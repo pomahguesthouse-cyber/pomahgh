@@ -18,6 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { isIndonesianHoliday, type IndonesianHoliday } from "@/utils/indonesianHolidays";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 interface Booking {
   id: string;
   room_id: string;
@@ -375,14 +377,61 @@ export const MonthlyBookingCalendar = () => {
                 </th>
                 {dates.map(date => {
                 const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-                return <th key={date.toISOString()} className={cn("border border-border p-1.5 min-w-[60px] text-center transition-colors", isWeekend && "bg-red-50/50 dark:bg-red-950/10")}>
-                      <div className={cn("text-[10px] font-medium uppercase", isWeekend ? "text-red-600" : "text-muted-foreground")}>
-                        {DAY_NAMES[getDay(date)]}
+                const holiday = isIndonesianHoliday(date);
+                const isHolidayOrWeekend = isWeekend || holiday !== null;
+                
+                const headerCell = (
+                  <th 
+                    key={date.toISOString()} 
+                    className={cn(
+                      "border border-border p-1.5 min-w-[60px] text-center transition-colors",
+                      isHolidayOrWeekend && "bg-red-50/50 dark:bg-red-950/10"
+                    )}
+                  >
+                    <div className={cn(
+                      "text-[10px] font-medium uppercase",
+                      isHolidayOrWeekend ? "text-red-600" : "text-muted-foreground"
+                    )}>
+                      {DAY_NAMES[getDay(date)]}
+                    </div>
+                    <div className={cn(
+                      "text-base font-bold",
+                      isHolidayOrWeekend && "text-red-600"
+                    )}>
+                      {format(date, "d")}
+                    </div>
+                    {holiday && (
+                      <div className="text-[8px] text-red-600 font-semibold mt-0.5">
+                        🎉
                       </div>
-                      <div className={cn("text-base font-bold", isWeekend && "text-red-600")}>
-                        {format(date, "d")}
-                      </div>
-                    </th>;
+                    )}
+                  </th>
+                );
+                
+                if (holiday) {
+                  return (
+                    <TooltipProvider key={date.toISOString()}>
+                      <Tooltip delayDuration={200}>
+                        <TooltipTrigger asChild>
+                          {headerCell}
+                        </TooltipTrigger>
+                        <TooltipContent 
+                          side="top" 
+                          className="bg-red-600 text-white font-medium"
+                        >
+                          <div className="text-xs">
+                            <div className="font-bold">{holiday.name}</div>
+                            <div className="text-[10px] opacity-90">
+                              {format(date, "d MMMM yyyy")}
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                }
+                
+                return headerCell;
               })}
               </tr>
             </thead>
@@ -691,7 +740,7 @@ const DraggableBookingCell = ({
   return <div ref={setNodeRef} {...listeners} {...attributes} onClick={onClick} className={cn("absolute top-0.5 bottom-0.5 bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20", getBackgroundClass(), isDragging && "opacity-50 scale-105 shadow-xl ring-2 ring-primary")} style={{
     left: '50%',
     width: bookingWidth,
-    transform: 'translateX(-50%)'
+    transform: 'translateX(0%)'
   }}>
       {/* Content - Guest name and nights */}
       <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
@@ -735,6 +784,7 @@ const DroppableRoomCell = ({
   date,
   booking,
   isWeekend,
+  holiday,
   isBlocked,
   blockReason,
   handleBookingClick,
@@ -745,6 +795,7 @@ const DroppableRoomCell = ({
   date: Date;
   booking: Booking | null;
   isWeekend: boolean;
+  holiday: IndonesianHoliday | null;
   isBlocked: boolean;
   blockReason?: string;
   handleBookingClick: (booking: Booking) => void;
@@ -765,7 +816,11 @@ const DroppableRoomCell = ({
   const checkOutDate = booking ? new Date(booking.check_out) : null;
   if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
   const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
-  return <td ref={setNodeRef} onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} className={cn("border border-border p-0 relative h-14 min-w-[60px] transition-colors cursor-context-menu", isWeekend && "bg-red-50/20 dark:bg-red-950/10", !isWeekend && "bg-background", isOver && "bg-primary/10 ring-2 ring-primary")} title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}>
+  
+  const isHolidayOrWeekend = isWeekend || holiday !== null;
+  
+  const cell = (
+    <td ref={setNodeRef} onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} className={cn("border border-border p-0 relative h-14 min-w-[60px] transition-colors cursor-context-menu", isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10", !isHolidayOrWeekend && "bg-background", isOver && "bg-primary/10 ring-2 ring-primary")} title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}>
       {/* Blocked Date Pattern */}
       {isBlocked && <div className="absolute inset-0 z-10 pointer-events-none" style={{
       background: `repeating-linear-gradient(
@@ -783,7 +838,31 @@ const DroppableRoomCell = ({
       
       {/* Render single booking */}
       {booking && !isBlocked && isStart && <DraggableBookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />}
-    </td>;
+    </td>
+  );
+  
+  if (holiday && !booking) {
+    return (
+      <TooltipProvider key={`${roomNumber}-${date.toISOString()}`}>
+        <Tooltip delayDuration={300}>
+          <TooltipTrigger asChild>
+            {cell}
+          </TooltipTrigger>
+          <TooltipContent 
+            side="top" 
+            className="bg-red-600 text-white font-medium"
+          >
+            <div className="text-xs">
+              <div className="font-bold">{holiday.name}</div>
+              <div className="text-[10px] opacity-90">Hari Libur Nasional</div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  
+  return cell;
 };
 
 // Room Row Component
@@ -821,9 +900,10 @@ const RoomRow = ({
       {dates.map(date => {
       const booking = getBookingForCell(room.roomNumber, date);
       const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+      const holiday = isIndonesianHoliday(date);
       const isBlocked = isDateBlocked(room.roomId, date);
       const blockReason = getBlockReason(room.roomId, date);
-      return <DroppableRoomCell key={date.toISOString()} roomId={room.roomId} roomNumber={room.roomNumber} date={date} booking={booking} isWeekend={isWeekend} isBlocked={isBlocked} blockReason={blockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />;
+      return <DroppableRoomCell key={date.toISOString()} roomId={room.roomId} roomNumber={room.roomNumber} date={date} booking={booking} isWeekend={isWeekend} holiday={holiday} isBlocked={isBlocked} blockReason={blockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />;
     })}
     </tr>;
 };
