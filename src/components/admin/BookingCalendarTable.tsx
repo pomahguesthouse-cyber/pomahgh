@@ -83,21 +83,25 @@ export const BookingCalendarTable = () => {
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const handleToday = () => setCurrentMonth(new Date());
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return 'bg-blue-500 hover:bg-blue-600 text-white';
-      case 'pending':
-        return 'bg-orange-500 hover:bg-orange-600 text-white';
-      case 'cancelled':
-        return 'bg-gray-400 hover:bg-gray-500 text-white';
-      case 'rejected':
-        return 'bg-red-400 hover:bg-red-500 text-white';
-      case 'maintenance':
-        return 'bg-gray-700 hover:bg-gray-800 text-white';
-      default:
-        return 'bg-primary hover:bg-primary/90 text-primary-foreground';
-    }
+  // Generate unique color for each booking
+  const getBookingColor = (bookingId: string) => {
+    const colors = [
+      "bg-blue-500 hover:bg-blue-600",
+      "bg-purple-500 hover:bg-purple-600",
+      "bg-pink-500 hover:bg-pink-600",
+      "bg-indigo-500 hover:bg-indigo-600",
+      "bg-cyan-500 hover:bg-cyan-600",
+      "bg-teal-500 hover:bg-teal-600",
+      "bg-emerald-500 hover:bg-emerald-600",
+      "bg-lime-500 hover:bg-lime-600",
+      "bg-amber-500 hover:bg-amber-600",
+      "bg-orange-500 hover:bg-orange-600",
+      "bg-red-500 hover:bg-red-600",
+      "bg-rose-500 hover:bg-rose-600",
+    ];
+    // Use booking ID to consistently assign color
+    const hash = bookingId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
   };
 
   const handleBookingClick = (booking: any) => {
@@ -230,7 +234,7 @@ export const BookingCalendarTable = () => {
               <div className="flex border-b bg-muted/50">
                 <div className="w-48 flex-shrink-0 border-r p-2 font-semibold text-sm flex items-center bg-muted/50">
                   <span>▾</span>
-                  <span className="ml-2">{groupName} ({groupRooms.length})</span>
+                  <span className="ml-2">{groupName} ({groupRooms.reduce((sum, r) => sum + r.room_count, 0)})</span>
                 </div>
                 <div className="flex" style={{ width: `${dates.length * 80}px` }}></div>
               </div>
@@ -259,20 +263,70 @@ export const BookingCalendarTable = () => {
                             .toUpperCase()
                             .slice(0, 2);
                           
+                          const checkInDate = parseISO(booking.check_in);
+                          const checkOutDate = parseISO(booking.check_out);
+                          
                           return (
                             <div
                               key={`${room.id}-${dateIdx}`}
-                              className="border-r p-1 relative cursor-pointer transition-opacity hover:opacity-90"
+                              className="border-r relative"
                               style={{ width: `${span * 80}px` }}
-                              onClick={() => handleBookingClick(booking)}
                             >
-                              <div
-                                className={cn(
-                                  "w-full h-full rounded px-2 py-1 text-xs font-medium text-center flex items-center justify-center",
-                                  getStatusColor(booking.status)
-                                )}
-                              >
-                                {booking.status === 'maintenance' ? 'Admin Block' : guestInitials}
+                              {/* Render each day of the booking */}
+                              <div className="flex h-full">
+                                {Array.from({ length: span }).map((_, dayOffset) => {
+                                  const currentDate = new Date(checkInDate);
+                                  currentDate.setDate(currentDate.getDate() + dayOffset);
+                                  
+                                  const isCheckInDay = isSameDay(currentDate, checkInDate);
+                                  const isCheckOutDay = isSameDay(currentDate, checkOutDate);
+                                  
+                                  return (
+                                    <div
+                                      key={dayOffset}
+                                      className="w-[80px] flex-shrink-0 p-1 cursor-pointer transition-opacity hover:opacity-90 relative"
+                                      onClick={() => handleBookingClick(booking)}
+                                    >
+                                      <div className="relative h-full">
+                                        {/* Half box for check-in day (top half) */}
+                                        {isCheckInDay && (
+                                          <div
+                                            className={cn(
+                                              "absolute top-0 left-0 right-0 h-1/2 rounded-t px-2 text-xs font-medium flex items-center justify-center text-white",
+                                              getBookingColor(booking.id)
+                                            )}
+                                          >
+                                            {booking.status === 'maintenance' ? 'Admin' : guestInitials}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Half box for check-out day (bottom half) */}
+                                        {isCheckOutDay && !isCheckInDay && (
+                                          <div
+                                            className={cn(
+                                              "absolute bottom-0 left-0 right-0 h-1/2 rounded-b px-2 text-xs font-medium flex items-center justify-center text-white",
+                                              getBookingColor(booking.id)
+                                            )}
+                                          >
+                                            {booking.status === 'maintenance' ? 'Block' : guestInitials}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Full box for middle days */}
+                                        {!isCheckInDay && !isCheckOutDay && (
+                                          <div
+                                            className={cn(
+                                              "w-full h-full rounded px-2 text-xs font-medium flex items-center justify-center text-white",
+                                              getBookingColor(booking.id)
+                                            )}
+                                          >
+                                            {booking.status === 'maintenance' ? 'Block' : guestInitials}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           );
@@ -301,6 +355,38 @@ export const BookingCalendarTable = () => {
               })}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+        <h3 className="font-semibold mb-3 text-sm">Legend:</h3>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="relative w-16 h-10 border rounded">
+              <div className="absolute top-0 left-0 right-0 h-1/2 bg-purple-500 rounded-t flex items-center justify-center text-[10px] text-white font-medium">
+                In
+              </div>
+            </div>
+            <span className="text-xs">Half box (top) = Check-in day (after 1:00 PM)</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative w-16 h-10 border rounded">
+              <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-blue-500 rounded-b flex items-center justify-center text-[10px] text-white font-medium">
+                Out
+              </div>
+            </div>
+            <span className="text-xs">Half box (bottom) = Check-out day (before 12:00 PM)</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-10 bg-teal-500 rounded flex items-center justify-center text-xs text-white font-medium">
+              Full
+            </div>
+            <span className="text-xs">Full box = Full day stay (between check-in and check-out)</span>
+          </div>
+          <div className="text-xs text-muted-foreground mt-2">
+            * Each booking has a unique color for easy identification
+          </div>
         </div>
       </div>
 
