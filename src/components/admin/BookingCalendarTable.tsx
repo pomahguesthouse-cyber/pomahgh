@@ -1,17 +1,31 @@
 import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO } from "date-fns";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 export const BookingCalendarTable = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [daysToShow, setDaysToShow] = useState(30);
-  const { bookings } = useAdminBookings();
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [newBookingData, setNewBookingData] = useState<{
+    roomId: string;
+    roomName: string;
+    date: Date;
+  } | null>(null);
+  
+  const { bookings, updateBooking, deleteBooking } = useAdminBookings();
   const { rooms } = useAdminRooms();
 
   const dates = useMemo(() => {
@@ -69,6 +83,40 @@ export const BookingCalendarTable = () => {
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const handleToday = () => setCurrentMonth(new Date());
 
+  const handleBookingClick = (booking: any) => {
+    setSelectedBooking(booking);
+    setBookingDialogOpen(true);
+  };
+
+  const handleEmptyCellClick = (roomId: string, roomName: string, date: Date) => {
+    setNewBookingData({ roomId, roomName, date });
+    setSelectedBooking(null);
+    setBookingDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setBookingDialogOpen(false);
+    setSelectedBooking(null);
+    setNewBookingData(null);
+  };
+
+  const handleDeleteBooking = () => {
+    if (selectedBooking) {
+      if (confirm("Are you sure you want to delete this booking?")) {
+        deleteBooking(selectedBooking.id);
+        handleCloseDialog();
+      }
+    }
+  };
+
+  const handleSaveBooking = () => {
+    if (selectedBooking) {
+      updateBooking(selectedBooking);
+      handleCloseDialog();
+      toast.success("Booking updated successfully");
+    }
+  };
+
   return (
     <Card className="p-4">
       {/* Header Controls */}
@@ -107,8 +155,8 @@ export const BookingCalendarTable = () => {
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="overflow-x-auto">
+      {/* Calendar Grid - Scrollable */}
+      <div className="overflow-x-auto overflow-y-auto max-h-[600px] border rounded-lg">
         <div className="min-w-[1200px]">
           {/* Date Headers */}
           <div className="flex border-b">
@@ -168,8 +216,9 @@ export const BookingCalendarTable = () => {
                           return (
                             <div
                               key={`${room.id}-${dateIdx}`}
-                              className="min-w-[60px] border-r p-1 relative"
+                              className="min-w-[60px] border-r p-1 relative cursor-pointer hover:bg-accent/50"
                               style={{ width: `${span * 60}px` }}
+                              onClick={() => handleBookingClick(booking)}
                             >
                               <Badge
                                 variant={booking.status === 'maintenance' ? 'destructive' : 'default'}
@@ -189,7 +238,8 @@ export const BookingCalendarTable = () => {
                             return (
                               <div
                                 key={`${room.id}-${dateIdx}`}
-                                className="flex-1 min-w-[60px] border-r p-1"
+                                className="flex-1 min-w-[60px] border-r p-1 cursor-pointer hover:bg-accent/30 transition-colors"
+                                onClick={() => handleEmptyCellClick(room.id, room.name, date)}
                               />
                             );
                           }
@@ -211,6 +261,192 @@ export const BookingCalendarTable = () => {
           No rooms available
         </div>
       )}
+
+      {/* Booking Details/Edit Dialog */}
+      <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedBooking ? 'Booking Details' : 'New Reservation'}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedBooking && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Guest Name</Label>
+                  <Input 
+                    value={selectedBooking.guest_name}
+                    onChange={(e) => setSelectedBooking({...selectedBooking, guest_name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Guest Email</Label>
+                  <Input 
+                    type="email"
+                    value={selectedBooking.guest_email}
+                    onChange={(e) => setSelectedBooking({...selectedBooking, guest_email: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Phone Number</Label>
+                <Input 
+                  value={selectedBooking.guest_phone || ""}
+                  onChange={(e) => setSelectedBooking({...selectedBooking, guest_phone: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Check-in Date</Label>
+                  <Input 
+                    type="date"
+                    value={selectedBooking.check_in}
+                    onChange={(e) => setSelectedBooking({...selectedBooking, check_in: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Check-out Date</Label>
+                  <Input 
+                    type="date"
+                    value={selectedBooking.check_out}
+                    onChange={(e) => setSelectedBooking({...selectedBooking, check_out: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Check-in Time</Label>
+                  <Input 
+                    type="time"
+                    value={selectedBooking.check_in_time || "14:00"}
+                    onChange={(e) => setSelectedBooking({...selectedBooking, check_in_time: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Check-out Time</Label>
+                  <Input 
+                    type="time"
+                    value={selectedBooking.check_out_time || "12:00"}
+                    onChange={(e) => setSelectedBooking({...selectedBooking, check_out_time: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Number of Guests</Label>
+                  <Input 
+                    type="number"
+                    min="1"
+                    value={selectedBooking.num_guests}
+                    onChange={(e) => setSelectedBooking({...selectedBooking, num_guests: parseInt(e.target.value)})}
+                  />
+                </div>
+                <div>
+                  <Label>Room Number</Label>
+                  <Input 
+                    value={selectedBooking.allocated_room_number || ""}
+                    onChange={(e) => setSelectedBooking({...selectedBooking, allocated_room_number: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Status</Label>
+                <Select 
+                  value={selectedBooking.status}
+                  onValueChange={(value) => setSelectedBooking({...selectedBooking, status: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Payment Status</Label>
+                <Select 
+                  value={selectedBooking.payment_status || "unpaid"}
+                  onValueChange={(value) => setSelectedBooking({...selectedBooking, payment_status: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="paid">Lunas</SelectItem>
+                    <SelectItem value="down_payment">DP</SelectItem>
+                    <SelectItem value="unpaid">Belum dibayar</SelectItem>
+                    <SelectItem value="pay_at_hotel">Bayar di Hotel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedBooking.payment_status === 'down_payment' && (
+                <div>
+                  <Label>Nominal DP</Label>
+                  <Input 
+                    type="number"
+                    min="0"
+                    value={selectedBooking.payment_amount || 0}
+                    onChange={(e) => setSelectedBooking({...selectedBooking, payment_amount: parseFloat(e.target.value)})}
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label>Special Requests</Label>
+                <Textarea 
+                  value={selectedBooking.special_requests || ""}
+                  onChange={(e) => setSelectedBooking({...selectedBooking, special_requests: e.target.value})}
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-between gap-2">
+                <Button variant="destructive" onClick={handleDeleteBooking}>
+                  Delete Booking
+                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleCloseDialog}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveBooking}>
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {newBookingData && (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Creating new booking for:</p>
+                <p className="font-semibold">{newBookingData.roomName}</p>
+                <p className="text-sm">Date: {format(newBookingData.date, "PPP")}</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                To create a booking, please use the "Add Reservation" button or go to the Bookings page.
+              </p>
+              <Button variant="outline" onClick={handleCloseDialog} className="w-full">
+                Close
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
