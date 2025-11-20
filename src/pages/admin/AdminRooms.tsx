@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon } from "lucide-react";
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RoomAvailabilityCalendar } from "@/components/admin/RoomAvailabilityCalendar";
+import { ROOM_FEATURES } from "@/constants/roomFeatures";
 
 const AdminRooms = () => {
   const { rooms, isLoading, createRoom, updateRoom, deleteRoom } = useAdminRooms();
@@ -31,7 +33,8 @@ const AdminRooms = () => {
     image_url: "",
     image_urls: [] as string[],
     virtual_tour_url: "",
-    features: "",
+    features: [] as string[],
+    room_numbers: [] as string[],
     room_count: "1",
     allotment: "0",
     promo_price: "",
@@ -59,7 +62,8 @@ const AdminRooms = () => {
       image_url: "",
       image_urls: [],
       virtual_tour_url: "",
-      features: "",
+      features: [],
+      room_numbers: [],
       room_count: "1",
       allotment: "0",
       promo_price: "",
@@ -90,7 +94,8 @@ const AdminRooms = () => {
       image_url: room.image_url,
       image_urls: room.image_urls || [],
       virtual_tour_url: room.virtual_tour_url || "",
-      features: room.features.join(", "),
+      features: room.features,
+      room_numbers: room.room_numbers || [],
       room_count: room.room_count?.toString() || "1",
       allotment: room.allotment?.toString() || "0",
       promo_price: room.promo_price?.toString() || "",
@@ -174,7 +179,8 @@ const AdminRooms = () => {
       image_url: formData.image_url,
       image_urls: formData.image_urls,
       virtual_tour_url: formData.virtual_tour_url || null,
-      features: formData.features.split(",").map(f => f.trim()).filter(Boolean),
+      features: formData.features,
+      room_numbers: formData.room_numbers,
       room_count: Number(formData.room_count),
       allotment: Number(formData.allotment),
       promo_price: formData.promo_price ? Number(formData.promo_price) : null,
@@ -197,6 +203,32 @@ const AdminRooms = () => {
 
     setIsDialogOpen(false);
     resetForm();
+  };
+
+  const handleRoomCountChange = (count: string) => {
+    const numCount = Math.max(1, Number(count) || 1);
+    const currentNumbers = formData.room_numbers;
+    const newNumbers = Array.from({ length: numCount }, (_, i) => 
+      currentNumbers[i] || `${i + 1}`
+    );
+    setFormData({ 
+      ...formData, 
+      room_count: numCount.toString(),
+      room_numbers: newNumbers
+    });
+  };
+
+  const handleRoomNumberChange = (index: number, value: string) => {
+    const newRoomNumbers = [...formData.room_numbers];
+    newRoomNumbers[index] = value;
+    setFormData({ ...formData, room_numbers: newRoomNumbers });
+  };
+
+  const toggleFeature = (featureId: string) => {
+    const newFeatures = formData.features.includes(featureId)
+      ? formData.features.filter(f => f !== featureId)
+      : [...formData.features, featureId];
+    setFormData({ ...formData, features: newFeatures });
   };
 
   if (isLoading) {
@@ -306,22 +338,25 @@ const AdminRooms = () => {
                     type="number"
                     min="1"
                     value={formData.room_count}
-                    onChange={(e) => setFormData({ ...formData, room_count: e.target.value })}
+                    onChange={(e) => handleRoomCountChange(e.target.value)}
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="allotment">Number of Room *</Label>
-                <Input
-                  id="allotment"
-                  type="number"
-                  min="0"
-                  value={formData.allotment}
-                  onChange={(e) => setFormData({ ...formData, allotment: e.target.value })}
-                  required
-                />
+                <Label>Room Numbers *</Label>
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {Array.from({ length: Number(formData.room_count) || 1 }).map((_, index) => (
+                    <Input
+                      key={index}
+                      placeholder={`Room ${index + 1}`}
+                      value={formData.room_numbers[index] || ""}
+                      onChange={(e) => handleRoomNumberChange(index, e.target.value)}
+                      required
+                    />
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -376,13 +411,28 @@ const AdminRooms = () => {
               </div>
 
               <div>
-                <Label htmlFor="features">Features (comma-separated)</Label>
-                <Input
-                  id="features"
-                  value={formData.features}
-                  onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                  placeholder="WiFi, TV, Air Conditioning"
-                />
+                <Label>Features</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2 p-4 border rounded-md">
+                  {ROOM_FEATURES.map((feature) => {
+                    const IconComponent = feature.icon;
+                    return (
+                      <div key={feature.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={feature.id}
+                          checked={formData.features.includes(feature.id)}
+                          onCheckedChange={() => toggleFeature(feature.id)}
+                        />
+                        <Label
+                          htmlFor={feature.id}
+                          className="flex items-center gap-2 cursor-pointer font-normal"
+                        >
+                          <IconComponent className="h-4 w-4" />
+                          {feature.label}
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="space-y-4 border-t pt-4">

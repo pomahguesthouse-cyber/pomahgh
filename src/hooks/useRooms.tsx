@@ -14,6 +14,7 @@ export interface Room {
   available: boolean;
   size_sqm: number | null;
   room_count: number;
+  room_numbers: string[] | null;
   allotment: number;
   base_price: number | null;
   final_price: number | null;
