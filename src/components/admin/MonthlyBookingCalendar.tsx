@@ -16,7 +16,6 @@ import { DndContext, DragEndEvent, useDraggable, useDroppable, DragOverlay, Mous
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-
 interface Booking {
   id: string;
   room_id: string;
@@ -42,34 +41,53 @@ interface Booking {
     allotment: number;
   };
 }
-
 const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 type ViewRange = 7 | 14 | 30;
-
 export const MonthlyBookingCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [viewRange, setViewRange] = useState<ViewRange>(30);
-  const [contextMenu, setContextMenu] = useState<{ roomId: string; roomNumber: string; date: Date; x: number; y: number } | null>(null);
-  const [blockDialog, setBlockDialog] = useState<{ open: boolean; roomId?: string; roomNumber?: string; date?: Date; reason?: string }>({ open: false });
+  const [contextMenu, setContextMenu] = useState<{
+    roomId: string;
+    roomNumber: string;
+    date: Date;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [blockDialog, setBlockDialog] = useState<{
+    open: boolean;
+    roomId?: string;
+    roomNumber?: string;
+    date?: Date;
+    reason?: string;
+  }>({
+    open: false
+  });
   const [activeId, setActiveId] = useState<string | null>(null);
-  
-  const { bookings } = useAdminBookings();
-  const { rooms } = useAdminRooms();
-  const { unavailableDates, addUnavailableDates, removeUnavailableDates } = useRoomAvailability();
+  const {
+    bookings
+  } = useAdminBookings();
+  const {
+    rooms
+  } = useAdminRooms();
+  const {
+    unavailableDates,
+    addUnavailableDates,
+    removeUnavailableDates
+  } = useRoomAvailability();
   const queryClient = useQueryClient();
 
   // Setup drag sensors with activation constraints
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: {
-      distance: 10,
-    },
+      distance: 10
+    }
   });
   const touchSensor = useSensor(TouchSensor, {
     activationConstraint: {
       delay: 250,
-      tolerance: 5,
-    },
+      tolerance: 5
+    }
   });
   const sensors = useSensors(mouseSensor, touchSensor);
 
@@ -78,11 +96,17 @@ export const MonthlyBookingCalendar = () => {
     if (viewRange === 30) {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
-      return eachDayOfInterval({ start: monthStart, end: monthEnd });
+      return eachDayOfInterval({
+        start: monthStart,
+        end: monthEnd
+      });
     } else {
       const startDate = currentDate;
       const endDate = addDays(startDate, viewRange - 1);
-      return eachDayOfInterval({ start: startDate, end: endDate });
+      return eachDayOfInterval({
+        start: startDate,
+        end: endDate
+      });
     }
   }, [currentDate, viewRange]);
 
@@ -102,7 +126,11 @@ export const MonthlyBookingCalendar = () => {
   // Get all room numbers
   const allRoomNumbers = useMemo(() => {
     if (!rooms) return [];
-    const roomNums: Array<{ roomType: string; roomNumber: string; roomId: string }> = [];
+    const roomNums: Array<{
+      roomType: string;
+      roomNumber: string;
+      roomId: string;
+    }> = [];
     rooms.forEach(room => {
       if (room.room_numbers && room.room_numbers.length > 0) {
         room.room_numbers.forEach(num => {
@@ -168,23 +196,30 @@ export const MonthlyBookingCalendar = () => {
   // Get status badge variant
   const getStatusVariant = (status: string) => {
     switch (status.toLowerCase()) {
-      case "confirmed": return "default";
-      case "pending": return "secondary";
-      case "cancelled": return "destructive";
-      default: return "outline";
+      case "confirmed":
+        return "default";
+      case "pending":
+        return "secondary";
+      case "cancelled":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
 
   // Get payment status badge variant
   const getPaymentVariant = (status?: string) => {
     switch (status?.toLowerCase()) {
-      case "paid": return "default";
-      case "partial": return "secondary";
-      case "unpaid": return "destructive";
-      default: return "outline";
+      case "paid":
+        return "default";
+      case "partial":
+        return "secondary";
+      case "unpaid":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
-
   const handlePrevMonth = () => {
     if (viewRange === 30) {
       setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
@@ -192,7 +227,6 @@ export const MonthlyBookingCalendar = () => {
       setCurrentDate(addDays(currentDate, -viewRange));
     }
   };
-
   const handleNextMonth = () => {
     if (viewRange === 30) {
       setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
@@ -200,51 +234,52 @@ export const MonthlyBookingCalendar = () => {
       setCurrentDate(addDays(currentDate, viewRange));
     }
   };
-
   const handleBookingClick = (booking: Booking) => {
     setSelectedBooking(booking);
   };
-
   const handleDragStart = (event: DragEndEvent) => {
     setActiveId(event.active.id as string);
   };
-
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+    const {
+      active,
+      over
+    } = event;
     setActiveId(null);
-    
     if (!over || !active.data.current) return;
-    
     const bookingId = active.id as string;
     const newRoomNumber = over.id as string;
     const booking = bookings?.find(b => b.id === bookingId);
-    
     if (!booking || booking.allocated_room_number === newRoomNumber) return;
-    
     try {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ allocated_room_number: newRoomNumber })
-        .eq("id", bookingId);
-      
+      const {
+        error
+      } = await supabase.from("bookings").update({
+        allocated_room_number: newRoomNumber
+      }).eq("id", bookingId);
       if (error) throw error;
-      
       toast.success(`Booking dipindahkan ke kamar ${newRoomNumber}`);
-      queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-bookings"]
+      });
     } catch (error) {
       toast.error("Tidak dapat memindahkan booking");
     }
   };
-
   const handleRightClick = (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => {
     e.preventDefault();
-    setContextMenu({ roomId, roomNumber, date, x: e.clientX, y: e.clientY });
+    setContextMenu({
+      roomId,
+      roomNumber,
+      date,
+      x: e.clientX,
+      y: e.clientY
+    });
   };
-
   const handleBlockDate = () => {
     if (!contextMenu) return;
-    setBlockDialog({ 
-      open: true, 
+    setBlockDialog({
+      open: true,
       roomId: contextMenu.roomId,
       roomNumber: contextMenu.roomNumber,
       date: contextMenu.date,
@@ -252,29 +287,26 @@ export const MonthlyBookingCalendar = () => {
     });
     setContextMenu(null);
   };
-
   const handleUnblockDate = async () => {
     if (!contextMenu) return;
     const dateStr = format(contextMenu.date, "yyyy-MM-dd");
-    
-    await removeUnavailableDates([{ 
-      room_id: contextMenu.roomId, 
-      unavailable_date: dateStr 
+    await removeUnavailableDates([{
+      room_id: contextMenu.roomId,
+      unavailable_date: dateStr
     }]);
     setContextMenu(null);
   };
-
   const handleSaveBlock = async () => {
     if (!blockDialog.roomId || !blockDialog.date) return;
-    
     const dateStr = format(blockDialog.date, "yyyy-MM-dd");
-    
     await addUnavailableDates([{
       room_id: blockDialog.roomId,
       unavailable_date: dateStr,
       reason: blockDialog.reason || "Blocked by admin"
     }]);
-    setBlockDialog({ open: false });
+    setBlockDialog({
+      open: false
+    });
   };
 
   // Close context menu when clicking outside
@@ -285,51 +317,33 @@ export const MonthlyBookingCalendar = () => {
       return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [contextMenu]);
-
   const activeDragBooking = useMemo(() => {
     if (!activeId) return null;
     return bookings?.find(b => b.id === activeId);
   }, [activeId, bookings]);
-
-  return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+  return <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <Card className="w-full shadow-lg rounded-xl overflow-hidden border-border/50">
         <div className="p-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 border-b border-border">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               {/* View Range Selector */}
               <div className="flex gap-1 bg-background rounded-lg p-1 shadow-sm border border-border">
-                <Button 
-                  variant={viewRange === 7 ? "default" : "ghost"} 
-                  size="sm" 
-                  onClick={() => {
-                    setViewRange(7);
-                    setCurrentDate(new Date());
-                  }} 
-                  className="text-xs"
-                >
+                <Button variant={viewRange === 7 ? "default" : "ghost"} size="sm" onClick={() => {
+                setViewRange(7);
+                setCurrentDate(new Date());
+              }} className="text-xs">
                   7 Hari
                 </Button>
-                <Button 
-                  variant={viewRange === 14 ? "default" : "ghost"} 
-                  size="sm" 
-                  onClick={() => {
-                    setViewRange(14);
-                    setCurrentDate(new Date());
-                  }} 
-                  className="text-xs"
-                >
+                <Button variant={viewRange === 14 ? "default" : "ghost"} size="sm" onClick={() => {
+                setViewRange(14);
+                setCurrentDate(new Date());
+              }} className="text-xs">
                   14 Hari
                 </Button>
-                <Button 
-                  variant={viewRange === 30 ? "default" : "ghost"} 
-                  size="sm" 
-                  onClick={() => {
-                    setViewRange(30);
-                    setCurrentDate(new Date());
-                  }} 
-                  className="text-xs"
-                >
+                <Button variant={viewRange === 30 ? "default" : "ghost"} size="sm" onClick={() => {
+                setViewRange(30);
+                setCurrentDate(new Date());
+              }} className="text-xs">
                   30 Hari
                 </Button>
               </div>
@@ -353,56 +367,30 @@ export const MonthlyBookingCalendar = () => {
                   <span className="text-sm font-bold uppercase tracking-wide">Kamar</span>
                 </th>
                 {dates.map(date => {
-                  const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-                  return (
-                    <th 
-                      key={date.toISOString()} 
-                      className={`border border-border p-3 min-w-[70px] text-center transition-colors ${
-                        isWeekend ? "bg-amber-50/50 dark:bg-amber-950/20" : "bg-background"
-                      }`}
-                    >
+                const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+                return <th key={date.toISOString()} className={`border border-border p-3 min-w-[70px] text-center transition-colors ${isWeekend ? "bg-amber-50/50 dark:bg-amber-950/20" : "bg-background"}`}>
                       <div className="text-xs font-normal text-muted-foreground uppercase tracking-wider">
                         {DAY_NAMES[getDay(date)]}
                       </div>
                       <div className="text-base font-bold mt-1">
                         {format(date, "d")}
                       </div>
-                    </th>
-                  );
-                })}
+                    </th>;
+              })}
               </tr>
             </thead>
             <tbody>
-              {Object.entries(roomsByType).map(([roomType]) => (
-                <React.Fragment key={roomType}>
+              {Object.entries(roomsByType).map(([roomType]) => <React.Fragment key={roomType}>
                   {/* Room type header */}
                   <tr className="border-y border-border">
-                    <td colSpan={dates.length + 1} className="p-3 bg-gradient-to-r from-muted/50 to-muted/30 font-bold text-sm uppercase tracking-wide">
+                    <td colSpan={dates.length + 1} className="p-3 bg-gradient-to-r from-muted/50 to-muted/30 font-bold text-sm uppercase tracking-wide rounded-sm">
                       {roomType}
                     </td>
                   </tr>
 
                   {/* Room rows */}
-                  {allRoomNumbers
-                    .filter(r => r.roomType === roomType)
-                    .map((room, roomIndex) => (
-                      <RoomRow 
-                        key={room.roomNumber} 
-                        room={room} 
-                        roomIndex={roomIndex} 
-                        dates={dates} 
-                        getBookingForCell={getBookingForCell} 
-                        isBookingStart={isBookingStart} 
-                        isBookingEnd={isBookingEnd} 
-                        isBeforeCheckout={isBeforeCheckout} 
-                        isDateBlocked={isDateBlocked}
-                        getBlockReason={getBlockReason}
-                        handleBookingClick={handleBookingClick}
-                        handleRightClick={handleRightClick}
-                      />
-                    ))}
-                </React.Fragment>
-              ))}
+                  {allRoomNumbers.filter(r => r.roomType === roomType).map((room, roomIndex) => <RoomRow key={room.roomNumber} room={room} roomIndex={roomIndex} dates={dates} getBookingForCell={getBookingForCell} isBookingStart={isBookingStart} isBookingEnd={isBookingEnd} isBeforeCheckout={isBeforeCheckout} isDateBlocked={isDateBlocked} getBlockReason={getBlockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />)}
+                </React.Fragment>)}
             </tbody>
           </table>
         </div>
@@ -413,8 +401,7 @@ export const MonthlyBookingCalendar = () => {
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">Detail Booking</DialogTitle>
             </DialogHeader>
-            {selectedBooking && (
-              <div className="space-y-6">
+            {selectedBooking && <div className="space-y-6">
                 {/* Status Badges */}
                 <div className="flex gap-2">
                   <Badge variant={getStatusVariant(selectedBooking.status)} className="text-xs px-3 py-1">
@@ -443,15 +430,13 @@ export const MonthlyBookingCalendar = () => {
                         <p className="font-semibold break-all">{selectedBooking.guest_email}</p>
                       </div>
                     </div>
-                    {selectedBooking.guest_phone && (
-                      <div className="flex items-start gap-3">
+                    {selectedBooking.guest_phone && <div className="flex items-start gap-3">
                         <Phone className="h-5 w-5 text-primary mt-0.5" />
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wide">Telepon</p>
                           <p className="font-semibold">{selectedBooking.guest_phone}</p>
                         </div>
-                      </div>
-                    )}
+                      </div>}
                     <div className="flex items-start gap-3">
                       <Users className="h-5 w-5 text-primary mt-0.5" />
                       <div>
@@ -471,11 +456,11 @@ export const MonthlyBookingCalendar = () => {
                       <div>
                         <p className="text-xs text-muted-foreground uppercase tracking-wide">Check-in</p>
                         <p className="font-semibold">
-                          {format(new Date(selectedBooking.check_in), "dd MMM yyyy", { locale: localeId })}
+                          {format(new Date(selectedBooking.check_in), "dd MMM yyyy", {
+                        locale: localeId
+                      })}
                         </p>
-                        {selectedBooking.check_in_time && (
-                          <p className="text-sm text-muted-foreground">{selectedBooking.check_in_time.slice(0, 5)}</p>
-                        )}
+                        {selectedBooking.check_in_time && <p className="text-sm text-muted-foreground">{selectedBooking.check_in_time.slice(0, 5)}</p>}
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -483,16 +468,14 @@ export const MonthlyBookingCalendar = () => {
                       <div>
                         <p className="text-xs text-muted-foreground uppercase tracking-wide">Check-out</p>
                         <p className="font-semibold">
-                          {format(new Date(selectedBooking.check_out), "dd MMM yyyy", { locale: localeId })}
+                          {format(new Date(selectedBooking.check_out), "dd MMM yyyy", {
+                        locale: localeId
+                      })}
                         </p>
-                        {selectedBooking.check_out_time && (
-                          <p className="text-sm text-muted-foreground">
+                        {selectedBooking.check_out_time && <p className="text-sm text-muted-foreground">
                             {selectedBooking.check_out_time.slice(0, 5)}
-                            {selectedBooking.check_out_time !== "12:00:00" && (
-                              <span className="ml-2 text-orange-600 font-semibold">(Late Check-out)</span>
-                            )}
-                          </p>
-                        )}
+                            {selectedBooking.check_out_time !== "12:00:00" && <span className="ml-2 text-orange-600 font-semibold">(Late Check-out)</span>}
+                          </p>}
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -525,8 +508,7 @@ export const MonthlyBookingCalendar = () => {
                         </p>
                       </div>
                     </div>
-                    {selectedBooking.payment_amount && (
-                      <div className="flex items-start gap-3">
+                    {selectedBooking.payment_amount && <div className="flex items-start gap-3">
                         <CreditCard className="h-5 w-5 text-primary mt-0.5" />
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wide">Jumlah Dibayar</p>
@@ -534,69 +516,55 @@ export const MonthlyBookingCalendar = () => {
                             Rp {selectedBooking.payment_amount.toLocaleString("id-ID")}
                           </p>
                         </div>
-                      </div>
-                    )}
+                      </div>}
                   </div>
                 </div>
 
                 {/* Special Requests */}
-                {selectedBooking.special_requests && (
-                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 rounded-lg p-4">
+                {selectedBooking.special_requests && <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 rounded-lg p-4">
                     <h3 className="font-bold text-sm uppercase tracking-wide mb-2">Permintaan Khusus</h3>
                     <p className="leading-relaxed">{selectedBooking.special_requests}</p>
-                  </div>
-                )}
+                  </div>}
 
                 {/* Footer */}
                 <div className="border-t pt-4">
                   <p className="text-xs text-muted-foreground text-center">
-                    Dibuat: {format(new Date(selectedBooking.created_at), "dd MMM yyyy HH:mm", { locale: localeId })}
+                    Dibuat: {format(new Date(selectedBooking.created_at), "dd MMM yyyy HH:mm", {
+                  locale: localeId
+                })}
                   </p>
                 </div>
-              </div>
-            )}
+              </div>}
           </DialogContent>
         </Dialog>
       </Card>
 
       {/* Drag Overlay */}
       <DragOverlay>
-        {activeDragBooking ? (
-          <div className="bg-gradient-to-br from-primary/20 to-primary/30 border-2 border-primary rounded-lg p-2 shadow-xl cursor-grabbing">
+        {activeDragBooking ? <div className="bg-gradient-to-br from-primary/20 to-primary/30 border-2 border-primary rounded-lg p-2 shadow-xl cursor-grabbing">
             <div className="text-xs font-semibold">{activeDragBooking.guest_name}</div>
             <div className="text-[10px] text-muted-foreground">{activeDragBooking.allocated_room_number}</div>
-          </div>
-        ) : null}
+          </div> : null}
       </DragOverlay>
 
       {/* Context Menu */}
-      {contextMenu && (
-        <div
-          className="fixed z-50 bg-card border border-border rounded-lg shadow-xl py-2 min-w-[180px]"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-        >
-          {isDateBlocked(contextMenu.roomId, contextMenu.date) ? (
-            <button
-              onClick={handleUnblockDate}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
-            >
+      {contextMenu && <div className="fixed z-50 bg-card border border-border rounded-lg shadow-xl py-2 min-w-[180px]" style={{
+      top: contextMenu.y,
+      left: contextMenu.x
+    }}>
+          {isDateBlocked(contextMenu.roomId, contextMenu.date) ? <button onClick={handleUnblockDate} className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2">
               <Trash2 className="w-4 h-4" />
               Unblock Date
-            </button>
-          ) : (
-            <button
-              onClick={handleBlockDate}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
-            >
+            </button> : <button onClick={handleBlockDate} className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2">
               <Ban className="w-4 h-4" />
               Block Date
-            </button>
-          )}
-        </div>
-      )}
+            </button>}
+        </div>}
 
       {/* Block Date Dialog */}
-      <Dialog open={blockDialog.open} onOpenChange={(open) => setBlockDialog({ open })}>
+      <Dialog open={blockDialog.open} onOpenChange={open => setBlockDialog({
+      open
+    })}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Block Date</DialogTitle>
@@ -607,34 +575,27 @@ export const MonthlyBookingCalendar = () => {
           <div className="space-y-4 py-4">
             <div>
               <Label>Date</Label>
-              <Input
-                value={blockDialog.date ? format(blockDialog.date, "PPP") : ""}
-                disabled
-                className="mt-1"
-              />
+              <Input value={blockDialog.date ? format(blockDialog.date, "PPP") : ""} disabled className="mt-1" />
             </div>
             <div>
               <Label htmlFor="reason">Reason (Optional)</Label>
-              <Textarea
-                id="reason"
-                value={blockDialog.reason || ""}
-                onChange={(e) => setBlockDialog({ ...blockDialog, reason: e.target.value })}
-                placeholder="e.g., Maintenance, Private event..."
-                className="mt-1"
-                rows={3}
-              />
+              <Textarea id="reason" value={blockDialog.reason || ""} onChange={e => setBlockDialog({
+              ...blockDialog,
+              reason: e.target.value
+            })} placeholder="e.g., Maintenance, Private event..." className="mt-1" rows={3} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBlockDialog({ open: false })}>
+            <Button variant="outline" onClick={() => setBlockDialog({
+            open: false
+          })}>
               Cancel
             </Button>
             <Button onClick={handleSaveBlock}>Block Date</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DndContext>
-  );
+    </DndContext>;
 };
 
 // Draggable Booking Cell Component
@@ -649,18 +610,18 @@ const DraggableBookingCell = ({
   isEnd: boolean;
   onClick: () => void;
 }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    isDragging
+  } = useDraggable({
     id: booking.id,
-    data: { booking }
+    data: {
+      booking
+    }
   });
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      onClick={onClick}
-      className={`
+  return <div ref={setNodeRef} {...listeners} {...attributes} onClick={onClick} className={`
         absolute inset-1 bg-gradient-to-br from-primary/40 to-primary/60
         hover:from-primary/50 hover:to-primary/70
         cursor-move flex items-center justify-center
@@ -669,17 +630,13 @@ const DraggableBookingCell = ({
         ${isStart ? "rounded-l-lg" : ""}
         ${isEnd ? "rounded-r-lg" : ""}
         ${isDragging ? "opacity-50 scale-105 shadow-lg" : ""}
-      `}
-    >
-      {isStart && (
-        <div className="text-center px-2 py-1">
+      `}>
+      {isStart && <div className="text-center px-2 py-1">
           <div className="font-bold truncate text-sm">
             {booking.guest_name.split(" ")[0]}
           </div>
-        </div>
-      )}
-    </div>
-  );
+        </div>}
+    </div>;
 };
 
 // Droppable Room Cell Component
@@ -710,62 +667,46 @@ const DroppableRoomCell = ({
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
 }) => {
-  const { setNodeRef, isOver } = useDroppable({
+  const {
+    setNodeRef,
+    isOver
+  } = useDroppable({
     id: roomNumber,
-    data: { roomNumber, date }
+    data: {
+      roomNumber,
+      date
+    }
   });
-
-  return (
-    <td
-      ref={setNodeRef}
-      onContextMenu={(e) => handleRightClick(e, roomId, roomNumber, date)}
-      className={`
+  return <td ref={setNodeRef} onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} className={`
         border border-border p-0 relative h-16 min-w-[70px] transition-colors
         ${isWeekend ? "bg-amber-50/30 dark:bg-amber-950/10" : ""}
         ${isOver ? "bg-primary/10 ring-2 ring-primary" : ""}
         cursor-context-menu
-      `}
-      title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
-    >
+      `} title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}>
       {/* Blocked Date Pattern */}
-      {isBlocked && (
-        <div 
-          className="absolute inset-0 z-10 pointer-events-none"
-          style={{
-            background: `repeating-linear-gradient(
+      {isBlocked && <div className="absolute inset-0 z-10 pointer-events-none" style={{
+      background: `repeating-linear-gradient(
               45deg,
               hsl(var(--destructive) / 0.15),
               hsl(var(--destructive) / 0.15) 8px,
               transparent 8px,
               transparent 16px
             )`
-          }}
-        >
+    }}>
           <div className="absolute top-1 right-1">
             <Ban className="w-3 h-3 text-destructive" />
           </div>
-        </div>
-      )}
+        </div>}
       
-      {booking && !isBlocked && (
-        <DraggableBookingCell 
-          booking={booking} 
-          isStart={isStart} 
-          isEnd={isEnd} 
-          onClick={() => handleBookingClick(booking)} 
-        />
-      )}
+      {booking && !isBlocked && <DraggableBookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />}
       
       {/* LCO Badge positioned at the border */}
-      {showLCO && booking && (
-        <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-20">
+      {showLCO && booking && <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-20">
           <span className="bg-gradient-to-r from-orange-400 to-orange-500 text-white text-[10px] px-2 py-1 rounded-full font-bold shadow-lg whitespace-nowrap border-2 border-white dark:border-gray-800">
             LCO {booking.check_out_time!.slice(0, 5)}
           </span>
-        </div>
-      )}
-    </td>
-  );
+        </div>}
+    </td>;
 };
 
 // Room Row Component
@@ -782,7 +723,11 @@ const RoomRow = ({
   handleBookingClick,
   handleRightClick
 }: {
-  room: { roomType: string; roomNumber: string; roomId: string };
+  room: {
+    roomType: string;
+    roomNumber: string;
+    roomId: string;
+  };
   roomIndex: number;
   dates: Date[];
   getBookingForCell: (roomNumber: string, date: Date) => Booking | null;
@@ -794,38 +739,19 @@ const RoomRow = ({
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
 }) => {
-  return (
-    <tr className={`${roomIndex % 2 === 0 ? "bg-background" : "bg-muted/30"} hover:bg-accent/20 transition-colors`}>
+  return <tr className={`${roomIndex % 2 === 0 ? "bg-background" : "bg-muted/30"} hover:bg-accent/20 transition-colors`}>
       <td className="border border-border p-3 sticky left-0 z-10 font-semibold text-sm shadow-sm bg-inherit">
         {room.roomNumber}
       </td>
       {dates.map(date => {
-        const booking = getBookingForCell(room.roomNumber, date);
-        const isStart = booking && isBookingStart(booking, date);
-        const isEnd = booking && isBookingEnd(booking, date);
-        const showLCO = booking && isBeforeCheckout(booking, date) && booking.check_out_time && booking.check_out_time !== "12:00:00";
-        const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-        const isBlocked = isDateBlocked(room.roomId, date);
-        const blockReason = getBlockReason(room.roomId, date);
-        
-        return (
-          <DroppableRoomCell 
-            key={date.toISOString()} 
-            roomId={room.roomId}
-            roomNumber={room.roomNumber} 
-            date={date} 
-            booking={booking} 
-            isStart={isStart} 
-            isEnd={isEnd} 
-            showLCO={showLCO} 
-            isWeekend={isWeekend} 
-            isBlocked={isBlocked}
-            blockReason={blockReason}
-            handleBookingClick={handleBookingClick}
-            handleRightClick={handleRightClick}
-          />
-        );
-      })}
-    </tr>
-  );
+      const booking = getBookingForCell(room.roomNumber, date);
+      const isStart = booking && isBookingStart(booking, date);
+      const isEnd = booking && isBookingEnd(booking, date);
+      const showLCO = booking && isBeforeCheckout(booking, date) && booking.check_out_time && booking.check_out_time !== "12:00:00";
+      const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+      const isBlocked = isDateBlocked(room.roomId, date);
+      const blockReason = getBlockReason(room.roomId, date);
+      return <DroppableRoomCell key={date.toISOString()} roomId={room.roomId} roomNumber={room.roomNumber} date={date} booking={booking} isStart={isStart} isEnd={isEnd} showLCO={showLCO} isWeekend={isWeekend} isBlocked={isBlocked} blockReason={blockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />;
+    })}
+    </tr>;
 };
