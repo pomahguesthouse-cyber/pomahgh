@@ -7,15 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, Upload, X } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon } from "lucide-react";
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { RoomAvailabilityCalendar } from "@/components/admin/RoomAvailabilityCalendar";
 
 const AdminRooms = () => {
   const { rooms, isLoading, createRoom, updateRoom, deleteRoom } = useAdminRooms();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [viewingCalendar, setViewingCalendar] = useState<Room | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -32,7 +35,6 @@ const AdminRooms = () => {
     room_count: "1",
     allotment: "0",
   });
-  const [uploading, setUploading] = useState(false);
 
   const resetForm = () => {
     setFormData({
@@ -271,7 +273,7 @@ const AdminRooms = () => {
               </div>
 
               <div>
-                <Label htmlFor="allotment">Room Allotment *</Label>
+                <Label htmlFor="allotment">Number of Room *</Label>
                 <Input
                   id="allotment"
                   type="number"
@@ -363,56 +365,87 @@ const AdminRooms = () => {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {rooms?.map((room) => (
-          <Card key={room.id}>
-            <CardHeader>
-              <CardTitle className="flex justify-between items-start">
-                <span>{room.name}</span>
-                <span className={`text-sm px-2 py-1 rounded ${room.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                  {room.available ? 'Available' : 'Unavailable'}
-                </span>
-              </CardTitle>
-              <CardDescription>
-                Rp {room.price_per_night.toLocaleString()}/night
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                {room.description}
-              </p>
-              <div className="text-sm space-y-1 mb-4">
-                <p>Max Guests: {room.max_guests}</p>
-                {room.size_sqm && <p>Size: {room.size_sqm} sqm</p>}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleEdit(room)}
-                  className="flex-1"
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => {
-                    if (confirm("Are you sure you want to delete this room?")) {
-                      deleteRoom(room.id);
-                    }
-                  }}
-                  className="flex-1"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {viewingCalendar && (
+        <div className="mb-6">
+          <Button
+            variant="outline"
+            onClick={() => setViewingCalendar(null)}
+            className="mb-4"
+          >
+            ← Back to Room List
+          </Button>
+          <RoomAvailabilityCalendar
+            roomId={viewingCalendar.id}
+            roomName={viewingCalendar.name}
+            totalRooms={viewingCalendar.room_count}
+          />
+        </div>
+      )}
+
+      {!viewingCalendar && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {rooms?.map((room) => (
+            <Card key={room.id}>
+              <CardHeader>
+                <CardTitle className="flex justify-between items-start">
+                  <span>{room.name}</span>
+                  <span className={`text-sm px-2 py-1 rounded ${room.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {room.available ? 'Available' : 'Unavailable'}
+                  </span>
+                </CardTitle>
+                <CardDescription>
+                  Rp {room.price_per_night.toLocaleString()}/night
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  {room.description}
+                </p>
+                <div className="text-sm space-y-1 mb-4">
+                  <p>Max Guests: {room.max_guests}</p>
+                  <p>Total Rooms: {room.room_count}</p>
+                  {room.size_sqm && <p>Size: {room.size_sqm} sqm</p>}
+                </div>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEdit(room)}
+                      className="flex-1"
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        if (confirm("Are you sure you want to delete this room?")) {
+                          deleteRoom(room.id);
+                        }
+                      }}
+                      className="flex-1"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => setViewingCalendar(room)}
+                    className="w-full"
+                  >
+                    <CalendarIcon className="h-4 w-4 mr-1" />
+                    View Availability
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
