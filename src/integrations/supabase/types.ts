@@ -18,7 +18,9 @@ export type Database = {
         Row: {
           allocated_room_number: string | null
           check_in: string
+          check_in_time: string | null
           check_out: string
+          check_out_time: string | null
           created_at: string
           guest_email: string
           guest_name: string
@@ -35,7 +37,9 @@ export type Database = {
         Insert: {
           allocated_room_number?: string | null
           check_in: string
+          check_in_time?: string | null
           check_out: string
+          check_out_time?: string | null
           created_at?: string
           guest_email: string
           guest_name: string
@@ -52,7 +56,9 @@ export type Database = {
         Update: {
           allocated_room_number?: string | null
           check_in?: string
+          check_in_time?: string | null
           check_out?: string
+          check_out_time?: string | null
           created_at?: string
           guest_email?: string
           guest_name?: string

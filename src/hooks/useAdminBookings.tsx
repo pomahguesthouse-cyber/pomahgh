@@ -10,6 +10,8 @@ interface Booking {
   guest_phone?: string;
   check_in: string;
   check_out: string;
+  check_in_time?: string;
+  check_out_time?: string;
   total_nights: number;
   total_price: number;
   num_guests: number;

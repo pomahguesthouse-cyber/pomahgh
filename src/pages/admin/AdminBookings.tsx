@@ -109,6 +109,8 @@ const AdminBookings = () => {
         guest_phone: editingBooking.guest_phone,
         check_in: editingBooking.check_in,
         check_out: editingBooking.check_out,
+        check_in_time: editingBooking.check_in_time,
+        check_out_time: editingBooking.check_out_time,
         num_guests: editingBooking.num_guests,
         total_nights: totalNights,
         allocated_room_number: editingBooking.allocated_room_number,
@@ -168,7 +170,12 @@ const AdminBookings = () => {
                     {(() => {
                   const status = getRoomStatus(booking);
                   const Icon = status.icon;
-                  return;
+                  return (
+                    <Badge variant={status.variant} className="flex items-center gap-1">
+                      {Icon && <Icon className="h-3 w-3" />}
+                      {status.label}
+                    </Badge>
+                  );
                 })()}
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -208,39 +215,62 @@ const AdminBookings = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Guest</p>
-                  <p className="font-medium">{booking.guest_name}</p>
-                  <p className="text-sm">{booking.guest_email}</p>
-                  {booking.guest_phone && <p className="text-sm">{booking.guest_phone}</p>}
+              <div className="space-y-4">
+                {/* Guest Info - Top Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Guest Name</p>
+                    <p className="font-medium">{booking.guest_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{booking.guest_email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p className="font-medium">{booking.guest_phone || "-"}</p>
+                  </div>
                 </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Room Number</p>
-                  {booking.allocated_room_number ? <p className="font-semibold text-primary text-lg">
-                      #{booking.allocated_room_number}
-                    </p> : <p className="text-sm text-muted-foreground italic">Not allocated</p>}
+
+                {/* Check-in, Checkout, Room Number - Second Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Check-in</p>
+                    <p className="font-medium">
+                      {format(new Date(booking.check_in), "MMM dd, yyyy")}
+                      {booking.check_in_time && <span className="ml-2 text-sm">at {booking.check_in_time}</span>}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Check-out</p>
+                    <p className="font-medium">
+                      {format(new Date(booking.check_out), "MMM dd, yyyy")}
+                      {booking.check_out_time && <span className="ml-2 text-sm">at {booking.check_out_time}</span>}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Room Number</p>
+                    {booking.allocated_room_number ? <p className="font-semibold text-primary text-lg">
+                        #{booking.allocated_room_number}
+                      </p> : <p className="text-sm text-muted-foreground italic">Not allocated</p>}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Check-in</p>
-                  <p className="font-medium">
-                    {format(new Date(booking.check_in), "MMM dd, yyyy")}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Check-out</p>
-                  <p className="font-medium">
-                    {format(new Date(booking.check_out), "MMM dd, yyyy")}
-                  </p>
+
+                {/* Details - Third Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Nights</p>
+                    <p className="font-medium">{booking.total_nights} nights</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Number of Guests</p>
+                    <p className="font-medium">{booking.num_guests} guests</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Price</p>
+                    <p className="text-lg font-bold">Rp {booking.total_price.toLocaleString()}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Details</p>
-                  <p className="font-medium">{booking.total_nights} nights</p>
-                  <p className="font-medium">{booking.num_guests} guests</p>
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-sm text-muted-foreground">Total Price</p>
-                <p className="text-lg font-bold">Rp {booking.total_price.toLocaleString()}</p>
               </div>
               {booking.special_requests && <div className="mt-4 p-3 bg-muted rounded-md">
                   <p className="text-sm text-muted-foreground">Special Requests</p>
@@ -297,10 +327,27 @@ const AdminBookings = () => {
               })} />
                 </div>
                 <div>
+                  <Label>Check-in Time</Label>
+                  <Input type="time" value={editingBooking.check_in_time || "14:00"} onChange={e => setEditingBooking({
+                ...editingBooking,
+                check_in_time: e.target.value
+              })} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <Label>Check-out Date</Label>
                   <Input type="date" value={editingBooking.check_out} onChange={e => setEditingBooking({
                 ...editingBooking,
                 check_out: e.target.value
+              })} />
+                </div>
+                <div>
+                  <Label>Check-out Time</Label>
+                  <Input type="time" value={editingBooking.check_out_time || "12:00"} onChange={e => setEditingBooking({
+                ...editingBooking,
+                check_out_time: e.target.value
               })} />
                 </div>
               </div>
