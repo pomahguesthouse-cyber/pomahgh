@@ -675,6 +675,10 @@ const DraggableBookingCell = ({
 
   const isPending = booking.status === 'pending';
   
+  // Calculate width to span multiple cells based on total_nights
+  const totalNights = booking.total_nights;
+  const bookingWidth = `calc(${totalNights * 100}% + ${(totalNights - 1)}px)`;
+  
   // Assign consistent colors based on booking ID  
   const getBackgroundClass = () => {
     if (isPending) {
@@ -696,24 +700,38 @@ const DraggableBookingCell = ({
     return colors[colorIndex];
   };
 
-  return <div ref={setNodeRef} {...listeners} {...attributes} onClick={onClick} className={cn("absolute inset-0.5 bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-hidden", getBackgroundClass(), isStart && "rounded-l-md", isEnd && "rounded-r-md", isDragging && "opacity-50 scale-105 shadow-xl ring-2 ring-primary")}>
-      {/* Content - Only show on start cell */}
-      {isStart && (
-        <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
-          {/* Guest Name */}
-          <div className="font-bold text-xs text-white drop-shadow-sm truncate">
-            {booking.guest_name.split(" ")[0]}
-          </div>
-          
-          {/* Nights count */}
-          <div className="text-[10px] text-white/90 font-medium">
-            {booking.total_nights} Malam
-          </div>
-        </div>
+  return (
+    <div 
+      ref={setNodeRef} 
+      {...listeners} 
+      {...attributes} 
+      onClick={onClick} 
+      className={cn(
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20",
+        getBackgroundClass(),
+        isDragging && "opacity-50 scale-105 shadow-xl ring-2 ring-primary"
       )}
+      style={{
+        left: '50%',
+        width: bookingWidth,
+        transform: 'translateX(-50%)'
+      }}
+    >
+      {/* Content - Guest name and nights */}
+      <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
+        {/* Guest Name */}
+        <div className="font-bold text-xs text-white drop-shadow-sm truncate">
+          {booking.guest_name.split(" ")[0]}
+        </div>
+        
+        {/* Nights count */}
+        <div className="text-[10px] text-white/90 font-medium">
+          {booking.total_nights} Malam
+        </div>
+      </div>
       
-      {/* LCO Badge - Show on the end cell */}
-      {isEnd && booking.check_out_time && booking.check_out_time !== "12:00:00" && (
+      {/* LCO Badge - Show on the end */}
+      {booking.check_out_time && booking.check_out_time !== "12:00:00" && (
         <div className="absolute -right-1 top-1/2 -translate-y-1/2 z-20">
           <div className="bg-white text-gray-800 text-[9px] px-1.5 py-0.5 rounded font-bold shadow-md whitespace-nowrap border border-gray-300">
             LCO {booking.check_out_time.slice(0, 5)}
@@ -721,8 +739,8 @@ const DraggableBookingCell = ({
         </div>
       )}
       
-      {/* Status watermark on last cell */}
-      {isEnd && !isPending && (
+      {/* Status watermark */}
+      {!isPending && (
         <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
           <span className="text-white/70 font-bold text-[8px] tracking-wider whitespace-nowrap">
             {booking.status === 'confirmed' ? 'CONFIRMED' : booking.status.toUpperCase()}
@@ -730,14 +748,15 @@ const DraggableBookingCell = ({
         </div>
       )}
       
-      {isPending && isEnd && (
+      {isPending && (
         <div className="absolute right-1 bottom-0.5 opacity-50 pointer-events-none">
           <span className="text-white/80 font-black text-[8px] tracking-wider whitespace-nowrap">
             PENDING
           </span>
         </div>
       )}
-    </div>;
+    </div>
+  );
 };
 
 // Droppable Room Cell Component
@@ -794,7 +813,7 @@ const DroppableRoomCell = ({
           </div>
         </div>}
       
-      {booking && !isBlocked && <DraggableBookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />}
+      {booking && !isBlocked && isStart && <DraggableBookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />}
     </td>;
 };
 
