@@ -14,7 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          check_in: string
+          check_out: string
+          created_at: string
+          guest_email: string
+          guest_name: string
+          guest_phone: string | null
+          id: string
+          num_guests: number
+          room_id: string
+          special_requests: string | null
+          status: string
+          total_nights: number
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          check_in: string
+          check_out: string
+          created_at?: string
+          guest_email: string
+          guest_name: string
+          guest_phone?: string | null
+          id?: string
+          num_guests?: number
+          room_id: string
+          special_requests?: string | null
+          status?: string
+          total_nights: number
+          total_price: number
+          updated_at?: string
+        }
+        Update: {
+          check_in?: string
+          check_out?: string
+          created_at?: string
+          guest_email?: string
+          guest_name?: string
+          guest_phone?: string | null
+          id?: string
+          num_guests?: number
+          room_id?: string
+          special_requests?: string | null
+          status?: string
+          total_nights?: number
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          available: boolean
+          created_at: string
+          description: string
+          features: string[]
+          id: string
+          image_url: string
+          max_guests: number
+          name: string
+          price_per_night: number
+          size_sqm: number | null
+          updated_at: string
+          virtual_tour_url: string | null
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          description: string
+          features?: string[]
+          id?: string
+          image_url: string
+          max_guests?: number
+          name: string
+          price_per_night: number
+          size_sqm?: number | null
+          updated_at?: string
+          virtual_tour_url?: string | null
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          description?: string
+          features?: string[]
+          id?: string
+          image_url?: string
+          max_guests?: number
+          name?: string
+          price_per_night?: number
+          size_sqm?: number | null
+          updated_at?: string
+          virtual_tour_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -27,7 +27,11 @@ export const Header = () => {
             <a href="#contact" className="text-foreground hover:text-primary transition-colors">
               Contact
             </a>
-            <Button variant="luxury" size="lg">
+            <Button 
+              variant="luxury" 
+              size="lg"
+              onClick={() => document.getElementById("rooms")?.scrollIntoView({ behavior: "smooth" })}
+            >
               Book Now
             </Button>
           </nav>

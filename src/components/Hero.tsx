@@ -21,10 +21,20 @@ export const Hero = () => {
           Experience Tropical Paradise Where Luxury Meets Serenity
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button variant="hero" size="lg" className="text-lg">
+          <Button 
+            variant="hero" 
+            size="lg" 
+            className="text-lg"
+            onClick={() => document.getElementById("rooms")?.scrollIntoView({ behavior: "smooth" })}
+          >
             Explore Rooms
           </Button>
-          <Button variant="outline" size="lg" className="text-lg border-card text-card hover:bg-card hover:text-primary">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="text-lg border-card text-card hover:bg-card hover:text-primary"
+            onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+          >
             Contact Us
           </Button>
         </div>
