@@ -168,10 +168,7 @@ const AdminBookings = () => {
                     {(() => {
                   const status = getRoomStatus(booking);
                   const Icon = status.icon;
-                  return <Badge variant={status.variant} className="flex items-center gap-1">
-                          {Icon && <Icon className="h-3 w-3" />}
-                          {status.label}
-                        </Badge>;
+                  return;
                 })()}
                   </div>
                   <p className="text-sm text-muted-foreground">
