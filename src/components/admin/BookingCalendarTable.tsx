@@ -111,7 +111,7 @@ export const BookingCalendarTable = () => {
   // Get booking color based on status
   const getBookingColor = (status: string) => {
     const statusColors: Record<string, string> = {
-      'pending': 'from-yellow-400/90 to-yellow-500/90',
+      'pending': 'from-gray-200/50 to-gray-300/50 border border-gray-400',
       'confirmed': 'from-blue-500/90 to-blue-600/90',
       'checked-in': 'from-green-500/90 to-green-600/90',
       'checked-out': 'from-gray-400/90 to-gray-500/90',
@@ -119,6 +119,20 @@ export const BookingCalendarTable = () => {
       'overbook': 'from-orange-500/90 to-orange-600/90',
     };
     return statusColors[status] || 'from-purple-500/90 to-purple-600/90';
+  };
+
+  // Get payment status badge
+  const getPaymentStatusBadge = (paymentStatus: string | null) => {
+    switch (paymentStatus) {
+      case 'paid':
+        return '💰 Lunas';
+      case 'partial':
+        return '💵 DP';
+      case 'unpaid':
+      case null:
+      default:
+        return '⏳ Belum';
+    }
   };
 
   const getBookingsForRoomAndDate = (roomNumber: string, date: Date) => {
@@ -329,8 +343,11 @@ export const BookingCalendarTable = () => {
                               const checkOut = parseISO(booking.check_out);
                               const nightsCount = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
                               
-                              // Calculate width based on number of nights
-                              const widthInCells = nightsCount;
+                              // Calculate width: starts at center of check-in, ends at center of check-out
+                              // Width = (nights - 1) * cellWidth + half cellWidth
+                              const cellWidth = 80;
+                              const bookingWidth = (nightsCount - 1) * cellWidth + cellWidth / 2;
+                              const startOffset = cellWidth / 2; // Start from center of first cell
 
                               return (
                                 <DraggableBooking key={booking.id} booking={booking}>
@@ -338,18 +355,21 @@ export const BookingCalendarTable = () => {
                                     onClick={() => handleBookingClick(booking)}
                                     className={cn(
                                       "absolute rounded text-white text-[11px] px-2 py-1 bg-gradient-to-r shadow hover:shadow-md transition-all cursor-pointer z-10",
-                                      getBookingColor(booking.status)
+                                      getBookingColor(booking.status),
+                                      booking.status === 'pending' && "text-gray-700"
                                     )}
                                     style={{
-                                      width: `${widthInCells * 80}px`,
-                                      left: '2px',
+                                      width: `${bookingWidth}px`,
+                                      left: `${startOffset}px`,
                                     }}
                                   >
                                     <div className="font-semibold truncate text-[10px]">
                                       {booking.guest_name}
                                     </div>
-                                    <div className="text-[9px] opacity-90">
-                                      {nightsCount}N
+                                    <div className="text-[9px] opacity-90 flex items-center gap-1">
+                                      <span>{nightsCount}N</span>
+                                      <span>•</span>
+                                      <span>{getPaymentStatusBadge(booking.payment_status)}</span>
                                     </div>
                                   </div>
                                 </DraggableBooking>
@@ -370,7 +390,7 @@ export const BookingCalendarTable = () => {
             <div className="flex items-center gap-6 text-xs flex-wrap">
               <div className="font-medium text-muted-foreground">Status Legend:</div>
               <div className="flex items-center gap-2">
-                <div className="w-12 h-6 bg-gradient-to-r from-yellow-400/90 to-yellow-500/90 rounded" />
+                <div className="w-12 h-6 bg-gradient-to-r from-gray-200/50 to-gray-300/50 border border-gray-400 rounded" />
                 <span>Pending</span>
               </div>
               <div className="flex items-center gap-2">
