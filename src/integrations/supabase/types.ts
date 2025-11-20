@@ -99,43 +99,58 @@ export type Database = {
       }
       rooms: {
         Row: {
+          allotment: number
           available: boolean
+          base_price: number | null
           created_at: string
           description: string
           features: string[]
+          final_price: number | null
           id: string
           image_url: string
+          image_urls: string[] | null
           max_guests: number
           name: string
           price_per_night: number
+          room_count: number
           size_sqm: number | null
           updated_at: string
           virtual_tour_url: string | null
         }
         Insert: {
+          allotment?: number
           available?: boolean
+          base_price?: number | null
           created_at?: string
           description: string
           features?: string[]
+          final_price?: number | null
           id?: string
           image_url: string
+          image_urls?: string[] | null
           max_guests?: number
           name: string
           price_per_night: number
+          room_count?: number
           size_sqm?: number | null
           updated_at?: string
           virtual_tour_url?: string | null
         }
         Update: {
+          allotment?: number
           available?: boolean
+          base_price?: number | null
           created_at?: string
           description?: string
           features?: string[]
+          final_price?: number | null
           id?: string
           image_url?: string
+          image_urls?: string[] | null
           max_guests?: number
           name?: string
           price_per_night?: number
+          room_count?: number
           size_sqm?: number | null
           updated_at?: string
           virtual_tour_url?: string | null

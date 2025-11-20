@@ -6,6 +6,13 @@ import { useRooms } from "@/hooks/useRooms";
 import { BookingDialog } from "./BookingDialog";
 import { VirtualTourViewer } from "./VirtualTourViewer";
 import type { Room } from "@/hooks/useRooms";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import deluxeRoom from "@/assets/room-deluxe.jpg";
 import villaRoom from "@/assets/room-villa.jpg";
 import { Eye } from "lucide-react";
@@ -58,17 +65,40 @@ export const Rooms = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-            {rooms?.map((room) => (
-              <Card
-                key={room.id}
-                className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
-              >
-                <div className="relative h-64 overflow-hidden group">
-                  <img
-                    src={roomImages[room.name] || room.image_url}
-                    alt={room.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
+            {rooms?.map((room) => {
+              const images = room.image_urls && room.image_urls.length > 0 
+                ? room.image_urls 
+                : [roomImages[room.name] || room.image_url];
+              
+              return (
+                <Card
+                  key={room.id}
+                  className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+                >
+                  <div className="relative h-64 overflow-hidden group">
+                    {images.length > 1 ? (
+                      <Carousel className="w-full h-full">
+                        <CarouselContent>
+                          {images.map((image, index) => (
+                            <CarouselItem key={index}>
+                              <img
+                                src={image}
+                                alt={`${room.name} - Photo ${index + 1}`}
+                                className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+                              />
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                        <CarouselPrevious className="left-2" />
+                        <CarouselNext className="right-2" />
+                      </Carousel>
+                    ) : (
+                      <img
+                        src={images[0]}
+                        alt={room.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    )}
                   {room.virtual_tour_url && (
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Button
@@ -131,9 +161,20 @@ export const Rooms = () => {
                       </Button>
                     )}
                   </div>
+                  {room.room_count && room.room_count > 1 && (
+                    <p className="text-sm mt-3">
+                      <strong>Available:</strong> {room.room_count} rooms
+                    </p>
+                  )}
+                  {room.allotment > 0 && (
+                    <p className="text-sm text-orange-600 mt-2">
+                      <strong>Allotment:</strong> {room.allotment} rooms reserved
+                    </p>
+                  )}
                 </CardContent>
               </Card>
-            ))}
+            );
+            })}
           </div>
         </div>
       </section>
