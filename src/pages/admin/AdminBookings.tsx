@@ -12,47 +12,6 @@ import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { Trash2, Edit, CheckCircle, Clock, Wrench } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-const getRoomStatus = (booking: any) => {
-  const today = startOfDay(new Date());
-  const checkIn = startOfDay(new Date(booking.check_in));
-  const checkOut = startOfDay(new Date(booking.check_out));
-  if (booking.status === 'cancelled' || booking.status === 'rejected') {
-    return {
-      label: 'Cancelled',
-      variant: 'secondary' as const,
-      icon: null
-    };
-  }
-  if (booking.status === 'maintenance') {
-    return {
-      label: 'Maintenance',
-      variant: 'destructive' as const,
-      icon: Wrench
-    };
-  }
-  if (isWithinInterval(today, {
-    start: checkIn,
-    end: checkOut
-  })) {
-    return {
-      label: 'Occupied',
-      variant: 'default' as const,
-      icon: CheckCircle
-    };
-  }
-  if (today < checkIn) {
-    return {
-      label: 'Upcoming',
-      variant: 'outline' as const,
-      icon: Clock
-    };
-  }
-  return {
-    label: 'Completed',
-    variant: 'secondary' as const,
-    icon: null
-  };
-};
 const AdminBookings = () => {
   const {
     bookings,
@@ -169,16 +128,17 @@ const AdminBookings = () => {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg">Booking #{booking.id.slice(0, 8)}</CardTitle>
-                    {(() => {
-                  const status = getRoomStatus(booking);
-                  const Icon = status.icon;
-                  return (
-                    <Badge variant={status.variant} className="flex items-center gap-1">
-                      {Icon && <Icon className="h-3 w-3" />}
-                      {status.label}
+                    <Badge 
+                      variant={
+                        booking.status === 'confirmed' || booking.status === 'checked-in' 
+                          ? 'default' 
+                          : booking.status === 'cancelled'
+                          ? 'destructive'
+                          : 'secondary'
+                      }
+                    >
+                      {booking.status}
                     </Badge>
-                  );
-                })()}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Created {format(new Date(booking.created_at), "MMM dd, yyyy 'at' HH:mm")}
