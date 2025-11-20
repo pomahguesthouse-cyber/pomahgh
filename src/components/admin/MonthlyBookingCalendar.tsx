@@ -147,12 +147,12 @@ export const MonthlyBookingCalendar = () => {
     return roomNums;
   }, [rooms]);
 
-  // Get all bookings for specific room and date
-  const getBookingsForCell = (roomNumber: string, date: Date): Booking[] => {
-    if (!bookings) return [];
+  // Get booking for specific room and date
+  const getBookingForCell = (roomNumber: string, date: Date): Booking | null => {
+    if (!bookings) return null;
     const dateStr = format(date, "yyyy-MM-dd");
     
-    return bookings.filter(booking => {
+    const matchingBookings = bookings.filter(booking => {
       if (booking.status === "cancelled") return false;
       if (booking.allocated_room_number !== roomNumber) return false;
       
@@ -161,12 +161,10 @@ export const MonthlyBookingCalendar = () => {
       
       // Include booking if date is within range
       return dateStr >= checkIn && dateStr < checkOut;
-    }).sort((a, b) => {
-      // Sort by check-out time ascending (check-out bookings show on top)
-      const timeA = a.check_out_time || "12:00:00";
-      const timeB = b.check_out_time || "12:00:00";
-      return timeA.localeCompare(timeB);
     });
+
+    // Return the first matching booking (validation prevents double bookings)
+    return matchingBookings[0] || null;
   };
 
   // Check if date is blocked
@@ -400,7 +398,7 @@ export const MonthlyBookingCalendar = () => {
                   </tr>
 
                   {/* Room rows */}
-                  {allRoomNumbers.filter(r => r.roomType === roomType).map((room, roomIndex) => <RoomRow key={room.roomNumber} room={room} roomIndex={roomIndex} dates={dates} getBookingsForCell={getBookingsForCell} isDateBlocked={isDateBlocked} getBlockReason={getBlockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />)}
+                  {allRoomNumbers.filter(r => r.roomType === roomType).map((room, roomIndex) => <RoomRow key={room.roomNumber} room={room} roomIndex={roomIndex} dates={dates} getBookingForCell={getBookingForCell} isBookingStart={isBookingStart} isBookingEnd={isBookingEnd} isDateBlocked={isDateBlocked} getBlockReason={getBlockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />)}
                 </React.Fragment>)}
             </tbody>
           </table>
@@ -663,14 +661,12 @@ const DraggableBookingCell = ({
   booking,
   isStart,
   isEnd,
-  onClick,
-  isCompact = false
+  onClick
 }: {
   booking: Booking;
   isStart: boolean;
   isEnd: boolean;
   onClick: () => void;
-  isCompact?: boolean;
 }) => {
   const {
     attributes,
@@ -688,7 +684,7 @@ const DraggableBookingCell = ({
   
   // Calculate width to span multiple cells based on total_nights
   const totalNights = booking.total_nights;
-  const bookingWidth = `calc(${totalNights * 100}% + ${(totalNights - 1)}px)`;
+  const bookingWidth = `${totalNights * 100}%`;
   
   // Assign consistent colors based on booking ID  
   const getBackgroundClass = () => {
@@ -718,8 +714,7 @@ const DraggableBookingCell = ({
       {...attributes} 
       onClick={onClick} 
       className={cn(
-        "absolute bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20",
-        isCompact ? "top-0.5 bottom-0.5 text-[10px]" : "top-0.5 bottom-0.5 text-xs",
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20",
         getBackgroundClass(),
         isDragging && "opacity-50 scale-105 shadow-xl ring-2 ring-primary"
       )}
@@ -730,32 +725,16 @@ const DraggableBookingCell = ({
       }}
     >
       {/* Content - Guest name and nights */}
-      <div className={cn(
-        "relative z-10 text-left w-full space-y-0.5",
-        isCompact ? "px-1.5 py-0.5" : "px-2 py-1"
-      )}>
+      <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
         {/* Guest Name */}
-        <div className={cn(
-          "font-bold text-white drop-shadow-sm truncate",
-          isCompact ? "text-[9px]" : "text-xs"
-        )}>
+        <div className="font-bold text-xs text-white drop-shadow-sm truncate">
           {booking.guest_name.split(" ")[0]}
         </div>
         
         {/* Nights count */}
-        <div className={cn(
-          "text-white/90 font-medium",
-          isCompact ? "text-[8px]" : "text-[10px]"
-        )}>
+        <div className="text-[10px] text-white/90 font-medium">
           {booking.total_nights} Malam
         </div>
-        
-        {/* Show check-out time in compact mode */}
-        {isCompact && booking.check_out_time && (
-          <div className="text-[8px] text-white/80">
-            CO: {booking.check_out_time.slice(0, 5)}
-          </div>
-        )}
       </div>
       
       {/* LCO Badge - Show on the end */}
@@ -792,7 +771,7 @@ const DroppableRoomCell = ({
   roomId,
   roomNumber,
   date,
-  bookings,
+  booking,
   isWeekend,
   isBlocked,
   blockReason,
@@ -802,7 +781,7 @@ const DroppableRoomCell = ({
   roomId: string;
   roomNumber: string;
   date: Date;
-  bookings: Booking[];
+  booking: Booking | null;
   isWeekend: boolean;
   isBlocked: boolean;
   blockReason?: string;
@@ -813,20 +792,25 @@ const DroppableRoomCell = ({
     setNodeRef,
     isOver
   } = useDroppable({
-    id: roomNumber,
+    id: `${roomNumber}-${format(date, "yyyy-MM-dd")}`,
     data: {
+      roomId,
       roomNumber,
       date
     }
   });
+
+  const isStart = booking ? booking.check_in === format(date, "yyyy-MM-dd") : false;
+  const checkOutDate = booking ? new Date(booking.check_out) : null;
+  if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
+  const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
   
   return (
     <td 
       ref={setNodeRef} 
       onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} 
       className={cn(
-        "border border-border p-0 relative min-w-[60px] transition-colors cursor-context-menu",
-        bookings.length === 1 ? "h-14" : "h-28",
+        "border border-border p-0 relative h-14 min-w-[60px] transition-colors cursor-context-menu",
         isWeekend && "bg-red-50/20 dark:bg-red-950/10",
         !isWeekend && "bg-background",
         isOver && "bg-primary/10 ring-2 ring-primary"
@@ -850,35 +834,14 @@ const DroppableRoomCell = ({
         </div>
       )}
       
-      {/* Render multiple bookings stacked */}
-      {!isBlocked && bookings.length > 0 && (
-        <div className="relative h-full flex flex-col">
-          {bookings.map((booking, index) => {
-            const dateStr = format(date, "yyyy-MM-dd");
-            const isStart = booking.check_in === dateStr;
-            const isEnd = format(new Date(booking.check_out), "yyyy-MM-dd") === format(new Date(date.getTime() + 86400000), "yyyy-MM-dd");
-            
-            return (
-              <div 
-                key={booking.id}
-                className={cn(
-                  "relative flex-1",
-                  index > 0 && "border-t border-border/50"
-                )}
-              >
-                {isStart && (
-                  <DraggableBookingCell 
-                    booking={booking} 
-                    isStart={isStart} 
-                    isEnd={isEnd} 
-                    onClick={() => handleBookingClick(booking)}
-                    isCompact={bookings.length > 1}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
+      {/* Render single booking */}
+      {booking && !isBlocked && isStart && (
+        <DraggableBookingCell 
+          booking={booking} 
+          isStart={isStart} 
+          isEnd={isEnd} 
+          onClick={() => handleBookingClick(booking)}
+        />
       )}
     </td>
   );
@@ -889,7 +852,9 @@ const RoomRow = ({
   room,
   roomIndex,
   dates,
-  getBookingsForCell,
+  getBookingForCell,
+  isBookingStart,
+  isBookingEnd,
   isDateBlocked,
   getBlockReason,
   handleBookingClick,
@@ -902,7 +867,9 @@ const RoomRow = ({
   };
   roomIndex: number;
   dates: Date[];
-  getBookingsForCell: (roomNumber: string, date: Date) => Booking[];
+  getBookingForCell: (roomNumber: string, date: Date) => Booking | null;
+  isBookingStart: (booking: Booking, date: Date) => boolean;
+  isBookingEnd: (booking: Booking, date: Date) => boolean;
   isDateBlocked: (roomId: string, date: Date) => boolean;
   getBlockReason: (roomId: string, date: Date) => string | undefined;
   handleBookingClick: (booking: Booking) => void;
@@ -914,7 +881,7 @@ const RoomRow = ({
         {room.roomNumber}
       </td>
       {dates.map(date => {
-        const bookings = getBookingsForCell(room.roomNumber, date);
+        const booking = getBookingForCell(room.roomNumber, date);
         const isWeekend = getDay(date) === 0 || getDay(date) === 6;
         const isBlocked = isDateBlocked(room.roomId, date);
         const blockReason = getBlockReason(room.roomId, date);
@@ -925,7 +892,7 @@ const RoomRow = ({
             roomId={room.roomId} 
             roomNumber={room.roomNumber} 
             date={date} 
-            bookings={bookings}
+            booking={booking}
             isWeekend={isWeekend} 
             isBlocked={isBlocked} 
             blockReason={blockReason} 
