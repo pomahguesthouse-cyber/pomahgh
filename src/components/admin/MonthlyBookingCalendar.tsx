@@ -621,21 +621,82 @@ const DraggableBookingCell = ({
       booking
     }
   });
+
+  const isPending = booking.status === 'pending';
+  
+  const getBackgroundClass = () => {
+    if (isPending) {
+      return 'from-gray-400 to-gray-500';
+    }
+    if (booking.status === 'confirmed') {
+      return 'from-primary/40 to-primary/60';
+    }
+    return 'from-gray-300 to-gray-400';
+  };
+
+  const getHoverClass = () => {
+    if (isPending) {
+      return 'hover:from-gray-500 hover:to-gray-600';
+    }
+    if (booking.status === 'confirmed') {
+      return 'hover:from-primary/50 hover:to-primary/70';
+    }
+    return 'hover:from-gray-400 hover:to-gray-500';
+  };
+
   return <div ref={setNodeRef} {...listeners} {...attributes} onClick={onClick} className={`
-        absolute inset-1 bg-gradient-to-br from-primary/40 to-primary/60
-        hover:from-primary/50 hover:to-primary/70
+        absolute inset-1 bg-gradient-to-br ${getBackgroundClass()} ${getHoverClass()}
         cursor-move flex items-center justify-center
         transition-all duration-200 text-xs shadow-sm
         hover:shadow-md hover:scale-[1.02]
         ${isStart ? "rounded-l-lg" : ""}
         ${isEnd ? "rounded-r-lg" : ""}
         ${isDragging ? "opacity-50 scale-105 shadow-lg" : ""}
+        relative overflow-hidden
       `}>
-      {isStart && <div className="text-center px-2 py-1">
-          <div className="font-bold truncate text-sm">
+      {/* PENDING Watermark */}
+      {isPending && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+          <span className="text-white/20 font-black text-2xl tracking-wider transform -rotate-12 whitespace-nowrap">
+            PENDING
+          </span>
+        </div>
+      )}
+
+      {/* Content - Guest Name & Payment Status */}
+      {isStart && (
+        <div className="relative z-10 text-center px-2 py-1 space-y-0.5">
+          {/* Guest Name */}
+          <div className="font-bold truncate text-sm text-white drop-shadow-md">
             {booking.guest_name.split(" ")[0]}
           </div>
-        </div>}
+          
+          {/* Payment Status Badge */}
+          <div className="flex items-center justify-center gap-1">
+            {booking.payment_status === 'paid' ? (
+              <div className="bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5">
+                <CreditCard className="w-2.5 h-2.5" />
+                PAID
+              </div>
+            ) : booking.payment_status === 'partial' ? (
+              <div className="bg-yellow-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5">
+                <CreditCard className="w-2.5 h-2.5" />
+                PARTIAL
+              </div>
+            ) : (
+              <div className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5">
+                <CreditCard className="w-2.5 h-2.5" />
+                UNPAID
+              </div>
+            )}
+          </div>
+          
+          {/* Total Nights */}
+          <div className="text-[10px] text-white/90 font-medium">
+            {booking.total_nights}N
+          </div>
+        </div>
+      )}
     </div>;
 };
 
