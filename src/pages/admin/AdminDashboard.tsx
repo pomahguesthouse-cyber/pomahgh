@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Users, Calendar, TrendingUp, Building2, PercentIcon } from "lucide-react";
 import { useMemo } from "react";
 import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
-import { BookingCalendarTable } from "@/components/admin/BookingCalendarTable";
+
 
 const AdminDashboard = () => {
   const { bookings } = useAdminBookings();
@@ -82,8 +82,6 @@ const AdminDashboard = () => {
         </p>
       </div>
 
-      {/* Booking Calendar Table */}
-      <BookingCalendarTable />
 
       {/* Revenue Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
