@@ -17,6 +17,7 @@ import { DndContext, DragEndEvent, useDraggable, useDroppable, DragOverlay, Mous
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 interface Booking {
   id: string;
   room_id: string;
@@ -676,7 +677,7 @@ const DraggableBookingCell = ({
   
   const getBackgroundClass = () => {
     if (isPending) {
-      return 'from-gray-400 to-gray-500';
+      return 'from-gray-200/30 to-gray-300/30 border-2 border-gray-400/50';
     }
     if (booking.status === 'confirmed') {
       return 'from-primary/40 to-primary/60';
@@ -686,7 +687,7 @@ const DraggableBookingCell = ({
 
   const getHoverClass = () => {
     if (isPending) {
-      return 'hover:from-gray-500 hover:to-gray-600';
+      return 'hover:from-gray-300/40 hover:to-gray-400/40';
     }
     if (booking.status === 'confirmed') {
       return 'hover:from-primary/50 hover:to-primary/70';
@@ -707,7 +708,7 @@ const DraggableBookingCell = ({
       {/* PENDING Watermark */}
       {isPending && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-white/20 font-black text-2xl tracking-wider transform -rotate-12 whitespace-nowrap">
+          <span className="text-gray-600/40 dark:text-gray-400/40 font-black text-2xl tracking-wider transform -rotate-12 whitespace-nowrap">
             PENDING
           </span>
         </div>
@@ -717,7 +718,10 @@ const DraggableBookingCell = ({
       {isStart && (
         <div className="relative z-10 text-center px-2 py-1 space-y-0.5">
           {/* Guest Name */}
-          <div className="font-bold truncate text-sm text-white drop-shadow-md">
+          <div className={cn(
+            "font-bold truncate text-sm drop-shadow-md",
+            isPending ? "text-gray-700 dark:text-gray-300" : "text-white"
+          )}>
             {booking.guest_name.split(" ")[0]}
           </div>
           
@@ -742,7 +746,10 @@ const DraggableBookingCell = ({
           </div>
           
           {/* Total Nights */}
-          <div className="text-[10px] text-white/90 font-medium">
+          <div className={cn(
+            "text-[10px] font-medium",
+            isPending ? "text-gray-600 dark:text-gray-400" : "text-white/90"
+          )}>
             {booking.total_nights}N
           </div>
         </div>
