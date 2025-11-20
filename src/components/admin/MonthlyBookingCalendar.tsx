@@ -13,13 +13,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { DndContext, DragEndEvent, useDraggable, useDroppable, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { isIndonesianHoliday, type IndonesianHoliday } from "@/utils/indonesianHolidays";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CreateBookingDialog } from "./CreateBookingDialog";
 interface Booking {
   id: string;
   room_id: string;
@@ -67,7 +67,14 @@ export const MonthlyBookingCalendar = () => {
   }>({
     open: false
   });
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [createBookingDialog, setCreateBookingDialog] = useState<{
+    open: boolean;
+    roomId?: string;
+    roomNumber?: string;
+    date?: Date;
+  }>({
+    open: false
+  });
   const {
     bookings
   } = useAdminBookings();
@@ -80,20 +87,6 @@ export const MonthlyBookingCalendar = () => {
     removeUnavailableDates
   } = useRoomAvailability();
   const queryClient = useQueryClient();
-
-  // Setup drag sensors with activation constraints
-  const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint: {
-      distance: 10
-    }
-  });
-  const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: {
-      delay: 250,
-      tolerance: 5
-    }
-  });
-  const sensors = useSensors(mouseSensor, touchSensor);
 
   // Calculate date range based on view selection
   const dates = useMemo(() => {
@@ -246,34 +239,16 @@ export const MonthlyBookingCalendar = () => {
   const handleBookingClick = (booking: Booking) => {
     setSelectedBooking(booking);
   };
-  const handleDragStart = (event: DragEndEvent) => {
-    setActiveId(event.active.id as string);
-  };
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const {
-      active,
-      over
-    } = event;
-    setActiveId(null);
-    if (!over || !active.data.current) return;
-    const bookingId = active.id as string;
-    const newRoomNumber = over.id as string;
-    const booking = bookings?.find(b => b.id === bookingId);
-    if (!booking || booking.allocated_room_number === newRoomNumber) return;
-    try {
-      const {
-        error
-      } = await supabase.from("bookings").update({
-        allocated_room_number: newRoomNumber
-      }).eq("id", bookingId);
-      if (error) throw error;
-      toast.success(`Booking dipindahkan ke kamar ${newRoomNumber}`);
-      queryClient.invalidateQueries({
-        queryKey: ["admin-bookings"]
-      });
-    } catch (error) {
-      toast.error("Tidak dapat memindahkan booking");
-    }
+  
+  const handleCellClick = (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => {
+    if (isBlocked || hasBooking) return;
+    
+    setCreateBookingDialog({
+      open: true,
+      roomId,
+      roomNumber,
+      date
+    });
   };
   const handleRightClick = (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => {
     e.preventDefault();
@@ -326,11 +301,8 @@ export const MonthlyBookingCalendar = () => {
       return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [contextMenu]);
-  const activeDragBooking = useMemo(() => {
-    if (!activeId) return null;
-    return bookings?.find(b => b.id === activeId);
-  }, [activeId, bookings]);
-  return <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+  
+  return <>
       <Card className="w-full shadow-lg rounded-xl overflow-hidden border-border/50">
         <div className="p-4 bg-muted/20 border-b border-border">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -445,7 +417,7 @@ export const MonthlyBookingCalendar = () => {
                   </tr>
 
                   {/* Room rows */}
-                  {allRoomNumbers.filter(r => r.roomType === roomType).map((room, roomIndex) => <RoomRow key={room.roomNumber} room={room} roomIndex={roomIndex} dates={dates} getBookingForCell={getBookingForCell} isBookingStart={isBookingStart} isBookingEnd={isBookingEnd} isDateBlocked={isDateBlocked} getBlockReason={getBlockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />)}
+                  {allRoomNumbers.filter(r => r.roomType === roomType).map((room, roomIndex) => <RoomRow key={room.roomNumber} room={room} roomIndex={roomIndex} dates={dates} getBookingForCell={getBookingForCell} isBookingStart={isBookingStart} isBookingEnd={isBookingEnd} isDateBlocked={isDateBlocked} getBlockReason={getBlockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} handleCellClick={handleCellClick} />)}
                 </React.Fragment>)}
             </tbody>
           </table>
@@ -638,14 +610,6 @@ export const MonthlyBookingCalendar = () => {
         </Dialog>
       </Card>
 
-      {/* Drag Overlay */}
-      <DragOverlay>
-        {activeDragBooking ? <div className="bg-gradient-to-br from-primary/20 to-primary/30 border-2 border-primary rounded-lg p-2 shadow-xl cursor-grabbing">
-            <div className="text-xs font-semibold">{activeDragBooking.guest_name}</div>
-            <div className="text-[10px] text-muted-foreground">{activeDragBooking.allocated_room_number}</div>
-          </div> : null}
-      </DragOverlay>
-
       {/* Context Menu */}
       {contextMenu && <div className="fixed z-50 bg-card border border-border rounded-lg shadow-xl py-2 min-w-[180px]" style={{
       top: contextMenu.y,
@@ -694,11 +658,22 @@ export const MonthlyBookingCalendar = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DndContext>;
+      
+      {/* Create Booking Dialog */}
+      <CreateBookingDialog 
+        open={createBookingDialog.open}
+        onOpenChange={(open) => setCreateBookingDialog({ open })}
+        roomId={createBookingDialog.roomId}
+        roomNumber={createBookingDialog.roomNumber}
+        initialDate={createBookingDialog.date}
+        rooms={rooms || []}
+      />
+    </>;
 };
 
 // Draggable Booking Cell Component
-const DraggableBookingCell = ({
+// Booking Cell Component (static, no drag)
+const BookingCell = ({
   booking,
   isStart,
   isEnd,
@@ -709,35 +684,28 @@ const DraggableBookingCell = ({
   isEnd: boolean;
   onClick: () => void;
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    isDragging
-  } = useDraggable({
-    id: booking.id,
-    data: {
-      booking
-    }
-  });
   const isPending = booking.status === 'pending';
-
-  // Calculate width to span multiple cells based on total_nights
   const totalNights = booking.total_nights;
   const bookingWidth = `${totalNights * 100}%`;
 
-  // Assign consistent colors based on booking ID  
   const getBackgroundClass = () => {
     if (isPending) {
       return 'from-gray-400/90 to-gray-500/90';
     }
-    const colors = ['from-teal-500/90 to-teal-600/90', 'from-pink-500/90 to-pink-600/90', 'from-purple-500/90 to-purple-600/90', 'from-blue-500/90 to-blue-600/90', 'from-indigo-500/90 to-indigo-600/90', 'from-cyan-500/90 to-cyan-600/90', 'from-emerald-500/90 to-emerald-600/90'];
-
-    // Use booking ID to consistently assign color
+    const colors = [
+      'from-teal-500/90 to-teal-600/90',
+      'from-pink-500/90 to-pink-600/90',
+      'from-purple-500/90 to-purple-600/90',
+      'from-blue-500/90 to-blue-600/90',
+      'from-indigo-500/90 to-indigo-600/90',
+      'from-cyan-500/90 to-cyan-600/90',
+      'from-emerald-500/90 to-emerald-600/90',
+    ];
     const colorIndex = booking.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     return colors[colorIndex];
   };
-  return <div ref={setNodeRef} {...listeners} {...attributes} onClick={onClick} className={cn("absolute top-0.5 bottom-0.5 bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20", getBackgroundClass(), isDragging && "opacity-50 scale-105 shadow-xl ring-2 ring-primary")} style={{
+  
+  return <div onClick={onClick} className={cn("absolute top-0.5 bottom-0.5 bg-gradient-to-r cursor-pointer flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20", getBackgroundClass())} style={{
     left: '50%',
     width: bookingWidth,
     transform: 'translateX(0%)'
@@ -777,8 +745,8 @@ const DraggableBookingCell = ({
     </div>;
 };
 
-// Droppable Room Cell Component
-const DroppableRoomCell = ({
+// Room Cell Component (with click to create)
+const RoomCell = ({
   roomId,
   roomNumber,
   date,
@@ -788,7 +756,8 @@ const DroppableRoomCell = ({
   isBlocked,
   blockReason,
   handleBookingClick,
-  handleRightClick
+  handleRightClick,
+  handleCellClick
 }: {
   roomId: string;
   roomNumber: string;
@@ -800,27 +769,30 @@ const DroppableRoomCell = ({
   blockReason?: string;
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
+  handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
 }) => {
-  const {
-    setNodeRef,
-    isOver
-  } = useDroppable({
-    id: `${roomNumber}-${format(date, "yyyy-MM-dd")}`,
-    data: {
-      roomId,
-      roomNumber,
-      date
-    }
-  });
   const isStart = booking ? booking.check_in === format(date, "yyyy-MM-dd") : false;
   const checkOutDate = booking ? new Date(booking.check_out) : null;
   if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
   const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
   
   const isHolidayOrWeekend = isWeekend || holiday !== null;
+  const hasBooking = booking !== null;
+  const isClickable = !isBlocked && !hasBooking;
   
   const cell = (
-    <td ref={setNodeRef} onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} className={cn("border border-border p-0 relative h-14 min-w-[60px] transition-colors cursor-context-menu", isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10", !isHolidayOrWeekend && "bg-background", isOver && "bg-primary/10 ring-2 ring-primary")} title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}>
+    <td 
+      onClick={() => handleCellClick(roomId, roomNumber, date, isBlocked, hasBooking)}
+      onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} 
+      className={cn(
+        "border border-border p-0 relative h-14 min-w-[60px] transition-all duration-200",
+        isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
+        !isHolidayOrWeekend && "bg-background",
+        isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
+        !isClickable && "cursor-context-menu"
+      )} 
+      title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
+    >
       {/* Blocked Date Pattern */}
       {isBlocked && <div className="absolute inset-0 z-10 pointer-events-none" style={{
       background: `repeating-linear-gradient(
@@ -837,7 +809,16 @@ const DroppableRoomCell = ({
         </div>}
       
       {/* Render single booking */}
-      {booking && !isBlocked && isStart && <DraggableBookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />}
+      {booking && !isBlocked && isStart && <BookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />}
+      
+      {/* Click hint for empty cells */}
+      {isClickable && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none z-5">
+          <div className="text-[10px] text-primary/60 font-medium">
+            Click to book
+          </div>
+        </div>
+      )}
     </td>
   );
   
@@ -876,7 +857,8 @@ const RoomRow = ({
   isDateBlocked,
   getBlockReason,
   handleBookingClick,
-  handleRightClick
+  handleRightClick,
+  handleCellClick
 }: {
   room: {
     roomType: string;
@@ -892,6 +874,7 @@ const RoomRow = ({
   getBlockReason: (roomId: string, date: Date) => string | undefined;
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
+  handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
 }) => {
   return <tr className="hover:bg-muted/10 transition-colors">
       <td className="border border-border p-2 sticky left-0 z-10 font-semibold text-xs shadow-sm bg-background">
@@ -903,7 +886,7 @@ const RoomRow = ({
       const holiday = isIndonesianHoliday(date);
       const isBlocked = isDateBlocked(room.roomId, date);
       const blockReason = getBlockReason(room.roomId, date);
-      return <DroppableRoomCell key={date.toISOString()} roomId={room.roomId} roomNumber={room.roomNumber} date={date} booking={booking} isWeekend={isWeekend} holiday={holiday} isBlocked={isBlocked} blockReason={blockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />;
+      return <RoomCell key={date.toISOString()} roomId={room.roomId} roomNumber={room.roomNumber} date={date} booking={booking} isWeekend={isWeekend} holiday={holiday} isBlocked={isBlocked} blockReason={blockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} handleCellClick={handleCellClick} />;
     })}
     </tr>;
 };
