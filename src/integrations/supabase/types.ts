@@ -73,6 +73,54 @@ export type Database = {
           },
         ]
       }
+      hero_slides: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          font_family: string | null
+          font_size: string | null
+          font_weight: string | null
+          id: string
+          image_url: string
+          is_active: boolean | null
+          overlay_subtext: string | null
+          overlay_text: string
+          text_align: string | null
+          text_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          font_family?: string | null
+          font_size?: string | null
+          font_weight?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          overlay_subtext?: string | null
+          overlay_text: string
+          text_align?: string | null
+          text_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          font_family?: string | null
+          font_size?: string | null
+          font_weight?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          overlay_subtext?: string | null
+          overlay_text?: string
+          text_align?: string | null
+          text_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
