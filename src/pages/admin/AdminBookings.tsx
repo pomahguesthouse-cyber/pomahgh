@@ -7,9 +7,35 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { format } from "date-fns";
-import { Trash2, Edit } from "lucide-react";
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { Trash2, Edit, CheckCircle, Clock, Wrench } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+const getRoomStatus = (booking: any) => {
+  const today = startOfDay(new Date());
+  const checkIn = startOfDay(new Date(booking.check_in));
+  const checkOut = startOfDay(new Date(booking.check_out));
+  
+  if (booking.status === 'cancelled' || booking.status === 'rejected') {
+    return { label: 'Cancelled', variant: 'secondary' as const, icon: null };
+  }
+  
+  if (booking.status === 'maintenance') {
+    return { label: 'Maintenance', variant: 'destructive' as const, icon: Wrench };
+  }
+  
+  if (isWithinInterval(today, { start: checkIn, end: checkOut })) {
+    return { label: 'Occupied', variant: 'default' as const, icon: CheckCircle };
+  }
+  
+  if (today < checkIn) {
+    return { label: 'Upcoming', variant: 'outline' as const, icon: Clock };
+  }
+  
+  return { label: 'Completed', variant: 'secondary' as const, icon: null };
+};
 
 const AdminBookings = () => {
   const { bookings, isLoading, updateBookingStatus, updateBooking, deleteBooking } = useAdminBookings();
@@ -18,6 +44,29 @@ const AdminBookings = () => {
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
+
+  // Real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('bookings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings'
+        },
+        () => {
+          // Refetch bookings on any change
+          window.location.reload();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const filteredBookings = bookings?.filter(booking => {
     if (filterStatus === "all") return true;
@@ -73,6 +122,7 @@ const AdminBookings = () => {
     { value: "confirmed", label: "Confirmed" },
     { value: "cancelled", label: "Cancelled" },
     { value: "rejected", label: "Rejected" },
+    { value: "maintenance", label: "Maintenance" },
   ];
 
   return (
@@ -101,8 +151,20 @@ const AdminBookings = () => {
           <Card key={booking.id}>
             <CardHeader>
               <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">Booking #{booking.id.slice(0, 8)}</CardTitle>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">Booking #{booking.id.slice(0, 8)}</CardTitle>
+                    {(() => {
+                      const status = getRoomStatus(booking);
+                      const Icon = status.icon;
+                      return (
+                        <Badge variant={status.variant} className="flex items-center gap-1">
+                          {Icon && <Icon className="h-3 w-3" />}
+                          {status.label}
+                        </Badge>
+                      );
+                    })()}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     Created {format(new Date(booking.created_at), "MMM dd, yyyy")}
                   </p>
@@ -127,6 +189,7 @@ const AdminBookings = () => {
                       <SelectItem value="confirmed">Confirmed</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="maintenance">Maintenance</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button
@@ -335,6 +398,7 @@ const AdminBookings = () => {
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
