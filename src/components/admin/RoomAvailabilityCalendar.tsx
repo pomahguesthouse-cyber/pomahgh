@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Booking {
   id: string;
@@ -27,6 +28,7 @@ export const RoomAvailabilityCalendar = ({
   totalRooms 
 }: RoomAvailabilityCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const queryClient = useQueryClient();
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ["room-bookings", roomId],
@@ -42,6 +44,56 @@ export const RoomAvailabilityCalendar = ({
       return data as Booking[];
     },
   });
+
+  // Set up real-time subscription for booking changes
+  useEffect(() => {
+    console.log("Setting up real-time subscription for room:", roomId);
+
+    const channel = supabase
+      .channel(`room-bookings-${roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'bookings',
+          filter: `room_id=eq.${roomId}`
+        },
+        (payload) => {
+          console.log("Real-time booking change detected:", payload);
+          
+          // Show toast notification based on event type
+          if (payload.eventType === 'INSERT') {
+            toast.success("New booking added", {
+              description: "Calendar updated automatically"
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            toast.info("Booking updated", {
+              description: "Calendar refreshed"
+            });
+          } else if (payload.eventType === 'DELETE') {
+            toast.info("Booking cancelled", {
+              description: "Calendar updated"
+            });
+          }
+          
+          // Invalidate and refetch the bookings query
+          queryClient.invalidateQueries({ queryKey: ["room-bookings", roomId] });
+        }
+      )
+      .subscribe((status) => {
+        console.log("Subscription status:", status);
+        if (status === 'SUBSCRIBED') {
+          console.log("Successfully subscribed to real-time updates");
+        }
+      });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log("Cleaning up real-time subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [roomId, queryClient]);
 
   const getBookingsForDate = (date: Date) => {
     if (!bookings) return [];
