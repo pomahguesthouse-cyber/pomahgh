@@ -83,6 +83,23 @@ export const BookingCalendarTable = () => {
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const handleToday = () => setCurrentMonth(new Date());
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'bg-blue-500 hover:bg-blue-600 text-white';
+      case 'pending':
+        return 'bg-orange-500 hover:bg-orange-600 text-white';
+      case 'cancelled':
+        return 'bg-gray-400 hover:bg-gray-500 text-white';
+      case 'rejected':
+        return 'bg-red-400 hover:bg-red-500 text-white';
+      case 'maintenance':
+        return 'bg-gray-700 hover:bg-gray-800 text-white';
+      default:
+        return 'bg-primary hover:bg-primary/90 text-primary-foreground';
+    }
+  };
+
   const handleBookingClick = (booking: any) => {
     setSelectedBooking(booking);
     setBookingDialogOpen(true);
@@ -119,6 +136,33 @@ export const BookingCalendarTable = () => {
 
   return (
     <Card className="p-4">
+      {/* Status Legend */}
+      <div className="mb-4 p-3 bg-muted/30 rounded-lg">
+        <p className="text-sm font-semibold mb-2">Status Legend:</p>
+        <div className="flex flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-blue-500"></div>
+            <span className="text-xs">Confirmed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-orange-500"></div>
+            <span className="text-xs">Pending</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gray-700"></div>
+            <span className="text-xs">Maintenance/Admin Block</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-gray-400"></div>
+            <span className="text-xs">Cancelled</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-red-400"></div>
+            <span className="text-xs">Rejected</span>
+          </div>
+        </div>
+      </div>
+
       {/* Header Controls */}
       <div className="flex items-center justify-between mb-4">
         <Button size="sm" variant="default">
@@ -155,26 +199,28 @@ export const BookingCalendarTable = () => {
         </div>
       </div>
 
-      {/* Calendar Grid - Scrollable */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[600px] border rounded-lg">
-        <div className="min-w-[1200px]">
+      {/* Calendar Grid - Horizontal Scrollable */}
+      <div className="overflow-x-auto border rounded-lg">
+        <div className="inline-block min-w-full">
           {/* Date Headers */}
-          <div className="flex border-b">
-            <div className="w-48 flex-shrink-0 border-r p-2 font-semibold text-sm">
+          <div className="flex border-b sticky top-0 bg-background z-10">
+            <div className="w-48 flex-shrink-0 border-r p-2 font-semibold text-sm bg-background">
               Room
             </div>
-            {dates.map((date, idx) => (
-              <div 
-                key={idx} 
-                className={cn(
-                  "flex-1 min-w-[60px] text-center p-2 border-r text-xs",
-                  isSameDay(date, new Date()) && "bg-accent"
-                )}
-              >
-                <div className="font-medium">{format(date, "dd")}</div>
-                <div className="text-muted-foreground uppercase">{format(date, "MMM")}</div>
-              </div>
-            ))}
+            <div className="flex">
+              {dates.map((date, idx) => (
+                <div 
+                  key={idx} 
+                  className={cn(
+                    "w-[80px] flex-shrink-0 text-center p-2 border-r text-xs",
+                    isSameDay(date, new Date()) && "bg-accent"
+                  )}
+                >
+                  <div className="font-medium">{format(date, "dd")}</div>
+                  <div className="text-muted-foreground uppercase">{format(date, "MMM")}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Room Rows */}
@@ -182,11 +228,11 @@ export const BookingCalendarTable = () => {
             <div key={groupName}>
               {/* Group Header */}
               <div className="flex border-b bg-muted/50">
-                <div className="w-48 flex-shrink-0 border-r p-2 font-semibold text-sm flex items-center">
+                <div className="w-48 flex-shrink-0 border-r p-2 font-semibold text-sm flex items-center bg-muted/50">
                   <span>▾</span>
                   <span className="ml-2">{groupName} ({groupRooms.length})</span>
                 </div>
-                <div className="flex-1"></div>
+                <div className="flex" style={{ width: `${dates.length * 80}px` }}></div>
               </div>
 
               {/* Individual Rooms */}
@@ -195,11 +241,11 @@ export const BookingCalendarTable = () => {
                 
                 return (
                   <div key={room.id} className="flex border-b hover:bg-muted/30">
-                    <div className="w-48 flex-shrink-0 border-r p-2 text-sm">
+                    <div className="w-48 flex-shrink-0 border-r p-2 text-sm bg-background sticky left-0 z-[5]">
                       {room.name}
                     </div>
                     
-                    <div className="flex-1 flex relative">
+                    <div className="flex relative">
                       {dates.map((date, dateIdx) => {
                         const bookingsOnDate = getBookingsForRoomAndDate(room.id, date);
                         const booking = bookingsOnDate[0];
@@ -216,16 +262,18 @@ export const BookingCalendarTable = () => {
                           return (
                             <div
                               key={`${room.id}-${dateIdx}`}
-                              className="min-w-[60px] border-r p-1 relative cursor-pointer hover:bg-accent/50"
-                              style={{ width: `${span * 60}px` }}
+                              className="border-r p-1 relative cursor-pointer transition-opacity hover:opacity-90"
+                              style={{ width: `${span * 80}px` }}
                               onClick={() => handleBookingClick(booking)}
                             >
-                              <Badge
-                                variant={booking.status === 'maintenance' ? 'destructive' : 'default'}
-                                className="w-full text-xs justify-center truncate"
+                              <div
+                                className={cn(
+                                  "w-full h-full rounded px-2 py-1 text-xs font-medium text-center flex items-center justify-center",
+                                  getStatusColor(booking.status)
+                                )}
                               >
                                 {booking.status === 'maintenance' ? 'Admin Block' : guestInitials}
-                              </Badge>
+                              </div>
                             </div>
                           );
                         } else if (!booking || !isSameDay(parseISO(booking.check_in), date)) {
@@ -238,7 +286,7 @@ export const BookingCalendarTable = () => {
                             return (
                               <div
                                 key={`${room.id}-${dateIdx}`}
-                                className="flex-1 min-w-[60px] border-r p-1 cursor-pointer hover:bg-accent/30 transition-colors"
+                                className="w-[80px] flex-shrink-0 border-r p-1 cursor-pointer hover:bg-accent/30 transition-colors"
                                 onClick={() => handleEmptyCellClick(room.id, room.name, date)}
                               />
                             );
