@@ -2,6 +2,7 @@ import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DaysAvailabilityCalendar } from "@/components/admin/DaysAvailabilityCalendar";
+import { MonthlyBookingCalendar } from "@/components/admin/MonthlyBookingCalendar";
 import { DollarSign, Users, Calendar, TrendingUp, Building2, PercentIcon } from "lucide-react";
 import { useMemo } from "react";
 import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
@@ -76,13 +77,15 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Monthly Booking Calendar - At the top */}
+      <MonthlyBookingCalendar />
+
       <div>
         <h2 className="text-3xl font-bold mb-2">Dashboard Overview</h2>
         <p className="text-muted-foreground">
           Key metrics and analytics for Pomah Guesthouse
         </p>
       </div>
-
 
       {/* Revenue Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
