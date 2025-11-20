@@ -151,14 +151,12 @@ export const MonthlyBookingCalendar = () => {
   const getBookingForCell = (roomNumber: string, date: Date): Booking | null => {
     if (!bookings) return null;
     const dateStr = format(date, "yyyy-MM-dd");
-    
     const matchingBookings = bookings.filter(booking => {
       if (booking.status === "cancelled") return false;
       if (booking.allocated_room_number !== roomNumber) return false;
-      
       const checkIn = booking.check_in;
       const checkOut = booking.check_out;
-      
+
       // Include booking if date is within range
       return dateStr >= checkIn && dateStr < checkOut;
     });
@@ -392,7 +390,7 @@ export const MonthlyBookingCalendar = () => {
               {Object.entries(roomsByType).map(([roomType]) => <React.Fragment key={roomType}>
                   {/* Room type header */}
                   <tr className="border-y border-border bg-muted/30">
-                    <td colSpan={dates.length + 1} className="p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                    <td colSpan={dates.length + 1} className="p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm">
                       {roomType}
                     </td>
                   </tr>
@@ -521,8 +519,7 @@ export const MonthlyBookingCalendar = () => {
                     </div>
 
                     {/* Conditional: Show DP and Remaining if partial payment */}
-                    {selectedBooking.payment_status === 'partial' && selectedBooking.payment_amount && (
-                      <>
+                    {selectedBooking.payment_status === 'partial' && selectedBooking.payment_amount && <>
                         {/* Divider */}
                         <Separator className="my-3" />
                         
@@ -547,12 +544,10 @@ export const MonthlyBookingCalendar = () => {
                             </p>
                           </div>
                         </div>
-                      </>
-                    )}
+                      </>}
 
                     {/* Conditional: Show full payment if paid */}
-                    {selectedBooking.payment_status === 'paid' && (
-                      <>
+                    {selectedBooking.payment_status === 'paid' && <>
                         <Separator className="my-3" />
                         <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900/30 rounded-lg p-3">
                           <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -560,12 +555,10 @@ export const MonthlyBookingCalendar = () => {
                             Pembayaran Lunas
                           </span>
                         </div>
-                      </>
-                    )}
+                      </>}
 
                     {/* Conditional: Show unpaid message */}
-                    {(selectedBooking.payment_status === 'unpaid' || !selectedBooking.payment_status) && (
-                      <>
+                    {(selectedBooking.payment_status === 'unpaid' || !selectedBooking.payment_status) && <>
                         <Separator className="my-3" />
                         <div className="flex items-center gap-2 bg-red-100 dark:bg-red-900/30 rounded-lg p-3">
                           <AlertCircle className="h-5 w-5 text-red-600" />
@@ -573,8 +566,7 @@ export const MonthlyBookingCalendar = () => {
                             Belum Ada Pembayaran
                           </span>
                         </div>
-                      </>
-                    )}
+                      </>}
                   </div>
                 </div>
 
@@ -679,51 +671,28 @@ const DraggableBookingCell = ({
       booking
     }
   });
-
   const isPending = booking.status === 'pending';
-  
+
   // Calculate width to span multiple cells based on total_nights
   const totalNights = booking.total_nights;
   const bookingWidth = `${totalNights * 100}%`;
-  
+
   // Assign consistent colors based on booking ID  
   const getBackgroundClass = () => {
     if (isPending) {
       return 'from-gray-400/90 to-gray-500/90';
     }
-    
-    const colors = [
-      'from-teal-500/90 to-teal-600/90',
-      'from-pink-500/90 to-pink-600/90',
-      'from-purple-500/90 to-purple-600/90',
-      'from-blue-500/90 to-blue-600/90',
-      'from-indigo-500/90 to-indigo-600/90',
-      'from-cyan-500/90 to-cyan-600/90',
-      'from-emerald-500/90 to-emerald-600/90',
-    ];
-    
+    const colors = ['from-teal-500/90 to-teal-600/90', 'from-pink-500/90 to-pink-600/90', 'from-purple-500/90 to-purple-600/90', 'from-blue-500/90 to-blue-600/90', 'from-indigo-500/90 to-indigo-600/90', 'from-cyan-500/90 to-cyan-600/90', 'from-emerald-500/90 to-emerald-600/90'];
+
     // Use booking ID to consistently assign color
     const colorIndex = booking.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     return colors[colorIndex];
   };
-
-  return (
-    <div 
-      ref={setNodeRef} 
-      {...listeners} 
-      {...attributes} 
-      onClick={onClick} 
-      className={cn(
-        "absolute top-0.5 bottom-0.5 bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20",
-        getBackgroundClass(),
-        isDragging && "opacity-50 scale-105 shadow-xl ring-2 ring-primary"
-      )}
-      style={{
-        left: '50%',
-        width: bookingWidth,
-        transform: 'translateX(-50%)'
-      }}
-    >
+  return <div ref={setNodeRef} {...listeners} {...attributes} onClick={onClick} className={cn("absolute top-0.5 bottom-0.5 bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20", getBackgroundClass(), isDragging && "opacity-50 scale-105 shadow-xl ring-2 ring-primary")} style={{
+    left: '50%',
+    width: bookingWidth,
+    transform: 'translateX(-50%)'
+  }}>
       {/* Content - Guest name and nights */}
       <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
         {/* Guest Name */}
@@ -738,32 +707,25 @@ const DraggableBookingCell = ({
       </div>
       
       {/* LCO Badge - Show on the end */}
-      {booking.check_out_time && booking.check_out_time !== "12:00:00" && (
-        <div className="absolute -right-1 top-1/2 -translate-y-1/2 z-20">
+      {booking.check_out_time && booking.check_out_time !== "12:00:00" && <div className="absolute -right-1 top-1/2 -translate-y-1/2 z-20">
           <div className="bg-white text-gray-800 text-[9px] px-1.5 py-0.5 rounded font-bold shadow-md whitespace-nowrap border border-gray-300">
             LCO {booking.check_out_time.slice(0, 5)}
           </div>
-        </div>
-      )}
+        </div>}
       
       {/* Status watermark */}
-      {!isPending && (
-        <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
+      {!isPending && <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
           <span className="text-white/70 font-bold text-[8px] tracking-wider whitespace-nowrap">
             {booking.status === 'confirmed' ? 'CONFIRMED' : booking.status.toUpperCase()}
           </span>
-        </div>
-      )}
+        </div>}
       
-      {isPending && (
-        <div className="absolute right-1 bottom-0.5 opacity-50 pointer-events-none">
+      {isPending && <div className="absolute right-1 bottom-0.5 opacity-50 pointer-events-none">
           <span className="text-white/80 font-black text-[8px] tracking-wider whitespace-nowrap">
             PENDING
           </span>
-        </div>
-      )}
-    </div>
-  );
+        </div>}
+    </div>;
 };
 
 // Droppable Room Cell Component
@@ -799,52 +761,29 @@ const DroppableRoomCell = ({
       date
     }
   });
-
   const isStart = booking ? booking.check_in === format(date, "yyyy-MM-dd") : false;
   const checkOutDate = booking ? new Date(booking.check_out) : null;
   if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
   const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
-  
-  return (
-    <td 
-      ref={setNodeRef} 
-      onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} 
-      className={cn(
-        "border border-border p-0 relative h-14 min-w-[60px] transition-colors cursor-context-menu",
-        isWeekend && "bg-red-50/20 dark:bg-red-950/10",
-        !isWeekend && "bg-background",
-        isOver && "bg-primary/10 ring-2 ring-primary"
-      )} 
-      title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
-    >
+  return <td ref={setNodeRef} onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} className={cn("border border-border p-0 relative h-14 min-w-[60px] transition-colors cursor-context-menu", isWeekend && "bg-red-50/20 dark:bg-red-950/10", !isWeekend && "bg-background", isOver && "bg-primary/10 ring-2 ring-primary")} title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}>
       {/* Blocked Date Pattern */}
-      {isBlocked && (
-        <div className="absolute inset-0 z-10 pointer-events-none" style={{
-          background: `repeating-linear-gradient(
+      {isBlocked && <div className="absolute inset-0 z-10 pointer-events-none" style={{
+      background: `repeating-linear-gradient(
             45deg,
             hsl(var(--destructive) / 0.15),
             hsl(var(--destructive) / 0.15) 8px,
             transparent 8px,
             transparent 16px
           )`
-        }}>
+    }}>
           <div className="absolute top-1 right-1">
             <Ban className="w-3 h-3 text-destructive" />
           </div>
-        </div>
-      )}
+        </div>}
       
       {/* Render single booking */}
-      {booking && !isBlocked && isStart && (
-        <DraggableBookingCell 
-          booking={booking} 
-          isStart={isStart} 
-          isEnd={isEnd} 
-          onClick={() => handleBookingClick(booking)}
-        />
-      )}
-    </td>
-  );
+      {booking && !isBlocked && isStart && <DraggableBookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />}
+    </td>;
 };
 
 // Room Row Component
@@ -875,32 +814,16 @@ const RoomRow = ({
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
 }) => {
-  return (
-    <tr className="hover:bg-muted/10 transition-colors">
+  return <tr className="hover:bg-muted/10 transition-colors">
       <td className="border border-border p-2 sticky left-0 z-10 font-semibold text-xs shadow-sm bg-background">
         {room.roomNumber}
       </td>
       {dates.map(date => {
-        const booking = getBookingForCell(room.roomNumber, date);
-        const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-        const isBlocked = isDateBlocked(room.roomId, date);
-        const blockReason = getBlockReason(room.roomId, date);
-        
-        return (
-          <DroppableRoomCell 
-            key={date.toISOString()} 
-            roomId={room.roomId} 
-            roomNumber={room.roomNumber} 
-            date={date} 
-            booking={booking}
-            isWeekend={isWeekend} 
-            isBlocked={isBlocked} 
-            blockReason={blockReason} 
-            handleBookingClick={handleBookingClick} 
-            handleRightClick={handleRightClick} 
-          />
-        );
-      })}
-    </tr>
-  );
+      const booking = getBookingForCell(room.roomNumber, date);
+      const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+      const isBlocked = isDateBlocked(room.roomId, date);
+      const blockReason = getBlockReason(room.roomId, date);
+      return <DroppableRoomCell key={date.toISOString()} roomId={room.roomId} roomNumber={room.roomNumber} date={date} booking={booking} isWeekend={isWeekend} isBlocked={isBlocked} blockReason={blockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />;
+    })}
+    </tr>;
 };
