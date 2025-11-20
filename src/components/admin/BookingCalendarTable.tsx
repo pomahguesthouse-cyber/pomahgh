@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO } from "date-fns";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DraggableBookingProps {
   booking: any;
@@ -36,23 +37,23 @@ const DraggableBooking = ({ booking, children }: DraggableBookingProps) => {
 };
 
 interface DroppableCellProps {
-  roomId: string;
+  roomNumber: string;
   date: Date;
   children: React.ReactNode;
   isOccupied: boolean;
 }
 
-const DroppableCell = ({ roomId, date, children, isOccupied }: DroppableCellProps) => {
+const DroppableCell = ({ roomNumber, date, children, isOccupied }: DroppableCellProps) => {
   const { setNodeRef, isOver } = useDroppable({
-    id: `cell-${roomId}-${format(date, 'yyyy-MM-dd')}`,
-    data: { roomId, date },
+    id: `cell-${roomNumber}-${format(date, 'yyyy-MM-dd')}`,
+    data: { roomNumber, date },
   });
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "relative min-h-[60px] border-r border-b transition-all",
+        "relative min-h-[50px] border-r border-b transition-all",
         isOver && !isOccupied && "bg-primary/10 ring-1 ring-primary",
         isOver && isOccupied && "bg-destructive/10 ring-1 ring-destructive"
       )}
@@ -62,44 +63,70 @@ const DroppableCell = ({ roomId, date, children, isOccupied }: DroppableCellProp
   );
 };
 
+type ViewMode = 'month' | 'week' | '2months';
+
 export const BookingCalendarTable = () => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   
   const { bookings, updateBooking } = useAdminBookings();
   const { rooms } = useAdminRooms();
 
-  const dates = useMemo(() => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
-    return eachDayOfInterval({ start, end });
-  }, [currentMonth]);
+  // Generate all individual room numbers from rooms
+  const allRoomNumbers = useMemo(() => {
+    if (!rooms) return [];
+    const roomList: { roomType: string; roomNumber: string; roomId: string }[] = [];
+    rooms.forEach(room => {
+      if (room.room_numbers && room.room_numbers.length > 0) {
+        room.room_numbers.forEach(number => {
+          roomList.push({
+            roomType: room.name,
+            roomNumber: number,
+            roomId: room.id
+          });
+        });
+      }
+    });
+    return roomList;
+  }, [rooms]);
 
-  // Generate unique color for each booking
-  const getBookingColor = (bookingId: string) => {
-    const colors = [
-      "from-blue-500/80 to-blue-600/80",
-      "from-purple-500/80 to-purple-600/80",
-      "from-pink-500/80 to-pink-600/80",
-      "from-orange-500/80 to-orange-600/80",
-      "from-green-500/80 to-green-600/80",
-      "from-cyan-500/80 to-cyan-600/80",
-      "from-indigo-500/80 to-indigo-600/80",
-      "from-rose-500/80 to-rose-600/80",
-      "from-teal-500/80 to-teal-600/80",
-      "from-amber-500/80 to-amber-600/80",
-    ];
-    const hash = bookingId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
+  const dates = useMemo(() => {
+    if (viewMode === 'week') {
+      const start = startOfWeek(currentDate, { weekStartsOn: 0 });
+      const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+      return eachDayOfInterval({ start, end });
+    } else if (viewMode === '2months') {
+      const start = startOfMonth(currentDate);
+      const end = endOfMonth(addMonths(currentDate, 1));
+      return eachDayOfInterval({ start, end });
+    } else {
+      const start = startOfMonth(currentDate);
+      const end = endOfMonth(currentDate);
+      return eachDayOfInterval({ start, end });
+    }
+  }, [currentDate, viewMode]);
+
+  // Get booking color based on status
+  const getBookingColor = (status: string) => {
+    const statusColors: Record<string, string> = {
+      'pending': 'from-yellow-400/90 to-yellow-500/90',
+      'confirmed': 'from-blue-500/90 to-blue-600/90',
+      'checked-in': 'from-green-500/90 to-green-600/90',
+      'checked-out': 'from-gray-400/90 to-gray-500/90',
+      'cancelled': 'from-red-400/90 to-red-500/90',
+      'overbook': 'from-orange-500/90 to-orange-600/90',
+    };
+    return statusColors[status] || 'from-purple-500/90 to-purple-600/90';
   };
 
-  const getBookingsForRoomAndDate = (roomId: string, date: Date) => {
+  const getBookingsForRoomAndDate = (roomNumber: string, date: Date) => {
     if (!bookings) return [];
     
     return bookings.filter(booking => {
-      if (booking.room_id !== roomId) return false;
-      if (booking.status === 'cancelled' || booking.status === 'rejected') return false;
+      if (booking.allocated_room_number !== roomNumber) return false;
+      if (booking.status === 'cancelled') return false;
       
       const checkIn = parseISO(booking.check_in);
       const checkOut = parseISO(booking.check_out);
@@ -115,7 +142,7 @@ export const BookingCalendarTable = () => {
     if (!over) return;
     
     const booking = active.data.current?.booking;
-    const { roomId: newRoomId, date: newDate } = over.data.current as { roomId: string; date: Date };
+    const { roomNumber: newRoomNumber, date: newDate } = over.data.current as { roomNumber: string; date: Date };
     
     if (!booking) return;
     
@@ -129,9 +156,8 @@ export const BookingCalendarTable = () => {
     // Check for conflicts
     const conflictingBookings = bookings?.filter(b => 
       b.id !== booking.id &&
-      b.room_id === newRoomId &&
+      b.allocated_room_number === newRoomNumber &&
       b.status !== 'cancelled' &&
-      b.status !== 'rejected' &&
       (
         isWithinInterval(parseISO(newCheckIn), { start: parseISO(b.check_in), end: parseISO(b.check_out) }) ||
         isWithinInterval(parseISO(newCheckOut), { start: parseISO(b.check_in), end: parseISO(b.check_out) })
@@ -146,7 +172,7 @@ export const BookingCalendarTable = () => {
     try {
       await updateBooking({
         id: booking.id,
-        room_id: newRoomId,
+        allocated_room_number: newRoomNumber,
         check_in: newCheckIn,
         check_out: newCheckOut,
       });
@@ -161,33 +187,71 @@ export const BookingCalendarTable = () => {
     setDialogOpen(true);
   };
 
+  const handlePrevious = () => {
+    if (viewMode === 'week') {
+      setCurrentDate(subWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(subMonths(currentDate, 1));
+    }
+  };
+
+  const handleNext = () => {
+    if (viewMode === 'week') {
+      setCurrentDate(addWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(addMonths(currentDate, 1));
+    }
+  };
+
+  const getHeaderTitle = () => {
+    if (viewMode === 'week') {
+      const start = startOfWeek(currentDate, { weekStartsOn: 0 });
+      const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+      return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
+    } else if (viewMode === '2months') {
+      return `${format(currentDate, 'MMMM')} - ${format(addMonths(currentDate, 1), 'MMMM yyyy')}`;
+    }
+    return format(currentDate, 'MMMM yyyy');
+  };
+
   return (
     <>
       <Card className="shadow-md">
         <CardHeader className="border-b bg-muted/30">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <CalendarIcon className="h-5 w-5 text-primary" />
               <CardTitle className="text-xl">Booking Calendar</CardTitle>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="min-w-[140px] text-center font-medium">
-                {format(currentMonth, 'MMMM yyyy')}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            
+            <div className="flex items-center gap-4">
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+                <TabsList>
+                  <TabsTrigger value="week">Week</TabsTrigger>
+                  <TabsTrigger value="month">Month</TabsTrigger>
+                  <TabsTrigger value="2months">2 Months</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevious}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="min-w-[200px] text-center font-medium">
+                  {getHeaderTitle()}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNext}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -199,74 +263,94 @@ export const BookingCalendarTable = () => {
                 {/* Header with dates */}
                 <div className="sticky top-0 z-10 bg-background border-b">
                   <div className="flex">
-                    <div className="w-48 flex-shrink-0 border-r p-3 font-semibold bg-muted/50">
+                    <div className="w-40 flex-shrink-0 border-r p-3 font-semibold bg-muted/50 sticky left-0 z-20">
                       Room
                     </div>
-                    {dates.map((date) => (
-                      <div
-                        key={date.toISOString()}
-                        className="w-24 flex-shrink-0 border-r p-2 text-center bg-muted/50"
-                      >
-                        <div className="text-xs font-medium text-muted-foreground">
-                          {format(date, 'EEE')}
+                    {dates.map((date) => {
+                      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                      return (
+                        <div
+                          key={date.toISOString()}
+                          className={cn(
+                            "w-20 flex-shrink-0 border-r p-2 text-center",
+                            isWeekend ? "bg-red-50" : "bg-muted/50"
+                          )}
+                        >
+                          <div className={cn(
+                            "text-xs font-medium",
+                            isWeekend ? "text-red-600" : "text-muted-foreground"
+                          )}>
+                            {format(date, 'EEE')}
+                          </div>
+                          <div className={cn(
+                            "text-sm font-semibold",
+                            isWeekend && "text-red-600"
+                          )}>
+                            {format(date, 'd')}
+                          </div>
+                          {viewMode !== 'week' && date.getDate() === 1 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              {format(date, 'MMM')}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-sm font-semibold">
-                          {format(date, 'd')}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
                 {/* Room rows */}
-                {rooms?.map((room) => (
-                  <div key={room.id} className="flex border-b last:border-b-0 hover:bg-muted/20 transition-colors">
-                    <div className="w-48 flex-shrink-0 border-r p-3 font-medium bg-background sticky left-0 z-[5]">
-                      <div className="text-sm">{room.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {room.room_count} {room.room_count === 1 ? 'room' : 'rooms'}
-                      </div>
+                {allRoomNumbers.map((roomInfo) => (
+                  <div key={roomInfo.roomNumber} className="flex border-b last:border-b-0 hover:bg-muted/20 transition-colors">
+                    <div className="w-40 flex-shrink-0 border-r p-3 bg-background sticky left-0 z-[5]">
+                      <div className="text-xs text-muted-foreground">{roomInfo.roomType}</div>
+                      <div className="text-sm font-medium">{roomInfo.roomNumber}</div>
                     </div>
                     {dates.map((date) => {
-                      const bookingsOnDate = getBookingsForRoomAndDate(room.id, date);
+                      const bookingsOnDate = getBookingsForRoomAndDate(roomInfo.roomNumber, date);
                       const hasBooking = bookingsOnDate.length > 0;
+                      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
                       return (
                         <DroppableCell
-                          key={`${room.id}-${date.toISOString()}`}
-                          roomId={room.id}
+                          key={`${roomInfo.roomNumber}-${date.toISOString()}`}
+                          roomNumber={roomInfo.roomNumber}
                           date={date}
                           isOccupied={hasBooking}
                         >
-                          <div className="w-24 h-full p-1">
+                          <div className={cn("w-20 h-full p-0.5", isWeekend && "bg-red-50/50")}>
                             {bookingsOnDate.map((booking) => {
                               const checkIn = parseISO(booking.check_in);
-                              const checkOut = parseISO(booking.check_out);
                               const isCheckInDay = isSameDay(date, checkIn);
-                              const isCheckOutDay = isSameDay(date, checkOut);
-                              const isFullDay = !isCheckInDay && !isCheckOutDay;
+
+                              // Only show booking bar on check-in day
+                              if (!isCheckInDay) return null;
+
+                              const checkOut = parseISO(booking.check_out);
+                              const nightsCount = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+                              
+                              // Calculate width based on number of nights
+                              const widthInCells = nightsCount;
 
                               return (
                                 <DraggableBooking key={booking.id} booking={booking}>
                                   <div
                                     onClick={() => handleBookingClick(booking)}
                                     className={cn(
-                                      "rounded-sm text-white text-xs p-1 mb-1 bg-gradient-to-br shadow-sm hover:shadow-md transition-all cursor-pointer",
-                                      getBookingColor(booking.id),
-                                      isFullDay && "h-full",
-                                      isCheckInDay && "h-1/2 mt-auto",
-                                      isCheckOutDay && "h-1/2"
+                                      "absolute rounded text-white text-[11px] px-2 py-1 bg-gradient-to-r shadow hover:shadow-md transition-all cursor-pointer z-10",
+                                      getBookingColor(booking.status)
                                     )}
+                                    style={{
+                                      width: `${widthInCells * 80}px`,
+                                      left: '2px',
+                                    }}
                                   >
-                                    <div className="font-medium truncate">
+                                    <div className="font-semibold truncate text-[10px]">
                                       {booking.guest_name}
                                     </div>
-                                    {isCheckInDay && (
-                                      <div className="text-[10px] opacity-90">Check-in 1PM</div>
-                                    )}
-                                    {isCheckOutDay && (
-                                      <div className="text-[10px] opacity-90">Checkout 12PM</div>
-                                    )}
+                                    <div className="text-[9px] opacity-90">
+                                      {nightsCount}N
+                                    </div>
                                   </div>
                                 </DraggableBooking>
                               );
@@ -283,22 +367,31 @@ export const BookingCalendarTable = () => {
 
           {/* Legend */}
           <div className="border-t bg-muted/20 p-4">
-            <div className="flex items-center gap-6 text-sm">
-              <div className="font-medium text-muted-foreground">Legend:</div>
+            <div className="flex items-center gap-6 text-xs flex-wrap">
+              <div className="font-medium text-muted-foreground">Status Legend:</div>
               <div className="flex items-center gap-2">
-                <div className="w-16 h-8 bg-gradient-to-br from-blue-500/80 to-blue-600/80 rounded" />
-                <span className="text-muted-foreground">Each booking has unique color</span>
+                <div className="w-12 h-6 bg-gradient-to-r from-yellow-400/90 to-yellow-500/90 rounded" />
+                <span>Pending</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex flex-col gap-0.5 w-16">
-                  <div className="h-4 bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-t" />
-                  <div className="h-4 bg-muted rounded-b" />
-                </div>
-                <span className="text-muted-foreground">Half box = Check-in (1PM) or Checkout (12PM)</span>
+                <div className="w-12 h-6 bg-gradient-to-r from-blue-500/90 to-blue-600/90 rounded" />
+                <span>Confirmed</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-16 h-8 bg-gradient-to-br from-pink-500/80 to-pink-600/80 rounded" />
-                <span className="text-muted-foreground">Full box = Full day stay</span>
+                <div className="w-12 h-6 bg-gradient-to-r from-green-500/90 to-green-600/90 rounded" />
+                <span>Checked-in</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 bg-gradient-to-r from-gray-400/90 to-gray-500/90 rounded" />
+                <span>Checked-out</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 bg-gradient-to-r from-red-400/90 to-red-500/90 rounded" />
+                <span>Cancelled</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-6 bg-gradient-to-r from-orange-500/90 to-orange-600/90 rounded" />
+                <span>Overbook</span>
               </div>
             </div>
           </div>
@@ -320,11 +413,24 @@ export const BookingCalendarTable = () => {
                   <div className="font-medium">{selectedBooking.guest_name}</div>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-muted-foreground">Status</div>
-                  <Badge variant={selectedBooking.status === 'confirmed' ? 'default' : 'secondary'}>
-                    {selectedBooking.status}
-                  </Badge>
+                  <div className="text-sm font-medium text-muted-foreground">Room</div>
+                  <div className="font-medium">{selectedBooking.allocated_room_number}</div>
                 </div>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">Status</div>
+                <Badge 
+                  variant={
+                    selectedBooking.status === 'confirmed' || selectedBooking.status === 'checked-in' 
+                      ? 'default' 
+                      : selectedBooking.status === 'cancelled'
+                      ? 'destructive'
+                      : 'secondary'
+                  }
+                  className="mt-1"
+                >
+                  {selectedBooking.status}
+                </Badge>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
