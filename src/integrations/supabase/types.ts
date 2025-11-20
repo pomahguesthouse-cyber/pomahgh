@@ -106,16 +106,26 @@ export type Database = {
           description: string
           features: string[]
           final_price: number | null
+          friday_price: number | null
           id: string
           image_url: string
           image_urls: string[] | null
           max_guests: number
+          monday_price: number | null
           name: string
           price_per_night: number
+          promo_end_date: string | null
+          promo_price: number | null
+          promo_start_date: string | null
           room_count: number
+          saturday_price: number | null
           size_sqm: number | null
+          sunday_price: number | null
+          thursday_price: number | null
+          tuesday_price: number | null
           updated_at: string
           virtual_tour_url: string | null
+          wednesday_price: number | null
         }
         Insert: {
           allotment?: number
@@ -125,16 +135,26 @@ export type Database = {
           description: string
           features?: string[]
           final_price?: number | null
+          friday_price?: number | null
           id?: string
           image_url: string
           image_urls?: string[] | null
           max_guests?: number
+          monday_price?: number | null
           name: string
           price_per_night: number
+          promo_end_date?: string | null
+          promo_price?: number | null
+          promo_start_date?: string | null
           room_count?: number
+          saturday_price?: number | null
           size_sqm?: number | null
+          sunday_price?: number | null
+          thursday_price?: number | null
+          tuesday_price?: number | null
           updated_at?: string
           virtual_tour_url?: string | null
+          wednesday_price?: number | null
         }
         Update: {
           allotment?: number
@@ -144,16 +164,26 @@ export type Database = {
           description?: string
           features?: string[]
           final_price?: number | null
+          friday_price?: number | null
           id?: string
           image_url?: string
           image_urls?: string[] | null
           max_guests?: number
+          monday_price?: number | null
           name?: string
           price_per_night?: number
+          promo_end_date?: string | null
+          promo_price?: number | null
+          promo_start_date?: string | null
           room_count?: number
+          saturday_price?: number | null
           size_sqm?: number | null
+          sunday_price?: number | null
+          thursday_price?: number | null
+          tuesday_price?: number | null
           updated_at?: string
           virtual_tour_url?: string | null
+          wednesday_price?: number | null
         }
         Relationships: []
       }

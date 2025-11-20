@@ -34,6 +34,16 @@ const AdminRooms = () => {
     features: "",
     room_count: "1",
     allotment: "0",
+    promo_price: "",
+    promo_start_date: "",
+    promo_end_date: "",
+    monday_price: "",
+    tuesday_price: "",
+    wednesday_price: "",
+    thursday_price: "",
+    friday_price: "",
+    saturday_price: "",
+    sunday_price: "",
   });
 
   const resetForm = () => {
@@ -52,6 +62,16 @@ const AdminRooms = () => {
       features: "",
       room_count: "1",
       allotment: "0",
+      promo_price: "",
+      promo_start_date: "",
+      promo_end_date: "",
+      monday_price: "",
+      tuesday_price: "",
+      wednesday_price: "",
+      thursday_price: "",
+      friday_price: "",
+      saturday_price: "",
+      sunday_price: "",
     });
     setEditingRoom(null);
   };
@@ -73,6 +93,16 @@ const AdminRooms = () => {
       features: room.features.join(", "),
       room_count: room.room_count?.toString() || "1",
       allotment: room.allotment?.toString() || "0",
+      promo_price: room.promo_price?.toString() || "",
+      promo_start_date: room.promo_start_date || "",
+      promo_end_date: room.promo_end_date || "",
+      monday_price: room.monday_price?.toString() || "",
+      tuesday_price: room.tuesday_price?.toString() || "",
+      wednesday_price: room.wednesday_price?.toString() || "",
+      thursday_price: room.thursday_price?.toString() || "",
+      friday_price: room.friday_price?.toString() || "",
+      saturday_price: room.saturday_price?.toString() || "",
+      sunday_price: room.sunday_price?.toString() || "",
     });
     setIsDialogOpen(true);
   };
@@ -147,6 +177,16 @@ const AdminRooms = () => {
       features: formData.features.split(",").map(f => f.trim()).filter(Boolean),
       room_count: Number(formData.room_count),
       allotment: Number(formData.allotment),
+      promo_price: formData.promo_price ? Number(formData.promo_price) : null,
+      promo_start_date: formData.promo_start_date || null,
+      promo_end_date: formData.promo_end_date || null,
+      monday_price: formData.monday_price ? Number(formData.monday_price) : null,
+      tuesday_price: formData.tuesday_price ? Number(formData.tuesday_price) : null,
+      wednesday_price: formData.wednesday_price ? Number(formData.wednesday_price) : null,
+      thursday_price: formData.thursday_price ? Number(formData.thursday_price) : null,
+      friday_price: formData.friday_price ? Number(formData.friday_price) : null,
+      saturday_price: formData.saturday_price ? Number(formData.saturday_price) : null,
+      sunday_price: formData.sunday_price ? Number(formData.sunday_price) : null,
     };
 
     if (editingRoom) {
@@ -343,6 +383,110 @@ const AdminRooms = () => {
                   onChange={(e) => setFormData({ ...formData, features: e.target.value })}
                   placeholder="WiFi, TV, Air Conditioning"
                 />
+              </div>
+
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="font-semibold text-lg">Promotional Pricing</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="promo_price">Promo Price (Rp)</Label>
+                    <Input
+                      id="promo_price"
+                      type="number"
+                      value={formData.promo_price}
+                      onChange={(e) => setFormData({ ...formData, promo_price: e.target.value })}
+                      placeholder="Override price"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="promo_start_date">Start Date</Label>
+                    <Input
+                      id="promo_start_date"
+                      type="date"
+                      value={formData.promo_start_date}
+                      onChange={(e) => setFormData({ ...formData, promo_start_date: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="promo_end_date">End Date</Label>
+                    <Input
+                      id="promo_end_date"
+                      type="date"
+                      value={formData.promo_end_date}
+                      onChange={(e) => setFormData({ ...formData, promo_end_date: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="font-semibold text-lg">Day-of-Week Pricing</h3>
+                <div className="grid grid-cols-4 gap-4">
+                  <div>
+                    <Label htmlFor="monday_price">Monday (Rp)</Label>
+                    <Input
+                      id="monday_price"
+                      type="number"
+                      value={formData.monday_price}
+                      onChange={(e) => setFormData({ ...formData, monday_price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tuesday_price">Tuesday (Rp)</Label>
+                    <Input
+                      id="tuesday_price"
+                      type="number"
+                      value={formData.tuesday_price}
+                      onChange={(e) => setFormData({ ...formData, tuesday_price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="wednesday_price">Wednesday (Rp)</Label>
+                    <Input
+                      id="wednesday_price"
+                      type="number"
+                      value={formData.wednesday_price}
+                      onChange={(e) => setFormData({ ...formData, wednesday_price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="thursday_price">Thursday (Rp)</Label>
+                    <Input
+                      id="thursday_price"
+                      type="number"
+                      value={formData.thursday_price}
+                      onChange={(e) => setFormData({ ...formData, thursday_price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="friday_price">Friday (Rp)</Label>
+                    <Input
+                      id="friday_price"
+                      type="number"
+                      value={formData.friday_price}
+                      onChange={(e) => setFormData({ ...formData, friday_price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="saturday_price">Saturday (Rp)</Label>
+                    <Input
+                      id="saturday_price"
+                      type="number"
+                      value={formData.saturday_price}
+                      onChange={(e) => setFormData({ ...formData, saturday_price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="sunday_price">Sunday (Rp)</Label>
+                    <Input
+                      id="sunday_price"
+                      type="number"
+                      value={formData.sunday_price}
+                      onChange={(e) => setFormData({ ...formData, sunday_price: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">Leave empty to use base price. Promo price overrides day-of-week pricing.</p>
               </div>
 
               <div className="flex items-center space-x-2">

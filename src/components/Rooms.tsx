@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,9 @@ import type { Room } from "@/hooks/useRooms";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import deluxeRoom from "@/assets/room-deluxe.jpg";
 import villaRoom from "@/assets/room-villa.jpg";
-import { Eye } from "lucide-react";
+import { Eye, Tag } from "lucide-react";
+import Autoplay from "embla-carousel-autoplay";
+import type { CarouselApi } from "@/components/ui/carousel";
 const roomImages: Record<string, string> = {
   "Deluxe Ocean View": deluxeRoom,
   "Private Pool Villa": villaRoom
@@ -23,6 +25,18 @@ export const Rooms = () => {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [tourRoom, setTourRoom] = useState<Room | null>(null);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+
+    setCurrent(api.selectedScrollSnap());
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
   const handleBookRoom = (room: Room) => {
     setSelectedRoom(room);
     setBookingOpen(true);
@@ -52,67 +66,144 @@ export const Rooms = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-            {rooms?.map(room => {
-            const images = room.image_urls && room.image_urls.length > 0 ? room.image_urls : [roomImages[room.name] || room.image_url];
-            return <Card key={room.id} className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-                  <div className="relative h-64 overflow-hidden group">
-                    {images.length > 1 ? <Carousel className="w-full h-full">
-                        <CarouselContent>
-                          {images.map((image, index) => <CarouselItem key={index}>
-                              <img src={image} alt={`${room.name} - Photo ${index + 1}`} className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110" />
-                            </CarouselItem>)}
-                        </CarouselContent>
-                        <CarouselPrevious className="left-2" />
-                        <CarouselNext className="right-2" />
-                      </Carousel> : <img src={images[0]} alt={room.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />}
-                  {room.virtual_tour_url && <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Button variant="hero" size="lg" onClick={() => handleViewTour(room)}>
-                        <Eye className="w-5 h-5 mr-2" />
-                        View 360° Tour
-                      </Button>
-                    </div>}
-                </div>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="text-2xl font-bold text-foreground mb-1">
-                        {room.name}
-                      </h3>
-                      {room.virtual_tour_url && <Badge variant="secondary" className="mb-2">
-                          <Eye className="w-3 h-3 mr-1" />
-                          360° Tour Available
-                        </Badge>}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">From</p>
-                      <p className="text-xl font-bold text-primary">
-                        Rp {room.price_per_night.toLocaleString("id-ID")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">per night</p>
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground mb-4">{room.description}</p>
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {room.features.map((feature, index) => <span key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                        {feature}
-                      </span>)}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="luxury" className="flex-1" onClick={() => handleBookRoom(room)}>
-                      Book Now
-                    </Button>
-                    {room.virtual_tour_url && <Button variant="outline" onClick={() => handleViewTour(room)}>
-                        <Eye className="w-4 h-4" />
-                      </Button>}
-                  </div>
-                  {room.room_count && room.room_count > 1 && <p className="text-sm mt-3">
-                      <strong>Available:</strong> {room.room_count} rooms
-                    </p>}
-                  {room.allotment > 0}
-                </CardContent>
-              </Card>;
-          })}
+          <Carousel
+            setApi={setApi}
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            plugins={[
+              Autoplay({
+                delay: 4000,
+              }),
+            ]}
+            className="w-full max-w-7xl mx-auto"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {rooms?.map(room => {
+                const images = room.image_urls && room.image_urls.length > 0 ? room.image_urls : [roomImages[room.name] || room.image_url];
+                const hasPromo = room.promo_price && room.promo_start_date && room.promo_end_date && 
+                  new Date() >= new Date(room.promo_start_date) && new Date() <= new Date(room.promo_end_date);
+                const displayPrice = room.final_price || room.price_per_night;
+                
+                return (
+                  <CarouselItem key={room.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                    <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-full">
+                      <div className="relative h-64 overflow-hidden group">
+                        {images.length > 1 ? (
+                          <Carousel
+                            className="w-full h-full"
+                            plugins={[
+                              Autoplay({
+                                delay: 3000,
+                              }),
+                            ]}
+                          >
+                            <CarouselContent>
+                              {images.map((image, index) => (
+                                <CarouselItem key={index}>
+                                  <img 
+                                    src={image} 
+                                    alt={`${room.name} - Photo ${index + 1}`} 
+                                    className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110" 
+                                  />
+                                </CarouselItem>
+                              ))}
+                            </CarouselContent>
+                          </Carousel>
+                        ) : (
+                          <img 
+                            src={images[0]} 
+                            alt={room.name} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                          />
+                        )}
+                        {room.virtual_tour_url && (
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button variant="hero" size="lg" onClick={() => handleViewTour(room)}>
+                              <Eye className="w-5 h-5 mr-2" />
+                              View 360° Tour
+                            </Button>
+                          </div>
+                        )}
+                        {hasPromo && (
+                          <div className="absolute top-2 right-2 z-10">
+                            <Badge className="bg-red-500 text-white">
+                              <Tag className="w-3 h-3 mr-1" />
+                              Promo
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h3 className="text-2xl font-bold text-foreground mb-1">
+                              {room.name}
+                            </h3>
+                            {room.virtual_tour_url && (
+                              <Badge variant="secondary" className="mb-2">
+                                <Eye className="w-3 h-3 mr-1" />
+                                360° Tour Available
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">From</p>
+                            {hasPromo && (
+                              <p className="text-sm line-through text-muted-foreground">
+                                Rp {room.price_per_night.toLocaleString("id-ID")}
+                              </p>
+                            )}
+                            <p className={`text-xl font-bold ${hasPromo ? 'text-red-500' : 'text-primary'}`}>
+                              Rp {displayPrice.toLocaleString("id-ID")}
+                            </p>
+                            <p className="text-xs text-muted-foreground">per night</p>
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground mb-4">{room.description}</p>
+                        <div className="flex flex-wrap gap-2 mb-6">
+                          {room.features.map((feature, index) => (
+                            <span key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                              {feature}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="luxury" className="flex-1" onClick={() => handleBookRoom(room)}>
+                            Book Now
+                          </Button>
+                          {room.virtual_tour_url && (
+                            <Button variant="outline" onClick={() => handleViewTour(room)}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                        {room.room_count && room.room_count > 1 && (
+                          <p className="text-sm mt-3">
+                            <strong>Number of Room:</strong> {room.room_count} rooms
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                );
+              })}
+            </CarouselContent>
+            <CarouselPrevious className="hidden md:flex -left-12" />
+            <CarouselNext className="hidden md:flex -right-12" />
+          </Carousel>
+          
+          <div className="flex justify-center gap-2 mt-8">
+            {rooms?.map((_, index) => (
+              <button
+                key={index}
+                className={`h-2 rounded-full transition-all ${
+                  index === current ? 'w-8 bg-primary' : 'w-2 bg-primary/30'
+                }`}
+                onClick={() => api?.scrollTo(index)}
+              />
+            ))}
           </div>
         </div>
       </section>

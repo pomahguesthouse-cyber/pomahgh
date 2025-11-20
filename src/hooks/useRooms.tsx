@@ -17,7 +17,52 @@ export interface Room {
   allotment: number;
   base_price: number | null;
   final_price: number | null;
+  promo_price: number | null;
+  promo_start_date: string | null;
+  promo_end_date: string | null;
+  monday_price: number | null;
+  tuesday_price: number | null;
+  wednesday_price: number | null;
+  thursday_price: number | null;
+  friday_price: number | null;
+  saturday_price: number | null;
+  sunday_price: number | null;
 }
+
+const getDayPrice = (room: Room, dayOfWeek: number): number => {
+  const dayPrices = [
+    room.sunday_price,
+    room.monday_price,
+    room.tuesday_price,
+    room.wednesday_price,
+    room.thursday_price,
+    room.friday_price,
+    room.saturday_price,
+  ];
+  return dayPrices[dayOfWeek] || room.price_per_night;
+};
+
+const getCurrentPrice = (room: Room): number => {
+  const today = new Date();
+  
+  // Check if promo is active
+  if (
+    room.promo_price &&
+    room.promo_start_date &&
+    room.promo_end_date
+  ) {
+    const promoStart = new Date(room.promo_start_date);
+    const promoEnd = new Date(room.promo_end_date);
+    
+    if (today >= promoStart && today <= promoEnd) {
+      return room.promo_price;
+    }
+  }
+  
+  // Check day-of-week pricing
+  const dayOfWeek = today.getDay();
+  return getDayPrice(room, dayOfWeek);
+};
 
 export const useRooms = () => {
   return useQuery({
@@ -30,7 +75,12 @@ export const useRooms = () => {
         .order("price_per_night", { ascending: true });
 
       if (error) throw error;
-      return data as Room[];
+      
+      // Calculate current price for each room
+      return (data as Room[]).map(room => ({
+        ...room,
+        final_price: getCurrentPrice(room)
+      }));
     },
   });
 };
