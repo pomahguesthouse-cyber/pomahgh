@@ -168,7 +168,7 @@ export const Rooms = () => {
                   )}
                   {room.allotment > 0 && (
                     <p className="text-sm text-orange-600 mt-2">
-                      <strong>Allotment:</strong> {room.allotment} rooms reserved
+                      <strong>Number of Room:</strong> {room.allotment} rooms reserved
                     </p>
                   )}
                 </CardContent>
