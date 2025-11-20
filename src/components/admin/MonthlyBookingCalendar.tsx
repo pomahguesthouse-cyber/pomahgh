@@ -358,21 +358,18 @@ export const MonthlyBookingCalendar = () => {
                     key={date.toISOString()} 
                     className={cn(
                       "border border-border p-1.5 min-w-[60px] text-center transition-colors relative",
-                      isHolidayOrWeekend && "bg-red-50/50 dark:bg-red-950/10",
-                      isTodayDate && "ring-2 ring-blue-500 ring-inset"
+                      isHolidayOrWeekend && "bg-red-50/50 dark:bg-red-950/10"
                     )}
                   >
                     <div className={cn(
                       "text-[10px] font-medium uppercase",
-                      isHolidayOrWeekend ? "text-red-600" : "text-muted-foreground",
-                      isTodayDate && "text-blue-600 font-bold"
+                      isHolidayOrWeekend ? "text-red-600" : "text-muted-foreground"
                     )}>
                       {DAY_NAMES[getDay(date)]}
                     </div>
                     <div className={cn(
                       "text-base font-bold",
-                      isHolidayOrWeekend && "text-red-600",
-                      isTodayDate && "text-blue-600"
+                      isHolidayOrWeekend && "text-red-600"
                     )}>
                       {format(date, "d")}
                     </div>
@@ -800,10 +797,9 @@ const RoomCell = ({
         "border border-border p-0 relative h-14 min-w-[60px] transition-all duration-200",
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
         !isHolidayOrWeekend && "bg-background",
-        isTodayDate && "ring-2 ring-blue-500 ring-inset",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
         !isClickable && "cursor-context-menu"
-      )} 
+      )}
       title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
     >
       {/* Blocked Date Pattern */}
