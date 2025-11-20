@@ -17,6 +17,11 @@ interface Booking {
   special_requests?: string;
   created_at: string;
   allocated_room_number?: string | null;
+  rooms?: {
+    name: string;
+    room_count: number;
+    allotment: number;
+  };
 }
 
 export const useAdminBookings = () => {
@@ -27,7 +32,14 @@ export const useAdminBookings = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("*")
+        .select(`
+          *,
+          rooms (
+            name,
+            room_count,
+            allotment
+          )
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

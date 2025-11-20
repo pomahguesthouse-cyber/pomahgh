@@ -106,6 +106,11 @@ const AdminBookings = () => {
                   <p className="text-sm text-muted-foreground">
                     Created {format(new Date(booking.created_at), "MMM dd, yyyy")}
                   </p>
+                  {booking.rooms && (
+                    <p className="text-sm font-medium text-primary mt-1">
+                      {booking.rooms.name} • Allotment: {booking.rooms.allotment}/{booking.rooms.room_count}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Select
@@ -146,16 +151,32 @@ const AdminBookings = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Guest</p>
                   <p className="font-medium">{booking.guest_name}</p>
                   <p className="text-sm">{booking.guest_email}</p>
                   {booking.guest_phone && <p className="text-sm">{booking.guest_phone}</p>}
-                  {booking.allocated_room_number && (
-                    <p className="text-sm font-semibold text-primary mt-1">
-                      Room: {booking.allocated_room_number}
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Room Type</p>
+                  {booking.rooms && (
+                    <>
+                      <p className="font-medium">{booking.rooms.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Allotment: {booking.rooms.allotment}/{booking.rooms.room_count}
+                      </p>
+                    </>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Room Number</p>
+                  {booking.allocated_room_number ? (
+                    <p className="font-semibold text-primary text-lg">
+                      #{booking.allocated_room_number}
                     </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Not allocated</p>
                   )}
                 </div>
                 <div>
@@ -163,8 +184,6 @@ const AdminBookings = () => {
                   <p className="font-medium">
                     {format(new Date(booking.check_in), "MMM dd, yyyy")}
                   </p>
-                </div>
-                <div>
                   <p className="text-sm text-muted-foreground">Check-out</p>
                   <p className="font-medium">
                     {format(new Date(booking.check_out), "MMM dd, yyyy")}
