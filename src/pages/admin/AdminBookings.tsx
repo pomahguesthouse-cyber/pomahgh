@@ -249,6 +249,9 @@ const AdminBookings = () => {
                       {format(new Date(booking.check_out), "MMM dd, yyyy")}
                       {booking.check_out_time && <span className="ml-1 text-xs">at {booking.check_out_time.slice(0, 5)}</span>}
                     </p>
+                    {booking.check_out_time && booking.check_out_time > "12:00:00" && (
+                      <p className="text-xs text-red-600 font-medium mt-0.5">Late Check-out</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Room Number</p>
