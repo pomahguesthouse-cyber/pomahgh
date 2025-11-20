@@ -41,6 +41,8 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
     guest_phone: "",
     num_guests: 1,
     special_requests: "",
+    check_in_time: "14:00",
+    check_out_time: "12:00",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -81,6 +83,8 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
         special_requests: validatedData.special_requests,
         check_in: checkIn,
         check_out: checkOut,
+        check_in_time: formData.check_in_time + ":00",
+        check_out_time: formData.check_out_time + ":00",
         price_per_night: room.price_per_night,
       };
 
@@ -96,6 +100,8 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
             guest_phone: "",
             num_guests: 1,
             special_requests: "",
+            check_in_time: "14:00",
+            check_out_time: "12:00",
           });
           setErrors({});
         },
@@ -188,6 +194,35 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
             </div>
           </div>
           {errors.dates && <p className="text-sm text-destructive">{errors.dates}</p>}
+
+          {/* Time Selection */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="check_in_time">Waktu Check-in</Label>
+              <Input
+                id="check_in_time"
+                type="time"
+                value={formData.check_in_time}
+                onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Default: 14:00
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="check_out_time">Waktu Check-out</Label>
+              <Input
+                id="check_out_time"
+                type="time"
+                value={formData.check_out_time}
+                onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Default: 12:00
+              </p>
+            </div>
+          </div>
 
           {/* Guest Information */}
           <div className="space-y-4">
