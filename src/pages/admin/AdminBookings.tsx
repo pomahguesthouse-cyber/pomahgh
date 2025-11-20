@@ -1,19 +1,67 @@
 import { useAdminBookings } from "@/hooks/useAdminBookings";
+import { useRooms } from "@/hooks/useRooms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit } from "lucide-react";
 import { useState } from "react";
 
 const AdminBookings = () => {
-  const { bookings, isLoading, updateBookingStatus, deleteBooking } = useAdminBookings();
+  const { bookings, isLoading, updateBookingStatus, updateBooking, deleteBooking } = useAdminBookings();
+  const { data: rooms } = useRooms();
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [editingBooking, setEditingBooking] = useState<any>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
 
   const filteredBookings = bookings?.filter(booking => {
     if (filterStatus === "all") return true;
     return booking.status === filterStatus;
   });
+
+  const handleEditClick = (booking: any) => {
+    setEditingBooking({
+      ...booking,
+      check_in: booking.check_in,
+      check_out: booking.check_out,
+    });
+    
+    // Get available room numbers for selected room
+    const room = rooms?.find(r => r.id === booking.room_id);
+    setAvailableRoomNumbers(room?.room_numbers || []);
+    
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingBooking) {
+      const totalNights = Math.ceil(
+        (new Date(editingBooking.check_out).getTime() - 
+         new Date(editingBooking.check_in).getTime()) / 
+        (1000 * 60 * 60 * 24)
+      );
+      
+      updateBooking({
+        id: editingBooking.id,
+        guest_name: editingBooking.guest_name,
+        guest_email: editingBooking.guest_email,
+        guest_phone: editingBooking.guest_phone,
+        check_in: editingBooking.check_in,
+        check_out: editingBooking.check_out,
+        num_guests: editingBooking.num_guests,
+        total_nights: totalNights,
+        allocated_room_number: editingBooking.allocated_room_number,
+        special_requests: editingBooking.special_requests,
+        status: editingBooking.status,
+      });
+      setEditDialogOpen(false);
+    }
+  };
 
   if (isLoading) {
     return <div>Loading bookings...</div>;
@@ -78,6 +126,13 @@ const AdminBookings = () => {
                   </Select>
                   <Button
                     size="icon"
+                    variant="outline"
+                    onClick={() => handleEditClick(booking)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
                     variant="destructive"
                     onClick={() => {
                       if (confirm("Are you sure you want to delete this booking?")) {
@@ -97,6 +152,11 @@ const AdminBookings = () => {
                   <p className="font-medium">{booking.guest_name}</p>
                   <p className="text-sm">{booking.guest_email}</p>
                   {booking.guest_phone && <p className="text-sm">{booking.guest_phone}</p>}
+                  {booking.allocated_room_number && (
+                    <p className="text-sm font-semibold text-primary mt-1">
+                      Room: {booking.allocated_room_number}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Check-in</p>
@@ -138,6 +198,149 @@ const AdminBookings = () => {
           </Card>
         )}
       </div>
+
+      {/* Edit Booking Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Booking</DialogTitle>
+          </DialogHeader>
+          {editingBooking && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Guest Name</Label>
+                  <Input
+                    value={editingBooking.guest_name}
+                    onChange={(e) =>
+                      setEditingBooking({ ...editingBooking, guest_name: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Guest Email</Label>
+                  <Input
+                    type="email"
+                    value={editingBooking.guest_email}
+                    onChange={(e) =>
+                      setEditingBooking({ ...editingBooking, guest_email: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Phone Number</Label>
+                <Input
+                  value={editingBooking.guest_phone || ""}
+                  onChange={(e) =>
+                    setEditingBooking({ ...editingBooking, guest_phone: e.target.value })
+                  }
+                  placeholder="+62..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Check-in Date</Label>
+                  <Input
+                    type="date"
+                    value={editingBooking.check_in}
+                    onChange={(e) =>
+                      setEditingBooking({ ...editingBooking, check_in: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Check-out Date</Label>
+                  <Input
+                    type="date"
+                    value={editingBooking.check_out}
+                    onChange={(e) =>
+                      setEditingBooking({ ...editingBooking, check_out: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Number of Guests</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editingBooking.num_guests}
+                    onChange={(e) =>
+                      setEditingBooking({
+                        ...editingBooking,
+                        num_guests: parseInt(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Room Number</Label>
+                  <Select
+                    value={editingBooking.allocated_room_number || ""}
+                    onValueChange={(value) =>
+                      setEditingBooking({ ...editingBooking, allocated_room_number: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select room number" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableRoomNumbers.map((roomNum) => (
+                        <SelectItem key={roomNum} value={roomNum}>
+                          {roomNum}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label>Status</Label>
+                <Select
+                  value={editingBooking.status}
+                  onValueChange={(value) =>
+                    setEditingBooking({ ...editingBooking, status: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Special Requests</Label>
+                <Textarea
+                  value={editingBooking.special_requests || ""}
+                  onChange={(e) =>
+                    setEditingBooking({ ...editingBooking, special_requests: e.target.value })
+                  }
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveEdit}>Save Changes</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

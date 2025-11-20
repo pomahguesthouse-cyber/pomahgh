@@ -16,6 +16,7 @@ interface Booking {
   status: string;
   special_requests?: string;
   created_at: string;
+  allocated_room_number?: string | null;
 }
 
 export const useAdminBookings = () => {
@@ -57,6 +58,29 @@ export const useAdminBookings = () => {
     },
   });
 
+  const updateBooking = useMutation({
+    mutationFn: async (booking: Partial<Booking> & { id: string }) => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .update(booking)
+        .eq("id", booking.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      toast.success("Booking updated successfully");
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to update booking", {
+        description: error.message,
+      });
+    },
+  });
+
   const deleteBooking = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -81,8 +105,9 @@ export const useAdminBookings = () => {
     bookings,
     isLoading,
     updateBookingStatus: updateBookingStatus.mutate,
+    updateBooking: updateBooking.mutate,
     deleteBooking: deleteBooking.mutate,
-    isUpdating: updateBookingStatus.isPending,
+    isUpdating: updateBookingStatus.isPending || updateBooking.isPending,
     isDeleting: deleteBooking.isPending,
   };
 };
