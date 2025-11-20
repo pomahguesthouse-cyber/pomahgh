@@ -199,6 +199,44 @@ export type Database = {
         }
         Relationships: []
       }
+      room_unavailable_dates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          reason: string | null
+          room_id: string
+          unavailable_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          room_id: string
+          unavailable_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          room_id?: string
+          unavailable_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_unavailable_dates_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           allotment: number

@@ -1,6 +1,7 @@
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DaysAvailabilityCalendar } from "@/components/admin/DaysAvailabilityCalendar";
 import { DollarSign, Users, Calendar, TrendingUp, Building2, PercentIcon } from "lucide-react";
 import { useMemo } from "react";
 import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
@@ -207,6 +208,11 @@ const AdminDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Days Availability Calendar */}
+      <div className="mt-8">
+        <DaysAvailabilityCalendar />
+      </div>
     </div>
   );
 };
