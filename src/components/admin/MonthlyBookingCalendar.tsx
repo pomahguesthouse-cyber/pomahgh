@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, isToday } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -347,31 +347,42 @@ export const MonthlyBookingCalendar = () => {
                 <th className="border border-border p-2 sticky left-0 z-30 min-w-[100px] bg-muted/50 shadow-sm">
                   <span className="text-xs font-bold uppercase tracking-wide">KAMAR</span>
                 </th>
-                {dates.map(date => {
+              {dates.map(date => {
                 const isWeekend = getDay(date) === 0 || getDay(date) === 6;
                 const holiday = isIndonesianHoliday(date);
                 const isHolidayOrWeekend = isWeekend || holiday !== null;
+                const isTodayDate = isToday(date);
                 
                 const headerCell = (
                   <th 
                     key={date.toISOString()} 
                     className={cn(
-                      "border border-border p-1.5 min-w-[60px] text-center transition-colors",
-                      isHolidayOrWeekend && "bg-red-50/50 dark:bg-red-950/10"
+                      "border border-border p-1.5 min-w-[60px] text-center transition-colors relative",
+                      isHolidayOrWeekend && "bg-red-50/50 dark:bg-red-950/10",
+                      isTodayDate && "ring-2 ring-blue-500 ring-inset"
                     )}
                   >
                     <div className={cn(
                       "text-[10px] font-medium uppercase",
-                      isHolidayOrWeekend ? "text-red-600" : "text-muted-foreground"
+                      isHolidayOrWeekend ? "text-red-600" : "text-muted-foreground",
+                      isTodayDate && "text-blue-600 font-bold"
                     )}>
                       {DAY_NAMES[getDay(date)]}
                     </div>
                     <div className={cn(
                       "text-base font-bold",
-                      isHolidayOrWeekend && "text-red-600"
+                      isHolidayOrWeekend && "text-red-600",
+                      isTodayDate && "text-blue-600"
                     )}>
                       {format(date, "d")}
                     </div>
+                    
+                    {isTodayDate && (
+                      <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-md">
+                        TODAY
+                      </div>
+                    )}
+                    
                     {holiday && (
                       <div className="text-[8px] text-red-600 font-semibold mt-0.5">
                         🎉
@@ -779,6 +790,7 @@ const RoomCell = ({
   const isHolidayOrWeekend = isWeekend || holiday !== null;
   const hasBooking = booking !== null;
   const isClickable = !isBlocked && !hasBooking;
+  const isTodayDate = isToday(date);
   
   const cell = (
     <td 
@@ -788,6 +800,7 @@ const RoomCell = ({
         "border border-border p-0 relative h-14 min-w-[60px] transition-all duration-200",
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
         !isHolidayOrWeekend && "bg-background",
+        isTodayDate && "ring-2 ring-blue-500 ring-inset",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
         !isClickable && "cursor-context-menu"
       )} 
