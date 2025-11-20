@@ -10,8 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { DndContext, DragEndEvent, useDraggable, useDroppable, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -496,27 +497,76 @@ export const MonthlyBookingCalendar = () => {
                 </div>
 
                 {/* Payment Information */}
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg p-4 space-y-3">
-                  <h3 className="font-bold text-sm uppercase tracking-wide mb-3">Informasi Pembayaran</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg p-4">
+                  <h3 className="font-bold text-sm uppercase tracking-wide mb-4">Informasi Pembayaran</h3>
+                  
+                  <div className="space-y-4">
+                    {/* Total Harga - Always show */}
                     <div className="flex items-start gap-3">
                       <CreditCard className="h-5 w-5 text-primary mt-0.5" />
-                      <div>
+                      <div className="flex-1">
                         <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Harga</p>
-                        <p className="font-bold text-xl">
+                        <p className="font-bold text-2xl">
                           Rp {selectedBooking.total_price.toLocaleString("id-ID")}
                         </p>
                       </div>
                     </div>
-                    {selectedBooking.payment_amount && <div className="flex items-start gap-3">
-                        <CreditCard className="h-5 w-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-wide">Jumlah Dibayar</p>
-                          <p className="font-bold text-xl text-green-600">
-                            Rp {selectedBooking.payment_amount.toLocaleString("id-ID")}
-                          </p>
+
+                    {/* Conditional: Show DP and Remaining if partial payment */}
+                    {selectedBooking.payment_status === 'partial' && selectedBooking.payment_amount && (
+                      <>
+                        {/* Divider */}
+                        <Separator className="my-3" />
+                        
+                        {/* DP Dibayar */}
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">DP Dibayar</p>
+                            <p className="font-bold text-xl text-green-600">
+                              Rp {selectedBooking.payment_amount.toLocaleString("id-ID")}
+                            </p>
+                          </div>
                         </div>
-                      </div>}
+                        
+                        {/* Sisa Pembayaran */}
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Sisa Pembayaran</p>
+                            <p className="font-bold text-xl text-orange-600">
+                              Rp {(selectedBooking.total_price - selectedBooking.payment_amount).toLocaleString("id-ID")}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Conditional: Show full payment if paid */}
+                    {selectedBooking.payment_status === 'paid' && (
+                      <>
+                        <Separator className="my-3" />
+                        <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900/30 rounded-lg p-3">
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          <span className="font-semibold text-green-700 dark:text-green-300">
+                            Pembayaran Lunas
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Conditional: Show unpaid message */}
+                    {(selectedBooking.payment_status === 'unpaid' || !selectedBooking.payment_status) && (
+                      <>
+                        <Separator className="my-3" />
+                        <div className="flex items-center gap-2 bg-red-100 dark:bg-red-900/30 rounded-lg p-3">
+                          <AlertCircle className="h-5 w-5 text-red-600" />
+                          <span className="font-semibold text-red-700 dark:text-red-300">
+                            Belum Ada Pembayaran
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
