@@ -73,10 +73,44 @@ export type Database = {
           },
         ]
       }
+      facilities: {
+        Row: {
+          created_at: string | null
+          description: string
+          display_order: number | null
+          icon_name: string
+          id: string
+          is_active: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          display_order?: number | null
+          icon_name: string
+          id?: string
+          is_active?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          display_order?: number | null
+          icon_name?: string
+          id?: string
+          is_active?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       hero_slides: {
         Row: {
           created_at: string | null
           display_order: number | null
+          duration: number | null
           font_family: string | null
           font_size: string | null
           font_weight: string | null
@@ -87,11 +121,13 @@ export type Database = {
           overlay_text: string
           text_align: string | null
           text_color: string | null
+          transition_effect: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           display_order?: number | null
+          duration?: number | null
           font_family?: string | null
           font_size?: string | null
           font_weight?: string | null
@@ -102,11 +138,13 @@ export type Database = {
           overlay_text: string
           text_align?: string | null
           text_color?: string | null
+          transition_effect?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           display_order?: number | null
+          duration?: number | null
           font_family?: string | null
           font_size?: string | null
           font_weight?: string | null
@@ -117,6 +155,7 @@ export type Database = {
           overlay_text?: string
           text_align?: string | null
           text_color?: string | null
+          transition_effect?: string | null
           updated_at?: string | null
         }
         Relationships: []

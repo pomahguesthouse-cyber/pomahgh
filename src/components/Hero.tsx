@@ -24,7 +24,21 @@ export const Hero = () => {
         font_weight: 'font-bold',
         text_color: 'text-card',
         text_align: 'center',
+        duration: 5000,
+        transition_effect: 'fade',
       }];
+
+  const getTransitionClass = (effect: string) => {
+    switch (effect) {
+      case 'slide':
+        return 'transition-transform duration-1000 ease-in-out';
+      case 'zoom':
+        return 'transition-all duration-1000 ease-in-out';
+      case 'fade':
+      default:
+        return 'transition-opacity duration-1000 ease-in-out';
+    }
+  };
 
   if (isLoading) {
     return (
@@ -43,7 +57,7 @@ export const Hero = () => {
         }}
         plugins={[
           Autoplay({
-            delay: 5000,
+            delay: heroSlides[0]?.duration || 5000,
           }),
         ]}
         className="w-full h-full"
@@ -53,7 +67,7 @@ export const Hero = () => {
             <CarouselItem key={slide.id} className="h-screen">
               {/* Background Image */}
               <div
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${getTransitionClass(slide.transition_effect)}`}
                 style={{ backgroundImage: `url(${slide.image_url})` }}
               >
                 <div className="absolute inset-0 hero-gradient"></div>

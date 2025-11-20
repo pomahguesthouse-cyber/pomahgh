@@ -43,6 +43,8 @@ const AdminHeroSlides = () => {
     text_align: "center",
     display_order: 0,
     is_active: true,
+    duration: 5000,
+    transition_effect: "fade",
   });
 
   const fontFamilies = ["Inter", "Poppins", "Playfair Display", "Montserrat", "Roboto"];
@@ -50,6 +52,7 @@ const AdminHeroSlides = () => {
   const fontWeights = ["font-normal", "font-medium", "font-semibold", "font-bold", "font-extrabold"];
   const textColors = ["text-card", "text-primary", "text-secondary", "text-accent", "text-white", "text-black"];
   const textAligns = ["left", "center", "right"];
+  const transitionEffects = ["fade", "slide", "zoom"];
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -96,6 +99,8 @@ const AdminHeroSlides = () => {
       text_align: slide.text_align,
       display_order: slide.display_order,
       is_active: slide.is_active,
+      duration: slide.duration,
+      transition_effect: slide.transition_effect,
     });
   };
 
@@ -117,6 +122,8 @@ const AdminHeroSlides = () => {
       text_align: "center",
       display_order: 0,
       is_active: true,
+      duration: 5000,
+      transition_effect: "fade",
     });
     setEditingId(null);
   };
@@ -294,6 +301,38 @@ const AdminHeroSlides = () => {
                     value={formData.display_order}
                     onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Durasi Tampilan (ms)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                    placeholder="5000"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="transition_effect">Efek Transisi</Label>
+                  <Select
+                    value={formData.transition_effect}
+                    onValueChange={(value) => setFormData({ ...formData, transition_effect: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {transitionEffects.map((effect) => (
+                        <SelectItem key={effect} value={effect}>
+                          {effect}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
