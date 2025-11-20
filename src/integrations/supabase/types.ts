@@ -27,6 +27,8 @@ export type Database = {
           guest_phone: string | null
           id: string
           num_guests: number
+          payment_amount: number | null
+          payment_status: string | null
           room_id: string
           special_requests: string | null
           status: string
@@ -46,6 +48,8 @@ export type Database = {
           guest_phone?: string | null
           id?: string
           num_guests?: number
+          payment_amount?: number | null
+          payment_status?: string | null
           room_id: string
           special_requests?: string | null
           status?: string
@@ -65,6 +69,8 @@ export type Database = {
           guest_phone?: string | null
           id?: string
           num_guests?: number
+          payment_amount?: number | null
+          payment_status?: string | null
           room_id?: string
           special_requests?: string | null
           status?: string

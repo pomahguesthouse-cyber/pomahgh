@@ -19,6 +19,8 @@ interface Booking {
   special_requests?: string;
   created_at: string;
   allocated_room_number?: string | null;
+  payment_status?: string;
+  payment_amount?: number;
   rooms?: {
     name: string;
     room_count: number;

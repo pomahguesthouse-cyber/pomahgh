@@ -115,7 +115,9 @@ const AdminBookings = () => {
         total_nights: totalNights,
         allocated_room_number: editingBooking.allocated_room_number,
         special_requests: editingBooking.special_requests,
-        status: editingBooking.status
+        status: editingBooking.status,
+        payment_status: editingBooking.payment_status,
+        payment_amount: editingBooking.payment_amount
       });
       setEditDialogOpen(false);
     }
@@ -178,8 +180,8 @@ const AdminBookings = () => {
                   );
                 })()}
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Created {format(new Date(booking.created_at), "MMM dd, yyyy")}
+                  <p className="text-xs text-muted-foreground">
+                    Created {format(new Date(booking.created_at), "MMM dd, yyyy 'at' HH:mm")}
                   </p>
                   {booking.rooms && <p className="text-sm font-medium text-primary mt-1">
                       {booking.rooms.name} • Allotment: {booking.rooms.allotment}/{booking.rooms.room_count}
@@ -219,62 +221,72 @@ const AdminBookings = () => {
                 {/* Guest Info - Top Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
                   <div>
-                    <p className="text-sm text-muted-foreground">Guest Name</p>
-                    <p className="font-medium">{booking.guest_name}</p>
+                    <p className="text-xs text-muted-foreground">Guest Name</p>
+                    <p className="text-sm font-medium">{booking.guest_name}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{booking.guest_email}</p>
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-sm font-medium">{booking.guest_email}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Phone</p>
-                    <p className="font-medium">{booking.guest_phone || "-"}</p>
+                    <p className="text-xs text-muted-foreground">Phone</p>
+                    <p className="text-sm font-medium">{booking.guest_phone || "-"}</p>
                   </div>
                 </div>
 
                 {/* Check-in, Checkout, Room Number - Second Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
                   <div>
-                    <p className="text-sm text-muted-foreground">Check-in</p>
-                    <p className="font-medium">
+                    <p className="text-xs text-muted-foreground">Check-in</p>
+                    <p className="text-sm font-medium">
                       {format(new Date(booking.check_in), "MMM dd, yyyy")}
-                      {booking.check_in_time && <span className="ml-2 text-sm">at {booking.check_in_time}</span>}
+                      {booking.check_in_time && <span className="ml-1 text-xs">at {booking.check_in_time.slice(0, 5)}</span>}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Check-out</p>
-                    <p className="font-medium">
+                    <p className="text-xs text-muted-foreground">Check-out</p>
+                    <p className="text-sm font-medium">
                       {format(new Date(booking.check_out), "MMM dd, yyyy")}
-                      {booking.check_out_time && <span className="ml-2 text-sm">at {booking.check_out_time}</span>}
+                      {booking.check_out_time && <span className="ml-1 text-xs">at {booking.check_out_time.slice(0, 5)}</span>}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Room Number</p>
-                    {booking.allocated_room_number ? <p className="font-semibold text-primary text-lg">
+                    <p className="text-xs text-muted-foreground">Room Number</p>
+                    {booking.allocated_room_number ? <p className="font-semibold text-primary text-base">
                         #{booking.allocated_room_number}
-                      </p> : <p className="text-sm text-muted-foreground italic">Not allocated</p>}
+                      </p> : <p className="text-xs text-muted-foreground italic">Not allocated</p>}
                   </div>
                 </div>
 
                 {/* Details - Third Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Nights</p>
-                    <p className="font-medium">{booking.total_nights} nights</p>
+                    <p className="text-xs text-muted-foreground">Total Nights</p>
+                    <p className="text-sm font-medium">{booking.total_nights} nights</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Number of Guests</p>
-                    <p className="font-medium">{booking.num_guests} guests</p>
+                    <p className="text-xs text-muted-foreground">Number of Guests</p>
+                    <p className="text-sm font-medium">{booking.num_guests} guests</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Price</p>
-                    <p className="text-lg font-bold">Rp {booking.total_price.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">Total Price</p>
+                    <p className="text-base font-bold">Rp {booking.total_price.toLocaleString()}</p>
+                    <p className="text-xs mt-1">
+                      {booking.payment_status === 'paid' && <span className="text-green-600 font-medium">Lunas</span>}
+                      {booking.payment_status === 'down_payment' && (
+                        <span className="text-orange-600 font-medium">
+                          DP: Rp {(booking.payment_amount || 0).toLocaleString()}
+                        </span>
+                      )}
+                      {booking.payment_status === 'unpaid' && <span className="text-red-600 font-medium">Belum dibayar</span>}
+                      {booking.payment_status === 'pay_at_hotel' && <span className="text-blue-600 font-medium">Bayar di Hotel</span>}
+                    </p>
                   </div>
                 </div>
               </div>
               {booking.special_requests && <div className="mt-4 p-3 bg-muted rounded-md">
-                  <p className="text-sm text-muted-foreground">Special Requests</p>
-                  <p className="text-sm">{booking.special_requests}</p>
+                  <p className="text-xs text-muted-foreground">Special Requests</p>
+                  <p className="text-xs">{booking.special_requests}</p>
                 </div>}
             </CardContent>
           </Card>)}
@@ -404,6 +416,32 @@ const AdminBookings = () => {
               special_requests: e.target.value
             })} rows={3} />
               </div>
+
+              <div>
+                <Label>Payment Status</Label>
+                <Select value={editingBooking.payment_status || "unpaid"} onValueChange={value => setEditingBooking({
+              ...editingBooking,
+              payment_status: value
+            })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="paid">Lunas</SelectItem>
+                    <SelectItem value="down_payment">DP</SelectItem>
+                    <SelectItem value="unpaid">Belum dibayar</SelectItem>
+                    <SelectItem value="pay_at_hotel">Bayar di Hotel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {editingBooking.payment_status === 'down_payment' && <div>
+                  <Label>Nominal DP</Label>
+                  <Input type="number" min="0" value={editingBooking.payment_amount || 0} onChange={e => setEditingBooking({
+                ...editingBooking,
+                payment_amount: parseFloat(e.target.value)
+              })} placeholder="Masukkan nominal DP" />
+                </div>}
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
