@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DndContext, DragEndEvent, useDraggable, useDroppable } from "@dnd-kit/core";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Booking {
   id: string;
@@ -42,15 +46,29 @@ interface Booking {
 
 const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
+type ViewRange = 7 | 14 | 30;
+
 export const MonthlyBookingCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [viewRange, setViewRange] = useState<ViewRange>(30);
   const { bookings } = useAdminBookings();
   const { rooms } = useAdminRooms();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  const dates = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  // Calculate date range based on view selection
+  const dates = useMemo(() => {
+    if (viewRange === 30) {
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
+      return eachDayOfInterval({ start: monthStart, end: monthEnd });
+    } else {
+      const startDate = currentDate;
+      const endDate = addDays(startDate, viewRange - 1);
+      return eachDayOfInterval({ start: startDate, end: endDate });
+    }
+  }, [currentDate, viewRange]);
 
   // Group rooms by type
   const roomsByType = useMemo(() => {
@@ -97,6 +115,13 @@ export const MonthlyBookingCalendar = () => {
       
       return dateStr >= checkIn && dateStr < checkOut;
     });
+  };
+
+  // Check if date is blocked (you can extend this to check room_unavailable_dates table)
+  const isDateBlocked = (roomNumber: string, date: Date) => {
+    // This can be extended to query the room_unavailable_dates table
+    // For now, return false
+    return false;
   };
 
   // Check if this is the first day of a booking
@@ -151,44 +176,128 @@ export const MonthlyBookingCalendar = () => {
   };
 
   const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+    if (viewRange === 30) {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+    } else {
+      setCurrentDate(addDays(currentDate, -viewRange));
+    }
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+    if (viewRange === 30) {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+    } else {
+      setCurrentDate(addDays(currentDate, viewRange));
+    }
   };
 
   const handleBookingClick = (booking: Booking) => {
     setSelectedBooking(booking);
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || !active.data.current) return;
+    
+    const bookingId = active.id as string;
+    const newRoomNumber = over.id as string;
+    const booking = bookings?.find(b => b.id === bookingId);
+    
+    if (!booking || booking.allocated_room_number === newRoomNumber) return;
+    
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ allocated_room_number: newRoomNumber })
+        .eq("id", bookingId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Berhasil",
+        description: `Booking dipindahkan ke kamar ${newRoomNumber}`,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+    } catch (error) {
+      toast({
+        title: "Gagal",
+        description: "Tidak dapat memindahkan booking",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <Card className="w-full shadow-lg rounded-xl overflow-hidden border-gray-100">
-      <div className="p-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {dates.length} Hari {format(currentDate, "MMMM yyyy", { locale: localeId }).toUpperCase()}
-          </h2>
-          <div className="flex gap-2">
-            <Button 
-              onClick={handlePrevMonth} 
-              variant="outline" 
-              size="sm"
-              className="hover:bg-white/80 transition-all hover:shadow-md"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button 
-              onClick={handleNextMonth} 
-              variant="outline" 
-              size="sm"
-              className="hover:bg-white/80 transition-all hover:shadow-md"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+    <DndContext onDragEnd={handleDragEnd}>
+      <Card className="w-full shadow-lg rounded-xl overflow-hidden border-gray-100">
+        <div className="p-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <h2 className="text-2xl font-bold text-gray-800">
+              {viewRange === 30 
+                ? `${dates.length} Hari ${format(currentDate, "MMMM yyyy", { locale: localeId }).toUpperCase()}`
+                : `${format(dates[0], "dd MMM", { locale: localeId })} - ${format(dates[dates.length - 1], "dd MMM yyyy", { locale: localeId })}`
+              }
+            </h2>
+            <div className="flex items-center gap-2">
+              {/* View Range Selector */}
+              <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm">
+                <Button
+                  variant={viewRange === 7 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setViewRange(7);
+                    setCurrentDate(new Date());
+                  }}
+                  className="text-xs"
+                >
+                  7 Hari
+                </Button>
+                <Button
+                  variant={viewRange === 14 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setViewRange(14);
+                    setCurrentDate(new Date());
+                  }}
+                  className="text-xs"
+                >
+                  14 Hari
+                </Button>
+                <Button
+                  variant={viewRange === 30 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setViewRange(30);
+                    setCurrentDate(new Date());
+                  }}
+                  className="text-xs"
+                >
+                  30 Hari
+                </Button>
+              </div>
+              
+              {/* Navigation Buttons */}
+              <Button 
+                onClick={handlePrevMonth} 
+                variant="outline" 
+                size="sm"
+                className="hover:bg-white/80 transition-all hover:shadow-md"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button 
+                onClick={handleNextMonth} 
+                variant="outline" 
+                size="sm"
+                className="hover:bg-white/80 transition-all hover:shadow-md"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
@@ -234,63 +343,18 @@ export const MonthlyBookingCalendar = () => {
                 {allRoomNumbers
                   .filter((r) => r.roomType === roomType)
                   .map((room, roomIndex) => (
-                    <tr 
+                    <RoomRow
                       key={room.roomNumber}
-                      className={`${roomIndex % 2 === 0 ? "bg-white" : "bg-gray-50/30"} hover:bg-blue-50/20 transition-colors`}
-                    >
-                      <td className="border border-gray-100 p-3 sticky left-0 z-10 font-semibold text-sm text-gray-700 shadow-sm bg-inherit">
-                        {room.roomNumber}
-                      </td>
-                      {dates.map((date) => {
-                        const booking = getBookingForCell(room.roomNumber, date);
-                        const isStart = booking && isBookingStart(booking, date);
-                        const isEnd = booking && isBookingEnd(booking, date);
-                        const showLCO = booking && isBeforeCheckout(booking, date) && 
-                                       booking.check_out_time && booking.check_out_time !== "12:00:00";
-                        const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-
-                        return (
-                          <td
-                            key={date.toISOString()}
-                            className={`border border-gray-100 p-0 relative h-16 min-w-[70px] transition-colors ${
-                              isWeekend ? "bg-amber-50/30" : ""
-                            }`}
-                          >
-                            {booking && (
-                              <div
-                                onClick={() => handleBookingClick(booking)}
-                                className={`
-                                  absolute inset-1 bg-gradient-to-br from-blue-100 to-blue-200
-                                  hover:from-blue-200 hover:to-blue-300
-                                  cursor-pointer flex items-center justify-center
-                                  transition-all duration-200 text-xs shadow-sm
-                                  hover:shadow-md hover:scale-[1.02]
-                                  ${isStart ? "rounded-l-lg" : ""}
-                                  ${isEnd ? "rounded-r-lg" : ""}
-                                `}
-                              >
-                                {isStart && (
-                                  <div className="text-center px-2 py-1">
-                                    <div className="font-bold text-gray-800 truncate text-sm">
-                                      {booking.guest_name.split(" ")[0]}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* LCO Badge positioned at the border */}
-                            {showLCO && (
-                              <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-20">
-                                <span className="bg-gradient-to-r from-orange-400 to-orange-500 text-white text-[10px] px-2 py-1 rounded-full font-bold shadow-lg whitespace-nowrap border-2 border-white">
-                                  LCO {booking.check_out_time!.slice(0, 5)}
-                                </span>
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
+                      room={room}
+                      roomIndex={roomIndex}
+                      dates={dates}
+                      getBookingForCell={getBookingForCell}
+                      isBookingStart={isBookingStart}
+                      isBookingEnd={isBookingEnd}
+                      isBeforeCheckout={isBeforeCheckout}
+                      isDateBlocked={isDateBlocked}
+                      handleBookingClick={handleBookingClick}
+                    />
                   ))}
               </React.Fragment>
             ))}
@@ -449,5 +513,187 @@ export const MonthlyBookingCalendar = () => {
         </DialogContent>
       </Dialog>
     </Card>
+    </DndContext>
+  );
+};
+
+// Draggable Booking Cell Component
+const DraggableBookingCell = ({ 
+  booking, 
+  isStart, 
+  isEnd,
+  onClick 
+}: { 
+  booking: Booking;
+  isStart: boolean;
+  isEnd: boolean;
+  onClick: () => void;
+}) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: booking.id,
+    data: { booking }
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={onClick}
+      className={`
+        absolute inset-1 bg-gradient-to-br from-blue-100 to-blue-200
+        hover:from-blue-200 hover:to-blue-300
+        cursor-move flex items-center justify-center
+        transition-all duration-200 text-xs shadow-sm
+        hover:shadow-md hover:scale-[1.02]
+        ${isStart ? "rounded-l-lg" : ""}
+        ${isEnd ? "rounded-r-lg" : ""}
+        ${isDragging ? "opacity-50 scale-105 shadow-lg" : ""}
+      `}
+    >
+      {isStart && (
+        <div className="text-center px-2 py-1">
+          <div className="font-bold text-gray-800 truncate text-sm">
+            {booking.guest_name.split(" ")[0]}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Droppable Room Cell Component
+const DroppableRoomCell = ({
+  roomNumber,
+  date,
+  booking,
+  isStart,
+  isEnd,
+  showLCO,
+  isWeekend,
+  isBlocked,
+  handleBookingClick
+}: {
+  roomNumber: string;
+  date: Date;
+  booking: Booking | null;
+  isStart: boolean;
+  isEnd: boolean;
+  showLCO: boolean;
+  isWeekend: boolean;
+  isBlocked: boolean;
+  handleBookingClick: (booking: Booking) => void;
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: roomNumber + "-" + format(date, "yyyy-MM-dd"),
+    data: { roomNumber, date }
+  });
+
+  return (
+    <td
+      ref={setNodeRef}
+      className={`border border-gray-100 p-0 relative h-16 min-w-[70px] transition-colors ${
+        isWeekend ? "bg-amber-50/30" : ""
+      } ${isOver ? "bg-blue-100 ring-2 ring-blue-400" : ""}`}
+    >
+      {/* Blocked Date Pattern */}
+      {isBlocked && (
+        <div 
+          className="absolute inset-0 bg-gray-300"
+          style={{
+            backgroundImage: `repeating-linear-gradient(
+              45deg,
+              transparent,
+              transparent 5px,
+              rgba(255, 255, 255, 0.5) 5px,
+              rgba(255, 255, 255, 0.5) 10px
+            )`
+          }}
+        />
+      )}
+      
+      {booking && !isBlocked && (
+        <DraggableBookingCell
+          booking={booking}
+          isStart={isStart}
+          isEnd={isEnd}
+          onClick={() => handleBookingClick(booking)}
+        />
+      )}
+      
+      {/* LCO Badge positioned at the border */}
+      {showLCO && booking && (
+        <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-20">
+          <span className="bg-gradient-to-r from-orange-400 to-orange-500 text-white text-[10px] px-2 py-1 rounded-full font-bold shadow-lg whitespace-nowrap border-2 border-white">
+            LCO {booking.check_out_time!.slice(0, 5)}
+          </span>
+        </div>
+      )}
+    </td>
+  );
+};
+
+// Room Row Component
+const RoomRow = ({
+  room,
+  roomIndex,
+  dates,
+  getBookingForCell,
+  isBookingStart,
+  isBookingEnd,
+  isBeforeCheckout,
+  isDateBlocked,
+  handleBookingClick
+}: {
+  room: { roomType: string; roomNumber: string; roomId: string };
+  roomIndex: number;
+  dates: Date[];
+  getBookingForCell: (roomNumber: string, date: Date) => Booking | null;
+  isBookingStart: (booking: Booking, date: Date) => boolean;
+  isBookingEnd: (booking: Booking, date: Date) => boolean;
+  isBeforeCheckout: (booking: Booking, date: Date) => boolean;
+  isDateBlocked: (roomNumber: string, date: Date) => boolean;
+  handleBookingClick: (booking: Booking) => void;
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: room.roomNumber,
+    data: { roomNumber: room.roomNumber }
+  });
+
+  return (
+    <tr 
+      ref={setNodeRef}
+      className={`${roomIndex % 2 === 0 ? "bg-white" : "bg-gray-50/30"} hover:bg-blue-50/20 transition-colors ${
+        isOver ? "bg-blue-50" : ""
+      }`}
+    >
+      <td className="border border-gray-100 p-3 sticky left-0 z-10 font-semibold text-sm text-gray-700 shadow-sm bg-inherit">
+        {room.roomNumber}
+      </td>
+      {dates.map((date) => {
+        const booking = getBookingForCell(room.roomNumber, date);
+        const isStart = booking && isBookingStart(booking, date);
+        const isEnd = booking && isBookingEnd(booking, date);
+        const showLCO = booking && isBeforeCheckout(booking, date) && 
+                       booking.check_out_time && booking.check_out_time !== "12:00:00";
+        const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+        const isBlocked = isDateBlocked(room.roomNumber, date);
+
+        return (
+          <DroppableRoomCell
+            key={date.toISOString()}
+            roomNumber={room.roomNumber}
+            date={date}
+            booking={booking}
+            isStart={isStart}
+            isEnd={isEnd}
+            showLCO={showLCO}
+            isWeekend={isWeekend}
+            isBlocked={isBlocked}
+            handleBookingClick={handleBookingClick}
+          />
+        );
+      })}
+    </tr>
   );
 };
