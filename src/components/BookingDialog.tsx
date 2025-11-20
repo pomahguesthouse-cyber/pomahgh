@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,8 @@ const bookingSchema = z.object({
 });
 
 export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [checkIn, setCheckIn] = useState<Date>();
   const [checkOut, setCheckOut] = useState<Date>();
   const [formData, setFormData] = useState({
@@ -42,8 +46,23 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
 
   const { mutate: createBooking, isPending } = useBooking();
 
+  useEffect(() => {
+    if (user?.email) {
+      setFormData(prev => ({
+        ...prev,
+        guest_name: user.user_metadata?.full_name || "",
+        guest_email: user.email,
+      }));
+    }
+  }, [user]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
     
     if (!room || !checkIn || !checkOut) {
       setErrors({ dates: "Pilih tanggal check-in dan check-out" });
@@ -179,6 +198,7 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
                 value={formData.guest_name}
                 onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
                 placeholder="John Doe"
+                disabled={!!user?.user_metadata?.full_name}
               />
               {errors.guest_name && <p className="text-sm text-destructive mt-1">{errors.guest_name}</p>}
             </div>
@@ -191,6 +211,7 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
                 value={formData.guest_email}
                 onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
                 placeholder="john@example.com"
+                disabled={!!user?.email}
               />
               {errors.guest_email && <p className="text-sm text-destructive mt-1">{errors.guest_email}</p>}
             </div>
