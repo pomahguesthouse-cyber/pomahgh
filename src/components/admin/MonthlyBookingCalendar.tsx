@@ -1,11 +1,12 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Users, CreditCard, Clock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -112,6 +113,43 @@ export const MonthlyBookingCalendar = () => {
     return dateStr === format(checkOutDate, "yyyy-MM-dd");
   };
 
+  // Check if this is the day before checkout (for LCO indicator)
+  const isBeforeCheckout = (booking: Booking, date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    const checkOutDate = new Date(booking.check_out);
+    const dayBeforeCheckout = new Date(checkOutDate);
+    dayBeforeCheckout.setDate(dayBeforeCheckout.getDate() - 1);
+    return dateStr === format(dayBeforeCheckout, "yyyy-MM-dd");
+  };
+
+  // Get status badge variant
+  const getStatusVariant = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "confirmed":
+        return "success";
+      case "pending":
+        return "warning";
+      case "cancelled":
+        return "destructive";
+      default:
+        return "default";
+    }
+  };
+
+  // Get payment status badge variant
+  const getPaymentVariant = (status?: string) => {
+    switch (status?.toLowerCase()) {
+      case "paid":
+        return "success";
+      case "partial":
+        return "warning";
+      case "unpaid":
+        return "destructive";
+      default:
+        return "outline";
+    }
+  };
+
   const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
   };
@@ -125,179 +163,285 @@ export const MonthlyBookingCalendar = () => {
   };
 
   return (
-    <Card className="w-full">
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold">
-              {dates.length} Hari {format(currentDate, "MMMM yyyy", { locale: localeId }).toUpperCase()}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Klik pada booking untuk melihat detail
-            </p>
-          </div>
+    <Card className="w-full shadow-lg rounded-xl overflow-hidden border-gray-100">
+      <div className="p-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-800">
+            {dates.length} Hari {format(currentDate, "MMMM yyyy", { locale: localeId }).toUpperCase()}
+          </h2>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+            <Button 
+              onClick={handlePrevMonth} 
+              variant="outline" 
+              size="sm"
+              className="hover:bg-white/80 transition-all hover:shadow-md"
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={handleNextMonth}>
+            <Button 
+              onClick={handleNextMonth} 
+              variant="outline" 
+              size="sm"
+              className="hover:bg-white/80 transition-all hover:shadow-md"
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Calendar Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b-2 border-border">
-                <th className="sticky left-0 bg-background z-10 p-2 text-left font-bold min-w-[100px] border-r-2 border-border">
-                  ROOM
-                </th>
-                {dates.map((date, idx) => (
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead className="sticky top-0 z-20">
+            <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
+              <th className="border border-gray-200 p-3 sticky left-0 z-30 min-w-[140px] bg-gradient-to-r from-gray-50 to-gray-100 shadow-md">
+                <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">Kamar</span>
+              </th>
+              {dates.map((date) => {
+                const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+                return (
                   <th
-                    key={idx}
-                    className="p-2 text-center min-w-[80px] border-r border-border"
+                    key={date.toISOString()}
+                    className={`border border-gray-200 p-3 min-w-[70px] text-center transition-colors ${
+                      isWeekend ? "bg-amber-50/50" : "bg-white"
+                    }`}
                   >
-                    <div className="font-bold">{format(date, "d")}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs font-normal text-gray-500 uppercase tracking-wider">
                       {DAY_NAMES[getDay(date)]}
                     </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(roomsByType).map(([roomType, roomList], typeIdx) => (
-                <tr key={typeIdx}>
-                  <td colSpan={dates.length + 1} className="p-0">
-                    <div className="bg-muted/50 px-3 py-2 font-bold border-y border-border">
-                      {roomType.toUpperCase()}
+                    <div className="text-base font-bold text-gray-800 mt-1">
+                      {format(date, "d")}
                     </div>
-                    <table className="w-full">
-                      <tbody>
-                        {allRoomNumbers
-                          .filter((rn) => rn.roomType === roomType)
-                          .map((roomNum, roomIdx) => (
-                            <tr key={roomIdx} className="border-b border-border hover:bg-muted/30">
-                              <td className="sticky left-0 bg-background z-10 p-2 font-medium min-w-[100px] border-r-2 border-border">
-                                {roomNum.roomNumber}
-                              </td>
-                              {dates.map((date, dateIdx) => {
-                                const booking = getBookingForCell(roomNum.roomNumber, date);
-                                const isStart = booking && isBookingStart(booking, date);
-                                const isEnd = booking && isBookingEnd(booking, date);
-
-                                return (
-                                  <td
-                                    key={dateIdx}
-                                    className={`p-1 border-r border-border min-w-[80px] h-12 relative ${
-                                      booking ? "bg-primary/10 cursor-pointer hover:bg-primary/20" : ""
-                                    }`}
-                                    onClick={() => booking && handleBookingClick(booking)}
-                                  >
-                                    {isStart && booking && (
-                                      <div className="text-xs font-medium truncate px-1">
-                                        {booking.guest_name}
-                                      </div>
-                                    )}
-                                    {isEnd && booking && booking.check_out_time && (
-                                      <div className="text-xs text-muted-foreground truncate px-1">
-                                        LCO: {booking.check_out_time.slice(0, 5)}
-                                      </div>
-                                    )}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(roomsByType).map(([roomType, roomsInType], typeIndex) => (
+              <React.Fragment key={roomType}>
+                {/* Room type header */}
+                <tr className="border-y border-gray-200">
+                  <td
+                    colSpan={dates.length + 1}
+                    className="p-3 bg-gradient-to-r from-gray-100 to-gray-50 font-bold text-sm uppercase tracking-wide text-gray-700"
+                  >
+                    {roomType}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+                {/* Room rows */}
+                {allRoomNumbers
+                  .filter((r) => r.roomType === roomType)
+                  .map((room, roomIndex) => (
+                    <tr 
+                      key={room.roomNumber}
+                      className={`${roomIndex % 2 === 0 ? "bg-white" : "bg-gray-50/30"} hover:bg-blue-50/20 transition-colors`}
+                    >
+                      <td className="border border-gray-100 p-3 sticky left-0 z-10 font-semibold text-sm text-gray-700 shadow-sm bg-inherit">
+                        {room.roomNumber}
+                      </td>
+                      {dates.map((date) => {
+                        const booking = getBookingForCell(room.roomNumber, date);
+                        const isStart = booking && isBookingStart(booking, date);
+                        const isEnd = booking && isBookingEnd(booking, date);
+                        const showLCO = booking && isBeforeCheckout(booking, date) && 
+                                       booking.check_out_time && booking.check_out_time !== "12:00:00";
+                        const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+
+                        return (
+                          <td
+                            key={date.toISOString()}
+                            className={`border border-gray-100 p-0 relative h-16 min-w-[70px] transition-colors ${
+                              isWeekend ? "bg-amber-50/30" : ""
+                            }`}
+                          >
+                            {booking && (
+                              <div
+                                onClick={() => handleBookingClick(booking)}
+                                className={`
+                                  absolute inset-1 bg-gradient-to-br from-blue-100 to-blue-200
+                                  hover:from-blue-200 hover:to-blue-300
+                                  cursor-pointer flex items-center justify-center
+                                  transition-all duration-200 text-xs shadow-sm
+                                  hover:shadow-md hover:scale-[1.02]
+                                  ${isStart ? "rounded-l-lg" : ""}
+                                  ${isEnd ? "rounded-r-lg" : ""}
+                                `}
+                              >
+                                {isStart && (
+                                  <div className="text-center px-2 py-1">
+                                    <div className="font-bold text-gray-800 truncate text-sm">
+                                      {booking.guest_name.split(" ")[0]}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* LCO Badge positioned at the border */}
+                            {showLCO && (
+                              <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-20">
+                                <span className="bg-gradient-to-r from-orange-400 to-orange-500 text-white text-[10px] px-2 py-1 rounded-full font-bold shadow-lg whitespace-nowrap border-2 border-white">
+                                  LCO {booking.check_out_time!.slice(0, 5)}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Booking Detail Modal */}
       <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detail Booking</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-gray-800">Detail Booking</DialogTitle>
           </DialogHeader>
           {selectedBooking && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Nama Tamu</p>
-                  <p className="font-medium">{selectedBooking.guest_name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{selectedBooking.guest_email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Telepon</p>
-                  <p className="font-medium">{selectedBooking.guest_phone || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Nomor Kamar</p>
-                  <p className="font-medium">{selectedBooking.allocated_room_number || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Check-in</p>
-                  <p className="font-medium">
-                    {format(new Date(selectedBooking.check_in), "dd MMM yyyy", { locale: localeId })}
-                    {selectedBooking.check_in_time && ` - ${selectedBooking.check_in_time.slice(0, 5)}`}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Check-out</p>
-                  <p className="font-medium">
-                    {format(new Date(selectedBooking.check_out), "dd MMM yyyy", { locale: localeId })}
-                    {selectedBooking.check_out_time && ` - ${selectedBooking.check_out_time.slice(0, 5)}`}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Jumlah Tamu</p>
-                  <p className="font-medium">{selectedBooking.num_guests} orang</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Malam</p>
-                  <p className="font-medium">{selectedBooking.total_nights} malam</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Harga</p>
-                  <p className="font-medium">Rp {selectedBooking.total_price.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <p className="font-medium capitalize">{selectedBooking.status}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Status Pembayaran</p>
-                  <p className="font-medium capitalize">{selectedBooking.payment_status || "unpaid"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Jumlah Dibayar</p>
-                  <p className="font-medium">
-                    Rp {(selectedBooking.payment_amount || 0).toLocaleString()}
-                  </p>
+            <div className="space-y-6">
+              {/* Status Badges */}
+              <div className="flex gap-2">
+                <Badge variant={getStatusVariant(selectedBooking.status)} className="text-xs px-3 py-1">
+                  {selectedBooking.status.toUpperCase()}
+                </Badge>
+                <Badge variant={getPaymentVariant(selectedBooking.payment_status)} className="text-xs px-3 py-1">
+                  {(selectedBooking.payment_status || "unpaid").toUpperCase()}
+                </Badge>
+              </div>
+
+              {/* Guest Information */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 space-y-3">
+                <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide mb-3">Informasi Tamu</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3">
+                    <Users className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Nama Tamu</p>
+                      <p className="font-semibold text-gray-800">{selectedBooking.guest_name}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                      <p className="font-semibold text-gray-800 break-all">{selectedBooking.guest_email}</p>
+                    </div>
+                  </div>
+                  {selectedBooking.guest_phone && (
+                    <div className="flex items-start gap-3">
+                      <Phone className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Telepon</p>
+                        <p className="font-semibold text-gray-800">{selectedBooking.guest_phone}</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-start gap-3">
+                    <Users className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Jumlah Tamu</p>
+                      <p className="font-semibold text-gray-800">{selectedBooking.num_guests} orang</p>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Booking Details */}
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 space-y-3">
+                <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide mb-3">Detail Booking</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="h-5 w-5 text-purple-600 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Check-in</p>
+                      <p className="font-semibold text-gray-800">
+                        {format(new Date(selectedBooking.check_in), "dd MMM yyyy", { locale: localeId })}
+                      </p>
+                      {selectedBooking.check_in_time && (
+                        <p className="text-sm text-gray-600">{selectedBooking.check_in_time.slice(0, 5)}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Calendar className="h-5 w-5 text-purple-600 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Check-out</p>
+                      <p className="font-semibold text-gray-800">
+                        {format(new Date(selectedBooking.check_out), "dd MMM yyyy", { locale: localeId })}
+                      </p>
+                      {selectedBooking.check_out_time && (
+                        <p className="text-sm text-gray-600">
+                          {selectedBooking.check_out_time.slice(0, 5)}
+                          {selectedBooking.check_out_time !== "12:00:00" && (
+                            <span className="ml-2 text-orange-600 font-semibold">(Late Check-out)</span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-5 w-5 text-purple-600 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Total Malam</p>
+                      <p className="font-semibold text-gray-800">{selectedBooking.total_nights} malam</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Calendar className="h-5 w-5 text-purple-600 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Nomor Kamar</p>
+                      <p className="font-semibold text-gray-800">{selectedBooking.allocated_room_number || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Information */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 space-y-3">
+                <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide mb-3">Informasi Pembayaran</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3">
+                    <CreditCard className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Total Harga</p>
+                      <p className="font-bold text-xl text-gray-800">
+                        Rp {selectedBooking.total_price.toLocaleString("id-ID")}
+                      </p>
+                    </div>
+                  </div>
+                  {selectedBooking.payment_amount && (
+                    <div className="flex items-start gap-3">
+                      <CreditCard className="h-5 w-5 text-green-600 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Jumlah Dibayar</p>
+                        <p className="font-bold text-xl text-green-600">
+                          Rp {selectedBooking.payment_amount.toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Special Requests */}
               {selectedBooking.special_requests && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Permintaan Khusus</p>
-                  <p className="font-medium">{selectedBooking.special_requests}</p>
+                <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4">
+                  <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide mb-2">Permintaan Khusus</h3>
+                  <p className="text-gray-700 leading-relaxed">{selectedBooking.special_requests}</p>
                 </div>
               )}
-              <div>
-                <p className="text-sm text-muted-foreground">Tanggal Booking</p>
-                <p className="font-medium">
-                  {format(new Date(selectedBooking.created_at), "dd MMM yyyy HH:mm", { locale: localeId })}
+
+              {/* Footer */}
+              <div className="border-t pt-4">
+                <p className="text-xs text-gray-400 text-center">
+                  Dibuat: {format(new Date(selectedBooking.created_at), "dd MMM yyyy HH:mm", { locale: localeId })}
                 </p>
               </div>
             </div>
