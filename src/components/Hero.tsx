@@ -1,47 +1,103 @@
 import { Button } from "@/components/ui/button";
+import { useHeroSlides } from "@/hooks/useHeroSlides";
 import heroImage from "@/assets/hero-guesthouse.jpg";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 
 export const Hero = () => {
+  const { data: slides, isLoading } = useHeroSlides();
+
+  // Use database slides if available, otherwise fallback to default
+  const heroSlides = slides && slides.length > 0 
+    ? slides 
+    : [{
+        id: 'default',
+        image_url: heroImage,
+        overlay_text: 'Pomah Guesthouse',
+        overlay_subtext: 'Experience Tropical Paradise Where Luxury Meets Serenity',
+        font_family: 'Inter',
+        font_size: 'text-5xl md:text-7xl lg:text-8xl',
+        font_weight: 'font-bold',
+        text_color: 'text-card',
+        text_align: 'center',
+      }];
+
+  if (isLoading) {
+    return (
+      <section id="home" className="relative h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-background"></div>
+      </section>
+    );
+  }
+
   return (
     <section id="home" className="relative h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${heroImage})` }}
+      <Carousel
+        opts={{
+          align: "start",
+          loop: true,
+        }}
+        plugins={[
+          Autoplay({
+            delay: 5000,
+          }),
+        ]}
+        className="w-full h-full"
       >
-        <div className="absolute inset-0 hero-gradient"></div>
-      </div>
+        <CarouselContent className="h-screen">
+          {heroSlides.map((slide) => (
+            <CarouselItem key={slide.id} className="h-screen">
+              {/* Background Image */}
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{ backgroundImage: `url(${slide.image_url})` }}
+              >
+                <div className="absolute inset-0 hero-gradient"></div>
+              </div>
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-4 animate-fade-in">
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-card mb-6">
-          Pomah Guesthouse
-        </h1>
-        <p className="text-xl md:text-2xl text-card/90 mb-8 max-w-2xl mx-auto">
-          Experience Tropical Paradise Where Luxury Meets Serenity
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button 
-            variant="hero" 
-            size="lg" 
-            className="text-lg"
-            onClick={() => document.getElementById("rooms")?.scrollIntoView({ behavior: "smooth" })}
-          >
-            Explore Rooms
-          </Button>
-          <Button 
-            variant="outline" 
-            size="lg" 
-            className="text-lg border-card text-card hover:bg-card hover:text-primary"
-            onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
-          >
-            Contact Us
-          </Button>
-        </div>
-      </div>
+              {/* Content */}
+              <div className={`relative z-10 text-${slide.text_align} px-4 animate-fade-in h-full flex flex-col justify-center items-${slide.text_align === 'center' ? 'center' : slide.text_align === 'right' ? 'end' : 'start'}`}>
+                <h1 
+                  className={`${slide.font_size} ${slide.font_weight} ${slide.text_color} mb-6`}
+                  style={{ fontFamily: slide.font_family }}
+                >
+                  {slide.overlay_text}
+                </h1>
+                {slide.overlay_subtext && (
+                  <p className={`text-xl md:text-2xl ${slide.text_color}/90 mb-8 max-w-2xl ${slide.text_align === 'center' ? 'mx-auto' : ''}`}>
+                    {slide.overlay_subtext}
+                  </p>
+                )}
+                <div className={`flex flex-col sm:flex-row gap-4 ${slide.text_align === 'center' ? 'justify-center' : slide.text_align === 'right' ? 'justify-end' : 'justify-start'}`}>
+                  <Button 
+                    variant="hero" 
+                    size="lg" 
+                    className="text-lg"
+                    onClick={() => document.getElementById("rooms")?.scrollIntoView({ behavior: "smooth" })}
+                  >
+                    Explore Rooms
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="text-lg border-card text-card hover:bg-card hover:text-primary"
+                    onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+                  >
+                    Contact Us
+                  </Button>
+                </div>
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce z-20">
         <div className="w-6 h-10 border-2 border-card/50 rounded-full flex items-start justify-center p-2">
           <div className="w-1 h-3 bg-card/50 rounded-full"></div>
         </div>
