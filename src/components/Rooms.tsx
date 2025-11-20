@@ -12,6 +12,7 @@ import villaRoom from "@/assets/room-villa.jpg";
 import { Eye, Tag } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
 import type { CarouselApi } from "@/components/ui/carousel";
+import { ROOM_FEATURES } from "@/constants/roomFeatures";
 const roomImages: Record<string, string> = {
   "Deluxe Ocean View": deluxeRoom,
   "Private Pool Villa": villaRoom
@@ -162,12 +163,22 @@ export const Rooms = () => {
                           </div>
                         </div>
                         <p className="text-muted-foreground mb-4">{room.description}</p>
-                        <div className="flex flex-wrap gap-2 mb-6">
-                          {room.features.map((feature, index) => (
-                            <span key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                              {feature}
-                            </span>
-                          ))}
+                        <div className="flex flex-wrap gap-3 mb-6">
+                          {room.features.map((featureId, index) => {
+                            const feature = ROOM_FEATURES.find(f => f.id === featureId);
+                            if (!feature) return null;
+                            const IconComponent = feature.icon;
+                            return (
+                              <div 
+                                key={index} 
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm"
+                                title={feature.label}
+                              >
+                                <IconComponent className="h-4 w-4" />
+                                <span>{feature.label}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                         <div className="flex gap-2">
                           <Button variant="luxury" className="flex-1" onClick={() => handleBookRoom(room)}>
