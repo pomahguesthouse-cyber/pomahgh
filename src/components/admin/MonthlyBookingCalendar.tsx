@@ -147,16 +147,25 @@ export const MonthlyBookingCalendar = () => {
     return roomNums;
   }, [rooms]);
 
-  // Get booking for specific room and date
-  const getBookingForCell = (roomNumber: string, date: Date) => {
-    if (!bookings) return null;
+  // Get all bookings for specific room and date
+  const getBookingsForCell = (roomNumber: string, date: Date): Booking[] => {
+    if (!bookings) return [];
     const dateStr = format(date, "yyyy-MM-dd");
-    return bookings.find(booking => {
+    
+    return bookings.filter(booking => {
       if (booking.status === "cancelled") return false;
       if (booking.allocated_room_number !== roomNumber) return false;
+      
       const checkIn = booking.check_in;
       const checkOut = booking.check_out;
+      
+      // Include booking if date is within range
       return dateStr >= checkIn && dateStr < checkOut;
+    }).sort((a, b) => {
+      // Sort by check-out time ascending (check-out bookings show on top)
+      const timeA = a.check_out_time || "12:00:00";
+      const timeB = b.check_out_time || "12:00:00";
+      return timeA.localeCompare(timeB);
     });
   };
 
@@ -391,7 +400,7 @@ export const MonthlyBookingCalendar = () => {
                   </tr>
 
                   {/* Room rows */}
-                  {allRoomNumbers.filter(r => r.roomType === roomType).map((room, roomIndex) => <RoomRow key={room.roomNumber} room={room} roomIndex={roomIndex} dates={dates} getBookingForCell={getBookingForCell} isBookingStart={isBookingStart} isBookingEnd={isBookingEnd} isBeforeCheckout={isBeforeCheckout} isDateBlocked={isDateBlocked} getBlockReason={getBlockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />)}
+                  {allRoomNumbers.filter(r => r.roomType === roomType).map((room, roomIndex) => <RoomRow key={room.roomNumber} room={room} roomIndex={roomIndex} dates={dates} getBookingsForCell={getBookingsForCell} isDateBlocked={isDateBlocked} getBlockReason={getBlockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />)}
                 </React.Fragment>)}
             </tbody>
           </table>
@@ -654,12 +663,14 @@ const DraggableBookingCell = ({
   booking,
   isStart,
   isEnd,
-  onClick
+  onClick,
+  isCompact = false
 }: {
   booking: Booking;
   isStart: boolean;
   isEnd: boolean;
   onClick: () => void;
+  isCompact?: boolean;
 }) => {
   const {
     attributes,
@@ -707,7 +718,8 @@ const DraggableBookingCell = ({
       {...attributes} 
       onClick={onClick} 
       className={cn(
-        "absolute top-0.5 bottom-0.5 bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20",
+        "absolute bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20",
+        isCompact ? "top-0.5 bottom-0.5 text-[10px]" : "top-0.5 bottom-0.5 text-xs",
         getBackgroundClass(),
         isDragging && "opacity-50 scale-105 shadow-xl ring-2 ring-primary"
       )}
@@ -718,16 +730,32 @@ const DraggableBookingCell = ({
       }}
     >
       {/* Content - Guest name and nights */}
-      <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
+      <div className={cn(
+        "relative z-10 text-left w-full space-y-0.5",
+        isCompact ? "px-1.5 py-0.5" : "px-2 py-1"
+      )}>
         {/* Guest Name */}
-        <div className="font-bold text-xs text-white drop-shadow-sm truncate">
+        <div className={cn(
+          "font-bold text-white drop-shadow-sm truncate",
+          isCompact ? "text-[9px]" : "text-xs"
+        )}>
           {booking.guest_name.split(" ")[0]}
         </div>
         
         {/* Nights count */}
-        <div className="text-[10px] text-white/90 font-medium">
+        <div className={cn(
+          "text-white/90 font-medium",
+          isCompact ? "text-[8px]" : "text-[10px]"
+        )}>
           {booking.total_nights} Malam
         </div>
+        
+        {/* Show check-out time in compact mode */}
+        {isCompact && booking.check_out_time && (
+          <div className="text-[8px] text-white/80">
+            CO: {booking.check_out_time.slice(0, 5)}
+          </div>
+        )}
       </div>
       
       {/* LCO Badge - Show on the end */}
@@ -764,10 +792,7 @@ const DroppableRoomCell = ({
   roomId,
   roomNumber,
   date,
-  booking,
-  isStart,
-  isEnd,
-  showLCO,
+  bookings,
   isWeekend,
   isBlocked,
   blockReason,
@@ -777,10 +802,7 @@ const DroppableRoomCell = ({
   roomId: string;
   roomNumber: string;
   date: Date;
-  booking: Booking | null;
-  isStart: boolean;
-  isEnd: boolean;
-  showLCO: boolean;
+  bookings: Booking[];
   isWeekend: boolean;
   isBlocked: boolean;
   blockReason?: string;
@@ -797,24 +819,69 @@ const DroppableRoomCell = ({
       date
     }
   });
-  return <td ref={setNodeRef} onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} className={cn("border border-border p-0 relative h-14 min-w-[60px] transition-colors cursor-context-menu", isWeekend && "bg-red-50/20 dark:bg-red-950/10", !isWeekend && "bg-background", isOver && "bg-primary/10 ring-2 ring-primary")} title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}>
+  
+  return (
+    <td 
+      ref={setNodeRef} 
+      onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} 
+      className={cn(
+        "border border-border p-0 relative min-w-[60px] transition-colors cursor-context-menu",
+        bookings.length === 1 ? "h-14" : "h-28",
+        isWeekend && "bg-red-50/20 dark:bg-red-950/10",
+        !isWeekend && "bg-background",
+        isOver && "bg-primary/10 ring-2 ring-primary"
+      )} 
+      title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
+    >
       {/* Blocked Date Pattern */}
-      {isBlocked && <div className="absolute inset-0 z-10 pointer-events-none" style={{
-      background: `repeating-linear-gradient(
-              45deg,
-              hsl(var(--destructive) / 0.15),
-              hsl(var(--destructive) / 0.15) 8px,
-              transparent 8px,
-              transparent 16px
-            )`
-    }}>
+      {isBlocked && (
+        <div className="absolute inset-0 z-10 pointer-events-none" style={{
+          background: `repeating-linear-gradient(
+            45deg,
+            hsl(var(--destructive) / 0.15),
+            hsl(var(--destructive) / 0.15) 8px,
+            transparent 8px,
+            transparent 16px
+          )`
+        }}>
           <div className="absolute top-1 right-1">
             <Ban className="w-3 h-3 text-destructive" />
           </div>
-        </div>}
+        </div>
+      )}
       
-      {booking && !isBlocked && isStart && <DraggableBookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />}
-    </td>;
+      {/* Render multiple bookings stacked */}
+      {!isBlocked && bookings.length > 0 && (
+        <div className="relative h-full flex flex-col">
+          {bookings.map((booking, index) => {
+            const dateStr = format(date, "yyyy-MM-dd");
+            const isStart = booking.check_in === dateStr;
+            const isEnd = format(new Date(booking.check_out), "yyyy-MM-dd") === format(new Date(date.getTime() + 86400000), "yyyy-MM-dd");
+            
+            return (
+              <div 
+                key={booking.id}
+                className={cn(
+                  "relative flex-1",
+                  index > 0 && "border-t border-border/50"
+                )}
+              >
+                {isStart && (
+                  <DraggableBookingCell 
+                    booking={booking} 
+                    isStart={isStart} 
+                    isEnd={isEnd} 
+                    onClick={() => handleBookingClick(booking)}
+                    isCompact={bookings.length > 1}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </td>
+  );
 };
 
 // Room Row Component
@@ -822,10 +889,7 @@ const RoomRow = ({
   room,
   roomIndex,
   dates,
-  getBookingForCell,
-  isBookingStart,
-  isBookingEnd,
-  isBeforeCheckout,
+  getBookingsForCell,
   isDateBlocked,
   getBlockReason,
   handleBookingClick,
@@ -838,28 +902,38 @@ const RoomRow = ({
   };
   roomIndex: number;
   dates: Date[];
-  getBookingForCell: (roomNumber: string, date: Date) => Booking | null;
-  isBookingStart: (booking: Booking, date: Date) => boolean;
-  isBookingEnd: (booking: Booking, date: Date) => boolean;
-  isBeforeCheckout: (booking: Booking, date: Date) => boolean;
+  getBookingsForCell: (roomNumber: string, date: Date) => Booking[];
   isDateBlocked: (roomId: string, date: Date) => boolean;
   getBlockReason: (roomId: string, date: Date) => string | undefined;
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
 }) => {
-  return <tr className="hover:bg-muted/10 transition-colors">
+  return (
+    <tr className="hover:bg-muted/10 transition-colors">
       <td className="border border-border p-2 sticky left-0 z-10 font-semibold text-xs shadow-sm bg-background">
         {room.roomNumber}
       </td>
       {dates.map(date => {
-      const booking = getBookingForCell(room.roomNumber, date);
-      const isStart = booking && isBookingStart(booking, date);
-      const isEnd = booking && isBookingEnd(booking, date);
-      const showLCO = booking && isBeforeCheckout(booking, date) && booking.check_out_time && booking.check_out_time !== "12:00:00";
-      const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-      const isBlocked = isDateBlocked(room.roomId, date);
-      const blockReason = getBlockReason(room.roomId, date);
-      return <DroppableRoomCell key={date.toISOString()} roomId={room.roomId} roomNumber={room.roomNumber} date={date} booking={booking} isStart={isStart} isEnd={isEnd} showLCO={showLCO} isWeekend={isWeekend} isBlocked={isBlocked} blockReason={blockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} />;
-    })}
-    </tr>;
+        const bookings = getBookingsForCell(room.roomNumber, date);
+        const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+        const isBlocked = isDateBlocked(room.roomId, date);
+        const blockReason = getBlockReason(room.roomId, date);
+        
+        return (
+          <DroppableRoomCell 
+            key={date.toISOString()} 
+            roomId={room.roomId} 
+            roomNumber={room.roomNumber} 
+            date={date} 
+            bookings={bookings}
+            isWeekend={isWeekend} 
+            isBlocked={isBlocked} 
+            blockReason={blockReason} 
+            handleBookingClick={handleBookingClick} 
+            handleRightClick={handleRightClick} 
+          />
+        );
+      })}
+    </tr>
+  );
 };

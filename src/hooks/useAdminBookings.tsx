@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useBookingValidation } from "./useBookingValidation";
+import { parseISO } from "date-fns";
 
 interface Booking {
   id: string;
@@ -30,6 +32,7 @@ interface Booking {
 
 export const useAdminBookings = () => {
   const queryClient = useQueryClient();
+  const { checkBookingConflict } = useBookingValidation();
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ["admin-bookings"],
@@ -76,6 +79,31 @@ export const useAdminBookings = () => {
 
   const updateBooking = useMutation({
     mutationFn: async (booking: Partial<Booking> & { id: string }) => {
+      // Check for conflicts if dates/room changed
+      if (booking.check_in || booking.check_out || booking.allocated_room_number) {
+        const { data: currentBooking } = await supabase
+          .from("bookings")
+          .select("*")
+          .eq("id", booking.id)
+          .single();
+
+        if (currentBooking) {
+          const conflict = await checkBookingConflict({
+            roomId: currentBooking.room_id,
+            roomNumber: booking.allocated_room_number || currentBooking.allocated_room_number,
+            checkIn: booking.check_in ? parseISO(booking.check_in) : parseISO(currentBooking.check_in),
+            checkOut: booking.check_out ? parseISO(booking.check_out) : parseISO(currentBooking.check_out),
+            checkInTime: booking.check_in_time || currentBooking.check_in_time,
+            checkOutTime: booking.check_out_time || currentBooking.check_out_time,
+            excludeBookingId: booking.id
+          });
+
+          if (conflict.hasConflict) {
+            throw new Error(conflict.reason || "Double booking terdeteksi!");
+          }
+        }
+      }
+
       const { data, error } = await supabase
         .from("bookings")
         .update(booking)
