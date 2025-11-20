@@ -14,6 +14,8 @@ export interface HeroSlide {
   text_align: string;
   display_order: number;
   is_active: boolean;
+  duration: number;
+  transition_effect: string;
   created_at: string;
   updated_at: string;
 }
