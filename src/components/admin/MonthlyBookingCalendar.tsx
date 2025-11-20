@@ -325,7 +325,7 @@ export const MonthlyBookingCalendar = () => {
   }, [activeId, bookings]);
   return <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <Card className="w-full shadow-lg rounded-xl overflow-hidden border-border/50">
-        <div className="p-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 border-b border-border">
+        <div className="p-4 bg-muted/20 border-b border-border">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               {/* View Range Selector */}
@@ -333,28 +333,28 @@ export const MonthlyBookingCalendar = () => {
                 <Button variant={viewRange === 7 ? "default" : "ghost"} size="sm" onClick={() => {
                 setViewRange(7);
                 setCurrentDate(new Date());
-              }} className="text-xs">
+              }} className="text-xs px-4">
                   7 Hari
                 </Button>
                 <Button variant={viewRange === 14 ? "default" : "ghost"} size="sm" onClick={() => {
                 setViewRange(14);
                 setCurrentDate(new Date());
-              }} className="text-xs">
+              }} className="text-xs px-4">
                   14 Hari
                 </Button>
                 <Button variant={viewRange === 30 ? "default" : "ghost"} size="sm" onClick={() => {
                 setViewRange(30);
                 setCurrentDate(new Date());
-              }} className="text-xs">
+              }} className="text-xs px-4">
                   30 Hari
                 </Button>
               </div>
               
               {/* Navigation Buttons */}
-              <Button onClick={handlePrevMonth} variant="outline" size="sm">
+              <Button onClick={handlePrevMonth} variant="outline" size="icon">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button onClick={handleNextMonth} variant="outline" size="sm">
+              <Button onClick={handleNextMonth} variant="outline" size="icon">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -364,17 +364,17 @@ export const MonthlyBookingCalendar = () => {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-20">
-              <tr className="bg-gradient-to-r from-muted/80 to-muted">
-                <th className="border border-border p-3 sticky left-0 z-30 min-w-[140px] bg-gradient-to-r from-muted/80 to-muted shadow-md">
-                  <span className="text-sm font-bold uppercase tracking-wide">Kamar</span>
+              <tr className="bg-muted/50">
+                <th className="border border-border p-2 sticky left-0 z-30 min-w-[100px] bg-muted/50 shadow-sm">
+                  <span className="text-xs font-bold uppercase tracking-wide">KAMAR</span>
                 </th>
                 {dates.map(date => {
                 const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-                return <th key={date.toISOString()} className={`border border-border p-3 min-w-[70px] text-center transition-colors ${isWeekend ? "bg-amber-50/50 dark:bg-amber-950/20" : "bg-background"}`}>
-                      <div className="text-xs font-normal text-muted-foreground uppercase tracking-wider">
+                return <th key={date.toISOString()} className={cn("border border-border p-1.5 min-w-[60px] text-center transition-colors", isWeekend && "bg-red-50/50 dark:bg-red-950/10")}>
+                      <div className={cn("text-[10px] font-medium uppercase", isWeekend ? "text-red-600" : "text-muted-foreground")}>
                         {DAY_NAMES[getDay(date)]}
                       </div>
-                      <div className="text-base font-bold mt-1">
+                      <div className={cn("text-base font-bold", isWeekend && "text-red-600")}>
                         {format(date, "d")}
                       </div>
                     </th>;
@@ -384,8 +384,8 @@ export const MonthlyBookingCalendar = () => {
             <tbody>
               {Object.entries(roomsByType).map(([roomType]) => <React.Fragment key={roomType}>
                   {/* Room type header */}
-                  <tr className="border-y border-border">
-                    <td colSpan={dates.length + 1} className="p-3 bg-gradient-to-r from-muted/50 to-muted/30 font-bold text-sm uppercase tracking-wide rounded-sm">
+                  <tr className="border-y border-border bg-muted/30">
+                    <td colSpan={dates.length + 1} className="p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground">
                       {roomType}
                     </td>
                   </tr>
@@ -675,83 +675,66 @@ const DraggableBookingCell = ({
 
   const isPending = booking.status === 'pending';
   
+  // Assign consistent colors based on booking ID  
   const getBackgroundClass = () => {
     if (isPending) {
-      return 'from-gray-200/30 to-gray-300/30 border-2 border-gray-400/50';
+      return 'from-gray-400/90 to-gray-500/90';
     }
-    if (booking.status === 'confirmed') {
-      return 'from-primary/40 to-primary/60';
-    }
-    return 'from-gray-300 to-gray-400';
+    
+    const colors = [
+      'from-teal-500/90 to-teal-600/90',
+      'from-pink-500/90 to-pink-600/90',
+      'from-purple-500/90 to-purple-600/90',
+      'from-blue-500/90 to-blue-600/90',
+      'from-indigo-500/90 to-indigo-600/90',
+      'from-cyan-500/90 to-cyan-600/90',
+      'from-emerald-500/90 to-emerald-600/90',
+    ];
+    
+    // Use booking ID to consistently assign color
+    const colorIndex = booking.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    return colors[colorIndex];
   };
 
-  const getHoverClass = () => {
-    if (isPending) {
-      return 'hover:from-gray-300/40 hover:to-gray-400/40';
-    }
-    if (booking.status === 'confirmed') {
-      return 'hover:from-primary/50 hover:to-primary/70';
-    }
-    return 'hover:from-gray-400 hover:to-gray-500';
-  };
-
-  return <div ref={setNodeRef} {...listeners} {...attributes} onClick={onClick} className={`
-        absolute inset-1 bg-gradient-to-br ${getBackgroundClass()} ${getHoverClass()}
-        cursor-move flex items-center justify-center
-        transition-all duration-200 text-xs shadow-sm
-        hover:shadow-md hover:scale-[1.02]
-        ${isStart ? "rounded-l-lg" : ""}
-        ${isEnd ? "rounded-r-lg" : ""}
-        ${isDragging ? "opacity-50 scale-105 shadow-lg" : ""}
-        relative overflow-hidden
-      `}>
-      {/* PENDING Watermark */}
-      {isPending && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-          <span className="text-gray-600/40 dark:text-gray-400/40 font-black text-2xl tracking-wider transform -rotate-12 whitespace-nowrap">
-            PENDING
-          </span>
-        </div>
-      )}
-
-      {/* Content - Guest Name & Payment Status */}
+  return <div ref={setNodeRef} {...listeners} {...attributes} onClick={onClick} className={cn("absolute inset-0.5 bg-gradient-to-r cursor-move flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-hidden", getBackgroundClass(), isStart && "rounded-l-md", isEnd && "rounded-r-md", isDragging && "opacity-50 scale-105 shadow-xl ring-2 ring-primary")}>
+      {/* Content - Only show on start cell */}
       {isStart && (
-        <div className="relative z-10 text-center px-2 py-1 space-y-0.5">
+        <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
           {/* Guest Name */}
-          <div className={cn(
-            "font-bold truncate text-sm drop-shadow-md",
-            isPending ? "text-gray-700 dark:text-gray-300" : "text-white"
-          )}>
+          <div className="font-bold text-xs text-white drop-shadow-sm truncate">
             {booking.guest_name.split(" ")[0]}
           </div>
           
-          {/* Payment Status Badge */}
-          <div className="flex items-center justify-center gap-1">
-            {booking.payment_status === 'paid' ? (
-              <div className="bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5">
-                <CreditCard className="w-2.5 h-2.5" />
-                PAID
-              </div>
-            ) : booking.payment_status === 'partial' ? (
-              <div className="bg-yellow-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5">
-                <CreditCard className="w-2.5 h-2.5" />
-                PARTIAL
-              </div>
-            ) : (
-              <div className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5">
-                <CreditCard className="w-2.5 h-2.5" />
-                UNPAID
-              </div>
-            )}
+          {/* Nights count */}
+          <div className="text-[10px] text-white/90 font-medium">
+            {booking.total_nights} Malam
           </div>
-          
-          {/* Total Nights */}
-          <div className={cn(
-            "text-[10px] font-medium",
-            isPending ? "text-gray-600 dark:text-gray-400" : "text-white/90"
-          )}>
-            {booking.total_nights}N
+        </div>
+      )}
+      
+      {/* LCO Badge - Show on the end cell */}
+      {isEnd && booking.check_out_time && booking.check_out_time !== "12:00:00" && (
+        <div className="absolute -right-1 top-1/2 -translate-y-1/2 z-20">
+          <div className="bg-white text-gray-800 text-[9px] px-1.5 py-0.5 rounded font-bold shadow-md whitespace-nowrap border border-gray-300">
+            LCO {booking.check_out_time.slice(0, 5)}
           </div>
+        </div>
+      )}
+      
+      {/* Status watermark on last cell */}
+      {isEnd && !isPending && (
+        <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
+          <span className="text-white/70 font-bold text-[8px] tracking-wider whitespace-nowrap">
+            {booking.status === 'confirmed' ? 'CONFIRMED' : booking.status.toUpperCase()}
+          </span>
+        </div>
+      )}
+      
+      {isPending && isEnd && (
+        <div className="absolute right-1 bottom-0.5 opacity-50 pointer-events-none">
+          <span className="text-white/80 font-black text-[8px] tracking-wider whitespace-nowrap">
+            PENDING
+          </span>
         </div>
       )}
     </div>;
@@ -795,12 +778,7 @@ const DroppableRoomCell = ({
       date
     }
   });
-  return <td ref={setNodeRef} onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} className={`
-        border border-border p-0 relative h-16 min-w-[70px] transition-colors
-        ${isWeekend ? "bg-amber-50/30 dark:bg-amber-950/10" : ""}
-        ${isOver ? "bg-primary/10 ring-2 ring-primary" : ""}
-        cursor-context-menu
-      `} title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}>
+  return <td ref={setNodeRef} onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} className={cn("border border-border p-0 relative h-14 min-w-[60px] transition-colors cursor-context-menu", isWeekend && "bg-red-50/20 dark:bg-red-950/10", !isWeekend && "bg-background", isOver && "bg-primary/10 ring-2 ring-primary")} title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}>
       {/* Blocked Date Pattern */}
       {isBlocked && <div className="absolute inset-0 z-10 pointer-events-none" style={{
       background: `repeating-linear-gradient(
@@ -817,13 +795,6 @@ const DroppableRoomCell = ({
         </div>}
       
       {booking && !isBlocked && <DraggableBookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />}
-      
-      {/* LCO Badge positioned at the border */}
-      {showLCO && booking && <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-20">
-          <span className="bg-gradient-to-r from-orange-400 to-orange-500 text-white text-[10px] px-2 py-1 rounded-full font-bold shadow-lg whitespace-nowrap border-2 border-white dark:border-gray-800">
-            LCO {booking.check_out_time!.slice(0, 5)}
-          </span>
-        </div>}
     </td>;
 };
 
@@ -857,8 +828,8 @@ const RoomRow = ({
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
 }) => {
-  return <tr className={`${roomIndex % 2 === 0 ? "bg-background" : "bg-muted/30"} hover:bg-accent/20 transition-colors`}>
-      <td className="border border-border p-3 sticky left-0 z-10 font-semibold text-sm shadow-sm bg-inherit">
+  return <tr className="hover:bg-muted/10 transition-colors">
+      <td className="border border-border p-2 sticky left-0 z-10 font-semibold text-xs shadow-sm bg-background">
         {room.roomNumber}
       </td>
       {dates.map(date => {
