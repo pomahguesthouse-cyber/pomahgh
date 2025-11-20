@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
+          allocated_room_number: string | null
           check_in: string
           check_out: string
           created_at: string
@@ -32,6 +33,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allocated_room_number?: string | null
           check_in: string
           check_out: string
           created_at?: string
@@ -48,6 +50,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allocated_room_number?: string | null
           check_in?: string
           check_out?: string
           created_at?: string
@@ -303,6 +306,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      allocate_room_number: {
+        Args: { p_check_in: string; p_check_out: string; p_room_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
