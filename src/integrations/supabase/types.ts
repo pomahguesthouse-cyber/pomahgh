@@ -175,6 +175,117 @@ export type Database = {
         }
         Relationships: []
       }
+      hotel_settings: {
+        Row: {
+          about_us: string | null
+          address: string
+          check_in_time: string | null
+          check_out_time: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          currency_code: string | null
+          currency_symbol: string | null
+          description: string | null
+          email_primary: string | null
+          email_reservations: string | null
+          facebook_url: string | null
+          favicon_url: string | null
+          hotel_name: string
+          id: string
+          instagram_url: string | null
+          logo_url: string | null
+          phone_primary: string | null
+          phone_secondary: string | null
+          postal_code: string | null
+          primary_color: string | null
+          reception_hours_end: string | null
+          reception_hours_start: string | null
+          secondary_color: string | null
+          state: string | null
+          tagline: string | null
+          tax_name: string | null
+          tax_rate: number | null
+          tiktok_url: string | null
+          twitter_url: string | null
+          updated_at: string | null
+          whatsapp_number: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          about_us?: string | null
+          address?: string
+          check_in_time?: string | null
+          check_out_time?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          currency_code?: string | null
+          currency_symbol?: string | null
+          description?: string | null
+          email_primary?: string | null
+          email_reservations?: string | null
+          facebook_url?: string | null
+          favicon_url?: string | null
+          hotel_name?: string
+          id?: string
+          instagram_url?: string | null
+          logo_url?: string | null
+          phone_primary?: string | null
+          phone_secondary?: string | null
+          postal_code?: string | null
+          primary_color?: string | null
+          reception_hours_end?: string | null
+          reception_hours_start?: string | null
+          secondary_color?: string | null
+          state?: string | null
+          tagline?: string | null
+          tax_name?: string | null
+          tax_rate?: number | null
+          tiktok_url?: string | null
+          twitter_url?: string | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          about_us?: string | null
+          address?: string
+          check_in_time?: string | null
+          check_out_time?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          currency_code?: string | null
+          currency_symbol?: string | null
+          description?: string | null
+          email_primary?: string | null
+          email_reservations?: string | null
+          facebook_url?: string | null
+          favicon_url?: string | null
+          hotel_name?: string
+          id?: string
+          instagram_url?: string | null
+          logo_url?: string | null
+          phone_primary?: string | null
+          phone_secondary?: string | null
+          postal_code?: string | null
+          primary_color?: string | null
+          reception_hours_end?: string | null
+          reception_hours_start?: string | null
+          secondary_color?: string | null
+          state?: string | null
+          tagline?: string | null
+          tax_name?: string | null
+          tax_rate?: number | null
+          tiktok_url?: string | null
+          twitter_url?: string | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
