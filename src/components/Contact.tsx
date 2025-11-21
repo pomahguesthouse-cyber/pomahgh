@@ -20,12 +20,12 @@ export const Contact = () => {
   return (
     <section id="contact" className="py-20 px-4 bg-secondary/30">
       <div className="container mx-auto max-w-6xl">
-        <div className="text-center mb-16 animate-slide-up">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+        <div className="text-center mb-12 sm:mb-16 animate-slide-up">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2">
             Get in Touch
           </h2>
-          <div className="w-24 h-1 bg-primary mx-auto mb-6"></div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <div className="w-16 sm:w-24 h-1 bg-primary mx-auto mb-4 sm:mb-6"></div>
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
             Ready to experience paradise? Contact us to book your stay or ask any questions.
           </p>
         </div>
@@ -33,25 +33,25 @@ export const Contact = () => {
         <div className="grid md:grid-cols-2 gap-12">
           {/* Contact Information */}
           <div className="space-y-8">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-primary" />
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Location</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">Location</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">
                   {fullAddress || "Jimbaran Beach, Bali, Indonesia, 80361"}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Phone className="w-6 h-6 text-primary" />
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Phone</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">Phone</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">
                   {settings?.phone_primary || "+62 361 123 4567"}
                   {settings?.phone_secondary && (
                     <>
@@ -65,12 +65,12 @@ export const Contact = () => {
               </div>
             </div>
 
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Mail className="w-6 h-6 text-primary" />
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Email</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">Email</h3>
                 <p className="text-muted-foreground">
                   {settings?.email_primary || "info@pomahguesthouse.com"}
                   {settings?.email_reservations && (
@@ -85,7 +85,7 @@ export const Contact = () => {
           </div>
 
           {/* Contact Form */}
-          <div className="bg-card p-8 rounded-lg shadow-lg">
+          <div className="bg-card p-4 sm:p-6 md:p-8 rounded-lg shadow-lg">
             <form className="space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">

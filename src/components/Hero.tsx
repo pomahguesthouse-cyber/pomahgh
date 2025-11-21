@@ -76,21 +76,21 @@ export const Hero = () => {
               {/* Content */}
               <div className={`relative z-10 text-${slide.text_align} px-4 animate-fade-in h-full flex flex-col justify-center items-${slide.text_align === 'center' ? 'center' : slide.text_align === 'right' ? 'end' : 'start'}`}>
                 <h1 
-                  className={`${slide.font_size} ${slide.font_weight} ${slide.text_color} mb-6`}
+                  className={`text-3xl sm:text-4xl md:text-6xl lg:text-7xl ${slide.font_weight} ${slide.text_color} mb-4 sm:mb-6 px-2`}
                   style={{ fontFamily: slide.font_family }}
                 >
                   {slide.overlay_text}
                 </h1>
                 {slide.overlay_subtext && (
-                  <p className={`text-xl md:text-2xl ${slide.text_color}/90 mb-8 max-w-2xl ${slide.text_align === 'center' ? 'mx-auto' : ''}`}>
+                  <p className={`text-base sm:text-lg md:text-xl lg:text-2xl ${slide.text_color}/90 mb-6 sm:mb-8 max-w-2xl px-2 ${slide.text_align === 'center' ? 'mx-auto' : ''}`}>
                     {slide.overlay_subtext}
                   </p>
                 )}
-                <div className={`flex flex-col sm:flex-row gap-4 ${slide.text_align === 'center' ? 'justify-center' : slide.text_align === 'right' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex flex-col sm:flex-row gap-3 sm:gap-4 px-2 ${slide.text_align === 'center' ? 'justify-center' : slide.text_align === 'right' ? 'justify-end' : 'justify-start'}`}>
                   <Button 
                     variant="hero" 
                     size="lg" 
-                    className="text-lg"
+                    className="text-sm sm:text-base md:text-lg"
                     onClick={() => document.getElementById("rooms")?.scrollIntoView({ behavior: "smooth" })}
                   >
                     Explore Rooms
@@ -98,7 +98,7 @@ export const Hero = () => {
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    className="text-lg border-card text-card hover:bg-card hover:text-primary"
+                    className="text-sm sm:text-base md:text-lg border-card text-card hover:bg-card hover:text-primary"
                     onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
                   >
                     Contact Us
