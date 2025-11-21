@@ -7,12 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { BookingConfirmationDialog } from "../BookingConfirmationDialog";
 
 interface CreateBookingDialogProps {
   open: boolean;
@@ -32,8 +34,10 @@ export const CreateBookingDialog = ({
   rooms
 }: CreateBookingDialogProps) => {
   const queryClient = useQueryClient();
+  const { settings } = useHotelSettings();
   const [checkIn, setCheckIn] = useState<Date | undefined>(initialDate);
   const [checkOut, setCheckOut] = useState<Date | undefined>();
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
@@ -77,6 +81,26 @@ export const CreateBookingDialog = ({
       return;
     }
 
+    const nights = differenceInDays(checkOut, checkIn);
+    const minStay = settings?.min_stay_nights || 1;
+    const maxStay = settings?.max_stay_nights || 30;
+
+    if (nights < minStay) {
+      toast.error(`Minimal menginap ${minStay} malam`);
+      return;
+    }
+
+    if (nights > maxStay) {
+      toast.error(`Maksimal menginap ${maxStay} malam`);
+      return;
+    }
+
+    setShowConfirmation(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!checkIn || !checkOut || !roomId || !selectedRoom) return;
+
     setIsSubmitting(true);
 
     try {
@@ -105,6 +129,7 @@ export const CreateBookingDialog = ({
 
       toast.success(`Booking berhasil dibuat untuk kamar ${roomNumber}`);
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      setShowConfirmation(false);
       onOpenChange(false);
     } catch (error) {
       console.error("Create booking error:", error);
@@ -118,6 +143,19 @@ export const CreateBookingDialog = ({
   const totalPrice = totalNights && selectedRoom ? totalNights * selectedRoom.price_per_night : 0;
 
   return (
+    <>
+      <BookingConfirmationDialog
+        open={showConfirmation}
+        onOpenChange={setShowConfirmation}
+        onConfirm={handleConfirm}
+        guestName={formData.guest_name}
+        roomName={selectedRoom?.name || ""}
+        checkIn={checkIn!}
+        checkOut={checkOut!}
+        totalNights={totalNights}
+        totalPrice={totalPrice}
+        numGuests={formData.num_guests}
+      />
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -305,5 +343,6 @@ export const CreateBookingDialog = ({
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 };

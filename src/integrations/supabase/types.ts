@@ -319,6 +319,8 @@ export type Database = {
           latitude: number | null
           logo_url: string | null
           longitude: number | null
+          max_stay_nights: number | null
+          min_stay_nights: number | null
           phone_primary: string | null
           phone_secondary: string | null
           postal_code: string | null
@@ -357,6 +359,8 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          max_stay_nights?: number | null
+          min_stay_nights?: number | null
           phone_primary?: string | null
           phone_secondary?: string | null
           postal_code?: string | null
@@ -395,6 +399,8 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          max_stay_nights?: number | null
+          min_stay_nights?: number | null
           phone_primary?: string | null
           phone_secondary?: string | null
           postal_code?: string | null

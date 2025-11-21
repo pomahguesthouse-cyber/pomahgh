@@ -14,7 +14,10 @@ import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Room } from "@/hooks/useRooms";
 import { useBooking, BookingData } from "@/hooks/useBooking";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
 import { z } from "zod";
+import { toast } from "sonner";
 
 interface BookingDialogProps {
   room: Room | null;
@@ -33,8 +36,10 @@ const bookingSchema = z.object({
 export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { settings } = useHotelSettings();
   const [checkIn, setCheckIn] = useState<Date>();
   const [checkOut, setCheckOut] = useState<Date>();
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
@@ -71,41 +76,24 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
       return;
     }
 
+    const nights = differenceInDays(checkOut, checkIn);
+    const minStay = settings?.min_stay_nights || 1;
+    const maxStay = settings?.max_stay_nights || 30;
+
+    if (nights < minStay) {
+      toast.error(`Minimal menginap ${minStay} malam`);
+      return;
+    }
+
+    if (nights > maxStay) {
+      toast.error(`Maksimal menginap ${maxStay} malam`);
+      return;
+    }
+
     try {
       const validatedData = bookingSchema.parse(formData);
-      
-      const bookingData: BookingData = {
-        room_id: room.id,
-        guest_name: validatedData.guest_name,
-        guest_email: validatedData.guest_email,
-        guest_phone: validatedData.guest_phone,
-        num_guests: validatedData.num_guests,
-        special_requests: validatedData.special_requests,
-        check_in: checkIn,
-        check_out: checkOut,
-        check_in_time: formData.check_in_time + ":00",
-        check_out_time: formData.check_out_time + ":00",
-        price_per_night: room.price_per_night,
-      };
-
-      createBooking(bookingData, {
-        onSuccess: () => {
-          onOpenChange(false);
-          // Reset form
-          setCheckIn(undefined);
-          setCheckOut(undefined);
-          setFormData({
-            guest_name: "",
-            guest_email: "",
-            guest_phone: "",
-            num_guests: 1,
-            special_requests: "",
-            check_in_time: "14:00",
-            check_out_time: "12:00",
-          });
-          setErrors({});
-        },
-      });
+      setErrors({});
+      setShowConfirmation(true);
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -119,13 +107,65 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
     }
   };
 
+  const handleConfirm = () => {
+    if (!room || !checkIn || !checkOut) return;
+
+    const validatedData = bookingSchema.parse(formData);
+    
+    const bookingData: BookingData = {
+      room_id: room.id,
+      guest_name: validatedData.guest_name,
+      guest_email: validatedData.guest_email,
+      guest_phone: validatedData.guest_phone,
+      num_guests: validatedData.num_guests,
+      special_requests: validatedData.special_requests,
+      check_in: checkIn,
+      check_out: checkOut,
+      check_in_time: formData.check_in_time + ":00",
+      check_out_time: formData.check_out_time + ":00",
+      price_per_night: room.price_per_night,
+    };
+
+    createBooking(bookingData, {
+      onSuccess: () => {
+        setShowConfirmation(false);
+        onOpenChange(false);
+        setCheckIn(undefined);
+        setCheckOut(undefined);
+        setFormData({
+          guest_name: "",
+          guest_email: "",
+          guest_phone: "",
+          num_guests: 1,
+          special_requests: "",
+          check_in_time: "14:00",
+          check_out_time: "12:00",
+        });
+        setErrors({});
+      },
+    });
+  };
+
   const totalNights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
   const totalPrice = room ? totalNights * room.price_per_night : 0;
 
   if (!room) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <BookingConfirmationDialog
+        open={showConfirmation}
+        onOpenChange={setShowConfirmation}
+        onConfirm={handleConfirm}
+        guestName={formData.guest_name}
+        roomName={room.name}
+        checkIn={checkIn!}
+        checkOut={checkOut!}
+        totalNights={totalNights}
+        totalPrice={totalPrice}
+        numGuests={formData.num_guests}
+      />
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Book {room.name}</DialogTitle>
@@ -315,5 +355,6 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
