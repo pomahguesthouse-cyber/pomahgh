@@ -116,7 +116,6 @@ export const useAdminBookings = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-      toast.success("Booking updated successfully");
     },
     onError: (error: Error) => {
       toast.error("Failed to update booking", {
@@ -148,9 +147,9 @@ export const useAdminBookings = () => {
   return {
     bookings,
     isLoading,
-    updateBookingStatus: updateBookingStatus.mutate,
-    updateBooking: updateBooking.mutate,
-    deleteBooking: deleteBooking.mutate,
+    updateBookingStatus: updateBookingStatus.mutateAsync,
+    updateBooking: updateBooking.mutateAsync,
+    deleteBooking: deleteBooking.mutateAsync,
     isUpdating: updateBookingStatus.isPending || updateBooking.isPending,
     isDeleting: deleteBooking.isPending,
   };
