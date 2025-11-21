@@ -1118,12 +1118,14 @@ const BookingCell = ({
   isEnd,
   onClick,
   visibleNights,
+  isTruncatedLeft,
 }: {
   booking: Booking;
   isStart: boolean;
   isEnd: boolean;
   onClick: () => void;
   visibleNights?: number;
+  isTruncatedLeft?: boolean;
 }) => {
   const isPending = booking.status === "pending";
   const totalNights = visibleNights || booking.total_nights;
@@ -1147,16 +1149,17 @@ const BookingCell = ({
   };
 
   const style = {
-    left: "50%",
+    left: isTruncatedLeft ? "0" : "50%",
     width: bookingWidth,
-    transform: "translateX(0%)",
+    transform: isTruncatedLeft ? "translateX(0%)" : "translateX(0%)",
   };
 
   return (
     <div
       onClick={onClick}
       className={cn(
-        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20 cursor-pointer",
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible z-20 cursor-pointer",
+        isTruncatedLeft ? "rounded-r-md" : "rounded-md",
         getBackgroundClass(),
       )}
       style={style}
@@ -1243,11 +1246,12 @@ const RoomCell = ({
   
   // Calculate visible nights for bookings that started before the visible range
   let visibleNights = booking?.total_nights;
-  if (booking && booking.check_in < firstVisibleStr && dateStr === firstVisibleStr) {
+  const isTruncatedLeft = booking && booking.check_in < firstVisibleStr && dateStr === firstVisibleStr;
+  
+  if (isTruncatedLeft) {
     // Calculate how many nights are visible
     const checkInDate = parseISO(booking.check_in);
     const checkOutDate = parseISO(booking.check_out);
-    const nightsBeforeVisible = differenceInDays(firstVisibleDate, checkInDate);
     visibleNights = differenceInDays(checkOutDate, firstVisibleDate);
   }
 
@@ -1297,6 +1301,7 @@ const RoomCell = ({
           isEnd={isEnd} 
           onClick={() => handleBookingClick(booking)}
           visibleNights={visibleNights}
+          isTruncatedLeft={isTruncatedLeft}
         />
       )}
 
