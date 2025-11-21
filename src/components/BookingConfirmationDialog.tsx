@@ -18,8 +18,8 @@ interface BookingConfirmationDialogProps {
   onConfirm: () => void;
   guestName: string;
   roomName: string;
-  checkIn: Date;
-  checkOut: Date;
+  checkIn?: Date;
+  checkOut?: Date;
   totalNights: number;
   totalPrice: number;
   numGuests: number;
@@ -37,6 +37,11 @@ export const BookingConfirmationDialog = ({
   totalPrice,
   numGuests,
 }: BookingConfirmationDialogProps) => {
+  // Don't render if dates are not valid
+  if (!checkIn || !checkOut) {
+    return null;
+  }
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
