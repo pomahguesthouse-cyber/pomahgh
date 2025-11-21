@@ -99,15 +99,24 @@ export const MonthlyBookingCalendar = () => {
   const todayColumnRef = useRef<HTMLTableCellElement>(null);
   const [scrolled, setScrolled] = useState(false);
 
-  // Calculate date range starting from today
+  // Calculate date range based on view selection and current date
   const dates = useMemo(() => {
-    const today = startOfDay(new Date());
-    const endDate = addDays(today, viewRange - 1);
-    return eachDayOfInterval({
-      start: today,
-      end: endDate
-    });
-  }, [viewRange]);
+    if (viewRange === 30) {
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
+      return eachDayOfInterval({
+        start: monthStart,
+        end: monthEnd
+      });
+    } else {
+      const startDate = currentDate;
+      const endDate = addDays(startDate, viewRange - 1);
+      return eachDayOfInterval({
+        start: startDate,
+        end: endDate
+      });
+    }
+  }, [currentDate, viewRange]);
 
   // Generate month/year options for dropdown
   const monthYearOptions = useMemo(() => {
@@ -462,6 +471,40 @@ export const MonthlyBookingCalendar = () => {
                 setCurrentDate(new Date());
               }} className="text-xs px-4">
                   30 Hari
+                </Button>
+              </div>
+              
+              {/* Month/Year Filter */}
+              <Select value={currentMonthYear} onValueChange={handleMonthYearChange}>
+                <SelectTrigger className="w-[180px] text-sm">
+                  <SelectValue placeholder="Pilih Bulan" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {monthYearOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {/* Navigation Buttons */}
+              <div className="flex gap-1">
+                <Button onClick={handlePrevMonth} variant="outline" size="icon">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <Button 
+                  onClick={handleGoToToday} 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs px-3 font-medium"
+                >
+                  Today
+                </Button>
+                
+                <Button onClick={handleNextMonth} variant="outline" size="icon">
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
