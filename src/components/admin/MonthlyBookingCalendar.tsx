@@ -574,7 +574,7 @@ export const MonthlyBookingCalendar = () => {
                   {/* Room type header */}
                   <tr className="border-y border-border bg-muted/30">
                     <td
-                      className="sticky left-0 z-20 p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm shadow-sm border-r border-border"
+                      className="sticky left-0 z-30 p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm shadow-sm border-r border-border"
                     >
                       {roomType}
                     </td>
@@ -1349,7 +1349,7 @@ const RoomRow = ({
 }) => {
   return (
     <tr className="hover:bg-muted/10 transition-colors">
-      <td className="border border-border p-2 sticky left-0 z-10 font-semibold text-xs shadow-sm bg-background">
+      <td className="border border-border p-2 sticky left-0 z-30 font-semibold text-xs shadow-sm bg-background">
         {room.roomNumber}
       </td>
       {dates.map((date) => {
