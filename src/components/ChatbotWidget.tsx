@@ -42,7 +42,7 @@ const ChatbotWidget = () => {
         <Button
           onClick={() => setIsOpen(true)}
           className={cn(
-            "fixed bottom-8 left-6 w-12 h-12 rounded-full shadow-lg z-50 transition-all hover:scale-110",
+            "fixed bottom-8 right-6 w-12 h-12 rounded-full shadow-lg z-50 transition-all hover:scale-110",
             position,
           )}
           style={{ backgroundColor: settings.primary_color }}
