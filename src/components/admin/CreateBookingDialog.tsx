@@ -150,7 +150,11 @@ export const CreateBookingDialog = ({
                     mode="single"
                     selected={checkIn}
                     onSelect={setCheckIn}
-                    disabled={(date) => date < new Date()}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return date < today;
+                    }}
                     initialFocus
                   />
                 </PopoverContent>
