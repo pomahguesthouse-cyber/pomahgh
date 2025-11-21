@@ -119,21 +119,12 @@ export const MonthlyBookingCalendar = () => {
 
   // Calculate date range based on view selection
   const dates = useMemo(() => {
-    if (viewRange === 30) {
-      const monthStart = startOfMonth(currentDate);
-      const monthEnd = endOfMonth(currentDate);
-      return eachDayOfInterval({
-        start: monthStart,
-        end: monthEnd,
-      });
-    } else {
-      const startDate = currentDate;
-      const endDate = addDays(startDate, viewRange - 1);
-      return eachDayOfInterval({
-        start: startDate,
-        end: endDate,
-      });
-    }
+    const startDate = currentDate;
+    const endDate = addDays(startDate, viewRange - 1);
+    return eachDayOfInterval({
+      start: startDate,
+      end: endDate,
+    });
   }, [currentDate, viewRange]);
 
   // Generate month/year options for dropdown
@@ -273,18 +264,11 @@ export const MonthlyBookingCalendar = () => {
     }
   };
   const handlePrevMonth = () => {
-    if (viewRange === 30) {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-    } else {
-      setCurrentDate(addDays(currentDate, -viewRange));
-    }
+    setCurrentDate(addDays(currentDate, -viewRange));
   };
+  
   const handleNextMonth = () => {
-    if (viewRange === 30) {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-    } else {
-      setCurrentDate(addDays(currentDate, viewRange));
-    }
+    setCurrentDate(addDays(currentDate, viewRange));
   };
   const handleGoToToday = () => {
     setCurrentDate(new Date());
