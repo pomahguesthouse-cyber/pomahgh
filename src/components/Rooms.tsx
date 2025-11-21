@@ -6,7 +6,13 @@ import { useRooms } from "@/hooks/useRooms";
 import { BookingDialog } from "./BookingDialog";
 import { VirtualTourViewer } from "./VirtualTourViewer";
 import type { Room } from "@/hooks/useRooms";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import deluxeRoom from "@/assets/room-deluxe.jpg";
 import villaRoom from "@/assets/room-villa.jpg";
 import { Eye, Tag } from "lucide-react";
@@ -49,6 +55,29 @@ export const Rooms = () => {
 
   if (isLoading) {
     return (
+      <section id="rooms" className="py-20 px-4 bg-secondary/30 animate-pulse">
+        <div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl shadow overflow-hidden border border-border"
+            >
+              <div className="h-48 sm:h-56 md:h-64 bg-muted" />
+
+              <div className="p-4 space-y-3">
+                <div className="h-4 bg-muted rounded w-2/3" />
+                <div className="h-3 bg-muted rounded w-1/2" />
+                <div className="h-3 bg-muted rounded w-full" />
+                <div className="h-10 bg-muted rounded mt-4" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  return (
       <section id="rooms" className="py-20 px-4 bg-secondary/30">
         <div className="container mx-auto text-center">
           <p className="text-muted-foreground">Loading rooms...</p>
@@ -67,8 +96,7 @@ export const Rooms = () => {
             </h2>
             <div className="w-16 sm:w-24 h-1 bg-primary mx-auto mb-4 sm:mb-6"></div>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-              Choose from our carefully designed rooms and villas, each offering a unique blend of comfort, style, and
-              breathtaking views.
+              Choose from our carefully designed rooms and villas, each offering a unique blend of comfort, style, and breathtaking views.
             </p>
           </div>
 
@@ -103,10 +131,13 @@ export const Rooms = () => {
                       viewport={{ once: true, margin: "-50px" }}
                       className="h-full"
                     >
-                      <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-full">
+                      <Card className="overflow-hidden hover:shadow-3xl shadow-xl transition-all duration-300 hover:-translate-y-3 scale-[0.95] hover:scale-100 rounded-2xl">
                         <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden group">
                           {images?.length > 1 ? (
-                            <Carousel className="w-full h-full" plugins={[Autoplay({ delay: 3000 })]}>
+                            <Carousel
+                              className="w-full h-full"
+                              plugins={[Autoplay({ delay: 3000 })]}
+                            >
                               <CarouselContent>
                                 {images.map((image, idx) => (
                                   <CarouselItem key={idx}>
@@ -168,9 +199,7 @@ export const Rooms = () => {
                                 </p>
                               )}
 
-                              <p
-                                className={`text-base sm:text-lg md:text-xl font-bold ${hasPromo ? "text-red-500" : "text-primary"}`}
-                              >
+                              <p className={`text-base sm:text-lg md:text-xl font-bold ${hasPromo ? "text-red-500" : "text-primary"}`}>
                                 Rp {displayPrice.toLocaleString("id-ID")}
                               </p>
 
