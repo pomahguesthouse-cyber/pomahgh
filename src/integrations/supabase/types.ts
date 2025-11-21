@@ -316,7 +316,9 @@ export type Database = {
           hotel_name: string
           id: string
           instagram_url: string | null
+          latitude: number | null
           logo_url: string | null
+          longitude: number | null
           phone_primary: string | null
           phone_secondary: string | null
           postal_code: string | null
@@ -352,7 +354,9 @@ export type Database = {
           hotel_name?: string
           id?: string
           instagram_url?: string | null
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           phone_primary?: string | null
           phone_secondary?: string | null
           postal_code?: string | null
@@ -388,7 +392,9 @@ export type Database = {
           hotel_name?: string
           id?: string
           instagram_url?: string | null
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           phone_primary?: string | null
           phone_secondary?: string | null
           postal_code?: string | null

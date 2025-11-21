@@ -82,9 +82,10 @@ export default function AdminSettings() {
 
         <form onSubmit={handleSubmit}>
           <Tabs defaultValue="basic" className="space-y-6">
-            <TabsList className="grid grid-cols-5 w-full">
+            <TabsList className="grid grid-cols-6 w-full">
               <TabsTrigger value="basic">Basic</TabsTrigger>
               <TabsTrigger value="contact">Contact</TabsTrigger>
+              <TabsTrigger value="location">Location</TabsTrigger>
               <TabsTrigger value="branding">Branding</TabsTrigger>
               <TabsTrigger value="social">Social Media</TabsTrigger>
               <TabsTrigger value="business">Business</TabsTrigger>
@@ -172,6 +173,44 @@ export default function AdminSettings() {
                     <Label htmlFor="whatsapp_number">WhatsApp Number</Label>
                     <Input id="whatsapp_number" name="whatsapp_number" defaultValue={settings.whatsapp_number || ""} />
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="location" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Location Details</CardTitle>
+                  <CardDescription>Set your hotel's location for map display</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="latitude">Latitude</Label>
+                      <Input 
+                        id="latitude" 
+                        name="latitude" 
+                        type="number" 
+                        step="any"
+                        defaultValue={settings.latitude || ""} 
+                        placeholder="e.g. -8.6705"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="longitude">Longitude</Label>
+                      <Input 
+                        id="longitude" 
+                        name="longitude" 
+                        type="number" 
+                        step="any"
+                        defaultValue={settings.longitude || ""} 
+                        placeholder="e.g. 115.2126"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Tip: You can find your coordinates on Google Maps by right-clicking on your location.
+                  </p>
                 </CardContent>
               </Card>
             </TabsContent>
