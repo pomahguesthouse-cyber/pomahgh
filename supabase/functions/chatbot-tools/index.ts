@@ -98,9 +98,50 @@ serve(async (req) => {
       }
 
       case "create_booking_draft": {
+        const { guest_name, guest_email, guest_phone, check_in, check_out, room_id, num_guests, special_requests } = parameters;
+        
+        // Get room details to calculate price
+        const { data: room, error: roomError } = await supabase
+          .from("rooms")
+          .select("price_per_night")
+          .eq("id", room_id)
+          .single();
+
+        if (roomError) throw roomError;
+
+        // Calculate nights and price
+        const checkInDate = new Date(check_in);
+        const checkOutDate = new Date(check_out);
+        const total_nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+        const total_price = total_nights * room.price_per_night;
+
+        // Insert booking
+        const { data: booking, error: bookingError } = await supabase
+          .from("bookings")
+          .insert({
+            guest_name,
+            guest_email,
+            guest_phone,
+            check_in,
+            check_out,
+            room_id,
+            num_guests: num_guests || 1,
+            special_requests,
+            total_nights,
+            total_price,
+            status: 'pending',
+            payment_status: 'unpaid'
+          })
+          .select()
+          .single();
+
+        if (bookingError) throw bookingError;
+
         result = {
-          message: "Terima kasih! Data booking Anda sudah saya catat. Untuk menyelesaikan booking, silakan klik tombol 'Buat Booking' di bawah ini atau hubungi kami langsung.",
-          booking_data: parameters
+          message: `Booking berhasil dibuat! Nomor booking: ${booking.id}. Status: Menunggu konfirmasi. Total: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`,
+          booking_id: booking.id,
+          total_price,
+          status: 'pending'
         };
         break;
       }
