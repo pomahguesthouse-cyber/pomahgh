@@ -19,10 +19,12 @@ import {
   useUpdateHeroSlide,
   useDeleteHeroSlide,
   uploadHeroImage,
+  uploadHeroVideo,
   HeroSlide,
 } from "@/hooks/useHeroSlides";
 import { Loader2, Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const AdminHeroSlides = () => {
   const { data: slides, isLoading } = useAdminHeroSlides();
@@ -33,7 +35,9 @@ const AdminHeroSlides = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
+    media_type: 'image' as 'image' | 'video',
     image_url: "",
+    video_url: "",
     overlay_text: "",
     overlay_subtext: "",
     font_family: "Inter",
@@ -70,10 +74,40 @@ const AdminHeroSlides = () => {
     }
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("Ukuran file terlalu besar. Maksimal 50MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const url = await uploadHeroVideo(file);
+      setFormData({ ...formData, video_url: url });
+      toast.success("Video berhasil diupload");
+    } catch (error: any) {
+      toast.error("Gagal upload video: " + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.image_url || !formData.overlay_text) {
-      toast.error("Gambar dan teks wajib diisi");
+    
+    if (formData.media_type === 'image' && !formData.image_url) {
+      toast.error("Gambar wajib diisi");
+      return;
+    }
+    if (formData.media_type === 'video' && !formData.video_url) {
+      toast.error("Video wajib diisi");
+      return;
+    }
+    if (!formData.overlay_text) {
+      toast.error("Teks wajib diisi");
       return;
     }
 
@@ -89,7 +123,9 @@ const AdminHeroSlides = () => {
   const handleEdit = (slide: HeroSlide) => {
     setEditingId(slide.id);
     setFormData({
-      image_url: slide.image_url,
+      media_type: slide.media_type || 'image',
+      image_url: slide.image_url || "",
+      video_url: slide.video_url || "",
       overlay_text: slide.overlay_text,
       overlay_subtext: slide.overlay_subtext || "",
       font_family: slide.font_family,
@@ -112,7 +148,9 @@ const AdminHeroSlides = () => {
 
   const resetForm = () => {
     setFormData({
+      media_type: 'image',
       image_url: "",
+      video_url: "",
       overlay_text: "",
       overlay_subtext: "",
       font_family: "Inter",
@@ -152,25 +190,72 @@ const AdminHeroSlides = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="image">Gambar Background</Label>
-                <div className="flex gap-4 items-center">
-                  <Input
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploading}
-                  />
-                  {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
-                </div>
-                {formData.image_url && (
-                  <img
-                    src={formData.image_url}
-                    alt="Preview"
-                    className="w-full h-40 object-cover rounded-md"
-                  />
-                )}
+                <Label>Tipe Media</Label>
+                <RadioGroup 
+                  value={formData.media_type} 
+                  onValueChange={(value) => setFormData({ 
+                    ...formData, 
+                    media_type: value as 'image' | 'video' 
+                  })}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="image" id="image-type" />
+                    <Label htmlFor="image-type">Gambar</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="video" id="video-type" />
+                    <Label htmlFor="video-type">Video</Label>
+                  </div>
+                </RadioGroup>
               </div>
+
+              {formData.media_type === 'image' ? (
+                <div className="space-y-2">
+                  <Label htmlFor="image">Gambar Background</Label>
+                  <div className="flex gap-4 items-center">
+                    <Input
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                    />
+                    {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  </div>
+                  {formData.image_url && (
+                    <img
+                      src={formData.image_url}
+                      alt="Preview"
+                      className="w-full h-40 object-cover rounded-md"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="video">Video Background</Label>
+                  <div className="flex gap-4 items-center">
+                    <Input
+                      id="video"
+                      type="file"
+                      accept="video/mp4,video/webm,video/mov"
+                      onChange={handleVideoUpload}
+                      disabled={uploading}
+                    />
+                    {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  </div>
+                  {formData.video_url && (
+                    <video
+                      src={formData.video_url}
+                      className="w-full h-40 object-cover rounded-md"
+                      controls
+                      muted
+                    />
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Format: MP4, WebM, MOV (Max 50MB)
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -364,17 +449,27 @@ const AdminHeroSlides = () => {
             <Card key={slide.id}>
               <CardContent className="p-4">
                 <div className="flex gap-4">
-                  <img
-                    src={slide.image_url}
-                    alt={slide.overlay_text}
-                    className="w-40 h-24 object-cover rounded"
-                  />
+                  {slide.media_type === 'video' && slide.video_url ? (
+                    <video
+                      src={slide.video_url}
+                      className="w-40 h-24 object-cover rounded"
+                      muted
+                    />
+                  ) : (
+                    <img
+                      src={slide.image_url || '/placeholder.svg'}
+                      alt={slide.overlay_text}
+                      className="w-40 h-24 object-cover rounded"
+                    />
+                  )}
                   <div className="flex-1">
                     <h3 className="font-semibold">{slide.overlay_text}</h3>
                     {slide.overlay_subtext && (
                       <p className="text-sm text-muted-foreground">{slide.overlay_subtext}</p>
                     )}
                     <div className="flex gap-2 mt-2 text-xs text-muted-foreground">
+                      <span>{slide.media_type === 'video' ? '🎬 Video' : '🖼️ Gambar'}</span>
+                      <span>•</span>
                       <span>{slide.font_family}</span>
                       <span>•</span>
                       <span>{slide.font_size}</span>

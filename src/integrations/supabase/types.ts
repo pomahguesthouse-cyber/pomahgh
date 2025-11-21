@@ -252,14 +252,16 @@ export type Database = {
           font_size: string | null
           font_weight: string | null
           id: string
-          image_url: string
+          image_url: string | null
           is_active: boolean | null
+          media_type: string | null
           overlay_subtext: string | null
           overlay_text: string
           text_align: string | null
           text_color: string | null
           transition_effect: string | null
           updated_at: string | null
+          video_url: string | null
         }
         Insert: {
           created_at?: string | null
@@ -269,14 +271,16 @@ export type Database = {
           font_size?: string | null
           font_weight?: string | null
           id?: string
-          image_url: string
+          image_url?: string | null
           is_active?: boolean | null
+          media_type?: string | null
           overlay_subtext?: string | null
           overlay_text: string
           text_align?: string | null
           text_color?: string | null
           transition_effect?: string | null
           updated_at?: string | null
+          video_url?: string | null
         }
         Update: {
           created_at?: string | null
@@ -286,14 +290,16 @@ export type Database = {
           font_size?: string | null
           font_weight?: string | null
           id?: string
-          image_url?: string
+          image_url?: string | null
           is_active?: boolean | null
+          media_type?: string | null
           overlay_subtext?: string | null
           overlay_text?: string
           text_align?: string | null
           text_color?: string | null
           transition_effect?: string | null
           updated_at?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }

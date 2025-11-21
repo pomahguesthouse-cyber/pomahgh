@@ -4,7 +4,9 @@ import { toast } from "sonner";
 
 export interface HeroSlide {
   id: string;
-  image_url: string;
+  image_url: string | null;
+  video_url?: string | null;
+  media_type: 'image' | 'video';
   overlay_text: string;
   overlay_subtext: string | null;
   font_family: string;
@@ -140,6 +142,26 @@ export const uploadHeroImage = async (file: File) => {
 
   const { data: { publicUrl } } = supabase.storage
     .from("hero-images")
+    .getPublicUrl(filePath);
+
+  return publicUrl;
+};
+
+export const uploadHeroVideo = async (file: File) => {
+  const fileExt = file.name.split(".").pop();
+  const fileName = `${Math.random()}.${fileExt}`;
+  const filePath = `${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("hero-videos")
+    .upload(filePath, file);
+
+  if (uploadError) {
+    throw uploadError;
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from("hero-videos")
     .getPublicUrl(filePath);
 
   return publicUrl;

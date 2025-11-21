@@ -12,7 +12,9 @@ export const Hero = () => {
   // Use database slides if available, otherwise fallback to default
   const heroSlides = slides && slides.length > 0 ? slides : [{
     id: 'default',
+    media_type: 'image' as const,
     image_url: heroImage,
+    video_url: null,
     overlay_text: 'Pomah Guesthouse',
     overlay_subtext: 'Experience Tropical Paradise Where Luxury Meets Serenity',
     font_family: 'Inter',
@@ -48,12 +50,27 @@ export const Hero = () => {
     })]} className="w-full h-full">
         <CarouselContent className="h-screen">
           {heroSlides.map(slide => <CarouselItem key={slide.id} className="h-screen">
-              {/* Background Image */}
-              <div className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${getTransitionClass(slide.transition_effect)}`} style={{
+              {/* Background Media - Image or Video */}
+              {slide.media_type === 'video' && slide.video_url ? (
+                <div className="absolute inset-0">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className={`absolute inset-0 w-full h-full object-cover ${getTransitionClass(slide.transition_effect)}`}
+                  >
+                    <source src={slide.video_url} type="video/mp4" />
+                  </video>
+                  <div className="absolute inset-0 hero-gradient"></div>
+                </div>
+              ) : (
+                <div className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${getTransitionClass(slide.transition_effect)}`} style={{
             backgroundImage: `url(${slide.image_url})`
           }}>
-                <div className="absolute inset-0 hero-gradient"></div>
-              </div>
+                  <div className="absolute inset-0 hero-gradient"></div>
+                </div>
+              )}
 
               {/* Content */}
               <div className={`relative z-10 text-${slide.text_align} px-4 animate-fade-in h-full flex flex-col justify-center items-${slide.text_align === 'center' ? 'center' : slide.text_align === 'right' ? 'end' : 'start'}`}>
