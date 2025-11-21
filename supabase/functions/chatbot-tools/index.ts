@@ -73,15 +73,36 @@ serve(async (req) => {
       case "get_room_details": {
         const { room_name } = parameters;
         
-        const { data, error } = await supabase
+        // Normalize room name by removing common words
+        const normalizeRoomName = (name: string) => {
+          return name
+            .toLowerCase()
+            .replace(/\b(room|kamar|suite)\b/gi, '')
+            .trim();
+        };
+
+        // Get all available rooms
+        const { data: allRooms, error: roomsError } = await supabase
           .from("rooms")
           .select("*")
-          .ilike("name", `%${room_name}%`)
-          .single();
+          .eq("available", true);
 
-        if (error) throw error;
+        if (roomsError) throw roomsError;
+
+        // Find best matching room
+        const normalizedSearchName = normalizeRoomName(room_name);
+        const room = allRooms?.find(r => {
+          const normalizedRoomName = normalizeRoomName(r.name);
+          return normalizedRoomName.includes(normalizedSearchName) || 
+                 normalizedSearchName.includes(normalizedRoomName);
+        });
+
+        if (!room) {
+          const roomList = allRooms?.map(r => r.name).join(", ") || "none";
+          throw new Error(`Kamar "${room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
+        }
         
-        result = data;
+        result = room;
         break;
       }
 
@@ -103,29 +124,40 @@ serve(async (req) => {
         
         console.log("Creating booking with params:", { guest_name, guest_email, check_in, check_out, room_name });
         
-        // Get room by name
-        const { data: room, error: roomError } = await supabase
+        // Normalize room name by removing common words
+        const normalizeRoomName = (name: string) => {
+          return name
+            .toLowerCase()
+            .replace(/\b(room|kamar|suite)\b/gi, '')
+            .trim();
+        };
+
+        // Get all available rooms
+        const { data: allRooms, error: roomsError } = await supabase
           .from("rooms")
           .select("id, name, price_per_night")
-          .ilike("name", `%${room_name}%`)
-          .maybeSingle();
+          .eq("available", true);
 
-        if (roomError) {
-          console.error("Room fetch error:", roomError);
-          throw new Error(`Error fetching room: ${roomError.message}`);
+        if (roomsError) {
+          console.error("Rooms fetch error:", roomsError);
+          throw new Error(`Error fetching rooms: ${roomsError.message}`);
         }
 
+        // Find best matching room
+        const normalizedSearchName = normalizeRoomName(room_name);
+        const room = allRooms?.find(r => {
+          const normalizedRoomName = normalizeRoomName(r.name);
+          return normalizedRoomName.includes(normalizedSearchName) || 
+                 normalizedSearchName.includes(normalizedRoomName);
+        });
+
         if (!room) {
-          // Get all available rooms to provide helpful error
-          const { data: availableRooms } = await supabase
-            .from("rooms")
-            .select("name")
-            .eq("available", true);
-          
-          const roomList = availableRooms?.map(r => r.name).join(", ") || "none";
+          const roomList = allRooms?.map(r => r.name).join(", ") || "none";
           console.error(`Room "${room_name}" not found. Available rooms: ${roomList}`);
           throw new Error(`Kamar "${room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
         }
+
+        console.log(`Matched "${room_name}" to room "${room.name}"`);
 
         // Calculate nights and price
         const checkInDate = new Date(check_in);
