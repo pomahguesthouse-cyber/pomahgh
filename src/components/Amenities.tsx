@@ -1,25 +1,20 @@
 import * as Icons from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { useFacilities } from "@/hooks/useFacilities";
-import { motion } from "framer-motion";
+
 
 // ---------- FacilityCard (modular) ----------
 export const FacilityCard = ({ icon, title, description }) => {
   const IconComponent = Icons[icon] ?? Icons.Circle;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="text-center p-6 rounded-lg bg-card hover:bg-accent/5 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-    >
-      <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-4">
+    <div className="tep">
+     items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-4">
         <IconComponent className="w-8 h-8 text-primary" />
       </div>
       <h3 className="text-xl font-bold text-foreground mb-2">{title}</h3>
       <p className="text-sm text-muted-foreground">{description}</p>
-    </motion.div>
+    </div>
   );
 };
 
@@ -65,7 +60,11 @@ export const Amenities = () => {
   return (
     <section id="amenities" className="py-20 px-4 bg-background">
       <div className="container mx-auto">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
+        <motion.div
+          }
+          }
+          className="text-center mb-16"
+        >
           <h2 className="text-4xl font-bold text-foreground mb-4">Facilities</h2>
           <div className="w-24 h-1 bg-primary mx-auto mb-6" />
           <p className="text-base text-muted-foreground max-w-2xl mx-auto px-4">
@@ -75,7 +74,12 @@ export const Amenities = () => {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {facilities.map((item) => (
-            <FacilityCard key={item.id} icon={item.icon_name} title={item.title} description={item.description} />
+            <FacilityCard
+              key={item.id}
+              icon={item.icon_name}
+              title={item.title}
+              description={item.description}
+            />
           ))}
         </div>
       </div>
