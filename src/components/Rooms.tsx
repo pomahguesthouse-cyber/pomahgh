@@ -16,7 +16,7 @@ const RoomSkeleton = () => (
 // Room Card Component
 const RoomCard = ({ room }) => {
   const [loaded, setLoaded] = useState(false);
-  const { name, final_price, image_urls, allotment } = room;
+  const { name, price, images, availableRooms } = room;
 
   return (
     <motion.div
@@ -29,7 +29,7 @@ const RoomCard = ({ room }) => {
         <CardContent className="p-4">
           <div className="relative w-full h-40 overflow-hidden rounded-xl mb-3 shadow-lg">
             <img
-              src={image_urls?.[0]}
+              src={images?.[0]}
               alt={name}
               className={`w-full h-full object-cover transition-opacity duration-500 ${
                 loaded ? "opacity-100" : "opacity-0"
@@ -37,8 +37,7 @@ const RoomCard = ({ room }) => {
               loading="lazy"
               onLoad={() => setLoaded(true)}
               onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = "/placeholder.jpg";
+                e.target.src = "/placeholder.jpg";
                 setLoaded(true);
               }}
             />
@@ -46,13 +45,13 @@ const RoomCard = ({ room }) => {
 
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-lg">{name}</h3>
-            {allotment <= 2 && (
-              <Badge className="bg-red-500 text-white animate-pulse">Sisa {allotment}</Badge>
+            {availableRooms <= 2 && (
+              <Badge className="bg-red-500 text-white animate-pulse">Sisa {availableRooms}</Badge>
             )}
           </div>
 
           <p className="text-sm text-gray-600 mb-2">Mulai dari:</p>
-          <p className="font-bold text-xl">Rp {final_price?.toLocaleString() || 0}</p>
+          <p className="font-bold text-xl">Rp {price.toLocaleString()}</p>
         </CardContent>
       </Card>
     </motion.div>
@@ -61,7 +60,7 @@ const RoomCard = ({ room }) => {
 
 // Main Rooms Component
 export default function Rooms() {
-  const { data: rooms, isLoading } = useRooms();
+  const { rooms, isLoading } = useRooms();
 
   // FIX: auto-handled loading block
   if (isLoading) {
