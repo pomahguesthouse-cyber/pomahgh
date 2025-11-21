@@ -88,6 +88,128 @@ export type Database = {
           },
         ]
       }
+      chat_conversations: {
+        Row: {
+          booking_created: boolean | null
+          ended_at: string | null
+          guest_email: string | null
+          id: string
+          message_count: number | null
+          session_id: string
+          started_at: string | null
+        }
+        Insert: {
+          booking_created?: boolean | null
+          ended_at?: string | null
+          guest_email?: string | null
+          id?: string
+          message_count?: number | null
+          session_id: string
+          started_at?: string | null
+        }
+        Update: {
+          booking_created?: boolean | null
+          ended_at?: string | null
+          guest_email?: string | null
+          id?: string
+          message_count?: number | null
+          session_id?: string
+          started_at?: string | null
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chatbot_settings: {
+        Row: {
+          bot_avatar_style: string | null
+          bot_avatar_url: string | null
+          bot_name: string | null
+          created_at: string | null
+          enable_availability_check: boolean | null
+          enable_booking_assistance: boolean | null
+          enable_facility_info: boolean | null
+          greeting_message: string | null
+          id: string
+          max_message_length: number | null
+          persona: string
+          primary_color: string | null
+          response_speed: string | null
+          show_typing_indicator: boolean | null
+          sound_enabled: boolean | null
+          updated_at: string | null
+          widget_position: string | null
+        }
+        Insert: {
+          bot_avatar_style?: string | null
+          bot_avatar_url?: string | null
+          bot_name?: string | null
+          created_at?: string | null
+          enable_availability_check?: boolean | null
+          enable_booking_assistance?: boolean | null
+          enable_facility_info?: boolean | null
+          greeting_message?: string | null
+          id?: string
+          max_message_length?: number | null
+          persona?: string
+          primary_color?: string | null
+          response_speed?: string | null
+          show_typing_indicator?: boolean | null
+          sound_enabled?: boolean | null
+          updated_at?: string | null
+          widget_position?: string | null
+        }
+        Update: {
+          bot_avatar_style?: string | null
+          bot_avatar_url?: string | null
+          bot_name?: string | null
+          created_at?: string | null
+          enable_availability_check?: boolean | null
+          enable_booking_assistance?: boolean | null
+          enable_facility_info?: boolean | null
+          greeting_message?: string | null
+          id?: string
+          max_message_length?: number | null
+          persona?: string
+          primary_color?: string | null
+          response_speed?: string | null
+          show_typing_indicator?: boolean | null
+          sound_enabled?: boolean | null
+          updated_at?: string | null
+          widget_position?: string | null
+        }
+        Relationships: []
+      }
       facilities: {
         Row: {
           created_at: string | null

@@ -5,6 +5,7 @@ import { Rooms } from "@/components/Rooms";
 import { Amenities } from "@/components/Amenities";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
+import ChatbotWidget from "@/components/ChatbotWidget";
 
 const Index = () => {
   return (
@@ -18,6 +19,7 @@ const Index = () => {
         <Contact />
       </main>
       <Footer />
+      <ChatbotWidget />
     </div>
   );
 };
