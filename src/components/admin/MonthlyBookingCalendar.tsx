@@ -2,7 +2,17 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, isToday, parseISO, differenceInDays } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  getDay,
+  addDays,
+  isToday,
+  parseISO,
+  differenceInDays,
+} from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +21,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle, Edit2, Save, X } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Mail,
+  Phone,
+  Users,
+  CreditCard,
+  Clock,
+  Ban,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  Edit2,
+  Save,
+  X,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -68,7 +101,7 @@ export const MonthlyBookingCalendar = () => {
     date?: Date;
     reason?: string;
   }>({
-    open: false
+    open: false,
   });
   const [createBookingDialog, setCreateBookingDialog] = useState<{
     open: boolean;
@@ -76,22 +109,12 @@ export const MonthlyBookingCalendar = () => {
     roomNumber?: string;
     date?: Date;
   }>({
-    open: false
+    open: false,
   });
-  
-  const {
-    bookings,
-    updateBooking,
-    isUpdating
-  } = useAdminBookings();
-  const {
-    rooms
-  } = useAdminRooms();
-  const {
-    unavailableDates,
-    addUnavailableDates,
-    removeUnavailableDates
-  } = useRoomAvailability();
+
+  const { bookings, updateBooking, isUpdating } = useAdminBookings();
+  const { rooms } = useAdminRooms();
+  const { unavailableDates, addUnavailableDates, removeUnavailableDates } = useRoomAvailability();
   const queryClient = useQueryClient();
 
   // Calculate date range based on view selection
@@ -101,14 +124,14 @@ export const MonthlyBookingCalendar = () => {
       const monthEnd = endOfMonth(currentDate);
       return eachDayOfInterval({
         start: monthStart,
-        end: monthEnd
+        end: monthEnd,
       });
     } else {
       const startDate = currentDate;
       const endDate = addDays(startDate, viewRange - 1);
       return eachDayOfInterval({
         start: startDate,
-        end: endDate
+        end: endDate,
       });
     }
   }, [currentDate, viewRange]);
@@ -117,18 +140,18 @@ export const MonthlyBookingCalendar = () => {
   const monthYearOptions = useMemo(() => {
     const options = [];
     const currentYear = new Date().getFullYear();
-    
+
     // Generate options for 2 years back to 1 year forward
     for (let year = currentYear - 2; year <= currentYear + 1; year++) {
       for (let month = 0; month < 12; month++) {
         const date = new Date(year, month, 1);
         options.push({
           value: format(date, "yyyy-MM"),
-          label: format(date, "MMMM yyyy", { locale: localeId })
+          label: format(date, "MMMM yyyy", { locale: localeId }),
         });
       }
     }
-    
+
     return options;
   }, []);
 
@@ -138,7 +161,7 @@ export const MonthlyBookingCalendar = () => {
   const roomsByType = useMemo(() => {
     if (!rooms) return {};
     const grouped: Record<string, typeof rooms> = {};
-    rooms.forEach(room => {
+    rooms.forEach((room) => {
       if (!grouped[room.name]) {
         grouped[room.name] = [];
       }
@@ -155,13 +178,13 @@ export const MonthlyBookingCalendar = () => {
       roomNumber: string;
       roomId: string;
     }> = [];
-    rooms.forEach(room => {
+    rooms.forEach((room) => {
       if (room.room_numbers && room.room_numbers.length > 0) {
-        room.room_numbers.forEach(num => {
+        room.room_numbers.forEach((num) => {
           roomNums.push({
             roomType: room.name,
             roomNumber: num,
-            roomId: room.id
+            roomId: room.id,
           });
         });
       }
@@ -173,7 +196,7 @@ export const MonthlyBookingCalendar = () => {
   const getBookingForCell = (roomNumber: string, date: Date): Booking | null => {
     if (!bookings) return null;
     const dateStr = format(date, "yyyy-MM-dd");
-    const matchingBookings = bookings.filter(booking => {
+    const matchingBookings = bookings.filter((booking) => {
       if (booking.status === "cancelled") return false;
       if (booking.allocated_room_number !== roomNumber) return false;
       const checkIn = booking.check_in;
@@ -190,13 +213,13 @@ export const MonthlyBookingCalendar = () => {
   // Check if date is blocked
   const isDateBlocked = (roomId: string, date: Date): boolean => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return unavailableDates.some(d => d.room_id === roomId && d.unavailable_date === dateStr);
+    return unavailableDates.some((d) => d.room_id === roomId && d.unavailable_date === dateStr);
   };
 
   // Get block reason
   const getBlockReason = (roomId: string, date: Date): string | undefined => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return unavailableDates.find(d => d.room_id === roomId && d.unavailable_date === dateStr)?.reason;
+    return unavailableDates.find((d) => d.room_id === roomId && d.unavailable_date === dateStr)?.reason;
   };
 
   // Check if this is the first day of a booking
@@ -308,7 +331,7 @@ export const MonthlyBookingCalendar = () => {
       toast.error("Check-out harus setelah check-in");
       return;
     }
-    if (editedBooking.payment_status === 'down_payment' && editedBooking.payment_amount) {
+    if (editedBooking.payment_status === "down_payment" && editedBooking.payment_amount) {
       if (editedBooking.payment_amount <= 0 || editedBooking.payment_amount > editedBooking.total_price) {
         toast.error("Jumlah DP tidak valid");
         return;
@@ -329,17 +352,17 @@ export const MonthlyBookingCalendar = () => {
         allocated_room_number: editedBooking.allocated_room_number,
         status: editedBooking.status,
         payment_status: editedBooking.payment_status,
-        payment_amount: editedBooking.payment_status === 'down_payment' ? editedBooking.payment_amount : 0,
+        payment_amount: editedBooking.payment_status === "down_payment" ? editedBooking.payment_amount : 0,
         special_requests: editedBooking.special_requests,
         total_nights: editedBooking.total_nights,
       });
-      
+
       // Wait for query refetch to complete
       await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-      
+
       // Small delay to ensure UI updates
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       setIsEditMode(false);
       setSelectedBooking(null);
       toast.success("Booking berhasil diupdate");
@@ -348,15 +371,15 @@ export const MonthlyBookingCalendar = () => {
       toast.error("Gagal mengupdate booking");
     }
   };
-  
+
   const handleCellClick = (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => {
     if (isBlocked || hasBooking) return;
-    
+
     setCreateBookingDialog({
       open: true,
       roomId,
       roomNumber,
-      date
+      date,
     });
   };
   const handleRightClick = (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => {
@@ -366,7 +389,7 @@ export const MonthlyBookingCalendar = () => {
       roomNumber,
       date,
       x: e.clientX,
-      y: e.clientY
+      y: e.clientY,
     });
   };
   const handleBlockDate = () => {
@@ -376,29 +399,33 @@ export const MonthlyBookingCalendar = () => {
       roomId: contextMenu.roomId,
       roomNumber: contextMenu.roomNumber,
       date: contextMenu.date,
-      reason: ""
+      reason: "",
     });
     setContextMenu(null);
   };
   const handleUnblockDate = async () => {
     if (!contextMenu) return;
     const dateStr = format(contextMenu.date, "yyyy-MM-dd");
-    await removeUnavailableDates([{
-      room_id: contextMenu.roomId,
-      unavailable_date: dateStr
-    }]);
+    await removeUnavailableDates([
+      {
+        room_id: contextMenu.roomId,
+        unavailable_date: dateStr,
+      },
+    ]);
     setContextMenu(null);
   };
   const handleSaveBlock = async () => {
     if (!blockDialog.roomId || !blockDialog.date) return;
     const dateStr = format(blockDialog.date, "yyyy-MM-dd");
-    await addUnavailableDates([{
-      room_id: blockDialog.roomId,
-      unavailable_date: dateStr,
-      reason: blockDialog.reason || "Blocked by admin"
-    }]);
+    await addUnavailableDates([
+      {
+        room_id: blockDialog.roomId,
+        unavailable_date: dateStr,
+        reason: blockDialog.reason || "Blocked by admin",
+      },
+    ]);
     setBlockDialog({
-      open: false
+      open: false,
     });
   };
 
@@ -410,7 +437,7 @@ export const MonthlyBookingCalendar = () => {
       return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [contextMenu]);
-  
+
   return (
     <>
       <Card className="w-full shadow-lg rounded-xl overflow-hidden border-border/50">
@@ -419,55 +446,65 @@ export const MonthlyBookingCalendar = () => {
             <div className="flex items-center gap-2 flex-wrap">
               {/* View Range Selector */}
               <div className="flex gap-1 bg-background rounded-lg p-1 shadow-sm border border-border">
-                <Button variant={viewRange === 7 ? "default" : "ghost"} size="sm" onClick={() => {
-                setViewRange(7);
-                setCurrentDate(new Date());
-              }} className="text-xs px-4">
+                <Button
+                  variant={viewRange === 7 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setViewRange(7);
+                    setCurrentDate(new Date());
+                  }}
+                  className="text-xs px-4"
+                >
                   7 Hari
                 </Button>
-                <Button variant={viewRange === 14 ? "default" : "ghost"} size="sm" onClick={() => {
-                setViewRange(14);
-                setCurrentDate(new Date());
-              }} className="text-xs px-4">
+                <Button
+                  variant={viewRange === 14 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setViewRange(14);
+                    setCurrentDate(new Date());
+                  }}
+                  className="text-xs px-4"
+                >
                   14 Hari
                 </Button>
-                <Button variant={viewRange === 30 ? "default" : "ghost"} size="sm" onClick={() => {
-                setViewRange(30);
-                setCurrentDate(new Date());
-              }} className="text-xs px-4">
+                <Button
+                  variant={viewRange === 30 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setViewRange(30);
+                    setCurrentDate(new Date());
+                  }}
+                  className="text-xs px-4"
+                >
                   30 Hari
                 </Button>
               </div>
-              
+
               {/* Month/Year Filter */}
               <Select value={currentMonthYear} onValueChange={handleMonthYearChange}>
                 <SelectTrigger className="w-[180px] text-sm">
                   <SelectValue placeholder="Pilih Bulan" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
-                  {monthYearOptions.map(option => (
+                  {monthYearOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              
+
               {/* Navigation Buttons */}
               <div className="flex gap-1">
                 <Button onClick={handlePrevMonth} variant="outline" size="icon">
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                
-                <Button 
-                  onClick={handleGoToToday} 
-                  variant="outline" 
-                  size="sm"
-                  className="text-xs px-3 font-medium"
-                >
+
+                <Button onClick={handleGoToToday} variant="outline" size="sm" className="text-xs px-3 font-medium">
                   Today
                 </Button>
-                
+
                 <Button onClick={handleNextMonth} variant="outline" size="icon">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -480,108 +517,127 @@ export const MonthlyBookingCalendar = () => {
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-20">
               <tr className="bg-muted/50">
-                <th className="border border-border p-2 sticky left-0 z-30 min-w-[100px] bg-muted/50 shadow-sm">
-                  <span className="text-xs font-bold uppercase tracking-wide">KAMAR</span>
+                <th
+                  className="
+    sticky left-0 z-30
+    min-w-[110px]
+    border border-border
+    bg-muted
+    p-2 shadow-sm
+  "
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wide">Kamar</span>
                 </th>
-              {dates.map(date => {
-                const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-                const holiday = isIndonesianHoliday(date);
-                const isHolidayOrWeekend = isWeekend || holiday !== null;
-                const isTodayDate = isToday(date);
-                
-                const headerCell = (
-                  <th 
-                    key={date.toISOString()} 
-                    className={cn(
-                      "border border-border p-1.5 min-w-[60px] text-center transition-colors relative",
-                      isHolidayOrWeekend && "bg-red-50/50 dark:bg-red-950/10"
-                    )}
-                  >
-                    <div className={cn(
-                      "text-[10px] font-medium uppercase",
-                      isHolidayOrWeekend ? "text-red-600" : "text-muted-foreground"
-                    )}>
-                      {DAY_NAMES[getDay(date)]}
-                    </div>
-                    <div className={cn(
-                      "text-base font-bold",
-                      isHolidayOrWeekend && "text-red-600"
-                    )}>
-                      {format(date, "d")}
-                    </div>
-                    
-                    {isTodayDate && (
-                      <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-md">
-                        TODAY
+                {dates.map((date) => {
+                  const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+                  const holiday = isIndonesianHoliday(date);
+                  const isHolidayOrWeekend = isWeekend || holiday !== null;
+                  const isTodayDate = isToday(date);
+
+                  const headerCell = (
+                    <th
+                      key={date.toISOString()}
+                      className={cn(
+                        "border border-border p-1.5 min-w-[60px] text-center transition-colors relative",
+                        isHolidayOrWeekend && "bg-red-50/50 dark:bg-red-950/10",
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "text-[10px] font-medium uppercase",
+                          isHolidayOrWeekend ? "text-red-600" : "text-muted-foreground",
+                        )}
+                      >
+                        {DAY_NAMES[getDay(date)]}
                       </div>
-                    )}
-                    
-                    {holiday && (
-                      <div className="text-[8px] text-red-600 font-semibold mt-0.5">
-                        🎉
+                      <div className={cn("text-base font-bold", isHolidayOrWeekend && "text-red-600")}>
+                        {format(date, "d")}
                       </div>
-                    )}
-                  </th>
-                );
-                
-                if (holiday) {
-                  return (
-                    <TooltipProvider key={date.toISOString()}>
-                      <Tooltip delayDuration={200}>
-                        <TooltipTrigger asChild>
-                          {headerCell}
-                        </TooltipTrigger>
-                        <TooltipContent 
-                          side="top" 
-                          className="bg-red-600 text-white font-medium"
-                        >
-                          <div className="text-xs">
-                            <div className="font-bold">{holiday.name}</div>
-                            <div className="text-[10px] opacity-90">
-                              {format(date, "d MMMM yyyy")}
-                            </div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+
+                      {isTodayDate && (
+                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-md">
+                          TODAY
+                        </div>
+                      )}
+
+                      {holiday && <div className="text-[8px] text-red-600 font-semibold mt-0.5">🎉</div>}
+                    </th>
                   );
-                }
-                
-                return headerCell;
-              })}
+
+                  if (holiday) {
+                    return (
+                      <TooltipProvider key={date.toISOString()}>
+                        <Tooltip delayDuration={200}>
+                          <TooltipTrigger asChild>{headerCell}</TooltipTrigger>
+                          <TooltipContent side="top" className="bg-red-600 text-white font-medium">
+                            <div className="text-xs">
+                              <div className="font-bold">{holiday.name}</div>
+                              <div className="text-[10px] opacity-90">{format(date, "d MMMM yyyy")}</div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  }
+
+                  return headerCell;
+                })}
               </tr>
             </thead>
             <tbody>
-              {Object.entries(roomsByType).map(([roomType]) => <React.Fragment key={roomType}>
+              {Object.entries(roomsByType).map(([roomType]) => (
+                <React.Fragment key={roomType}>
                   {/* Room type header */}
                   <tr className="border-y border-border bg-muted/30">
-                    <td colSpan={dates.length + 1} className="p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm">
+                    <td
+                      colSpan={dates.length + 1}
+                      className="p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm"
+                    >
                       {roomType}
                     </td>
                   </tr>
 
                   {/* Room rows */}
-                  {allRoomNumbers.filter(r => r.roomType === roomType).map((room, roomIndex) => <RoomRow key={room.roomNumber} room={room} roomIndex={roomIndex} dates={dates} getBookingForCell={getBookingForCell} isBookingStart={isBookingStart} isBookingEnd={isBookingEnd} isDateBlocked={isDateBlocked} getBlockReason={getBlockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} handleCellClick={handleCellClick} />)}
-                </React.Fragment>)}
+                  {allRoomNumbers
+                    .filter((r) => r.roomType === roomType)
+                    .map((room, roomIndex) => (
+                      <RoomRow
+                        key={room.roomNumber}
+                        room={room}
+                        roomIndex={roomIndex}
+                        dates={dates}
+                        getBookingForCell={getBookingForCell}
+                        isBookingStart={isBookingStart}
+                        isBookingEnd={isBookingEnd}
+                        isDateBlocked={isDateBlocked}
+                        getBlockReason={getBlockReason}
+                        handleBookingClick={handleBookingClick}
+                        handleRightClick={handleRightClick}
+                        handleCellClick={handleCellClick}
+                      />
+                    ))}
+                </React.Fragment>
+              ))}
             </tbody>
           </table>
         </div>
 
         {/* Booking Detail Modal */}
-        <Dialog open={!!selectedBooking} onOpenChange={(open) => {
-          if (!open) {
-            setSelectedBooking(null);
-            setIsEditMode(false);
-            setEditedBooking(null);
-          }
-        }}>
+        <Dialog
+          open={!!selectedBooking}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedBooking(null);
+              setIsEditMode(false);
+              setEditedBooking(null);
+            }
+          }}
+        >
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex-1">
                 <DialogTitle className="text-2xl font-bold mb-1">Detail Booking</DialogTitle>
-                <DialogDescription>
-                  {isEditMode ? "Edit informasi booking" : "Lihat detail booking"}
-                </DialogDescription>
+                <DialogDescription>{isEditMode ? "Edit informasi booking" : "Lihat detail booking"}</DialogDescription>
               </div>
               <Button
                 variant="outline"
@@ -603,7 +659,8 @@ export const MonthlyBookingCalendar = () => {
                 )}
               </Button>
             </div>
-            {editedBooking && <div className="space-y-6">
+            {editedBooking && (
+              <div className="space-y-6">
                 {/* Status Badges */}
                 <div className="flex gap-2">
                   <Badge variant={getStatusVariant(editedBooking.status)} className="text-xs px-3 py-1">
@@ -663,7 +720,9 @@ export const MonthlyBookingCalendar = () => {
                           type="number"
                           min="1"
                           value={editedBooking.num_guests}
-                          onChange={(e) => setEditedBooking({ ...editedBooking, num_guests: parseInt(e.target.value) || 1 })}
+                          onChange={(e) =>
+                            setEditedBooking({ ...editedBooking, num_guests: parseInt(e.target.value) || 1 })
+                          }
                           className="font-semibold"
                         />
                       ) : (
@@ -688,11 +747,11 @@ export const MonthlyBookingCalendar = () => {
                               const newCheckIn = e.target.value;
                               const checkOut = editedBooking.check_out;
                               const nights = differenceInDays(new Date(checkOut), new Date(newCheckIn));
-                              
-                              setEditedBooking({ 
-                                ...editedBooking, 
+
+                              setEditedBooking({
+                                ...editedBooking,
                                 check_in: newCheckIn,
-                                total_nights: nights > 0 ? nights : 1
+                                total_nights: nights > 0 ? nights : 1,
                               });
                             }}
                             className="font-semibold"
@@ -726,11 +785,11 @@ export const MonthlyBookingCalendar = () => {
                               const newCheckOut = e.target.value;
                               const checkIn = editedBooking.check_in;
                               const nights = differenceInDays(new Date(newCheckOut), new Date(checkIn));
-                              
-                              setEditedBooking({ 
-                                ...editedBooking, 
+
+                              setEditedBooking({
+                                ...editedBooking,
                                 check_out: newCheckOut,
-                                total_nights: nights > 0 ? nights : 1
+                                total_nights: nights > 0 ? nights : 1,
                               });
                             }}
                             className="font-semibold"
@@ -763,7 +822,9 @@ export const MonthlyBookingCalendar = () => {
                       {isEditMode ? (
                         <Input
                           value={editedBooking.allocated_room_number || ""}
-                          onChange={(e) => setEditedBooking({ ...editedBooking, allocated_room_number: e.target.value })}
+                          onChange={(e) =>
+                            setEditedBooking({ ...editedBooking, allocated_room_number: e.target.value })
+                          }
                           className="font-semibold"
                         />
                       ) : (
@@ -794,23 +855,23 @@ export const MonthlyBookingCalendar = () => {
                     </div>
                   </div>
                   <div className="pt-2">
-                    <p className="text-xs text-muted-foreground">Total: <span className="font-bold">{editedBooking.total_nights} malam</span></p>
+                    <p className="text-xs text-muted-foreground">
+                      Total: <span className="font-bold">{editedBooking.total_nights} malam</span>
+                    </p>
                   </div>
                 </div>
 
                 {/* Payment Information */}
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg p-4">
                   <h3 className="font-bold text-sm uppercase tracking-wide mb-4">Informasi Pembayaran</h3>
-                  
+
                   <div className="space-y-4">
                     {/* Total Harga - Always show */}
                     <div className="flex items-start gap-3">
                       <CreditCard className="h-5 w-5 text-primary mt-0.5" />
                       <div className="flex-1">
                         <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Harga</p>
-                        <p className="font-bold text-2xl">
-                          Rp {editedBooking.total_price.toLocaleString("id-ID")}
-                        </p>
+                        <p className="font-bold text-2xl">Rp {editedBooking.total_price.toLocaleString("id-ID")}</p>
                       </div>
                     </div>
 
@@ -822,11 +883,13 @@ export const MonthlyBookingCalendar = () => {
                       {isEditMode ? (
                         <Select
                           value={editedBooking.payment_status || "unpaid"}
-                          onValueChange={(value) => setEditedBooking({ 
-                            ...editedBooking, 
-                            payment_status: value,
-                            payment_amount: value === 'down_payment' ? editedBooking.payment_amount : 0
-                          })}
+                          onValueChange={(value) =>
+                            setEditedBooking({
+                              ...editedBooking,
+                              payment_status: value,
+                              payment_amount: value === "down_payment" ? editedBooking.payment_amount : 0,
+                            })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -840,17 +903,17 @@ export const MonthlyBookingCalendar = () => {
                         </Select>
                       ) : (
                         <p className="font-semibold capitalize">
-                          {editedBooking.payment_status === 'unpaid' && "Belum Dibayar"}
-                          {editedBooking.payment_status === 'down_payment' && "DP (Down Payment)"}
-                          {editedBooking.payment_status === 'paid' && "Lunas"}
-                          {editedBooking.payment_status === 'pay_at_hotel' && "Bayar di Hotel"}
+                          {editedBooking.payment_status === "unpaid" && "Belum Dibayar"}
+                          {editedBooking.payment_status === "down_payment" && "DP (Down Payment)"}
+                          {editedBooking.payment_status === "paid" && "Lunas"}
+                          {editedBooking.payment_status === "pay_at_hotel" && "Bayar di Hotel"}
                           {!editedBooking.payment_status && "Belum Dibayar"}
                         </p>
                       )}
                     </div>
 
                     {/* Conditional: Show DP amount input if down_payment */}
-                    {editedBooking.payment_status === 'down_payment' && (
+                    {editedBooking.payment_status === "down_payment" && (
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground uppercase tracking-wide">Jumlah DP</Label>
                         {isEditMode ? (
@@ -859,10 +922,12 @@ export const MonthlyBookingCalendar = () => {
                             min="0"
                             max={editedBooking.total_price}
                             value={editedBooking.payment_amount || 0}
-                            onChange={(e) => setEditedBooking({ 
-                              ...editedBooking, 
-                              payment_amount: parseFloat(e.target.value) || 0 
-                            })}
+                            onChange={(e) =>
+                              setEditedBooking({
+                                ...editedBooking,
+                                payment_amount: parseFloat(e.target.value) || 0,
+                              })
+                            }
                             className="font-semibold"
                           />
                         ) : (
@@ -874,7 +939,10 @@ export const MonthlyBookingCalendar = () => {
                           <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/30 rounded">
                             <p className="text-sm text-muted-foreground">Sisa Pembayaran</p>
                             <p className="font-bold text-orange-600">
-                              Rp {(editedBooking.total_price - (editedBooking.payment_amount || 0)).toLocaleString("id-ID")}
+                              Rp{" "}
+                              {(editedBooking.total_price - (editedBooking.payment_amount || 0)).toLocaleString(
+                                "id-ID",
+                              )}
                             </p>
                           </div>
                         )}
@@ -882,21 +950,17 @@ export const MonthlyBookingCalendar = () => {
                     )}
 
                     {/* Status messages */}
-                    {editedBooking.payment_status === 'paid' && (
+                    {editedBooking.payment_status === "paid" && (
                       <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900/30 rounded-lg p-3">
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        <span className="font-semibold text-green-700 dark:text-green-300">
-                          Pembayaran Lunas
-                        </span>
+                        <span className="font-semibold text-green-700 dark:text-green-300">Pembayaran Lunas</span>
                       </div>
                     )}
 
-                    {(editedBooking.payment_status === 'unpaid' || !editedBooking.payment_status) && (
+                    {(editedBooking.payment_status === "unpaid" || !editedBooking.payment_status) && (
                       <div className="flex items-center gap-2 bg-red-100 dark:bg-red-900/30 rounded-lg p-3">
                         <AlertCircle className="h-5 w-5 text-red-600" />
-                        <span className="font-semibold text-red-700 dark:text-red-300">
-                          Belum Ada Pembayaran
-                        </span>
+                        <span className="font-semibold text-red-700 dark:text-red-300">Belum Ada Pembayaran</span>
                       </div>
                     )}
                   </div>
@@ -920,26 +984,20 @@ export const MonthlyBookingCalendar = () => {
                 {/* Footer */}
                 <div className="border-t pt-4">
                   <p className="text-xs text-muted-foreground text-center">
-                    Dibuat: {format(new Date(editedBooking.created_at), "dd MMM yyyy HH:mm", {
-                  locale: localeId
-                })}
+                    Dibuat:{" "}
+                    {format(new Date(editedBooking.created_at), "dd MMM yyyy HH:mm", {
+                      locale: localeId,
+                    })}
                   </p>
                 </div>
 
                 {/* Action Buttons - Only show in edit mode */}
                 {isEditMode && (
                   <div className="flex gap-2 justify-end pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      onClick={handleEditToggle}
-                      disabled={isUpdating}
-                    >
+                    <Button variant="outline" onClick={handleEditToggle} disabled={isUpdating}>
                       Batal
                     </Button>
-                    <Button
-                      onClick={handleSaveChanges}
-                      disabled={isUpdating}
-                    >
+                    <Button onClick={handleSaveChanges} disabled={isUpdating}>
                       {isUpdating ? (
                         <>Menyimpan...</>
                       ) : (
@@ -951,35 +1009,54 @@ export const MonthlyBookingCalendar = () => {
                     </Button>
                   </div>
                 )}
-              </div>}
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </Card>
 
       {/* Context Menu */}
-      {contextMenu && <div className="fixed z-50 bg-card border border-border rounded-lg shadow-xl py-2 min-w-[180px]" style={{
-      top: contextMenu.y,
-      left: contextMenu.x
-    }}>
-          {isDateBlocked(contextMenu.roomId, contextMenu.date) ? <button onClick={handleUnblockDate} className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2">
+      {contextMenu && (
+        <div
+          className="fixed z-50 bg-card border border-border rounded-lg shadow-xl py-2 min-w-[180px]"
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
+          }}
+        >
+          {isDateBlocked(contextMenu.roomId, contextMenu.date) ? (
+            <button
+              onClick={handleUnblockDate}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
+            >
               <Trash2 className="w-4 h-4" />
               Unblock Date
-            </button> : <button onClick={handleBlockDate} className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2">
+            </button>
+          ) : (
+            <button
+              onClick={handleBlockDate}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
+            >
               <Ban className="w-4 h-4" />
               Block Date
-            </button>}
-        </div>}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Block Date Dialog */}
-      <Dialog open={blockDialog.open} onOpenChange={open => setBlockDialog({
-      open
-    })}>
+      <Dialog
+        open={blockDialog.open}
+        onOpenChange={(open) =>
+          setBlockDialog({
+            open,
+          })
+        }
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Block Date</DialogTitle>
-            <DialogDescription>
-              Block this date to prevent new bookings for {blockDialog.roomNumber}
-            </DialogDescription>
+            <DialogDescription>Block this date to prevent new bookings for {blockDialog.roomNumber}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -988,25 +1065,39 @@ export const MonthlyBookingCalendar = () => {
             </div>
             <div>
               <Label htmlFor="reason">Reason (Optional)</Label>
-              <Textarea id="reason" value={blockDialog.reason || ""} onChange={e => setBlockDialog({
-              ...blockDialog,
-              reason: e.target.value
-            })} placeholder="e.g., Maintenance, Private event..." className="mt-1" rows={3} />
+              <Textarea
+                id="reason"
+                value={blockDialog.reason || ""}
+                onChange={(e) =>
+                  setBlockDialog({
+                    ...blockDialog,
+                    reason: e.target.value,
+                  })
+                }
+                placeholder="e.g., Maintenance, Private event..."
+                className="mt-1"
+                rows={3}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBlockDialog({
-            open: false
-          })}>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setBlockDialog({
+                  open: false,
+                })
+              }
+            >
               Cancel
             </Button>
             <Button onClick={handleSaveBlock}>Block Date</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Create Booking Dialog */}
-      <CreateBookingDialog 
+      <CreateBookingDialog
         open={createBookingDialog.open}
         onOpenChange={(open) => setCreateBookingDialog({ open })}
         roomId={createBookingDialog.roomId}
@@ -1023,62 +1114,58 @@ const BookingCell = ({
   booking,
   isStart,
   isEnd,
-  onClick
+  onClick,
 }: {
   booking: Booking;
   isStart: boolean;
   isEnd: boolean;
   onClick: () => void;
 }) => {
-  const isPending = booking.status === 'pending';
+  const isPending = booking.status === "pending";
   const totalNights = booking.total_nights;
   const bookingWidth = `${totalNights * 100}%`;
 
   const getBackgroundClass = () => {
     if (isPending) {
-      return 'from-gray-400/90 to-gray-500/90';
+      return "from-gray-400/90 to-gray-500/90";
     }
     const colors = [
-      'from-teal-500/90 to-teal-600/90',
-      'from-pink-500/90 to-pink-600/90',
-      'from-purple-500/90 to-purple-600/90',
-      'from-blue-500/90 to-blue-600/90',
-      'from-indigo-500/90 to-indigo-600/90',
-      'from-cyan-500/90 to-cyan-600/90',
-      'from-emerald-500/90 to-emerald-600/90',
+      "from-teal-500/90 to-teal-600/90",
+      "from-pink-500/90 to-pink-600/90",
+      "from-purple-500/90 to-purple-600/90",
+      "from-blue-500/90 to-blue-600/90",
+      "from-indigo-500/90 to-indigo-600/90",
+      "from-cyan-500/90 to-cyan-600/90",
+      "from-emerald-500/90 to-emerald-600/90",
     ];
-    const colorIndex = booking.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    const colorIndex = booking.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     return colors[colorIndex];
   };
 
   const style = {
-    left: '50%',
+    left: "50%",
     width: bookingWidth,
-    transform: 'translateX(0%)'
+    transform: "translateX(0%)",
   };
-  
+
   return (
-    <div 
-      onClick={onClick} 
+    <div
+      onClick={onClick}
       className={cn(
         "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20 cursor-pointer",
-        getBackgroundClass()
-      )} 
+        getBackgroundClass(),
+      )}
       style={style}
     >
       {/* Content - Guest name and nights */}
       <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
         {/* Guest Name */}
-        <div className="font-bold text-xs text-white drop-shadow-sm truncate">
-          {booking.guest_name.split(" ")[0]}
-        </div>
-        
+        <div className="font-bold text-xs text-white drop-shadow-sm truncate">{booking.guest_name.split(" ")[0]}</div>
+
         {/* Nights count */}
-        <div className="text-[10px] text-white/90 font-medium">
-          {booking.total_nights} Malam
-        </div>
+        <div className="text-[10px] text-white/90 font-medium">{booking.total_nights} Malam</div>
       </div>
-      
+
       {/* LCO Badge - Show on the end */}
       {booking.check_out_time && booking.check_out_time !== "12:00:00" && (
         <div className="absolute -right-1 top-1/2 -translate-y-1/2 z-20">
@@ -1087,21 +1174,19 @@ const BookingCell = ({
           </div>
         </div>
       )}
-      
+
       {/* Status watermark */}
       {!isPending && (
         <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
           <span className="text-white/70 font-bold text-[8px] tracking-wider whitespace-nowrap">
-            {booking.status === 'confirmed' ? 'CONFIRMED' : booking.status.toUpperCase()}
+            {booking.status === "confirmed" ? "CONFIRMED" : booking.status.toUpperCase()}
           </span>
         </div>
       )}
-      
+
       {isPending && (
         <div className="absolute right-1 bottom-0.5 opacity-50 pointer-events-none">
-          <span className="text-white/80 font-black text-[8px] tracking-wider whitespace-nowrap">
-            PENDING
-          </span>
+          <span className="text-white/80 font-black text-[8px] tracking-wider whitespace-nowrap">PENDING</span>
         </div>
       )}
     </div>
@@ -1120,7 +1205,7 @@ const RoomCell = ({
   blockReason,
   handleBookingClick,
   handleRightClick,
-  handleCellClick
+  handleCellClick,
 }: {
   roomId: string;
   roomNumber: string;
@@ -1138,65 +1223,65 @@ const RoomCell = ({
   const checkOutDate = booking ? new Date(booking.check_out) : null;
   if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
   const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
-  
+
   const isHolidayOrWeekend = isWeekend || holiday !== null;
   const hasBooking = booking !== null;
   const isClickable = !isBlocked && !hasBooking;
   const isTodayDate = isToday(date);
-  
+
   const cell = (
-    <td 
+    <td
       onClick={() => handleCellClick(roomId, roomNumber, date, isBlocked, hasBooking)}
-      onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} 
+      onContextMenu={(e) => handleRightClick(e, roomId, roomNumber, date)}
       className={cn(
         "border border-border p-0 relative h-14 min-w-[60px] transition-all duration-200",
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
         !isHolidayOrWeekend && "bg-background",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
-        !isClickable && "cursor-context-menu"
+        !isClickable && "cursor-context-menu",
       )}
       title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
     >
       {/* Blocked Date Pattern */}
-      {isBlocked && <div className="absolute inset-0 z-10 pointer-events-none" style={{
-      background: `repeating-linear-gradient(
+      {isBlocked && (
+        <div
+          className="absolute inset-0 z-10 pointer-events-none"
+          style={{
+            background: `repeating-linear-gradient(
             45deg,
             hsl(var(--destructive) / 0.15),
             hsl(var(--destructive) / 0.15) 8px,
             transparent 8px,
             transparent 16px
-          )`
-    }}>
+          )`,
+          }}
+        >
           <div className="absolute top-1 right-1">
             <Ban className="w-3 h-3 text-destructive" />
           </div>
-        </div>}
-      
+        </div>
+      )}
+
       {/* Render single booking */}
-      {booking && !isBlocked && isStart && <BookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />}
-      
+      {booking && !isBlocked && isStart && (
+        <BookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />
+      )}
+
       {/* Click hint for empty cells */}
       {isClickable && (
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none z-5">
-          <div className="text-[10px] text-primary/60 font-medium">
-            Click to book
-          </div>
+          <div className="text-[10px] text-primary/60 font-medium">Click to book</div>
         </div>
       )}
     </td>
   );
-  
+
   if (holiday && !booking) {
     return (
       <TooltipProvider key={`${roomNumber}-${date.toISOString()}`}>
         <Tooltip delayDuration={300}>
-          <TooltipTrigger asChild>
-            {cell}
-          </TooltipTrigger>
-          <TooltipContent 
-            side="top" 
-            className="bg-red-600 text-white font-medium"
-          >
+          <TooltipTrigger asChild>{cell}</TooltipTrigger>
+          <TooltipContent side="top" className="bg-red-600 text-white font-medium">
             <div className="text-xs">
               <div className="font-bold">{holiday.name}</div>
               <div className="text-[10px] opacity-90">Hari Libur Nasional</div>
@@ -1206,7 +1291,7 @@ const RoomCell = ({
       </TooltipProvider>
     );
   }
-  
+
   return cell;
 };
 
@@ -1222,7 +1307,7 @@ const RoomRow = ({
   getBlockReason,
   handleBookingClick,
   handleRightClick,
-  handleCellClick
+  handleCellClick,
 }: {
   room: {
     roomType: string;
@@ -1240,17 +1325,34 @@ const RoomRow = ({
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
 }) => {
-  return <tr className="hover:bg-muted/10 transition-colors">
+  return (
+    <tr className="hover:bg-muted/10 transition-colors">
       <td className="border border-border p-2 sticky left-0 z-10 font-semibold text-xs shadow-sm bg-background">
         {room.roomNumber}
       </td>
-      {dates.map(date => {
-      const booking = getBookingForCell(room.roomNumber, date);
-      const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-      const holiday = isIndonesianHoliday(date);
-      const isBlocked = isDateBlocked(room.roomId, date);
-      const blockReason = getBlockReason(room.roomId, date);
-      return <RoomCell key={date.toISOString()} roomId={room.roomId} roomNumber={room.roomNumber} date={date} booking={booking} isWeekend={isWeekend} holiday={holiday} isBlocked={isBlocked} blockReason={blockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} handleCellClick={handleCellClick} />;
-    })}
-    </tr>;
+      {dates.map((date) => {
+        const booking = getBookingForCell(room.roomNumber, date);
+        const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+        const holiday = isIndonesianHoliday(date);
+        const isBlocked = isDateBlocked(room.roomId, date);
+        const blockReason = getBlockReason(room.roomId, date);
+        return (
+          <RoomCell
+            key={date.toISOString()}
+            roomId={room.roomId}
+            roomNumber={room.roomNumber}
+            date={date}
+            booking={booking}
+            isWeekend={isWeekend}
+            holiday={holiday}
+            isBlocked={isBlocked}
+            blockReason={blockReason}
+            handleBookingClick={handleBookingClick}
+            handleRightClick={handleRightClick}
+            handleCellClick={handleCellClick}
+          />
+        );
+      })}
+    </tr>
+  );
 };
