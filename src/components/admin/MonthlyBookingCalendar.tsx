@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
@@ -93,6 +93,11 @@ export const MonthlyBookingCalendar = () => {
     removeUnavailableDates
   } = useRoomAvailability();
   const queryClient = useQueryClient();
+
+  // Refs for auto-scroll functionality
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const todayColumnRef = useRef<HTMLTableCellElement>(null);
+  const [scrolled, setScrolled] = useState(false);
 
   // Calculate date range based on view selection
   const dates = useMemo(() => {
@@ -410,6 +415,36 @@ export const MonthlyBookingCalendar = () => {
       return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [contextMenu]);
+
+  // Auto-scroll to today's date on mount
+  useEffect(() => {
+    if (tableContainerRef.current && todayColumnRef.current) {
+      const container = tableContainerRef.current;
+      const todayColumn = todayColumnRef.current;
+      
+      // Calculate scroll position to place today's column near the left
+      const scrollLeft = todayColumn.offsetLeft - 120; // 120px offset for KAMAR column
+      
+      // Smooth scroll to today
+      container.scrollTo({
+        left: Math.max(0, scrollLeft),
+        behavior: 'smooth'
+      });
+    }
+  }, [dates]); // Re-run when dates change
+
+  // Detect horizontal scroll for shadow effect
+  useEffect(() => {
+    const container = tableContainerRef.current;
+    if (!container) return;
+    
+    const handleScroll = () => {
+      setScrolled(container.scrollLeft > 0);
+    };
+    
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
   
   return (
     <>
@@ -476,11 +511,14 @@ export const MonthlyBookingCalendar = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div ref={tableContainerRef} className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-20">
+            <thead className="sticky top-14 z-20 bg-background">
               <tr className="bg-muted/50">
-                <th className="border border-border p-2 sticky left-0 z-30 min-w-[100px] bg-muted/50 shadow-sm">
+                <th className={cn(
+                  "border border-border p-2 sticky left-0 z-[25] min-w-[100px] bg-muted/50",
+                  scrolled && "shadow-lg"
+                )}>
                   <span className="text-xs font-bold uppercase tracking-wide">KAMAR</span>
                 </th>
               {dates.map(date => {
@@ -491,6 +529,7 @@ export const MonthlyBookingCalendar = () => {
                 
                 const headerCell = (
                   <th 
+                    ref={isTodayDate ? todayColumnRef : null}
                     key={date.toISOString()} 
                     className={cn(
                       "border border-border p-1.5 min-w-[60px] text-center transition-colors relative",
@@ -1241,7 +1280,7 @@ const RoomRow = ({
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
 }) => {
   return <tr className="hover:bg-muted/10 transition-colors">
-      <td className="border border-border p-2 sticky left-0 z-10 font-semibold text-xs shadow-sm bg-background">
+      <td className="border border-border p-2 sticky left-0 z-[15] font-semibold text-xs shadow-sm bg-background">
         {room.roomNumber}
       </td>
       {dates.map(date => {
