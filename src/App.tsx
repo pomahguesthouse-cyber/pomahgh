@@ -13,6 +13,7 @@ import AdminBookings from "./pages/admin/AdminBookings";
 import AdminHeroSlides from "./pages/admin/AdminHeroSlides";
 import AdminFacilities from "./pages/admin/AdminFacilities";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminChatbot from "./pages/admin/AdminChatbot";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/admin/hero-slides" element={<AdminLayout><AdminHeroSlides /></AdminLayout>} />
           <Route path="/admin/facilities" element={<AdminLayout><AdminFacilities /></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
+          <Route path="/admin/chatbot" element={<AdminLayout><AdminChatbot /></AdminLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
