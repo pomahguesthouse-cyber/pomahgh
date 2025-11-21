@@ -513,10 +513,10 @@ export const MonthlyBookingCalendar = () => {
 
         <div ref={tableContainerRef} className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead className="sticky top-14 z-20 bg-background">
+            <thead className="sticky top-14 z-40 bg-background">
               <tr className="bg-muted/50">
                 <th className={cn(
-                  "border border-border p-2 sticky left-0 z-[25] min-w-[100px] bg-muted/50",
+                  "border border-border p-2 sticky left-0 z-[45] min-w-[100px] bg-muted/50",
                   scrolled && "shadow-lg"
                 )}>
                   <span className="text-xs font-bold uppercase tracking-wide">KAMAR</span>
@@ -1280,7 +1280,7 @@ const RoomRow = ({
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
 }) => {
   return <tr className="hover:bg-muted/10 transition-colors">
-      <td className="border border-border p-2 sticky left-0 z-[15] font-semibold text-xs shadow-sm bg-background">
+      <td className="border border-border p-2 sticky left-0 z-30 font-semibold text-xs shadow-sm bg-background">
         {room.roomNumber}
       </td>
       {dates.map(date => {
