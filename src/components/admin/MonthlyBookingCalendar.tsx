@@ -1117,14 +1117,16 @@ const BookingCell = ({
   isStart,
   isEnd,
   onClick,
+  visibleNights,
 }: {
   booking: Booking;
   isStart: boolean;
   isEnd: boolean;
   onClick: () => void;
+  visibleNights?: number;
 }) => {
   const isPending = booking.status === "pending";
-  const totalNights = booking.total_nights;
+  const totalNights = visibleNights || booking.total_nights;
   const bookingWidth = `${totalNights * 100}%`;
 
   const getBackgroundClass = () => {
@@ -1208,6 +1210,7 @@ const RoomCell = ({
   handleBookingClick,
   handleRightClick,
   handleCellClick,
+  firstVisibleDate,
 }: {
   roomId: string;
   roomNumber: string;
@@ -1220,11 +1223,33 @@ const RoomCell = ({
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
+  firstVisibleDate: Date;
 }) => {
-  const isStart = booking ? booking.check_in === format(date, "yyyy-MM-dd") : false;
+  // Check if this is where the booking should start rendering
+  const dateStr = format(date, "yyyy-MM-dd");
+  const firstVisibleStr = format(firstVisibleDate, "yyyy-MM-dd");
+  
+  // A booking should render if:
+  // 1. Its check-in is on this date, OR
+  // 2. Its check-in is before the first visible date AND this is the first visible date AND the booking is active
+  const isStart = booking 
+    ? booking.check_in === dateStr || 
+      (booking.check_in < firstVisibleStr && dateStr === firstVisibleStr && booking.check_out > dateStr)
+    : false;
+  
   const checkOutDate = booking ? new Date(booking.check_out) : null;
   if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
   const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
+  
+  // Calculate visible nights for bookings that started before the visible range
+  let visibleNights = booking?.total_nights;
+  if (booking && booking.check_in < firstVisibleStr && dateStr === firstVisibleStr) {
+    // Calculate how many nights are visible
+    const checkInDate = parseISO(booking.check_in);
+    const checkOutDate = parseISO(booking.check_out);
+    const nightsBeforeVisible = differenceInDays(firstVisibleDate, checkInDate);
+    visibleNights = differenceInDays(checkOutDate, firstVisibleDate);
+  }
 
   const isHolidayOrWeekend = isWeekend || holiday !== null;
   const hasBooking = booking !== null;
@@ -1266,7 +1291,13 @@ const RoomCell = ({
 
       {/* Render single booking */}
       {booking && !isBlocked && isStart && (
-        <BookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} />
+        <BookingCell 
+          booking={booking} 
+          isStart={isStart} 
+          isEnd={isEnd} 
+          onClick={() => handleBookingClick(booking)}
+          visibleNights={visibleNights}
+        />
       )}
 
       {/* Click hint for empty cells */}
@@ -1352,6 +1383,7 @@ const RoomRow = ({
             handleBookingClick={handleBookingClick}
             handleRightClick={handleRightClick}
             handleCellClick={handleCellClick}
+            firstVisibleDate={dates[0]}
           />
         );
       })}
