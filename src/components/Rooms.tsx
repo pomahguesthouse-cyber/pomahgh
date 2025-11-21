@@ -13,7 +13,6 @@ import { Eye, Tag } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
 import type { CarouselApi } from "@/components/ui/carousel";
 import { ROOM_FEATURES } from "@/constants/roomFeatures";
-import { motion } from "framer-motion";
 const roomImages: Record<string, string> = {
   "Deluxe Ocean View": deluxeRoom,
   "Private Pool Villa": villaRoom,
@@ -79,7 +78,7 @@ export const Rooms = () => {
             className="w-full max-w-7xl mx-auto"
           >
             <CarouselContent className="-ml-2 md:-ml-4">
-              {rooms?.map((room, index) => {
+              {rooms?.map((room) => {
                 const images =
                   room.image_urls && room.image_urls.length > 0
                     ? room.image_urls
@@ -93,14 +92,7 @@ export const Rooms = () => {
                 const displayPrice = room.final_price || room.price_per_night;
                 return (
                   <CarouselItem key={room.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
-                      viewport={{ once: true, margin: "-50px" }}
-                      className="h-full"
-                    >
-                      <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-full">
+                    <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-full">
                       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden group">
                         {images?.length > 1 ? (
                           <Carousel
@@ -227,7 +219,6 @@ export const Rooms = () => {
                         {room.room_count && room.room_count > 1}
                       </CardContent>
                     </Card>
-                    </motion.div>
                   </CarouselItem>
                 );
               })}
