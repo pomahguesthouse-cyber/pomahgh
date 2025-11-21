@@ -240,7 +240,7 @@ export const MonthlyBookingCalendar = () => {
     switch (status?.toLowerCase()) {
       case "paid":
         return "default";
-      case "partial":
+      case "down_payment":
         return "secondary";
       case "unpaid":
         return "destructive";
@@ -307,7 +307,7 @@ export const MonthlyBookingCalendar = () => {
       toast.error("Check-out harus setelah check-in");
       return;
     }
-    if (editedBooking.payment_status === 'partial' && editedBooking.payment_amount) {
+    if (editedBooking.payment_status === 'down_payment' && editedBooking.payment_amount) {
       if (editedBooking.payment_amount <= 0 || editedBooking.payment_amount > editedBooking.total_price) {
         toast.error("Jumlah DP tidak valid");
         return;
@@ -328,7 +328,7 @@ export const MonthlyBookingCalendar = () => {
         allocated_room_number: editedBooking.allocated_room_number,
         status: editedBooking.status,
         payment_status: editedBooking.payment_status,
-        payment_amount: editedBooking.payment_status === 'partial' ? editedBooking.payment_amount : 0,
+        payment_amount: editedBooking.payment_status === 'down_payment' ? editedBooking.payment_amount : 0,
         special_requests: editedBooking.special_requests,
       });
       
@@ -796,7 +796,7 @@ export const MonthlyBookingCalendar = () => {
                           onValueChange={(value) => setEditedBooking({ 
                             ...editedBooking, 
                             payment_status: value,
-                            payment_amount: value === 'partial' ? editedBooking.payment_amount : 0
+                            payment_amount: value === 'down_payment' ? editedBooking.payment_amount : 0
                           })}
                         >
                           <SelectTrigger>
@@ -804,7 +804,7 @@ export const MonthlyBookingCalendar = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="unpaid">Belum Dibayar</SelectItem>
-                            <SelectItem value="partial">DP (Down Payment)</SelectItem>
+                            <SelectItem value="down_payment">DP (Down Payment)</SelectItem>
                             <SelectItem value="paid">Lunas</SelectItem>
                             <SelectItem value="pay_at_hotel">Bayar di Hotel</SelectItem>
                           </SelectContent>
@@ -812,7 +812,7 @@ export const MonthlyBookingCalendar = () => {
                       ) : (
                         <p className="font-semibold capitalize">
                           {editedBooking.payment_status === 'unpaid' && "Belum Dibayar"}
-                          {editedBooking.payment_status === 'partial' && "DP (Down Payment)"}
+                          {editedBooking.payment_status === 'down_payment' && "DP (Down Payment)"}
                           {editedBooking.payment_status === 'paid' && "Lunas"}
                           {editedBooking.payment_status === 'pay_at_hotel' && "Bayar di Hotel"}
                           {!editedBooking.payment_status && "Belum Dibayar"}
@@ -820,8 +820,8 @@ export const MonthlyBookingCalendar = () => {
                       )}
                     </div>
 
-                    {/* Conditional: Show DP amount input if partial */}
-                    {editedBooking.payment_status === 'partial' && (
+                    {/* Conditional: Show DP amount input if down_payment */}
+                    {editedBooking.payment_status === 'down_payment' && (
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground uppercase tracking-wide">Jumlah DP</Label>
                         {isEditMode ? (
