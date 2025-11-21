@@ -332,6 +332,12 @@ export const MonthlyBookingCalendar = () => {
         special_requests: editedBooking.special_requests,
       });
       
+      // Wait for query refetch to complete
+      await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      
+      // Small delay to ensure UI updates
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       setIsEditMode(false);
       setSelectedBooking(null);
       toast.success("Booking berhasil diupdate");
