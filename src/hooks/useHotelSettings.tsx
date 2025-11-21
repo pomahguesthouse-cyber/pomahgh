@@ -37,6 +37,8 @@ export interface HotelSettings {
   currency_symbol?: string;
   tax_rate?: number;
   tax_name?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const useHotelSettings = () => {
