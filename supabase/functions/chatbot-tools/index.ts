@@ -100,6 +100,8 @@ serve(async (req) => {
       case "create_booking_draft": {
         const { guest_name, guest_email, guest_phone, check_in, check_out, room_id, num_guests, special_requests } = parameters;
         
+        console.log("Creating booking with params:", { guest_name, guest_email, check_in, check_out, room_id });
+        
         // Get room details to calculate price
         const { data: room, error: roomError } = await supabase
           .from("rooms")
@@ -107,7 +109,10 @@ serve(async (req) => {
           .eq("id", room_id)
           .single();
 
-        if (roomError) throw roomError;
+        if (roomError) {
+          console.error("Room fetch error:", roomError);
+          throw new Error(`Room not found: ${roomError.message}`);
+        }
 
         // Calculate nights and price
         const checkInDate = new Date(check_in);
@@ -115,18 +120,20 @@ serve(async (req) => {
         const total_nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
         const total_price = total_nights * room.price_per_night;
 
+        console.log("Calculated:", { total_nights, total_price });
+
         // Insert booking
         const { data: booking, error: bookingError } = await supabase
           .from("bookings")
           .insert({
             guest_name,
             guest_email,
-            guest_phone,
+            guest_phone: guest_phone || null,
             check_in,
             check_out,
             room_id,
             num_guests: num_guests || 1,
-            special_requests,
+            special_requests: special_requests || null,
             total_nights,
             total_price,
             status: 'pending',
@@ -135,7 +142,12 @@ serve(async (req) => {
           .select()
           .single();
 
-        if (bookingError) throw bookingError;
+        if (bookingError) {
+          console.error("Booking insert error:", bookingError);
+          throw new Error(`Failed to create booking: ${bookingError.message}`);
+        }
+
+        console.log("Booking created successfully:", booking.id);
 
         result = {
           message: `Booking berhasil dibuat! Nomor booking: ${booking.id}. Status: Menunggu konfirmasi. Total: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`,
