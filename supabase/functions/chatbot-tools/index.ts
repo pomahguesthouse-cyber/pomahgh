@@ -98,15 +98,15 @@ serve(async (req) => {
       }
 
       case "create_booking_draft": {
-        const { guest_name, guest_email, guest_phone, check_in, check_out, room_id, num_guests, special_requests } = parameters;
+        const { guest_name, guest_email, guest_phone, check_in, check_out, room_name, num_guests, special_requests } = parameters;
         
-        console.log("Creating booking with params:", { guest_name, guest_email, check_in, check_out, room_id });
+        console.log("Creating booking with params:", { guest_name, guest_email, check_in, check_out, room_name });
         
-        // Get room details to calculate price
+        // Get room by name
         const { data: room, error: roomError } = await supabase
           .from("rooms")
-          .select("price_per_night")
-          .eq("id", room_id)
+          .select("id, name, price_per_night")
+          .ilike("name", `%${room_name}%`)
           .single();
 
         if (roomError) {
@@ -120,7 +120,7 @@ serve(async (req) => {
         const total_nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
         const total_price = total_nights * room.price_per_night;
 
-        console.log("Calculated:", { total_nights, total_price });
+        console.log("Calculated:", { total_nights, total_price, room_id: room.id });
 
         // Insert booking
         const { data: booking, error: bookingError } = await supabase
@@ -131,7 +131,7 @@ serve(async (req) => {
             guest_phone: guest_phone || null,
             check_in,
             check_out,
-            room_id,
+            room_id: room.id,
             num_guests: num_guests || 1,
             special_requests: special_requests || null,
             total_nights,
@@ -149,8 +149,51 @@ serve(async (req) => {
 
         console.log("Booking created successfully:", booking.id);
 
+        // Get hotel settings for WhatsApp
+        const { data: hotelSettings } = await supabase
+          .from("hotel_settings")
+          .select("whatsapp_number, hotel_name")
+          .single();
+
+        // Send WhatsApp notifications (background task)
+        if (hotelSettings?.whatsapp_number) {
+          const adminMessage = `🔔 *BOOKING BARU*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\nKamar: ${room.name}\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\nTotal: Rp ${total_price.toLocaleString('id-ID')}\n\nBooking ID: ${booking.id}`;
+          
+          // Send to admin
+          fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+            },
+            body: JSON.stringify({
+              phone: hotelSettings.whatsapp_number,
+              message: adminMessage,
+              type: "admin"
+            })
+          }).catch(err => console.error("Failed to send admin WhatsApp:", err));
+
+          // Send to customer if phone provided
+          if (guest_phone) {
+            const customerMessage = `Terima kasih ${guest_name}! 🙏\n\nBooking Anda telah kami terima:\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${room.name}\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${total_price.toLocaleString('id-ID')}\n\n📝 Booking ID: ${booking.id}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`;
+            
+            fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+              },
+              body: JSON.stringify({
+                phone: guest_phone,
+                message: customerMessage,
+                type: "customer"
+              })
+            }).catch(err => console.error("Failed to send customer WhatsApp:", err));
+          }
+        }
+
         result = {
-          message: `Booking berhasil dibuat! Nomor booking: ${booking.id}. Status: Menunggu konfirmasi. Total: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`,
+          message: `Booking berhasil dibuat! Nomor booking: ${booking.id}. Status: Menunggu konfirmasi. Total: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran melalui WhatsApp.`,
           booking_id: booking.id,
           total_price,
           status: 'pending'

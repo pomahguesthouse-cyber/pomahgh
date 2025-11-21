@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.chatbot-tools]
 verify_jwt = false
+
+[functions.send-whatsapp]
+verify_jwt = false
