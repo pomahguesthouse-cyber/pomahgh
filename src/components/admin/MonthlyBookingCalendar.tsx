@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, isToday, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, isToday, parseISO, differenceInDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -331,6 +331,7 @@ export const MonthlyBookingCalendar = () => {
         payment_status: editedBooking.payment_status,
         payment_amount: editedBooking.payment_status === 'down_payment' ? editedBooking.payment_amount : 0,
         special_requests: editedBooking.special_requests,
+        total_nights: editedBooking.total_nights,
       });
       
       // Wait for query refetch to complete
@@ -683,7 +684,17 @@ export const MonthlyBookingCalendar = () => {
                           <Input
                             type="date"
                             value={editedBooking.check_in}
-                            onChange={(e) => setEditedBooking({ ...editedBooking, check_in: e.target.value })}
+                            onChange={(e) => {
+                              const newCheckIn = e.target.value;
+                              const checkOut = editedBooking.check_out;
+                              const nights = differenceInDays(new Date(checkOut), new Date(newCheckIn));
+                              
+                              setEditedBooking({ 
+                                ...editedBooking, 
+                                check_in: newCheckIn,
+                                total_nights: nights > 0 ? nights : 1
+                              });
+                            }}
                             className="font-semibold"
                           />
                           <Input
@@ -711,7 +722,17 @@ export const MonthlyBookingCalendar = () => {
                           <Input
                             type="date"
                             value={editedBooking.check_out}
-                            onChange={(e) => setEditedBooking({ ...editedBooking, check_out: e.target.value })}
+                            onChange={(e) => {
+                              const newCheckOut = e.target.value;
+                              const checkIn = editedBooking.check_in;
+                              const nights = differenceInDays(new Date(newCheckOut), new Date(checkIn));
+                              
+                              setEditedBooking({ 
+                                ...editedBooking, 
+                                check_out: newCheckOut,
+                                total_nights: nights > 0 ? nights : 1
+                              });
+                            }}
                             className="font-semibold"
                           />
                           <Input
