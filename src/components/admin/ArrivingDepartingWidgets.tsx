@@ -75,10 +75,10 @@ export const ArrivingDepartingWidgets = () => {
   ) => {
     if (bookings.length === 0) {
       return (
-        <div className="flex items-center justify-center py-8 text-muted-foreground">
+        <div className="flex items-center justify-center py-6 text-muted-foreground">
           <div className="text-center">
-            <div className="text-2xl mb-2">⚠️</div>
-            <p>No {type === "arriving" ? "arrivals" : "departures"} for {type === "arriving" ? arrivingFilter : departingFilter}.</p>
+            <div className="text-xl mb-2">⚠️</div>
+            <p className="text-sm">No {type === "arriving" ? "arrivals" : "departures"} for {type === "arriving" ? arrivingFilter : departingFilter}.</p>
           </div>
         </div>
       );
@@ -89,14 +89,14 @@ export const ArrivingDepartingWidgets = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">ID</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">CUSTOMER NAME</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">ADULTS</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">ROOMS</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">ID</th>
+              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">CUSTOMER NAME</th>
+              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">ADULTS</th>
+              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">ROOMS</th>
+              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">
                 {type === "arriving" ? "CHECK-OUT" : "CHECK-IN"}
               </th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">STATUS</th>
+              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">STATUS</th>
             </tr>
           </thead>
           <tbody>
@@ -106,26 +106,26 @@ export const ArrivingDepartingWidgets = () => {
               
               return (
                 <tr key={booking.id} className="border-b hover:bg-muted/20 transition-colors">
-                  <td className="py-4 px-4">
-                    <div className="border border-blue-500 text-blue-500 rounded px-2 py-1 text-sm font-semibold inline-block">
+                  <td className="py-2 px-2">
+                    <div className="border border-blue-500 text-blue-500 rounded px-1.5 py-0.5 text-xs font-semibold inline-block">
                       {booking.id.slice(0, 4).toUpperCase()}
                     </div>
                   </td>
-                  <td className="py-4 px-4 font-medium">{booking.guest_name}</td>
-                  <td className="py-4 px-4">{booking.num_guests} Adults</td>
-                  <td className="py-4 px-4">
+                  <td className="py-2 px-2 text-sm font-medium">{booking.guest_name}</td>
+                  <td className="py-2 px-2 text-sm">{booking.num_guests} Adults</td>
+                  <td className="py-2 px-2 text-sm">
                     {booking.allocated_room_number || booking.rooms?.name || "N/A"}
                   </td>
-                  <td className="py-4 px-4">
-                    <div>
+                  <td className="py-2 px-2">
+                    <div className="text-sm">
                       {format(parseISO(displayDate), "dd/MM/yyyy", { locale: localeId })}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       {displayTime ? displayTime.slice(0, 5) : "N/A"}
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <Badge className="bg-green-500 hover:bg-green-600 text-white">
+                  <td className="py-2 px-2">
+                    <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs px-2 py-0.5">
                       Confirmed
                     </Badge>
                   </td>
