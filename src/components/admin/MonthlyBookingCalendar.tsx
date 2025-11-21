@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle, Edit2, Save, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +52,8 @@ export const MonthlyBookingCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [viewRange, setViewRange] = useState<ViewRange>(30);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     roomId: string;
     roomNumber: string;
@@ -77,7 +79,9 @@ export const MonthlyBookingCalendar = () => {
     open: false
   });
   const {
-    bookings
+    bookings,
+    updateBooking,
+    isUpdating
   } = useAdminBookings();
   const {
     rooms
@@ -268,6 +272,73 @@ export const MonthlyBookingCalendar = () => {
   };
   const handleBookingClick = (booking: Booking) => {
     setSelectedBooking(booking);
+    setEditedBooking(booking);
+    setIsEditMode(false);
+  };
+
+  const handleEditToggle = () => {
+    if (isEditMode) {
+      // Cancel edit - reset to original
+      setEditedBooking(selectedBooking);
+      setIsEditMode(false);
+    } else {
+      // Enter edit mode
+      setIsEditMode(true);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!editedBooking) return;
+
+    // Validation
+    if (!editedBooking.guest_name.trim()) {
+      toast.error("Nama tamu tidak boleh kosong");
+      return;
+    }
+    if (!editedBooking.guest_email.trim() || !/\S+@\S+\.\S+/.test(editedBooking.guest_email)) {
+      toast.error("Email tidak valid");
+      return;
+    }
+    if (editedBooking.num_guests <= 0) {
+      toast.error("Jumlah tamu harus lebih dari 0");
+      return;
+    }
+    if (new Date(editedBooking.check_out) <= new Date(editedBooking.check_in)) {
+      toast.error("Check-out harus setelah check-in");
+      return;
+    }
+    if (editedBooking.payment_status === 'partial' && editedBooking.payment_amount) {
+      if (editedBooking.payment_amount <= 0 || editedBooking.payment_amount > editedBooking.total_price) {
+        toast.error("Jumlah DP tidak valid");
+        return;
+      }
+    }
+
+    try {
+      await updateBooking({
+        id: editedBooking.id,
+        guest_name: editedBooking.guest_name,
+        guest_email: editedBooking.guest_email,
+        guest_phone: editedBooking.guest_phone,
+        num_guests: editedBooking.num_guests,
+        check_in: editedBooking.check_in,
+        check_out: editedBooking.check_out,
+        check_in_time: editedBooking.check_in_time,
+        check_out_time: editedBooking.check_out_time,
+        allocated_room_number: editedBooking.allocated_room_number,
+        status: editedBooking.status,
+        payment_status: editedBooking.payment_status,
+        payment_amount: editedBooking.payment_status === 'partial' ? editedBooking.payment_amount : 0,
+        special_requests: editedBooking.special_requests,
+      });
+      
+      setIsEditMode(false);
+      setSelectedBooking(null);
+      toast.success("Booking berhasil diupdate");
+    } catch (error) {
+      console.error("Error updating booking:", error);
+      toast.error("Gagal mengupdate booking");
+    }
   };
   
   const handleCellClick = (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => {
@@ -488,19 +559,49 @@ export const MonthlyBookingCalendar = () => {
         </div>
 
         {/* Booking Detail Modal */}
-        <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
+        <Dialog open={!!selectedBooking} onOpenChange={(open) => {
+          if (!open) {
+            setSelectedBooking(null);
+            setIsEditMode(false);
+            setEditedBooking(null);
+          }
+        }}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">Detail Booking</DialogTitle>
-            </DialogHeader>
-            {selectedBooking && <div className="space-y-6">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="flex-1">
+                <DialogTitle className="text-2xl font-bold mb-1">Detail Booking</DialogTitle>
+                <DialogDescription>
+                  {isEditMode ? "Edit informasi booking" : "Lihat detail booking"}
+                </DialogDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditToggle}
+                disabled={isUpdating}
+                className="flex-shrink-0"
+              >
+                {isEditMode ? (
+                  <>
+                    <X className="h-4 w-4 mr-2" />
+                    Batal
+                  </>
+                ) : (
+                  <>
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Edit
+                  </>
+                )}
+              </Button>
+            </div>
+            {editedBooking && <div className="space-y-6">
                 {/* Status Badges */}
                 <div className="flex gap-2">
-                  <Badge variant={getStatusVariant(selectedBooking.status)} className="text-xs px-3 py-1">
-                    {selectedBooking.status.toUpperCase()}
+                  <Badge variant={getStatusVariant(editedBooking.status)} className="text-xs px-3 py-1">
+                    {editedBooking.status.toUpperCase()}
                   </Badge>
-                  <Badge variant={getPaymentVariant(selectedBooking.payment_status)} className="text-xs px-3 py-1">
-                    {(selectedBooking.payment_status || "unpaid").toUpperCase()}
+                  <Badge variant={getPaymentVariant(editedBooking.payment_status)} className="text-xs px-3 py-1">
+                    {(editedBooking.payment_status || "unpaid").toUpperCase()}
                   </Badge>
                 </div>
 
@@ -508,33 +609,57 @@ export const MonthlyBookingCalendar = () => {
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4 space-y-3">
                   <h3 className="font-bold text-sm uppercase tracking-wide mb-3">Informasi Tamu</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-start gap-3">
-                      <Users className="h-5 w-5 text-primary mt-0.5" />
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Nama Tamu</p>
-                        <p className="font-semibold">{selectedBooking.guest_name}</p>
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nama Tamu</Label>
+                      {isEditMode ? (
+                        <Input
+                          value={editedBooking.guest_name}
+                          onChange={(e) => setEditedBooking({ ...editedBooking, guest_name: e.target.value })}
+                          className="font-semibold"
+                        />
+                      ) : (
+                        <p className="font-semibold">{editedBooking.guest_name}</p>
+                      )}
                     </div>
-                    <div className="flex items-start gap-3">
-                      <Mail className="h-5 w-5 text-primary mt-0.5" />
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Email</p>
-                        <p className="font-semibold break-all">{selectedBooking.guest_email}</p>
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Email</Label>
+                      {isEditMode ? (
+                        <Input
+                          type="email"
+                          value={editedBooking.guest_email}
+                          onChange={(e) => setEditedBooking({ ...editedBooking, guest_email: e.target.value })}
+                          className="font-semibold"
+                        />
+                      ) : (
+                        <p className="font-semibold break-all">{editedBooking.guest_email}</p>
+                      )}
                     </div>
-                    {selectedBooking.guest_phone && <div className="flex items-start gap-3">
-                        <Phone className="h-5 w-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-wide">Telepon</p>
-                          <p className="font-semibold">{selectedBooking.guest_phone}</p>
-                        </div>
-                      </div>}
-                    <div className="flex items-start gap-3">
-                      <Users className="h-5 w-5 text-primary mt-0.5" />
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Jumlah Tamu</p>
-                        <p className="font-semibold">{selectedBooking.num_guests} orang</p>
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Telepon</Label>
+                      {isEditMode ? (
+                        <Input
+                          type="tel"
+                          value={editedBooking.guest_phone || ""}
+                          onChange={(e) => setEditedBooking({ ...editedBooking, guest_phone: e.target.value })}
+                          className="font-semibold"
+                        />
+                      ) : (
+                        <p className="font-semibold">{editedBooking.guest_phone || "-"}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Jumlah Tamu</Label>
+                      {isEditMode ? (
+                        <Input
+                          type="number"
+                          min="1"
+                          value={editedBooking.num_guests}
+                          onChange={(e) => setEditedBooking({ ...editedBooking, num_guests: parseInt(e.target.value) || 1 })}
+                          className="font-semibold"
+                        />
+                      ) : (
+                        <p className="font-semibold">{editedBooking.num_guests} orang</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -543,47 +668,104 @@ export const MonthlyBookingCalendar = () => {
                 <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg p-4 space-y-3">
                   <h3 className="font-bold text-sm uppercase tracking-wide mb-3">Detail Booking</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-5 w-5 text-primary mt-0.5" />
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Check-in</p>
-                        <p className="font-semibold">
-                          {format(new Date(selectedBooking.check_in), "dd MMM yyyy", {
-                        locale: localeId
-                      })}
-                        </p>
-                        {selectedBooking.check_in_time && <p className="text-sm text-muted-foreground">{selectedBooking.check_in_time.slice(0, 5)}</p>}
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Check-in</Label>
+                      {isEditMode ? (
+                        <div className="space-y-2">
+                          <Input
+                            type="date"
+                            value={editedBooking.check_in}
+                            onChange={(e) => setEditedBooking({ ...editedBooking, check_in: e.target.value })}
+                            className="font-semibold"
+                          />
+                          <Input
+                            type="time"
+                            value={editedBooking.check_in_time || "14:00:00"}
+                            onChange={(e) => setEditedBooking({ ...editedBooking, check_in_time: e.target.value })}
+                            className="text-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="font-semibold">
+                            {format(new Date(editedBooking.check_in), "dd MMM yyyy", { locale: localeId })}
+                          </p>
+                          {editedBooking.check_in_time && (
+                            <p className="text-sm text-muted-foreground">{editedBooking.check_in_time.slice(0, 5)}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-5 w-5 text-primary mt-0.5" />
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Check-out</p>
-                        <p className="font-semibold">
-                          {format(new Date(selectedBooking.check_out), "dd MMM yyyy", {
-                        locale: localeId
-                      })}
-                        </p>
-                        {selectedBooking.check_out_time && <p className="text-sm text-muted-foreground">
-                            {selectedBooking.check_out_time.slice(0, 5)}
-                            {selectedBooking.check_out_time !== "12:00:00" && <span className="ml-2 text-orange-600 font-semibold">(Late Check-out)</span>}
-                          </p>}
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Check-out</Label>
+                      {isEditMode ? (
+                        <div className="space-y-2">
+                          <Input
+                            type="date"
+                            value={editedBooking.check_out}
+                            onChange={(e) => setEditedBooking({ ...editedBooking, check_out: e.target.value })}
+                            className="font-semibold"
+                          />
+                          <Input
+                            type="time"
+                            value={editedBooking.check_out_time || "12:00:00"}
+                            onChange={(e) => setEditedBooking({ ...editedBooking, check_out_time: e.target.value })}
+                            className="text-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="font-semibold">
+                            {format(new Date(editedBooking.check_out), "dd MMM yyyy", { locale: localeId })}
+                          </p>
+                          {editedBooking.check_out_time && (
+                            <p className="text-sm text-muted-foreground">
+                              {editedBooking.check_out_time.slice(0, 5)}
+                              {editedBooking.check_out_time !== "12:00:00" && (
+                                <span className="ml-2 text-orange-600 font-semibold">(Late Check-out)</span>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-start gap-3">
-                      <Clock className="h-5 w-5 text-primary mt-0.5" />
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Malam</p>
-                        <p className="font-semibold">{selectedBooking.total_nights} malam</p>
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nomor Kamar</Label>
+                      {isEditMode ? (
+                        <Input
+                          value={editedBooking.allocated_room_number || ""}
+                          onChange={(e) => setEditedBooking({ ...editedBooking, allocated_room_number: e.target.value })}
+                          className="font-semibold"
+                        />
+                      ) : (
+                        <p className="font-semibold">{editedBooking.allocated_room_number || "-"}</p>
+                      )}
                     </div>
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-5 w-5 text-primary mt-0.5" />
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Nomor Kamar</p>
-                        <p className="font-semibold">{selectedBooking.allocated_room_number || "-"}</p>
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Status Booking</Label>
+                      {isEditMode ? (
+                        <Select
+                          value={editedBooking.status}
+                          onValueChange={(value) => setEditedBooking({ ...editedBooking, status: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="confirmed">Confirmed</SelectItem>
+                            <SelectItem value="checked-in">Checked In</SelectItem>
+                            <SelectItem value="checked-out">Checked Out</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <p className="font-semibold capitalize">{editedBooking.status}</p>
+                      )}
                     </div>
+                  </div>
+                  <div className="pt-2">
+                    <p className="text-xs text-muted-foreground">Total: <span className="font-bold">{editedBooking.total_nights} malam</span></p>
                   </div>
                 </div>
 
@@ -598,77 +780,148 @@ export const MonthlyBookingCalendar = () => {
                       <div className="flex-1">
                         <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Harga</p>
                         <p className="font-bold text-2xl">
-                          Rp {selectedBooking.total_price.toLocaleString("id-ID")}
+                          Rp {editedBooking.total_price.toLocaleString("id-ID")}
                         </p>
                       </div>
                     </div>
 
-                    {/* Conditional: Show DP and Remaining if partial payment */}
-                    {selectedBooking.payment_status === 'partial' && selectedBooking.payment_amount && <>
-                        {/* Divider */}
-                        <Separator className="my-3" />
-                        
-                        {/* DP Dibayar */}
-                        <div className="flex items-start gap-3">
-                          <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                          <div className="flex-1">
-                            <p className="text-xs text-muted-foreground uppercase tracking-wide">DP Dibayar</p>
-                            <p className="font-bold text-xl text-green-600">
-                              Rp {selectedBooking.payment_amount.toLocaleString("id-ID")}
+                    <Separator className="my-3" />
+
+                    {/* Payment Status */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Status Pembayaran</Label>
+                      {isEditMode ? (
+                        <Select
+                          value={editedBooking.payment_status || "unpaid"}
+                          onValueChange={(value) => setEditedBooking({ 
+                            ...editedBooking, 
+                            payment_status: value,
+                            payment_amount: value === 'partial' ? editedBooking.payment_amount : 0
+                          })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unpaid">Belum Dibayar</SelectItem>
+                            <SelectItem value="partial">DP (Down Payment)</SelectItem>
+                            <SelectItem value="paid">Lunas</SelectItem>
+                            <SelectItem value="pay_at_hotel">Bayar di Hotel</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <p className="font-semibold capitalize">
+                          {editedBooking.payment_status === 'unpaid' && "Belum Dibayar"}
+                          {editedBooking.payment_status === 'partial' && "DP (Down Payment)"}
+                          {editedBooking.payment_status === 'paid' && "Lunas"}
+                          {editedBooking.payment_status === 'pay_at_hotel' && "Bayar di Hotel"}
+                          {!editedBooking.payment_status && "Belum Dibayar"}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Conditional: Show DP amount input if partial */}
+                    {editedBooking.payment_status === 'partial' && (
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Jumlah DP</Label>
+                        {isEditMode ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            max={editedBooking.total_price}
+                            value={editedBooking.payment_amount || 0}
+                            onChange={(e) => setEditedBooking({ 
+                              ...editedBooking, 
+                              payment_amount: parseFloat(e.target.value) || 0 
+                            })}
+                            className="font-semibold"
+                          />
+                        ) : (
+                          <p className="font-bold text-xl text-green-600">
+                            Rp {(editedBooking.payment_amount || 0).toLocaleString("id-ID")}
+                          </p>
+                        )}
+                        {editedBooking.payment_amount && (
+                          <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/30 rounded">
+                            <p className="text-sm text-muted-foreground">Sisa Pembayaran</p>
+                            <p className="font-bold text-orange-600">
+                              Rp {(editedBooking.total_price - (editedBooking.payment_amount || 0)).toLocaleString("id-ID")}
                             </p>
                           </div>
-                        </div>
-                        
-                        {/* Sisa Pembayaran */}
-                        <div className="flex items-start gap-3">
-                          <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
-                          <div className="flex-1">
-                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Sisa Pembayaran</p>
-                            <p className="font-bold text-xl text-orange-600">
-                              Rp {(selectedBooking.total_price - selectedBooking.payment_amount).toLocaleString("id-ID")}
-                            </p>
-                          </div>
-                        </div>
-                      </>}
+                        )}
+                      </div>
+                    )}
 
-                    {/* Conditional: Show full payment if paid */}
-                    {selectedBooking.payment_status === 'paid' && <>
-                        <Separator className="my-3" />
-                        <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900/30 rounded-lg p-3">
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                          <span className="font-semibold text-green-700 dark:text-green-300">
-                            Pembayaran Lunas
-                          </span>
-                        </div>
-                      </>}
+                    {/* Status messages */}
+                    {editedBooking.payment_status === 'paid' && (
+                      <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900/30 rounded-lg p-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <span className="font-semibold text-green-700 dark:text-green-300">
+                          Pembayaran Lunas
+                        </span>
+                      </div>
+                    )}
 
-                    {/* Conditional: Show unpaid message */}
-                    {(selectedBooking.payment_status === 'unpaid' || !selectedBooking.payment_status) && <>
-                        <Separator className="my-3" />
-                        <div className="flex items-center gap-2 bg-red-100 dark:bg-red-900/30 rounded-lg p-3">
-                          <AlertCircle className="h-5 w-5 text-red-600" />
-                          <span className="font-semibold text-red-700 dark:text-red-300">
-                            Belum Ada Pembayaran
-                          </span>
-                        </div>
-                      </>}
+                    {(editedBooking.payment_status === 'unpaid' || !editedBooking.payment_status) && (
+                      <div className="flex items-center gap-2 bg-red-100 dark:bg-red-900/30 rounded-lg p-3">
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                        <span className="font-semibold text-red-700 dark:text-red-300">
+                          Belum Ada Pembayaran
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Special Requests */}
-                {selectedBooking.special_requests && <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 rounded-lg p-4">
-                    <h3 className="font-bold text-sm uppercase tracking-wide mb-2">Permintaan Khusus</h3>
-                    <p className="leading-relaxed">{selectedBooking.special_requests}</p>
-                  </div>}
+                <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 rounded-lg p-4 space-y-2">
+                  <Label className="font-bold text-sm uppercase tracking-wide">Permintaan Khusus</Label>
+                  {isEditMode ? (
+                    <Textarea
+                      value={editedBooking.special_requests || ""}
+                      onChange={(e) => setEditedBooking({ ...editedBooking, special_requests: e.target.value })}
+                      placeholder="Permintaan khusus dari tamu..."
+                      rows={3}
+                    />
+                  ) : (
+                    <p className="leading-relaxed">{editedBooking.special_requests || "-"}</p>
+                  )}
+                </div>
 
                 {/* Footer */}
                 <div className="border-t pt-4">
                   <p className="text-xs text-muted-foreground text-center">
-                    Dibuat: {format(new Date(selectedBooking.created_at), "dd MMM yyyy HH:mm", {
+                    Dibuat: {format(new Date(editedBooking.created_at), "dd MMM yyyy HH:mm", {
                   locale: localeId
                 })}
                   </p>
                 </div>
+
+                {/* Action Buttons - Only show in edit mode */}
+                {isEditMode && (
+                  <div className="flex gap-2 justify-end pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={handleEditToggle}
+                      disabled={isUpdating}
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      onClick={handleSaveChanges}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? (
+                        <>Menyimpan...</>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Simpan Perubahan
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>}
           </DialogContent>
         </Dialog>
