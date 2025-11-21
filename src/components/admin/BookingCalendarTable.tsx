@@ -492,34 +492,33 @@ export const BookingCalendarTable = () => {
         if (!open) setIsEditMode(false);
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle>Detail Booking</DialogTitle>
-                <DialogDescription>
-                  {isEditMode ? "Edit informasi booking" : "Lihat detail booking"}
-                </DialogDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEditToggle}
-                disabled={isUpdating}
-              >
-                {isEditMode ? (
-                  <>
-                    <X className="h-4 w-4 mr-2" />
-                    Batal
-                  </>
-                ) : (
-                  <>
-                    <Edit2 className="h-4 w-4 mr-2" />
-                    Edit
-                  </>
-                )}
-              </Button>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex-1">
+              <DialogTitle className="text-xl mb-1">Detail Booking</DialogTitle>
+              <DialogDescription>
+                {isEditMode ? "Edit informasi booking" : "Lihat detail booking"}
+              </DialogDescription>
             </div>
-          </DialogHeader>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEditToggle}
+              disabled={isUpdating}
+              className="flex-shrink-0"
+            >
+              {isEditMode ? (
+                <>
+                  <X className="h-4 w-4 mr-2" />
+                  Batal
+                </>
+              ) : (
+                <>
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Edit
+                </>
+              )}
+            </Button>
+          </div>
           
           {editedBooking && (
             <div className="space-y-6">
