@@ -1,4 +1,4 @@
-import { LayoutDashboard, Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle } from "lucide-react";
+import { LayoutDashboard, Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -19,6 +19,7 @@ const adminItems = [
   { title: "Rooms", url: "/admin/rooms", icon: Building2 },
   { title: "Hero Slides", url: "/admin/hero-slides", icon: ImageIcon },
   { title: "Facilities", url: "/admin/facilities", icon: Boxes },
+  { title: "Lokasi Terdekat", url: "/admin/nearby-locations", icon: MapPin },
   { title: "Chatbot AI", url: "/admin/chatbot", icon: MessageCircle },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];

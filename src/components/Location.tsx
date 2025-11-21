@@ -1,11 +1,16 @@
-import { MapPin, Phone, Mail } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Navigation } from "lucide-react";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { useNearbyLocations } from "@/hooks/useNearbyLocations";
 import { Card, CardContent } from "@/components/ui/card";
+import * as LucideIcons from "lucide-react";
 export const Location = () => {
-  const {
-    settings,
-    isLoading
-  } = useHotelSettings();
+  const { settings, isLoading } = useHotelSettings();
+  const { locations, isLoading: locationsLoading } = useNearbyLocations();
+  
+  const getIcon = (iconName: string) => {
+    const Icon = (LucideIcons as any)[iconName] || MapPin;
+    return Icon;
+  };
   if (isLoading || !settings) {
     return null;
   }
@@ -42,8 +47,67 @@ export const Location = () => {
             </CardContent>
           </Card>
 
-          {/* Contact Info */}
-          
+          {/* Nearby Locations */}
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 flex items-center gap-2">
+                <Navigation className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                Lokasi Terdekat (Radius 5km)
+              </h3>
+              
+              {locationsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="w-10 h-10 bg-muted rounded-full" />
+                      <div className="flex-1">
+                        <div className="h-4 bg-muted rounded w-1/3 mb-2" />
+                        <div className="h-3 bg-muted rounded w-1/4" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : locations && locations.length > 0 ? (
+                <div className="space-y-3">
+                  {locations.map((location) => {
+                    const Icon = getIcon(location.icon_name);
+                    return (
+                      <div
+                        key={location.id}
+                        className="flex items-center gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                          <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm sm:text-base truncate">
+                            {location.name}
+                          </h4>
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            {location.category}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="flex items-center gap-1 text-xs sm:text-sm font-medium text-primary">
+                            <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
+                            {location.distance_km} km
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <Clock className="w-3 h-3" />
+                            ~{location.travel_time_minutes} menit
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Belum ada data lokasi terdekat.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>;

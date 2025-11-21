@@ -414,6 +414,45 @@ export type Database = {
         }
         Relationships: []
       }
+      nearby_locations: {
+        Row: {
+          category: string
+          created_at: string | null
+          display_order: number | null
+          distance_km: number
+          icon_name: string
+          id: string
+          is_active: boolean | null
+          name: string
+          travel_time_minutes: number
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          display_order?: number | null
+          distance_km: number
+          icon_name?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          travel_time_minutes: number
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          display_order?: number | null
+          distance_km?: number
+          icon_name?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          travel_time_minutes?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
