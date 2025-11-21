@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Edit2, X, Save } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
@@ -12,6 +12,11 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 
 interface DraggableBookingProps {
   booking: any;
@@ -70,8 +75,10 @@ export const BookingCalendarTable = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedBooking, setEditedBooking] = useState<any>(null);
   
-  const { bookings, updateBooking } = useAdminBookings();
+  const { bookings, updateBooking, isUpdating } = useAdminBookings();
   const { rooms } = useAdminRooms();
 
   // Generate all individual room numbers from rooms
@@ -198,7 +205,68 @@ export const BookingCalendarTable = () => {
 
   const handleBookingClick = (booking: any) => {
     setSelectedBooking(booking);
+    setEditedBooking(booking);
+    setIsEditMode(false);
     setDialogOpen(true);
+  };
+
+  const handleEditToggle = () => {
+    setIsEditMode(!isEditMode);
+    if (!isEditMode) {
+      setEditedBooking({ ...selectedBooking });
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    // Validate payment amount
+    if (editedBooking.payment_status === 'partial') {
+      if (!editedBooking.payment_amount || editedBooking.payment_amount <= 0) {
+        toast.error("Masukkan jumlah DP yang valid");
+        return;
+      }
+      if (editedBooking.payment_amount > editedBooking.total_price) {
+        toast.error("Jumlah pembayaran tidak boleh melebihi total harga");
+        return;
+      }
+    }
+
+    // Validate dates
+    const checkInDate = new Date(editedBooking.check_in);
+    const checkOutDate = new Date(editedBooking.check_out);
+    if (checkOutDate <= checkInDate) {
+      toast.error("Tanggal check-out harus setelah check-in");
+      return;
+    }
+
+    // Validate guests
+    if (editedBooking.num_guests <= 0) {
+      toast.error("Jumlah tamu harus lebih dari 0");
+      return;
+    }
+
+    try {
+      await updateBooking({
+        id: editedBooking.id,
+        guest_name: editedBooking.guest_name,
+        guest_email: editedBooking.guest_email,
+        guest_phone: editedBooking.guest_phone,
+        check_in: editedBooking.check_in,
+        check_out: editedBooking.check_out,
+        check_in_time: editedBooking.check_in_time,
+        check_out_time: editedBooking.check_out_time,
+        allocated_room_number: editedBooking.allocated_room_number,
+        num_guests: editedBooking.num_guests,
+        status: editedBooking.status,
+        payment_status: editedBooking.payment_status,
+        payment_amount: editedBooking.payment_status === 'partial' ? editedBooking.payment_amount : 
+                       editedBooking.payment_status === 'paid' ? editedBooking.total_price : 0,
+        special_requests: editedBooking.special_requests,
+      });
+      setIsEditMode(false);
+      setDialogOpen(false);
+    } catch (error) {
+      // Error handled by mutation
+    }
   };
 
   const handlePrevious = () => {
@@ -419,79 +487,340 @@ export const BookingCalendarTable = () => {
       </Card>
 
       {/* Booking Details Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) setIsEditMode(false);
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Booking Details</DialogTitle>
-            <DialogDescription>View booking information</DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>Detail Booking</DialogTitle>
+                <DialogDescription>
+                  {isEditMode ? "Edit informasi booking" : "Lihat detail booking"}
+                </DialogDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditToggle}
+                disabled={isUpdating}
+              >
+                {isEditMode ? (
+                  <>
+                    <X className="h-4 w-4 mr-2" />
+                    Batal
+                  </>
+                ) : (
+                  <>
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Edit
+                  </>
+                )}
+              </Button>
+            </div>
           </DialogHeader>
-          {selectedBooking && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Guest Name</div>
-                  <div className="font-medium">{selectedBooking.guest_name}</div>
+          
+          {editedBooking && (
+            <div className="space-y-6">
+              {/* Guest Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm text-muted-foreground">Informasi Tamu</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nama Tamu</Label>
+                    {isEditMode ? (
+                      <Input
+                        value={editedBooking.guest_name}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, guest_name: e.target.value })}
+                      />
+                    ) : (
+                      <div className="font-medium">{editedBooking.guest_name}</div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    {isEditMode ? (
+                      <Input
+                        type="email"
+                        value={editedBooking.guest_email}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, guest_email: e.target.value })}
+                      />
+                    ) : (
+                      <div className="font-medium">{editedBooking.guest_email}</div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Room</div>
-                  <div className="font-medium">{selectedBooking.allocated_room_number}</div>
-                </div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Status</div>
-                <Badge 
-                  variant={
-                    selectedBooking.status === 'confirmed' || selectedBooking.status === 'checked-in' 
-                      ? 'default' 
-                      : selectedBooking.status === 'cancelled'
-                      ? 'destructive'
-                      : 'secondary'
-                  }
-                  className="mt-1"
-                >
-                  {selectedBooking.status}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Check-in</div>
-                  <div>{format(parseISO(selectedBooking.check_in), 'PPP')}</div>
-                  <div className="text-xs text-muted-foreground">1:00 PM</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Check-out</div>
-                  <div>{format(parseISO(selectedBooking.check_out), 'PPP')}</div>
-                  <div className="text-xs text-muted-foreground">12:00 PM</div>
-                </div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Email</div>
-                <div>{selectedBooking.guest_email}</div>
-              </div>
-              {selectedBooking.guest_phone && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Phone</div>
-                  <div>{selectedBooking.guest_phone}</div>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Guests</div>
-                  <div>{selectedBooking.num_guests}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Nights</div>
-                  <div>{selectedBooking.total_nights}</div>
+                <div className="space-y-2">
+                  <Label>Nomor Telepon</Label>
+                  {isEditMode ? (
+                    <Input
+                      value={editedBooking.guest_phone || ''}
+                      onChange={(e) => setEditedBooking({ ...editedBooking, guest_phone: e.target.value })}
+                      placeholder="Contoh: +62812345678"
+                    />
+                  ) : (
+                    <div className="font-medium">{editedBooking.guest_phone || '-'}</div>
+                  )}
                 </div>
               </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Total Price</div>
-                <div className="text-lg font-bold">Rp {Number(selectedBooking.total_price).toLocaleString()}</div>
+
+              <Separator />
+
+              {/* Booking Details */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm text-muted-foreground">Detail Booking</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Check-in</Label>
+                    {isEditMode ? (
+                      <Input
+                        type="date"
+                        value={editedBooking.check_in}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, check_in: e.target.value })}
+                      />
+                    ) : (
+                      <div className="font-medium">{format(parseISO(editedBooking.check_in), 'PPP')}</div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Check-out</Label>
+                    {isEditMode ? (
+                      <Input
+                        type="date"
+                        value={editedBooking.check_out}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, check_out: e.target.value })}
+                      />
+                    ) : (
+                      <div className="font-medium">{format(parseISO(editedBooking.check_out), 'PPP')}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Waktu Check-in</Label>
+                    {isEditMode ? (
+                      <Input
+                        type="time"
+                        value={editedBooking.check_in_time || '14:00'}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, check_in_time: e.target.value })}
+                      />
+                    ) : (
+                      <div className="font-medium">{editedBooking.check_in_time || '14:00'}</div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Waktu Check-out</Label>
+                    {isEditMode ? (
+                      <Input
+                        type="time"
+                        value={editedBooking.check_out_time || '12:00'}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, check_out_time: e.target.value })}
+                      />
+                    ) : (
+                      <div className="font-medium">{editedBooking.check_out_time || '12:00'}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nomor Kamar</Label>
+                    {isEditMode ? (
+                      <Select
+                        value={editedBooking.allocated_room_number || ''}
+                        onValueChange={(value) => setEditedBooking({ ...editedBooking, allocated_room_number: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allRoomNumbers
+                            .filter(r => r.roomId === editedBooking.room_id)
+                            .map((room) => (
+                              <SelectItem key={room.roomNumber} value={room.roomNumber}>
+                                {room.roomNumber}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="font-medium">{editedBooking.allocated_room_number || '-'}</div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Jumlah Tamu</Label>
+                    {isEditMode ? (
+                      <Input
+                        type="number"
+                        min="1"
+                        value={editedBooking.num_guests}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, num_guests: parseInt(e.target.value) || 1 })}
+                      />
+                    ) : (
+                      <div className="font-medium">{editedBooking.num_guests} orang</div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Total Malam</Label>
+                    <div className="font-medium">{editedBooking.total_nights} malam</div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Status Booking</Label>
+                  {isEditMode ? (
+                    <Select
+                      value={editedBooking.status}
+                      onValueChange={(value) => setEditedBooking({ ...editedBooking, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                        <SelectItem value="checked-in">Checked-in</SelectItem>
+                        <SelectItem value="checked-out">Checked-out</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge 
+                      variant={
+                        editedBooking.status === 'confirmed' || editedBooking.status === 'checked-in' 
+                          ? 'default' 
+                          : editedBooking.status === 'cancelled'
+                          ? 'destructive'
+                          : 'secondary'
+                      }
+                    >
+                      {editedBooking.status}
+                    </Badge>
+                  )}
+                </div>
               </div>
-              {selectedBooking.special_requests && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Special Requests</div>
-                  <div className="text-sm">{selectedBooking.special_requests}</div>
+
+              <Separator />
+
+              {/* Payment Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm text-muted-foreground">Informasi Pembayaran</h3>
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="text-sm text-muted-foreground mb-1">Total Harga</div>
+                  <div className="text-2xl font-bold text-primary">
+                    Rp {Number(editedBooking.total_price).toLocaleString('id-ID')}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Status Pembayaran</Label>
+                  {isEditMode ? (
+                    <Select
+                      value={editedBooking.payment_status || 'unpaid'}
+                      onValueChange={(value) => setEditedBooking({ ...editedBooking, payment_status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unpaid">❌ Belum Dibayar</SelectItem>
+                        <SelectItem value="partial">💵 DP (Down Payment)</SelectItem>
+                        <SelectItem value="paid">💰 Lunas</SelectItem>
+                        <SelectItem value="pay_at_hotel">🏨 Bayar di Hotel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          editedBooking.payment_status === 'paid' ? 'default' :
+                          editedBooking.payment_status === 'partial' ? 'secondary' :
+                          'outline'
+                        }
+                      >
+                        {editedBooking.payment_status === 'paid' ? '💰 Lunas' :
+                         editedBooking.payment_status === 'partial' ? '💵 DP' :
+                         editedBooking.payment_status === 'pay_at_hotel' ? '🏨 Bayar di Hotel' :
+                         '❌ Belum Dibayar'}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                
+                {(editedBooking.payment_status === 'partial' || (isEditMode && editedBooking.payment_status === 'partial')) && (
+                  <div className="space-y-2">
+                    <Label>Jumlah DP</Label>
+                    {isEditMode ? (
+                      <Input
+                        type="number"
+                        min="0"
+                        max={editedBooking.total_price}
+                        value={editedBooking.payment_amount || 0}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, payment_amount: parseFloat(e.target.value) || 0 })}
+                        placeholder="Masukkan jumlah DP"
+                      />
+                    ) : (
+                      <div className="font-medium">
+                        Rp {Number(editedBooking.payment_amount || 0).toLocaleString('id-ID')}
+                      </div>
+                    )}
+                    {!isEditMode && editedBooking.payment_amount && (
+                      <div className="text-sm text-muted-foreground">
+                        Sisa: Rp {Number(editedBooking.total_price - editedBooking.payment_amount).toLocaleString('id-ID')}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {editedBooking.payment_status === 'paid' && !isEditMode && (
+                  <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="text-sm font-medium text-green-900 dark:text-green-100">
+                      ✅ Pembayaran Lunas
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Special Requests */}
+              <div className="space-y-2">
+                <Label>Permintaan Khusus</Label>
+                {isEditMode ? (
+                  <Textarea
+                    value={editedBooking.special_requests || ''}
+                    onChange={(e) => setEditedBooking({ ...editedBooking, special_requests: e.target.value })}
+                    placeholder="Masukkan permintaan khusus..."
+                    rows={3}
+                  />
+                ) : (
+                  <div className="text-sm bg-muted/50 p-3 rounded-md">
+                    {editedBooking.special_requests || 'Tidak ada permintaan khusus'}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              {isEditMode && (
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={handleEditToggle}
+                    disabled={isUpdating}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    onClick={handleSaveChanges}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? (
+                      <>Menyimpan...</>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Simpan Perubahan
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
             </div>
