@@ -585,16 +585,18 @@ export const MonthlyBookingCalendar = () => {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(roomsByType).map(([roomType]) => (
+                {Object.entries(roomsByType).map(([roomType]) => (
                 <React.Fragment key={roomType}>
                   {/* Room type header */}
                   <tr className="border-y border-border bg-muted/30">
                     <td
-                      colSpan={dates.length + 1}
-                      className="p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm"
+                      className="sticky left-0 z-20 p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm shadow-sm border-r border-border"
                     >
                       {roomType}
                     </td>
+                    {dates.map((date) => (
+                      <td key={date.toISOString()} className="bg-stone-200 border border-border" />
+                    ))}
                   </tr>
 
                   {/* Room rows */}
