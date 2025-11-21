@@ -97,7 +97,6 @@ export const MonthlyBookingCalendar = () => {
   // Refs for auto-scroll functionality
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const todayColumnRef = useRef<HTMLTableCellElement>(null);
-  const [scrolled, setScrolled] = useState(false);
 
   // Calculate date range based on view selection and current date
   const dates = useMemo(() => {
@@ -423,7 +422,7 @@ export const MonthlyBookingCalendar = () => {
       const todayColumn = todayColumnRef.current;
       
       // Calculate scroll position to place today's column near the left
-      const scrollLeft = todayColumn.offsetLeft - 120; // 120px offset for KAMAR column
+      const scrollLeft = todayColumn.offsetLeft - 40; // Small offset for better visibility
       
       // Smooth scroll to today
       container.scrollTo({
@@ -432,19 +431,6 @@ export const MonthlyBookingCalendar = () => {
       });
     }
   }, [dates]); // Re-run when dates change
-
-  // Detect horizontal scroll for shadow effect
-  useEffect(() => {
-    const container = tableContainerRef.current;
-    if (!container) return;
-    
-    const handleScroll = () => {
-      setScrolled(container.scrollLeft > 0);
-    };
-    
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, []);
   
   return (
     <>
@@ -511,93 +497,179 @@ export const MonthlyBookingCalendar = () => {
           </div>
         </div>
 
-        <div ref={tableContainerRef} className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className="sticky top-14 z-40 bg-background">
-              <tr className="bg-muted/50">
-                <th className={cn(
-                  "border border-border p-2 sticky left-0 z-[45] min-w-[100px] bg-muted/50",
-                  scrolled && "shadow-lg"
-                )}>
-                  <span className="text-xs font-bold uppercase tracking-wide">KAMAR</span>
-                </th>
-              {dates.map(date => {
-                const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-                const holiday = isIndonesianHoliday(date);
-                const isHolidayOrWeekend = isWeekend || holiday !== null;
-                const isTodayDate = isToday(date);
-                
-                const headerCell = (
-                  <th 
-                    ref={isTodayDate ? todayColumnRef : null}
-                    key={date.toISOString()} 
-                    className={cn(
-                      "border border-border p-1.5 min-w-[60px] text-center transition-colors relative",
-                      isHolidayOrWeekend && "bg-red-50/50 dark:bg-red-950/10"
-                    )}
-                  >
-                    <div className={cn(
-                      "text-sm font-bold",
-                      isHolidayOrWeekend && "text-red-600"
-                    )}>
-                      {format(date, "d MMM", { locale: localeId })}
-                    </div>
-                    
-                    {isTodayDate && (
-                      <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-md">
-                        TODAY
-                      </div>
-                    )}
-                    
-                    {holiday && (
-                      <div className="text-[8px] text-red-600 font-semibold mt-0.5">
-                        🎉
-                      </div>
-                    )}
+        {/* 2-Table Layout: Fixed KAMAR column + Scrollable date columns */}
+        <div className="flex">
+          {/* LEFT TABLE - FIXED KAMAR COLUMN */}
+          <div className="flex-shrink-0">
+            <table className="border-collapse">
+              <thead className="sticky top-14 z-50 bg-background">
+                {/* Day names row - empty cell */}
+                <tr className="bg-muted/50 border-b border-border h-8">
+                  <th className="border border-border p-1 min-w-[120px] bg-muted/50">
                   </th>
-                );
-                
-                if (holiday) {
-                  return (
-                    <TooltipProvider key={date.toISOString()}>
-                      <Tooltip delayDuration={200}>
-                        <TooltipTrigger asChild>
-                          {headerCell}
-                        </TooltipTrigger>
-                        <TooltipContent 
-                          side="top" 
-                          className="bg-red-600 text-white font-medium"
-                        >
-                          <div className="text-xs">
-                            <div className="font-bold">{holiday.name}</div>
-                            <div className="text-[10px] opacity-90">
-                              {format(date, "d MMMM yyyy")}
-                            </div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  );
-                }
-                
-                return headerCell;
-              })}
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(roomsByType).map(([roomType]) => <React.Fragment key={roomType}>
-                  {/* Room type header */}
-                  <tr className="border-y border-border bg-muted/30">
-                    <td colSpan={dates.length + 1} className="p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm">
-                      {roomType}
-                    </td>
-                  </tr>
+                </tr>
+                {/* Date row */}
+                <tr className="bg-muted/50 h-12">
+                  <th className="border border-border p-2 min-w-[120px] bg-muted/50">
+                    <span className="text-xs font-bold uppercase tracking-wide">KAMAR</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(roomsByType).map(([roomType]) => (
+                  <React.Fragment key={roomType}>
+                    {/* Room type header */}
+                    <tr className="border-y border-border bg-muted/30 h-9">
+                      <td className="p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200">
+                        {roomType}
+                      </td>
+                    </tr>
+                    
+                    {/* Room name rows */}
+                    {allRoomNumbers.filter(r => r.roomType === roomType).map(room => (
+                      <tr key={room.roomNumber} className="hover:bg-muted/10 transition-colors h-14">
+                        <td className="border border-border p-2 font-semibold text-xs bg-background">
+                          {room.roomNumber}
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-                  {/* Room rows */}
-                  {allRoomNumbers.filter(r => r.roomType === roomType).map((room, roomIndex) => <RoomRow key={room.roomNumber} room={room} roomIndex={roomIndex} dates={dates} getBookingForCell={getBookingForCell} isBookingStart={isBookingStart} isBookingEnd={isBookingEnd} isDateBlocked={isDateBlocked} getBlockReason={getBlockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} handleCellClick={handleCellClick} />)}
-                </React.Fragment>)}
-            </tbody>
-          </table>
+          {/* RIGHT TABLE - SCROLLABLE DATE COLUMNS */}
+          <div ref={tableContainerRef} className="overflow-x-auto flex-1">
+            <table className="border-collapse">
+              <thead className="sticky top-14 z-40 bg-background">
+                {/* Day names row */}
+                <tr className="bg-muted/50 border-b border-border h-8">
+                  {dates.map(date => {
+                    const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+                    const dayName = DAY_NAMES[getDay(date)];
+                    
+                    return (
+                      <th 
+                        key={`day-${date.toISOString()}`}
+                        className={cn(
+                          "border border-border p-1 text-[11px] font-semibold min-w-[60px] text-center",
+                          isWeekend && "text-red-600"
+                        )}
+                      >
+                        {dayName}
+                      </th>
+                    );
+                  })}
+                </tr>
+                
+                {/* Date row */}
+                <tr className="bg-muted/50 h-12">
+                  {dates.map(date => {
+                    const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+                    const holiday = isIndonesianHoliday(date);
+                    const isHolidayOrWeekend = isWeekend || holiday !== null;
+                    const isTodayDate = isToday(date);
+                    
+                    const headerCell = (
+                      <th 
+                        ref={isTodayDate ? todayColumnRef : null}
+                        key={date.toISOString()} 
+                        className={cn(
+                          "border border-border p-1.5 min-w-[60px] text-center transition-colors relative",
+                          isHolidayOrWeekend && "bg-red-50/50 dark:bg-red-950/10"
+                        )}
+                      >
+                        <div className={cn(
+                          "text-sm font-bold",
+                          isHolidayOrWeekend && "text-red-600"
+                        )}>
+                          {format(date, "d MMM", { locale: localeId })}
+                        </div>
+                        
+                        {isTodayDate && (
+                          <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-md">
+                            TODAY
+                          </div>
+                        )}
+                        
+                        {holiday && (
+                          <div className="text-[8px] text-red-600 font-semibold mt-0.5">
+                            🎉
+                          </div>
+                        )}
+                      </th>
+                    );
+                    
+                    if (holiday) {
+                      return (
+                        <TooltipProvider key={date.toISOString()}>
+                          <Tooltip delayDuration={200}>
+                            <TooltipTrigger asChild>
+                              {headerCell}
+                            </TooltipTrigger>
+                            <TooltipContent 
+                              side="top" 
+                              className="bg-red-600 text-white font-medium"
+                            >
+                              <div className="text-xs">
+                                <div className="font-bold">{holiday.name}</div>
+                                <div className="text-[10px] opacity-90">
+                                  {format(date, "d MMMM yyyy")}
+                                </div>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    }
+                    
+                    return headerCell;
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(roomsByType).map(([roomType]) => (
+                  <React.Fragment key={roomType}>
+                    {/* Room type header - spanning row */}
+                    <tr className="border-y border-border bg-muted/30 h-9">
+                      <td colSpan={dates.length} className="border border-border"></td>
+                    </tr>
+                    
+                    {/* Date cells for each room */}
+                    {allRoomNumbers.filter(r => r.roomType === roomType).map(room => (
+                      <tr key={room.roomNumber} className="hover:bg-muted/10 transition-colors h-14">
+                        {dates.map(date => {
+                          const booking = getBookingForCell(room.roomNumber, date);
+                          const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+                          const holiday = isIndonesianHoliday(date);
+                          const isBlocked = isDateBlocked(room.roomId, date);
+                          const blockReason = getBlockReason(room.roomId, date);
+                          
+                          return (
+                            <RoomCell 
+                              key={date.toISOString()} 
+                              roomId={room.roomId} 
+                              roomNumber={room.roomNumber} 
+                              date={date} 
+                              booking={booking} 
+                              isWeekend={isWeekend} 
+                              holiday={holiday} 
+                              isBlocked={isBlocked} 
+                              blockReason={blockReason} 
+                              handleBookingClick={handleBookingClick} 
+                              handleRightClick={handleRightClick} 
+                              handleCellClick={handleCellClick} 
+                            />
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Booking Detail Modal */}
@@ -1241,49 +1313,4 @@ const RoomCell = ({
   }
   
   return cell;
-};
-
-// Room Row Component
-const RoomRow = ({
-  room,
-  roomIndex,
-  dates,
-  getBookingForCell,
-  isBookingStart,
-  isBookingEnd,
-  isDateBlocked,
-  getBlockReason,
-  handleBookingClick,
-  handleRightClick,
-  handleCellClick
-}: {
-  room: {
-    roomType: string;
-    roomNumber: string;
-    roomId: string;
-  };
-  roomIndex: number;
-  dates: Date[];
-  getBookingForCell: (roomNumber: string, date: Date) => Booking | null;
-  isBookingStart: (booking: Booking, date: Date) => boolean;
-  isBookingEnd: (booking: Booking, date: Date) => boolean;
-  isDateBlocked: (roomId: string, date: Date) => boolean;
-  getBlockReason: (roomId: string, date: Date) => string | undefined;
-  handleBookingClick: (booking: Booking) => void;
-  handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
-  handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
-}) => {
-  return <tr className="hover:bg-muted/10 transition-colors">
-      <td className="border border-border p-2 sticky left-0 z-30 font-semibold text-xs shadow-sm bg-background">
-        {room.roomNumber}
-      </td>
-      {dates.map(date => {
-      const booking = getBookingForCell(room.roomNumber, date);
-      const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-      const holiday = isIndonesianHoliday(date);
-      const isBlocked = isDateBlocked(room.roomId, date);
-      const blockReason = getBlockReason(room.roomId, date);
-      return <RoomCell key={date.toISOString()} roomId={room.roomId} roomNumber={room.roomNumber} date={date} booking={booking} isWeekend={isWeekend} holiday={holiday} isBlocked={isBlocked} blockReason={blockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} handleCellClick={handleCellClick} />;
-    })}
-    </tr>;
 };
