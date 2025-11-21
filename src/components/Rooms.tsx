@@ -37,7 +37,8 @@ const RoomCard = ({ room }) => {
               loading="lazy"
               onLoad={() => setLoaded(true)}
               onError={(e) => {
-                e.target.src = "/placeholder.jpg";
+                const target = e.target as HTMLImageElement;
+                target.src = "/placeholder.jpg";
                 setLoaded(true);
               }}
             />
@@ -60,7 +61,7 @@ const RoomCard = ({ room }) => {
 
 // Main Rooms Component
 export default function Rooms() {
-  const { rooms, isLoading } = useRooms();
+  const { data: rooms, isLoading } = useRooms();
 
   // FIX: auto-handled loading block
   if (isLoading) {
