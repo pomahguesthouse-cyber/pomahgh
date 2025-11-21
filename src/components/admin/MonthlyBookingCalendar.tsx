@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, isToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, isToday, parseISO, differenceInDays, isSameDay, isBefore, startOfDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { isIndonesianHoliday, type IndonesianHoliday } from "@/utils/indonesianHolidays";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CreateBookingDialog } from "./CreateBookingDialog";
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, useDraggable, useDroppable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 interface Booking {
   id: string;
   room_id: string;
@@ -78,6 +80,8 @@ export const MonthlyBookingCalendar = () => {
   }>({
     open: false
   });
+  const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
+  
   const {
     bookings,
     updateBooking,
@@ -400,6 +404,62 @@ export const MonthlyBookingCalendar = () => {
     });
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const bookingId = event.active.id as string;
+    const booking = bookings?.find(b => b.id === bookingId);
+    if (booking) {
+      setActiveBooking(booking);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveBooking(null);
+
+    if (!over || !active) return;
+
+    const bookingId = active.id as string;
+    const booking = bookings?.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    // Parse drop target: "cell-roomNumber-date"
+    const dropId = over.id as string;
+    const [, targetRoomNumber, targetDateStr] = dropId.split('-');
+    
+    if (!targetRoomNumber || !targetDateStr) return;
+
+    const targetDate = parseISO(targetDateStr);
+    const currentCheckIn = parseISO(booking.check_in);
+    const currentCheckOut = parseISO(booking.check_out);
+    const bookingDuration = differenceInDays(currentCheckOut, currentCheckIn);
+
+    // Calculate new dates
+    const newCheckIn = targetDate;
+    const newCheckOut = addDays(targetDate, bookingDuration);
+
+    // Check if dates actually changed
+    if (isSameDay(currentCheckIn, newCheckIn) && booking.allocated_room_number === targetRoomNumber) {
+      return;
+    }
+
+    try {
+      await updateBooking({
+        id: booking.id,
+        check_in: format(newCheckIn, 'yyyy-MM-dd'),
+        check_out: format(newCheckOut, 'yyyy-MM-dd'),
+        allocated_room_number: targetRoomNumber,
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      toast.success(`Booking dipindahkan ke ${format(newCheckIn, 'dd MMM')} - ${format(newCheckOut, 'dd MMM')}`);
+    } catch (error: any) {
+      console.error("Error moving booking:", error);
+      toast.error(error.message || "Gagal memindahkan booking");
+    }
+  };
+
   // Close context menu when clicking outside
   useEffect(() => {
     const handleClickOutside = () => setContextMenu(null);
@@ -409,7 +469,8 @@ export const MonthlyBookingCalendar = () => {
     }
   }, [contextMenu]);
   
-  return <>
+  return (
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <Card className="w-full shadow-lg rounded-xl overflow-hidden border-border/50">
         <div className="p-4 bg-muted/20 border-b border-border">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -991,11 +1052,26 @@ export const MonthlyBookingCalendar = () => {
         initialDate={createBookingDialog.date}
         rooms={rooms || []}
       />
-    </>;
+
+      {/* Drag Overlay */}
+      <DragOverlay>
+        {activeBooking && (
+          <div className="bg-primary text-primary-foreground p-3 rounded-lg shadow-2xl opacity-90 cursor-grabbing animate-pulse">
+            <div className="text-sm font-semibold">{activeBooking.guest_name}</div>
+            <div className="text-xs mt-1">
+              {format(parseISO(activeBooking.check_in), 'dd MMM')} - {format(parseISO(activeBooking.check_out), 'dd MMM')}
+            </div>
+            <div className="text-xs mt-1 opacity-80">
+              {activeBooking.total_nights} malam
+            </div>
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
+  );
 };
 
 // Draggable Booking Cell Component
-// Booking Cell Component (static, no drag)
 const BookingCell = ({
   booking,
   isStart,
@@ -1007,6 +1083,11 @@ const BookingCell = ({
   isEnd: boolean;
   onClick: () => void;
 }) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: booking.id,
+    data: { booking }
+  });
+
   const isPending = booking.status === 'pending';
   const totalNights = booking.total_nights;
   const bookingWidth = `${totalNights * 100}%`;
@@ -1027,12 +1108,30 @@ const BookingCell = ({
     const colorIndex = booking.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     return colors[colorIndex];
   };
-  
-  return <div onClick={onClick} className={cn("absolute top-0.5 bottom-0.5 bg-gradient-to-r cursor-pointer flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20", getBackgroundClass())} style={{
+
+  const style = transform ? {
+    left: '50%',
+    width: bookingWidth,
+    transform: `translateX(0%) ${CSS.Transform.toString(transform)}`,
+  } : {
     left: '50%',
     width: bookingWidth,
     transform: 'translateX(0%)'
-  }}>
+  };
+  
+  return (
+    <div 
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={onClick} 
+      className={cn(
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible rounded-md z-20",
+        getBackgroundClass(),
+        isDragging ? "opacity-50 cursor-grabbing" : "cursor-grab"
+      )} 
+      style={style}
+    >
       {/* Content - Guest name and nights */}
       <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
         {/* Guest Name */}
@@ -1047,28 +1146,35 @@ const BookingCell = ({
       </div>
       
       {/* LCO Badge - Show on the end */}
-      {booking.check_out_time && booking.check_out_time !== "12:00:00" && <div className="absolute -right-1 top-1/2 -translate-y-1/2 z-20">
+      {booking.check_out_time && booking.check_out_time !== "12:00:00" && (
+        <div className="absolute -right-1 top-1/2 -translate-y-1/2 z-20">
           <div className="bg-white text-gray-800 text-[9px] px-1.5 py-0.5 rounded font-bold shadow-md whitespace-nowrap border border-gray-300">
             LCO {booking.check_out_time.slice(0, 5)}
           </div>
-        </div>}
+        </div>
+      )}
       
       {/* Status watermark */}
-      {!isPending && <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
+      {!isPending && (
+        <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
           <span className="text-white/70 font-bold text-[8px] tracking-wider whitespace-nowrap">
             {booking.status === 'confirmed' ? 'CONFIRMED' : booking.status.toUpperCase()}
           </span>
-        </div>}
+        </div>
+      )}
       
-      {isPending && <div className="absolute right-1 bottom-0.5 opacity-50 pointer-events-none">
+      {isPending && (
+        <div className="absolute right-1 bottom-0.5 opacity-50 pointer-events-none">
           <span className="text-white/80 font-black text-[8px] tracking-wider whitespace-nowrap">
             PENDING
           </span>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
 
-// Room Cell Component (with click to create)
+// Room Cell Component (with click to create + droppable)
 const RoomCell = ({
   roomId,
   roomNumber,
@@ -1094,6 +1200,11 @@ const RoomCell = ({
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
 }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `cell-${roomNumber}-${format(date, 'yyyy-MM-dd')}`,
+    data: { roomNumber, date }
+  });
+
   const isStart = booking ? booking.check_in === format(date, "yyyy-MM-dd") : false;
   const checkOutDate = booking ? new Date(booking.check_out) : null;
   if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
@@ -1106,6 +1217,7 @@ const RoomCell = ({
   
   const cell = (
     <td 
+      ref={setNodeRef}
       onClick={() => handleCellClick(roomId, roomNumber, date, isBlocked, hasBooking)}
       onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} 
       className={cn(
@@ -1113,7 +1225,8 @@ const RoomCell = ({
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
         !isHolidayOrWeekend && "bg-background",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
-        !isClickable && "cursor-context-menu"
+        !isClickable && "cursor-context-menu",
+        isOver && "bg-primary/20 ring-2 ring-primary ring-inset"
       )}
       title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
     >
