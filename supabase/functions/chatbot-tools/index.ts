@@ -108,11 +108,23 @@ serve(async (req) => {
           .from("rooms")
           .select("id, name, price_per_night")
           .ilike("name", `%${room_name}%`)
-          .single();
+          .maybeSingle();
 
         if (roomError) {
           console.error("Room fetch error:", roomError);
-          throw new Error(`Room not found: ${roomError.message}`);
+          throw new Error(`Error fetching room: ${roomError.message}`);
+        }
+
+        if (!room) {
+          // Get all available rooms to provide helpful error
+          const { data: availableRooms } = await supabase
+            .from("rooms")
+            .select("name")
+            .eq("available", true);
+          
+          const roomList = availableRooms?.map(r => r.name).join(", ") || "none";
+          console.error(`Room "${room_name}" not found. Available rooms: ${roomList}`);
+          throw new Error(`Kamar "${room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
         }
 
         // Calculate nights and price
