@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
@@ -106,6 +107,27 @@ export const MonthlyBookingCalendar = () => {
       });
     }
   }, [currentDate, viewRange]);
+
+  // Generate month/year options for dropdown
+  const monthYearOptions = useMemo(() => {
+    const options = [];
+    const currentYear = new Date().getFullYear();
+    
+    // Generate options for 2 years back to 1 year forward
+    for (let year = currentYear - 2; year <= currentYear + 1; year++) {
+      for (let month = 0; month < 12; month++) {
+        const date = new Date(year, month, 1);
+        options.push({
+          value: format(date, "yyyy-MM"),
+          label: format(date, "MMMM yyyy", { locale: localeId })
+        });
+      }
+    }
+    
+    return options;
+  }, []);
+
+  const currentMonthYear = format(currentDate, "yyyy-MM");
 
   // Group rooms by type
   const roomsByType = useMemo(() => {
@@ -236,6 +258,14 @@ export const MonthlyBookingCalendar = () => {
       setCurrentDate(addDays(currentDate, viewRange));
     }
   };
+  const handleGoToToday = () => {
+    setCurrentDate(new Date());
+  };
+  const handleMonthYearChange = (value: string) => {
+    // value format: "2024-11"
+    const [year, month] = value.split("-").map(Number);
+    setCurrentDate(new Date(year, month - 1, 1));
+  };
   const handleBookingClick = (booking: Booking) => {
     setSelectedBooking(booking);
   };
@@ -306,7 +336,7 @@ export const MonthlyBookingCalendar = () => {
       <Card className="w-full shadow-lg rounded-xl overflow-hidden border-border/50">
         <div className="p-4 bg-muted/20 border-b border-border">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {/* View Range Selector */}
               <div className="flex gap-1 bg-background rounded-lg p-1 shadow-sm border border-border">
                 <Button variant={viewRange === 7 ? "default" : "ghost"} size="sm" onClick={() => {
@@ -329,13 +359,39 @@ export const MonthlyBookingCalendar = () => {
                 </Button>
               </div>
               
+              {/* Month/Year Filter */}
+              <Select value={currentMonthYear} onValueChange={handleMonthYearChange}>
+                <SelectTrigger className="w-[180px] text-sm">
+                  <SelectValue placeholder="Pilih Bulan" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {monthYearOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
               {/* Navigation Buttons */}
-              <Button onClick={handlePrevMonth} variant="outline" size="icon">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button onClick={handleNextMonth} variant="outline" size="icon">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-1">
+                <Button onClick={handlePrevMonth} variant="outline" size="icon">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <Button 
+                  onClick={handleGoToToday} 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs px-3 font-medium"
+                >
+                  Today
+                </Button>
+                
+                <Button onClick={handleNextMonth} variant="outline" size="icon">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
