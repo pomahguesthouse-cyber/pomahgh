@@ -344,6 +344,16 @@ export default function AdminSettings() {
                       <Input id="tax_name" name="tax_name" defaultValue={settings.tax_name || "Tax"} />
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="min_stay_nights">Minimum Stay (Nights)</Label>
+                      <Input id="min_stay_nights" name="min_stay_nights" type="number" min="1" defaultValue={settings.min_stay_nights || 1} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="max_stay_nights">Maximum Stay (Nights)</Label>
+                      <Input id="max_stay_nights" name="max_stay_nights" type="number" min="1" defaultValue={settings.max_stay_nights || 30} />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

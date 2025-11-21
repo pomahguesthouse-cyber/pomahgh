@@ -39,6 +39,8 @@ export interface HotelSettings {
   tax_name?: string;
   latitude?: number;
   longitude?: number;
+  min_stay_nights?: number;
+  max_stay_nights?: number;
 }
 
 export const useHotelSettings = () => {
