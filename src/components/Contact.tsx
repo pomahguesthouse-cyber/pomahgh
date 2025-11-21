@@ -2,8 +2,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPin, Phone, Mail } from "lucide-react";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
 
 export const Contact = () => {
+  const { settings } = useHotelSettings();
+
+  const fullAddress = [
+    settings?.address,
+    settings?.city,
+    settings?.state,
+    settings?.postal_code,
+    settings?.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <section id="contact" className="py-20 px-4 bg-secondary/30">
       <div className="container mx-auto max-w-6xl">
@@ -27,8 +40,7 @@ export const Contact = () => {
               <div>
                 <h3 className="text-xl font-bold text-foreground mb-2">Location</h3>
                 <p className="text-muted-foreground">
-                  Jimbaran Beach, Bali<br />
-                  Indonesia, 80361
+                  {fullAddress || "Jimbaran Beach, Bali, Indonesia, 80361"}
                 </p>
               </div>
             </div>
@@ -40,7 +52,14 @@ export const Contact = () => {
               <div>
                 <h3 className="text-xl font-bold text-foreground mb-2">Phone</h3>
                 <p className="text-muted-foreground">
-                  +62 361 123 4567<br />
+                  {settings?.phone_primary || "+62 361 123 4567"}
+                  {settings?.phone_secondary && (
+                    <>
+                      <br />
+                      {settings.phone_secondary}
+                    </>
+                  )}
+                  <br />
                   Available 24/7
                 </p>
               </div>
@@ -53,8 +72,13 @@ export const Contact = () => {
               <div>
                 <h3 className="text-xl font-bold text-foreground mb-2">Email</h3>
                 <p className="text-muted-foreground">
-                  info@pomahguesthouse.com<br />
-                  reservations@pomahguesthouse.com
+                  {settings?.email_primary || "info@pomahguesthouse.com"}
+                  {settings?.email_reservations && (
+                    <>
+                      <br />
+                      {settings.email_reservations}
+                    </>
+                  )}
                 </p>
               </div>
             </div>

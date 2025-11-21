@@ -1,4 +1,4 @@
-import { LayoutDashboard, Home, Calendar, Building2, ImageIcon, Boxes } from "lucide-react";
+import { LayoutDashboard, Home, Calendar, Building2, ImageIcon, Boxes, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -19,6 +19,7 @@ const adminItems = [
   { title: "Rooms", url: "/admin/rooms", icon: Building2 },
   { title: "Hero Slides", url: "/admin/hero-slides", icon: ImageIcon },
   { title: "Facilities", url: "/admin/facilities", icon: Boxes },
+  { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
 export function AdminSidebar() {
