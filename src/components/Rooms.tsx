@@ -16,7 +16,7 @@ const RoomSkeleton = () => (
 // Room Card Component
 const RoomCard = ({ room }) => {
   const [loaded, setLoaded] = useState(false);
-  const { name, price, images, availableRooms } = room;
+  const { name, final_price, image_urls, allotment } = room;
 
   return (
     <motion.div
@@ -29,7 +29,7 @@ const RoomCard = ({ room }) => {
         <CardContent className="p-4">
           <div className="relative w-full h-40 overflow-hidden rounded-xl mb-3 shadow-lg">
             <img
-              src={images?.[0]}
+              src={image_urls?.[0]}
               alt={name}
               className={`w-full h-full object-cover transition-opacity duration-500 ${
                 loaded ? "opacity-100" : "opacity-0"
@@ -46,13 +46,13 @@ const RoomCard = ({ room }) => {
 
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold text-lg">{name}</h3>
-            {availableRooms <= 2 && (
-              <Badge className="bg-red-500 text-white animate-pulse">Sisa {availableRooms}</Badge>
+            {allotment <= 2 && (
+              <Badge className="bg-red-500 text-white animate-pulse">Sisa {allotment}</Badge>
             )}
           </div>
 
           <p className="text-sm text-gray-600 mb-2">Mulai dari:</p>
-          <p className="font-bold text-xl">Rp {price.toLocaleString()}</p>
+          <p className="font-bold text-xl">Rp {final_price?.toLocaleString() || 0}</p>
         </CardContent>
       </Card>
     </motion.div>
