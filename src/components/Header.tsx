@@ -24,16 +24,17 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
-      ${isScrolled ? "bg-black/60 backdrop-blur-md border-b border-white/10" : "bg-transparent border-transparent"}`}
+        ${isScrolled ? "bg-black/60 backdrop-blur-md" : "bg-transparent"}
+      `}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          {/* LOGO */}
+          {/* 🔥 LOGO FILE GANTI TEKS */}
           <Link to="/" className="flex items-center">
             <img src="/logo.png" alt="Logo" className="h-12 w-auto object-contain" />
           </Link>
 
-          {/* DESKTOP NAV */}
+          {/* 🔥 DESKTOP MENU PUTIH */}
           <nav className="hidden md:flex items-center gap-6 text-white">
             <a href="#home" className="hover:text-white/70 transition">
               Home
@@ -56,7 +57,7 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="border-white text-white">
+                    <Button variant="outline" size="icon" className="text-white border-white">
                       <User className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -87,12 +88,12 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
               </Link>
             )}
 
-            <Button className="bg-white text-black hover:bg-white/90" onClick={scrollToRooms}>
+            <Button onClick={scrollToRooms} className="bg-white text-black hover:bg-white/90">
               Book Now
             </Button>
           </nav>
 
-          {/* MOBILE TOGGLE */}
+          {/* 🔥 MOBILE BUTTON PUTIH */}
           <button
             className="md:hidden text-white p-2 rounded-lg hover:bg-white/10 transition"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -101,7 +102,7 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
           </button>
         </div>
 
-        {/* MOBILE MENU */}
+        {/* 🔥 MOBILE MENU PUTIH */}
         {isMenuOpen && (
           <nav className="md:hidden pb-4 flex flex-col gap-4 text-white">
             <a href="#home" className="py-2" onClick={() => setIsMenuOpen(false)}>
@@ -135,7 +136,7 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
                     setIsMenuOpen(false);
                   }}
                   variant="outline"
-                  className="w-full border-white text-white"
+                  className="w-full text-white border-white"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
@@ -143,7 +144,7 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
               </>
             ) : (
               <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                <Button variant="outline" className="w-full border-white text-white">
+                <Button variant="outline" className="w-full text-white border-white">
                   Sign In
                 </Button>
               </Link>
