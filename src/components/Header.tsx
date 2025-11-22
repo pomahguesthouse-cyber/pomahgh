@@ -48,9 +48,43 @@ export const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+   import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Menu, X, User, Shield, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b
+        ${isScrolled 
+          ? "bg-background/80 backdrop-blur-md border-border" 
+          : "bg-transparent border-transparent"
+        }`}
+    >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
+
           <Link to="/" className="text-2xl font-bold tracking-wider text-primary">
             POMAH GUESTHOUSE
           </Link>
@@ -69,6 +103,7 @@ export const Header = () => {
             <a href="#contact" className="text-foreground/80 hover:text-foreground transition-colors">
               Contact
             </a>
+
             {user ? (
               <>
                 <Link to="/bookings" className="text-foreground/80 hover:text-foreground transition-colors">
@@ -80,6 +115,7 @@ export const Header = () => {
                       <User className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
+
                   <DropdownMenuContent align="end">
                     {isAdmin && (
                       <>
@@ -90,6 +126,7 @@ export const Header = () => {
                         <DropdownMenuSeparator />
                       </>
                     )}
+
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign Out
@@ -99,19 +136,16 @@ export const Header = () => {
               </>
             ) : (
               <Link to="/auth">
-                <Button variant="outline">
-                  Sign In
-                </Button>
+                <Button variant="outline">Sign In</Button>
               </Link>
             )}
-            <Button onClick={scrollToRooms}>
-              Book Now
-            </Button>
+
+            <Button onClick={scrollToRooms}>Book Now</Button>
           </nav>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Button */}
           <button
-            className="md:hidden text-foreground"
+            className="md:hidden text-foreground p-2 rounded-lg hover:bg-accent transition"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -128,6 +162,7 @@ export const Header = () => {
             >
               Home
             </a>
+
             <a
               href="#rooms"
               className="text-foreground/80 hover:text-foreground transition-colors block py-2"
@@ -135,6 +170,7 @@ export const Header = () => {
             >
               Rooms
             </a>
+
             <a
               href="#amenities"
               className="text-foreground/80 hover:text-foreground transition-colors block py-2"
@@ -142,6 +178,7 @@ export const Header = () => {
             >
               Amenities
             </a>
+
             <a
               href="#contact"
               className="text-foreground/80 hover:text-foreground transition-colors block py-2"
@@ -149,6 +186,7 @@ export const Header = () => {
             >
               Contact
             </a>
+
             {user ? (
               <>
                 <Link
@@ -158,6 +196,7 @@ export const Header = () => {
                 >
                   My Bookings
                 </Link>
+
                 {isAdmin && (
                   <Link
                     to="/admin"
@@ -167,6 +206,7 @@ export const Header = () => {
                     Admin Dashboard
                   </Link>
                 )}
+
                 <Button
                   onClick={() => {
                     handleSignOut();
@@ -186,6 +226,7 @@ export const Header = () => {
                 </Button>
               </Link>
             )}
+
             <Button
               onClick={() => {
                 scrollToRooms();
@@ -200,4 +241,5 @@ export const Header = () => {
       </div>
     </header>
   );
-};
+}
+
