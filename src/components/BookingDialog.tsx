@@ -37,8 +37,15 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
   const { user } = useAuth();
   const navigate = useNavigate();
   const { settings } = useHotelSettings();
-  const [checkIn, setCheckIn] = useState<Date>();
-  const [checkOut, setCheckOut] = useState<Date>();
+  
+  // Set default dates: today and tomorrow
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const [checkIn, setCheckIn] = useState<Date>(today);
+  const [checkOut, setCheckOut] = useState<Date>(tomorrow);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [formData, setFormData] = useState({
     guest_name: "",
@@ -72,7 +79,21 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
     }
     
     if (!room || !checkIn || !checkOut) {
-      setErrors({ dates: "Pilih tanggal check-in dan check-out" });
+      toast.error("Pilih tanggal check-in dan check-out");
+      return;
+    }
+
+    // Validate check-in is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (checkIn < today) {
+      toast.error("Tanggal check-in tidak boleh di masa lalu");
+      return;
+    }
+
+    // Validate check-out is after check-in
+    if (checkOut <= checkIn) {
+      toast.error("Tanggal check-out harus setelah check-in");
       return;
     }
 
@@ -130,8 +151,13 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
       onSuccess: () => {
         setShowConfirmation(false);
         onOpenChange(false);
-        setCheckIn(undefined);
-        setCheckOut(undefined);
+        // Reset to default dates
+        const resetToday = new Date();
+        resetToday.setHours(0, 0, 0, 0);
+        const resetTomorrow = new Date(resetToday);
+        resetTomorrow.setDate(resetTomorrow.getDate() + 1);
+        setCheckIn(resetToday);
+        setCheckOut(resetTomorrow);
         setFormData({
           guest_name: "",
           guest_email: "",

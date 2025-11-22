@@ -35,8 +35,24 @@ export const CreateBookingDialog = ({
 }: CreateBookingDialogProps) => {
   const queryClient = useQueryClient();
   const { settings } = useHotelSettings();
-  const [checkIn, setCheckIn] = useState<Date | undefined>(initialDate);
-  const [checkOut, setCheckOut] = useState<Date | undefined>();
+  
+  // Set default dates: initialDate or today, and next day for checkout
+  const getDefaultCheckIn = () => {
+    const date = initialDate || new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+  };
+  
+  const getDefaultCheckOut = (checkInDate: Date) => {
+    const nextDay = new Date(checkInDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    return nextDay;
+  };
+  
+  const [checkIn, setCheckIn] = useState<Date | undefined>(getDefaultCheckIn());
+  const [checkOut, setCheckOut] = useState<Date | undefined>(
+    checkIn ? getDefaultCheckOut(checkIn) : undefined
+  );
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [formData, setFormData] = useState({
     guest_name: "",
@@ -52,8 +68,9 @@ export const CreateBookingDialog = ({
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      setCheckIn(initialDate);
-      setCheckOut(undefined);
+      const defaultCheckIn = getDefaultCheckIn();
+      setCheckIn(defaultCheckIn);
+      setCheckOut(getDefaultCheckOut(defaultCheckIn));
       setFormData({
         guest_name: "",
         guest_email: "",
@@ -76,6 +93,15 @@ export const CreateBookingDialog = ({
       return;
     }
 
+    // Validate check-in is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (checkIn < today) {
+      toast.error("Tanggal check-in tidak boleh di masa lalu");
+      return;
+    }
+
+    // Validate check-out is after check-in
     if (checkOut <= checkIn) {
       toast.error("Tanggal check-out harus setelah check-in");
       return;
