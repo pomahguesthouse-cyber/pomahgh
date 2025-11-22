@@ -90,46 +90,48 @@ export const Hero = () => {
 
               {/* Content */}
               <div
-                className={`relative z-10 text-${slide.text_align} px-4 animate-fade-in h-full flex flex-col justify-center items-${slide.text_align === "center" ? "center" : slide.text_align === "right" ? "end" : "start"}`}
+                className={`relative z-10 text-${slide.text_align} px-4 h-full flex flex-col justify-center items-${slide.text_align === "center" ? "center" : slide.text_align === "right" ? "end" : "start"}`}
               >
-                <h1
+                <motion.h1
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                   className={`text-3xl sm:text-4xl md:text-6xl lg:text-7xl ${slide.font_weight} ${slide.text_color} mb-4 sm:mb-6 px-2`}
                   style={{
                     fontFamily: slide.font_family,
                   }}
                 >
                   {slide.overlay_text}
-                </h1>
+                </motion.h1>
                 {slide.overlay_subtext && (
-                  <p
+                  <motion.p
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
                     className={`text-base sm:text-lg md:text-xl lg:text-2xl ${slide.text_color}/90 mb-6 sm:mb-8 max-w-2xl px-2 ${slide.text_align === "center" ? "mx-auto" : ""}`}
                   >
                     {slide.overlay_subtext}
-                  </p>
+                  </motion.p>
                 )}
-                <div
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
                   className={`flex flex-col sm:flex-row gap-3 sm:gap-4 px-2 ${slide.text_align === "center" ? "justify-center" : slide.text_align === "right" ? "justify-end" : "justify-start"}`}
                 >
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
+                  <Button
+                    variant="hero"
+                    size="lg"
+                    className="text-white text-sm sm:text-base md:text-lg"
+                    onClick={() => {
+                      document.getElementById("rooms")?.scrollIntoView({
+                        behavior: "smooth",
+                      });
+                    }}
                   >
-                    <Button
-                      variant="hero"
-                      size="lg"
-                      className="text-white text-sm sm:text-base md:text-lg"
-                      onClick={() => {
-                        document.getElementById("rooms")?.scrollIntoView({
-                          behavior: "smooth",
-                        });
-                      }}
-                    >
-                      Explore Rooms
-                    </Button>
-                  </motion.div>
-                </div>
+                    Explore Rooms
+                  </Button>
+                </motion.div>
               </div>
             </CarouselItem>
           ))}
