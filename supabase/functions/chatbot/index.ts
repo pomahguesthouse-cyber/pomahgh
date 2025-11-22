@@ -203,19 +203,19 @@ BAHASA:
         type: "function",
         function: {
           name: "create_booking_draft",
-          description: "Buat draft booking dengan data yang sudah dikumpulkan",
+          description: "Buat draft booking dengan data yang sudah dikumpulkan. PENTING: Nomor telepon (guest_phone) WAJIB diisi!",
           parameters: {
             type: "object",
             properties: {
-              guest_name: { type: "string" },
-              guest_email: { type: "string" },
-              guest_phone: { type: "string" },
-              check_in: { type: "string" },
-              check_out: { type: "string" },
-              num_guests: { type: "number" },
-              room_name: { type: "string" }
+              guest_name: { type: "string", description: "Nama lengkap tamu" },
+              guest_email: { type: "string", description: "Email tamu" },
+              guest_phone: { type: "string", description: "Nomor telepon/WhatsApp tamu (WAJIB DIISI!)" },
+              check_in: { type: "string", description: "Tanggal check-in YYYY-MM-DD" },
+              check_out: { type: "string", description: "Tanggal check-out YYYY-MM-DD" },
+              num_guests: { type: "number", description: "Jumlah tamu" },
+              room_name: { type: "string", description: "Nama tipe kamar" }
             },
-            required: ["guest_name", "guest_email", "check_in", "check_out", "num_guests", "room_name"]
+            required: ["guest_name", "guest_email", "guest_phone", "check_in", "check_out", "num_guests", "room_name"]
           }
         }
       }

@@ -28,7 +28,14 @@ interface BookingDialogProps {
 const bookingSchema = z.object({
   guest_name: z.string().trim().min(1, "Nama harus diisi").max(100),
   guest_email: z.string().trim().email("Email tidak valid").max(255),
-  guest_phone: z.string().trim().max(20).optional(),
+  guest_phone: z.string()
+    .trim()
+    .min(1, "Nomor telepon harus diisi")
+    .max(20, "Nomor telepon terlalu panjang")
+    .regex(/^[\d\s\+\-\(\)]+$/, "Format nomor telepon tidak valid")
+    .refine(val => val.replace(/\D/g, '').length >= 10, {
+      message: "Nomor telepon minimal 10 digit"
+    }),
   num_guests: z.number().min(1, "Minimal 1 tamu").max(10, "Maksimal 10 tamu"),
   special_requests: z.string().max(500).optional(),
 });
@@ -131,45 +138,51 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
   const handleConfirm = () => {
     if (!room || !checkIn || !checkOut) return;
 
-    const validatedData = bookingSchema.parse(formData);
-    
-    const bookingData: BookingData = {
-      room_id: room.id,
-      guest_name: validatedData.guest_name,
-      guest_email: validatedData.guest_email,
-      guest_phone: validatedData.guest_phone,
-      num_guests: validatedData.num_guests,
-      special_requests: validatedData.special_requests,
-      check_in: checkIn,
-      check_out: checkOut,
-      check_in_time: formData.check_in_time + ":00",
-      check_out_time: formData.check_out_time + ":00",
-      price_per_night: room.price_per_night,
-    };
+    try {
+      const validatedData = bookingSchema.parse(formData);
+      
+      const bookingData: BookingData = {
+        room_id: room.id,
+        guest_name: validatedData.guest_name,
+        guest_email: validatedData.guest_email,
+        guest_phone: validatedData.guest_phone,
+        num_guests: validatedData.num_guests,
+        special_requests: validatedData.special_requests || "",
+        check_in: checkIn,
+        check_out: checkOut,
+        check_in_time: formData.check_in_time + ":00",
+        check_out_time: formData.check_out_time + ":00",
+        price_per_night: room.price_per_night,
+      };
 
-    createBooking(bookingData, {
-      onSuccess: () => {
-        setShowConfirmation(false);
-        onOpenChange(false);
-        // Reset to default dates
-        const resetToday = new Date();
-        resetToday.setHours(0, 0, 0, 0);
-        const resetTomorrow = new Date(resetToday);
-        resetTomorrow.setDate(resetTomorrow.getDate() + 1);
-        setCheckIn(resetToday);
-        setCheckOut(resetTomorrow);
-        setFormData({
-          guest_name: "",
-          guest_email: "",
-          guest_phone: "",
-          num_guests: 1,
-          special_requests: "",
-          check_in_time: "14:00",
-          check_out_time: "12:00",
-        });
-        setErrors({});
-      },
-    });
+      createBooking(bookingData, {
+        onSuccess: () => {
+          setShowConfirmation(false);
+          onOpenChange(false);
+          // Reset to default dates
+          const resetToday = new Date();
+          resetToday.setHours(0, 0, 0, 0);
+          const resetTomorrow = new Date(resetToday);
+          resetTomorrow.setDate(resetTomorrow.getDate() + 1);
+          setCheckIn(resetToday);
+          setCheckOut(resetTomorrow);
+          setFormData({
+            guest_name: "",
+            guest_email: "",
+            guest_phone: "",
+            num_guests: 1,
+            special_requests: "",
+            check_in_time: "14:00",
+            check_out_time: "12:00",
+          });
+          setErrors({});
+        },
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error("Data tidak valid, periksa kembali formulir");
+      }
+    }
   };
 
   const totalNights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
@@ -322,14 +335,16 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
             </div>
 
             <div>
-              <Label htmlFor="guest_phone">Nomor Telepon</Label>
+              <Label htmlFor="guest_phone">Nomor Telepon <span className="text-destructive">*</span></Label>
               <Input
                 id="guest_phone"
                 type="tel"
                 value={formData.guest_phone}
                 onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
                 placeholder="+62 812 3456 7890"
+                required
               />
+              {errors.guest_phone && <p className="text-sm text-destructive mt-1">{errors.guest_phone}</p>}
             </div>
 
             <div>

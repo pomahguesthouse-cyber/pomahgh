@@ -88,6 +88,32 @@ export const CreateBookingDialog = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate required fields
+    if (!formData.guest_name.trim()) {
+      toast.error("Nama wajib diisi");
+      return;
+    }
+    if (!formData.guest_email.trim()) {
+      toast.error("Email wajib diisi");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guest_email)) {
+      toast.error("Format email tidak valid");
+      return;
+    }
+    if (!formData.guest_phone.trim()) {
+      toast.error("Nomor telepon wajib diisi");
+      return;
+    }
+    if (!/^[\d\s\+\-\(\)]+$/.test(formData.guest_phone)) {
+      toast.error("Format nomor telepon tidak valid");
+      return;
+    }
+    if (formData.guest_phone.replace(/\D/g, '').length < 10) {
+      toast.error("Nomor telepon minimal 10 digit");
+      return;
+    }
+    
     if (!checkIn || !checkOut || !roomId || !selectedRoom) {
       toast.error("Lengkapi semua data booking");
       return;
@@ -138,7 +164,7 @@ export const CreateBookingDialog = ({
         allocated_room_number: roomNumber,
         guest_name: formData.guest_name,
         guest_email: formData.guest_email,
-        guest_phone: formData.guest_phone || null,
+        guest_phone: formData.guest_phone,
         check_in: format(checkIn, "yyyy-MM-dd"),
         check_out: format(checkOut, "yyyy-MM-dd"),
         check_in_time: formData.check_in_time + ":00",
@@ -305,13 +331,14 @@ export const CreateBookingDialog = ({
             </div>
 
             <div>
-              <Label htmlFor="guest_phone">Nomor Telepon</Label>
+              <Label htmlFor="guest_phone">Nomor Telepon <span className="text-destructive">*</span></Label>
               <Input
                 id="guest_phone"
                 type="tel"
                 value={formData.guest_phone}
                 onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
-                placeholder="+62 xxx xxx xxx"
+                placeholder="+62 812 3456 7890"
+                required
                 className="mt-1"
               />
             </div>
