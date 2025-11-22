@@ -77,3 +77,12 @@ verify_jwt = false
 
 [functions.realtime-voice]
 verify_jwt = false
+
+[functions.generate-invoice]
+verify_jwt = false
+
+[functions.send-invoice-email]
+verify_jwt = false
+
+[functions.send-invoice]
+verify_jwt = false
