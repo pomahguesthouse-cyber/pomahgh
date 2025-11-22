@@ -9,17 +9,71 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { supabase } from "@/integrations/supabase/client";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
-export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) {
+export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+  const { settings } = useHotelSettings();
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkAdminStatus(session.user.id);
+      }
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkAdminStatus(session.user.id);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkAdminStatus = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    setIsAdmin(!!data);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
+  const handleScrollToRooms = () => {
+    if (scrollToRooms) {
+      scrollToRooms();
+    } else {
+      navigate("/#rooms");
+    }
+  };
 
   return (
     <header
@@ -29,9 +83,12 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          {/* 🔥 LOGO FILE GANTI TEKS */}
           <Link to="/" className="flex items-center">
-            <img src="/logo.png" alt="Logo" className="h-12 w-auto object-contain" />
+            <img 
+              src={settings?.logo_url || "/logo.png"} 
+              alt={settings?.hotel_name || "Logo"} 
+              className="h-12 w-auto object-contain" 
+            />
           </Link>
 
           {/* 🔥 DESKTOP MENU PUTIH */}
@@ -88,7 +145,7 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
               </Link>
             )}
 
-            <Button onClick={scrollToRooms} className="bg-white text-black hover:bg-white/90">
+            <Button onClick={handleScrollToRooms} className="bg-white text-black hover:bg-white/90">
               Book Now
             </Button>
           </nav>
@@ -152,7 +209,7 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
 
             <Button
               onClick={() => {
-                scrollToRooms();
+                handleScrollToRooms();
                 setIsMenuOpen(false);
               }}
               className="w-full bg-white text-black hover:bg-white/90"
