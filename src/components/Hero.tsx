@@ -3,6 +3,7 @@ import { useHeroSlides } from "@/hooks/useHeroSlides";
 import heroImage from "@/assets/hero-guesthouse.jpg";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
+import { motion } from "framer-motion";
 export const Hero = () => {
   const { data: slides, isLoading } = useHeroSlides();
 
