@@ -8,7 +8,7 @@ export interface BookingData {
   room_id: string;
   guest_name: string;
   guest_email: string;
-  guest_phone?: string;
+  guest_phone: string;
   check_in: Date;
   check_out: Date;
   check_in_time?: string;

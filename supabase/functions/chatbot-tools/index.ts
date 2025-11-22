@@ -144,11 +144,16 @@ serve(async (req) => {
       case "create_booking_draft": {
         let { guest_name, guest_email, guest_phone, check_in, check_out, room_name, num_guests, special_requests } = parameters;
         
+        // Validate required fields
+        if (!guest_phone || !guest_phone.trim()) {
+          throw new Error("Nomor telepon wajib diisi untuk membuat booking");
+        }
+        
         // Validate and fix dates if needed
         check_in = validateAndFixDate(check_in, "check_in");
         check_out = validateAndFixDate(check_out, "check_out");
         
-        console.log("Creating booking with params:", { guest_name, guest_email, check_in, check_out, room_name });
+        console.log("Creating booking with params:", { guest_name, guest_email, guest_phone, check_in, check_out, room_name });
         
         // Normalize room name by removing common words
         const normalizeRoomName = (name: string) => {
@@ -199,7 +204,7 @@ serve(async (req) => {
           .insert({
             guest_name,
             guest_email,
-            guest_phone: guest_phone || null,
+            guest_phone,
             check_in,
             check_out,
             room_id: room.id,
