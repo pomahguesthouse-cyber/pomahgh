@@ -3,6 +3,7 @@ export class AudioRecorder {
   private audioContext: AudioContext | null = null;
   private processor: ScriptProcessorNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
+  private isPaused = false;
 
   constructor(private onAudioData: (audioData: Float32Array) => void) {}
 
@@ -26,8 +27,10 @@ export class AudioRecorder {
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
       
       this.processor.onaudioprocess = (e) => {
-        const inputData = e.inputBuffer.getChannelData(0);
-        this.onAudioData(new Float32Array(inputData));
+        if (!this.isPaused) {
+          const inputData = e.inputBuffer.getChannelData(0);
+          this.onAudioData(new Float32Array(inputData));
+        }
       };
       
       this.source.connect(this.processor);
@@ -36,6 +39,14 @@ export class AudioRecorder {
       console.error('Error accessing microphone:', error);
       throw error;
     }
+  }
+
+  pause() {
+    this.isPaused = true;
+  }
+
+  resume() {
+    this.isPaused = false;
   }
 
   stop() {
@@ -123,6 +134,7 @@ export class AudioQueue {
   private queue: Uint8Array[] = [];
   private isPlaying = false;
   private audioContext: AudioContext;
+  private currentSource: AudioBufferSourceNode | null = null;
 
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
@@ -157,7 +169,11 @@ export class AudioQueue {
       source.buffer = audioBuffer;
       source.connect(this.audioContext.destination);
       
-      source.onended = () => this.playNext();
+      this.currentSource = source;
+      source.onended = () => {
+        this.currentSource = null;
+        this.playNext();
+      };
       source.start(0);
     } catch (error) {
       console.error('Error playing audio:', error);
@@ -165,7 +181,19 @@ export class AudioQueue {
     }
   }
 
+  stopCurrentPlayback() {
+    if (this.currentSource) {
+      try {
+        this.currentSource.stop();
+      } catch (e) {
+        // Already stopped
+      }
+      this.currentSource = null;
+    }
+  }
+
   clear() {
+    this.stopCurrentPlayback();
     this.queue = [];
     this.isPlaying = false;
   }

@@ -16,6 +16,7 @@ const VoiceInterface = ({ onTranscriptUpdate, onSpeakingChange, primaryColor }: 
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [userTranscript, setUserTranscript] = useState("");
   const [assistantTranscript, setAssistantTranscript] = useState("");
   
@@ -109,6 +110,22 @@ const VoiceInterface = ({ onTranscriptUpdate, onSpeakingChange, primaryColor }: 
         }
         else if (data.type === 'input_audio_buffer.speech_started') {
           setIsRecording(true);
+          
+          // Interrupt AI if currently speaking
+          if (isSpeaking) {
+            console.log("[Voice] User interrupted AI");
+            audioQueueRef.current?.clear();
+            
+            // Send cancel event to OpenAI
+            if (wsRef.current?.readyState === WebSocket.OPEN) {
+              wsRef.current.send(JSON.stringify({
+                type: 'response.cancel'
+              }));
+            }
+            
+            setIsSpeaking(false);
+            onSpeakingChange(false);
+          }
         }
         else if (data.type === 'input_audio_buffer.speech_stopped') {
           setIsRecording(false);
@@ -147,6 +164,26 @@ const VoiceInterface = ({ onTranscriptUpdate, onSpeakingChange, primaryColor }: 
     }
   };
 
+  const toggleMute = () => {
+    if (!recorderRef.current) return;
+    
+    if (isMuted) {
+      recorderRef.current.resume();
+      setIsMuted(false);
+      toast({
+        title: "Mikrofon Aktif",
+        description: "Anda dapat berbicara kembali",
+      });
+    } else {
+      recorderRef.current.pause();
+      setIsMuted(true);
+      toast({
+        title: "Mikrofon Dimatikan",
+        description: "Mikrofon sementara dimatikan",
+      });
+    }
+  };
+
   const disconnect = () => {
     recorderRef.current?.stop();
     wsRef.current?.close();
@@ -156,6 +193,7 @@ const VoiceInterface = ({ onTranscriptUpdate, onSpeakingChange, primaryColor }: 
     setIsConnected(false);
     setIsRecording(false);
     setIsSpeaking(false);
+    setIsMuted(false);
     setUserTranscript("");
     setAssistantTranscript("");
     
@@ -170,26 +208,40 @@ const VoiceInterface = ({ onTranscriptUpdate, onSpeakingChange, primaryColor }: 
       {/* Status Indicators */}
       <div className="flex flex-col items-center gap-2">
         {isConnected && (
-          <div className="flex items-center gap-4 text-sm">
-            <div className={cn("flex items-center gap-2", isRecording && "text-primary")}>
-              {isRecording ? (
-                <Mic className="w-4 h-4 animate-pulse" />
-              ) : (
-                <MicOff className="w-4 h-4 text-muted-foreground" />
-              )}
-              <span>{isRecording ? "Mendengarkan..." : "Menunggu"}</span>
-            </div>
-            {isSpeaking && (
-              <div className="flex items-center gap-2 text-primary">
-                <div className="flex gap-1">
-                  <div className="w-1 h-3 bg-primary rounded-full animate-pulse" />
-                  <div className="w-1 h-3 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
-                  <div className="w-1 h-3 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                </div>
-                <span>AI Berbicara...</span>
+          <>
+            {isMuted && (
+              <div className="px-3 py-1 bg-destructive text-destructive-foreground rounded-full text-xs font-medium">
+                MIKROFON DIMATIKAN
               </div>
             )}
-          </div>
+            <div className="flex items-center gap-4 text-sm">
+              <div className={cn(
+                "flex items-center gap-2",
+                isMuted ? "text-muted-foreground" : isRecording && "text-primary"
+              )}>
+                {isMuted ? (
+                  <MicOff className="w-4 h-4" />
+                ) : isRecording ? (
+                  <Mic className="w-4 h-4 animate-pulse" />
+                ) : (
+                  <MicOff className="w-4 h-4 text-muted-foreground" />
+                )}
+                <span>
+                  {isMuted ? "Muted" : isRecording ? "Mendengarkan..." : "Menunggu"}
+                </span>
+              </div>
+              {isSpeaking && (
+                <div className="flex items-center gap-2 text-primary">
+                  <div className="flex gap-1">
+                    <div className="w-1 h-3 bg-primary rounded-full animate-pulse" />
+                    <div className="w-1 h-3 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
+                    <div className="w-1 h-3 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                  </div>
+                  <span>AI Berbicara...</span>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
@@ -206,7 +258,7 @@ const VoiceInterface = ({ onTranscriptUpdate, onSpeakingChange, primaryColor }: 
       )}
 
       {/* Call Control */}
-      <div className="flex justify-center">
+      <div className="flex justify-center gap-3">
         {!isConnected ? (
           <Button 
             onClick={connect}
@@ -217,14 +269,28 @@ const VoiceInterface = ({ onTranscriptUpdate, onSpeakingChange, primaryColor }: 
             <Phone className="w-6 h-6 text-white" />
           </Button>
         ) : (
-          <Button 
-            onClick={disconnect}
-            size="lg"
-            variant="destructive"
-            className="rounded-full w-16 h-16"
-          >
-            <PhoneOff className="w-6 h-6" />
-          </Button>
+          <>
+            <Button 
+              onClick={toggleMute}
+              size="lg"
+              variant={isMuted ? "destructive" : "outline"}
+              className="rounded-full w-14 h-14"
+            >
+              {isMuted ? (
+                <MicOff className="w-5 h-5" />
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
+            </Button>
+            <Button 
+              onClick={disconnect}
+              size="lg"
+              variant="destructive"
+              className="rounded-full w-16 h-16"
+            >
+              <PhoneOff className="w-6 h-6" />
+            </Button>
+          </>
         )}
       </div>
 
