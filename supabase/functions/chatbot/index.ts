@@ -62,8 +62,22 @@ serve(async (req) => {
       `- ${loc.name} (${loc.category}): ${loc.distance_km}km, ~${loc.travel_time_minutes} menit`
     ).join('\n') || '';
 
+    // Get current date for context
+    const now = new Date();
+    const dateOptions: Intl.DateTimeFormatOptions = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    const currentDateIndonesian = now.toLocaleDateString('id-ID', dateOptions);
+    const currentDateISO = now.toISOString().split('T')[0];
+
     // Build enhanced system prompt
     const systemPrompt = `${chatbotSettings.persona}
+
+📅 TANGGAL SEKARANG: ${currentDateIndonesian} (${currentDateISO})
+⚠️ TAHUN SEKARANG: 2025
 
 INFORMASI LENGKAP ${hotelSettings?.hotel_name || 'POMAH GUESTHOUSE'}:
 
@@ -101,6 +115,24 @@ TOOLS YANG TERSEDIA:
 3. get_facilities - Daftar lengkap fasilitas
 4. create_booking_draft - Buat booking langsung
 
+⚠️ PANDUAN PARSING TANGGAL (SANGAT PENTING!):
+- "hari ini" → tanggal sekarang (${currentDateISO})
+- "besok" → hari ini + 1 hari
+- "lusa" → hari ini + 2 hari  
+- "minggu depan" / "seminggu lagi" → hari ini + 7 hari
+- "bulan depan" / "sebulan lagi" → bulan ini + 1 bulan
+- "akhir pekan ini" / "weekend" → Sabtu-Minggu minggu ini
+- Jika user hanya sebut tanggal & bulan (contoh: "15 Januari", "20 Desember") → SELALU GUNAKAN TAHUN 2025
+- Jika tanggal sudah lewat di tahun 2025, gunakan tahun 2026
+- Format output tanggal: YYYY-MM-DD (contoh: 2025-01-15, 2025-12-20)
+
+CONTOH PARSING:
+❌ User: "Ada kamar 15 Januari?" → JANGAN parse ke 2023-01-15
+✅ User: "Ada kamar 15 Januari?" → HARUS parse ke 2025-01-15
+
+❌ User: "Booking besok sampai lusa" → JANGAN gunakan tahun lama
+✅ User: "Booking besok sampai lusa" → Hitung dari ${currentDateISO} + 1 dan + 2 hari
+
 CARA MENJAWAB (PENTING!):
 ✓ LUGAS & LANGSUNG - Langsung jawab pertanyaan tanpa basa-basi berlebihan
 ✓ GUNAKAN DATA AKURAT - Semua info di atas adalah data real dari database
@@ -129,12 +161,18 @@ BAHASA:
         type: "function",
         function: {
           name: "check_availability",
-          description: "Cek ketersediaan kamar untuk tanggal tertentu",
+          description: "Cek ketersediaan kamar untuk tanggal tertentu. PENTING: Gunakan tahun 2025 atau lebih baru untuk semua tanggal!",
           parameters: {
             type: "object",
             properties: {
-              check_in: { type: "string", description: "Tanggal check-in (YYYY-MM-DD)" },
-              check_out: { type: "string", description: "Tanggal check-out (YYYY-MM-DD)" },
+              check_in: { 
+                type: "string", 
+                description: "Tanggal check-in format YYYY-MM-DD. WAJIB pakai tahun 2025 atau lebih. Contoh: 2025-01-15, 2025-12-20. JANGAN pakai tahun < 2025!" 
+              },
+              check_out: { 
+                type: "string", 
+                description: "Tanggal check-out format YYYY-MM-DD. WAJIB pakai tahun 2025 atau lebih. Contoh: 2025-01-18, 2025-12-25. JANGAN pakai tahun < 2025!" 
+              },
               num_guests: { type: "number", description: "Jumlah tamu" }
             },
             required: ["check_in", "check_out"]

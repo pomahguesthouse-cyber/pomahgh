@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to validate and fix dates
+function validateAndFixDate(dateStr: string, fieldName: string): string {
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  
+  // If year is before 2025, correct it to 2025
+  if (year < 2025) {
+    console.warn(`⚠️ ${fieldName} has year ${year}, correcting to 2025`);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `2025-${month}-${day}`;
+  }
+  
+  return dateStr;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,7 +40,13 @@ serve(async (req) => {
 
     switch (tool_name) {
       case "check_availability": {
-        const { check_in, check_out, num_guests } = parameters;
+        let { check_in, check_out, num_guests } = parameters;
+        
+        // Validate and fix dates if needed
+        check_in = validateAndFixDate(check_in, "check_in");
+        check_out = validateAndFixDate(check_out, "check_out");
+        
+        console.log(`✅ Checking availability: ${check_in} to ${check_out} for ${num_guests || 'any'} guests`);
         
         // Get all rooms
         const { data: rooms, error: roomsError } = await supabase
@@ -120,7 +142,11 @@ serve(async (req) => {
       }
 
       case "create_booking_draft": {
-        const { guest_name, guest_email, guest_phone, check_in, check_out, room_name, num_guests, special_requests } = parameters;
+        let { guest_name, guest_email, guest_phone, check_in, check_out, room_name, num_guests, special_requests } = parameters;
+        
+        // Validate and fix dates if needed
+        check_in = validateAndFixDate(check_in, "check_in");
+        check_out = validateAndFixDate(check_out, "check_out");
         
         console.log("Creating booking with params:", { guest_name, guest_email, check_in, check_out, room_name });
         
