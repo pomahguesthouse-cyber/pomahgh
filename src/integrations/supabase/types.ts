@@ -26,6 +26,8 @@ export type Database = {
           guest_name: string
           guest_phone: string | null
           id: string
+          invoice_number: string | null
+          last_invoice_sent_at: string | null
           num_guests: number
           payment_amount: number | null
           payment_status: string | null
@@ -47,6 +49,8 @@ export type Database = {
           guest_name: string
           guest_phone?: string | null
           id?: string
+          invoice_number?: string | null
+          last_invoice_sent_at?: string | null
           num_guests?: number
           payment_amount?: number | null
           payment_status?: string | null
@@ -68,6 +72,8 @@ export type Database = {
           guest_name?: string
           guest_phone?: string | null
           id?: string
+          invoice_number?: string | null
+          last_invoice_sent_at?: string | null
           num_guests?: number
           payment_amount?: number | null
           payment_status?: string | null
@@ -307,6 +313,7 @@ export type Database = {
         Row: {
           about_us: string | null
           address: string
+          auto_send_invoice: boolean | null
           check_in_time: string | null
           check_out_time: string | null
           city: string | null
@@ -322,11 +329,13 @@ export type Database = {
           hotel_name: string
           id: string
           instagram_url: string | null
+          invoice_footer_text: string | null
           latitude: number | null
           logo_url: string | null
           longitude: number | null
           max_stay_nights: number | null
           min_stay_nights: number | null
+          payment_instructions: string | null
           phone_primary: string | null
           phone_secondary: string | null
           postal_code: string | null
@@ -347,6 +356,7 @@ export type Database = {
         Insert: {
           about_us?: string | null
           address?: string
+          auto_send_invoice?: boolean | null
           check_in_time?: string | null
           check_out_time?: string | null
           city?: string | null
@@ -362,11 +372,13 @@ export type Database = {
           hotel_name?: string
           id?: string
           instagram_url?: string | null
+          invoice_footer_text?: string | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
           max_stay_nights?: number | null
           min_stay_nights?: number | null
+          payment_instructions?: string | null
           phone_primary?: string | null
           phone_secondary?: string | null
           postal_code?: string | null
@@ -387,6 +399,7 @@ export type Database = {
         Update: {
           about_us?: string | null
           address?: string
+          auto_send_invoice?: boolean | null
           check_in_time?: string | null
           check_out_time?: string | null
           city?: string | null
@@ -402,11 +415,13 @@ export type Database = {
           hotel_name?: string
           id?: string
           instagram_url?: string | null
+          invoice_footer_text?: string | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
           max_stay_nights?: number | null
           min_stay_nights?: number | null
+          payment_instructions?: string | null
           phone_primary?: string | null
           phone_secondary?: string | null
           postal_code?: string | null
@@ -425,6 +440,56 @@ export type Database = {
           youtube_url?: string | null
         }
         Relationships: []
+      }
+      invoice_logs: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          created_by: string | null
+          email_sent: boolean | null
+          error_message: string | null
+          id: string
+          invoice_number: string
+          sent_at: string | null
+          sent_to_email: string | null
+          sent_to_whatsapp: string | null
+          whatsapp_sent: boolean | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          created_by?: string | null
+          email_sent?: boolean | null
+          error_message?: string | null
+          id?: string
+          invoice_number: string
+          sent_at?: string | null
+          sent_to_email?: string | null
+          sent_to_whatsapp?: string | null
+          whatsapp_sent?: boolean | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          email_sent?: boolean | null
+          error_message?: string | null
+          id?: string
+          invoice_number?: string
+          sent_at?: string | null
+          sent_to_email?: string | null
+          sent_to_whatsapp?: string | null
+          whatsapp_sent?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nearby_locations: {
         Row: {
@@ -650,6 +715,7 @@ export type Database = {
         Args: { p_check_in: string; p_check_out: string; p_room_id: string }
         Returns: string
       }
+      generate_invoice_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
