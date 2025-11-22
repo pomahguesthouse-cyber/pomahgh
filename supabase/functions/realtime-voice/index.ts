@@ -81,18 +81,38 @@ INSTRUKSI PENTING:
 - Setelah tool selesai, berikan respons berdasarkan hasilnya
 - Jika ada pertanyaan yang tidak dapat dijawab, tawarkan bantuan alternatif`;
 
+    // Get ephemeral token from OpenAI for WebSocket connection
+    const sessionResponse = await fetch("https://api.openai.com/v1/realtime/sessions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-realtime-preview-2024-12-17",
+        voice: "alloy",
+      }),
+    });
+
+    if (!sessionResponse.ok) {
+      const errorText = await sessionResponse.text();
+      console.error("[Server] Failed to create OpenAI session:", sessionResponse.status, errorText);
+      throw new Error(`Failed to create OpenAI session: ${sessionResponse.status}`);
+    }
+
+    const sessionData = await sessionResponse.json();
+    const EPHEMERAL_KEY = sessionData.client_secret.value;
+
+    console.log("[Server] Ephemeral session created");
+
     // Upgrade to WebSocket
     const { socket, response } = Deno.upgradeWebSocket(req);
     
-    // Connect to OpenAI Realtime API
+    // Connect to OpenAI Realtime API using ephemeral token
+    const model = "gpt-4o-realtime-preview-2024-12-17";
     const openAISocket = new WebSocket(
-      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17",
-      {
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "OpenAI-Beta": "realtime=v1"
-        }
-      }
+      `wss://api.openai.com/v1/realtime?model=${model}`,
+      ["realtime", `openai-insecure-api-key.${EPHEMERAL_KEY}`, "openai-beta.realtime-v1"]
     );
 
     let sessionConfigured = false;
