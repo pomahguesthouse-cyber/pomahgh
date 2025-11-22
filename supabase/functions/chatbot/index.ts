@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,27 +19,108 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build system prompt with chatbot settings
+    // Initialize Supabase client to fetch real data
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Fetch hotel settings and data
+    const { data: hotelSettings } = await supabase
+      .from("hotel_settings")
+      .select("*")
+      .single();
+
+    const { data: rooms } = await supabase
+      .from("rooms")
+      .select("name, description, price_per_night, max_guests, features, size_sqm")
+      .eq("available", true)
+      .order("price_per_night");
+
+    const { data: facilities } = await supabase
+      .from("facilities")
+      .select("title, description")
+      .eq("is_active", true);
+
+    const { data: nearbyLocations } = await supabase
+      .from("nearby_locations")
+      .select("name, category, distance_km, travel_time_minutes")
+      .eq("is_active", true)
+      .order("distance_km")
+      .limit(10);
+
+    // Build comprehensive context
+    const roomsInfo = rooms?.map(r => 
+      `- ${r.name}: ${r.description}. Harga: Rp ${r.price_per_night.toLocaleString()}/malam. Max ${r.max_guests} tamu${r.size_sqm ? `, ${r.size_sqm}m²` : ''}. Fasilitas: ${r.features.join(', ')}`
+    ).join('\n') || '';
+
+    const facilitiesInfo = facilities?.map(f => 
+      `- ${f.title}: ${f.description}`
+    ).join('\n') || '';
+
+    const nearbyInfo = nearbyLocations?.map(loc => 
+      `- ${loc.name} (${loc.category}): ${loc.distance_km}km, ~${loc.travel_time_minutes} menit`
+    ).join('\n') || '';
+
+    // Build enhanced system prompt
     const systemPrompt = `${chatbotSettings.persona}
 
-Informasi Penting:
-- Nama Hotel: Pomah Guesthouse
-- Check-in: 14:00, Check-out: 12:00
-- Lokasi: Bali, Indonesia
+INFORMASI LENGKAP ${hotelSettings?.hotel_name || 'POMAH GUESTHOUSE'}:
 
-Anda memiliki akses ke tools untuk:
-1. Cek ketersediaan kamar (check_availability)
-2. Dapatkan info detail kamar (get_room_details)
-3. Dapatkan daftar fasilitas (get_facilities)
-4. Bantu membuat booking (create_booking_draft)
+📍 LOKASI & KONTAK:
+- Alamat: ${hotelSettings?.address || 'Bali, Indonesia'}
+- Email: ${hotelSettings?.email_primary || '-'}
+- Telepon: ${hotelSettings?.phone_primary || '-'}
+- WhatsApp: ${hotelSettings?.whatsapp_number || '-'}
 
-Pedoman:
-- Selalu ramah dan profesional
-- Jika ditanya ketersediaan, gunakan tool check_availability
-- Jika ditanya fasilitas, gunakan tool get_facilities
-- Jika tamu ingin booking, kumpulkan info: nama, email, telepon, tanggal check-in/out, jumlah tamu
-- Berikan informasi yang akurat dan jelas
-- Gunakan bahasa Indonesia yang natural
+⏰ JAM OPERASIONAL:
+- Check-in: ${hotelSettings?.check_in_time || '14:00'}
+- Check-out: ${hotelSettings?.check_out_time || '12:00'}
+${hotelSettings?.min_stay_nights ? `- Minimum menginap: ${hotelSettings.min_stay_nights} malam` : ''}
+${hotelSettings?.max_stay_nights ? `- Maximum menginap: ${hotelSettings.max_stay_nights} malam` : ''}
+
+🏨 TENTANG KAMI:
+${hotelSettings?.description || 'Guesthouse nyaman dengan layanan terbaik'}
+
+🛏️ TIPE KAMAR:
+${roomsInfo}
+
+✨ FASILITAS:
+${facilitiesInfo}
+
+📍 LOKASI TERDEKAT:
+${nearbyInfo}
+
+💰 INFORMASI PEMBAYARAN:
+${hotelSettings?.tax_name && hotelSettings?.tax_rate ? `- Pajak: ${hotelSettings.tax_name} ${hotelSettings.tax_rate}%` : ''}
+- Mata uang: ${hotelSettings?.currency_code || 'IDR'}
+
+TOOLS YANG TERSEDIA:
+1. check_availability - Cek ketersediaan real-time kamar untuk tanggal tertentu
+2. get_room_details - Info lengkap kamar spesifik
+3. get_facilities - Daftar lengkap fasilitas
+4. create_booking_draft - Buat booking langsung
+
+CARA MENJAWAB (PENTING!):
+✓ LUGAS & LANGSUNG - Langsung jawab pertanyaan tanpa basa-basi berlebihan
+✓ GUNAKAN DATA AKURAT - Semua info di atas adalah data real dari database
+✓ PROAKTIF - Tawarkan info relevan tanpa diminta jika membantu
+✓ GUNAKAN TOOLS - Jangan tebak-tebak, gunakan tools untuk data real-time
+✓ SINGKAT TAPI LENGKAP - Tidak perlu kalimat panjang, langsung ke intinya
+✓ NUMBERS MATTER - Selalu sebutkan harga, kapasitas, dan detail spesifik
+✓ NATURAL - Berbicara seperti resepsionis hotel profesional yang ramah
+
+CONTOH JAWABAN YANG BAIK:
+❌ "Terima kasih atas pertanyaan Anda. Kami dengan senang hati akan membantu..."
+✅ "Ada 3 tipe kamar: Deluxe Room Rp 500rb, Superior Rp 700rb, Villa Rp 1jt per malam."
+
+❌ "Kami memiliki berbagai fasilitas yang menarik untuk Anda..."
+✅ "Fasilitas: WiFi gratis, kolam renang, sarapan, parkir, AC semua kamar."
+
+BAHASA:
+- Gunakan Bahasa Indonesia yang natural dan familiar
+- Boleh informal tapi tetap profesional (seperti chat WhatsApp hotel)
+- Gunakan emoji sesekali untuk kesan ramah (📍🏨✨💰)
 `;
 
     // Define tools for the AI
@@ -101,7 +183,7 @@ Pedoman:
       }
     ];
 
-    // Call Lovable AI
+    // Call Lovable AI with optimized settings for direct answers
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -115,9 +197,9 @@ Pedoman:
           ...messages
         ],
         tools,
-        temperature: 0.7,
-        max_tokens: chatbotSettings.response_speed === 'fast' ? 300 : 
-                    chatbotSettings.response_speed === 'detailed' ? 800 : 500,
+        temperature: 0.3, // Lower temperature for more focused, direct responses
+        max_tokens: chatbotSettings.response_speed === 'fast' ? 250 : 
+                    chatbotSettings.response_speed === 'detailed' ? 600 : 400,
       }),
     });
 
