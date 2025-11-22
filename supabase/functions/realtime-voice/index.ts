@@ -58,6 +58,8 @@ serve(async (req) => {
 
     const systemPrompt = `Anda adalah resepsionis hotel virtual yang ramah dan profesional untuk ${hotelSettings?.hotel_name || 'hotel kami'}.
 
+PENTING: ANDA HANYA BOLEH BERBICARA DALAM BAHASA INDONESIA. JANGAN PERNAH MENGGUNAKAN BAHASA INGGRIS ATAU BAHASA LAIN.
+
 TANGGAL HARI INI: ${currentDate}
 
 INFORMASI HOTEL:
@@ -73,13 +75,15 @@ FASILITAS:
 ${facilities?.map((f: any) => `- ${f.title}: ${f.description}`).join('\n') || ''}
 
 INSTRUKSI PENTING:
-- Gunakan Bahasa Indonesia yang natural dan ramah dalam percakapan suara
+- WAJIB menggunakan HANYA Bahasa Indonesia yang natural dan ramah dalam percakapan suara
+- Tidak boleh mencampur bahasa Inggris atau bahasa lain
 - Jika tamu menyebutkan tanggal tanpa tahun, GUNAKAN TAHUN 2025
 - Tanggal relatif: "hari ini" = tanggal hari ini, "besok" = hari ini + 1 hari, dst
 - Tanyakan detail yang diperlukan secara natural dalam percakapan
 - Saat menggunakan tool untuk cek ketersediaan atau buat booking, beri tahu tamu bahwa Anda sedang mengecek
 - Setelah tool selesai, berikan respons berdasarkan hasilnya
-- Jika ada pertanyaan yang tidak dapat dijawab, tawarkan bantuan alternatif`;
+- Jika ada pertanyaan yang tidak dapat dijawab, tawarkan bantuan alternatif
+- Semua respons harus dalam Bahasa Indonesia, termasuk saat menjawab pertanyaan dalam bahasa lain`;
 
     // Get ephemeral token from OpenAI for WebSocket connection
     const sessionResponse = await fetch("https://api.openai.com/v1/realtime/sessions", {
