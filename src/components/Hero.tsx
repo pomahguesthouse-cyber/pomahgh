@@ -109,19 +109,25 @@ export const Hero = () => {
                 <div
                   className={`flex flex-col sm:flex-row gap-3 sm:gap-4 px-2 ${slide.text_align === "center" ? "justify-center" : slide.text_align === "right" ? "justify-end" : "justify-start"}`}
                 >
-                  <Button
-                    variant="hero"
-                    size="lg"
-                    className="text-sm sm:text-base md:text-lg"
-                    onClick={() => {
-                      const target = document.getElementById("rooms");
-                      if (target) {
-                        target.scrollIntoView({ behavior: "smooth" });
-                      }
-                    }}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
                   >
-                    Explore Rooms
-                  </Button>
+                    <Button
+                      variant="hero"
+                      size="lg"
+                      className="text-white text-sm sm:text-base md:text-lg"
+                      onClick={() => {
+                        document.getElementById("rooms")?.scrollIntoView({
+                          behavior: "smooth",
+                        });
+                      }}
+                    >
+                      Explore Rooms
+                    </Button>
+                  </motion.div>
                 </div>
               </div>
             </CarouselItem>
