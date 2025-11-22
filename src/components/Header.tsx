@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, User, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -12,216 +10,33 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-export const Header = () => {
+export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Cek Admin
   useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user) {
-        setIsAdmin(false);
-        return;
-      }
-
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      setIsAdmin(!!data);
-    };
-
-    checkAdmin();
-  }, [user]);
-
-  // Scroll Effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
-  const scrollToRooms = () => {
-    document.getElementById("rooms")?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
-        isScrolled ? "bg-background/80 backdrop-blur-md border-border" : "bg-transparent border-transparent"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b
+      ${
+        isScrolled
+          ? "bg-background/80 backdrop-blur-md border-border"
+          : "bg-transparent border-transparent"
       }`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          <Link to="/" className="text-2xl font-bold tracking-wider text-primary">
-            POMAH GUESTHOUSE
-          </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6">
-            <a href="#home" className="text-foreground/80 hover:text-foreground transition-colors">
-              Home
-            </a>
-            <a href="#rooms" className="text-foreground/80 hover:text-foreground transition-colors">
-              Rooms
-            </a>
-            <a href="#amenities" className="text-foreground/80 hover:text-foreground transition-colors">
-              Amenities
-            </a>
-            <a href="#contact" className="text-foreground/80 hover:text-foreground transition-colors">
-              Contact
-            </a>
-
-            {user ? (
-              <>
-                <Link to="/bookings" className="text-foreground/80 hover:text-foreground transition-colors">
-                  My Bookings
-                </Link>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <User className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-
-                  <DropdownMenuContent align="end">
-                    {isAdmin && (
-                      <>
-                        <DropdownMenuItem onClick={() => navigate("/admin/dashboard")}>
-                          <Shield className="mr-2 h-4 w-4" />
-                          Admin Dashboard
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
-
-                    <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sign Out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <Link to="/auth">
-                <Button variant="outline">Sign In</Button>
-              </Link>
-            )}
-
-            <Button onClick={scrollToRooms}>Book Now</Button>
-          </nav>
-
-          {/* Mobile Button */}
-          <button
-            className="md:hidden text-foreground p-2 rounded-lg hover:bg-accent transition"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-
-        {/* Mobile Nav */}
-        {isMenuOpen && (
-          <nav className="md:hidden pb-4 flex flex-col gap-4">
-            <a
-              href="#home"
-              className="text-foreground/80 hover:text-foreground transition-colors block py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Home
-            </a>
-
-            <a
-              href="#rooms"
-              className="text-foreground/80 hover:text-foreground transition-colors block py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Rooms
-            </a>
-
-            <a
-              href="#amenities"
-              className="text-foreground/80 hover:text-foreground transition-colors block py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Amenities
-            </a>
-
-            <a
-              href="#contact"
-              className="text-foreground/80 hover:text-foreground transition-colors block py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Contact
-            </a>
-
-            {user ? (
-              <>
-                <Link
-                  to="/bookings"
-                  className="text-foreground/80 hover:text-foreground transition-colors block py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  My Bookings
-                </Link>
-
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    className="text-foreground/80 hover:text-foreground transition-colors block py-2"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Admin Dashboard
-                  </Link>
-                )}
-
-                <Button
-                  onClick={() => {
-                    handleSignOut();
-                    setIsMenuOpen(false);
-                  }}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                <Button variant="outline" className="w-full">
-                  Sign In
-                </Button>
-              </Link>
-            )}
-
-            <Button
-              onClick={() => {
-                scrollToRooms();
-                setIsMenuOpen(false);
-              }}
-              className="w-full"
-            >
-              Book Now
-            </Button>
-          </nav>
-        )}
-      </div>
-    </header>
-  );
-};
+          {/* LOGO IMAGE */}
+          <Link to="/" className="flex items-center">
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="h-12 w-auto object-contain"
+            />
