@@ -1,5 +1,6 @@
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useRooms } from "@/hooks/useRooms";
+import { useInvoice } from "@/hooks/useInvoice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import { Trash2, Edit, CheckCircle, Clock, Wrench } from "lucide-react";
+import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 const AdminBookings = () => {
@@ -23,6 +24,7 @@ const AdminBookings = () => {
   const {
     data: rooms
   } = useRooms();
+  const { sendInvoice, isSending } = useInvoice();
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -148,6 +150,16 @@ const AdminBookings = () => {
                     </p>}
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => sendInvoice({ bookingId: booking.id })}
+                    disabled={isSending || booking.status !== 'confirmed'}
+                    title={booking.status !== 'confirmed' ? 'Only confirmed bookings can send invoice' : 'Send invoice via email & WhatsApp'}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Invoice
+                  </Button>
                   <Select value={booking.status} onValueChange={value => updateBookingStatus({
                 id: booking.id,
                 status: value
