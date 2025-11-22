@@ -1,23 +1,25 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "./ui/button";
-import { Menu, X, User, LogOut, Shield } from "lucide-react";
+import { Menu, X, User, Shield, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
+  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
+  // Cek Admin
   useEffect(() => {
     const checkAdmin = async () => {
       if (!user) {
@@ -38,6 +40,16 @@ export const Header = () => {
     checkAdmin();
   }, [user]);
 
+  // Scroll Effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
@@ -48,48 +60,18 @@ export const Header = () => {
   };
 
   return (
-   import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, User, Shield, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-
-export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b
-        ${isScrolled 
-          ? "bg-background/80 backdrop-blur-md border-border" 
-          : "bg-transparent border-transparent"
-        }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
+        isScrolled ? "bg-background/80 backdrop-blur-md border-border" : "bg-transparent border-transparent"
+      }`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-
           <Link to="/" className="text-2xl font-bold tracking-wider text-primary">
             POMAH GUESTHOUSE
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6">
             <a href="#home" className="text-foreground/80 hover:text-foreground transition-colors">
               Home
@@ -109,6 +91,7 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
                 <Link to="/bookings" className="text-foreground/80 hover:text-foreground transition-colors">
                   My Bookings
                 </Link>
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon">
@@ -152,7 +135,7 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
           </button>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Nav */}
         {isMenuOpen && (
           <nav className="md:hidden pb-4 flex flex-col gap-4">
             <a
@@ -241,5 +224,4 @@ export default function Header({ user, isAdmin, handleSignOut, scrollToRooms }) 
       </div>
     </header>
   );
-}
-
+};
