@@ -84,10 +84,10 @@ export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center">
-            <img 
-              src={settings?.logo_url || "/logo.png"} 
-              alt={settings?.hotel_name || "Logo"} 
-              className="h-12 w-auto object-contain" 
+            <img
+              src={settings?.logo_url || "/logo.png"}
+              alt={settings?.hotel_name || "Logo"}
+              className="h-12 w-auto object-contain"
             />
           </Link>
 
