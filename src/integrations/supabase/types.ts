@@ -616,6 +616,7 @@ export type Database = {
           room_numbers: string[] | null
           saturday_price: number | null
           size_sqm: number | null
+          slug: string | null
           sunday_price: number | null
           thursday_price: number | null
           tuesday_price: number | null
@@ -646,6 +647,7 @@ export type Database = {
           room_numbers?: string[] | null
           saturday_price?: number | null
           size_sqm?: number | null
+          slug?: string | null
           sunday_price?: number | null
           thursday_price?: number | null
           tuesday_price?: number | null
@@ -676,6 +678,7 @@ export type Database = {
           room_numbers?: string[] | null
           saturday_price?: number | null
           size_sqm?: number | null
+          slug?: string | null
           sunday_price?: number | null
           thursday_price?: number | null
           tuesday_price?: number | null

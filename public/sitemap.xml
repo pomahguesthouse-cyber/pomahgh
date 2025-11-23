@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://pomahguesthouse.com/</loc>
+    <priority>1.0</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://pomahguesthouse.com/auth</loc>
+    <priority>0.5</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://pomahguesthouse.com/bookings</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <!-- Room pages will be dynamically added here -->
+  <!-- For now, add common room slugs manually -->
+  <url>
+    <loc>https://pomahguesthouse.com/rooms/deluxe-ocean-view</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://pomahguesthouse.com/rooms/private-pool-villa</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+</urlset>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -205,6 +206,14 @@ export const Rooms = () => {
                         </div>
 
                         <div className="flex gap-2">
+                          <Link
+                            to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                            className="flex-1"
+                          >
+                            <Button variant="outline" className="w-full">
+                              View Details
+                            </Button>
+                          </Link>
                           <Button variant="luxury" className="flex-1" onClick={() => handleBookRoom(room)}>
                             Book Now
                           </Button>

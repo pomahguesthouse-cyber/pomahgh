@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useRooms } from "@/hooks/useRooms";
 import { useInvoice } from "@/hooks/useInvoice";
+import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +13,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send } from "lucide-react";
-import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 const AdminBookings = () => {
   const {
@@ -29,6 +30,8 @@ const AdminBookings = () => {
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
+  const [invoicePreviewOpen, setInvoicePreviewOpen] = useState(false);
+  const [selectedBookingForInvoice, setSelectedBookingForInvoice] = useState<any>(null);
 
   // Real-time subscription
   useEffect(() => {
@@ -153,9 +156,12 @@ const AdminBookings = () => {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => sendInvoice({ bookingId: booking.id })}
-                    disabled={isSending || booking.status !== 'confirmed'}
-                    title={booking.status !== 'confirmed' ? 'Only confirmed bookings can send invoice' : 'Send invoice via email & WhatsApp'}
+                    onClick={() => {
+                      setSelectedBookingForInvoice(booking);
+                      setInvoicePreviewOpen(true);
+                    }}
+                    disabled={booking.status !== 'confirmed'}
+                    title={booking.status !== 'confirmed' ? 'Only confirmed bookings can send invoice' : 'Preview and send invoice'}
                   >
                     <Send className="h-4 w-4 mr-2" />
                     Invoice
@@ -427,6 +433,17 @@ const AdminBookings = () => {
             </div>}
         </DialogContent>
       </Dialog>
+
+      {/* Invoice Preview Dialog */}
+      <InvoicePreviewDialog
+        booking={selectedBookingForInvoice}
+        open={invoicePreviewOpen}
+        onOpenChange={setInvoicePreviewOpen}
+        onSendInvoice={async (options) => {
+          await sendInvoice(options);
+          setInvoicePreviewOpen(false);
+        }}
+      />
     </div>;
 };
 export default AdminBookings;
