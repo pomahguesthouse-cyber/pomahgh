@@ -41,6 +41,7 @@ export interface HotelSettings {
   longitude?: number;
   min_stay_nights?: number;
   max_stay_nights?: number;
+  payment_instructions?: string;
 }
 
 export const useHotelSettings = () => {
