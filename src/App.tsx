@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Bookings from "./pages/Bookings";
@@ -15,6 +16,7 @@ import AdminFacilities from "./pages/admin/AdminFacilities";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNearbyLocations from "./pages/admin/AdminNearbyLocations";
 import AdminChatbot from "./pages/admin/AdminChatbot";
+import RoomDetail from "./pages/RoomDetail";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import NotFound from "./pages/NotFound";
 
@@ -22,15 +24,17 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/bookings" element={<Bookings />} />
-          <Route path="/admin" element={<AdminLogin />} />
+    <HelmetProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/bookings" element={<Bookings />} />
+            <Route path="/rooms/:roomSlug" element={<RoomDetail />} />
+            <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
           <Route path="/admin/rooms" element={<AdminLayout><AdminRooms /></AdminLayout>} />
           <Route path="/admin/bookings" element={<AdminLayout><AdminBookings /></AdminLayout>} />
@@ -44,6 +48,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+  </HelmetProvider>
   </QueryClientProvider>
 );
 
