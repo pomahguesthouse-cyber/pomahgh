@@ -44,45 +44,76 @@ function generateInvoiceHTML(data: InvoiceData): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invoice ${booking.invoice_number}</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Arial', 'Helvetica', sans-serif;
       line-height: 1.6;
-      color: #333;
+      color: #1a1a1a;
       max-width: 800px;
       margin: 0 auto;
       padding: 20px;
-      background-color: #f5f5f5;
+      background-color: #ffffff;
+      font-size: 12pt;
     }
+    
     .invoice-container {
       background: white;
       padding: 40px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border: 1px solid #e0e0e0;
     }
     .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      margin-bottom: 40px;
-      padding-bottom: 20px;
+      display: table;
+      width: 100%;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
       border-bottom: 3px solid #8B4513;
     }
-    .logo {
-      font-size: 28px;
-      font-weight: bold;
-      color: #8B4513;
+    
+    .header-left {
+      display: table-cell;
+      width: 50%;
+      vertical-align: top;
     }
-    .invoice-info {
+    
+    .header-right {
+      display: table-cell;
+      width: 50%;
+      vertical-align: top;
       text-align: right;
     }
-    .invoice-number {
-      font-size: 24px;
+    
+    .logo {
+      font-size: 24pt;
       font-weight: bold;
       color: #8B4513;
       margin-bottom: 5px;
     }
+    
+    .tagline {
+      color: #666;
+      font-size: 10pt;
+      margin-top: 3px;
+    }
+    
+    .invoice-info {
+      text-align: right;
+    }
+    
+    .invoice-number {
+      font-size: 20pt;
+      font-weight: bold;
+      color: #8B4513;
+      margin-bottom: 5px;
+    }
+    
     .invoice-date {
       color: #666;
+      font-size: 10pt;
     }
     .section {
       margin-bottom: 30px;
@@ -96,111 +127,211 @@ function generateInvoiceHTML(data: InvoiceData): string {
       letter-spacing: 0.5px;
     }
     .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 30px;
-      margin-bottom: 30px;
+      display: table;
+      width: 100%;
+      margin-bottom: 25px;
     }
+    
     .info-box {
+      display: table-cell;
+      width: 50%;
       padding: 15px;
       background: #f9f9f9;
-      border-radius: 5px;
+      border: 1px solid #e0e0e0;
+      vertical-align: top;
+    }
+    
+    .info-box:first-child {
+      border-right: none;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 20px;
+      page-break-inside: avoid;
     }
+    
+    thead {
+      display: table-header-group;
+    }
+    
+    tbody {
+      display: table-row-group;
+    }
+    
     th {
-      background: #8B4513;
-      color: white;
-      padding: 12px;
+      background: #8B4513 !important;
+      color: white !important;
+      padding: 10px;
       text-align: left;
       font-weight: 600;
+      font-size: 10pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
+    
     td {
-      padding: 12px;
-      border-bottom: 1px solid #eee;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      font-size: 10pt;
+    }
+    
+    tr {
+      page-break-inside: avoid;
     }
     .text-right {
       text-align: right;
     }
     .totals {
       margin-left: auto;
-      width: 300px;
+      width: 320px;
+      page-break-inside: avoid;
     }
+    
     .total-row {
-      display: flex;
-      justify-content: space-between;
+      display: table;
+      width: 100%;
       padding: 8px 0;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #e0e0e0;
     }
+    
+    .total-row > span:first-child {
+      display: table-cell;
+      text-align: left;
+      font-size: 10pt;
+    }
+    
+    .total-row > span:last-child {
+      display: table-cell;
+      text-align: right;
+      font-size: 10pt;
+    }
+    
     .total-row.grand-total {
-      font-size: 18px;
+      font-size: 14pt;
       font-weight: bold;
       color: #8B4513;
-      border-top: 2px solid #8B4513;
-      border-bottom: 2px solid #8B4513;
+      border-top: 3px solid #8B4513;
+      border-bottom: 3px solid #8B4513;
       padding: 12px 0;
       margin-top: 10px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .status-badge {
       display: inline-block;
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 3px;
+      font-size: 9pt;
       font-weight: bold;
       text-transform: uppercase;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
+    
     .status-pending {
-      background: #FFF3CD;
-      color: #856404;
+      background: #FFF3CD !important;
+      color: #856404 !important;
+      border: 1px solid #ffeaa7;
     }
+    
     .status-confirmed {
-      background: #D4EDDA;
-      color: #155724;
+      background: #D4EDDA !important;
+      color: #155724 !important;
+      border: 1px solid #c3e6cb;
     }
+    
     .status-paid {
-      background: #D1ECF1;
-      color: #0C5460;
+      background: #D1ECF1 !important;
+      color: #0C5460 !important;
+      border: 1px solid #bee5eb;
     }
     .payment-instructions {
       background: #f0f8ff;
-      padding: 20px;
-      border-radius: 5px;
+      padding: 15px;
+      border: 1px solid #8B4513;
       border-left: 4px solid #8B4513;
-      margin-top: 30px;
+      margin-top: 25px;
+      page-break-inside: avoid;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
+    
     .footer {
       margin-top: 40px;
       padding-top: 20px;
-      border-top: 1px solid #eee;
+      border-top: 2px solid #e0e0e0;
       text-align: center;
       color: #666;
-      font-size: 14px;
+      font-size: 9pt;
+      page-break-inside: avoid;
     }
+    
     .contact-info {
       margin-top: 10px;
+      font-size: 9pt;
     }
+    
+    /* Print Styles */
     @media print {
+      @page {
+        size: A4;
+        margin: 1.5cm;
+      }
+      
       body {
-        background: white;
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        font-size: 10pt;
       }
+      
       .invoice-container {
-        box-shadow: none;
-        padding: 0;
+        box-shadow: none !important;
+        padding: 0 !important;
+        border: none !important;
+        page-break-after: avoid;
       }
+      
+      .header {
+        page-break-after: avoid;
+      }
+      
+      table {
+        page-break-inside: avoid;
+      }
+      
+      .section {
+        page-break-inside: avoid;
+      }
+      
+      /* Force print colors */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      /* Hide elements that shouldn't print */
+      button, .no-print {
+        display: none !important;
+      }
+    }
+    
+    /* PDF Generation Compatibility */
+    .pdf-friendly {
+      background: white;
+      color: black;
     }
   </style>
 </head>
 <body>
-  <div class="invoice-container">
+  <div class="invoice-container pdf-friendly">
     <div class="header">
-      <div>
+      <div class="header-left">
         <div class="logo">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
-        <div style="color: #666; margin-top: 5px;">${hotelSettings.tagline || ''}</div>
+        <div class="tagline">${hotelSettings.tagline || ''}</div>
       </div>
-      <div class="invoice-info">
+      <div class="header-right">
         <div class="invoice-number">${booking.invoice_number}</div>
         <div class="invoice-date">Tanggal: ${formatDate(booking.created_at)}</div>
       </div>

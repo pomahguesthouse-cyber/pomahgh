@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Printer } from "lucide-react";
+import { Loader2, Printer, Download } from "lucide-react";
 import { toast } from "sonner";
+import html2pdf from "html2pdf.js";
 
 interface InvoicePreviewDialogProps {
   booking: any;
@@ -27,6 +28,7 @@ export const InvoicePreviewDialog = ({
   const [invoiceHtml, setInvoiceHtml] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [sendEmail, setSendEmail] = useState(true);
   const [sendWhatsApp, setSendWhatsApp] = useState(true);
 
@@ -86,6 +88,59 @@ export const InvoicePreviewDialog = ({
     }
   };
 
+  const handleDownloadPDF = async () => {
+    if (!invoiceHtml || !booking) return;
+
+    setDownloading(true);
+    toast.loading("Generating PDF...");
+
+    try {
+      // Create a temporary container
+      const container = document.createElement('div');
+      container.innerHTML = invoiceHtml;
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      document.body.appendChild(container);
+
+      // PDF options for better quality
+      const opt = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename: `Invoice-${booking.invoice_number || booking.id}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          logging: false
+        },
+        jsPDF: { 
+          unit: 'mm' as const, 
+          format: 'a4' as const, 
+          orientation: 'portrait' as const,
+          compress: true
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] as const }
+      };
+
+      // Generate PDF
+      await html2pdf().set(opt).from(container).save();
+
+      // Clean up
+      document.body.removeChild(container);
+      
+      toast.dismiss();
+      toast.success("PDF berhasil diunduh!");
+    } catch (error: any) {
+      console.error("Error generating PDF:", error);
+      toast.dismiss();
+      toast.error("Gagal mengunduh PDF", {
+        description: error.message
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -130,6 +185,23 @@ export const InvoicePreviewDialog = ({
         </div>
 
         <DialogFooter className="gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleDownloadPDF} 
+            disabled={loading || downloading}
+          >
+            {downloading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Downloading...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
+              </>
+            )}
+          </Button>
           <Button variant="outline" onClick={handlePrint} disabled={loading}>
             <Printer className="w-4 h-4 mr-2" />
             Print
