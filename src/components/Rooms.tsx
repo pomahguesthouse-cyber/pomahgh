@@ -93,7 +93,8 @@ export const Rooms = () => {
                 const displayPrice = room.final_price || room.price_per_night;
                 return (
                   <CarouselItem key={room.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
-                    <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-full">
+                    <Link to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
+                      <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-full cursor-pointer">
                       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden group">
                         {images?.length > 1 ? (
                           <Carousel
@@ -127,7 +128,15 @@ export const Rooms = () => {
                         {/* Virtual Tour Overlay */}
                         {room.virtual_tour_url && (
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Button variant="hero" size="lg" onClick={() => handleViewTour(room)}>
+                            <Button 
+                              variant="hero" 
+                              size="lg" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleViewTour(room);
+                              }}
+                            >
                               <Eye className="w-5 h-5 mr-2" />
                               View 360° Tour
                             </Button>
@@ -206,20 +215,27 @@ export const Rooms = () => {
                         </div>
 
                         <div className="flex gap-2">
-                          <Link
-                            to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
-                            className="flex-1"
+                          <Button 
+                            variant="luxury" 
+                            className="flex-1" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleBookRoom(room);
+                            }}
                           >
-                            <Button variant="outline" className="w-full">
-                              View Details
-                            </Button>
-                          </Link>
-                          <Button variant="luxury" className="flex-1" onClick={() => handleBookRoom(room)}>
                             Book Now
                           </Button>
 
                           {room.virtual_tour_url && (
-                            <Button variant="outline" onClick={() => handleViewTour(room)}>
+                            <Button 
+                              variant="outline" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleViewTour(room);
+                              }}
+                            >
                               <Eye className="w-4 h-4" />
                             </Button>
                           )}
@@ -228,6 +244,7 @@ export const Rooms = () => {
                         {room.room_count && room.room_count > 1}
                       </CardContent>
                     </Card>
+                    </Link>
                   </CarouselItem>
                 );
               })}
