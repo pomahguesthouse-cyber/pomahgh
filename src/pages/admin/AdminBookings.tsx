@@ -12,8 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send, Tag } from "lucide-react";
+import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send, Tag, CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 const AdminBookings = () => {
@@ -38,6 +39,8 @@ const AdminBookings = () => {
   // Custom pricing states for edit dialog
   const [useCustomPriceEdit, setUseCustomPriceEdit] = useState(false);
   const [customPricePerNightEdit, setCustomPricePerNightEdit] = useState<string>("");
+  const [pricingModeEdit, setPricingModeEdit] = useState<"per_night" | "total">("per_night");
+  const [customTotalPriceEdit, setCustomTotalPriceEdit] = useState<string>("");
 
   // Real-time subscription
   useEffect(() => {
@@ -79,10 +82,14 @@ const AdminBookings = () => {
     // Detect if custom price is used (difference > Rp 100)
     if (Math.abs(actualPricePerNight - normalPricePerNight) > 100) {
       setUseCustomPriceEdit(true);
+      setPricingModeEdit("per_night");
       setCustomPricePerNightEdit(actualPricePerNight.toString());
+      setCustomTotalPriceEdit("");
     } else {
       setUseCustomPriceEdit(false);
       setCustomPricePerNightEdit("");
+      setCustomTotalPriceEdit("");
+      setPricingModeEdit("per_night");
     }
     
     setEditDialogOpen(true);
@@ -94,24 +101,42 @@ const AdminBookings = () => {
         / (1000 * 60 * 60 * 24)
       );
       
-      // Calculate price per night
+      // Calculate total price based on mode
       const room = rooms?.find(r => r.id === editingBooking.room_id);
-      let pricePerNight = room?.price_per_night || 0;
+      let totalPrice = 0;
       
-      if (useCustomPriceEdit && customPricePerNightEdit) {
-        const customPrice = parseFloat(customPricePerNightEdit);
-        if (isNaN(customPrice) || customPrice <= 0) {
-          toast.error("Harga custom tidak valid");
+      if (useCustomPriceEdit) {
+        if (pricingModeEdit === "per_night" && customPricePerNightEdit) {
+          const pricePerNight = parseFloat(customPricePerNightEdit);
+          if (isNaN(pricePerNight) || pricePerNight <= 0) {
+            toast.error("Harga per malam tidak valid");
+            return;
+          }
+          if (pricePerNight < 10000) {
+            toast.error("Harga per malam minimal Rp 10.000");
+            return;
+          }
+          totalPrice = totalNights * pricePerNight;
+        } else if (pricingModeEdit === "total" && customTotalPriceEdit) {
+          const customTotal = parseFloat(customTotalPriceEdit);
+          if (isNaN(customTotal) || customTotal <= 0) {
+            toast.error("Total harga tidak valid");
+            return;
+          }
+          if (customTotal < 10000) {
+            toast.error("Total harga minimal Rp 10.000");
+            return;
+          }
+          totalPrice = customTotal;
+        } else {
+          toast.error("Harga custom wajib diisi");
           return;
         }
-        if (customPrice < 10000) {
-          toast.error("Harga custom minimal Rp 10.000");
-          return;
-        }
-        pricePerNight = customPrice;
+      } else {
+        // Use normal price
+        const pricePerNight = room?.price_per_night || 0;
+        totalPrice = totalNights * pricePerNight;
       }
-      
-      const totalPrice = totalNights * pricePerNight;
       
       updateBooking({
         id: editingBooking.id,
@@ -464,31 +489,61 @@ const AdminBookings = () => {
                       setUseCustomPriceEdit(checked);
                       if (!checked) {
                         setCustomPricePerNightEdit("");
+                        setCustomTotalPriceEdit("");
+                        setPricingModeEdit("per_night");
                       }
                     }}
                   />
                 </div>
 
                 {useCustomPriceEdit && (
-                  <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
-                    <Label htmlFor="custom_price_edit">
-                      Harga per Malam (Custom) <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative mt-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        Rp
-                      </span>
-                      <Input
-                        id="custom_price_edit"
-                        type="number"
-                        min="10000"
-                        step="1000"
-                        value={customPricePerNightEdit}
-                        onChange={(e) => setCustomPricePerNightEdit(e.target.value)}
-                        placeholder="Masukkan harga custom"
-                        className="pl-10"
-                      />
+                  <div className="mt-3 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                    {/* Pricing Mode Selection */}
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Mode Harga Custom</Label>
+                      <RadioGroup
+                        value={pricingModeEdit}
+                        onValueChange={(value: "per_night" | "total") => {
+                          setPricingModeEdit(value);
+                          if (value === "per_night") {
+                            setCustomTotalPriceEdit("");
+                          } else {
+                            setCustomPricePerNightEdit("");
+                          }
+                        }}
+                        className="grid grid-cols-2 gap-4"
+                      >
+                        <div>
+                          <RadioGroupItem
+                            value="per_night"
+                            id="mode-per-night-edit"
+                            className="peer sr-only"
+                          />
+                          <Label
+                            htmlFor="mode-per-night-edit"
+                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                          >
+                            <CalendarIcon className="mb-2 h-5 w-5" />
+                            <span className="text-sm font-medium">Per Malam</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <RadioGroupItem
+                            value="total"
+                            id="mode-total-edit"
+                            className="peer sr-only"
+                          />
+                          <Label
+                            htmlFor="mode-total-edit"
+                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                          >
+                            <Tag className="mb-2 h-5 w-5" />
+                            <span className="text-sm font-medium">Total Harga</span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
                     </div>
+
                     {(() => {
                       const room = rooms?.find(r => r.id === editingBooking.room_id);
                       const normalPrice = room?.price_per_night || 0;
@@ -496,22 +551,123 @@ const AdminBookings = () => {
                         (new Date(editingBooking.check_out).getTime() - new Date(editingBooking.check_in).getTime()) 
                         / (1000 * 60 * 60 * 24)
                       );
-                      const customPrice = parseFloat(customPricePerNightEdit) || 0;
-                      const newTotal = totalNights * customPrice;
-                      
+                      const normalTotal = normalPrice * totalNights;
+
                       return (
                         <>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Harga normal: Rp {normalPrice.toLocaleString("id-ID")}
-                          </p>
-                          {customPrice > 0 && (
-                            <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded">
-                              <p className="text-xs font-medium">
-                                Total baru: Rp {newTotal.toLocaleString("id-ID")}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                ({totalNights} malam × Rp {customPrice.toLocaleString("id-ID")})
-                              </p>
+                          {/* Per Night Input */}
+                          {pricingModeEdit === "per_night" && (
+                            <div className="animate-in slide-in-from-top-2 duration-200">
+                              <Label htmlFor="custom_price_per_night_edit">
+                                Harga per Malam (Custom) <span className="text-destructive">*</span>
+                              </Label>
+                              <div className="relative mt-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                  Rp
+                                </span>
+                                <Input
+                                  id="custom_price_per_night_edit"
+                                  type="number"
+                                  min="10000"
+                                  step="1000"
+                                  value={customPricePerNightEdit}
+                                  onChange={(e) => setCustomPricePerNightEdit(e.target.value)}
+                                  placeholder="Masukkan harga per malam"
+                                  className="pl-10"
+                                />
+                              </div>
+                              <div className="mt-2 space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                  Harga normal: Rp {normalPrice.toLocaleString("id-ID")} /malam
+                                </p>
+                                {customPricePerNightEdit && (
+                                  <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded">
+                                    <p className="text-xs font-medium">
+                                      Total baru: Rp {(parseFloat(customPricePerNightEdit) * totalNights).toLocaleString("id-ID")}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      ({totalNights} malam × Rp {parseFloat(customPricePerNightEdit).toLocaleString("id-ID")})
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Quick Discount Buttons */}
+                              <div className="flex gap-2 mt-2">
+                                <p className="text-xs text-muted-foreground mr-2 self-center">Quick:</p>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const discount10 = normalPrice * 0.9;
+                                    setCustomPricePerNightEdit(Math.round(discount10).toString());
+                                  }}
+                                >
+                                  -10%
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const discount20 = normalPrice * 0.8;
+                                    setCustomPricePerNightEdit(Math.round(discount20).toString());
+                                  }}
+                                >
+                                  -20%
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const discount50 = normalPrice * 0.5;
+                                    setCustomPricePerNightEdit(Math.round(discount50).toString());
+                                  }}
+                                >
+                                  -50%
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Total Price Input */}
+                          {pricingModeEdit === "total" && (
+                            <div className="animate-in slide-in-from-top-2 duration-200">
+                              <Label htmlFor="custom_total_price_edit">
+                                Total Harga (Custom) <span className="text-destructive">*</span>
+                              </Label>
+                              <div className="relative mt-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                  Rp
+                                </span>
+                                <Input
+                                  id="custom_total_price_edit"
+                                  type="number"
+                                  min="10000"
+                                  step="1000"
+                                  value={customTotalPriceEdit}
+                                  onChange={(e) => setCustomTotalPriceEdit(e.target.value)}
+                                  placeholder="Masukkan total harga"
+                                  className="pl-10"
+                                />
+                              </div>
+                              <div className="mt-2 space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                  Total normal: Rp {normalTotal.toLocaleString("id-ID")}
+                                </p>
+                                {customTotalPriceEdit && (
+                                  <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded">
+                                    <p className="text-xs font-medium">
+                                      Harga per malam: Rp {(parseFloat(customTotalPriceEdit) / totalNights).toLocaleString("id-ID")}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      (Total: Rp {parseFloat(customTotalPriceEdit).toLocaleString("id-ID")} ÷ {totalNights} malam)
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </>
