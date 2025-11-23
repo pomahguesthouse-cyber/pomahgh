@@ -356,6 +356,37 @@ export default function AdminSettings() {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informasi Rekening Bank</CardTitle>
+                  <CardDescription>Detail rekening untuk pembayaran tamu</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bank_name">Nama Bank</Label>
+                    <Input id="bank_name" name="bank_name" defaultValue={settings.bank_name || ""} placeholder="Contoh: Bank BCA" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="account_number">Nomor Rekening</Label>
+                    <Input id="account_number" name="account_number" defaultValue={settings.account_number || ""} placeholder="Contoh: 1234567890" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="account_holder_name">Nama Pemilik Rekening</Label>
+                    <Input id="account_holder_name" name="account_holder_name" defaultValue={settings.account_holder_name || ""} placeholder="Contoh: Pomah Guesthouse" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="payment_instructions">Instruksi Pembayaran Tambahan</Label>
+                    <Textarea 
+                      id="payment_instructions" 
+                      name="payment_instructions" 
+                      rows={3}
+                      defaultValue={settings.payment_instructions || ""} 
+                      placeholder="Informasi tambahan untuk pembayaran"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
 
