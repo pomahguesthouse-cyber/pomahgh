@@ -35,6 +35,10 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
 
           <div className="flex-1 flex flex-col transition-all">
             <main className="flex-1 p-6 max-w-5xl mx-auto w-full">{children}</main>
+            <header className="h-14 border-b flex items-center px-4 bg-background sticky top-0 z-10">
+              <SidebarTrigger />
+              <h1 className="ml-4 text-lg font-semibold">{pageTitle}</h1>
+            </header>
           </div>
         </div>
       </SidebarProvider>
