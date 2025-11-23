@@ -66,6 +66,11 @@ export default function AdminBankAccounts() {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Bank Accounts</h1>
+          <p className="text-muted-foreground">Manage payment methods for your hotel</p>
+        </div>
+
         <div className="flex justify-end items-center">
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
