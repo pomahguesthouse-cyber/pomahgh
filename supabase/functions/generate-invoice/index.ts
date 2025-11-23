@@ -9,10 +9,11 @@ interface InvoiceData {
   booking: any;
   room: any;
   hotelSettings: any;
+  bankAccounts: any[];
 }
 
 function generateInvoiceHTML(data: InvoiceData): string {
-  const { booking, room, hotelSettings } = data;
+  const { booking, room, hotelSettings, bankAccounts } = data;
   
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('id-ID', {
@@ -437,30 +438,32 @@ function generateInvoiceHTML(data: InvoiceData): string {
       </div>
     </div>
 
-    ${amountDue > 0 && (hotelSettings.bank_name || hotelSettings.payment_instructions) ? `
+    ${amountDue > 0 && (bankAccounts.length > 0 || hotelSettings.payment_instructions) ? `
     <div class="payment-instructions">
       <div class="section-title">Instruksi Pembayaran</div>
-      ${hotelSettings.bank_name ? `
-      <table style="width: 100%; margin-bottom: 15px; border: none;">
-        <tr style="border: none;">
-          <td style="border: none; padding: 5px 0; width: 150px;"><strong>Nama Bank:</strong></td>
-          <td style="border: none; padding: 5px 0;">${hotelSettings.bank_name}</td>
-        </tr>
-        ${hotelSettings.account_number ? `
-        <tr style="border: none;">
-          <td style="border: none; padding: 5px 0;"><strong>Nomor Rekening:</strong></td>
-          <td style="border: none; padding: 5px 0;">${hotelSettings.account_number}</td>
-        </tr>
-        ` : ''}
-        ${hotelSettings.account_holder_name ? `
-        <tr style="border: none;">
-          <td style="border: none; padding: 5px 0;"><strong>Atas Nama:</strong></td>
-          <td style="border: none; padding: 5px 0;">${hotelSettings.account_holder_name}</td>
-        </tr>
-        ` : ''}
-      </table>
+      ${bankAccounts.length > 0 ? `
+        <p style="margin-bottom: 15px; font-weight: 600;">Silakan transfer ke salah satu rekening berikut:</p>
+        ${bankAccounts.map((account: any, index: number) => `
+          <div style="margin-bottom: 20px; padding: 15px; background: white; border: 1px solid #e0e0e0; border-radius: 5px;">
+            <p style="font-weight: bold; color: #8B4513; margin-bottom: 10px; font-size: 11pt;">Opsi ${index + 1}</p>
+            <table style="width: 100%; border: none;">
+              <tr style="border: none;">
+                <td style="border: none; padding: 5px 0; width: 150px;"><strong>Nama Bank:</strong></td>
+                <td style="border: none; padding: 5px 0;">${account.bank_name}</td>
+              </tr>
+              <tr style="border: none;">
+                <td style="border: none; padding: 5px 0;"><strong>Nomor Rekening:</strong></td>
+                <td style="border: none; padding: 5px 0; font-weight: 600; font-size: 11pt;">${account.account_number}</td>
+              </tr>
+              <tr style="border: none;">
+                <td style="border: none; padding: 5px 0;"><strong>Atas Nama:</strong></td>
+                <td style="border: none; padding: 5px 0;">${account.account_holder_name}</td>
+              </tr>
+            </table>
+          </div>
+        `).join('')}
       ` : ''}
-      ${hotelSettings.payment_instructions ? `<div style="margin-top: 10px;">${hotelSettings.payment_instructions}</div>` : ''}
+      ${hotelSettings.payment_instructions ? `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">${hotelSettings.payment_instructions}</div>` : ''}
     </div>
     ` : ''}
 
@@ -515,6 +518,17 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to fetch hotel settings: ${settingsError.message}`);
     }
 
+    // Fetch active bank accounts
+    const { data: bankAccounts, error: bankError } = await supabase
+      .from('bank_accounts')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+
+    if (bankError) {
+      console.error('Failed to fetch bank accounts:', bankError);
+    }
+
     // Generate invoice number if not exists
     let invoiceNumber = booking.invoice_number;
     if (!invoiceNumber) {
@@ -538,7 +552,8 @@ Deno.serve(async (req) => {
     const html = generateInvoiceHTML({
       booking: { ...booking, invoice_number: invoiceNumber },
       room: booking.rooms,
-      hotelSettings
+      hotelSettings,
+      bankAccounts: bankAccounts || []
     });
 
     console.log(`Invoice generated: ${invoiceNumber} for booking ${bookingId}`);

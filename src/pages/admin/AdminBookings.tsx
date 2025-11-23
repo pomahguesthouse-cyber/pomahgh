@@ -3,6 +3,7 @@ import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useRooms } from "@/hooks/useRooms";
 import { useInvoice } from "@/hooks/useInvoice";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ const AdminBookings = () => {
   } = useRooms();
   const { sendInvoice, isSending } = useInvoice();
   const { settings: hotelSettings } = useHotelSettings();
+  const { bankAccounts } = useBankAccounts();
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -362,10 +364,21 @@ const AdminBookings = () => {
                       {booking.payment_status === 'pay_at_hotel' && <span className="text-blue-600 font-medium">Bayar di Hotel</span>}
                     </p>
                   </div>
-                  {hotelSettings?.payment_instructions && (
+                  {bankAccounts && bankAccounts.length > 0 && (
                     <div className="md:col-span-2">
-                      <p className="text-xs text-muted-foreground">Informasi Pembayaran</p>
-                      <p className="text-sm mt-1 text-muted-foreground">{hotelSettings.payment_instructions}</p>
+                      <p className="text-xs text-muted-foreground mb-2">Pilihan Pembayaran</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {bankAccounts.slice(0, 2).map((account) => (
+                          <div key={account.id} className="text-xs bg-muted/50 p-2 rounded">
+                            <p className="font-medium">{account.bank_name}</p>
+                            <p className="font-mono">{account.account_number}</p>
+                            <p className="text-muted-foreground">{account.account_holder_name}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {bankAccounts.length > 2 && (
+                        <p className="text-xs text-muted-foreground mt-1">+{bankAccounts.length - 2} opsi lainnya</p>
+                      )}
                     </div>
                   )}
                 </div>
