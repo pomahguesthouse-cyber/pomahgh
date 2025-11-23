@@ -85,8 +85,8 @@ export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }
               }}
               className="
       h-[60px]
-      sm:h-[80px]
-      md:h-[80x]
+      sm:h-[70px]
+      md:h-[70x]
       w-auto
       transition-opacity duration-300 opacity-0
       object-contain
