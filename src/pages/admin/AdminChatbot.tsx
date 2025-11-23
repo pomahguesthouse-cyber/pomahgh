@@ -50,13 +50,6 @@ const AdminChatbot = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold mb-2">Pengaturan Chatbot</h2>
-        <p className="text-muted-foreground">
-          Konfigurasi AI chatbot untuk membantu tamu Anda
-        </p>
-      </div>
-
       <Tabs defaultValue="personality" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="personality">
