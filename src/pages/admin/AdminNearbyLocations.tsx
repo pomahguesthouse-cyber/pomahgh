@@ -103,8 +103,7 @@ export default function AdminNearbyLocations() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Lokasi Terdekat</h1>
+        <div className="flex justify-end items-center">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => setEditingLocation(null)}>

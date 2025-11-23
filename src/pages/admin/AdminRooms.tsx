@@ -237,11 +237,7 @@ const AdminRooms = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-bold mb-2">Room Management</h2>
-          <p className="text-muted-foreground">Create, edit, and manage rooms</p>
-        </div>
+      <div className="flex justify-end items-center">
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) resetForm();

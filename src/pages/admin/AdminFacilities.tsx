@@ -107,10 +107,6 @@ const AdminFacilities = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Kelola Fasilitas</h1>
-        </div>
-
         <Card>
           <CardHeader>
             <CardTitle>{editingId ? "Edit Fasilitas" : "Tambah Fasilitas Baru"}</CardTitle>
