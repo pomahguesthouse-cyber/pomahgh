@@ -17,6 +17,7 @@ export type Database = {
       bookings: {
         Row: {
           allocated_room_number: string | null
+          booking_source: string | null
           check_in: string
           check_in_time: string | null
           check_out: string
@@ -29,6 +30,8 @@ export type Database = {
           invoice_number: string | null
           last_invoice_sent_at: string | null
           num_guests: number
+          ota_name: string | null
+          other_source: string | null
           payment_amount: number | null
           payment_status: string | null
           room_id: string
@@ -40,6 +43,7 @@ export type Database = {
         }
         Insert: {
           allocated_room_number?: string | null
+          booking_source?: string | null
           check_in: string
           check_in_time?: string | null
           check_out: string
@@ -52,6 +56,8 @@ export type Database = {
           invoice_number?: string | null
           last_invoice_sent_at?: string | null
           num_guests?: number
+          ota_name?: string | null
+          other_source?: string | null
           payment_amount?: number | null
           payment_status?: string | null
           room_id: string
@@ -63,6 +69,7 @@ export type Database = {
         }
         Update: {
           allocated_room_number?: string | null
+          booking_source?: string | null
           check_in?: string
           check_in_time?: string | null
           check_out?: string
@@ -75,6 +82,8 @@ export type Database = {
           invoice_number?: string | null
           last_invoice_sent_at?: string | null
           num_guests?: number
+          ota_name?: string | null
+          other_source?: string | null
           payment_amount?: number | null
           payment_status?: string | null
           room_id?: string

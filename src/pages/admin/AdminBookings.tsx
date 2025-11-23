@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send, Tag, CalendarIcon } from "lucide-react";
+import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send, Tag, CalendarIcon, Users, Globe, UserCheck, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 const AdminBookings = () => {
@@ -41,6 +41,11 @@ const AdminBookings = () => {
   const [customPricePerNightEdit, setCustomPricePerNightEdit] = useState<string>("");
   const [pricingModeEdit, setPricingModeEdit] = useState<"per_night" | "total">("per_night");
   const [customTotalPriceEdit, setCustomTotalPriceEdit] = useState<string>("");
+  
+  // Booking source states for edit
+  const [bookingSourceEdit, setBookingSourceEdit] = useState<"direct" | "ota" | "walk_in" | "other">("direct");
+  const [otaNameEdit, setOtaNameEdit] = useState<string>("");
+  const [otherSourceEdit, setOtherSourceEdit] = useState<string>("");
 
   // Real-time subscription
   useEffect(() => {
@@ -92,6 +97,11 @@ const AdminBookings = () => {
       setPricingModeEdit("per_night");
     }
     
+    // Populate booking source fields
+    setBookingSourceEdit(booking.booking_source || "direct");
+    setOtaNameEdit(booking.ota_name || "");
+    setOtherSourceEdit(booking.other_source || "");
+    
     setEditDialogOpen(true);
   };
   const handleSaveEdit = () => {
@@ -138,6 +148,17 @@ const AdminBookings = () => {
         totalPrice = totalNights * pricePerNight;
       }
       
+      // Validate booking source conditional fields
+      if (bookingSourceEdit === "ota" && !otaNameEdit.trim()) {
+        toast.error("Nama OTA wajib diisi");
+        return;
+      }
+
+      if (bookingSourceEdit === "other" && !otherSourceEdit.trim()) {
+        toast.error("Keterangan sumber booking wajib diisi");
+        return;
+      }
+      
       updateBooking({
         id: editingBooking.id,
         guest_name: editingBooking.guest_name,
@@ -154,7 +175,10 @@ const AdminBookings = () => {
         special_requests: editingBooking.special_requests,
         status: editingBooking.status,
         payment_status: editingBooking.payment_status,
-        payment_amount: editingBooking.payment_amount
+        payment_amount: editingBooking.payment_amount,
+        booking_source: bookingSourceEdit,
+        ota_name: bookingSourceEdit === "ota" ? otaNameEdit : null,
+        other_source: bookingSourceEdit === "other" ? otherSourceEdit : null,
       });
       setEditDialogOpen(false);
     }
@@ -313,7 +337,7 @@ const AdminBookings = () => {
                 </div>
 
                 {/* Details - Third Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
                   <div>
                     <p className="text-xs text-muted-foreground">Total Nights</p>
                     <p className="text-sm font-medium">{booking.total_nights} nights</p>
@@ -336,6 +360,55 @@ const AdminBookings = () => {
                       {booking.payment_status === 'pay_at_hotel' && <span className="text-blue-600 font-medium">Bayar di Hotel</span>}
                     </p>
                   </div>
+                </div>
+
+                {/* Booking Source - Fourth Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Jenis Booking</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {(!booking.booking_source || booking.booking_source === "direct") && (
+                        <>
+                          <Users className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium">Direct</span>
+                        </>
+                      )}
+                      {booking.booking_source === "ota" && (
+                        <>
+                          <Globe className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium">OTA</span>
+                        </>
+                      )}
+                      {booking.booking_source === "walk_in" && (
+                        <>
+                          <UserCheck className="h-4 w-4 text-orange-600" />
+                          <span className="text-sm font-medium">Walk-in</span>
+                        </>
+                      )}
+                      {booking.booking_source === "other" && (
+                        <>
+                          <HelpCircle className="h-4 w-4 text-purple-600" />
+                          <span className="text-sm font-medium">Lainnya</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {booking.booking_source === "ota" && booking.ota_name && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Platform OTA</p>
+                      <Badge variant="secondary" className="mt-1">
+                        {booking.ota_name}
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {booking.booking_source === "other" && booking.other_source && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Sumber</p>
+                      <p className="text-sm font-medium mt-1">{booking.other_source}</p>
+                    </div>
+                  )}
                 </div>
               </div>
               {booking.special_requests && <div className="mt-4 p-3 bg-muted rounded-md">
@@ -382,6 +455,83 @@ const AdminBookings = () => {
               ...editingBooking,
               guest_phone: e.target.value
             })} placeholder="+62..." />
+              </div>
+
+              {/* Booking Source Section */}
+              <div className="border-t pt-4 mt-4">
+                <div>
+                  <Label htmlFor="booking_source_edit" className="text-base font-semibold">
+                    Jenis Booking
+                  </Label>
+                  <Select
+                    value={bookingSourceEdit}
+                    onValueChange={(value: "direct" | "ota" | "walk_in" | "other") => {
+                      setBookingSourceEdit(value);
+                      if (value !== "ota") setOtaNameEdit("");
+                      if (value !== "other") setOtherSourceEdit("");
+                    }}
+                  >
+                    <SelectTrigger id="booking_source_edit" className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="direct">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          <span>Direct</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="ota">
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          <span>OTA</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="walk_in">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="h-4 w-4" />
+                          <span>Walk-in</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="other">
+                        <div className="flex items-center gap-2">
+                          <HelpCircle className="h-4 w-4" />
+                          <span>Lainnya</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {bookingSourceEdit === "ota" && (
+                  <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
+                    <Label htmlFor="ota_name_edit">
+                      Nama OTA <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="ota_name_edit"
+                      value={otaNameEdit}
+                      onChange={(e) => setOtaNameEdit(e.target.value)}
+                      placeholder="Contoh: Traveloka, Booking.com"
+                      className="mt-1"
+                    />
+                  </div>
+                )}
+
+                {bookingSourceEdit === "other" && (
+                  <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
+                    <Label htmlFor="other_source_edit">
+                      Keterangan Sumber <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="other_source_edit"
+                      value={otherSourceEdit}
+                      onChange={(e) => setOtherSourceEdit(e.target.value)}
+                      placeholder="Contoh: Referral, Corporate"
+                      className="mt-1"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
