@@ -87,7 +87,12 @@ export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }
             <img
               src={settings?.logo_url || "/logo.png"}
               alt={settings?.hotel_name || "Logo"}
-              className="h-12 w-auto object-contain"
+              className="h-[120px] sm:h-[150px] md:h-[200px] w-auto object-contain transition-opacity duration-300 opacity-0"
+              onLoad={(e) => (e.currentTarget.style.opacity = 1)}
+              onError={(e) => {
+                e.currentTarget.src = "/logo.png";
+                e.currentTarget.style.opacity = 1;
+              }}
             />
           </Link>
 
