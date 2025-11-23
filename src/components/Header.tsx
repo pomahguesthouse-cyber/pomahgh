@@ -2,23 +2,23 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, User, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser } from "@supabase/supabase-js";
-export default function Header({
-  scrollToRooms
-}: {
-  scrollToRooms?: () => void;
-}) {
+export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
-  const {
-    settings
-  } = useHotelSettings();
+  const { settings } = useHotelSettings();
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll);
@@ -26,11 +26,7 @@ export default function Header({
   }, []);
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({
-      data: {
-        session
-      }
-    }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
@@ -39,9 +35,7 @@ export default function Header({
 
     // Listen for auth changes
     const {
-      data: {
-        subscription
-      }
+      data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -53,9 +47,12 @@ export default function Header({
     return () => subscription.unsubscribe();
   }, []);
   const checkAdminStatus = async (userId: string) => {
-    const {
-      data
-    } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
     setIsAdmin(!!data);
   };
   const handleSignOut = async () => {
@@ -69,16 +66,32 @@ export default function Header({
       navigate("/#rooms");
     }
   };
-  return <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
         ${isScrolled ? "bg-black/60 backdrop-blur-md" : "bg-transparent"}
-      `}>
+      `}
+    >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center">
-            <img src={settings?.logo_url || "/logo.png"} alt={settings?.hotel_name || "Logo"} onLoad={e => e.currentTarget.style.opacity = "1"} onError={e => {
-            e.currentTarget.src = "/logo.png";
-            e.currentTarget.style.opacity = "1";
-          }} className="h-[120px] sm:h-[150px] md:h-[100px] w-auto transition-opacity duration-300 opacity-0 object-contain" />
+            <img
+              src={settings?.logo_url || "/logo.png"}
+              alt={settings?.hotel_name || "Logo"}
+              onLoad={(e) => (e.currentTarget.style.opacity = "1")}
+              onError={(e) => {
+                e.currentTarget.src = "/logo.png";
+                e.currentTarget.style.opacity = "1";
+              }}
+              className="
+      h-[140px]
+      sm:h-[160px]
+      md:h-[200px]
+      w-auto
+      transition-opacity duration-300 opacity-0
+      object-contain
+    "
+            />
           </Link>
 
           {/* 🔥 DESKTOP MENU PUTIH */}
@@ -96,7 +109,8 @@ export default function Header({
               Contact
             </a>
 
-            {user ? <>
+            {user ? (
+              <>
                 <Link to="/bookings" className="hover:text-white/70 transition">
                   My Bookings
                 </Link>
@@ -109,13 +123,15 @@ export default function Header({
                   </DropdownMenuTrigger>
 
                   <DropdownMenuContent align="end" className="text-black">
-                    {isAdmin && <>
+                    {isAdmin && (
+                      <>
                         <DropdownMenuItem onClick={() => navigate("/admin/dashboard")}>
                           <Shield className="mr-2 h-4 w-4" />
                           Admin Dashboard
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                      </>}
+                      </>
+                    )}
 
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -123,11 +139,14 @@ export default function Header({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </> : <Link to="/auth">
+              </>
+            ) : (
+              <Link to="/auth">
                 <Button variant="outline" className="border-white text-white">
                   Sign In
                 </Button>
-              </Link>}
+              </Link>
+            )}
 
             <Button onClick={handleScrollToRooms} className="bg-white text-black hover:bg-white/90">
               Book Now
@@ -135,13 +154,17 @@ export default function Header({
           </nav>
 
           {/* 🔥 MOBILE BUTTON PUTIH */}
-          <button className="md:hidden text-white p-2 rounded-lg hover:bg-white/10 transition" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          <button
+            className="md:hidden text-white p-2 rounded-lg hover:bg-white/10 transition"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
         {/* 🔥 MOBILE MENU PUTIH */}
-        {isMenuOpen && <nav className="md:hidden pb-4 flex flex-col gap-4 text-white">
+        {isMenuOpen && (
+          <nav className="md:hidden pb-4 flex flex-col gap-4 text-white">
             <a href="#home" className="py-2" onClick={() => setIsMenuOpen(false)}>
               Home
             </a>
@@ -155,35 +178,50 @@ export default function Header({
               Contact
             </a>
 
-            {user ? <>
+            {user ? (
+              <>
                 <Link to="/bookings" className="py-2" onClick={() => setIsMenuOpen(false)}>
                   My Bookings
                 </Link>
 
-                {isAdmin && <Link to="/admin" className="py-2" onClick={() => setIsMenuOpen(false)}>
+                {isAdmin && (
+                  <Link to="/admin" className="py-2" onClick={() => setIsMenuOpen(false)}>
                     Admin Dashboard
-                  </Link>}
+                  </Link>
+                )}
 
-                <Button onClick={() => {
-            handleSignOut();
-            setIsMenuOpen(false);
-          }} variant="outline" className="w-full text-white border-white">
+                <Button
+                  onClick={() => {
+                    handleSignOut();
+                    setIsMenuOpen(false);
+                  }}
+                  variant="outline"
+                  className="w-full text-white border-white"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </Button>
-              </> : <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
+              </>
+            ) : (
+              <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
                 <Button variant="outline" className="w-full text-white border-white">
                   Sign In
                 </Button>
-              </Link>}
+              </Link>
+            )}
 
-            <Button onClick={() => {
-          handleScrollToRooms();
-          setIsMenuOpen(false);
-        }} className="w-full bg-white text-black hover:bg-white/90">
+            <Button
+              onClick={() => {
+                handleScrollToRooms();
+                setIsMenuOpen(false);
+              }}
+              className="w-full bg-white text-black hover:bg-white/90"
+            >
               Book Now
             </Button>
-          </nav>}
+          </nav>
+        )}
       </div>
-    </header>;
+    </header>
+  );
 }
