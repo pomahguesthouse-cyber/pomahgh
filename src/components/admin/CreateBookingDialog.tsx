@@ -9,7 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CalendarIcon, Tag } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon, Tag, Users, Globe, UserCheck, HelpCircle } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -73,6 +74,11 @@ export const CreateBookingDialog = ({
   const [customPricePerNight, setCustomPricePerNight] = useState<string>("");
   const [pricingMode, setPricingMode] = useState<"per_night" | "total">("per_night");
   const [customTotalPrice, setCustomTotalPrice] = useState<string>("");
+  
+  // Booking source states
+  const [bookingSource, setBookingSource] = useState<"direct" | "ota" | "walk_in" | "other">("direct");
+  const [otaName, setOtaName] = useState<string>("");
+  const [otherSource, setOtherSource] = useState<string>("");
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -94,6 +100,10 @@ export const CreateBookingDialog = ({
       setCustomPricePerNight("");
       setPricingMode("per_night");
       setCustomTotalPrice("");
+      // Reset booking source
+      setBookingSource("direct");
+      setOtaName("");
+      setOtherSource("");
     }
   }, [open, initialDate]);
 
@@ -194,6 +204,17 @@ export const CreateBookingDialog = ({
       }
     }
 
+    // Validate booking source conditional fields
+    if (bookingSource === "ota" && !otaName.trim()) {
+      toast.error("Nama OTA wajib diisi");
+      return;
+    }
+
+    if (bookingSource === "other" && !otherSource.trim()) {
+      toast.error("Keterangan sumber booking wajib diisi");
+      return;
+    }
+
     setShowConfirmation(true);
   };
 
@@ -231,7 +252,10 @@ export const CreateBookingDialog = ({
         num_guests: formData.num_guests,
         special_requests: formData.special_requests || null,
         status: "confirmed",
-        payment_status: "unpaid"
+        payment_status: "unpaid",
+        booking_source: bookingSource,
+        ota_name: bookingSource === "ota" ? otaName : null,
+        other_source: bookingSource === "other" ? otherSource : null,
       });
 
       if (error) throw error;
@@ -441,6 +465,94 @@ export const CreateBookingDialog = ({
                 className="mt-1"
               />
             </div>
+          </div>
+
+          {/* Booking Source Section */}
+          <div className="space-y-4 border-t pt-4 mt-4">
+            <div>
+              <Label htmlFor="booking_source" className="text-base font-semibold">
+                Jenis Booking
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Pilih sumber booking untuk tracking
+              </p>
+              <Select
+                value={bookingSource}
+                onValueChange={(value: "direct" | "ota" | "walk_in" | "other") => {
+                  setBookingSource(value);
+                  if (value !== "ota") setOtaName("");
+                  if (value !== "other") setOtherSource("");
+                }}
+              >
+                <SelectTrigger id="booking_source" className="mt-1">
+                  <SelectValue placeholder="Pilih jenis booking" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="direct">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>Direct</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="ota">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      <span>OTA (Online Travel Agency)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="walk_in">
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4" />
+                      <span>Walk-in</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="other">
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="h-4 w-4" />
+                      <span>Lainnya</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {bookingSource === "ota" && (
+              <div className="animate-in slide-in-from-top-2 duration-200">
+                <Label htmlFor="ota_name">
+                  Nama OTA <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="ota_name"
+                  value={otaName}
+                  onChange={(e) => setOtaName(e.target.value)}
+                  placeholder="Contoh: Traveloka, Booking.com, Agoda, Tiket.com"
+                  className="mt-1"
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Masukkan nama platform OTA tempat booking dilakukan
+                </p>
+              </div>
+            )}
+
+            {bookingSource === "other" && (
+              <div className="animate-in slide-in-from-top-2 duration-200">
+                <Label htmlFor="other_source">
+                  Keterangan Sumber <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="other_source"
+                  value={otherSource}
+                  onChange={(e) => setOtherSource(e.target.value)}
+                  placeholder="Contoh: Referral teman, Event, Corporate booking"
+                  className="mt-1"
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Jelaskan sumber booking lainnya
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Custom Pricing Section */}
