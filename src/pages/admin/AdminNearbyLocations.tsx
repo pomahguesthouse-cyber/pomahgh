@@ -103,11 +103,6 @@ export default function AdminNearbyLocations() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Nearby Locations</h1>
-          <p className="text-muted-foreground">Kelola lokasi terdekat dari hotel</p>
-        </div>
-
         <div className="flex justify-end items-center">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>

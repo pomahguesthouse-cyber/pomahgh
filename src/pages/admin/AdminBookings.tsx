@@ -210,11 +210,6 @@ const AdminBookings = () => {
     label: "Maintenance"
   }];
   return <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Booking Management</h1>
-        <p className="text-muted-foreground">View and manage all bookings</p>
-      </div>
-
       <div className="flex justify-end items-center">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-48">

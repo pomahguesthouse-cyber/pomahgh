@@ -179,11 +179,6 @@ const AdminHeroSlides = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Hero Slides</h1>
-          <p className="text-muted-foreground">Kelola tampilan hero slider di homepage</p>
-        </div>
-
         <Card>
           <CardHeader>
             <CardTitle>{editingId ? "Edit Slide" : "Tambah Slide Baru"}</CardTitle>

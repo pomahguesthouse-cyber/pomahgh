@@ -237,11 +237,6 @@ const AdminRooms = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Room Management</h1>
-        <p className="text-muted-foreground">Create, edit, and manage rooms</p>
-      </div>
-
       <div className="flex justify-end items-center">
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);

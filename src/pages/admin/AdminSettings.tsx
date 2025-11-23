@@ -75,11 +75,6 @@ export default function AdminSettings() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Hotel Settings</h1>
-          <p className="text-muted-foreground">Manage your hotel information and configuration</p>
-        </div>
-
         <form onSubmit={handleSubmit}>
           <Tabs defaultValue="basic" className="space-y-6">
             <TabsList className="grid grid-cols-6 w-full">
