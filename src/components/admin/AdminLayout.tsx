@@ -10,17 +10,17 @@ interface AdminLayoutProps {
 
 const getPageTitle = (pathname: string): string => {
   const titles: Record<string, string> = {
-    '/admin/dashboard': 'Dashboard',
-    '/admin/bookings': 'Booking Management',
-    '/admin/rooms': 'Room Management',
-    '/admin/settings': 'Hotel Settings',
-    '/admin/bank-accounts': 'Bank Accounts',
-    '/admin/hero-slides': 'Hero Slides',
-    '/admin/facilities': 'Facilities',
-    '/admin/nearby-locations': 'Nearby Locations',
-    '/admin/chatbot': 'Chatbot Settings',
+    "/admin/dashboard": "Dashboard",
+    "/admin/bookings": "Booking Management",
+    "/admin/rooms": "Room Management",
+    "/admin/settings": "Hotel Settings",
+    "/admin/bank-accounts": "Bank Accounts",
+    "/admin/hero-slides": "Hero Slides",
+    "/admin/facilities": "Facilities",
+    "/admin/nearby-locations": "Nearby Locations",
+    "/admin/chatbot": "Chatbot Settings",
   };
-  return titles[pathname] || 'Admin Dashboard';
+  return titles[pathname] || "Admin Dashboard";
 };
 
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
@@ -34,11 +34,6 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
           <AdminSidebar />
 
           <div className="flex-1 flex flex-col transition-all">
-            <header className="h-14 border-b flex items-center px-4 bg-background sticky top-0 z-10">
-              <SidebarTrigger />
-              <h1 className="ml-4 text-lg font-semibold">{pageTitle}</h1>
-            </header>
-
             <main className="flex-1 p-6 max-w-5xl mx-auto w-full">{children}</main>
           </div>
         </div>
