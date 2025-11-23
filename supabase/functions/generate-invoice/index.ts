@@ -437,10 +437,30 @@ function generateInvoiceHTML(data: InvoiceData): string {
       </div>
     </div>
 
-    ${amountDue > 0 && hotelSettings.payment_instructions ? `
+    ${amountDue > 0 && (hotelSettings.bank_name || hotelSettings.payment_instructions) ? `
     <div class="payment-instructions">
       <div class="section-title">Instruksi Pembayaran</div>
-      <div>${hotelSettings.payment_instructions}</div>
+      ${hotelSettings.bank_name ? `
+      <table style="width: 100%; margin-bottom: 15px; border: none;">
+        <tr style="border: none;">
+          <td style="border: none; padding: 5px 0; width: 150px;"><strong>Nama Bank:</strong></td>
+          <td style="border: none; padding: 5px 0;">${hotelSettings.bank_name}</td>
+        </tr>
+        ${hotelSettings.account_number ? `
+        <tr style="border: none;">
+          <td style="border: none; padding: 5px 0;"><strong>Nomor Rekening:</strong></td>
+          <td style="border: none; padding: 5px 0;">${hotelSettings.account_number}</td>
+        </tr>
+        ` : ''}
+        ${hotelSettings.account_holder_name ? `
+        <tr style="border: none;">
+          <td style="border: none; padding: 5px 0;"><strong>Atas Nama:</strong></td>
+          <td style="border: none; padding: 5px 0;">${hotelSettings.account_holder_name}</td>
+        </tr>
+        ` : ''}
+      </table>
+      ` : ''}
+      ${hotelSettings.payment_instructions ? `<div style="margin-top: 10px;">${hotelSettings.payment_instructions}</div>` : ''}
     </div>
     ` : ''}
 

@@ -321,8 +321,11 @@ export type Database = {
       hotel_settings: {
         Row: {
           about_us: string | null
+          account_holder_name: string | null
+          account_number: string | null
           address: string
           auto_send_invoice: boolean | null
+          bank_name: string | null
           check_in_time: string | null
           check_out_time: string | null
           city: string | null
@@ -364,8 +367,11 @@ export type Database = {
         }
         Insert: {
           about_us?: string | null
+          account_holder_name?: string | null
+          account_number?: string | null
           address?: string
           auto_send_invoice?: boolean | null
+          bank_name?: string | null
           check_in_time?: string | null
           check_out_time?: string | null
           city?: string | null
@@ -407,8 +413,11 @@ export type Database = {
         }
         Update: {
           about_us?: string | null
+          account_holder_name?: string | null
+          account_number?: string | null
           address?: string
           auto_send_invoice?: boolean | null
+          bank_name?: string | null
           check_in_time?: string | null
           check_out_time?: string | null
           city?: string | null

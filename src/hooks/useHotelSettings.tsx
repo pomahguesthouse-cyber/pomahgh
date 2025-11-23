@@ -42,6 +42,9 @@ export interface HotelSettings {
   min_stay_nights?: number;
   max_stay_nights?: number;
   payment_instructions?: string;
+  bank_name?: string;
+  account_number?: string;
+  account_holder_name?: string;
 }
 
 export const useHotelSettings = () => {
