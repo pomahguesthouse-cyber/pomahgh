@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useRooms } from "@/hooks/useRooms";
 import { useInvoice } from "@/hooks/useInvoice";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ const AdminBookings = () => {
     data: rooms
   } = useRooms();
   const { sendInvoice, isSending } = useInvoice();
+  const { settings: hotelSettings } = useHotelSettings();
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -360,6 +362,12 @@ const AdminBookings = () => {
                       {booking.payment_status === 'pay_at_hotel' && <span className="text-blue-600 font-medium">Bayar di Hotel</span>}
                     </p>
                   </div>
+                  {hotelSettings?.payment_instructions && (
+                    <div className="md:col-span-2">
+                      <p className="text-xs text-muted-foreground">Informasi Pembayaran</p>
+                      <p className="text-sm mt-1 text-muted-foreground">{hotelSettings.payment_instructions}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Booking Source - Fourth Row */}
