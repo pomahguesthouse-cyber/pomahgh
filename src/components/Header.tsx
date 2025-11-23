@@ -68,7 +68,7 @@ export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }
   };
   return (
     <header
-      className={`fixed top-1 left-0 right-0 z-50 transition-all duration-300
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
         ${isScrolled ? "bg-black/60 backdrop-blur-md" : "bg-transparent"}
       `}
     >
@@ -84,9 +84,9 @@ export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }
                 e.currentTarget.style.opacity = "1";
               }}
               className="
-      h-[80px]
-      sm:h-[100px]
-      md:h-[120x]
+      h-[60px]
+      sm:h-[80px]
+      md:h-[80x]
       w-auto
       transition-opacity duration-300 opacity-0
       object-contain
