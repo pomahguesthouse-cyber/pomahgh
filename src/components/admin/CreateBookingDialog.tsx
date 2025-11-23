@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { CalendarIcon, Tag } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -64,6 +66,10 @@ export const CreateBookingDialog = ({
     check_out_time: "12:00",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Custom pricing states
+  const [useCustomPrice, setUseCustomPrice] = useState(false);
+  const [customPricePerNight, setCustomPricePerNight] = useState<string>("");
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -80,6 +86,9 @@ export const CreateBookingDialog = ({
         check_in_time: "14:00",
         check_out_time: "12:00",
       });
+      // Reset custom pricing
+      setUseCustomPrice(false);
+      setCustomPricePerNight("");
     }
   }, [open, initialDate]);
 
@@ -147,6 +156,27 @@ export const CreateBookingDialog = ({
       return;
     }
 
+    // Validate custom price if enabled
+    if (useCustomPrice) {
+      if (!customPricePerNight || customPricePerNight.trim() === "") {
+        toast.error("Harga custom wajib diisi");
+        return;
+      }
+      const price = parseFloat(customPricePerNight);
+      if (isNaN(price) || price <= 0) {
+        toast.error("Harga custom harus berupa angka positif");
+        return;
+      }
+      if (price < 10000) {
+        toast.error("Harga custom minimal Rp 10.000");
+        return;
+      }
+      if (price > 100000000) {
+        toast.error("Harga custom maksimal Rp 100.000.000");
+        return;
+      }
+    }
+
     setShowConfirmation(true);
   };
 
@@ -157,7 +187,10 @@ export const CreateBookingDialog = ({
 
     try {
       const totalNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-      const totalPrice = totalNights * selectedRoom.price_per_night;
+      const effectivePricePerNight = useCustomPrice && customPricePerNight 
+        ? parseFloat(customPricePerNight) 
+        : selectedRoom.price_per_night;
+      const totalPrice = totalNights * effectivePricePerNight;
 
       const { error } = await supabase.from("bookings").insert({
         room_id: roomId,
@@ -191,8 +224,12 @@ export const CreateBookingDialog = ({
     }
   };
 
+  const effectivePricePerNight = useCustomPrice && customPricePerNight 
+    ? parseFloat(customPricePerNight) 
+    : selectedRoom?.price_per_night || 0;
+
   const totalNights = checkIn && checkOut ? Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-  const totalPrice = totalNights && selectedRoom ? totalNights * selectedRoom.price_per_night : 0;
+  const totalPrice = totalNights * effectivePricePerNight;
 
   return (
     <>
@@ -370,13 +407,79 @@ export const CreateBookingDialog = ({
             </div>
           </div>
 
+          {/* Custom Pricing Section */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="use-custom-price" className="text-base">
+                  Gunakan Harga Custom
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Override harga normal kamar dengan harga custom
+                </p>
+              </div>
+              <Switch
+                id="use-custom-price"
+                checked={useCustomPrice}
+                onCheckedChange={(checked) => {
+                  setUseCustomPrice(checked);
+                  if (!checked) {
+                    setCustomPricePerNight("");
+                  }
+                }}
+              />
+            </div>
+
+            {useCustomPrice && (
+              <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
+                <Label htmlFor="custom_price">
+                  Harga per Malam (Custom) <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative mt-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    Rp
+                  </span>
+                  <Input
+                    id="custom_price"
+                    type="number"
+                    min="10000"
+                    step="1000"
+                    value={customPricePerNight}
+                    onChange={(e) => setCustomPricePerNight(e.target.value)}
+                    placeholder="Masukkan harga custom"
+                    className="pl-10"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Harga normal: Rp {selectedRoom?.price_per_night.toLocaleString("id-ID")}
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Price Summary */}
           {totalNights > 0 && (
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4">
+              {useCustomPrice && customPricePerNight && (
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="secondary" className="text-xs">
+                    <Tag className="w-3 h-3 mr-1" />
+                    Custom Price
+                  </Badge>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-muted-foreground">Total</p>
-                  <p className="text-xs text-muted-foreground">{totalNights} malam × Rp {selectedRoom?.price_per_night.toLocaleString("id-ID")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {totalNights} malam × Rp {effectivePricePerNight.toLocaleString("id-ID")}
+                    {useCustomPrice && customPricePerNight && (
+                      <span className="ml-2 line-through text-muted-foreground/50">
+                        (Normal: Rp {selectedRoom?.price_per_night.toLocaleString("id-ID")})
+                      </span>
+                    )}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold">Rp {totalPrice.toLocaleString("id-ID")}</p>
