@@ -107,6 +107,11 @@ const AdminFacilities = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Facilities</h1>
+          <p className="text-muted-foreground">Kelola fasilitas hotel Anda</p>
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle>{editingId ? "Edit Fasilitas" : "Tambah Fasilitas Baru"}</CardTitle>
