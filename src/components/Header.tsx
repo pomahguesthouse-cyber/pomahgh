@@ -84,9 +84,9 @@ export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }
                 e.currentTarget.style.opacity = "1";
               }}
               className="
-      h-[100px]
-      sm:h-[120px]
-      md:h-[140px]
+      h-[80px]
+      sm:h-[100px]
+      md:h-[120x]
       w-auto
       transition-opacity duration-300 opacity-0
       object-contain
