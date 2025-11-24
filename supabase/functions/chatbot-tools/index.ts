@@ -198,32 +198,85 @@ serve(async (req) => {
 
         console.log("Calculated:", { total_nights, total_price, room_id: room.id });
 
-        // Insert booking
-        const { data: booking, error: bookingError } = await supabase
+        // Check for existing pending booking from chatbot for this guest
+        const { data: existingBooking } = await supabase
           .from("bookings")
-          .insert({
-            guest_name,
-            guest_email,
-            guest_phone,
-            check_in,
-            check_out,
-            room_id: room.id,
-            num_guests: num_guests || 1,
-            special_requests: special_requests || null,
-            total_nights,
-            total_price,
-            status: 'pending',
-            payment_status: 'unpaid'
-          })
-          .select()
-          .single();
+          .select("id, check_in, check_out, room_id, total_price")
+          .eq("guest_email", guest_email)
+          .eq("guest_phone", guest_phone)
+          .eq("status", "pending")
+          .eq("booking_source", "other")
+          .eq("other_source", "Chatbot AI")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-        if (bookingError) {
-          console.error("Booking insert error:", bookingError);
-          throw new Error(`Failed to create booking: ${bookingError.message}`);
+        let booking;
+        let isUpdate = false;
+
+        if (existingBooking) {
+          // UPDATE existing booking (reschedule)
+          console.log(`Found existing booking ${existingBooking.id}, updating...`);
+          
+          const { data: updatedBooking, error: updateError } = await supabase
+            .from("bookings")
+            .update({
+              check_in,
+              check_out,
+              room_id: room.id,
+              num_guests: num_guests || 1,
+              special_requests: special_requests || null,
+              total_nights,
+              total_price,
+              allocated_room_number: null, // Reset room allocation
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", existingBooking.id)
+            .select()
+            .single();
+            
+          if (updateError) {
+            console.error("Booking update error:", updateError);
+            throw new Error(`Failed to update booking: ${updateError.message}`);
+          }
+          
+          booking = updatedBooking;
+          isUpdate = true;
+          console.log("Booking updated successfully:", booking.id);
+        } else {
+          // CREATE new booking
+          console.log("No existing booking found, creating new...");
+          
+          const { data: newBooking, error: bookingError } = await supabase
+            .from("bookings")
+            .insert({
+              guest_name,
+              guest_email,
+              guest_phone,
+              check_in,
+              check_out,
+              room_id: room.id,
+              num_guests: num_guests || 1,
+              special_requests: special_requests || null,
+              total_nights,
+              total_price,
+              status: 'pending',
+              payment_status: 'unpaid',
+              booking_source: 'other',
+              other_source: 'Chatbot AI'
+            })
+            .select()
+            .single();
+
+          if (bookingError) {
+            console.error("Booking insert error:", bookingError);
+            throw new Error(`Failed to create booking: ${bookingError.message}`);
+          }
+          
+          booking = newBooking;
+          isUpdate = false;
+          console.log("Booking created successfully:", booking.id);
         }
-
-        console.log("Booking created successfully:", booking.id);
 
         // Get hotel settings for WhatsApp
         const { data: hotelSettings } = await supabase
@@ -233,7 +286,9 @@ serve(async (req) => {
 
         // Send WhatsApp notifications (background task)
         if (hotelSettings?.whatsapp_number) {
-          const adminMessage = `🔔 *BOOKING BARU*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\nKamar: ${room.name}\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\nTotal: Rp ${total_price.toLocaleString('id-ID')}\n\nBooking ID: ${booking.id}`;
+          const adminMessage = isUpdate
+            ? `🔄 *RESCHEDULE BOOKING (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\nKamar: ${room.name}\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\nTotal: Rp ${total_price.toLocaleString('id-ID')}\n\nBooking ID: ${booking.id}\n\n⚠️ Booking ini telah diperbarui oleh guest melalui chatbot.`
+            : `🔔 *BOOKING BARU (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\nKamar: ${room.name}\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\nTotal: Rp ${total_price.toLocaleString('id-ID')}\n\nBooking ID: ${booking.id}`;
           
           // Send to admin
           fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
@@ -251,7 +306,9 @@ serve(async (req) => {
 
           // Send to customer if phone provided
           if (guest_phone) {
-            const customerMessage = `Terima kasih ${guest_name}! 🙏\n\nBooking Anda telah kami terima:\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${room.name}\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${total_price.toLocaleString('id-ID')}\n\n📝 Booking ID: ${booking.id}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`;
+            const customerMessage = isUpdate
+              ? `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${room.name}\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${total_price.toLocaleString('id-ID')}\n\n📝 Booking ID: ${booking.id}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
+              : `Terima kasih ${guest_name}! 🙏\n\nBooking Anda telah kami terima:\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${room.name}\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${total_price.toLocaleString('id-ID')}\n\n📝 Booking ID: ${booking.id}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`;
             
             fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
               method: "POST",
@@ -269,10 +326,13 @@ serve(async (req) => {
         }
 
         result = {
-          message: `Booking berhasil dibuat! Nomor booking: ${booking.id}. Status: Menunggu konfirmasi. Total: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran melalui WhatsApp.`,
+          message: isUpdate
+            ? `Booking berhasil diperbarui! Nomor booking: ${booking.id}. Check-in baru: ${check_in}, Check-out baru: ${check_out}. Total baru: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
+            : `Booking berhasil dibuat! Nomor booking: ${booking.id}. Status: Menunggu konfirmasi. Total: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran melalui WhatsApp.`,
           booking_id: booking.id,
           total_price,
-          status: 'pending'
+          status: 'pending',
+          is_update: isUpdate
         };
         break;
       }
