@@ -17,9 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send, Tag, CalendarIcon, Users, Globe, UserCheck, HelpCircle } from "lucide-react";
+import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send, Tag, CalendarIcon, Users, Globe, UserCheck, HelpCircle, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 const AdminBookings = () => {
   const {
     bookings,
@@ -40,6 +43,11 @@ const AdminBookings = () => {
   const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
   const [invoicePreviewOpen, setInvoicePreviewOpen] = useState(false);
   const [selectedBookingForInvoice, setSelectedBookingForInvoice] = useState<any>(null);
+  
+  // Date filter states
+  const [filterDateType, setFilterDateType] = useState<"check_in" | "check_out">("check_in");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   
   // Custom pricing states for edit dialog
   const [useCustomPriceEdit, setUseCustomPriceEdit] = useState(false);
@@ -67,8 +75,22 @@ const AdminBookings = () => {
     };
   }, []);
   const filteredBookings = bookings?.filter(booking => {
-    if (filterStatus === "all") return true;
-    return booking.status === filterStatus;
+    // Filter by status
+    if (filterStatus !== "all" && booking.status !== filterStatus) {
+      return false;
+    }
+    
+    // Filter by date range
+    if (startDate && endDate) {
+      const bookingDate = new Date(filterDateType === "check_in" ? booking.check_in : booking.check_out);
+      const isInRange = isWithinInterval(bookingDate, {
+        start: startOfDay(startDate),
+        end: endOfDay(endDate)
+      });
+      if (!isInRange) return false;
+    }
+    
+    return true;
   });
   const handleEditClick = (booking: any) => {
     setEditingBooking({
@@ -211,7 +233,86 @@ const AdminBookings = () => {
     label: "Maintenance"
   }];
   return <div className="space-y-6">
-      <div className="flex justify-end items-center">
+      <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-3">
+        {/* Date Filter Type */}
+        <Select value={filterDateType} onValueChange={(value: "check_in" | "check_out") => setFilterDateType(value)}>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="check_in">Filter by Check-in</SelectItem>
+            <SelectItem value="check_out">Filter by Check-out</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Date Range Picker */}
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[240px] justify-start text-left font-normal",
+                  !startDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {startDate ? format(startDate, "dd/MM/yy") : <span>Start date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={startDate}
+                onSelect={setStartDate}
+                initialFocus
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+
+          <span className="text-muted-foreground">to</span>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[240px] justify-start text-left font-normal",
+                  !endDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {endDate ? format(endDate, "dd/MM/yy") : <span>End date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={endDate}
+                onSelect={setEndDate}
+                initialFocus
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+
+          {(startDate || endDate) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setStartDate(undefined);
+                setEndDate(undefined);
+              }}
+              title="Clear date filter"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* Status Filter */}
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-48">
             <SelectValue />
@@ -247,7 +348,7 @@ const AdminBookings = () => {
                       {booking.status}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      Created {format(new Date(booking.created_at), "MMM dd, yyyy 'at' HH:mm")}
+                      Created {format(new Date(booking.created_at), "dd/MM/yy 'at' HH:mm")}
                     </span>
                   </div>
                   
@@ -329,7 +430,7 @@ const AdminBookings = () => {
                   <div>
                     <p className="text-xs text-muted-foreground">Check-in</p>
                     <p className="font-medium">
-                      {format(new Date(booking.check_in), "MMM dd, yyyy")}
+                      {format(new Date(booking.check_in), "dd/MM/yy")}
                     </p>
                     {booking.check_in_time && (
                       <p className="text-xs text-muted-foreground">at {booking.check_in_time.slice(0, 5)}</p>
@@ -340,7 +441,7 @@ const AdminBookings = () => {
                   <div>
                     <p className="text-xs text-muted-foreground">Check-out</p>
                     <p className="font-medium">
-                      {format(new Date(booking.check_out), "MMM dd, yyyy")}
+                      {format(new Date(booking.check_out), "dd/MM/yy")}
                     </p>
                     {booking.check_out_time && (
                       <p className="text-xs text-muted-foreground">at {booking.check_out_time.slice(0, 5)}</p>
