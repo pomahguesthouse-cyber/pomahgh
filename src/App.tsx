@@ -16,6 +16,7 @@ import AdminFacilities from "./pages/admin/AdminFacilities";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNearbyLocations from "./pages/admin/AdminNearbyLocations";
 import AdminChatbot from "./pages/admin/AdminChatbot";
+import AdminInvoiceTemplate from "./pages/admin/AdminInvoiceTemplate";
 import AdminBankAccounts from "./pages/admin/AdminBankAccounts";
 import RoomDetail from "./pages/RoomDetail";
 import { AdminLayout } from "./components/admin/AdminLayout";
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
           <Route path="/admin/chatbot" element={<AdminLayout><AdminChatbot /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
+          <Route path="/admin/invoice-template" element={<AdminLayout><AdminInvoiceTemplate /></AdminLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

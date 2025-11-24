@@ -41,6 +41,7 @@ export interface HotelSettings {
   longitude?: number;
   min_stay_nights?: number;
   max_stay_nights?: number;
+  auto_send_invoice?: boolean;
   payment_instructions?: string;
   bank_name?: string;
   account_number?: string;

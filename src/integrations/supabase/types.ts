@@ -542,6 +542,96 @@ export type Database = {
           },
         ]
       }
+      invoice_templates: {
+        Row: {
+          accent_color: string | null
+          background_color: string | null
+          border_style: string | null
+          created_at: string | null
+          custom_footer_text: string | null
+          custom_header_text: string | null
+          font_family: string | null
+          font_size_base: number | null
+          font_size_heading: number | null
+          header_height: number | null
+          id: string
+          is_active: boolean | null
+          layout_style: string | null
+          logo_position: string | null
+          logo_size: string | null
+          payment_title: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          show_guest_details: boolean | null
+          show_hotel_details: boolean | null
+          show_logo: boolean | null
+          show_payment_instructions: boolean | null
+          show_special_requests: boolean | null
+          spacing: string | null
+          terms_and_conditions: string | null
+          text_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          background_color?: string | null
+          border_style?: string | null
+          created_at?: string | null
+          custom_footer_text?: string | null
+          custom_header_text?: string | null
+          font_family?: string | null
+          font_size_base?: number | null
+          font_size_heading?: number | null
+          header_height?: number | null
+          id?: string
+          is_active?: boolean | null
+          layout_style?: string | null
+          logo_position?: string | null
+          logo_size?: string | null
+          payment_title?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          show_guest_details?: boolean | null
+          show_hotel_details?: boolean | null
+          show_logo?: boolean | null
+          show_payment_instructions?: boolean | null
+          show_special_requests?: boolean | null
+          spacing?: string | null
+          terms_and_conditions?: string | null
+          text_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          background_color?: string | null
+          border_style?: string | null
+          created_at?: string | null
+          custom_footer_text?: string | null
+          custom_header_text?: string | null
+          font_family?: string | null
+          font_size_base?: number | null
+          font_size_heading?: number | null
+          header_height?: number | null
+          id?: string
+          is_active?: boolean | null
+          layout_style?: string | null
+          logo_position?: string | null
+          logo_size?: string | null
+          payment_title?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          show_guest_details?: boolean | null
+          show_hotel_details?: boolean | null
+          show_logo?: boolean | null
+          show_payment_instructions?: boolean | null
+          show_special_requests?: boolean | null
+          spacing?: string | null
+          terms_and_conditions?: string | null
+          text_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       nearby_locations: {
         Row: {
           category: string
