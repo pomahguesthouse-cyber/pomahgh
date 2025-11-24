@@ -425,7 +425,7 @@ export const MonthlyBookingCalendar = () => {
   return (
     <>
       <Card className="w-full shadow-lg rounded-xl overflow-hidden border-border/50">
-        <div className="sticky top-[56px] z-20 p-4 bg-background border-b border-border shadow-sm">
+        <div className="p-4 bg-muted/20 border-b border-border">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-2 flex-wrap">
               {/* View Range Selector */}
