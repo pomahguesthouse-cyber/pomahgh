@@ -168,7 +168,7 @@ export const BookingCalendarTable = () => {
       const checkIn = parseISO(booking.check_in);
       const checkOut = parseISO(booking.check_out);
 
-      return isWithinInterval(date, { start: checkIn, end: checkOut }) || isSameDay(date, checkIn, date);
+      return isWithinInterval(date, { start: checkIn, end: checkOut }) || isSameDay(date, checkIn);
     });
   };
 
