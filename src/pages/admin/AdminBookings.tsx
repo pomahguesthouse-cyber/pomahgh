@@ -38,6 +38,7 @@ const AdminBookings = () => {
   const { settings: hotelSettings } = useHotelSettings();
   const { bankAccounts } = useBankAccounts();
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
@@ -81,6 +82,17 @@ const AdminBookings = () => {
     // Filter by status
     if (filterStatus !== "all" && booking.status !== filterStatus) {
       return false;
+    }
+    
+    // Filter by booking source
+    if (sourceFilter !== "all") {
+      if (sourceFilter === "chatbot_ai") {
+        if (booking.booking_source !== "other" || booking.other_source !== "Chatbot AI") {
+          return false;
+        }
+      } else if (booking.booking_source !== sourceFilter) {
+        return false;
+      }
     }
     
     // Filter by date range
@@ -350,6 +362,21 @@ const AdminBookings = () => {
               </SelectItem>)}
           </SelectContent>
         </Select>
+
+        {/* Source Filter */}
+        <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All Sources" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Sources</SelectItem>
+            <SelectItem value="direct">Direct</SelectItem>
+            <SelectItem value="ota">OTA</SelectItem>
+            <SelectItem value="walk_in">Walk-in</SelectItem>
+            <SelectItem value="chatbot_ai">🤖 Chatbot AI</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Accordion type="single" collapsible className="space-y-4">
@@ -506,32 +533,33 @@ const AdminBookings = () => {
                 {/* Booking Source Row */}
                 <div className="mt-3 flex items-center gap-2">
                   <p className="text-xs text-muted-foreground">Jenis Booking:</p>
-                  {(!booking.booking_source || booking.booking_source === "direct") && (
+                  {booking.booking_source === "other" && booking.other_source === "Chatbot AI" ? (
+                    <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                      🤖 Chatbot AI
+                    </Badge>
+                  ) : (!booking.booking_source || booking.booking_source === "direct") ? (
                     <div className="flex items-center gap-1">
                       <Users className="h-3 w-3 text-blue-600" />
                       <span className="text-xs font-medium">Direct</span>
                     </div>
-                  )}
-                  {booking.booking_source === "ota" && (
+                  ) : booking.booking_source === "ota" ? (
                     <div className="flex items-center gap-1">
                       <Globe className="h-3 w-3 text-green-600" />
                       <span className="text-xs font-medium">OTA</span>
                       {booking.ota_name && <span className="text-xs text-muted-foreground">({booking.ota_name})</span>}
                     </div>
-                  )}
-                  {booking.booking_source === "walk_in" && (
+                  ) : booking.booking_source === "walk_in" ? (
                     <div className="flex items-center gap-1">
                       <UserCheck className="h-3 w-3 text-purple-600" />
                       <span className="text-xs font-medium">Walk-in</span>
                     </div>
-                  )}
-                  {booking.booking_source === "other" && (
+                  ) : booking.booking_source === "other" ? (
                     <div className="flex items-center gap-1">
                       <HelpCircle className="h-3 w-3 text-gray-600" />
                       <span className="text-xs font-medium">Other</span>
                       {booking.other_source && <span className="text-xs text-muted-foreground">({booking.other_source})</span>}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </AccordionTrigger>
