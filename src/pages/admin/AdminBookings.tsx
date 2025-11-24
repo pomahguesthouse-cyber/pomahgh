@@ -354,8 +354,13 @@ const AdminBookings = () => {
 
       <Accordion type="single" collapsible className="space-y-4">
         {filteredBookings?.map(booking => (
-          <AccordionItem value={booking.id} key={booking.id} className="border rounded-lg">
-            <AccordionTrigger className="hover:no-underline px-6 py-4">
+          <AccordionItem value={booking.id} key={booking.id} className="border rounded-lg relative overflow-hidden">
+            {/* Gray overlay for cancelled bookings */}
+            {booking.status === 'cancelled' && (
+              <div className="absolute inset-0 bg-gray-500/30 pointer-events-none z-10 rounded-lg" />
+            )}
+            
+            <AccordionTrigger className="hover:no-underline px-6 py-4 relative z-20">
               <div className="w-full text-left" onClick={(e) => e.stopPropagation()}>
                 {/* Header Row */}
                 <div className="flex justify-between items-start mb-4">
@@ -531,7 +536,7 @@ const AdminBookings = () => {
               </div>
             </AccordionTrigger>
 
-            <AccordionContent>
+            <AccordionContent className="relative z-20">
               <div className="px-6 pb-4 space-y-4 border-t pt-4">
                 {/* Contact Details */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
