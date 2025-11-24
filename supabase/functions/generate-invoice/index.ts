@@ -12,8 +12,29 @@ interface InvoiceData {
   bankAccounts: any[];
 }
 
-function generateInvoiceHTML(data: InvoiceData): string {
+function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
   const { booking, room, hotelSettings, bankAccounts } = data;
+  
+  // Use template settings or defaults
+  const primaryColor = template?.primary_color || '#8B4513';
+  const secondaryColor = template?.secondary_color || '#D2691E';
+  const textColor = template?.text_color || '#1a1a1a';
+  const backgroundColor = template?.background_color || '#ffffff';
+  const accentColor = template?.accent_color || '#f0f8ff';
+  const fontFamily = template?.font_family || 'Arial';
+  const fontSizeBase = template?.font_size_base || 12;
+  const fontSizeHeading = template?.font_size_heading || 24;
+  const showLogo = template?.show_logo !== false;
+  const showGuestDetails = template?.show_guest_details !== false;
+  const showHotelDetails = template?.show_hotel_details !== false;
+  const showSpecialRequests = template?.show_special_requests !== false;
+  const showPaymentInstructions = template?.show_payment_instructions !== false;
+  const customHeaderText = template?.custom_header_text || null;
+  const customFooterText = template?.custom_footer_text || null;
+  const paymentTitle = template?.payment_title || 'Instruksi Pembayaran';
+  const layoutStyle = template?.layout_style || 'modern';
+  const borderStyle = template?.border_style || 'solid';
+  const spacing = template?.spacing || 'normal';
   
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('id-ID', {
@@ -52,27 +73,27 @@ function generateInvoiceHTML(data: InvoiceData): string {
     }
     
     body {
-      font-family: 'Arial', 'Helvetica', sans-serif;
+      font-family: '${fontFamily}', 'Helvetica', sans-serif;
       line-height: 1.6;
-      color: #1a1a1a;
+      color: ${textColor};
       max-width: 800px;
       margin: 0 auto;
-      padding: 20px;
-      background-color: #ffffff;
-      font-size: 12pt;
+      padding: ${spacing === 'compact' ? '10px' : spacing === 'spacious' ? '30px' : '20px'};
+      background-color: ${backgroundColor};
+      font-size: ${fontSizeBase}pt;
     }
     
     .invoice-container {
       background: white;
       padding: 40px;
-      border: 1px solid #e0e0e0;
+      border: ${borderStyle === 'none' ? 'none' : borderStyle === 'dashed' ? '1px dashed #e0e0e0' : '1px solid #e0e0e0'};
     }
     .header {
       display: table;
       width: 100%;
       margin-bottom: 30px;
       padding-bottom: 15px;
-      border-bottom: 3px solid #8B4513;
+      border-bottom: 3px solid ${primaryColor};
     }
     
     .header-left {
@@ -89,9 +110,9 @@ function generateInvoiceHTML(data: InvoiceData): string {
     }
     
     .logo {
-      font-size: 24pt;
+      font-size: ${fontSizeHeading}pt;
       font-weight: bold;
-      color: #8B4513;
+      color: ${primaryColor};
       margin-bottom: 5px;
     }
     
@@ -106,9 +127,9 @@ function generateInvoiceHTML(data: InvoiceData): string {
     }
     
     .invoice-number {
-      font-size: 20pt;
+      font-size: ${fontSizeHeading * 0.8}pt;
       font-weight: bold;
-      color: #8B4513;
+      color: ${primaryColor};
       margin-bottom: 5px;
     }
     
@@ -122,7 +143,7 @@ function generateInvoiceHTML(data: InvoiceData): string {
     .section-title {
       font-size: 14px;
       font-weight: bold;
-      color: #8B4513;
+      color: ${primaryColor};
       text-transform: uppercase;
       margin-bottom: 10px;
       letter-spacing: 0.5px;
@@ -161,7 +182,7 @@ function generateInvoiceHTML(data: InvoiceData): string {
     }
     
     th {
-      background: #8B4513 !important;
+      background: ${primaryColor} !important;
       color: white !important;
       padding: 10px;
       text-align: left;
@@ -211,9 +232,9 @@ function generateInvoiceHTML(data: InvoiceData): string {
     .total-row.grand-total {
       font-size: 14pt;
       font-weight: bold;
-      color: #8B4513;
-      border-top: 3px solid #8B4513;
-      border-bottom: 3px solid #8B4513;
+      color: ${primaryColor};
+      border-top: 3px solid ${primaryColor};
+      border-bottom: 3px solid ${primaryColor};
       padding: 12px 0;
       margin-top: 10px;
       -webkit-print-color-adjust: exact;
@@ -248,10 +269,10 @@ function generateInvoiceHTML(data: InvoiceData): string {
       border: 1px solid #bee5eb;
     }
     .payment-instructions {
-      background: #f0f8ff;
+      background: ${accentColor};
       padding: 15px;
-      border: 1px solid #8B4513;
-      border-left: 4px solid #8B4513;
+      border: 1px solid ${primaryColor};
+      border-left: 4px solid ${primaryColor};
       margin-top: 25px;
       page-break-inside: avoid;
       -webkit-print-color-adjust: exact;
@@ -327,9 +348,11 @@ function generateInvoiceHTML(data: InvoiceData): string {
 </head>
 <body>
   <div class="invoice-container pdf-friendly">
+    ${customHeaderText ? `<div style="background: ${accentColor}; padding: 15px; margin-bottom: 20px; border-left: 4px solid ${primaryColor}; font-weight: 600;">${customHeaderText}</div>` : ''}
+    
     <div class="header">
       <div class="header-left">
-        <div class="logo">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
+        ${showLogo ? `<div class="logo">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>` : ''}
         <div class="tagline">${hotelSettings.tagline || ''}</div>
       </div>
       <div class="header-right">
@@ -338,13 +361,16 @@ function generateInvoiceHTML(data: InvoiceData): string {
       </div>
     </div>
 
-    <div class="info-grid">
+    ${showGuestDetails || showHotelDetails ? `<div class="info-grid">` : ''}
+      ${showGuestDetails ? `
       <div class="info-box">
         <div class="section-title">Detail Tamu</div>
         <div><strong>${booking.guest_name}</strong></div>
         <div>${booking.guest_email}</div>
         ${booking.guest_phone ? `<div>${booking.guest_phone}</div>` : ''}
       </div>
+      ` : ''}
+      ${showHotelDetails ? `
       <div class="info-box">
         <div class="section-title">Detail Hotel</div>
         <div><strong>${hotelSettings.hotel_name}</strong></div>
@@ -352,7 +378,8 @@ function generateInvoiceHTML(data: InvoiceData): string {
         <div>${hotelSettings.city}, ${hotelSettings.country}</div>
         <div>${hotelSettings.phone_primary}</div>
       </div>
-    </div>
+      ` : ''}
+    ${showGuestDetails || showHotelDetails ? `</div>` : ''}
 
     <div class="section">
       <div class="section-title">Detail Booking</div>
@@ -382,7 +409,7 @@ function generateInvoiceHTML(data: InvoiceData): string {
       </table>
     </div>
 
-    ${booking.special_requests ? `
+    ${showSpecialRequests && booking.special_requests ? `
     <div class="section">
       <div class="section-title">Permintaan Khusus</div>
       <div class="info-box">${booking.special_requests}</div>
@@ -438,14 +465,14 @@ function generateInvoiceHTML(data: InvoiceData): string {
       </div>
     </div>
 
-    ${amountDue > 0 && (bankAccounts.length > 0 || hotelSettings.payment_instructions) ? `
+    ${showPaymentInstructions && amountDue > 0 && (bankAccounts.length > 0 || hotelSettings.payment_instructions) ? `
     <div class="payment-instructions">
-      <div class="section-title">Instruksi Pembayaran</div>
+      <div class="section-title">${paymentTitle}</div>
       ${bankAccounts.length > 0 ? `
         <p style="margin-bottom: 15px; font-weight: 600;">Silakan transfer ke salah satu rekening berikut:</p>
         ${bankAccounts.map((account: any, index: number) => `
           <div style="margin-bottom: 20px; padding: 15px; background: white; border: 1px solid #e0e0e0; border-radius: 5px;">
-            <p style="font-weight: bold; color: #8B4513; margin-bottom: 10px; font-size: 11pt;">Opsi ${index + 1}</p>
+            <p style="font-weight: bold; color: ${primaryColor}; margin-bottom: 10px; font-size: 11pt;">Opsi ${index + 1}</p>
             <table style="width: 100%; border: none;">
               <tr style="border: none;">
                 <td style="border: none; padding: 5px 0; width: 150px;"><strong>Nama Bank:</strong></td>
@@ -468,7 +495,7 @@ function generateInvoiceHTML(data: InvoiceData): string {
     ` : ''}
 
     <div class="footer">
-      <div>${hotelSettings.invoice_footer_text || 'Terima kasih telah memilih Pomah Guesthouse!'}</div>
+      <div>${customFooterText || hotelSettings.invoice_footer_text || 'Terima kasih telah memilih Pomah Guesthouse!'}</div>
       <div class="contact-info">
         <div>📧 ${hotelSettings.email_primary} | 📞 ${hotelSettings.phone_primary}</div>
         ${hotelSettings.whatsapp_number ? `<div>💬 WhatsApp: ${hotelSettings.whatsapp_number}</div>` : ''}
@@ -496,6 +523,15 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Fetch invoice template
+    const { data: template } = await supabase
+      .from('invoice_templates')
+      .select('*')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    console.log('Invoice template:', template ? 'Found' : 'Not found, using defaults');
 
     // Fetch booking with room details
     const { data: booking, error: bookingError } = await supabase
@@ -548,13 +584,13 @@ Deno.serve(async (req) => {
         .eq('id', bookingId);
     }
 
-    // Generate HTML
+    // Generate HTML with template
     const html = generateInvoiceHTML({
       booking: { ...booking, invoice_number: invoiceNumber },
       room: booking.rooms,
       hotelSettings,
       bankAccounts: bankAccounts || []
-    });
+    }, template);
 
     console.log(`Invoice generated: ${invoiceNumber} for booking ${bookingId}`);
 
