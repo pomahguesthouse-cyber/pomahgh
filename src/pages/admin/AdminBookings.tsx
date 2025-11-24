@@ -49,6 +49,9 @@ const AdminBookings = () => {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   
+  // Search state
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  
   // Custom pricing states for edit dialog
   const [useCustomPriceEdit, setUseCustomPriceEdit] = useState(false);
   const [customPricePerNightEdit, setCustomPricePerNightEdit] = useState<string>("");
@@ -88,6 +91,19 @@ const AdminBookings = () => {
         end: endOfDay(endDate)
       });
       if (!isInRange) return false;
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      const matchesGuestName = booking.guest_name?.toLowerCase().includes(query);
+      const matchesEmail = booking.guest_email?.toLowerCase().includes(query);
+      const matchesRoomNumber = booking.allocated_room_number?.toLowerCase().includes(query);
+      const matchesBookingId = booking.id.toLowerCase().includes(query);
+      
+      if (!matchesGuestName && !matchesEmail && !matchesRoomNumber && !matchesBookingId) {
+        return false;
+      }
     }
     
     return true;
@@ -233,6 +249,17 @@ const AdminBookings = () => {
     label: "Maintenance"
   }];
   return <div className="space-y-6">
+      {/* Search Bar */}
+      <div className="w-full max-w-md">
+        <Input
+          type="text"
+          placeholder="Search by name, email, room number, or booking ID..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full"
+        />
+      </div>
+
       <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-3">
         {/* Date Filter Type */}
         <Select value={filterDateType} onValueChange={(value: "check_in" | "check_out") => setFilterDateType(value)}>
