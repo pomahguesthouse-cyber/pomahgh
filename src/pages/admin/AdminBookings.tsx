@@ -8,6 +8,7 @@ import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -223,13 +224,17 @@ const AdminBookings = () => {
         </Select>
       </div>
 
-      <div className="space-y-4">
-        {filteredBookings?.map(booking => <Card key={booking.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">Booking #{booking.id.slice(0, 8)}</CardTitle>
+      <Accordion type="single" collapsible className="space-y-4">
+        {filteredBookings?.map(booking => (
+          <AccordionItem value={booking.id} key={booking.id} className="border rounded-lg">
+            <AccordionTrigger className="hover:no-underline px-6 py-4">
+              <div className="w-full text-left" onClick={(e) => e.stopPropagation()}>
+                {/* Header Row */}
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-semibold text-lg">
+                      Booking #{booking.id.slice(0, 8)}
+                    </h3>
                     <Badge 
                       variant={
                         booking.status === 'confirmed' || booking.status === 'checked-in' 
@@ -241,116 +246,119 @@ const AdminBookings = () => {
                     >
                       {booking.status}
                     </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Created {format(new Date(booking.created_at), "MMM dd, yyyy 'at' HH:mm")}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Created {format(new Date(booking.created_at), "MMM dd, yyyy 'at' HH:mm")}
-                  </p>
-                  {booking.rooms && <p className="text-sm font-medium text-primary mt-1">
-                      {booking.rooms.name} • Allotment: {booking.rooms.allotment}/{booking.rooms.room_count}
-                    </p>}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedBookingForInvoice(booking);
-                      setInvoicePreviewOpen(true);
-                    }}
-                    disabled={booking.status !== 'confirmed'}
-                    title={booking.status !== 'confirmed' ? 'Only confirmed bookings can send invoice' : 'Preview and send invoice'}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Invoice
-                  </Button>
-                  <Select value={booking.status} onValueChange={value => updateBookingStatus({
-                id: booking.id,
-                status: value
-              })}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="maintenance">Maintenance</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button size="icon" variant="outline" onClick={() => handleEditClick(booking)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="destructive" onClick={() => {
-                if (confirm("Are you sure you want to delete this booking?")) {
-                  deleteBooking(booking.id);
-                }
-              }}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Guest Info - Top Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Guest Name</p>
-                    <p className="text-sm font-medium">{booking.guest_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="text-sm font-medium">{booking.guest_email}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Phone</p>
-                    <p className="text-sm font-medium">{booking.guest_phone || "-"}</p>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedBookingForInvoice(booking);
+                        setInvoicePreviewOpen(true);
+                      }}
+                      disabled={booking.status !== 'confirmed'}
+                      title={booking.status !== 'confirmed' ? 'Only confirmed bookings can send invoice' : 'Preview and send invoice'}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Invoice
+                    </Button>
+                    <Select 
+                      value={booking.status} 
+                      onValueChange={(value) => {
+                        updateBookingStatus({
+                          id: booking.id,
+                          status: value
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="w-32" onClick={(e) => e.stopPropagation()}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="maintenance">Maintenance</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditClick(booking);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="destructive" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Are you sure you want to delete this booking?")) {
+                          deleteBooking(booking.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
 
-                {/* Check-in, Checkout, Room Number - Second Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
+                {/* Compact Info Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                  {/* Room & Guest */}
+                  <div className="col-span-2 md:col-span-1">
+                    {booking.rooms && (
+                      <p className="text-primary font-medium">
+                        {booking.rooms.name} • #{booking.allocated_room_number || "TBA"}
+                      </p>
+                    )}
+                    <p className="font-medium mt-1">{booking.guest_name}</p>
+                    <p className="text-xs text-muted-foreground">{booking.num_guests} guests</p>
+                  </div>
+
+                  {/* Check-in */}
                   <div>
                     <p className="text-xs text-muted-foreground">Check-in</p>
-                    <p className="text-sm font-medium">
+                    <p className="font-medium">
                       {format(new Date(booking.check_in), "MMM dd, yyyy")}
-                      {booking.check_in_time && <span className="ml-1 text-xs">at {booking.check_in_time.slice(0, 5)}</span>}
                     </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Check-out</p>
-                    <p className="text-sm font-medium">
-                      {format(new Date(booking.check_out), "MMM dd, yyyy")}
-                      {booking.check_out_time && <span className="ml-1 text-xs">at {booking.check_out_time.slice(0, 5)}</span>}
-                    </p>
-                    {booking.check_out_time && booking.check_out_time > "12:00:00" && (
-                      <p className="text-xs text-red-600 font-medium mt-0.5">Late Check-out</p>
+                    {booking.check_in_time && (
+                      <p className="text-xs text-muted-foreground">at {booking.check_in_time.slice(0, 5)}</p>
                     )}
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Room Number</p>
-                    {booking.allocated_room_number ? <p className="font-semibold text-primary text-base">
-                        #{booking.allocated_room_number}
-                      </p> : <p className="text-xs text-muted-foreground italic">Not allocated</p>}
-                  </div>
-                </div>
 
-                {/* Details - Third Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
+                  {/* Check-out */}
+                  <div>
+                    <p className="text-xs text-muted-foreground">Check-out</p>
+                    <p className="font-medium">
+                      {format(new Date(booking.check_out), "MMM dd, yyyy")}
+                    </p>
+                    {booking.check_out_time && (
+                      <p className="text-xs text-muted-foreground">at {booking.check_out_time.slice(0, 5)}</p>
+                    )}
+                  </div>
+
+                  {/* Total Nights */}
                   <div>
                     <p className="text-xs text-muted-foreground">Total Nights</p>
-                    <p className="text-sm font-medium">{booking.total_nights} nights</p>
+                    <p className="font-medium">{booking.total_nights} nights</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Number of Guests</p>
-                    <p className="text-sm font-medium">{booking.num_guests} guests</p>
-                  </div>
+
+                  {/* Total Price & Payment */}
                   <div>
                     <p className="text-xs text-muted-foreground">Total Price</p>
-                    <p className="text-base font-bold">Rp {booking.total_price.toLocaleString()}</p>
-                    <p className="text-xs mt-1">
-                      {booking.payment_status === 'paid' && <span className="text-green-600 font-medium">Lunas</span>}
+                    <p className="font-bold">Rp {booking.total_price.toLocaleString()}</p>
+                    <p className="text-xs mt-0.5">
+                      {booking.payment_status === 'paid' && <span className="text-green-600 font-medium">Lunas ✓</span>}
                       {booking.payment_status === 'down_payment' && (
                         <span className="text-orange-600 font-medium">
                           DP: Rp {(booking.payment_amount || 0).toLocaleString()}
@@ -360,87 +368,101 @@ const AdminBookings = () => {
                       {booking.payment_status === 'pay_at_hotel' && <span className="text-blue-600 font-medium">Bayar di Hotel</span>}
                     </p>
                   </div>
-                  {bankAccounts && bankAccounts.length > 0 && (
-                    <div className="md:col-span-2">
-                      <p className="text-xs text-muted-foreground mb-2">Pilihan Pembayaran</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {bankAccounts.slice(0, 2).map((account) => (
-                          <div key={account.id} className="text-xs bg-muted/50 p-2 rounded">
-                            <p className="font-medium">{account.bank_name}</p>
-                            <p className="font-mono">{account.account_number}</p>
-                            <p className="text-muted-foreground">{account.account_holder_name}</p>
-                          </div>
-                        ))}
-                      </div>
-                      {bankAccounts.length > 2 && (
-                        <p className="text-xs text-muted-foreground mt-1">+{bankAccounts.length - 2} opsi lainnya</p>
-                      )}
-                    </div>
-                  )}
                 </div>
 
-                {/* Booking Source - Fourth Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Jenis Booking</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      {(!booking.booking_source || booking.booking_source === "direct") && (
-                        <>
-                          <Users className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm font-medium">Direct</span>
-                        </>
-                      )}
-                      {booking.booking_source === "ota" && (
-                        <>
-                          <Globe className="h-4 w-4 text-green-600" />
-                          <span className="text-sm font-medium">OTA</span>
-                        </>
-                      )}
-                      {booking.booking_source === "walk_in" && (
-                        <>
-                          <UserCheck className="h-4 w-4 text-orange-600" />
-                          <span className="text-sm font-medium">Walk-in</span>
-                        </>
-                      )}
-                      {booking.booking_source === "other" && (
-                        <>
-                          <HelpCircle className="h-4 w-4 text-purple-600" />
-                          <span className="text-sm font-medium">Lainnya</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {booking.booking_source === "ota" && booking.ota_name && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Platform OTA</p>
-                      <Badge variant="secondary" className="mt-1">
-                        {booking.ota_name}
-                      </Badge>
+                {/* Booking Source Row */}
+                <div className="mt-3 flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">Jenis Booking:</p>
+                  {(!booking.booking_source || booking.booking_source === "direct") && (
+                    <div className="flex items-center gap-1">
+                      <Users className="h-3 w-3 text-blue-600" />
+                      <span className="text-xs font-medium">Direct</span>
                     </div>
                   )}
-                  
-                  {booking.booking_source === "other" && booking.other_source && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">Sumber</p>
-                      <p className="text-sm font-medium mt-1">{booking.other_source}</p>
+                  {booking.booking_source === "ota" && (
+                    <div className="flex items-center gap-1">
+                      <Globe className="h-3 w-3 text-green-600" />
+                      <span className="text-xs font-medium">OTA</span>
+                      {booking.ota_name && <span className="text-xs text-muted-foreground">({booking.ota_name})</span>}
+                    </div>
+                  )}
+                  {booking.booking_source === "walk_in" && (
+                    <div className="flex items-center gap-1">
+                      <UserCheck className="h-3 w-3 text-purple-600" />
+                      <span className="text-xs font-medium">Walk-in</span>
+                    </div>
+                  )}
+                  {booking.booking_source === "other" && (
+                    <div className="flex items-center gap-1">
+                      <HelpCircle className="h-3 w-3 text-gray-600" />
+                      <span className="text-xs font-medium">Other</span>
+                      {booking.other_source && <span className="text-xs text-muted-foreground">({booking.other_source})</span>}
                     </div>
                   )}
                 </div>
               </div>
-              {booking.special_requests && <div className="mt-4 p-3 bg-muted rounded-md">
-                  <p className="text-xs text-muted-foreground">Special Requests</p>
-                  <p className="text-xs">{booking.special_requests}</p>
-                </div>}
-            </CardContent>
-          </Card>)}
+            </AccordionTrigger>
 
-        {filteredBookings?.length === 0 && <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No bookings found for the selected filter.</p>
-            </CardContent>
-          </Card>}
-      </div>
+            <AccordionContent>
+              <div className="px-6 pb-4 space-y-4 border-t pt-4">
+                {/* Contact Details */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-sm font-medium">{booking.guest_email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Phone</p>
+                    <p className="text-sm font-medium">{booking.guest_phone || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Room Number</p>
+                    {booking.allocated_room_number ? (
+                      <p className="font-semibold text-primary text-lg">
+                        #{booking.allocated_room_number}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">Not allocated</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Special Requests */}
+                {booking.special_requests && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Special Requests</p>
+                    <p className="text-sm bg-muted/50 p-3 rounded">{booking.special_requests}</p>
+                  </div>
+                )}
+
+                {/* Payment Options - Bank Accounts */}
+                {bankAccounts && bankAccounts.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Pilihan Pembayaran</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {bankAccounts.map((account) => (
+                        <div key={account.id} className="bg-muted/50 p-3 rounded">
+                          <p className="font-medium text-sm">{account.bank_name}</p>
+                          <p className="font-mono text-sm">{account.account_number}</p>
+                          <p className="text-xs text-muted-foreground">{account.account_holder_name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+
+      {(!filteredBookings || filteredBookings.length === 0) && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">No bookings found for the selected filter.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Edit Booking Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
