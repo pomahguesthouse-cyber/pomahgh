@@ -16,6 +16,7 @@ import AdminFacilities from "./pages/admin/AdminFacilities";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNearbyLocations from "./pages/admin/AdminNearbyLocations";
 import AdminChatbot from "./pages/admin/AdminChatbot";
+import AdminChannelManagers from "./pages/admin/AdminChannelManagers";
 import AdminInvoiceTemplate from "./pages/admin/AdminInvoiceTemplate";
 import AdminBankAccounts from "./pages/admin/AdminBankAccounts";
 import AdminRoomFeatures from "./pages/admin/AdminRoomFeatures";
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/admin/nearby-locations" element={<AdminLayout><AdminNearbyLocations /></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
           <Route path="/admin/chatbot" element={<AdminLayout><AdminChatbot /></AdminLayout>} />
+          <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/invoice-template" element={<AdminLayout><AdminInvoiceTemplate /></AdminLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
