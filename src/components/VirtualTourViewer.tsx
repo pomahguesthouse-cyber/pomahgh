@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Maximize2, RotateCw } from "lucide-react";
+import { Panorama360Viewer } from "./Panorama360Viewer";
 
 interface VirtualTourViewerProps {
   tourUrl: string | null;
@@ -17,10 +18,6 @@ export const VirtualTourViewer = ({
 }: VirtualTourViewerProps) => {
   if (!tourUrl) return null;
 
-  // Support for different 360 formats
-  const is360Image = tourUrl.match(/\.(jpg|jpeg|png|webp)$/i);
-  const isIframe = tourUrl.startsWith("http") && !is360Image;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl h-[80vh] p-0">
@@ -32,31 +29,13 @@ export const VirtualTourViewer = ({
         </DialogHeader>
 
         <div className="relative w-full h-full px-6 pb-6">
-          {isIframe ? (
-            // For embedded 360 tour services (Matterport, Kuula, etc.)
-            <iframe
-              src={tourUrl}
-              className="w-full h-full rounded-lg border-0"
-              allowFullScreen
-              allow="accelerometer; gyroscope; vr"
-              title={`Virtual Tour - ${roomName}`}
-            />
-          ) : (
-            // For direct 360 image files - basic viewer
-            <div className="relative w-full h-full bg-muted rounded-lg overflow-hidden">
-              <img
-                src={tourUrl}
-                alt={`360° View - ${roomName}`}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur px-4 py-2 rounded-full">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Maximize2 className="w-4 h-4" />
-                  Drag to explore the room in 360°
-                </p>
-              </div>
-            </div>
-          )}
+          <Panorama360Viewer
+            imageUrl={tourUrl}
+            roomName={roomName}
+            height="100%"
+            autoLoad
+            showControls
+          />
         </div>
 
         <div className="px-6 pb-4">
