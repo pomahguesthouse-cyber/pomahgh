@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useAdminRoomFeatures } from "@/hooks/useRoomFeatures";
+import { use360Upload } from "@/hooks/use360Upload";
 import * as Icons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,19 +11,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, Maximize2 } from "lucide-react";
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RoomAvailabilityCalendar } from "@/components/admin/RoomAvailabilityCalendar";
+import { Panorama360Viewer } from "@/components/Panorama360Viewer";
 
 const AdminRooms = () => {
   const { rooms, isLoading, createRoom, updateRoom, deleteRoom } = useAdminRooms();
   const { data: roomFeatures, isLoading: featuresLoading } = useAdminRoomFeatures();
+  const { upload360Image } = use360Upload();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [viewingCalendar, setViewingCalendar] = useState<Room | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploading360, setUploading360] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -169,6 +174,26 @@ const AdminRooms = () => {
         image_url: newUrls[0] || ""
       };
     });
+  };
+
+  const handle360Upload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading360(true);
+    try {
+      const publicUrl = await upload360Image(file);
+      setFormData(prev => ({ ...prev, virtual_tour_url: publicUrl }));
+      toast.success("Gambar 360° berhasil diupload");
+    } catch (error: any) {
+      toast.error("Gagal upload gambar 360°", {
+        description: error.message
+      });
+    } finally {
+      setUploading360(false);
+      // Reset file input
+      event.target.value = "";
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -403,14 +428,73 @@ const AdminRooms = () => {
                 </div>
               )}
 
-              <div>
-                <Label htmlFor="virtual_tour_url">Virtual Tour URL</Label>
-                <Input
-                  id="virtual_tour_url"
-                  type="url"
-                  value={formData.virtual_tour_url}
-                  onChange={(e) => setFormData({ ...formData, virtual_tour_url: e.target.value })}
-                />
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <RotateCw className="h-5 w-5" />
+                  Virtual Tour 360°
+                </h3>
+
+                <Tabs defaultValue="upload" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="upload">📤 Upload File</TabsTrigger>
+                    <TabsTrigger value="url">🔗 URL Manual</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="upload" className="space-y-2">
+                    <Label>Upload Gambar Panorama 360°</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handle360Upload}
+                        disabled={uploading360}
+                      />
+                      {uploading360 && <Loader2 className="h-5 w-5 animate-spin" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Format: JPG, PNG, WEBP • Max: 20MB • Rekomendasi: 4096x2048 atau lebih tinggi
+                    </p>
+                  </TabsContent>
+
+                  <TabsContent value="url" className="space-y-2">
+                    <Label htmlFor="virtual_tour_url">URL Virtual Tour</Label>
+                    <Input
+                      id="virtual_tour_url"
+                      type="url"
+                      placeholder="https://... (Matterport, Kuula, atau URL gambar 360°)"
+                      value={formData.virtual_tour_url}
+                      onChange={(e) => setFormData({ ...formData, virtual_tour_url: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Mendukung: Matterport, Kuula, Google Street View, atau URL gambar 360° langsung
+                    </p>
+                  </TabsContent>
+                </Tabs>
+
+                {formData.virtual_tour_url && (
+                  <div className="mt-4 space-y-2">
+                    <Label>Preview 360°</Label>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Panorama360Viewer
+                        imageUrl={formData.virtual_tour_url}
+                        roomName={formData.name || "Preview"}
+                        height="200px"
+                        autoLoad={true}
+                        showControls={true}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, virtual_tour_url: "" })}
+                      >
+                        <X className="h-4 w-4 mr-1" /> Hapus
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
