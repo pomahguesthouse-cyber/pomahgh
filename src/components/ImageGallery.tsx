@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Maximize2 } from "lucide-react";
+import { Maximize2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface ImageGalleryProps {
   images: string[];
   roomName: string;
+  has360Tour?: boolean;
 }
 
-export const ImageGallery = ({ images, roomName }: ImageGalleryProps) => {
+export const ImageGallery = ({ images, roomName, has360Tour }: ImageGalleryProps) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -21,6 +23,12 @@ export const ImageGallery = ({ images, roomName }: ImageGalleryProps) => {
           alt={`${roomName} - Photo ${selectedImage + 1}`}
           className="w-full h-full object-cover"
         />
+        {has360Tour && (
+          <Badge className="absolute top-4 left-4 bg-primary/90 text-primary-foreground backdrop-blur">
+            <RotateCw className="w-3 h-3 mr-1" />
+            360° Available
+          </Badge>
+        )}
         <Button
           onClick={() => setLightboxOpen(true)}
           variant="secondary"

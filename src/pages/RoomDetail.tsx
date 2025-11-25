@@ -14,7 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookingDialog } from "@/components/BookingDialog";
 import { VirtualTourViewer } from "@/components/VirtualTourViewer";
-import { Loader2, Users, Maximize, Tag, Eye, Bed } from "lucide-react";
+import { Panorama360Viewer } from "@/components/Panorama360Viewer";
+import { Loader2, Users, Maximize, Tag, Eye, Bed, Maximize2, RotateCw } from "lucide-react";
 import type { Room } from "@/hooks/useRooms";
 
 const RoomDetail = () => {
@@ -111,7 +112,7 @@ const RoomDetail = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Left Column - Images and Details */}
             <div className="lg:col-span-2 space-y-8">
-              <ImageGallery images={images} roomName={room.name} />
+              <ImageGallery images={images} roomName={room.name} has360Tour={!!room.virtual_tour_url} />
 
               {/* Room Info */}
               <div>
@@ -204,19 +205,40 @@ const RoomDetail = () => {
                 </div>
               </div>
 
-              {/* Virtual Tour */}
+              {/* Virtual Tour - Embedded Preview */}
               {room.virtual_tour_url && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-4">Virtual Tour</h2>
-                  <Button
-                    variant="luxury"
-                    size="lg"
-                    onClick={() => setTourOpen(true)}
-                    className="w-full"
-                  >
-                    <Eye className="w-5 h-5 mr-2" />
-                    View 360° Virtual Tour
-                  </Button>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <RotateCw className="w-6 h-6 text-primary" />
+                      Virtual Tour 360°
+                    </h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTourOpen(true)}
+                    >
+                      <Maximize2 className="w-4 h-4 mr-2" />
+                      Full Screen
+                    </Button>
+                  </div>
+                  
+                  {/* Embedded 360 Viewer Preview */}
+                  <div className="rounded-lg overflow-hidden border border-border">
+                    <Panorama360Viewer
+                      imageUrl={room.virtual_tour_url}
+                      roomName={room.name}
+                      height="400px"
+                      autoLoad
+                      showControls
+                    />
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-4">
+                    <span className="flex items-center gap-1">🖱️ Drag untuk memutar</span>
+                    <span className="flex items-center gap-1">🔍 Scroll untuk zoom</span>
+                    <span className="flex items-center gap-1">📱 Touch untuk mobile</span>
+                  </p>
                 </div>
               )}
             </div>
