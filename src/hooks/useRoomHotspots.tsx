@@ -5,6 +5,7 @@ import { toast } from "sonner";
 export interface RoomHotspot {
   id: string;
   room_id: string;
+  panorama_id?: string;
   pitch: number;
   yaw: number;
   hotspot_type: string;
@@ -15,22 +16,28 @@ export interface RoomHotspot {
   display_order: number;
   is_active: boolean;
   target_room_id?: string;
+  target_panorama_id?: string;
   created_at?: string;
   updated_at?: string;
 }
 
-export const useRoomHotspots = (roomId: string | undefined) => {
+export const useRoomHotspots = (roomId: string | undefined, panoramaId?: string | undefined) => {
   return useQuery({
-    queryKey: ["room-hotspots", roomId],
+    queryKey: ["room-hotspots", roomId, panoramaId],
     queryFn: async () => {
       if (!roomId) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from("room_hotspots")
         .select("*")
         .eq("room_id", roomId)
-        .eq("is_active", true)
-        .order("display_order");
+        .eq("is_active", true);
+
+      if (panoramaId) {
+        query = query.eq("panorama_id", panoramaId);
+      }
+
+      const { data, error } = await query.order("display_order");
 
       if (error) throw error;
       return data as RoomHotspot[];
@@ -39,17 +46,22 @@ export const useRoomHotspots = (roomId: string | undefined) => {
   });
 };
 
-export const useAdminRoomHotspots = (roomId: string | undefined) => {
+export const useAdminRoomHotspots = (roomId: string | undefined, panoramaId?: string | undefined) => {
   return useQuery({
-    queryKey: ["admin-room-hotspots", roomId],
+    queryKey: ["admin-room-hotspots", roomId, panoramaId],
     queryFn: async () => {
       if (!roomId) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from("room_hotspots")
         .select("*")
-        .eq("room_id", roomId)
-        .order("display_order");
+        .eq("room_id", roomId);
+
+      if (panoramaId) {
+        query = query.eq("panorama_id", panoramaId);
+      }
+
+      const { data, error } = await query.order("display_order");
 
       if (error) throw error;
       return data as RoomHotspot[];

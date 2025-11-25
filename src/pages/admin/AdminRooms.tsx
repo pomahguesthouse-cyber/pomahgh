@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { RoomAvailabilityCalendar } from "@/components/admin/RoomAvailabilityCalendar";
 import { Panorama360Viewer } from "@/components/Panorama360Viewer";
 import { HotspotEditor } from "@/components/admin/HotspotEditor";
+import { PanoramaManager } from "@/components/admin/PanoramaManager";
 
 const AdminRooms = () => {
   const { rooms, isLoading, createRoom, updateRoom, deleteRoom } = useAdminRooms();
@@ -31,6 +32,8 @@ const AdminRooms = () => {
   const [uploading360, setUploading360] = useState(false);
   const [hotspotEditorOpen, setHotspotEditorOpen] = useState(false);
   const [selectedRoomForHotspots, setSelectedRoomForHotspots] = useState<Room | null>(null);
+  const [selectedPanoramaId, setSelectedPanoramaId] = useState<string | undefined>();
+  const [panoramaManagerOpen, setPanoramaManagerOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -432,84 +435,29 @@ const AdminRooms = () => {
               )}
 
               <div className="space-y-4 border-t pt-4">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <RotateCw className="h-5 w-5" />
-                  Virtual Tour 360°
-                </h3>
-
-                <Tabs defaultValue="upload" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="upload">📤 Upload File</TabsTrigger>
-                    <TabsTrigger value="url">🔗 URL Manual</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="upload" className="space-y-2">
-                    <Label>Upload Gambar Panorama 360°</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handle360Upload}
-                        disabled={uploading360}
-                      />
-                      {uploading360 && <Loader2 className="h-5 w-5 animate-spin" />}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Format: JPG, PNG, WEBP • Max: 20MB • Rekomendasi: 4096x2048 atau lebih tinggi
-                    </p>
-                  </TabsContent>
-
-                  <TabsContent value="url" className="space-y-2">
-                    <Label htmlFor="virtual_tour_url">URL Virtual Tour</Label>
-                    <Input
-                      id="virtual_tour_url"
-                      type="url"
-                      placeholder="https://... (Matterport, Kuula, atau URL gambar 360°)"
-                      value={formData.virtual_tour_url}
-                      onChange={(e) => setFormData({ ...formData, virtual_tour_url: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Mendukung: Matterport, Kuula, Google Street View, atau URL gambar 360° langsung
-                    </p>
-                  </TabsContent>
-                </Tabs>
-
-                {formData.virtual_tour_url && (
-                  <div className="mt-4 space-y-2">
-                    <Label>Preview 360°</Label>
-                    <div className="border rounded-lg overflow-hidden">
-                      <Panorama360Viewer
-                        imageUrl={formData.virtual_tour_url}
-                        roomName={formData.name || "Preview"}
-                        height="200px"
-                        autoLoad={true}
-                        showControls={true}
-                      />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      {editingRoom && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedRoomForHotspots(editingRoom);
-                            setHotspotEditorOpen(true);
-                          }}
-                        >
-                          <MapPin className="h-4 w-4 mr-1" />
-                          Kelola Hotspot
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setFormData({ ...formData, virtual_tour_url: "" })}
-                      >
-                        <X className="h-4 w-4 mr-1" /> Hapus
-                      </Button>
-                    </div>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <RotateCw className="h-5 w-5" />
+                    Virtual Tour 360°
+                  </h3>
+                  {editingRoom && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedRoomForHotspots(editingRoom);
+                        setPanoramaManagerOpen(true);
+                      }}
+                    >
+                      Kelola Panorama
+                    </Button>
+                  )}
+                </div>
+                
+                {!editingRoom && (
+                  <div className="p-4 border border-dashed rounded-lg bg-muted/30 text-center text-sm text-muted-foreground">
+                    Simpan room terlebih dahulu untuk menambahkan panorama 360°
                   </div>
                 )}
               </div>
@@ -746,14 +694,37 @@ const AdminRooms = () => {
       )}
 
       {/* Hotspot Editor Dialog */}
-      {selectedRoomForHotspots && (
+      {selectedRoomForHotspots && selectedPanoramaId && (
         <HotspotEditor
           roomId={selectedRoomForHotspots.id}
           roomName={selectedRoomForHotspots.name}
+          panoramaId={selectedPanoramaId}
           virtualTourUrl={selectedRoomForHotspots.virtual_tour_url || ""}
           open={hotspotEditorOpen}
           onOpenChange={setHotspotEditorOpen}
         />
+      )}
+
+      {/* Panorama Manager Dialog */}
+      {selectedRoomForHotspots && (
+        <Dialog open={panoramaManagerOpen} onOpenChange={setPanoramaManagerOpen}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <RotateCw className="w-6 h-6" />
+                Kelola Panorama - {selectedRoomForHotspots.name}
+              </DialogTitle>
+            </DialogHeader>
+            <PanoramaManager
+              roomId={selectedRoomForHotspots.id}
+              roomName={selectedRoomForHotspots.name}
+              onEditHotspots={(panoramaId) => {
+                setSelectedPanoramaId(panoramaId);
+                setHotspotEditorOpen(true);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
