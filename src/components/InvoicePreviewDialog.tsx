@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Printer, Download } from "lucide-react";
 import { toast } from "sonner";
 import html2pdf from "html2pdf.js";
+import DOMPurify from "dompurify";
 
 interface InvoicePreviewDialogProps {
   booking: any;
@@ -82,7 +83,8 @@ export const InvoicePreviewDialog = ({
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
-      printWindow.document.write(invoiceHtml);
+      const sanitizedHtml = DOMPurify.sanitize(invoiceHtml);
+      printWindow.document.write(sanitizedHtml);
       printWindow.document.close();
       printWindow.print();
     }
@@ -97,7 +99,8 @@ export const InvoicePreviewDialog = ({
     try {
       // Create a temporary container
       const container = document.createElement('div');
-      container.innerHTML = invoiceHtml;
+      const sanitizedHtml = DOMPurify.sanitize(invoiceHtml);
+      container.innerHTML = sanitizedHtml;
       container.style.position = 'absolute';
       container.style.left = '-9999px';
       document.body.appendChild(container);
@@ -156,7 +159,7 @@ export const InvoicePreviewDialog = ({
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div dangerouslySetInnerHTML={{ __html: invoiceHtml }} />
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(invoiceHtml) }} />
           )}
         </div>
 
