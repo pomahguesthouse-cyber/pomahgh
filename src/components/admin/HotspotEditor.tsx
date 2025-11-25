@@ -10,6 +10,7 @@ import { Panorama360Viewer } from "@/components/Panorama360Viewer";
 import { useAdminRoomHotspots, useCreateHotspot, useUpdateHotspot, useDeleteHotspot, RoomHotspot } from "@/hooks/useRoomHotspots";
 import { useRoomFeatures } from "@/hooks/useRoomFeatures";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
+import { useAdminRoomPanoramas } from "@/hooks/useRoomPanoramas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface HotspotEditorProps {
   roomId: string;
   roomName: string;
+  panoramaId?: string;
   virtualTourUrl: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,13 +27,15 @@ interface HotspotEditorProps {
 export const HotspotEditor = ({
   roomId,
   roomName,
+  panoramaId,
   virtualTourUrl,
   open,
   onOpenChange,
 }: HotspotEditorProps) => {
-  const { data: hotspots = [] } = useAdminRoomHotspots(roomId);
+  const { data: hotspots = [] } = useAdminRoomHotspots(roomId, panoramaId);
   const { data: roomFeatures = [] } = useRoomFeatures();
   const { rooms = [] } = useAdminRooms();
+  const { data: panoramas = [] } = useAdminRoomPanoramas(roomId);
   const createHotspot = useCreateHotspot();
   const updateHotspot = useUpdateHotspot();
   const deleteHotspot = useDeleteHotspot();
@@ -48,6 +52,7 @@ export const HotspotEditor = ({
     icon_name: "Info",
     hotspot_type: "info",
     target_room_id: "",
+    target_panorama_id: "",
   });
 
   const handleViewerClick = (pitch: number, yaw: number) => {
@@ -64,6 +69,7 @@ export const HotspotEditor = ({
   const handleSubmit = () => {
     const hotspotData = {
       room_id: roomId,
+      panorama_id: panoramaId,
       pitch: formData.pitch,
       yaw: formData.yaw,
       title: formData.title,
@@ -72,6 +78,7 @@ export const HotspotEditor = ({
       icon_name: formData.icon_name,
       hotspot_type: formData.hotspot_type,
       target_room_id: formData.target_room_id || null,
+      target_panorama_id: formData.target_panorama_id || null,
       display_order: hotspots.length,
       is_active: true,
     };
@@ -96,6 +103,7 @@ export const HotspotEditor = ({
       icon_name: hotspot.icon_name,
       hotspot_type: hotspot.hotspot_type,
       target_room_id: hotspot.target_room_id || "",
+      target_panorama_id: hotspot.target_panorama_id || "",
     });
     setShowForm(true);
   };
@@ -116,6 +124,7 @@ export const HotspotEditor = ({
       icon_name: "Info",
       hotspot_type: "info",
       target_room_id: "",
+      target_panorama_id: "",
     });
     setShowForm(false);
     setEditingId(null);
@@ -225,8 +234,10 @@ export const HotspotEditor = ({
                         setFormData({
                           ...formData,
                           hotspot_type: value,
-                          icon_name: value === "navigation" ? "Navigation" : "Info",
-                          feature_key: value === "navigation" ? "" : formData.feature_key,
+                          icon_name: value === "navigation" || value === "navigation_panorama" ? "Navigation" : "Info",
+                          feature_key: (value === "navigation" || value === "navigation_panorama") ? "" : formData.feature_key,
+                          target_room_id: value !== "navigation" ? "" : formData.target_room_id,
+                          target_panorama_id: value !== "navigation_panorama" ? "" : formData.target_panorama_id,
                         });
                       }}
                     >
@@ -242,6 +253,9 @@ export const HotspotEditor = ({
                         </SelectItem>
                         <SelectItem value="navigation">
                           🚪 Navigation - Link ke ruangan lain
+                        </SelectItem>
+                        <SelectItem value="navigation_panorama">
+                          🔄 Navigation - Antar panorama (room ini)
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -266,7 +280,7 @@ export const HotspotEditor = ({
                         </SelectTrigger>
                         <SelectContent>
                           {rooms
-                            .filter(r => r.id !== roomId && r.virtual_tour_url)
+                            .filter(r => r.id !== roomId)
                             .map((room) => (
                               <SelectItem key={room.id} value={room.id}>
                                 {room.name}
@@ -274,8 +288,36 @@ export const HotspotEditor = ({
                             ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                  ) : formData.hotspot_type === "navigation_panorama" ? (
+                    <div>
+                      <Label>Panorama Tujuan *</Label>
+                      <Select
+                        value={formData.target_panorama_id}
+                        onValueChange={(value) => {
+                          const targetPanorama = panoramas.find(p => p.id === value);
+                          setFormData({
+                            ...formData,
+                            target_panorama_id: value,
+                            title: targetPanorama ? `Lihat ${targetPanorama.title}` : formData.title,
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih panorama tujuan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {panoramas
+                            .filter(p => p.id !== panoramaId)
+                            .map((pano) => (
+                              <SelectItem key={pano.id} value={pano.id}>
+                                {pano.title}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Hanya menampilkan ruangan dengan virtual tour
+                        Hanya menampilkan panorama lain dalam room yang sama
                       </p>
                     </div>
                   ) : (
@@ -357,11 +399,16 @@ export const HotspotEditor = ({
                                     <Badge variant="secondary">Inactive</Badge>
                                   )}
                                 </div>
-                                {hotspot.target_room_id && (
-                                  <p className="text-sm text-muted-foreground">
-                                    Tujuan: {rooms.find(r => r.id === hotspot.target_room_id)?.name}
-                                  </p>
-                                )}
+                                 {hotspot.target_room_id && (
+                                   <p className="text-sm text-muted-foreground">
+                                     → Tujuan Room: {rooms.find(r => r.id === hotspot.target_room_id)?.name}
+                                   </p>
+                                 )}
+                                 {hotspot.target_panorama_id && (
+                                   <p className="text-sm text-muted-foreground">
+                                     → Tujuan Panorama: {panoramas.find(p => p.id === hotspot.target_panorama_id)?.title}
+                                   </p>
+                                 )}
                                 {hotspot.feature_key && (
                                   <p className="text-sm text-muted-foreground">
                                     Feature: {roomFeatures.find(f => f.feature_key === hotspot.feature_key)?.label}

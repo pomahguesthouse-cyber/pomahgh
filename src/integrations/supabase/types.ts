@@ -738,8 +738,10 @@ export type Database = {
           icon_name: string | null
           id: string
           is_active: boolean | null
+          panorama_id: string | null
           pitch: number
           room_id: string
+          target_panorama_id: string | null
           target_room_id: string | null
           title: string
           updated_at: string | null
@@ -754,8 +756,10 @@ export type Database = {
           icon_name?: string | null
           id?: string
           is_active?: boolean | null
+          panorama_id?: string | null
           pitch: number
           room_id: string
+          target_panorama_id?: string | null
           target_room_id?: string | null
           title: string
           updated_at?: string | null
@@ -770,14 +774,23 @@ export type Database = {
           icon_name?: string | null
           id?: string
           is_active?: boolean | null
+          panorama_id?: string | null
           pitch?: number
           room_id?: string
+          target_panorama_id?: string | null
           target_room_id?: string | null
           title?: string
           updated_at?: string | null
           yaw?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "room_hotspots_panorama_id_fkey"
+            columns: ["panorama_id"]
+            isOneToOne: false
+            referencedRelation: "room_panoramas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "room_hotspots_room_id_fkey"
             columns: ["room_id"]
@@ -786,8 +799,62 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "room_hotspots_target_panorama_id_fkey"
+            columns: ["target_panorama_id"]
+            isOneToOne: false
+            referencedRelation: "room_panoramas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "room_hotspots_target_room_id_fkey"
             columns: ["target_room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_panoramas: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          image_url: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          room_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          room_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          room_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_panoramas_room_id_fkey"
+            columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
             referencedColumns: ["id"]

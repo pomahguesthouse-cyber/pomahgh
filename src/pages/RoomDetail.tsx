@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useRoomDetail } from "@/hooks/useRoomDetail";
 import { useRooms } from "@/hooks/useRooms";
 import { useRoomFeatures } from "@/hooks/useRoomFeatures";
 import { useRoomHotspots } from "@/hooks/useRoomHotspots";
+import { useRoomPanoramas } from "@/hooks/useRoomPanoramas";
 import * as Icons from "lucide-react";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -25,11 +26,23 @@ const RoomDetail = () => {
   const { data: room, isLoading, error } = useRoomDetail(roomSlug || "");
   const { data: allRooms } = useRooms();
   const { data: roomFeatures } = useRoomFeatures();
-  const { data: hotspots = [] } = useRoomHotspots(room?.id);
+  const { data: panoramas = [] } = useRoomPanoramas(room?.id);
+  const [currentPanoramaId, setCurrentPanoramaId] = useState<string | undefined>();
+  const { data: hotspots = [] } = useRoomHotspots(room?.id, currentPanoramaId);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
 
   const navigate = useNavigate();
+
+  // Set primary panorama when data loads
+  useEffect(() => {
+    if (panoramas.length > 0 && !currentPanoramaId) {
+      const primary = panoramas.find(p => p.is_primary) || panoramas[0];
+      setCurrentPanoramaId(primary.id);
+    }
+  }, [panoramas, currentPanoramaId]);
+
+  const currentPanorama = panoramas.find(p => p.id === currentPanoramaId);
 
   const getIconComponent = (iconName: string) => {
     const IconComponent = Icons[iconName as keyof typeof Icons] as any;
@@ -37,8 +50,17 @@ const RoomDetail = () => {
   };
 
   const handleHotspotClick = (hotspot: any) => {
-    if (hotspot.hotspot_type === "navigation" && hotspot.target_room_id) {
-      // Find target room and navigate to it
+    if (hotspot.hotspot_type === "navigation_panorama" && hotspot.target_panorama_id) {
+      // Navigation within the same room (panorama to panorama)
+      const targetPanorama = panoramas.find(p => p.id === hotspot.target_panorama_id);
+      if (targetPanorama) {
+        setCurrentPanoramaId(hotspot.target_panorama_id);
+        toast.success(`Pindah ke ${targetPanorama.title}`, {
+          description: "Memuat panorama...",
+        });
+      }
+    } else if (hotspot.hotspot_type === "navigation" && hotspot.target_room_id) {
+      // Navigation to another room
       const targetRoom = allRooms?.find(r => r.id === hotspot.target_room_id);
       if (targetRoom) {
         const slug = targetRoom.slug || targetRoom.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -230,28 +252,47 @@ const RoomDetail = () => {
               </div>
 
               {/* Virtual Tour - Embedded Preview */}
-              {room.virtual_tour_url && (
+              {panoramas.length > 0 && currentPanorama && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold flex items-center gap-2">
-                      <RotateCw className="w-6 h-6 text-primary" />
-                      Virtual Tour 360°
-                    </h2>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setTourOpen(true)}
-                    >
-                      <Maximize2 className="w-4 h-4 mr-2" />
-                      Full Screen
-                    </Button>
+                    <div>
+                      <h2 className="text-2xl font-bold flex items-center gap-2">
+                        <RotateCw className="w-6 h-6 text-primary" />
+                        Virtual Tour 360°
+                      </h2>
+                      {panoramas.length > 1 && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {currentPanorama.title}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      {panoramas.length > 1 && panoramas.map((pano) => (
+                        <Button
+                          key={pano.id}
+                          variant={pano.id === currentPanoramaId ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPanoramaId(pano.id)}
+                        >
+                          {pano.title}
+                        </Button>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTourOpen(true)}
+                      >
+                        <Maximize2 className="w-4 h-4 mr-2" />
+                        Full Screen
+                      </Button>
+                    </div>
                   </div>
                   
                   {/* Embedded 360 Viewer Preview */}
                   <div className="rounded-lg overflow-hidden border border-border">
                     <Panorama360Viewer
-                      imageUrl={room.virtual_tour_url}
-                      roomName={room.name}
+                      imageUrl={currentPanorama.image_url}
+                      roomName={currentPanorama.title}
                       height="400px"
                       autoLoad
                       showControls
