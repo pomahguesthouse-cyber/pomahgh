@@ -14,6 +14,7 @@ export interface RoomHotspot {
   icon_name: string;
   display_order: number;
   is_active: boolean;
+  target_room_id?: string;
   created_at?: string;
   updated_at?: string;
 }

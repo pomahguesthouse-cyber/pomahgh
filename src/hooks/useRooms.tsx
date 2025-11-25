@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface Room {
   id: string;
   name: string;
+  slug?: string | null;
   description: string;
   price_per_night: number;
   max_guests: number;

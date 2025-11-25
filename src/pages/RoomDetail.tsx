@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useRoomDetail } from "@/hooks/useRoomDetail";
 import { useRooms } from "@/hooks/useRooms";
@@ -29,9 +29,30 @@ const RoomDetail = () => {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
 
+  const navigate = useNavigate();
+
   const getIconComponent = (iconName: string) => {
     const IconComponent = Icons[iconName as keyof typeof Icons] as any;
     return IconComponent || Icons.Circle;
+  };
+
+  const handleHotspotClick = (hotspot: any) => {
+    if (hotspot.hotspot_type === "navigation" && hotspot.target_room_id) {
+      // Find target room and navigate to it
+      const targetRoom = allRooms?.find(r => r.id === hotspot.target_room_id);
+      if (targetRoom) {
+        const slug = targetRoom.slug || targetRoom.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        navigate(`/rooms/${slug}`);
+        toast.success(`Navigasi ke ${targetRoom.name}`, {
+          description: "Memuat virtual tour...",
+        });
+      }
+    } else {
+      // Regular info hotspot
+      toast.info(hotspot.title, {
+        description: hotspot.description,
+      });
+    }
   };
 
   if (isLoading) {
@@ -235,11 +256,7 @@ const RoomDetail = () => {
                       autoLoad
                       showControls
                       hotspots={hotspots}
-                      onHotspotClick={(hotspot) => {
-                        toast.info(hotspot.title, {
-                          description: hotspot.description,
-                        });
-                      }}
+                      onHotspotClick={handleHotspotClick}
                     />
                   </div>
                   
@@ -352,11 +369,7 @@ const RoomDetail = () => {
         open={tourOpen}
         onOpenChange={setTourOpen}
         hotspots={hotspots}
-        onHotspotClick={(hotspot) => {
-          toast.info(hotspot.title, {
-            description: hotspot.description,
-          });
-        }}
+        onHotspotClick={handleHotspotClick}
       />
     </>
   );

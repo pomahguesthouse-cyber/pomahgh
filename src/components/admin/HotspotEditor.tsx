@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Edit, Trash2, Plus, Save } from "lucide-react";
+import { MapPin, Edit, Trash2, Plus, Save, Navigation } from "lucide-react";
 import { Panorama360Viewer } from "@/components/Panorama360Viewer";
 import { useAdminRoomHotspots, useCreateHotspot, useUpdateHotspot, useDeleteHotspot, RoomHotspot } from "@/hooks/useRoomHotspots";
 import { useRoomFeatures } from "@/hooks/useRoomFeatures";
+import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,6 +31,7 @@ export const HotspotEditor = ({
 }: HotspotEditorProps) => {
   const { data: hotspots = [] } = useAdminRoomHotspots(roomId);
   const { data: roomFeatures = [] } = useRoomFeatures();
+  const { rooms = [] } = useAdminRooms();
   const createHotspot = useCreateHotspot();
   const updateHotspot = useUpdateHotspot();
   const deleteHotspot = useDeleteHotspot();
@@ -45,6 +47,7 @@ export const HotspotEditor = ({
     feature_key: "",
     icon_name: "Info",
     hotspot_type: "info",
+    target_room_id: "",
   });
 
   const handleViewerClick = (pitch: number, yaw: number) => {
@@ -68,6 +71,7 @@ export const HotspotEditor = ({
       feature_key: formData.feature_key || null,
       icon_name: formData.icon_name,
       hotspot_type: formData.hotspot_type,
+      target_room_id: formData.target_room_id || null,
       display_order: hotspots.length,
       is_active: true,
     };
@@ -91,6 +95,7 @@ export const HotspotEditor = ({
       feature_key: hotspot.feature_key || "",
       icon_name: hotspot.icon_name,
       hotspot_type: hotspot.hotspot_type,
+      target_room_id: hotspot.target_room_id || "",
     });
     setShowForm(true);
   };
@@ -110,6 +115,7 @@ export const HotspotEditor = ({
       feature_key: "",
       icon_name: "Info",
       hotspot_type: "info",
+      target_room_id: "",
     });
     setShowForm(false);
     setEditingId(null);
@@ -212,32 +218,95 @@ export const HotspotEditor = ({
                   </div>
 
                   <div>
-                    <Label>Feature (Opsional)</Label>
+                    <Label>Tipe Hotspot *</Label>
                     <Select
-                      value={formData.feature_key}
+                      value={formData.hotspot_type}
                       onValueChange={(value) => {
-                        const feature = roomFeatures.find(f => f.feature_key === value);
                         setFormData({
                           ...formData,
-                          feature_key: value,
-                          icon_name: feature?.icon_name || "Info",
-                          title: feature?.label || formData.title,
+                          hotspot_type: value,
+                          icon_name: value === "navigation" ? "Navigation" : "Info",
+                          feature_key: value === "navigation" ? "" : formData.feature_key,
                         });
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Pilih feature" />
+                        <SelectValue placeholder="Pilih tipe" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Tidak ada</SelectItem>
-                        {roomFeatures.map((feature) => (
-                          <SelectItem key={feature.id} value={feature.feature_key}>
-                            {feature.label}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="info">
+                          📍 Info - Menampilkan informasi
+                        </SelectItem>
+                        <SelectItem value="feature">
+                          ⭐ Feature - Highlight fitur kamar
+                        </SelectItem>
+                        <SelectItem value="navigation">
+                          🚪 Navigation - Link ke ruangan lain
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {formData.hotspot_type === "navigation" ? (
+                    <div>
+                      <Label>Ruangan Tujuan *</Label>
+                      <Select
+                        value={formData.target_room_id}
+                        onValueChange={(value) => {
+                          const targetRoom = rooms.find(r => r.id === value);
+                          setFormData({
+                            ...formData,
+                            target_room_id: value,
+                            title: targetRoom ? `Lihat ${targetRoom.name}` : formData.title,
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih ruangan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {rooms
+                            .filter(r => r.id !== roomId && r.virtual_tour_url)
+                            .map((room) => (
+                              <SelectItem key={room.id} value={room.id}>
+                                {room.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Hanya menampilkan ruangan dengan virtual tour
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <Label>Feature (Opsional)</Label>
+                      <Select
+                        value={formData.feature_key}
+                        onValueChange={(value) => {
+                          const feature = roomFeatures.find(f => f.feature_key === value);
+                          setFormData({
+                            ...formData,
+                            feature_key: value,
+                            icon_name: feature?.icon_name || "Info",
+                            title: feature?.label || formData.title,
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih feature" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Tidak ada</SelectItem>
+                          {roomFeatures.map((feature) => (
+                            <SelectItem key={feature.id} value={feature.feature_key}>
+                              {feature.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <Button onClick={handleSubmit} className="w-full">
                     <Save className="h-4 w-4 mr-2" />
@@ -273,11 +342,26 @@ export const HotspotEditor = ({
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
+                                  {hotspot.hotspot_type === "navigation" && (
+                                    <Navigation className="h-4 w-4 text-primary" />
+                                  )}
                                   <span className="font-medium">{index + 1}. {hotspot.title}</span>
+                                  <Badge variant={
+                                    hotspot.hotspot_type === "navigation" ? "default" :
+                                    hotspot.hotspot_type === "feature" ? "secondary" : "outline"
+                                  }>
+                                    {hotspot.hotspot_type === "navigation" ? "🚪" : 
+                                     hotspot.hotspot_type === "feature" ? "⭐" : "📍"}
+                                  </Badge>
                                   {!hotspot.is_active && (
                                     <Badge variant="secondary">Inactive</Badge>
                                   )}
                                 </div>
+                                {hotspot.target_room_id && (
+                                  <p className="text-sm text-muted-foreground">
+                                    Tujuan: {rooms.find(r => r.id === hotspot.target_room_id)?.name}
+                                  </p>
+                                )}
                                 {hotspot.feature_key && (
                                   <p className="text-sm text-muted-foreground">
                                     Feature: {roomFeatures.find(f => f.feature_key === hotspot.feature_key)?.label}
