@@ -1,4 +1,5 @@
 import { Pannellum } from "pannellum-react";
+import { RoomHotspot } from "@/hooks/useRoomHotspots";
 
 interface Panorama360ViewerProps {
   imageUrl: string;
@@ -6,6 +7,10 @@ interface Panorama360ViewerProps {
   height?: string;
   autoLoad?: boolean;
   showControls?: boolean;
+  hotspots?: RoomHotspot[];
+  editMode?: boolean;
+  onAddHotspot?: (pitch: number, yaw: number) => void;
+  onHotspotClick?: (hotspot: RoomHotspot) => void;
 }
 
 export const Panorama360Viewer = ({
@@ -14,6 +19,10 @@ export const Panorama360Viewer = ({
   height = "400px",
   autoLoad = true,
   showControls = true,
+  hotspots = [],
+  editMode = false,
+  onAddHotspot,
+  onHotspotClick,
 }: Panorama360ViewerProps) => {
   // Detect if URL is 360 image or iframe embed
   const is360Image = imageUrl.match(/\.(jpg|jpeg|png|webp)$/i);
@@ -52,7 +61,25 @@ export const Panorama360Viewer = ({
         draggable
         compass
         onLoad={() => console.log("360° panorama loaded")}
-      />
+        onMouseup={(event: any) => {
+          if (editMode && onAddHotspot) {
+            const pitch = event.pitch;
+            const yaw = event.yaw;
+            onAddHotspot(pitch, yaw);
+          }
+        }}
+      >
+        {hotspots.map((hotspot) => (
+          <Pannellum.Hotspot
+            key={hotspot.id}
+            type="info"
+            pitch={hotspot.pitch}
+            yaw={hotspot.yaw}
+            text={hotspot.title}
+            handleClick={() => onHotspotClick?.(hotspot)}
+          />
+        ))}
+      </Pannellum>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { useRoomDetail } from "@/hooks/useRoomDetail";
 import { useRooms } from "@/hooks/useRooms";
 import { useRoomFeatures } from "@/hooks/useRoomFeatures";
+import { useRoomHotspots } from "@/hooks/useRoomHotspots";
 import * as Icons from "lucide-react";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -16,6 +17,7 @@ import { BookingDialog } from "@/components/BookingDialog";
 import { VirtualTourViewer } from "@/components/VirtualTourViewer";
 import { Panorama360Viewer } from "@/components/Panorama360Viewer";
 import { Loader2, Users, Maximize, Tag, Eye, Bed, Maximize2, RotateCw } from "lucide-react";
+import { toast } from "sonner";
 import type { Room } from "@/hooks/useRooms";
 
 const RoomDetail = () => {
@@ -23,6 +25,7 @@ const RoomDetail = () => {
   const { data: room, isLoading, error } = useRoomDetail(roomSlug || "");
   const { data: allRooms } = useRooms();
   const { data: roomFeatures } = useRoomFeatures();
+  const { data: hotspots = [] } = useRoomHotspots(room?.id);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
 
@@ -231,6 +234,12 @@ const RoomDetail = () => {
                       height="400px"
                       autoLoad
                       showControls
+                      hotspots={hotspots}
+                      onHotspotClick={(hotspot) => {
+                        toast.info(hotspot.title, {
+                          description: hotspot.description,
+                        });
+                      }}
                     />
                   </div>
                   
@@ -342,6 +351,12 @@ const RoomDetail = () => {
         roomName={room.name}
         open={tourOpen}
         onOpenChange={setTourOpen}
+        hotspots={hotspots}
+        onHotspotClick={(hotspot) => {
+          toast.info(hotspot.title, {
+            description: hotspot.description,
+          });
+        }}
       />
     </>
   );

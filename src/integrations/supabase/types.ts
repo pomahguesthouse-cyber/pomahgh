@@ -728,6 +728,62 @@ export type Database = {
         }
         Relationships: []
       }
+      room_hotspots: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          feature_key: string | null
+          hotspot_type: string | null
+          icon_name: string | null
+          id: string
+          is_active: boolean | null
+          pitch: number
+          room_id: string
+          title: string
+          updated_at: string | null
+          yaw: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          feature_key?: string | null
+          hotspot_type?: string | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          pitch: number
+          room_id: string
+          title: string
+          updated_at?: string | null
+          yaw: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          feature_key?: string | null
+          hotspot_type?: string | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          pitch?: number
+          room_id?: string
+          title?: string
+          updated_at?: string | null
+          yaw?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_hotspots_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_unavailable_dates: {
         Row: {
           created_at: string | null

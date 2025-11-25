@@ -12,12 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, Maximize2 } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, Maximize2, MapPin } from "lucide-react";
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RoomAvailabilityCalendar } from "@/components/admin/RoomAvailabilityCalendar";
 import { Panorama360Viewer } from "@/components/Panorama360Viewer";
+import { HotspotEditor } from "@/components/admin/HotspotEditor";
 
 const AdminRooms = () => {
   const { rooms, isLoading, createRoom, updateRoom, deleteRoom } = useAdminRooms();
@@ -28,6 +29,8 @@ const AdminRooms = () => {
   const [viewingCalendar, setViewingCalendar] = useState<Room | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploading360, setUploading360] = useState(false);
+  const [hotspotEditorOpen, setHotspotEditorOpen] = useState(false);
+  const [selectedRoomForHotspots, setSelectedRoomForHotspots] = useState<Room | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -483,7 +486,21 @@ const AdminRooms = () => {
                         showControls={true}
                       />
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-between items-center">
+                      {editingRoom && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRoomForHotspots(editingRoom);
+                            setHotspotEditorOpen(true);
+                          }}
+                        >
+                          <MapPin className="h-4 w-4 mr-1" />
+                          Kelola Hotspot
+                        </Button>
+                      )}
                       <Button
                         type="button"
                         variant="destructive"
@@ -726,6 +743,17 @@ const AdminRooms = () => {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Hotspot Editor Dialog */}
+      {selectedRoomForHotspots && (
+        <HotspotEditor
+          roomId={selectedRoomForHotspots.id}
+          roomName={selectedRoomForHotspots.name}
+          virtualTourUrl={selectedRoomForHotspots.virtual_tour_url || ""}
+          open={hotspotEditorOpen}
+          onOpenChange={setHotspotEditorOpen}
+        />
       )}
     </div>
   );

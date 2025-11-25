@@ -2,12 +2,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Maximize2, RotateCw } from "lucide-react";
 import { Panorama360Viewer } from "./Panorama360Viewer";
+import { RoomHotspot } from "@/hooks/useRoomHotspots";
 
 interface VirtualTourViewerProps {
   tourUrl: string | null;
   roomName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  hotspots?: RoomHotspot[];
+  onHotspotClick?: (hotspot: RoomHotspot) => void;
 }
 
 export const VirtualTourViewer = ({
@@ -15,6 +18,8 @@ export const VirtualTourViewer = ({
   roomName,
   open,
   onOpenChange,
+  hotspots = [],
+  onHotspotClick,
 }: VirtualTourViewerProps) => {
   if (!tourUrl) return null;
 
@@ -35,6 +40,8 @@ export const VirtualTourViewer = ({
             height="100%"
             autoLoad
             showControls
+            hotspots={hotspots}
+            onHotspotClick={onHotspotClick}
           />
         </div>
 

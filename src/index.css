@@ -150,3 +150,28 @@ All colors MUST be HSL.
     }
   }
 }
+
+/* Hotspot styles */
+.pnlm-hotspot {
+  @apply bg-primary/90 text-white rounded-full p-2 shadow-lg cursor-pointer transition-all duration-300;
+  animation: pulse-hotspot 2s infinite;
+}
+
+.pnlm-hotspot:hover {
+  @apply scale-110 bg-primary shadow-xl;
+}
+
+.pnlm-hotspot-base {
+  @apply flex items-center justify-center;
+}
+
+@keyframes pulse-hotspot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
