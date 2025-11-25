@@ -3,6 +3,8 @@ import { useParams, Navigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useRoomDetail } from "@/hooks/useRoomDetail";
 import { useRooms } from "@/hooks/useRooms";
+import { useRoomFeatures } from "@/hooks/useRoomFeatures";
+import * as Icons from "lucide-react";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -13,15 +15,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BookingDialog } from "@/components/BookingDialog";
 import { VirtualTourViewer } from "@/components/VirtualTourViewer";
 import { Loader2, Users, Maximize, Tag, Eye, Bed } from "lucide-react";
-import { ROOM_FEATURES } from "@/constants/roomFeatures";
 import type { Room } from "@/hooks/useRooms";
 
 const RoomDetail = () => {
   const { roomSlug } = useParams<{ roomSlug: string }>();
   const { data: room, isLoading, error } = useRoomDetail(roomSlug || "");
   const { data: allRooms } = useRooms();
+  const { data: roomFeatures } = useRoomFeatures();
   const [bookingOpen, setBookingOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
+
+  const getIconComponent = (iconName: string) => {
+    const IconComponent = Icons[iconName as keyof typeof Icons] as any;
+    return IconComponent || Icons.Circle;
+  };
 
   if (isLoading) {
     return (
@@ -139,10 +146,10 @@ const RoomDetail = () => {
                 <h2 className="text-2xl font-bold mb-4">Room Features</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {room.features.map((featureId) => {
-                    const feature = ROOM_FEATURES.find((f) => f.id === featureId);
+                    const feature = roomFeatures?.find((f) => f.feature_key === featureId);
                     if (!feature) return null;
 
-                    const IconComponent = feature.icon;
+                    const IconComponent = getIconComponent(feature.icon_name);
 
                     return (
                       <div

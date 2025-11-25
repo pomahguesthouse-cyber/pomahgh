@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
+import { useAdminRoomFeatures } from "@/hooks/useRoomFeatures";
+import * as Icons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,10 +15,10 @@ import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RoomAvailabilityCalendar } from "@/components/admin/RoomAvailabilityCalendar";
-import { ROOM_FEATURES } from "@/constants/roomFeatures";
 
 const AdminRooms = () => {
   const { rooms, isLoading, createRoom, updateRoom, deleteRoom } = useAdminRooms();
+  const { data: roomFeatures, isLoading: featuresLoading } = useAdminRoomFeatures();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [viewingCalendar, setViewingCalendar] = useState<Room | null>(null);
@@ -48,6 +50,11 @@ const AdminRooms = () => {
     saturday_price: "",
     sunday_price: "",
   });
+
+  const getIconComponent = (iconName: string) => {
+    const IconComponent = Icons[iconName as keyof typeof Icons] as any;
+    return IconComponent || Icons.Circle;
+  };
 
   const resetForm = () => {
     setFormData({
@@ -409,17 +416,17 @@ const AdminRooms = () => {
               <div>
                 <Label>Features</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2 p-4 border rounded-md">
-                  {ROOM_FEATURES.map((feature) => {
-                    const IconComponent = feature.icon;
+                  {roomFeatures?.map((feature) => {
+                    const IconComponent = getIconComponent(feature.icon_name);
                     return (
-                      <div key={feature.id} className="flex items-center space-x-2">
+                      <div key={feature.feature_key} className="flex items-center space-x-2">
                         <Checkbox
-                          id={feature.id}
-                          checked={formData.features.includes(feature.id)}
-                          onCheckedChange={() => toggleFeature(feature.id)}
+                          id={feature.feature_key}
+                          checked={formData.features.includes(feature.feature_key)}
+                          onCheckedChange={() => toggleFeature(feature.feature_key)}
                         />
                         <Label
-                          htmlFor={feature.id}
+                          htmlFor={feature.feature_key}
                           className="flex items-center gap-2 cursor-pointer font-normal"
                         >
                           <IconComponent className="h-4 w-4" />
