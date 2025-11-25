@@ -20,6 +20,9 @@ import { RoomAvailabilityCalendar } from "@/components/admin/RoomAvailabilityCal
 import { Panorama360Viewer } from "@/components/Panorama360Viewer";
 import { HotspotEditor } from "@/components/admin/HotspotEditor";
 import { PanoramaManager } from "@/components/admin/PanoramaManager";
+import { FloorPlanEditor } from "@/components/admin/FloorPlanEditor";
+import { useAdminRoomPanoramas } from "@/hooks/useRoomPanoramas";
+import { useAdminRoomHotspots } from "@/hooks/useRoomHotspots";
 
 const AdminRooms = () => {
   const { rooms, isLoading, createRoom, updateRoom, deleteRoom } = useAdminRooms();
@@ -34,6 +37,8 @@ const AdminRooms = () => {
   const [selectedRoomForHotspots, setSelectedRoomForHotspots] = useState<Room | null>(null);
   const [selectedPanoramaId, setSelectedPanoramaId] = useState<string | undefined>();
   const [panoramaManagerOpen, setPanoramaManagerOpen] = useState(false);
+  const [floorPlanEditorOpen, setFloorPlanEditorOpen] = useState(false);
+  const [selectedRoomForFloorPlan, setSelectedRoomForFloorPlan] = useState<Room | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -677,15 +682,41 @@ const AdminRooms = () => {
                       Delete
                     </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={() => setViewingCalendar(room)}
-                    className="w-full"
-                  >
-                    <CalendarIcon className="h-4 w-4 mr-1" />
-                    View Availability
-                  </Button>
+                   <Button
+                     size="sm"
+                     variant="default"
+                     onClick={() => setViewingCalendar(room)}
+                     className="w-full"
+                   >
+                     <CalendarIcon className="h-4 w-4 mr-1" />
+                     View Availability
+                   </Button>
+                   <div className="flex gap-2">
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={() => {
+                         setSelectedRoomForHotspots(room);
+                         setPanoramaManagerOpen(true);
+                       }}
+                       className="flex-1"
+                     >
+                       <RotateCw className="h-4 w-4 mr-1" />
+                       Panorama
+                     </Button>
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={() => {
+                         setSelectedRoomForFloorPlan(room);
+                         setFloorPlanEditorOpen(true);
+                       }}
+                       className="flex-1"
+                     >
+                       <MapPin className="h-4 w-4 mr-1" />
+                       Floor Plan
+                     </Button>
+                   </div>
                 </div>
               </CardContent>
             </Card>
@@ -726,7 +757,47 @@ const AdminRooms = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Floor Plan Editor Dialog */}
+      {selectedRoomForFloorPlan && (
+        <FloorPlanEditorDialog
+          room={selectedRoomForFloorPlan}
+          open={floorPlanEditorOpen}
+          onOpenChange={setFloorPlanEditorOpen}
+        />
+      )}
     </div>
+  );
+};
+
+const FloorPlanEditorDialog = ({ 
+  room, 
+  open, 
+  onOpenChange 
+}: { 
+  room: Room; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const { data: panoramas } = useAdminRoomPanoramas(room.id);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MapPin className="w-6 h-6" />
+            Floor Plan - {room.name}
+          </DialogTitle>
+        </DialogHeader>
+        <FloorPlanEditor
+          roomId={room.id}
+          floorPlanUrl={room.floor_plan_url || undefined}
+          floorPlanEnabled={room.floor_plan_enabled || false}
+          panoramas={panoramas || []}
+        />
+      </DialogContent>
+    </Dialog>
   );
 };
 

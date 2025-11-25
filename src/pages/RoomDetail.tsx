@@ -17,7 +17,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BookingDialog } from "@/components/BookingDialog";
 import { VirtualTourViewer } from "@/components/VirtualTourViewer";
 import { Panorama360Viewer } from "@/components/Panorama360Viewer";
-import { Loader2, Users, Maximize, Tag, Eye, Bed, Maximize2, RotateCw } from "lucide-react";
+import { FloorPlanViewer } from "@/components/FloorPlanViewer";
+import { Loader2, Users, Maximize, Tag, Eye, Bed, Maximize2, RotateCw, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import type { Room } from "@/hooks/useRooms";
 
@@ -306,6 +307,27 @@ const RoomDetail = () => {
                     <span className="flex items-center gap-1">🔍 Scroll untuk zoom</span>
                     <span className="flex items-center gap-1">📱 Touch untuk mobile</span>
                   </p>
+
+                  {/* Floor Plan Minimap */}
+                  {room.floor_plan_enabled && room.floor_plan_url && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-primary" />
+                        <h3 className="font-semibold">Floor Plan Navigation</h3>
+                      </div>
+                      <div className="rounded-lg overflow-hidden border border-border bg-muted/30" style={{ height: "200px" }}>
+                        <FloorPlanViewer
+                          floorPlanUrl={room.floor_plan_url}
+                          panoramas={panoramas}
+                          currentPanoramaId={currentPanoramaId}
+                          onPanoramaClick={setCurrentPanoramaId}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center">
+                        Click markers on floor plan to navigate between views
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

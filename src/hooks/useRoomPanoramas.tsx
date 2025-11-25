@@ -11,6 +11,9 @@ export interface RoomPanorama {
   is_primary: boolean;
   display_order: number;
   is_active: boolean;
+  floor_plan_x?: number;
+  floor_plan_y?: number;
+  floor_plan_icon?: string;
   created_at?: string;
   updated_at?: string;
 }

@@ -819,6 +819,9 @@ export type Database = {
           created_at: string | null
           description: string | null
           display_order: number | null
+          floor_plan_icon: string | null
+          floor_plan_x: number | null
+          floor_plan_y: number | null
           id: string
           image_url: string
           is_active: boolean | null
@@ -831,6 +834,9 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           display_order?: number | null
+          floor_plan_icon?: string | null
+          floor_plan_x?: number | null
+          floor_plan_y?: number | null
           id?: string
           image_url: string
           is_active?: boolean | null
@@ -843,6 +849,9 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           display_order?: number | null
+          floor_plan_icon?: string | null
+          floor_plan_x?: number | null
+          floor_plan_y?: number | null
           id?: string
           image_url?: string
           is_active?: boolean | null
@@ -908,6 +917,8 @@ export type Database = {
           description: string
           features: string[]
           final_price: number | null
+          floor_plan_enabled: boolean | null
+          floor_plan_url: string | null
           friday_price: number | null
           id: string
           image_url: string
@@ -939,6 +950,8 @@ export type Database = {
           description: string
           features?: string[]
           final_price?: number | null
+          floor_plan_enabled?: boolean | null
+          floor_plan_url?: string | null
           friday_price?: number | null
           id?: string
           image_url: string
@@ -970,6 +983,8 @@ export type Database = {
           description?: string
           features?: string[]
           final_price?: number | null
+          floor_plan_enabled?: boolean | null
+          floor_plan_url?: string | null
           friday_price?: number | null
           id?: string
           image_url?: string
