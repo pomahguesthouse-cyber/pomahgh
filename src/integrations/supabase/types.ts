@@ -740,6 +740,7 @@ export type Database = {
           is_active: boolean | null
           pitch: number
           room_id: string
+          target_room_id: string | null
           title: string
           updated_at: string | null
           yaw: number
@@ -755,6 +756,7 @@ export type Database = {
           is_active?: boolean | null
           pitch: number
           room_id: string
+          target_room_id?: string | null
           title: string
           updated_at?: string | null
           yaw: number
@@ -770,6 +772,7 @@ export type Database = {
           is_active?: boolean | null
           pitch?: number
           room_id?: string
+          target_room_id?: string | null
           title?: string
           updated_at?: string | null
           yaw?: number
@@ -778,6 +781,13 @@ export type Database = {
           {
             foreignKeyName: "room_hotspots_room_id_fkey"
             columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_hotspots_target_room_id_fkey"
+            columns: ["target_room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
             referencedColumns: ["id"]
