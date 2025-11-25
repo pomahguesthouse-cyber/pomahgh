@@ -14,6 +14,146 @@ export type Database = {
   }
   public: {
     Tables: {
+      availability_sync_logs: {
+        Row: {
+          channel_manager_id: string | null
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          http_status_code: number | null
+          id: string
+          request_payload: Json | null
+          response_payload: Json | null
+          room_id: string | null
+          success: boolean | null
+          sync_queue_id: string | null
+        }
+        Insert: {
+          channel_manager_id?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          http_status_code?: number | null
+          id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          room_id?: string | null
+          success?: boolean | null
+          sync_queue_id?: string | null
+        }
+        Update: {
+          channel_manager_id?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          http_status_code?: number | null
+          id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          room_id?: string | null
+          success?: boolean | null
+          sync_queue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_sync_logs_channel_manager_id_fkey"
+            columns: ["channel_manager_id"]
+            isOneToOne: false
+            referencedRelation: "channel_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_sync_logs_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_sync_logs_sync_queue_id_fkey"
+            columns: ["sync_queue_id"]
+            isOneToOne: false
+            referencedRelation: "availability_sync_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      availability_sync_queue: {
+        Row: {
+          availability_data: Json
+          booking_id: string | null
+          channel_manager_id: string | null
+          created_at: string | null
+          date_from: string
+          date_to: string
+          error_message: string | null
+          id: string
+          last_attempt_at: string | null
+          next_retry_at: string | null
+          retry_count: number | null
+          room_id: string | null
+          status: string | null
+          triggered_by: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          availability_data: Json
+          booking_id?: string | null
+          channel_manager_id?: string | null
+          created_at?: string | null
+          date_from: string
+          date_to: string
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          next_retry_at?: string | null
+          retry_count?: number | null
+          room_id?: string | null
+          status?: string | null
+          triggered_by?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          availability_data?: Json
+          booking_id?: string | null
+          channel_manager_id?: string | null
+          created_at?: string | null
+          date_from?: string
+          date_to?: string
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          next_retry_at?: string | null
+          retry_count?: number | null
+          room_id?: string | null
+          status?: string | null
+          triggered_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_sync_queue_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_sync_queue_channel_manager_id_fkey"
+            columns: ["channel_manager_id"]
+            isOneToOne: false
+            referencedRelation: "channel_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_sync_queue_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bank_accounts: {
         Row: {
           account_holder_name: string
@@ -135,6 +275,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      channel_managers: {
+        Row: {
+          api_endpoint: string | null
+          api_key_secret: string | null
+          auth_type: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          last_sync_status: string | null
+          max_retries: number | null
+          name: string
+          retry_delay_seconds: number | null
+          type: string
+          updated_at: string | null
+          webhook_secret: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          api_endpoint?: string | null
+          api_key_secret?: string | null
+          auth_type?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          max_retries?: number | null
+          name: string
+          retry_delay_seconds?: number | null
+          type: string
+          updated_at?: string | null
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          api_endpoint?: string | null
+          api_key_secret?: string | null
+          auth_type?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          max_retries?: number | null
+          name?: string
+          retry_delay_seconds?: number | null
+          type?: string
+          updated_at?: string | null
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
       }
       chat_conversations: {
         Row: {
@@ -1039,6 +1233,15 @@ export type Database = {
       allocate_room_number: {
         Args: { p_check_in: string; p_check_out: string; p_room_id: string }
         Returns: string
+      }
+      calculate_room_availability: {
+        Args: { p_date_from: string; p_date_to: string; p_room_id: string }
+        Returns: {
+          availability_date: string
+          available_count: number
+          booked_count: number
+          total_allotment: number
+        }[]
       }
       generate_invoice_number: { Args: never; Returns: string }
       has_role: {
