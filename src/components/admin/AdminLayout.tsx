@@ -19,6 +19,7 @@ const getPageTitle = (pathname: string): string => {
     "/admin/facilities": "Facilities",
     "/admin/nearby-locations": "Nearby Locations",
     "/admin/chatbot": "Chatbot Settings",
+    "/admin/channel-managers": "Channel Managers",
   };
   return titles[pathname] || "Admin Dashboard";
 };
