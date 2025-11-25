@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRooms } from "@/hooks/useRooms";
+import { useRoomFeatures } from "@/hooks/useRoomFeatures";
+import * as Icons from "lucide-react";
 import { BookingDialog } from "./BookingDialog";
 import { VirtualTourViewer } from "./VirtualTourViewer";
 import type { Room } from "@/hooks/useRooms";
@@ -13,13 +15,14 @@ import villaRoom from "@/assets/room-villa.jpg";
 import { Eye, Tag } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
 import type { CarouselApi } from "@/components/ui/carousel";
-import { ROOM_FEATURES } from "@/constants/roomFeatures";
+
 const roomImages: Record<string, string> = {
   "Deluxe Ocean View": deluxeRoom,
   "Private Pool Villa": villaRoom,
 };
 export const Rooms = () => {
   const { data: rooms, isLoading } = useRooms();
+  const { data: roomFeatures } = useRoomFeatures();
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -41,6 +44,12 @@ export const Rooms = () => {
     setTourRoom(room);
     setTourOpen(true);
   };
+
+  const getIconComponent = (iconName: string) => {
+    const IconComponent = Icons[iconName as keyof typeof Icons] as any;
+    return IconComponent || Icons.Circle;
+  };
+
   if (isLoading) {
     return (
       <section id="rooms" className="py-20 px-4 bg-secondary/30">
@@ -196,10 +205,10 @@ export const Rooms = () => {
 
                         <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
                           {room.features.map((featureId, index) => {
-                            const feature = ROOM_FEATURES.find((f) => f.id === featureId);
+                            const feature = roomFeatures?.find((f) => f.feature_key === featureId);
                             if (!feature) return null;
 
-                            const IconComponent = feature.icon;
+                            const IconComponent = getIconComponent(feature.icon_name);
 
                             return (
                               <div

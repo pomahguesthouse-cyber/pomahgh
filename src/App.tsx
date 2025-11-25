@@ -18,6 +18,7 @@ import AdminNearbyLocations from "./pages/admin/AdminNearbyLocations";
 import AdminChatbot from "./pages/admin/AdminChatbot";
 import AdminInvoiceTemplate from "./pages/admin/AdminInvoiceTemplate";
 import AdminBankAccounts from "./pages/admin/AdminBankAccounts";
+import AdminRoomFeatures from "./pages/admin/AdminRoomFeatures";
 import RoomDetail from "./pages/RoomDetail";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import NotFound from "./pages/NotFound";
@@ -41,8 +42,9 @@ const App = () => (
           <Route path="/admin/rooms" element={<AdminLayout><AdminRooms /></AdminLayout>} />
           <Route path="/admin/bookings" element={<AdminLayout><AdminBookings /></AdminLayout>} />
           <Route path="/admin/hero-slides" element={<AdminLayout><AdminHeroSlides /></AdminLayout>} />
-          <Route path="/admin/facilities" element={<AdminLayout><AdminFacilities /></AdminLayout>} />
-          <Route path="/admin/nearby-locations" element={<AdminLayout><AdminNearbyLocations /></AdminLayout>} />
+            <Route path="/admin/facilities" element={<AdminLayout><AdminFacilities /></AdminLayout>} />
+            <Route path="/admin/room-features" element={<AdminLayout><AdminRoomFeatures /></AdminLayout>} />
+            <Route path="/admin/nearby-locations" element={<AdminLayout><AdminNearbyLocations /></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
           <Route path="/admin/chatbot" element={<AdminLayout><AdminChatbot /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
