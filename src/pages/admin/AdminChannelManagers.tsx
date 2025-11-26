@@ -21,13 +21,6 @@ export default function AdminChannelManagers() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold">Channel Manager Sync</h2>
-          <p className="text-muted-foreground">
-            Monitor dan kelola sinkronisasi availability dengan channel manager OTA
-          </p>
-        </div>
-
         {/* Channel Managers Overview */}
         <Card>
           <CardHeader>
