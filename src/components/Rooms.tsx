@@ -195,20 +195,13 @@ export const Rooms = () => {
                             )}
 
                             <div className="flex items-center gap-2 mb-2">
-                              {room.virtual_tour_url && (
-                                <Badge variant="secondary" className="text-xs">
-                                  <Eye className="w-3 h-3 mr-1" />
-                                  360° Tour
-                                </Badge>
-                              )}
-                              
                               {checkIn && checkOut && !isCheckingAvailability && availability && (
                                 availability[room.id] > 0 ? (
-                                  <span className="text-xs font-bold" style={{ color: '#1f8893' }}>
+                                  <span className="text-xs font-bold animate-fade-in" style={{ color: '#1f8893' }}>
                                     {availability[room.id]} kamar tersisa
                                   </span>
                                 ) : (
-                                  <span className="text-xs font-medium text-red-500">
+                                  <span className="text-xs font-medium text-red-500 animate-pulse">
                                     Tidak Tersedia
                                   </span>
                                 )
@@ -278,16 +271,30 @@ export const Rooms = () => {
                           </Button>
 
                           {room.virtual_tour_url && (
-                            <Button 
-                              variant="outline" 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleViewTour(room);
-                              }}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
+                            <>
+                              <Badge 
+                                variant="secondary" 
+                                className="text-xs flex items-center cursor-pointer hover:bg-secondary/80 transition-colors px-2"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleViewTour(room);
+                                }}
+                              >
+                                <Eye className="w-3 h-3 mr-1" />
+                                360°
+                              </Badge>
+                              <Button 
+                                variant="outline" 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleViewTour(room);
+                                }}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </>
                           )}
                         </div>
 
