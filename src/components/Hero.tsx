@@ -140,6 +140,9 @@ export const Hero = () => {
         title_animation_loop: false,
         subtitle_animation_loop: false,
         show_overlay: true,
+        overlay_gradient_from: "#0F766E",
+        overlay_gradient_to: "#000000",
+        overlay_opacity: 0.5,
         duration: 5000,
         transition_effect: "fade",
       },
@@ -196,7 +199,13 @@ export const Hero = () => {
                       <source src={slide.video_url} type="video/mp4" />
                     </video>
                     {(slide.show_overlay ?? true) && (
-                      <div className="absolute inset-0 hero-gradient"></div>
+                      <div 
+                        className="absolute inset-0"
+                        style={{
+                          background: `linear-gradient(to bottom, ${slide.overlay_gradient_from || '#0F766E'}, ${slide.overlay_gradient_to || '#000000'})`,
+                          opacity: slide.overlay_opacity ?? 0.5
+                        }}
+                      ></div>
                     )}
                   </div>
                 ) : (
@@ -207,7 +216,13 @@ export const Hero = () => {
                     }}
                   >
                     {(slide.show_overlay ?? true) && (
-                      <div className="absolute inset-0 hero-gradient"></div>
+                      <div 
+                        className="absolute inset-0"
+                        style={{
+                          background: `linear-gradient(to bottom, ${slide.overlay_gradient_from || '#0F766E'}, ${slide.overlay_gradient_to || '#000000'})`,
+                          opacity: slide.overlay_opacity ?? 0.5
+                        }}
+                      ></div>
                     )}
                   </div>
                 )}

@@ -497,6 +497,9 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           media_type: string | null
+          overlay_gradient_from: string | null
+          overlay_gradient_to: string | null
+          overlay_opacity: number | null
           overlay_subtext: string | null
           overlay_text: string
           show_overlay: boolean | null
@@ -525,6 +528,9 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           media_type?: string | null
+          overlay_gradient_from?: string | null
+          overlay_gradient_to?: string | null
+          overlay_opacity?: number | null
           overlay_subtext?: string | null
           overlay_text: string
           show_overlay?: boolean | null
@@ -553,6 +559,9 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           media_type?: string | null
+          overlay_gradient_from?: string | null
+          overlay_gradient_to?: string | null
+          overlay_opacity?: number | null
           overlay_subtext?: string | null
           overlay_text?: string
           show_overlay?: boolean | null
