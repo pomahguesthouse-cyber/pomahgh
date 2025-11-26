@@ -18,6 +18,7 @@ import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useSearchDates } from "@/contexts/SearchDatesContext";
 
 interface BookingDialogProps {
   room: Room | null;
@@ -44,15 +45,27 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
   const { user } = useAuth();
   const navigate = useNavigate();
   const { settings } = useHotelSettings();
+  const { checkIn: searchCheckIn, checkOut: searchCheckOut } = useSearchDates();
   
-  // Set default dates: today and tomorrow
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Set default dates: use search dates if available, otherwise today and tomorrow
+  const getDefaultCheckIn = () => {
+    if (searchCheckIn) return searchCheckIn;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  };
   
-  const [checkIn, setCheckIn] = useState<Date>(today);
-  const [checkOut, setCheckOut] = useState<Date>(tomorrow);
+  const getDefaultCheckOut = () => {
+    if (searchCheckOut) return searchCheckOut;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow;
+  };
+  
+  const [checkIn, setCheckIn] = useState<Date>(getDefaultCheckIn());
+  const [checkOut, setCheckOut] = useState<Date>(getDefaultCheckOut());
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [formData, setFormData] = useState({
     guest_name: "",
@@ -76,6 +89,12 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
       }));
     }
   }, [user]);
+
+  // Update dates when search dates change
+  useEffect(() => {
+    if (searchCheckIn) setCheckIn(searchCheckIn);
+    if (searchCheckOut) setCheckOut(searchCheckOut);
+  }, [searchCheckIn, searchCheckOut]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

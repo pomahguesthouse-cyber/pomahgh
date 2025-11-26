@@ -12,9 +12,13 @@ import type { Room } from "@/hooks/useRooms";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import deluxeRoom from "@/assets/room-deluxe.jpg";
 import villaRoom from "@/assets/room-villa.jpg";
-import { Eye, Tag, Users, Ruler } from "lucide-react";
+import { Eye, Tag, Users, Ruler, CheckCircle2, XCircle } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
 import type { CarouselApi } from "@/components/ui/carousel";
+import { useSearchDates } from "@/contexts/SearchDatesContext";
+import { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
+import { format, differenceInDays } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 
 const roomImages: Record<string, string> = {
   "Deluxe Ocean View": deluxeRoom,
@@ -23,12 +27,15 @@ const roomImages: Record<string, string> = {
 export const Rooms = () => {
   const { data: rooms, isLoading } = useRooms();
   const { data: roomFeatures } = useRoomFeatures();
+  const { checkIn, checkOut } = useSearchDates();
+  const { data: availability, isLoading: isCheckingAvailability } = useRoomAvailabilityCheck(checkIn, checkOut);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [tourRoom, setTourRoom] = useState<Room | null>(null);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+  const totalNights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
   useEffect(() => {
     if (!api) return;
     setCurrent(api.selectedScrollSnap());
@@ -68,10 +75,15 @@ export const Rooms = () => {
               Our Accommodations
             </h2>
             <div className="w-16 sm:w-24 h-1 bg-primary mx-auto mb-4 sm:mb-6"></div>
-            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-              Choose from our carefully designed rooms and villas, each offering a unique blend of comfort, style, and
-              breathtaking views.
-            </p>
+            {checkIn && checkOut ? (
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+                Mencari kamar untuk: {format(checkIn, "dd MMM yyyy", { locale: localeId })} - {format(checkOut, "dd MMM yyyy", { locale: localeId })} ({totalNights} malam)
+              </p>
+            ) : (
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+                Pilih tanggal check-in dan check-out untuk melihat ketersediaan kamar
+              </p>
+            )}
           </div>
 
           <Carousel
@@ -182,12 +194,28 @@ export const Rooms = () => {
                               </div>
                             )}
 
-                            {room.virtual_tour_url && (
-                              <Badge variant="secondary" className="mb-2 text-xs">
-                                <Eye className="w-3 h-3 mr-1" />
-                                360° Tour
-                              </Badge>
-                            )}
+                            <div className="flex items-center gap-2 mb-2">
+                              {room.virtual_tour_url && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  360° Tour
+                                </Badge>
+                              )}
+                              
+                              {checkIn && checkOut && !isCheckingAvailability && availability && (
+                                availability[room.id] > 0 ? (
+                                  <Badge variant="success" className="text-xs">
+                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                    Tersedia
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="destructive" className="text-xs">
+                                    <XCircle className="w-3 h-3 mr-1" />
+                                    Tidak Tersedia
+                                  </Badge>
+                                )
+                              )}
+                            </div>
                           </div>
 
                           <div className="text-right flex-shrink-0">
@@ -244,8 +272,11 @@ export const Rooms = () => {
                               e.stopPropagation();
                               handleBookRoom(room);
                             }}
+                            disabled={checkIn && checkOut && availability && availability[room.id] === 0}
                           >
-                            Book Now
+                            {checkIn && checkOut && availability && availability[room.id] === 0 
+                              ? "Tidak Tersedia" 
+                              : "Book Now"}
                           </Button>
 
                           {room.virtual_tour_url && (
