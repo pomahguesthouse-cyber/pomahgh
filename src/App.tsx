@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Bookings from "./pages/Bookings";
@@ -32,8 +33,9 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
+        <SearchDatesProvider>
+          <BrowserRouter>
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/bookings" element={<Bookings />} />
@@ -53,8 +55,9 @@ const App = () => (
           <Route path="/admin/invoice-template" element={<AdminLayout><AdminInvoiceTemplate /></AdminLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </SearchDatesProvider>
     </TooltipProvider>
   </HelmetProvider>
   </QueryClientProvider>
