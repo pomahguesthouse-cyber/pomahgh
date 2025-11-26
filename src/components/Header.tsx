@@ -12,7 +12,12 @@ import {
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser } from "@supabase/supabase-js";
-export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }) {
+interface HeaderProps {
+  scrollToRooms?: () => void;
+  variant?: "transparent" | "solid";
+}
+
+export default function Header({ scrollToRooms, variant = "transparent" }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -69,11 +74,18 @@ export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
-        ${isScrolled ? "bg-black/60 backdrop-blur-md" : "bg-transparent"}
+        ${
+          variant === "solid"
+            ? "bg-black/80 backdrop-blur-md"
+            : isScrolled
+            ? "bg-black/60 backdrop-blur-md"
+            : "bg-transparent"
+        }
       `}
     >
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
+        {/* Desktop Layout - Vertical Stack */}
+        <div className="hidden md:flex flex-col items-center py-4 gap-3">
           <Link to="/" className="flex items-center">
             <img
               src={settings?.logo_url || "/logo.png"}
@@ -83,19 +95,11 @@ export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }
                 e.currentTarget.src = "/logo.png";
                 e.currentTarget.style.opacity = "1";
               }}
-              className="
-      h-[60px]
-      sm:h-[70px]
-      md:h-[70x]
-      w-auto
-      transition-opacity duration-300 opacity-0
-      object-contain
-    "
+              className="h-[70px] w-auto transition-opacity duration-300 opacity-0 object-contain"
             />
           </Link>
 
-          {/* 🔥 DESKTOP MENU PUTIH */}
-          <nav className="hidden md:flex items-center gap-6 text-white">
+          <nav className="flex items-center gap-6 text-white">
             <a href="#home" className="hover:text-white/70 transition">
               Home
             </a>
@@ -152,10 +156,25 @@ export default function Header({ scrollToRooms }: { scrollToRooms?: () => void }
               Book Now
             </Button>
           </nav>
+        </div>
 
-          {/* 🔥 MOBILE BUTTON PUTIH */}
+        {/* Mobile Layout - Horizontal */}
+        <div className="flex md:hidden items-center justify-between h-16">
+          <Link to="/" className="flex items-center">
+            <img
+              src={settings?.logo_url || "/logo.png"}
+              alt={settings?.hotel_name || "Logo"}
+              onLoad={(e) => (e.currentTarget.style.opacity = "1")}
+              onError={(e) => {
+                e.currentTarget.src = "/logo.png";
+                e.currentTarget.style.opacity = "1";
+              }}
+              className="h-[50px] w-auto transition-opacity duration-300 opacity-0 object-contain"
+            />
+          </Link>
+
           <button
-            className="md:hidden text-white p-2 rounded-lg hover:bg-white/10 transition"
+            className="text-white p-2 rounded-lg hover:bg-white/10 transition"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
