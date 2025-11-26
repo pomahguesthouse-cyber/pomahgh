@@ -1,4 +1,3 @@
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useSeoSettings } from "@/hooks/useSeoSettings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,24 +50,21 @@ const AdminSeoSettings = () => {
 
   if (isLoading) {
     return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </AdminLayout>
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-muted-foreground">Manage your website's SEO configuration</p>
-          <Button onClick={handleSave} disabled={isUpdating}>
-            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Changes
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-muted-foreground">Manage your website's SEO configuration</p>
+        <Button onClick={handleSave} disabled={isUpdating}>
+          {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Changes
+        </Button>
+      </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
@@ -538,8 +534,7 @@ const AdminSeoSettings = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
-  );
-};
+    );
+  };
 
 export default AdminSeoSettings;
