@@ -62,11 +62,8 @@ const AdminSeoSettings = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">SEO Settings</h1>
-            <p className="text-muted-foreground">Manage your website's SEO configuration</p>
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-muted-foreground">Manage your website's SEO configuration</p>
           <Button onClick={handleSave} disabled={isUpdating}>
             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes

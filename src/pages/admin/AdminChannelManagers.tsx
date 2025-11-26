@@ -28,13 +28,10 @@ export default function AdminChannelManagers() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Channel Manager Sync</h2>
-            <p className="text-muted-foreground">
-              Monitor dan kelola sinkronisasi availability dengan channel manager OTA
-            </p>
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-muted-foreground">
+            Monitor dan kelola sinkronisasi availability dengan channel manager OTA
+          </p>
           <ChannelManagerForm />
         </div>
         {/* Channel Managers Overview */}
