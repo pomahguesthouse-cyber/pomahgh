@@ -57,6 +57,7 @@ const AdminHeroSlides = () => {
     is_active: true,
     duration: 5000,
     transition_effect: "fade",
+    show_overlay: true,
   });
 
   const fontFamilies = [
@@ -171,6 +172,7 @@ const AdminHeroSlides = () => {
       is_active: slide.is_active,
       duration: slide.duration,
       transition_effect: slide.transition_effect,
+      show_overlay: slide.show_overlay ?? true,
     });
   };
 
@@ -204,6 +206,7 @@ const AdminHeroSlides = () => {
       is_active: true,
       duration: 5000,
       transition_effect: "fade",
+      show_overlay: true,
     });
     setEditingId(null);
   };
@@ -291,6 +294,23 @@ const AdminHeroSlides = () => {
                 </p>
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label>Overlay Gradient</Label>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-overlay"
+                  checked={formData.show_overlay}
+                  onCheckedChange={(checked) => setFormData({ ...formData, show_overlay: checked })}
+                />
+                <Label htmlFor="show-overlay" className="cursor-pointer">
+                  Tampilkan overlay gradient
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Overlay memberikan efek gradient untuk meningkatkan keterbacaan teks
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
