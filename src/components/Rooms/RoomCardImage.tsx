@@ -5,7 +5,26 @@ import { Eye, Tag } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
 import type { RoomCardImageProps } from "./types";
 
+const getTransitionClass = (effect?: string) => {
+  switch (effect) {
+    case "fade":
+      return "animate-fade-in";
+    case "blur":
+      return "transition-all duration-700 data-[active=false]:blur-sm data-[active=false]:opacity-0 data-[active=true]:blur-0 data-[active=true]:opacity-100";
+    case "zoom":
+      return "transition-transform duration-700 data-[active=false]:scale-75 data-[active=false]:opacity-0 data-[active=true]:scale-100 data-[active=true]:opacity-100";
+    case "flip":
+      return "transition-all duration-700 data-[active=false]:rotate-y-90 data-[active=false]:opacity-0 data-[active=true]:rotate-y-0 data-[active=true]:opacity-100";
+    case "slide":
+    default:
+      return "transition-transform duration-500";
+  }
+};
+
 export const RoomCardImage = ({ room, images, hasPromo, onViewTour }: RoomCardImageProps) => {
+  const transitionEffect = (room as any).transition_effect || "slide";
+  const transitionClass = getTransitionClass(transitionEffect);
+
   return (
     <div className="relative h-64 overflow-hidden group">
       {images?.length > 1 ? (
@@ -23,7 +42,11 @@ export const RoomCardImage = ({ room, images, hasPromo, onViewTour }: RoomCardIm
                 <img
                   src={image}
                   alt={`${room.name} - Photo ${index + 1}`}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className={`w-full h-full object-cover ${
+                    transitionEffect === "slide" 
+                      ? "transition-transform duration-500 group-hover:scale-110" 
+                      : transitionClass
+                  }`}
                 />
               </CarouselItem>
             ))}

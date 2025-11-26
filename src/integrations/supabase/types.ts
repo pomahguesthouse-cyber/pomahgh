@@ -1131,6 +1131,7 @@ export type Database = {
           slug: string | null
           sunday_price: number | null
           thursday_price: number | null
+          transition_effect: string | null
           tuesday_price: number | null
           updated_at: string
           virtual_tour_url: string | null
@@ -1164,6 +1165,7 @@ export type Database = {
           slug?: string | null
           sunday_price?: number | null
           thursday_price?: number | null
+          transition_effect?: string | null
           tuesday_price?: number | null
           updated_at?: string
           virtual_tour_url?: string | null
@@ -1197,6 +1199,7 @@ export type Database = {
           slug?: string | null
           sunday_price?: number | null
           thursday_price?: number | null
+          transition_effect?: string | null
           tuesday_price?: number | null
           updated_at?: string
           virtual_tour_url?: string | null

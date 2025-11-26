@@ -29,6 +29,7 @@ export interface Room {
   friday_price: number | null;
   saturday_price: number | null;
   sunday_price: number | null;
+  transition_effect?: string | null;
   floor_plan_url?: string | null;
   floor_plan_enabled?: boolean | null;
 }
