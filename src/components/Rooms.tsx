@@ -206,7 +206,7 @@ export const Rooms = () => {
                                 availability[room.id] > 0 ? (
                                   <Badge variant="success" className="text-xs">
                                     <CheckCircle2 className="w-3 h-3 mr-1" />
-                                    Tersedia
+                                    {availability[room.id]} kamar tersisa
                                   </Badge>
                                 ) : (
                                   <Badge variant="destructive" className="text-xs">
