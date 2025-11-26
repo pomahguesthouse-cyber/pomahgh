@@ -73,16 +73,16 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-whatsapp]
-verify_jwt = false
+verify_jwt = true
 
 [functions.realtime-voice]
 verify_jwt = false
 
 [functions.generate-invoice]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-invoice-email]
 verify_jwt = false
 
 [functions.send-invoice]
-verify_jwt = false
+verify_jwt = true
