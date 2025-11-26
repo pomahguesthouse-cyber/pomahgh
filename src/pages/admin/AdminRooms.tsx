@@ -65,6 +65,7 @@ const AdminRooms = () => {
     friday_price: "",
     saturday_price: "",
     sunday_price: "",
+    transition_effect: "slide",
   });
 
   const getIconComponent = (iconName: string) => {
@@ -99,6 +100,7 @@ const AdminRooms = () => {
       friday_price: "",
       saturday_price: "",
       sunday_price: "",
+      transition_effect: "slide",
     });
     setEditingRoom(null);
   };
@@ -131,6 +133,7 @@ const AdminRooms = () => {
       friday_price: room.friday_price?.toString() || "",
       saturday_price: room.saturday_price?.toString() || "",
       sunday_price: room.sunday_price?.toString() || "",
+      transition_effect: (room as any).transition_effect || "slide",
     });
     setIsDialogOpen(true);
   };
@@ -236,6 +239,7 @@ const AdminRooms = () => {
       friday_price: formData.friday_price ? Number(formData.friday_price) : null,
       saturday_price: formData.saturday_price ? Number(formData.saturday_price) : null,
       sunday_price: formData.sunday_price ? Number(formData.sunday_price) : null,
+      transition_effect: formData.transition_effect,
     };
 
     if (editingRoom) {
@@ -438,6 +442,25 @@ const AdminRooms = () => {
                   </div>
                 </div>
               )}
+
+              <div>
+                <Label htmlFor="transition_effect">Efek Transisi Foto</Label>
+                <select
+                  id="transition_effect"
+                  value={formData.transition_effect}
+                  onChange={(e) => setFormData({ ...formData, transition_effect: e.target.value })}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="slide">Slide</option>
+                  <option value="fade">Fade</option>
+                  <option value="blur">Blur</option>
+                  <option value="zoom">Zoom</option>
+                  <option value="flip">Flip</option>
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pilih efek animasi saat foto kamar berpindah
+                </p>
+              </div>
 
               <div className="space-y-4 border-t pt-4">
                 <div className="flex items-center justify-between">
