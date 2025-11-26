@@ -14,6 +14,10 @@ export interface HeroSlide {
   font_weight: string;
   text_color: string;
   text_align: string;
+  subtitle_font_family?: string | null;
+  subtitle_font_size?: string | null;
+  subtitle_font_weight?: string | null;
+  subtitle_text_color?: string | null;
   display_order: number;
   is_active: boolean;
   duration: number;

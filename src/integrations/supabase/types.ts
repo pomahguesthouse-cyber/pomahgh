@@ -499,6 +499,10 @@ export type Database = {
           media_type: string | null
           overlay_subtext: string | null
           overlay_text: string
+          subtitle_font_family: string | null
+          subtitle_font_size: string | null
+          subtitle_font_weight: string | null
+          subtitle_text_color: string | null
           text_align: string | null
           text_color: string | null
           transition_effect: string | null
@@ -518,6 +522,10 @@ export type Database = {
           media_type?: string | null
           overlay_subtext?: string | null
           overlay_text: string
+          subtitle_font_family?: string | null
+          subtitle_font_size?: string | null
+          subtitle_font_weight?: string | null
+          subtitle_text_color?: string | null
           text_align?: string | null
           text_color?: string | null
           transition_effect?: string | null
@@ -537,6 +545,10 @@ export type Database = {
           media_type?: string | null
           overlay_subtext?: string | null
           overlay_text?: string
+          subtitle_font_family?: string | null
+          subtitle_font_size?: string | null
+          subtitle_font_weight?: string | null
+          subtitle_text_color?: string | null
           text_align?: string | null
           text_color?: string | null
           transition_effect?: string | null

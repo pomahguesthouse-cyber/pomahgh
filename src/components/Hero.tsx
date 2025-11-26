@@ -107,9 +107,10 @@ export const Hero = () => {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                  className={`text-3xl sm:text-4xl md:text-6xl lg:text-7xl ${slide.font_weight} ${slide.text_color} mb-4 sm:mb-6 px-2`}
+                  className={`${slide.font_size || "text-3xl sm:text-4xl md:text-6xl lg:text-7xl"} ${slide.font_weight} mb-4 sm:mb-6 px-2`}
                   style={{
                     fontFamily: slide.font_family,
+                    color: slide.text_color,
                   }}
                 >
                   {slide.overlay_text}
@@ -119,7 +120,11 @@ export const Hero = () => {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-                    className={`text-base sm:text-lg md:text-xl lg:text-2xl ${slide.text_color}/90 mb-6 sm:mb-8 max-w-2xl px-2 ${slide.text_align === "center" ? "mx-auto" : ""}`}
+                    className={`${slide.subtitle_font_size || "text-base sm:text-lg md:text-xl lg:text-2xl"} ${slide.subtitle_font_weight || "font-normal"} mb-6 sm:mb-8 max-w-2xl px-2 ${slide.text_align === "center" ? "mx-auto" : ""}`}
+                    style={{
+                      fontFamily: slide.subtitle_font_family || slide.font_family,
+                      color: slide.subtitle_text_color || slide.text_color,
+                    }}
                   >
                     {slide.overlay_subtext}
                   </motion.p>
