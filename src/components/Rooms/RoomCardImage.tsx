@@ -9,13 +9,29 @@ const getTransitionClass = (effect?: string) => {
   switch (effect) {
     case "fade":
       return "animate-fade-in";
+
     case "blur":
-      return "transition-all duration-700 data-[active=false]:blur-sm data-[active=false]:opacity-0 data-[active=true]:blur-0 data-[active=true]:opacity-100";
+      return `
+        transition-all duration-700 
+        data-[active=false]:blur-sm data-[active=false]:opacity-0 
+        data-[active=true]:blur-0 data-[active=true]:opacity-100
+      `;
+
     case "zoom":
-      return "transition-transform duration-700 data-[active=false]:scale-75 data-[active=false]:opacity-0 data-[active=true]:scale-100 data-[active=true]:opacity-100";
+      return `
+        transition-transform duration-700 
+        data-[active=false]:scale-75 data-[active=false]:opacity-0 
+        data-[active=true]:scale-100 data-[active=true]:opacity-100
+      `;
+
     case "flip":
-      return "transition-all duration-700 data-[active=false]:rotate-y-90 data-[active=false]:opacity-0 data-[active=true]:rotate-y-0 data-[active=true]:opacity-100";
-    case "slide":
+      return `
+        transition-all duration-700 
+        [transform-style:preserve-3d]
+        data-[active=false]:rotate-y-90 data-[active=false]:opacity-0 
+        data-[active=true]:rotate-y-0 data-[active=true]:opacity-100
+      `;
+
     default:
       return "transition-transform duration-500";
   }
@@ -24,29 +40,26 @@ const getTransitionClass = (effect?: string) => {
 export const RoomCardImage = ({ room, images, hasPromo, onViewTour }: RoomCardImageProps) => {
   const transitionEffect = (room as any).transition_effect || "slide";
   const transitionClass = getTransitionClass(transitionEffect);
+  const isSlide = transitionEffect === "slide";
 
   return (
     <div className="relative h-64 overflow-hidden group">
       {images?.length > 1 ? (
         <Carousel
           className="w-full h-full"
-          plugins={[
-            Autoplay({
-              delay: 3000,
-            }),
-          ]}
+          plugins={[Autoplay({ delay: 3000 })]}
         >
           <CarouselContent>
             {images.map((image, index) => (
-              <CarouselItem key={index}>
+              <CarouselItem key={index} onClick={(e) => e.stopPropagation()}>
                 <img
                   src={image}
                   alt={`${room.name} - Photo ${index + 1}`}
-                  className={`w-full h-full object-cover ${
-                    transitionEffect === "slide" 
-                      ? "transition-transform duration-500 group-hover:scale-110" 
-                      : transitionClass
-                  }`}
+                  className={`
+                    w-full h-full object-cover 
+                    ${isSlide ? "group-hover:scale-105 transition-transform duration-500" : transitionClass}
+                  `}
+                  draggable={false}
                 />
               </CarouselItem>
             ))}
@@ -56,16 +69,17 @@ export const RoomCardImage = ({ room, images, hasPromo, onViewTour }: RoomCardIm
         <img
           src={images?.[0]}
           alt={room.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
       )}
 
       {/* Virtual Tour Overlay */}
       {room.virtual_tour_url && (
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Button 
-            variant="hero" 
-            size="lg" 
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+          <Button
+            variant="hero"
+            size="lg"
+            className="pointer-events-auto"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -81,7 +95,7 @@ export const RoomCardImage = ({ room, images, hasPromo, onViewTour }: RoomCardIm
       {/* Promo Badge */}
       {hasPromo && (
         <div className="absolute top-2 right-2 z-10">
-          <Badge className="bg-red-500 text-white">
+          <Badge className="bg-red-500 text-white flex items-center">
             <Tag className="w-3 h-3 mr-1" />
             Promo
           </Badge>
@@ -91,8 +105,8 @@ export const RoomCardImage = ({ room, images, hasPromo, onViewTour }: RoomCardIm
       {/* 360° Tour Badge */}
       {room.virtual_tour_url && (
         <div className="absolute top-2 left-2 z-10">
-          <Badge 
-            className="bg-black/70 text-white cursor-pointer hover:bg-black/80 transition-colors"
+          <Badge
+            className="bg-black/70 text-white cursor-pointer hover:bg-black/80 transition-colors flex items-center"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
