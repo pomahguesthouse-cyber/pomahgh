@@ -149,23 +149,6 @@ All colors MUST be HSL.
       transform: translateY(0);
     }
   }
-  
-  @keyframes letter-spacing-in {
-    0% {
-      opacity: 0;
-      letter-spacing: 0.5em;
-      transform: translateY(20px);
-    }
-    100% {
-      opacity: 1;
-      letter-spacing: 0.05em;
-      transform: translateY(0);
-    }
-  }
-  
-  .animate-letter-spacing {
-    animation: letter-spacing-in 1.5s ease-out forwards;
-  }
 }
 
 /* Hotspot styles */
