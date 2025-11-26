@@ -20,15 +20,33 @@ interface HeaderProps {
 export default function Header({ scrollToRooms, variant = "transparent" }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { settings } = useHotelSettings();
+  
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Detect scroll direction
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling DOWN & passed threshold - hide header
+        setIsVisible(false);
+      } else {
+        // Scrolling UP - show header
+        setIsVisible(true);
+      }
+      
+      setIsScrolled(currentScrollY > 10);
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -73,7 +91,9 @@ export default function Header({ scrollToRooms, variant = "transparent" }: Heade
   };
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
+      className={`fixed top-0 left-0 right-0 z-50 
+        transition-transform duration-300 ease-in-out
+        ${isVisible ? "translate-y-0" : "-translate-y-full"}
         ${
           variant === "solid"
             ? "bg-black/80 backdrop-blur-md"
@@ -84,8 +104,9 @@ export default function Header({ scrollToRooms, variant = "transparent" }: Heade
       `}
     >
       <div className="container mx-auto px-4">
-        {/* Desktop Layout - Vertical Stack */}
-        <div className="hidden md:flex flex-col items-center py-4 gap-3">
+        {/* Desktop Layout - Horizontal */}
+        <div className="hidden md:flex items-center justify-between h-20">
+          {/* Logo on the left */}
           <Link to="/" className="flex items-center">
             <img
               src={settings?.logo_url || "/logo.png"}
@@ -95,11 +116,12 @@ export default function Header({ scrollToRooms, variant = "transparent" }: Heade
                 e.currentTarget.src = "/logo.png";
                 e.currentTarget.style.opacity = "1";
               }}
-              className="h-[70px] w-auto transition-opacity duration-300 opacity-0 object-contain"
+              className="h-[60px] w-auto transition-opacity duration-300 opacity-0 object-contain"
             />
           </Link>
 
-          <nav className="flex items-center gap-6 text-white">
+          {/* Navigation on the right */}
+          <nav className="hidden md:flex items-center gap-6 text-white">
             <a href="#home" className="hover:text-white/70 transition">
               Home
             </a>
