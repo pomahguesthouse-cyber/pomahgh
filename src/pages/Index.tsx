@@ -7,22 +7,25 @@ import { Location } from "@/components/Location";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
 import ChatbotWidget from "@/components/ChatbotWidget";
+import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
-      <Header />
-      <main>
-        <Hero />
-        <Welcome />
-        <Rooms />
-        <Amenities />
-        <Location />
-        <Contact />
-      </main>
-      <Footer />
-      <ChatbotWidget />
-    </div>
+    <SearchDatesProvider>
+      <div className="min-h-screen">
+        <Header />
+        <main>
+          <Hero />
+          <Welcome />
+          <Rooms />
+          <Amenities />
+          <Location />
+          <Contact />
+        </main>
+        <Footer />
+        <ChatbotWidget />
+      </div>
+    </SearchDatesProvider>
   );
 };
 
