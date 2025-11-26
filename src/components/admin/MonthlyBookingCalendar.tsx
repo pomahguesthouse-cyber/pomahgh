@@ -315,6 +315,10 @@ export const MonthlyBookingCalendar = () => {
       toast.error("Check-out harus setelah check-in");
       return;
     }
+    if (editedBooking.total_price <= 0) {
+      toast.error("Total harga harus lebih dari 0");
+      return;
+    }
     if (editedBooking.payment_status === "down_payment" && editedBooking.payment_amount) {
       if (editedBooking.payment_amount <= 0 || editedBooking.payment_amount > editedBooking.total_price) {
         toast.error("Jumlah DP tidak valid");
@@ -339,6 +343,7 @@ export const MonthlyBookingCalendar = () => {
         payment_amount: editedBooking.payment_status === "down_payment" ? editedBooking.payment_amount : 0,
         special_requests: editedBooking.special_requests,
         total_nights: editedBooking.total_nights,
+        total_price: editedBooking.total_price,
       });
 
       // Wait for query refetch to complete
@@ -855,9 +860,29 @@ export const MonthlyBookingCalendar = () => {
                     {/* Total Harga - Always show */}
                     <div className="flex items-start gap-3">
                       <CreditCard className="h-5 w-5 text-primary mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Harga</p>
-                        <p className="font-bold text-2xl">Rp {editedBooking.total_price.toLocaleString("id-ID")}</p>
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Total Harga</Label>
+                        {isEditMode ? (
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
+                              Rp
+                            </span>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={editedBooking.total_price}
+                              onChange={(e) =>
+                                setEditedBooking({
+                                  ...editedBooking,
+                                  total_price: parseFloat(e.target.value) || 0,
+                                })
+                              }
+                              className="font-bold text-lg pl-10"
+                            />
+                          </div>
+                        ) : (
+                          <p className="font-bold text-2xl">Rp {editedBooking.total_price.toLocaleString("id-ID")}</p>
+                        )}
                       </div>
                     </div>
 
