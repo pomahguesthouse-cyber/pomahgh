@@ -10,7 +10,6 @@ interface AdminLayoutProps {
 
 const getPageTitle = (pathname: string): string => {
   const titles: Record<string, string> = {
-    "/admin/dashboard": "Dashboard",
     "/admin/bookings": "Booking Management",
     "/admin/rooms": "Room Management",
     "/admin/settings": "Hotel Settings",
@@ -20,8 +19,10 @@ const getPageTitle = (pathname: string): string => {
     "/admin/nearby-locations": "Nearby Locations",
     "/admin/chatbot": "Chatbot Settings",
     "/admin/channel-managers": "Channel Managers",
+    "/admin/room-features": "Room Features",
+    "/admin/invoice-template": "Invoice Template",
   };
-  return titles[pathname] || "Admin Dashboard";
+  return titles[pathname] || "Admin Panel";
 };
 
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
