@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Loader2, Upload, RefreshCw } from "lucide-react";
 import { SeoPreview } from "@/components/admin/SeoPreview";
 import { toast } from "@/hooks/use-toast";
@@ -17,12 +17,36 @@ const AdminSeoSettings = () => {
   const [formData, setFormData] = useState<Partial<typeof settings>>(settings || {});
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // Refs for smooth scrolling to sections
+  const generalRef = useRef<HTMLDivElement>(null);
+  const socialRef = useRef<HTMLDivElement>(null);
+  const localRef = useRef<HTMLDivElement>(null);
+  const indexingRef = useRef<HTMLDivElement>(null);
+  const analyticsRef = useRef<HTMLDivElement>(null);
+  const advancedRef = useRef<HTMLDivElement>(null);
+
   const handleUpdate = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = () => {
     updateSettings(formData);
+  };
+
+  const handleTabChange = (value: string) => {
+    const refMap: Record<string, React.RefObject<HTMLDivElement>> = {
+      general: generalRef,
+      social: socialRef,
+      local: localRef,
+      indexing: indexingRef,
+      analytics: analyticsRef,
+      advanced: advancedRef,
+    };
+    
+    refMap[value]?.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,7 +92,7 @@ const AdminSeoSettings = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Tabs defaultValue="general" className="space-y-4">
+            <Tabs defaultValue="general" onValueChange={handleTabChange} className="space-y-4">
               <TabsList className="flex w-full overflow-x-auto scrollbar-hide sticky top-0 z-10 bg-background/95 backdrop-blur-sm shadow-sm">
                 <TabsTrigger value="general" className="flex-shrink-0 px-4">General</TabsTrigger>
                 <TabsTrigger value="social" className="flex-shrink-0 px-4">Social</TabsTrigger>
@@ -79,7 +103,7 @@ const AdminSeoSettings = () => {
               </TabsList>
 
               {/* General SEO */}
-              <TabsContent value="general" className="space-y-4">
+              <TabsContent value="general" ref={generalRef} className="space-y-4 scroll-mt-20">
                 <Card>
                   <CardHeader>
                     <CardTitle>General SEO</CardTitle>
@@ -156,7 +180,7 @@ const AdminSeoSettings = () => {
               </TabsContent>
 
               {/* Social Media SEO */}
-              <TabsContent value="social" className="space-y-4">
+              <TabsContent value="social" ref={socialRef} className="space-y-4 scroll-mt-20">
                 <Card>
                   <CardHeader>
                     <CardTitle>Social Media SEO</CardTitle>
@@ -215,7 +239,7 @@ const AdminSeoSettings = () => {
               </TabsContent>
 
               {/* Local SEO */}
-              <TabsContent value="local" className="space-y-4">
+              <TabsContent value="local" ref={localRef} className="space-y-4 scroll-mt-20">
                 <Card>
                   <CardHeader>
                     <CardTitle>Local SEO</CardTitle>
@@ -284,7 +308,7 @@ const AdminSeoSettings = () => {
               </TabsContent>
 
               {/* Indexing Control */}
-              <TabsContent value="indexing" className="space-y-4">
+              <TabsContent value="indexing" ref={indexingRef} className="space-y-4 scroll-mt-20">
                 <Card>
                   <CardHeader>
                     <CardTitle>Indexing Control</CardTitle>
@@ -410,7 +434,7 @@ const AdminSeoSettings = () => {
               </TabsContent>
 
               {/* Analytics */}
-              <TabsContent value="analytics" className="space-y-4">
+              <TabsContent value="analytics" ref={analyticsRef} className="space-y-4 scroll-mt-20">
                 <Card>
                   <CardHeader>
                     <CardTitle>Analytics & Verification</CardTitle>
@@ -471,7 +495,7 @@ const AdminSeoSettings = () => {
               </TabsContent>
 
               {/* Advanced */}
-              <TabsContent value="advanced" className="space-y-4">
+              <TabsContent value="advanced" ref={advancedRef} className="space-y-4 scroll-mt-20">
                 <Card>
                   <CardHeader>
                     <CardTitle>Advanced SEO</CardTitle>
