@@ -116,7 +116,7 @@ export const Rooms = () => {
                   <CarouselItem key={room.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
                     <Link to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
                       <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-full cursor-pointer">
-                      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden group">
+                      <div className="relative h-64 overflow-hidden group">
                         {images?.length > 1 ? (
                           <Carousel
                             className="w-full h-full"
@@ -194,7 +194,7 @@ export const Rooms = () => {
                       <CardContent className="p-3 sm:p-4 md:p-6">
                         <div className="flex justify-between items-start mb-2 sm:mb-3">
                           <div className="flex-1 min-w-0 pr-2">
-                            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground mb-1 truncate">
+                            <h3 className="text-lg sm:text-xl md:text-2xl font-playfair font-bold text-foreground mb-1 truncate">
                               {room.name}
                             </h3>
                             
