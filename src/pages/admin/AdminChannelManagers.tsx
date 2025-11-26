@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAvailabilitySync } from "@/hooks/useAvailabilitySync";
+import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { RefreshCw, CheckCircle, XCircle, Clock, Loader2, AlertCircle } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { ChannelManagerForm } from "@/components/admin/ChannelManagerForm";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -18,9 +19,21 @@ export default function AdminChannelManagers() {
     isLoadingManagers
   } = useAvailabilitySync();
 
+  // Enable real-time notifications
+  useAdminNotifications();
+
   return (
     <AdminLayout>
       <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Channel Manager Sync</h2>
+            <p className="text-muted-foreground">
+              Monitor dan kelola sinkronisasi availability dengan channel manager OTA
+            </p>
+          </div>
+          <ChannelManagerForm />
+        </div>
         {/* Channel Managers Overview */}
         <Card>
           <CardHeader>
