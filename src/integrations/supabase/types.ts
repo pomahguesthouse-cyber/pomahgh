@@ -499,12 +499,16 @@ export type Database = {
           media_type: string | null
           overlay_subtext: string | null
           overlay_text: string
+          subtitle_animation: string | null
+          subtitle_animation_loop: boolean | null
           subtitle_font_family: string | null
           subtitle_font_size: string | null
           subtitle_font_weight: string | null
           subtitle_text_color: string | null
           text_align: string | null
           text_color: string | null
+          title_animation: string | null
+          title_animation_loop: boolean | null
           transition_effect: string | null
           updated_at: string | null
           video_url: string | null
@@ -522,12 +526,16 @@ export type Database = {
           media_type?: string | null
           overlay_subtext?: string | null
           overlay_text: string
+          subtitle_animation?: string | null
+          subtitle_animation_loop?: boolean | null
           subtitle_font_family?: string | null
           subtitle_font_size?: string | null
           subtitle_font_weight?: string | null
           subtitle_text_color?: string | null
           text_align?: string | null
           text_color?: string | null
+          title_animation?: string | null
+          title_animation_loop?: boolean | null
           transition_effect?: string | null
           updated_at?: string | null
           video_url?: string | null
@@ -545,12 +553,16 @@ export type Database = {
           media_type?: string | null
           overlay_subtext?: string | null
           overlay_text?: string
+          subtitle_animation?: string | null
+          subtitle_animation_loop?: boolean | null
           subtitle_font_family?: string | null
           subtitle_font_size?: string | null
           subtitle_font_weight?: string | null
           subtitle_text_color?: string | null
           text_align?: string | null
           text_color?: string | null
+          title_animation?: string | null
+          title_animation_loop?: boolean | null
           transition_effect?: string | null
           updated_at?: string | null
           video_url?: string | null
