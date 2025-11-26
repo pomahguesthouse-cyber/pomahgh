@@ -4,7 +4,7 @@ import { useHeroSlides } from "@/hooks/useHeroSlides";
 import heroImage from "@/assets/hero-guesthouse.jpg";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
@@ -16,6 +16,7 @@ import { toast } from "sonner";
 export const Hero = () => {
   const { data: slides, isLoading } = useHeroSlides();
   const { checkIn, checkOut, setCheckIn, setCheckOut } = useSearchDates();
+  const [showDatePickers, setShowDatePickers] = useState(false);
 
   // Use database slides if available, otherwise fallback to default
   const heroSlides =
@@ -127,77 +128,93 @@ export const Hero = () => {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-                  className={`flex flex-col sm:flex-row gap-3 sm:gap-4 px-2 ${slide.text_align === "center" ? "justify-center" : slide.text_align === "right" ? "justify-end" : "justify-start"}`}
+                  className={`flex flex-col items-center gap-3 px-2 ${slide.text_align === "center" ? "justify-center" : slide.text_align === "right" ? "justify-end" : "justify-start"}`}
                 >
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full sm:w-auto justify-start text-left font-normal bg-background/80 backdrop-blur",
-                          !checkIn && "text-muted-foreground"
-                        )}
+                  <AnimatePresence>
+                    {showDatePickers && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="flex flex-col sm:flex-row gap-3 overflow-hidden"
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {checkIn ? format(checkIn, "dd MMM", { locale: localeId }) : "Check-in"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={checkIn}
-                        onSelect={setCheckIn}
-                        disabled={(date) => {
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          return date < today;
-                        }}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full sm:w-auto justify-start text-left font-normal bg-background/80 backdrop-blur",
+                                !checkIn && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {checkIn ? format(checkIn, "dd MMM", { locale: localeId }) : "Check-in"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={checkIn}
+                              onSelect={setCheckIn}
+                              disabled={(date) => {
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                return date < today;
+                              }}
+                              initialFocus
+                              className="pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
 
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full sm:w-auto justify-start text-left font-normal bg-background/80 backdrop-blur",
-                          !checkOut && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {checkOut ? format(checkOut, "dd MMM", { locale: localeId }) : "Check-out"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={checkOut}
-                        onSelect={setCheckOut}
-                        disabled={(date) => !checkIn || date <= checkIn}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full sm:w-auto justify-start text-left font-normal bg-background/80 backdrop-blur",
+                                !checkOut && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {checkOut ? format(checkOut, "dd MMM", { locale: localeId }) : "Check-out"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={checkOut}
+                              onSelect={setCheckOut}
+                              disabled={(date) => !checkIn || date <= checkIn}
+                              initialFocus
+                              className="pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   <Button
                     variant="hero"
                     size="lg"
                     className="text-white text-sm sm:text-base md:text-lg"
                     onClick={() => {
-                      if (!checkIn || !checkOut) {
-                        toast.error("Pilih tanggal check-in dan check-out");
-                        return;
+                      if (!showDatePickers) {
+                        setShowDatePickers(true);
+                      } else {
+                        if (!checkIn || !checkOut) {
+                          toast.error("Pilih tanggal check-in dan check-out");
+                          return;
+                        }
+                        document.getElementById("rooms")?.scrollIntoView({
+                          behavior: "smooth",
+                        });
                       }
-                      document.getElementById("rooms")?.scrollIntoView({
-                        behavior: "smooth",
-                      });
                     }}
                   >
-                    Cari Kamar
+                    {showDatePickers ? "Cari Kamar" : "Pilih Tanggal"}
                   </Button>
                 </motion.div>
               </div>
