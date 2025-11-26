@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -58,6 +59,9 @@ const AdminHeroSlides = () => {
     duration: 5000,
     transition_effect: "fade",
     show_overlay: true,
+    overlay_gradient_from: "#0F766E",
+    overlay_gradient_to: "#000000",
+    overlay_opacity: 50,
   });
 
   const fontFamilies = [
@@ -138,11 +142,17 @@ const AdminHeroSlides = () => {
       return;
     }
 
+    // Convert opacity from 0-100 to 0-1 for database
+    const submitData = {
+      ...formData,
+      overlay_opacity: formData.overlay_opacity / 100,
+    };
+
     if (editingId) {
-      await updateSlide.mutateAsync({ id: editingId, ...formData });
+      await updateSlide.mutateAsync({ id: editingId, ...submitData });
       setEditingId(null);
     } else {
-      await createSlide.mutateAsync(formData);
+      await createSlide.mutateAsync(submitData);
     }
     resetForm();
   };
@@ -173,6 +183,9 @@ const AdminHeroSlides = () => {
       duration: slide.duration,
       transition_effect: slide.transition_effect,
       show_overlay: slide.show_overlay ?? true,
+      overlay_gradient_from: slide.overlay_gradient_from || "#0F766E",
+      overlay_gradient_to: slide.overlay_gradient_to || "#000000",
+      overlay_opacity: ((slide.overlay_opacity ?? 0.5) * 100),
     });
   };
 
@@ -207,6 +220,9 @@ const AdminHeroSlides = () => {
       duration: 5000,
       transition_effect: "fade",
       show_overlay: true,
+      overlay_gradient_from: "#0F766E",
+      overlay_gradient_to: "#000000",
+      overlay_opacity: 50,
     });
     setEditingId(null);
   };
@@ -310,6 +326,74 @@ const AdminHeroSlides = () => {
               <p className="text-xs text-muted-foreground">
                 Overlay memberikan efek gradient untuk meningkatkan keterbacaan teks
               </p>
+
+              {formData.show_overlay && (
+                <div className="space-y-4 mt-4 pt-4 border-t">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>🎨 Warna Awal Gradient</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={formData.overlay_gradient_from}
+                          onChange={(e) => setFormData({ ...formData, overlay_gradient_from: e.target.value })}
+                          className="w-16 h-10 p-1 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={formData.overlay_gradient_from}
+                          onChange={(e) => setFormData({ ...formData, overlay_gradient_from: e.target.value })}
+                          placeholder="#0F766E"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>🎨 Warna Akhir Gradient</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={formData.overlay_gradient_to}
+                          onChange={(e) => setFormData({ ...formData, overlay_gradient_to: e.target.value })}
+                          className="w-16 h-10 p-1 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={formData.overlay_gradient_to}
+                          onChange={(e) => setFormData({ ...formData, overlay_gradient_to: e.target.value })}
+                          placeholder="#000000"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>💧 Opacity Overlay ({formData.overlay_opacity}%)</Label>
+                    </div>
+                    <Slider
+                      value={[formData.overlay_opacity]}
+                      onValueChange={([value]) => setFormData({ ...formData, overlay_opacity: value })}
+                      min={0}
+                      max={100}
+                      step={5}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      0% = Transparan penuh, 100% = Tidak transparan
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-lg border" style={{
+                    background: `linear-gradient(to bottom, ${formData.overlay_gradient_from}, ${formData.overlay_gradient_to})`,
+                    opacity: formData.overlay_opacity / 100
+                  }}>
+                    <p className="text-white text-center font-semibold">Preview Gradient</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

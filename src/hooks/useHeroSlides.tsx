@@ -23,6 +23,9 @@ export interface HeroSlide {
   title_animation_loop?: boolean | null;
   subtitle_animation_loop?: boolean | null;
   show_overlay?: boolean | null;
+  overlay_gradient_from?: string | null;
+  overlay_gradient_to?: string | null;
+  overlay_opacity?: number | null;
   display_order: number;
   is_active: boolean;
   duration: number;
