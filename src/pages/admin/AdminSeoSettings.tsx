@@ -69,13 +69,13 @@ const AdminSeoSettings = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Tabs defaultValue="general" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
-                <TabsTrigger value="general">General</TabsTrigger>
-                <TabsTrigger value="social">Social</TabsTrigger>
-                <TabsTrigger value="local">Local</TabsTrigger>
-                <TabsTrigger value="indexing">Indexing</TabsTrigger>
-                <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              <TabsList className="flex w-full overflow-x-auto scrollbar-hide">
+                <TabsTrigger value="general" className="flex-shrink-0 px-4">General</TabsTrigger>
+                <TabsTrigger value="social" className="flex-shrink-0 px-4">Social</TabsTrigger>
+                <TabsTrigger value="local" className="flex-shrink-0 px-4">Local</TabsTrigger>
+                <TabsTrigger value="indexing" className="flex-shrink-0 px-4">Indexing</TabsTrigger>
+                <TabsTrigger value="analytics" className="flex-shrink-0 px-4">Analytics</TabsTrigger>
+                <TabsTrigger value="advanced" className="flex-shrink-0 px-4">Advanced</TabsTrigger>
               </TabsList>
 
               {/* General SEO */}
