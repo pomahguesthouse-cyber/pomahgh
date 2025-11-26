@@ -22,6 +22,7 @@ export interface HeroSlide {
   subtitle_animation?: string | null;
   title_animation_loop?: boolean | null;
   subtitle_animation_loop?: boolean | null;
+  show_overlay?: boolean | null;
   display_order: number;
   is_active: boolean;
   duration: number;

@@ -499,6 +499,7 @@ export type Database = {
           media_type: string | null
           overlay_subtext: string | null
           overlay_text: string
+          show_overlay: boolean | null
           subtitle_animation: string | null
           subtitle_animation_loop: boolean | null
           subtitle_font_family: string | null
@@ -526,6 +527,7 @@ export type Database = {
           media_type?: string | null
           overlay_subtext?: string | null
           overlay_text: string
+          show_overlay?: boolean | null
           subtitle_animation?: string | null
           subtitle_animation_loop?: boolean | null
           subtitle_font_family?: string | null
@@ -553,6 +555,7 @@ export type Database = {
           media_type?: string | null
           overlay_subtext?: string | null
           overlay_text?: string
+          show_overlay?: boolean | null
           subtitle_animation?: string | null
           subtitle_animation_loop?: boolean | null
           subtitle_font_family?: string | null

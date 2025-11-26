@@ -123,25 +123,26 @@ export const Hero = () => {
     slides && slides.length > 0
       ? slides
       : [
-          {
-            id: "default",
-            media_type: "image" as const,
-            image_url: heroImage,
-            video_url: null,
-            overlay_text: "Pomah Guesthouse",
-            overlay_subtext: "Experience Tropical Paradise Where Luxury Meets Serenity",
-            font_family: "Inter",
-            font_size: "text-5xl md:text-7xl lg:text-8xl",
-            font_weight: "font-bold",
-            text_color: "text-card",
-            text_align: "center",
-            title_animation: "fade-up",
-            subtitle_animation: "fade-up",
-            title_animation_loop: false,
-            subtitle_animation_loop: false,
-            duration: 5000,
-            transition_effect: "fade",
-          },
+      {
+        id: "default",
+        media_type: "image" as const,
+        image_url: heroImage,
+        video_url: null,
+        overlay_text: "Pomah Guesthouse",
+        overlay_subtext: "Experience Tropical Paradise Where Luxury Meets Serenity",
+        font_family: "Inter",
+        font_size: "text-5xl md:text-7xl lg:text-8xl",
+        font_weight: "font-bold",
+        text_color: "text-card",
+        text_align: "center",
+        title_animation: "fade-up",
+        subtitle_animation: "fade-up",
+        title_animation_loop: false,
+        subtitle_animation_loop: false,
+        show_overlay: true,
+        duration: 5000,
+        transition_effect: "fade",
+      },
         ];
   const getTransitionClass = (effect: string) => {
     switch (effect) {
@@ -194,7 +195,9 @@ export const Hero = () => {
                     >
                       <source src={slide.video_url} type="video/mp4" />
                     </video>
-                    <div className="absolute inset-0 hero-gradient"></div>
+                    {(slide.show_overlay ?? true) && (
+                      <div className="absolute inset-0 hero-gradient"></div>
+                    )}
                   </div>
                 ) : (
                   <div
@@ -203,7 +206,9 @@ export const Hero = () => {
                       backgroundImage: `url(${slide.image_url})`,
                     }}
                   >
-                    <div className="absolute inset-0 hero-gradient"></div>
+                    {(slide.show_overlay ?? true) && (
+                      <div className="absolute inset-0 hero-gradient"></div>
+                    )}
                   </div>
                 )}
 
