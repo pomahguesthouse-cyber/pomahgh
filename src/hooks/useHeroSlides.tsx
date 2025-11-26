@@ -18,6 +18,10 @@ export interface HeroSlide {
   subtitle_font_size?: string | null;
   subtitle_font_weight?: string | null;
   subtitle_text_color?: string | null;
+  title_animation?: string | null;
+  subtitle_animation?: string | null;
+  title_animation_loop?: boolean | null;
+  subtitle_animation_loop?: boolean | null;
   display_order: number;
   is_active: boolean;
   duration: number;

@@ -49,6 +49,10 @@ const AdminHeroSlides = () => {
     subtitle_font_size: "text-xl",
     subtitle_font_weight: "font-normal",
     subtitle_text_color: "#FFFFFF",
+    title_animation: "fade-up",
+    subtitle_animation: "fade-up",
+    title_animation_loop: false,
+    subtitle_animation_loop: false,
     display_order: 0,
     is_active: true,
     duration: 5000,
@@ -66,6 +70,19 @@ const AdminHeroSlides = () => {
   const fontWeights = ["font-light", "font-normal", "font-medium", "font-semibold", "font-bold", "font-extrabold"];
   const textAligns = ["left", "center", "right"];
   const transitionEffects = ["fade", "slide", "zoom", "blur"];
+  const textAnimations = [
+    { value: "none", label: "Tanpa Animasi", icon: "🚫" },
+    { value: "fade-up", label: "Fade Up", icon: "⬆️" },
+    { value: "fade-down", label: "Fade Down", icon: "⬇️" },
+    { value: "fade-left", label: "Fade Left", icon: "⬅️" },
+    { value: "fade-right", label: "Fade Right", icon: "➡️" },
+    { value: "zoom-in", label: "Zoom In", icon: "🔍" },
+    { value: "zoom-out", label: "Zoom Out", icon: "🔎" },
+    { value: "bounce", label: "Bounce", icon: "🏀" },
+    { value: "blur-in", label: "Blur In", icon: "💨" },
+    { value: "slide-up", label: "Slide Up", icon: "📤" },
+    { value: "scale-rotate", label: "Scale Rotate", icon: "🔄" },
+  ];
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,6 +163,10 @@ const AdminHeroSlides = () => {
       subtitle_font_size: slide.subtitle_font_size || "text-xl",
       subtitle_font_weight: slide.subtitle_font_weight || "font-normal",
       subtitle_text_color: slide.subtitle_text_color || slide.text_color,
+      title_animation: slide.title_animation || "fade-up",
+      subtitle_animation: slide.subtitle_animation || "fade-up",
+      title_animation_loop: slide.title_animation_loop || false,
+      subtitle_animation_loop: slide.subtitle_animation_loop || false,
       display_order: slide.display_order,
       is_active: slide.is_active,
       duration: slide.duration,
@@ -175,6 +196,10 @@ const AdminHeroSlides = () => {
       subtitle_font_size: "text-xl",
       subtitle_font_weight: "font-normal",
       subtitle_text_color: "#FFFFFF",
+      title_animation: "fade-up",
+      subtitle_animation: "fade-up",
+      title_animation_loop: false,
+      subtitle_animation_loop: false,
       display_order: 0,
       is_active: true,
       duration: 5000,
@@ -370,6 +395,38 @@ const AdminHeroSlides = () => {
                   </div>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <Label>🎬 Animasi</Label>
+                  <Select
+                    value={formData.title_animation}
+                    onValueChange={(value) => setFormData({ ...formData, title_animation: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      {textAnimations.map((anim) => (
+                        <SelectItem key={anim.value} value={anim.value}>
+                          {anim.icon} {anim.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-6">
+                  <Switch
+                    id="title-loop"
+                    checked={formData.title_animation_loop}
+                    onCheckedChange={(checked) => setFormData({ ...formData, title_animation_loop: checked })}
+                  />
+                  <Label htmlFor="title-loop" className="cursor-pointer">
+                    🔁 Loop Animasi
+                  </Label>
+                </div>
+              </div>
             </div>
 
             {/* Subtitle Styling Section */}
@@ -450,6 +507,38 @@ const AdminHeroSlides = () => {
                       className="flex-1"
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <Label>🎬 Animasi</Label>
+                  <Select
+                    value={formData.subtitle_animation}
+                    onValueChange={(value) => setFormData({ ...formData, subtitle_animation: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      {textAnimations.map((anim) => (
+                        <SelectItem key={anim.value} value={anim.value}>
+                          {anim.icon} {anim.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-6">
+                  <Switch
+                    id="subtitle-loop"
+                    checked={formData.subtitle_animation_loop}
+                    onCheckedChange={(checked) => setFormData({ ...formData, subtitle_animation_loop: checked })}
+                  />
+                  <Label htmlFor="subtitle-loop" className="cursor-pointer">
+                    🔁 Loop Animasi
+                  </Label>
                 </div>
               </div>
             </div>
