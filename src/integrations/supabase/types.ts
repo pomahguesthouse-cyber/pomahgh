@@ -1207,6 +1207,108 @@ export type Database = {
         }
         Relationships: []
       }
+      seo_settings: {
+        Row: {
+          allow_indexing: boolean | null
+          bing_verification: string | null
+          business_type: string | null
+          canonical_url: string | null
+          created_at: string | null
+          custom_head_scripts: string | null
+          default_og_image: string | null
+          facebook_app_id: string | null
+          facebook_pixel_id: string | null
+          follow_links: boolean | null
+          geo_coordinates: string | null
+          geo_placename: string | null
+          geo_region: string | null
+          google_analytics_id: string | null
+          google_search_console_verification: string | null
+          google_tag_manager_id: string | null
+          id: string
+          meta_description: string | null
+          meta_keywords: string | null
+          og_locale: string | null
+          og_site_name: string | null
+          price_range: string | null
+          robots_txt_custom: string | null
+          site_title: string | null
+          sitemap_auto_generate: boolean | null
+          sitemap_change_freq: string | null
+          sitemap_priority_home: number | null
+          sitemap_priority_rooms: number | null
+          structured_data_enabled: boolean | null
+          twitter_handle: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allow_indexing?: boolean | null
+          bing_verification?: string | null
+          business_type?: string | null
+          canonical_url?: string | null
+          created_at?: string | null
+          custom_head_scripts?: string | null
+          default_og_image?: string | null
+          facebook_app_id?: string | null
+          facebook_pixel_id?: string | null
+          follow_links?: boolean | null
+          geo_coordinates?: string | null
+          geo_placename?: string | null
+          geo_region?: string | null
+          google_analytics_id?: string | null
+          google_search_console_verification?: string | null
+          google_tag_manager_id?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          og_locale?: string | null
+          og_site_name?: string | null
+          price_range?: string | null
+          robots_txt_custom?: string | null
+          site_title?: string | null
+          sitemap_auto_generate?: boolean | null
+          sitemap_change_freq?: string | null
+          sitemap_priority_home?: number | null
+          sitemap_priority_rooms?: number | null
+          structured_data_enabled?: boolean | null
+          twitter_handle?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allow_indexing?: boolean | null
+          bing_verification?: string | null
+          business_type?: string | null
+          canonical_url?: string | null
+          created_at?: string | null
+          custom_head_scripts?: string | null
+          default_og_image?: string | null
+          facebook_app_id?: string | null
+          facebook_pixel_id?: string | null
+          follow_links?: boolean | null
+          geo_coordinates?: string | null
+          geo_placename?: string | null
+          geo_region?: string | null
+          google_analytics_id?: string | null
+          google_search_console_verification?: string | null
+          google_tag_manager_id?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          og_locale?: string | null
+          og_site_name?: string | null
+          price_range?: string | null
+          robots_txt_custom?: string | null
+          site_title?: string | null
+          sitemap_auto_generate?: boolean | null
+          sitemap_change_freq?: string | null
+          sitemap_priority_home?: number | null
+          sitemap_priority_rooms?: number | null
+          structured_data_enabled?: boolean | null
+          twitter_handle?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
