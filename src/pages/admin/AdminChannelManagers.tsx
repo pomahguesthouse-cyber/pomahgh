@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAvailabilitySync } from "@/hooks/useAvailabilitySync";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
-import { RefreshCw, CheckCircle, XCircle, Clock, Loader2, AlertCircle } from "lucide-react";
+import { RefreshCw, CheckCircle, XCircle, Clock, Loader2, AlertCircle, Pencil } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { ChannelManagerForm } from "@/components/admin/ChannelManagerForm";
+import { DeleteChannelManagerDialog } from "@/components/admin/DeleteChannelManagerDialog";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -89,6 +91,18 @@ export default function AdminChannelManagers() {
                           {cm.last_sync_status}
                         </Badge>
                       )}
+                      <ChannelManagerForm 
+                        channelManager={cm}
+                        trigger={
+                          <Button variant="ghost" size="icon">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
+                      <DeleteChannelManagerDialog 
+                        channelManagerId={cm.id}
+                        channelManagerName={cm.name}
+                      />
                     </div>
                   </div>
                 ))}

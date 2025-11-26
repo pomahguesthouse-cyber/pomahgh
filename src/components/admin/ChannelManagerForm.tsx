@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Tables } from "@/integrations/supabase/types";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
+
+type ChannelManager = Tables<"channel_managers">;
 
 const channelManagerSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -49,9 +52,15 @@ const channelManagerSchema = z.object({
 
 type ChannelManagerFormData = z.infer<typeof channelManagerSchema>;
 
-export const ChannelManagerForm = () => {
+interface ChannelManagerFormProps {
+  channelManager?: ChannelManager | null;
+  trigger?: React.ReactNode;
+}
+
+export const ChannelManagerForm = ({ channelManager, trigger }: ChannelManagerFormProps) => {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const isEditMode = !!channelManager;
 
   const form = useForm<ChannelManagerFormData>({
     resolver: zodResolver(channelManagerSchema),
@@ -65,58 +74,101 @@ export const ChannelManagerForm = () => {
     },
   });
 
-  const createChannelManager = useMutation({
-    mutationFn: async (data: ChannelManagerFormData) => {
-      const { data: result, error } = await supabase
-        .from("channel_managers")
-        .insert([{
-          name: data.name,
-          type: data.type,
-          auth_type: data.auth_type || null,
-          api_endpoint: data.api_endpoint || null,
-          api_key_secret: data.api_key_secret || null,
-          webhook_url: data.webhook_url || null,
-          webhook_secret: data.webhook_secret || null,
-          is_active: data.is_active,
-          max_retries: data.max_retries,
-          retry_delay_seconds: data.retry_delay_seconds,
-        }])
-        .select()
-        .single();
+  // Reset form when channelManager changes or dialog opens
+  useEffect(() => {
+    if (open && channelManager) {
+      form.reset({
+        name: channelManager.name,
+        type: channelManager.type as "api" | "webhook",
+        auth_type: (channelManager.auth_type as "bearer" | "basic" | "api_key") || "bearer",
+        api_endpoint: channelManager.api_endpoint || "",
+        api_key_secret: channelManager.api_key_secret || "",
+        webhook_url: channelManager.webhook_url || "",
+        webhook_secret: channelManager.webhook_secret || "",
+        is_active: channelManager.is_active ?? true,
+        max_retries: channelManager.max_retries ?? 3,
+        retry_delay_seconds: channelManager.retry_delay_seconds ?? 60,
+      });
+    } else if (open && !channelManager) {
+      form.reset({
+        name: "",
+        type: "api",
+        auth_type: "bearer",
+        is_active: true,
+        max_retries: 3,
+        retry_delay_seconds: 60,
+      });
+    }
+  }, [open, channelManager, form]);
 
-      if (error) throw error;
-      return result;
+  const saveChannelManager = useMutation({
+    mutationFn: async (data: ChannelManagerFormData) => {
+      const payload = {
+        name: data.name,
+        type: data.type,
+        auth_type: data.auth_type || null,
+        api_endpoint: data.api_endpoint || null,
+        api_key_secret: data.api_key_secret || null,
+        webhook_url: data.webhook_url || null,
+        webhook_secret: data.webhook_secret || null,
+        is_active: data.is_active,
+        max_retries: data.max_retries,
+        retry_delay_seconds: data.retry_delay_seconds,
+      };
+
+      if (isEditMode && channelManager) {
+        const { data: result, error } = await supabase
+          .from("channel_managers")
+          .update(payload)
+          .eq("id", channelManager.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return result;
+      } else {
+        const { data: result, error } = await supabase
+          .from("channel_managers")
+          .insert([payload])
+          .select()
+          .single();
+
+        if (error) throw error;
+        return result;
+      }
     },
     onSuccess: () => {
-      toast.success("Channel manager created successfully");
+      toast.success(`Channel manager ${isEditMode ? 'updated' : 'created'} successfully`);
       queryClient.invalidateQueries({ queryKey: ["channel-managers"] });
       setOpen(false);
       form.reset();
     },
     onError: (error: Error) => {
-      toast.error("Failed to create channel manager", {
+      toast.error(`Failed to ${isEditMode ? 'update' : 'create'} channel manager`, {
         description: error.message,
       });
     },
   });
 
   const onSubmit = (data: ChannelManagerFormData) => {
-    createChannelManager.mutate(data);
+    saveChannelManager.mutate(data);
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Channel Manager
-        </Button>
+        {trigger || (
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Channel Manager
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Channel Manager</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit' : 'Add'} Channel Manager</DialogTitle>
           <DialogDescription>
-            Configure a new channel manager integration for availability sync
+            {isEditMode ? 'Update' : 'Configure a new'} channel manager integration for availability sync
           </DialogDescription>
         </DialogHeader>
 
@@ -339,8 +391,11 @@ export const ChannelManagerForm = () => {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={createChannelManager.isPending}>
-                {createChannelManager.isPending ? "Creating..." : "Create Channel Manager"}
+              <Button type="submit" disabled={saveChannelManager.isPending}>
+                {saveChannelManager.isPending 
+                  ? (isEditMode ? "Updating..." : "Creating...") 
+                  : (isEditMode ? "Update Channel Manager" : "Create Channel Manager")
+                }
               </Button>
             </div>
           </form>
