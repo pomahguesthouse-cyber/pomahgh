@@ -165,14 +165,30 @@ export const Rooms = () => {
                         )}
 
                         {/* Promo Badge */}
-                        {hasPromo && (
-                          <div className="absolute top-2 right-2 z-10">
-                            <Badge className="bg-red-500 text-white">
-                              <Tag className="w-3 h-3 mr-1" />
-                              Promo
-                            </Badge>
-                          </div>
-                        )}
+                            {hasPromo && (
+                              <div className="absolute top-2 right-2 z-10">
+                                <Badge className="bg-red-500 text-white">
+                                  <Tag className="w-3 h-3 mr-1" />
+                                  Promo
+                                </Badge>
+                              </div>
+                            )}
+
+                            {room.virtual_tour_url && (
+                              <div className="absolute top-2 left-2 z-10">
+                                <Badge 
+                                  className="bg-black/70 text-white cursor-pointer hover:bg-black/80 transition-colors"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleViewTour(room);
+                                  }}
+                                >
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  360°
+                                </Badge>
+                              </div>
+                            )}
                       </div>
 
                       <CardContent className="p-3 sm:p-4 md:p-6">
@@ -269,33 +285,6 @@ export const Rooms = () => {
                               ? "Tidak Tersedia" 
                               : "Book Now"}
                           </Button>
-
-                          {room.virtual_tour_url && (
-                            <>
-                              <Badge 
-                                variant="secondary" 
-                                className="text-xs flex items-center cursor-pointer hover:bg-secondary/80 transition-colors px-2"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleViewTour(room);
-                                }}
-                              >
-                                <Eye className="w-3 h-3 mr-1" />
-                                360°
-                              </Badge>
-                              <Button 
-                                variant="outline" 
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleViewTour(room);
-                                }}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
                         </div>
 
                         {room.room_count && room.room_count > 1}
