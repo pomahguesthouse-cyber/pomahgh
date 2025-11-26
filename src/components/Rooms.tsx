@@ -204,15 +204,13 @@ export const Rooms = () => {
                               
                               {checkIn && checkOut && !isCheckingAvailability && availability && (
                                 availability[room.id] > 0 ? (
-                                  <Badge variant="success" className="text-xs">
-                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                  <span className="text-xs font-bold" style={{ color: '#1f8893' }}>
                                     {availability[room.id]} kamar tersisa
-                                  </Badge>
+                                  </span>
                                 ) : (
-                                  <Badge variant="destructive" className="text-xs">
-                                    <XCircle className="w-3 h-3 mr-1" />
+                                  <span className="text-xs font-medium text-red-500">
                                     Tidak Tersedia
-                                  </Badge>
+                                  </span>
                                 )
                               )}
                             </div>
