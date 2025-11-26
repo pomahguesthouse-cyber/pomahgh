@@ -12,7 +12,7 @@ import type { Room } from "@/hooks/useRooms";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import deluxeRoom from "@/assets/room-deluxe.jpg";
 import villaRoom from "@/assets/room-villa.jpg";
-import { Eye, Tag, Users } from "lucide-react";
+import { Eye, Tag, Users, Ruler } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
 import type { CarouselApi } from "@/components/ui/carousel";
 
@@ -174,6 +174,13 @@ export const Rooms = () => {
                               <Users className="h-3 w-3" />
                               <span>{room.max_guests} Tamu</span>
                             </div>
+
+                            {room.size_sqm && (
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs mb-1">
+                                <Ruler className="h-3 w-3" />
+                                <span>{room.size_sqm} m²</span>
+                              </div>
+                            )}
 
                             {room.virtual_tour_url && (
                               <Badge variant="secondary" className="mb-2 text-xs">
