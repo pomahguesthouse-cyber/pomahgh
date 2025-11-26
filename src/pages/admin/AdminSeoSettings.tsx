@@ -69,7 +69,7 @@ const AdminSeoSettings = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Tabs defaultValue="general" className="space-y-4">
-              <TabsList className="flex w-full overflow-x-auto scrollbar-hide">
+              <TabsList className="flex w-full overflow-x-auto scrollbar-hide sticky top-0 z-10 bg-background/95 backdrop-blur-sm shadow-sm">
                 <TabsTrigger value="general" className="flex-shrink-0 px-4">General</TabsTrigger>
                 <TabsTrigger value="social" className="flex-shrink-0 px-4">Social</TabsTrigger>
                 <TabsTrigger value="local" className="flex-shrink-0 px-4">Local</TabsTrigger>
