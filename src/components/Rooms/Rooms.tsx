@@ -1,0 +1,98 @@
+import { useState, useEffect } from "react";
+import { useRooms } from "@/hooks/useRooms";
+import { useRoomFeatures } from "@/hooks/useRoomFeatures";
+import { useSearchDates } from "@/contexts/SearchDatesContext";
+import { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
+import { BookingDialog } from "../BookingDialog";
+import { VirtualTourViewer } from "../VirtualTourViewer";
+import { RoomsHeader } from "./RoomsHeader";
+import { RoomCarousel } from "./RoomCarousel";
+import { RoomDots } from "./RoomDots";
+import { calculateTotalNights } from "./utils/formatDateRange";
+import type { Room } from "@/hooks/useRooms";
+import type { CarouselApi } from "@/components/ui/carousel";
+
+export const Rooms = () => {
+  const { data: rooms, isLoading } = useRooms();
+  const { data: roomFeatures } = useRoomFeatures();
+  const { checkIn, checkOut } = useSearchDates();
+  const { data: availability, isLoading: isCheckingAvailability } = useRoomAvailabilityCheck(checkIn, checkOut);
+  
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourRoom, setTourRoom] = useState<Room | null>(null);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  
+  const totalNights = calculateTotalNights(checkIn, checkOut);
+
+  useEffect(() => {
+    if (!api) return;
+    setCurrent(api.selectedScrollSnap());
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
+
+  const handleBookRoom = (room: Room) => {
+    setSelectedRoom(room);
+    setBookingOpen(true);
+  };
+
+  const handleViewTour = (room: Room) => {
+    setTourRoom(room);
+    setTourOpen(true);
+  };
+
+  if (isLoading) {
+    return (
+      <section id="rooms" className="py-20 px-4 bg-secondary/30">
+        <div className="container mx-auto text-center">
+          <p className="text-muted-foreground">Loading rooms...</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <>
+      <section id="rooms" className="py-20 px-4 bg-secondary/30">
+        <div className="container mx-auto">
+          <RoomsHeader
+            checkIn={checkIn}
+            checkOut={checkOut}
+            totalNights={totalNights}
+          />
+
+          <RoomCarousel
+            rooms={rooms}
+            availability={availability}
+            isCheckingAvailability={isCheckingAvailability}
+            roomFeatures={roomFeatures}
+            onBookRoom={handleBookRoom}
+            onViewTour={handleViewTour}
+            setApi={setApi}
+            checkIn={checkIn}
+            checkOut={checkOut}
+          />
+
+          <RoomDots
+            total={rooms?.length || 0}
+            current={current}
+            onDotClick={(index) => api?.scrollTo(index)}
+          />
+        </div>
+      </section>
+
+      <BookingDialog room={selectedRoom} open={bookingOpen} onOpenChange={setBookingOpen} />
+
+      <VirtualTourViewer
+        tourUrl={tourRoom?.virtual_tour_url || null}
+        roomName={tourRoom?.name || ""}
+        open={tourOpen}
+        onOpenChange={setTourOpen}
+      />
+    </>
+  );
+};
