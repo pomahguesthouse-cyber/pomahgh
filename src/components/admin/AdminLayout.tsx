@@ -22,6 +22,7 @@ const getPageTitle = (pathname: string): string => {
     "/admin/channel-managers": "Channel Managers",
     "/admin/room-features": "Room Features",
     "/admin/invoice-template": "Invoice Template",
+    "/admin/seo-settings": "SEO Settings",
   };
   return titles[pathname] || "Admin Panel";
 };

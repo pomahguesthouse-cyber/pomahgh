@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
+import { GlobalSEO } from "@/components/GlobalSEO";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Bookings from "./pages/Bookings";
@@ -21,6 +22,7 @@ import AdminChannelManagers from "./pages/admin/AdminChannelManagers";
 import AdminInvoiceTemplate from "./pages/admin/AdminInvoiceTemplate";
 import AdminBankAccounts from "./pages/admin/AdminBankAccounts";
 import AdminRoomFeatures from "./pages/admin/AdminRoomFeatures";
+import AdminSeoSettings from "./pages/admin/AdminSeoSettings";
 import RoomDetail from "./pages/RoomDetail";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import NotFound from "./pages/NotFound";
@@ -31,6 +33,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
       <TooltipProvider>
+        <GlobalSEO />
         <Toaster />
         <Sonner />
         <SearchDatesProvider>
@@ -53,6 +56,7 @@ const App = () => (
           <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/invoice-template" element={<AdminLayout><AdminInvoiceTemplate /></AdminLayout>} />
+          <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
