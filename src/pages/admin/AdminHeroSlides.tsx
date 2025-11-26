@@ -43,20 +43,29 @@ const AdminHeroSlides = () => {
     font_family: "Inter",
     font_size: "text-5xl",
     font_weight: "font-bold",
-    text_color: "text-card",
+    text_color: "#FFFFFF",
     text_align: "center",
+    subtitle_font_family: "Inter",
+    subtitle_font_size: "text-xl",
+    subtitle_font_weight: "font-normal",
+    subtitle_text_color: "#FFFFFF",
     display_order: 0,
     is_active: true,
     duration: 5000,
     transition_effect: "fade",
   });
 
-  const fontFamilies = ["Inter", "Poppins", "Playfair Display", "Montserrat", "Roboto"];
-  const fontSizes = ["text-3xl", "text-4xl", "text-5xl", "text-6xl", "text-7xl", "text-8xl"];
-  const fontWeights = ["font-normal", "font-medium", "font-semibold", "font-bold", "font-extrabold"];
-  const textColors = ["text-card", "text-primary", "text-secondary", "text-accent", "text-white", "text-black"];
+  const fontFamilies = [
+    "Inter", "Poppins", "Montserrat", "Roboto", "Lato", 
+    "Open Sans", "Raleway", "Nunito", "Quicksand", 
+    "Source Sans Pro", "Josefin Sans", "Playfair Display", 
+    "Merriweather", "Oswald", "Dancing Script", "Pacifico", "Lobster"
+  ];
+  const titleFontSizes = ["text-3xl", "text-4xl", "text-5xl", "text-6xl", "text-7xl", "text-8xl", "text-9xl"];
+  const subtitleFontSizes = ["text-sm", "text-base", "text-lg", "text-xl", "text-2xl", "text-3xl", "text-4xl"];
+  const fontWeights = ["font-light", "font-normal", "font-medium", "font-semibold", "font-bold", "font-extrabold"];
   const textAligns = ["left", "center", "right"];
-  const transitionEffects = ["fade", "slide", "zoom"];
+  const transitionEffects = ["fade", "slide", "zoom", "blur"];
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,6 +142,10 @@ const AdminHeroSlides = () => {
       font_weight: slide.font_weight,
       text_color: slide.text_color,
       text_align: slide.text_align,
+      subtitle_font_family: slide.subtitle_font_family || slide.font_family,
+      subtitle_font_size: slide.subtitle_font_size || "text-xl",
+      subtitle_font_weight: slide.subtitle_font_weight || "font-normal",
+      subtitle_text_color: slide.subtitle_text_color || slide.text_color,
       display_order: slide.display_order,
       is_active: slide.is_active,
       duration: slide.duration,
@@ -156,8 +169,12 @@ const AdminHeroSlides = () => {
       font_family: "Inter",
       font_size: "text-5xl",
       font_weight: "font-bold",
-      text_color: "text-card",
+      text_color: "#FFFFFF",
       text_align: "center",
+      subtitle_font_family: "Inter",
+      subtitle_font_size: "text-xl",
+      subtitle_font_weight: "font-normal",
+      subtitle_text_color: "#FFFFFF",
       display_order: 0,
       is_active: true,
       duration: 5000,
@@ -181,7 +198,7 @@ const AdminHeroSlides = () => {
           <CardTitle>{editingId ? "Edit Slide" : "Tambah Slide Baru"}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label>Tipe Media</Label>
               <RadioGroup 
@@ -273,104 +290,191 @@ const AdminHeroSlides = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="font_family">Font Family</Label>
-                <Select
-                  value={formData.font_family}
-                  onValueChange={(value) => setFormData({ ...formData, font_family: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fontFamilies.map((font) => (
-                      <SelectItem key={font} value={font}>
-                        {font}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Title Styling Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="text-lg font-semibold">📝 Styling Teks Utama (Title)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Font Family</Label>
+                  <Select
+                    value={formData.font_family}
+                    onValueChange={(value) => setFormData({ ...formData, font_family: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fontFamilies.map((font) => (
+                        <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                          {font}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="font_size">Ukuran Font</Label>
-                <Select
-                  value={formData.font_size}
-                  onValueChange={(value) => setFormData({ ...formData, font_size: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fontSizes.map((size) => (
-                      <SelectItem key={size} value={size}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div>
+                  <Label>Font Size</Label>
+                  <Select
+                    value={formData.font_size}
+                    onValueChange={(value) => setFormData({ ...formData, font_size: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {titleFontSizes.map((size) => (
+                        <SelectItem key={size} value={size}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="font_weight">Font Weight</Label>
-                <Select
-                  value={formData.font_weight}
-                  onValueChange={(value) => setFormData({ ...formData, font_weight: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fontWeights.map((weight) => (
-                      <SelectItem key={weight} value={weight}>
-                        {weight}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Label>Font Weight</Label>
+                  <Select
+                    value={formData.font_weight}
+                    onValueChange={(value) => setFormData({ ...formData, font_weight: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fontWeights.map((weight) => (
+                        <SelectItem key={weight} value={weight}>
+                          {weight}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Text Color (Hex)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={formData.text_color}
+                      onChange={(e) => setFormData({ ...formData, text_color: e.target.value })}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={formData.text_color}
+                      onChange={(e) => setFormData({ ...formData, text_color: e.target.value })}
+                      placeholder="#FFFFFF"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="text_color">Warna Teks</Label>
-                <Select
-                  value={formData.text_color}
-                  onValueChange={(value) => setFormData({ ...formData, text_color: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {textColors.map((color) => (
-                      <SelectItem key={color} value={color}>
-                        {color}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Subtitle Styling Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="text-lg font-semibold">📝 Styling Subtitle</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Font Family</Label>
+                  <Select
+                    value={formData.subtitle_font_family}
+                    onValueChange={(value) => setFormData({ ...formData, subtitle_font_family: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fontFamilies.map((font) => (
+                        <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                          {font}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="text_align">Alignment</Label>
-                <Select
-                  value={formData.text_align}
-                  onValueChange={(value) => setFormData({ ...formData, text_align: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {textAligns.map((align) => (
-                      <SelectItem key={align} value={align}>
-                        {align}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div>
+                  <Label>Font Size</Label>
+                  <Select
+                    value={formData.subtitle_font_size}
+                    onValueChange={(value) => setFormData({ ...formData, subtitle_font_size: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subtitleFontSizes.map((size) => (
+                        <SelectItem key={size} value={size}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
+                <div>
+                  <Label>Font Weight</Label>
+                  <Select
+                    value={formData.subtitle_font_weight}
+                    onValueChange={(value) => setFormData({ ...formData, subtitle_font_weight: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fontWeights.map((weight) => (
+                        <SelectItem key={weight} value={weight}>
+                          {weight}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Text Color (Hex)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={formData.subtitle_text_color}
+                      onChange={(e) => setFormData({ ...formData, subtitle_text_color: e.target.value })}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={formData.subtitle_text_color}
+                      onChange={(e) => setFormData({ ...formData, subtitle_text_color: e.target.value })}
+                      placeholder="#FFFFFF"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Text Align */}
+            <div>
+              <Label>Text Align</Label>
+              <Select
+                value={formData.text_align}
+                onValueChange={(value) => setFormData({ ...formData, text_align: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {textAligns.map((align) => (
+                    <SelectItem key={align} value={align}>
+                      {align}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="display_order">Urutan</Label>
                 <Input
@@ -380,9 +484,7 @@ const AdminHeroSlides = () => {
                   onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="duration">Durasi Tampilan (ms)</Label>
                 <Input
@@ -393,26 +495,60 @@ const AdminHeroSlides = () => {
                   placeholder="5000"
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="transition_effect">Efek Transisi</Label>
-                <Select
-                  value={formData.transition_effect}
-                  onValueChange={(value) => setFormData({ ...formData, transition_effect: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {transitionEffects.map((effect) => (
-                      <SelectItem key={effect} value={effect}>
-                        {effect}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="transition_effect">Efek Transisi</Label>
+              <Select
+                value={formData.transition_effect}
+                onValueChange={(value) => setFormData({ ...formData, transition_effect: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {transitionEffects.map((effect) => (
+                    <SelectItem key={effect} value={effect}>
+                      {effect}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Live Preview */}
+            {formData.overlay_text && (
+              <div className="mt-6 p-6 rounded-lg bg-muted/50 border">
+                <Label className="mb-3 block">👁️ Live Preview</Label>
+                <div 
+                  className="relative min-h-[200px] rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20"
+                  style={{ textAlign: formData.text_align as any }}
+                >
+                  <div className="space-y-2 p-4">
+                    <div
+                      className={`${formData.font_size} ${formData.font_weight}`}
+                      style={{ 
+                        fontFamily: formData.font_family,
+                        color: formData.text_color
+                      }}
+                    >
+                      {formData.overlay_text}
+                    </div>
+                    {formData.overlay_subtext && (
+                      <div
+                        className={`${formData.subtitle_font_size} ${formData.subtitle_font_weight}`}
+                        style={{ 
+                          fontFamily: formData.subtitle_font_family,
+                          color: formData.subtitle_text_color
+                        }}
+                      >
+                        {formData.overlay_subtext}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center space-x-2">
               <Switch
