@@ -8,6 +8,7 @@ import { RefreshCw, CheckCircle, XCircle, Clock, Loader2, AlertCircle, Pencil } 
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { ChannelManagerForm } from "@/components/admin/ChannelManagerForm";
 import { DeleteChannelManagerDialog } from "@/components/admin/DeleteChannelManagerDialog";
+import { TestChannelManagerButton } from "@/components/admin/TestChannelManagerButton";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -91,6 +92,7 @@ export default function AdminChannelManagers() {
                           {cm.last_sync_status}
                         </Badge>
                       )}
+                      <TestChannelManagerButton channelManager={cm} />
                       <ChannelManagerForm 
                         channelManager={cm}
                         trigger={

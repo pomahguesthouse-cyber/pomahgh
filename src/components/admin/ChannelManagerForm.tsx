@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tables } from "@/integrations/supabase/types";
+import { useTestChannelManager } from "@/hooks/useTestChannelManager";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Wifi } from "lucide-react";
 
 type ChannelManager = Tables<"channel_managers">;
 
@@ -61,6 +62,7 @@ export const ChannelManagerForm = ({ channelManager, trigger }: ChannelManagerFo
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const isEditMode = !!channelManager;
+  const testConnection = useTestChannelManager();
 
   const form = useForm<ChannelManagerFormData>({
     resolver: zodResolver(channelManagerSchema),
@@ -154,6 +156,21 @@ export const ChannelManagerForm = ({ channelManager, trigger }: ChannelManagerFo
     saveChannelManager.mutate(data);
   };
 
+  const handleTestConnection = () => {
+    const values = form.getValues();
+    
+    if (!values.api_endpoint) {
+      toast.error("Please enter an API endpoint first");
+      return;
+    }
+
+    testConnection.mutate({
+      api_endpoint: values.api_endpoint,
+      auth_type: values.auth_type,
+      api_key_secret: values.api_key_secret,
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -221,12 +238,24 @@ export const ChannelManagerForm = ({ channelManager, trigger }: ChannelManagerFo
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>API Endpoint</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://api.channelmanager.com/availability"
-                          {...field}
-                        />
-                      </FormControl>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input
+                            placeholder="https://api.channelmanager.com/availability"
+                            {...field}
+                          />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={handleTestConnection}
+                          disabled={testConnection.isPending || !field.value}
+                          title="Test Connection"
+                        >
+                          <Wifi className={`h-4 w-4 ${testConnection.isPending ? 'animate-pulse' : ''}`} />
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
