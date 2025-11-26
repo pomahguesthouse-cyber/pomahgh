@@ -10,6 +10,7 @@ interface AdminLayoutProps {
 
 const getPageTitle = (pathname: string): string => {
   const titles: Record<string, string> = {
+    "/admin/dashboard": "Dashboard",
     "/admin/bookings": "Booking Management",
     "/admin/rooms": "Room Management",
     "/admin/settings": "Hotel Settings",
