@@ -7,10 +7,21 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAdminBuilding3DSettings, useUpdateBuilding3DSettings, upload3DModel } from "@/hooks/useBuilding3DSettings";
 import { toast } from "sonner";
-import { Loader2, Upload, Eye } from "lucide-react";
+import { Loader2, Eye, RotateCcw, Move, RotateCw, Maximize2, MousePointer2 } from "lucide-react";
 import { Building3DViewer } from "@/components/Building3DViewer";
+
+const DEFAULT_TRANSFORM = {
+  model_position_x: 0,
+  model_position_y: 0,
+  model_position_z: 0,
+  model_rotation_x: 0,
+  model_rotation_y: 0,
+  model_rotation_z: 0,
+  model_scale: 1.5,
+};
 
 const AdminBuilding3D = () => {
   const { data: settings, isLoading } = useAdminBuilding3DSettings();
@@ -18,6 +29,8 @@ const AdminBuilding3D = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
 
   const [formData, setFormData] = useState({
     title: settings?.title || "Virtual Tour 3D",
@@ -78,6 +91,14 @@ const AdminBuilding3D = () => {
     }
   };
 
+  const handleResetTransform = () => {
+    setFormData((prev) => ({
+      ...prev,
+      ...DEFAULT_TRANSFORM,
+    }));
+    toast.success("Transform direset ke nilai default");
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateSettings.mutate(formData);
@@ -103,10 +124,63 @@ const AdminBuilding3D = () => {
         {showPreview && (
           <Card>
             <CardHeader>
-              <CardTitle>Live Preview</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle>Live Preview</CardTitle>
+                <div className="flex items-center gap-2">
+                  {/* Transform Mode Selector */}
+                  <ToggleGroup type="single" value={transformMode} onValueChange={(value) => value && setTransformMode(value as any)}>
+                    <ToggleGroupItem value="translate" title="Geser Posisi">
+                      <Move className="h-4 w-4" />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="rotate" title="Putar">
+                      <RotateCw className="h-4 w-4" />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="scale" title="Perbesar/Perkecil">
+                      <Maximize2 className="h-4 w-4" />
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                  
+                  {/* Edit Mode Toggle */}
+                  <Button 
+                    variant={editMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setEditMode(!editMode)}
+                  >
+                    <MousePointer2 className="h-4 w-4 mr-2" />
+                    {editMode ? "Edit Aktif" : "Edit Mode"}
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <Building3DViewer hideHeader />
+            <CardContent className="space-y-4">
+              <Building3DViewer 
+                hideHeader
+                editMode={editMode}
+                transformMode={transformMode}
+                overrideTransform={{
+                  position: [formData.model_position_x, formData.model_position_y, formData.model_position_z],
+                  rotation: [formData.model_rotation_x, formData.model_rotation_y, formData.model_rotation_z],
+                  scale: formData.model_scale,
+                }}
+                onTransformChange={(transform) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    model_position_x: transform.position[0],
+                    model_position_y: transform.position[1],
+                    model_position_z: transform.position[2],
+                    model_rotation_x: transform.rotation[0],
+                    model_rotation_y: transform.rotation[1],
+                    model_rotation_z: transform.rotation[2],
+                    model_scale: transform.scale,
+                  }));
+                }}
+              />
+              
+              {editMode && (
+                <p className="text-sm text-muted-foreground text-center">
+                  💡 Klik model lalu drag untuk mengubah. Gunakan tombol di atas untuk switch antara posisi/rotasi/skala.
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
@@ -338,8 +412,20 @@ const AdminBuilding3D = () => {
           {/* Model Transform Settings */}
           <Card>
             <CardHeader>
-              <CardTitle>Pengaturan Transform Model</CardTitle>
-              <CardDescription>Atur posisi, rotasi, dan skala awal model 3D</CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Pengaturan Transform Model</CardTitle>
+                  <CardDescription>Atur posisi, rotasi, dan skala awal model 3D</CardDescription>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleResetTransform}
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reset Transform
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Model Position */}
