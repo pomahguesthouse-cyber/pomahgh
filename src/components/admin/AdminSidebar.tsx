@@ -18,6 +18,7 @@ const adminItems = [
   { title: "Bookings", url: "/admin/bookings", icon: Calendar },
   { title: "Rooms", url: "/admin/rooms", icon: Building2 },
   { title: "Hero Slides", url: "/admin/hero-slides", icon: ImageIcon },
+  { title: "Facility Hero", url: "/admin/facility-hero-slides", icon: ImageIcon },
   { title: "Facilities", url: "/admin/facilities", icon: Boxes },
   { title: "Room Features", url: "/admin/room-features", icon: Tags },
   { title: "Lokasi Terdekat", url: "/admin/nearby-locations", icon: MapPin },
