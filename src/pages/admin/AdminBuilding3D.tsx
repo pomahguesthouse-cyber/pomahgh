@@ -90,11 +90,7 @@ const AdminBuilding3D = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">3D Building Viewer</h1>
-            <p className="text-muted-foreground">Kelola tampilan 3D bangunan hotel</p>
-          </div>
+        <div className="flex justify-end">
           <Button onClick={() => setShowPreview(!showPreview)} variant="outline">
             <Eye className="h-4 w-4 mr-2" />
             {showPreview ? "Sembunyikan" : "Preview"}
