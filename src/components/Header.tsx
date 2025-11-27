@@ -36,12 +36,14 @@ className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
           ? "backdrop-blur-md bg-black/40 shadow-md py-2"
           : "bg-transparent py-4"
       }`}
-> <div className="container mx-auto flex items-center justify-between px-4">
-{/* Logo */} <Link to="/" className="font-bold text-lg">
-{settings?.hotel_name ?? "Pomah Guesthouse"} </Link>
+    >
+      <div className="container mx-auto flex items-center justify-between px-4">
+        {/* Logo */}
+        <Link to="/" className="font-bold text-lg">
+          {settings?.hotel_name ?? "Pomah Guesthouse"}
+        </Link>
 
-```
-    {/* Desktop Menu */}
+        {/* Desktop Menu */}
     <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
       <Link to="/" className="hover:text-primary transition-colors">
         Home
@@ -184,7 +186,5 @@ className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
     </nav>
   </div>
 </header>
-```
-
-);
+  );
 }
