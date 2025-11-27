@@ -33,10 +33,23 @@ export const useRoomAvailability = (roomId?: string) => {
   });
 
   const addUnavailableDates = useMutation({
-    mutationFn: async (dates: { room_id: string; unavailable_date: string; reason?: string }[]) => {
+    mutationFn: async (dates: { room_id: string; unavailable_date: string; reason?: string; created_by?: string }[]) => {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("User must be authenticated to block dates");
+      }
+
+      // Add created_by to all dates
+      const datesWithUser = dates.map(date => ({
+        ...date,
+        created_by: date.created_by || user.id
+      }));
+
       const { data, error } = await supabase
         .from("room_unavailable_dates")
-        .upsert(dates, {
+        .upsert(datesWithUser, {
           onConflict: 'room_id,unavailable_date',
           ignoreDuplicates: false
         })
