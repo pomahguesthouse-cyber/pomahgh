@@ -107,6 +107,12 @@ export const upload3DModel = async (
   const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
   const filePath = `${fileName}`;
 
+  // Get current user's session token
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error("Anda harus login sebagai admin untuk upload");
+  }
+
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
 
@@ -134,12 +140,11 @@ export const upload3DModel = async (
 
     // Get Supabase config
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
     // Construct Supabase storage upload URL
     const uploadUrl = `${supabaseUrl}/storage/v1/object/3d-models/${filePath}`;
     xhr.open("POST", uploadUrl);
-    xhr.setRequestHeader("Authorization", `Bearer ${supabaseKey}`);
+    xhr.setRequestHeader("Authorization", `Bearer ${session.access_token}`);
     xhr.setRequestHeader("x-upsert", "false");
     xhr.send(file);
   });
