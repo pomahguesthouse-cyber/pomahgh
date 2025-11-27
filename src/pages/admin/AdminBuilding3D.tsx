@@ -103,7 +103,7 @@ const AdminBuilding3D = () => {
               <CardTitle>Live Preview</CardTitle>
             </CardHeader>
             <CardContent>
-              <Building3DViewer />
+              <Building3DViewer hideHeader />
             </CardContent>
           </Card>
         )}
