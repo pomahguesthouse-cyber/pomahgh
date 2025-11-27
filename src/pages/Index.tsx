@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { Welcome } from "@/components/Welcome";
+import { Building3DViewer } from "@/components/Building3DViewer";
 import { Rooms } from "@/components/Rooms";
 import { Amenities } from "@/components/Amenities";
 import { Location } from "@/components/Location";
@@ -15,6 +16,7 @@ const Index = () => {
       <main>
         <Hero />
         <Welcome />
+        <Building3DViewer />
         <Rooms />
         <Amenities />
         <Location />
