@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -79,17 +78,14 @@ const AdminBuilding3D = () => {
 
   if (isLoading) {
     return (
-      <AdminLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </AdminLayout>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex justify-end">
           <Button onClick={() => setShowPreview(!showPreview)} variant="outline">
             <Eye className="h-4 w-4 mr-2" />
@@ -363,8 +359,7 @@ const AdminBuilding3D = () => {
             Simpan Pengaturan
           </Button>
         </form>
-      </div>
-    </AdminLayout>
+    </div>
   );
 };
 
