@@ -15,7 +15,6 @@ import AdminRooms from "./pages/admin/AdminRooms";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminHeroSlides from "./pages/admin/AdminHeroSlides";
 import AdminFacilityHeroSlides from "./pages/admin/AdminFacilityHeroSlides";
-import AdminBuilding3D from "./pages/admin/AdminBuilding3D";
 import AdminFacilities from "./pages/admin/AdminFacilities";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNearbyLocations from "./pages/admin/AdminNearbyLocations";
@@ -51,7 +50,6 @@ const App = () => (
           <Route path="/admin/bookings" element={<AdminLayout><AdminBookings /></AdminLayout>} />
           <Route path="/admin/hero-slides" element={<AdminLayout><AdminHeroSlides /></AdminLayout>} />
           <Route path="/admin/facility-hero-slides" element={<AdminLayout><AdminFacilityHeroSlides /></AdminLayout>} />
-          <Route path="/admin/building-3d" element={<AdminLayout><AdminBuilding3D /></AdminLayout>} />
             <Route path="/admin/facilities" element={<AdminLayout><AdminFacilities /></AdminLayout>} />
             <Route path="/admin/room-features" element={<AdminLayout><AdminRoomFeatures /></AdminLayout>} />
             <Route path="/admin/nearby-locations" element={<AdminLayout><AdminNearbyLocations /></AdminLayout>} />

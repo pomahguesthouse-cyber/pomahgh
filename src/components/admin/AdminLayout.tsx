@@ -23,8 +23,6 @@ const getPageTitle = (pathname: string): string => {
     "/admin/room-features": "Room Features",
     "/admin/invoice-template": "Invoice Template",
     "/admin/seo-settings": "SEO Settings",
-    "/admin/building-3d": "3D Building Viewer",
-    "/admin/facility-hero-slides": "Facility Hero Slides",
   };
   return titles[pathname] || "Admin Panel";
 };

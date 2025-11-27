@@ -1,4 +1,4 @@
-import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, FileText, Tags, RefreshCw, LayoutDashboard, Search, Box } from "lucide-react";
+import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, FileText, Tags, RefreshCw, LayoutDashboard, Search } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -19,7 +19,6 @@ const adminItems = [
   { title: "Rooms", url: "/admin/rooms", icon: Building2 },
   { title: "Hero Slides", url: "/admin/hero-slides", icon: ImageIcon },
   { title: "Facility Hero", url: "/admin/facility-hero-slides", icon: ImageIcon },
-  { title: "3D Building", url: "/admin/building-3d", icon: Box },
   { title: "Facilities", url: "/admin/facilities", icon: Boxes },
   { title: "Room Features", url: "/admin/room-features", icon: Tags },
   { title: "Lokasi Terdekat", url: "/admin/nearby-locations", icon: MapPin },
