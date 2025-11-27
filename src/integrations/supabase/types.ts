@@ -601,11 +601,6 @@ export type Database = {
           email_reservations: string | null
           facebook_url: string | null
           favicon_url: string | null
-          header_bg_color: string | null
-          header_bg_opacity: number | null
-          header_blur: number | null
-          header_show_logo: boolean | null
-          header_text_color: string | null
           hotel_name: string
           id: string
           instagram_url: string | null
@@ -652,11 +647,6 @@ export type Database = {
           email_reservations?: string | null
           facebook_url?: string | null
           favicon_url?: string | null
-          header_bg_color?: string | null
-          header_bg_opacity?: number | null
-          header_blur?: number | null
-          header_show_logo?: boolean | null
-          header_text_color?: string | null
           hotel_name?: string
           id?: string
           instagram_url?: string | null
@@ -703,11 +693,6 @@ export type Database = {
           email_reservations?: string | null
           facebook_url?: string | null
           favicon_url?: string | null
-          header_bg_color?: string | null
-          header_bg_opacity?: number | null
-          header_blur?: number | null
-          header_show_logo?: boolean | null
-          header_text_color?: string | null
           hotel_name?: string
           id?: string
           instagram_url?: string | null

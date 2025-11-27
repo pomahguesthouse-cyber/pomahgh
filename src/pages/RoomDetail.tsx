@@ -86,7 +86,7 @@ const RoomDetail = () => {
         roomSlug={roomSlug || ""}
       />
 
-      <Header />
+      <Header variant="solid" />
 
       <main className="min-h-screen bg-background pt-28">
         <div className="container mx-auto px-4 py-8">

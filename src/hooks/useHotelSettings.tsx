@@ -46,11 +46,6 @@ export interface HotelSettings {
   bank_name?: string;
   account_number?: string;
   account_holder_name?: string;
-  header_bg_color?: string;
-  header_bg_opacity?: number;
-  header_blur?: number;
-  header_show_logo?: boolean;
-  header_text_color?: string;
 }
 
 export const useHotelSettings = () => {
