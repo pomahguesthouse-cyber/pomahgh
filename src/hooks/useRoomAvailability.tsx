@@ -36,7 +36,10 @@ export const useRoomAvailability = (roomId?: string) => {
     mutationFn: async (dates: { room_id: string; unavailable_date: string; reason?: string }[]) => {
       const { data, error } = await supabase
         .from("room_unavailable_dates")
-        .insert(dates)
+        .upsert(dates, {
+          onConflict: 'room_id,unavailable_date',
+          ignoreDuplicates: false
+        })
         .select();
 
       if (error) throw error;
