@@ -1,12 +1,25 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Environment, Html } from "@react-three/drei";
-import { Suspense, useState, useEffect, Component, ReactNode } from "react";
+import { OrbitControls, useGLTF, Environment, Html, TransformControls } from "@react-three/drei";
+import { Suspense, useState, useEffect, Component, ReactNode, useRef } from "react";
 import { useBuilding3DSettings } from "@/hooks/useBuilding3DSettings";
 import { Skeleton } from "./ui/skeleton";
 import { Loader2 } from "lucide-react";
+import * as THREE from "three";
 
 interface Building3DViewerProps {
   hideHeader?: boolean;
+  editMode?: boolean;
+  transformMode?: "translate" | "rotate" | "scale";
+  onTransformChange?: (transform: {
+    position: [number, number, number];
+    rotation: [number, number, number];
+    scale: number;
+  }) => void;
+  overrideTransform?: {
+    position: [number, number, number];
+    rotation: [number, number, number];
+    scale: number;
+  };
 }
 
 // Error Boundary for 3D model loading
@@ -40,16 +53,30 @@ const HotelModel = ({
   url, 
   position, 
   rotation, 
-  scale 
+  scale,
+  modelRef
 }: { 
   url: string;
   position: [number, number, number];
   rotation: [number, number, number];
   scale: number;
+  modelRef?: React.RefObject<THREE.Group>;
 }) => {
   const { scene } = useGLTF(url);
+  
+  useEffect(() => {
+    if (modelRef?.current) {
+      modelRef.current.position.set(...position);
+      modelRef.current.rotation.set(
+        ...rotation.map(deg => (deg * Math.PI) / 180) as [number, number, number]
+      );
+      modelRef.current.scale.set(scale, scale, scale);
+    }
+  }, [position, rotation, scale, modelRef]);
+  
   return (
     <primitive 
+      ref={modelRef}
       object={scene} 
       position={position}
       rotation={rotation.map(deg => (deg * Math.PI) / 180) as [number, number, number]}
@@ -61,14 +88,27 @@ const HotelModel = ({
 const PlaceholderBuilding = ({ 
   position, 
   rotation, 
-  scale 
+  scale,
+  modelRef
 }: { 
   position: [number, number, number];
   rotation: [number, number, number];
   scale: number;
+  modelRef?: React.RefObject<THREE.Group>;
 }) => {
+  useEffect(() => {
+    if (modelRef?.current) {
+      modelRef.current.position.set(...position);
+      modelRef.current.rotation.set(
+        ...rotation.map(deg => (deg * Math.PI) / 180) as [number, number, number]
+      );
+      modelRef.current.scale.set(scale, scale, scale);
+    }
+  }, [position, rotation, scale, modelRef]);
+  
   return (
     <group 
+      ref={modelRef}
       position={position}
       rotation={rotation.map(deg => (deg * Math.PI) / 180) as [number, number, number]}
       scale={scale}
@@ -135,9 +175,36 @@ const LoadingFallback = () => {
   );
 };
 
-export const Building3DViewer = ({ hideHeader = false }: Building3DViewerProps = {}) => {
+export const Building3DViewer = ({ 
+  hideHeader = false,
+  editMode = false,
+  transformMode = "translate",
+  onTransformChange,
+  overrideTransform
+}: Building3DViewerProps = {}) => {
   const { data: settings, isLoading } = useBuilding3DSettings();
   const [modelError, setModelError] = useState(false);
+  const modelRef = useRef<THREE.Group>(null);
+  const orbitControlsRef = useRef<any>(null);
+
+  const handleTransformUpdate = () => {
+    if (modelRef.current && onTransformChange) {
+      const { position, rotation, scale } = modelRef.current;
+      onTransformChange({
+        position: [
+          Math.round(position.x * 100) / 100,
+          Math.round(position.y * 100) / 100,
+          Math.round(position.z * 100) / 100
+        ],
+        rotation: [
+          Math.round((rotation.x * 180) / Math.PI * 10) / 10,
+          Math.round((rotation.y * 180) / Math.PI * 10) / 10,
+          Math.round((rotation.z * 180) / Math.PI * 10) / 10
+        ],
+        scale: Math.round(scale.x * 100) / 100,
+      });
+    }
+  };
 
   // Reset error state when model URL changes
   useEffect(() => {
@@ -206,39 +273,53 @@ export const Building3DViewer = ({ hideHeader = false }: Building3DViewerProps =
                   <ErrorBoundary onError={() => setModelError(true)}>
                     <HotelModel 
                       url={settings.model_url}
-                      position={[
+                      position={overrideTransform?.position || [
                         settings.model_position_x || 0,
                         settings.model_position_y || 0,
                         settings.model_position_z || 0,
                       ]}
-                      rotation={[
+                      rotation={overrideTransform?.rotation || [
                         settings.model_rotation_x || 0,
                         settings.model_rotation_y || 0,
                         settings.model_rotation_z || 0,
                       ]}
-                      scale={settings.model_scale || 1.5}
+                      scale={overrideTransform?.scale || settings.model_scale || 1.5}
+                      modelRef={modelRef}
                     />
                   </ErrorBoundary>
                 </Suspense>
               ) : (
                 <PlaceholderBuilding 
-                  position={[
+                  position={overrideTransform?.position || [
                     settings.model_position_x || 0,
                     settings.model_position_y || 0,
                     settings.model_position_z || 0,
                   ]}
-                  rotation={[
+                  rotation={overrideTransform?.rotation || [
                     settings.model_rotation_x || 0,
                     settings.model_rotation_y || 0,
                     settings.model_rotation_z || 0,
                   ]}
-                  scale={settings.model_scale || 1.5}
+                  scale={overrideTransform?.scale || settings.model_scale || 1.5}
+                  modelRef={modelRef}
+                />
+              )}
+
+              {/* Transform Controls for Edit Mode */}
+              {editMode && modelRef.current && (
+                <TransformControls
+                  object={modelRef.current}
+                  mode={transformMode}
+                  onObjectChange={handleTransformUpdate}
+                  onMouseDown={() => orbitControlsRef.current && (orbitControlsRef.current.enabled = false)}
+                  onMouseUp={() => orbitControlsRef.current && (orbitControlsRef.current.enabled = true)}
                 />
               )}
 
               {/* Controls */}
               <OrbitControls
-                autoRotate={settings.enable_auto_rotate}
+                ref={orbitControlsRef}
+                autoRotate={settings.enable_auto_rotate && !editMode}
                 autoRotateSpeed={settings.auto_rotate_speed}
                 enableZoom={settings.enable_zoom}
                 minDistance={settings.min_zoom}
