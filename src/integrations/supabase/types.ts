@@ -485,6 +485,54 @@ export type Database = {
         }
         Relationships: []
       }
+      facility_hero_slides: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          duration: number | null
+          id: string
+          image_url: string
+          is_active: boolean | null
+          overlay_gradient_from: string | null
+          overlay_gradient_to: string | null
+          overlay_opacity: number | null
+          show_overlay: boolean | null
+          subtitle: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          duration?: number | null
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          overlay_gradient_from?: string | null
+          overlay_gradient_to?: string | null
+          overlay_opacity?: number | null
+          show_overlay?: boolean | null
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          duration?: number | null
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          overlay_gradient_from?: string | null
+          overlay_gradient_to?: string | null
+          overlay_opacity?: number | null
+          show_overlay?: boolean | null
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       hero_slides: {
         Row: {
           created_at: string | null
@@ -601,6 +649,11 @@ export type Database = {
           email_reservations: string | null
           facebook_url: string | null
           favicon_url: string | null
+          header_bg_color: string | null
+          header_bg_opacity: number | null
+          header_blur: number | null
+          header_show_logo: boolean | null
+          header_text_color: string | null
           hotel_name: string
           id: string
           instagram_url: string | null
@@ -647,6 +700,11 @@ export type Database = {
           email_reservations?: string | null
           facebook_url?: string | null
           favicon_url?: string | null
+          header_bg_color?: string | null
+          header_bg_opacity?: number | null
+          header_blur?: number | null
+          header_show_logo?: boolean | null
+          header_text_color?: string | null
           hotel_name?: string
           id?: string
           instagram_url?: string | null
@@ -693,6 +751,11 @@ export type Database = {
           email_reservations?: string | null
           facebook_url?: string | null
           favicon_url?: string | null
+          header_bg_color?: string | null
+          header_bg_opacity?: number | null
+          header_blur?: number | null
+          header_show_logo?: boolean | null
+          header_text_color?: string | null
           hotel_name?: string
           id?: string
           instagram_url?: string | null
