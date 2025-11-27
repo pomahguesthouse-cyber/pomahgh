@@ -36,14 +36,43 @@ class ErrorBoundary extends Component<
   }
 }
 
-const HotelModel = ({ url }: { url: string }) => {
+const HotelModel = ({ 
+  url, 
+  position, 
+  rotation, 
+  scale 
+}: { 
+  url: string;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: number;
+}) => {
   const { scene } = useGLTF(url);
-  return <primitive object={scene} scale={1.5} />;
+  return (
+    <primitive 
+      object={scene} 
+      position={position}
+      rotation={rotation.map(deg => (deg * Math.PI) / 180) as [number, number, number]}
+      scale={scale} 
+    />
+  );
 };
 
-const PlaceholderBuilding = () => {
+const PlaceholderBuilding = ({ 
+  position, 
+  rotation, 
+  scale 
+}: { 
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: number;
+}) => {
   return (
-    <group>
+    <group 
+      position={position}
+      rotation={rotation.map(deg => (deg * Math.PI) / 180) as [number, number, number]}
+      scale={scale}
+    >
       {/* Base building */}
       <mesh position={[0, 1, 0]}>
         <boxGeometry args={[3, 2, 2]} />
@@ -175,11 +204,36 @@ export const Building3DViewer = ({ hideHeader = false }: Building3DViewerProps =
               {settings.model_url && settings.model_type === "uploaded" && !modelError ? (
                 <Suspense fallback={<LoadingFallback />}>
                   <ErrorBoundary onError={() => setModelError(true)}>
-                    <HotelModel url={settings.model_url} />
+                    <HotelModel 
+                      url={settings.model_url}
+                      position={[
+                        settings.model_position_x || 0,
+                        settings.model_position_y || 0,
+                        settings.model_position_z || 0,
+                      ]}
+                      rotation={[
+                        settings.model_rotation_x || 0,
+                        settings.model_rotation_y || 0,
+                        settings.model_rotation_z || 0,
+                      ]}
+                      scale={settings.model_scale || 1.5}
+                    />
                   </ErrorBoundary>
                 </Suspense>
               ) : (
-                <PlaceholderBuilding />
+                <PlaceholderBuilding 
+                  position={[
+                    settings.model_position_x || 0,
+                    settings.model_position_y || 0,
+                    settings.model_position_z || 0,
+                  ]}
+                  rotation={[
+                    settings.model_rotation_x || 0,
+                    settings.model_rotation_y || 0,
+                    settings.model_rotation_z || 0,
+                  ]}
+                  scale={settings.model_scale || 1.5}
+                />
               )}
 
               {/* Controls */}

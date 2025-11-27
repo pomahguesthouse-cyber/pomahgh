@@ -21,6 +21,13 @@ export interface Building3DSettings {
   directional_light_intensity: number;
   show_section: boolean;
   is_active: boolean;
+  model_position_x: number;
+  model_position_y: number;
+  model_position_z: number;
+  model_rotation_x: number;
+  model_rotation_y: number;
+  model_rotation_z: number;
+  model_scale: number;
 }
 
 export const useBuilding3DSettings = () => {

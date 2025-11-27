@@ -292,6 +292,13 @@ export type Database = {
           is_active: boolean | null
           max_zoom: number | null
           min_zoom: number | null
+          model_position_x: number | null
+          model_position_y: number | null
+          model_position_z: number | null
+          model_rotation_x: number | null
+          model_rotation_y: number | null
+          model_rotation_z: number | null
+          model_scale: number | null
           model_type: string | null
           model_url: string | null
           show_section: boolean | null
@@ -314,6 +321,13 @@ export type Database = {
           is_active?: boolean | null
           max_zoom?: number | null
           min_zoom?: number | null
+          model_position_x?: number | null
+          model_position_y?: number | null
+          model_position_z?: number | null
+          model_rotation_x?: number | null
+          model_rotation_y?: number | null
+          model_rotation_z?: number | null
+          model_scale?: number | null
           model_type?: string | null
           model_url?: string | null
           show_section?: boolean | null
@@ -336,6 +350,13 @@ export type Database = {
           is_active?: boolean | null
           max_zoom?: number | null
           min_zoom?: number | null
+          model_position_x?: number | null
+          model_position_y?: number | null
+          model_position_z?: number | null
+          model_rotation_x?: number | null
+          model_rotation_y?: number | null
+          model_rotation_z?: number | null
+          model_scale?: number | null
           model_type?: string | null
           model_url?: string | null
           show_section?: boolean | null
