@@ -1,18 +1,40 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
-import { Suspense, useState } from "react";
+import { OrbitControls, useGLTF, Environment, Html } from "@react-three/drei";
+import { Suspense, useState, useEffect, Component, ReactNode } from "react";
 import { useBuilding3DSettings } from "@/hooks/useBuilding3DSettings";
 import { Skeleton } from "./ui/skeleton";
+import { Loader2 } from "lucide-react";
 
-const HotelModel = ({ url, onError }: { url: string; onError: () => void }) => {
-  try {
-    const { scene } = useGLTF(url);
-    return <primitive object={scene} scale={1.5} />;
-  } catch (error) {
-    console.error("Failed to load 3D model:", error);
-    onError();
-    return null;
+// Error Boundary for 3D model loading
+class ErrorBoundary extends Component<
+  { children: ReactNode; onError: () => void },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; onError: () => void }) {
+    super(props);
+    this.state = { hasError: false };
   }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("3D Model loading error:", error);
+    this.props.onError();
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return null;
+    }
+    return this.props.children;
+  }
+}
+
+const HotelModel = ({ url }: { url: string }) => {
+  const { scene } = useGLTF(url);
+  return <primitive object={scene} scale={1.5} />;
 };
 
 const PlaceholderBuilding = () => {
@@ -65,16 +87,29 @@ const PlaceholderBuilding = () => {
 
 const LoadingFallback = () => {
   return (
-    <mesh>
-      <boxGeometry args={[2, 2, 2]} />
-      <meshStandardMaterial color="#666" wireframe />
-    </mesh>
+    <>
+      <mesh>
+        <boxGeometry args={[2, 2, 2]} />
+        <meshStandardMaterial color="#666" wireframe />
+      </mesh>
+      <Html center>
+        <div className="flex flex-col items-center gap-2 text-white">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-sm">Loading 3D Model...</p>
+        </div>
+      </Html>
+    </>
   );
 };
 
 export const Building3DViewer = () => {
   const { data: settings, isLoading } = useBuilding3DSettings();
   const [modelError, setModelError] = useState(false);
+
+  // Reset error state when model URL changes
+  useEffect(() => {
+    setModelError(false);
+  }, [settings?.model_url]);
 
   if (isLoading) {
     return (
@@ -130,12 +165,13 @@ export const Building3DViewer = () => {
               />
               <pointLight position={[-10, 10, -5]} intensity={0.5} />
 
-              {/* Model */}
+              {/* Model - wrapped in additional Suspense with error handling */}
               {settings.model_url && settings.model_type === "uploaded" && !modelError ? (
-                <HotelModel 
-                  url={settings.model_url} 
-                  onError={() => setModelError(true)}
-                />
+                <Suspense fallback={<LoadingFallback />}>
+                  <ErrorBoundary onError={() => setModelError(true)}>
+                    <HotelModel url={settings.model_url} />
+                  </ErrorBoundary>
+                </Suspense>
               ) : (
                 <PlaceholderBuilding />
               )}

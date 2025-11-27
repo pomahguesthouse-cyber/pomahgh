@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { useAdminBuilding3DSettings, useUpdateBuilding3DSettings, upload3DModel } from "@/hooks/useBuilding3DSettings";
 import { toast } from "sonner";
 import { Loader2, Upload, Eye } from "lucide-react";
@@ -16,6 +17,7 @@ const AdminBuilding3D = () => {
   const { data: settings, isLoading } = useAdminBuilding3DSettings();
   const updateSettings = useUpdateBuilding3DSettings();
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -54,8 +56,11 @@ const AdminBuilding3D = () => {
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
     try {
-      const url = await upload3DModel(file);
+      const url = await upload3DModel(file, (progress) => {
+        setUploadProgress(progress);
+      });
       setFormData((prev) => ({ ...prev, model_url: url, model_type: "uploaded" }));
       toast.success("Model 3D berhasil diupload");
     } catch (error) {
@@ -63,6 +68,7 @@ const AdminBuilding3D = () => {
       toast.error("Gagal upload model 3D");
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -126,7 +132,17 @@ const AdminBuilding3D = () => {
                   />
                   {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
                 </div>
-                {formData.model_url && (
+                
+                {isUploading && (
+                  <div className="space-y-2 mt-4">
+                    <Progress value={uploadProgress} className="h-2" />
+                    <p className="text-sm text-muted-foreground text-center">
+                      Uploading... {uploadProgress}%
+                    </p>
+                  </div>
+                )}
+                
+                {formData.model_url && !isUploading && (
                   <p className="text-sm text-muted-foreground mt-2">
                     Model saat ini: {formData.model_type === "uploaded" ? "Custom model" : "Placeholder"}
                   </p>
