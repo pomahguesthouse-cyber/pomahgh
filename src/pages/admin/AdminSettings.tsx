@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Slider } from "@/components/ui/slider";
 
 export default function AdminSettings() {
   const { settings, isLoading, updateSettings, isUpdating, uploadFile } = useHotelSettings();
@@ -251,6 +252,138 @@ export default function AdminSettings() {
                   <div className="space-y-2">
                     <Label htmlFor="secondary_color">Secondary Color</Label>
                     <Input id="secondary_color" name="secondary_color" type="color" defaultValue={settings.secondary_color || "#D2691E"} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Header Customization</CardTitle>
+                <CardDescription>Customize the appearance of your website header</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Show Logo Toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="header_show_logo">Show Logo in Header</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Display logo image instead of hotel name text
+                    </p>
+                  </div>
+                  <Switch
+                    id="header_show_logo"
+                    checked={settings.header_show_logo || false}
+                    onCheckedChange={(checked) => updateSettings({ header_show_logo: checked })}
+                  />
+                </div>
+
+                {/* Header Background Color */}
+                <div className="space-y-2">
+                  <Label htmlFor="header_bg_color">Header Background Color</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input 
+                      id="header_bg_color" 
+                      name="header_bg_color" 
+                      type="color" 
+                      defaultValue={settings.header_bg_color || "#000000"}
+                      className="w-20 h-10"
+                    />
+                    <Input 
+                      type="text" 
+                      defaultValue={settings.header_bg_color || "#000000"}
+                      placeholder="#000000"
+                      className="flex-1"
+                      onChange={(e) => {
+                        const colorInput = document.getElementById('header_bg_color') as HTMLInputElement;
+                        if (colorInput) colorInput.value = e.target.value;
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Header Transparency */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="header_bg_opacity">Header Transparency</Label>
+                    <span className="text-sm text-muted-foreground">
+                      {Math.round((settings.header_bg_opacity ?? 0.4) * 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    id="header_bg_opacity"
+                    min={0}
+                    max={100}
+                    step={1}
+                    defaultValue={[(settings.header_bg_opacity ?? 0.4) * 100]}
+                    onValueChange={(value) => updateSettings({ header_bg_opacity: value[0] / 100 })}
+                  />
+                </div>
+
+                {/* Header Blur */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="header_blur">Header Blur Effect</Label>
+                    <span className="text-sm text-muted-foreground">
+                      {settings.header_blur ?? 12}px
+                    </span>
+                  </div>
+                  <Slider
+                    id="header_blur"
+                    min={0}
+                    max={20}
+                    step={1}
+                    defaultValue={[settings.header_blur ?? 12]}
+                    onValueChange={(value) => updateSettings({ header_blur: value[0] })}
+                  />
+                </div>
+
+                {/* Header Text Color */}
+                <div className="space-y-2">
+                  <Label htmlFor="header_text_color">Header Text Color</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input 
+                      id="header_text_color" 
+                      name="header_text_color" 
+                      type="color" 
+                      defaultValue={settings.header_text_color || "#ffffff"}
+                      className="w-20 h-10"
+                    />
+                    <Input 
+                      type="text" 
+                      defaultValue={settings.header_text_color || "#ffffff"}
+                      placeholder="#ffffff"
+                      className="flex-1"
+                      onChange={(e) => {
+                        const colorInput = document.getElementById('header_text_color') as HTMLInputElement;
+                        if (colorInput) colorInput.value = e.target.value;
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Live Preview */}
+                <div className="space-y-2 pt-4 border-t">
+                  <Label>Preview</Label>
+                  <div 
+                    className="rounded-lg p-4 flex items-center justify-between"
+                    style={{
+                      backgroundColor: `${settings.header_bg_color || '#000000'}${Math.round((settings.header_bg_opacity ?? 0.4) * 255).toString(16).padStart(2, '0')}`,
+                      backdropFilter: `blur(${settings.header_blur ?? 12}px)`,
+                      color: settings.header_text_color || '#ffffff',
+                    }}
+                  >
+                    {settings.header_show_logo && settings.logo_url ? (
+                      <img src={settings.logo_url} alt="Logo" className="h-8 object-contain" />
+                    ) : (
+                      <span className="font-bold text-lg">{settings.hotel_name}</span>
+                    )}
+                    <div className="flex gap-4 text-sm">
+                      <span>Home</span>
+                      <span>Rooms</span>
+                      <span>Gallery</span>
+                      <span>Contact</span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
