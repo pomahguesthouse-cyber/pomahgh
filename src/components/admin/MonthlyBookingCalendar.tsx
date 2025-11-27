@@ -1287,17 +1287,35 @@ const RoomCell = ({
         <div
           className="absolute inset-0 z-10 pointer-events-none"
           style={{
-            background: `repeating-linear-gradient(
-            45deg,
-            hsl(var(--destructive) / 0.15),
-            hsl(var(--destructive) / 0.15) 8px,
-            transparent 8px,
-            transparent 16px
-          )`,
+            background: `
+              linear-gradient(135deg, 
+                hsl(var(--muted-foreground) / 0.3) 25%, 
+                transparent 25%
+              ),
+              linear-gradient(225deg, 
+                hsl(var(--muted-foreground) / 0.3) 25%, 
+                transparent 25%
+              ),
+              linear-gradient(45deg, 
+                hsl(var(--muted-foreground) / 0.3) 25%, 
+                transparent 25%
+              ),
+              linear-gradient(315deg, 
+                hsl(var(--muted-foreground) / 0.3) 25%, 
+                transparent 25%
+              )
+            `,
+            backgroundSize: "8px 8px",
+            backgroundPosition: "0 0, 4px 0, 4px -4px, 0px 4px",
           }}
         >
-          <div className="absolute top-1 right-1">
-            <Ban className="w-3 h-3 text-destructive" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-0.5">
+              <Ban className="w-4 h-4 text-muted-foreground" />
+              <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider">
+                BLOCKED
+              </span>
+            </div>
           </div>
         </div>
       )}
