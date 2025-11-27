@@ -48,8 +48,8 @@ const AdminBuilding3D = () => {
       return;
     }
 
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error("Ukuran file maksimal 20MB");
+    if (file.size > 200 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 200MB");
       return;
     }
 
@@ -111,7 +111,7 @@ const AdminBuilding3D = () => {
           <Card>
             <CardHeader>
               <CardTitle>Model 3D</CardTitle>
-              <CardDescription>Upload file .glb atau .gltf (maksimal 20MB)</CardDescription>
+              <CardDescription>Upload file .glb atau .gltf (maksimal 200MB)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
