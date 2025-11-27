@@ -97,25 +97,50 @@ export const useUpdateBuilding3DSettings = () => {
   });
 };
 
-export const upload3DModel = async (file: File): Promise<string> => {
+type ProgressCallback = (progress: number) => void;
+
+export const upload3DModel = async (
+  file: File,
+  onProgress?: ProgressCallback
+): Promise<string> => {
   const fileExt = file.name.split(".").pop();
   const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
   const filePath = `${fileName}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("3d-models")
-    .upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: false,
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    // Track upload progress
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable && onProgress) {
+        const progress = Math.round((event.loaded / event.total) * 100);
+        onProgress(progress);
+      }
     });
 
-  if (uploadError) {
-    throw uploadError;
-  }
+    xhr.addEventListener("load", async () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        // Get public URL after successful upload
+        const { data } = supabase.storage
+          .from("3d-models")
+          .getPublicUrl(filePath);
+        resolve(data.publicUrl);
+      } else {
+        reject(new Error(`Upload failed with status ${xhr.status}`));
+      }
+    });
 
-  const { data } = supabase.storage
-    .from("3d-models")
-    .getPublicUrl(filePath);
+    xhr.addEventListener("error", () => reject(new Error("Upload failed")));
 
-  return data.publicUrl;
+    // Get Supabase config
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    // Construct Supabase storage upload URL
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/3d-models/${filePath}`;
+    xhr.open("POST", uploadUrl);
+    xhr.setRequestHeader("Authorization", `Bearer ${supabaseKey}`);
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.send(file);
+  });
 };
