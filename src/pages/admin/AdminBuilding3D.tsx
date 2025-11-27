@@ -37,6 +37,13 @@ const AdminBuilding3D = () => {
     is_active: settings?.is_active ?? true,
     model_url: settings?.model_url || "",
     model_type: settings?.model_type || "placeholder",
+    model_position_x: settings?.model_position_x || 0,
+    model_position_y: settings?.model_position_y || 0,
+    model_position_z: settings?.model_position_z || 0,
+    model_rotation_x: settings?.model_rotation_x || 0,
+    model_rotation_y: settings?.model_rotation_y || 0,
+    model_rotation_z: settings?.model_rotation_z || 0,
+    model_scale: settings?.model_scale || 1.5,
   });
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -325,6 +332,103 @@ const AdminBuilding3D = () => {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Model Transform Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Pengaturan Transform Model</CardTitle>
+              <CardDescription>Atur posisi, rotasi, dan skala awal model 3D</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Model Position */}
+              <div>
+                <Label className="text-base font-semibold">Posisi Model</Label>
+                <p className="text-sm text-muted-foreground mb-3">Geser model ke kiri/kanan, atas/bawah, depan/belakang</p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="model-pos-x">X (Kiri/Kanan)</Label>
+                    <Input
+                      id="model-pos-x"
+                      type="number"
+                      step="0.1"
+                      value={formData.model_position_x}
+                      onChange={(e) => setFormData({ ...formData, model_position_x: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="model-pos-y">Y (Atas/Bawah)</Label>
+                    <Input
+                      id="model-pos-y"
+                      type="number"
+                      step="0.1"
+                      value={formData.model_position_y}
+                      onChange={(e) => setFormData({ ...formData, model_position_y: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="model-pos-z">Z (Depan/Belakang)</Label>
+                    <Input
+                      id="model-pos-z"
+                      type="number"
+                      step="0.1"
+                      value={formData.model_position_z}
+                      onChange={(e) => setFormData({ ...formData, model_position_z: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Model Rotation */}
+              <div>
+                <Label className="text-base font-semibold">Rotasi Model (dalam derajat)</Label>
+                <p className="text-sm text-muted-foreground mb-3">Putar model untuk menentukan sudut pandang terbaik</p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Rotasi X ({formData.model_rotation_x}°)</Label>
+                    <Slider
+                      value={[formData.model_rotation_x]}
+                      onValueChange={([value]) => setFormData({ ...formData, model_rotation_x: value })}
+                      min={-180}
+                      max={180}
+                      step={5}
+                    />
+                  </div>
+                  <div>
+                    <Label>Rotasi Y ({formData.model_rotation_y}°)</Label>
+                    <Slider
+                      value={[formData.model_rotation_y]}
+                      onValueChange={([value]) => setFormData({ ...formData, model_rotation_y: value })}
+                      min={-180}
+                      max={180}
+                      step={5}
+                    />
+                  </div>
+                  <div>
+                    <Label>Rotasi Z ({formData.model_rotation_z}°)</Label>
+                    <Slider
+                      value={[formData.model_rotation_z]}
+                      onValueChange={([value]) => setFormData({ ...formData, model_rotation_z: value })}
+                      min={-180}
+                      max={180}
+                      step={5}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Model Scale */}
+              <div>
+                <Label>Skala Model ({formData.model_scale}x)</Label>
+                <Slider
+                  value={[formData.model_scale]}
+                  onValueChange={([value]) => setFormData({ ...formData, model_scale: value })}
+                  min={0.1}
+                  max={5}
+                  step={0.1}
+                />
+              </div>
             </CardContent>
           </Card>
 
