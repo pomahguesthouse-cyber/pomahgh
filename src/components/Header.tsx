@@ -1,190 +1,268 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, User, LogOut, Shield } from "lucide-react";
+import { Menu, X, User, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-DropdownMenu,
-DropdownMenuTrigger,
-DropdownMenuContent,
-DropdownMenuItem,
-DropdownMenuSeparator,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { User as SupabaseUser } from "@supabase/supabase-js";
+interface HeaderProps {
+  scrollToRooms?: () => void;
+  variant?: "transparent" | "solid";
+}
 
-export default function Header() {
-const [menuOpen, setMenuOpen] = useState(false);
-const [scrolled, setScrolled] = useState(false);
+export default function Header({ scrollToRooms, variant = "transparent" }: HeaderProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+  const { settings } = useHotelSettings();
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Detect scroll direction
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling DOWN & passed threshold - hide header
+        setIsVisible(false);
+      } else {
+        // Scrolling UP - show header
+        setIsVisible(true);
+      }
+      
+      setIsScrolled(currentScrollY > 10);
+      setLastScrollY(currentScrollY);
+    };
 
-const navigate = useNavigate();
-const { settings } = useHotelSettings();
-const { isLoggedIn, logout } = useAdminAuth();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkAdminStatus(session.user.id);
+      }
+    });
 
-// Detect scroll for fade + backdrop header
-useEffect(() => {
-const handleScroll = () => {
-setScrolled(window.scrollY > 20);
-};
-window.addEventListener("scroll", handleScroll);
-return () => window.removeEventListener("scroll", handleScroll);
-}, []);
-
-return (
-<header
-className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        scrolled
-          ? "backdrop-blur-md bg-black/40 shadow-md py-2"
-          : "bg-transparent py-4"
-      }`}
-> <div className="container mx-auto flex items-center justify-between px-4">
-{/* Logo */} <Link to="/" className="font-bold text-lg">
-{settings?.hotel_name ?? "Pomah Guesthouse"} </Link>
-
-```
-    {/* Desktop Menu */}
-    <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-      <Link to="/" className="hover:text-primary transition-colors">
-        Home
-      </Link>
-      <Link to="/rooms" className="hover:text-primary transition-colors">
-        Rooms
-      </Link>
-      <Link to="/gallery" className="hover:text-primary transition-colors">
-        Gallery
-      </Link>
-      <Link to="/contact" className="hover:text-primary transition-colors">
-        Contact
-      </Link>
-
-      {/* User Dropdown */}
-      {isLoggedIn ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 hover:text-primary transition-colors">
-              <User className="w-4 h-4" />
-              Admin
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate("/admin")}>
-              <Shield className="w-4 h-4 mr-2" />
-              Dashboard
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem
-              onClick={() => {
-                logout();
-                navigate("/");
-              }}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/login")}
-        >
-          <User className="w-4 h-4 mr-2" />
-          Login
-        </Button>
-      )}
-    </nav>
-
-    {/* Mobile Toggle */}
-    <button
-      className="md:hidden p-2"
-      onClick={() => setMenuOpen(!menuOpen)}
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkAdminStatus(session.user.id);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+  const checkAdminStatus = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    setIsAdmin(!!data);
+  };
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+  const handleScrollToRooms = () => {
+    if (scrollToRooms) {
+      scrollToRooms();
+    } else {
+      navigate("/#rooms");
+    }
+  };
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 
+        transition-transform duration-300 ease-in-out
+        ${isVisible ? "translate-y-0" : "-translate-y-full"}
+        ${
+          variant === "solid"
+            ? "bg-black/80 backdrop-blur-md"
+            : isScrolled
+            ? "bg-black/60 backdrop-blur-md"
+            : "bg-transparent"
+        }
+      `}
     >
-      {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-    </button>
-  </div>
+      <div className="container mx-auto px-4">
+        {/* Desktop Layout - Horizontal */}
+        <div className="hidden md:flex items-center justify-between h-20">
+          {/* Logo on the left */}
+          <Link to="/" className="flex items-center">
+            <img
+              src={settings?.logo_url || "/logo.png"}
+              alt={settings?.hotel_name || "Logo"}
+              onLoad={(e) => (e.currentTarget.style.opacity = "1")}
+              onError={(e) => {
+                e.currentTarget.src = "/logo.png";
+                e.currentTarget.style.opacity = "1";
+              }}
+              className="h-[60px] w-auto transition-opacity duration-300 opacity-0 object-contain"
+            />
+          </Link>
 
-  {/* Mobile Menu Drawer */}
-  <div
-    className={`md:hidden absolute left-0 w-full bg-white shadow-xl transition-all duration-300 origin-top ${
-      menuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
-    }`}
-  >
-    <nav className="flex flex-col gap-4 px-6 py-4 text-sm font-medium">
-      <Link
-        to="/"
-        onClick={() => setMenuOpen(false)}
-        className="hover:text-primary"
-      >
-        Home
-      </Link>
+          {/* Navigation on the right */}
+          <nav className="hidden md:flex items-center gap-6 text-white">
+            <a href="#home" className="hover:text-white/70 transition">
+              Home
+            </a>
+            <a href="#rooms" className="hover:text-white/70 transition">
+              Rooms
+            </a>
+            <a href="#amenities" className="hover:text-white/70 transition">
+              Amenities
+            </a>
+            <a href="#contact" className="hover:text-white/70 transition">
+              Contact
+            </a>
 
-      <Link
-        to="/rooms"
-        onClick={() => setMenuOpen(false)}
-        className="hover:text-primary"
-      >
-        Rooms
-      </Link>
+            {user ? (
+              <>
+                <Link to="/bookings" className="hover:text-white/70 transition">
+                  My Bookings
+                </Link>
 
-      <Link
-        to="/gallery"
-        onClick={() => setMenuOpen(false)}
-        className="hover:text-primary"
-      >
-        Gallery
-      </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="text-white border-white">
+                      <User className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
 
-      <Link
-        to="/contact"
-        onClick={() => setMenuOpen(false)}
-        className="hover:text-primary"
-      >
-        Contact
-      </Link>
+                  <DropdownMenuContent align="end" className="text-black">
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuItem onClick={() => navigate("/admin/dashboard")}>
+                          <Shield className="mr-2 h-4 w-4" />
+                          Admin Dashboard
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
 
-      {isLoggedIn ? (
-        <>
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <Link to="/auth">
+                <Button variant="outline" className="border-white text-white">
+                  Sign In
+                </Button>
+              </Link>
+            )}
+
+            <Button onClick={handleScrollToRooms} className="bg-white text-black hover:bg-white/90">
+              Book Now
+            </Button>
+          </nav>
+        </div>
+
+        {/* Mobile Layout - Horizontal */}
+        <div className="flex md:hidden items-center justify-between h-16">
+          <Link to="/" className="flex items-center">
+            <img
+              src={settings?.logo_url || "/logo.png"}
+              alt={settings?.hotel_name || "Logo"}
+              onLoad={(e) => (e.currentTarget.style.opacity = "1")}
+              onError={(e) => {
+                e.currentTarget.src = "/logo.png";
+                e.currentTarget.style.opacity = "1";
+              }}
+              className="h-[50px] w-auto transition-opacity duration-300 opacity-0 object-contain"
+            />
+          </Link>
+
           <button
-            onClick={() => {
-              navigate("/admin");
-              setMenuOpen(false);
-            }}
-            className="flex items-center gap-2 py-2"
+            className="text-white p-2 rounded-lg hover:bg-white/10 transition"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            <Shield className="w-4 h-4" />
-            Dashboard
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
+        </div>
 
-          <button
-            onClick={() => {
-              logout();
-              navigate("/");
-              setMenuOpen(false);
-            }}
-            className="flex items-center gap-2 py-2"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
-        </>
-      ) : (
-        <button
-          className="flex items-center gap-2 py-2"
-          onClick={() => {
-            navigate("/login");
-            setMenuOpen(false);
-          }}
-        >
-          <User className="w-4 h-4" />
-          Login
-        </button>
-      )}
-    </nav>
-  </div>
-</header>
-```
+        {/* 🔥 MOBILE MENU PUTIH */}
+        {isMenuOpen && (
+          <nav className="md:hidden pb-4 flex flex-col gap-4 text-white">
+            <a href="#home" className="py-2" onClick={() => setIsMenuOpen(false)}>
+              Home
+            </a>
+            <a href="#rooms" className="py-2" onClick={() => setIsMenuOpen(false)}>
+              Rooms
+            </a>
+            <a href="#amenities" className="py-2" onClick={() => setIsMenuOpen(false)}>
+              Amenities
+            </a>
+            <a href="#contact" className="py-2" onClick={() => setIsMenuOpen(false)}>
+              Contact
+            </a>
 
-);
+            {user ? (
+              <>
+                <Link to="/bookings" className="py-2" onClick={() => setIsMenuOpen(false)}>
+                  My Bookings
+                </Link>
+
+                {isAdmin && (
+                  <Link to="/admin" className="py-2" onClick={() => setIsMenuOpen(false)}>
+                    Admin Dashboard
+                  </Link>
+                )}
+
+                <Button
+                  onClick={() => {
+                    handleSignOut();
+                    setIsMenuOpen(false);
+                  }}
+                  variant="outline"
+                  className="w-full text-white border-white"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
+                <Button variant="outline" className="w-full text-white border-white">
+                  Sign In
+                </Button>
+              </Link>
+            )}
+
+            <Button
+              onClick={() => {
+                handleScrollToRooms();
+                setIsMenuOpen(false);
+              }}
+              className="w-full bg-white text-black hover:bg-white/90"
+            >
+              Book Now
+            </Button>
+          </nav>
+        )}
+      </div>
+    </header>
+  );
 }
