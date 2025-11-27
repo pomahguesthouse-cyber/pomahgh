@@ -5,6 +5,10 @@ import { useBuilding3DSettings } from "@/hooks/useBuilding3DSettings";
 import { Skeleton } from "./ui/skeleton";
 import { Loader2 } from "lucide-react";
 
+interface Building3DViewerProps {
+  hideHeader?: boolean;
+}
+
 // Error Boundary for 3D model loading
 class ErrorBoundary extends Component<
   { children: ReactNode; onError: () => void },
@@ -102,7 +106,7 @@ const LoadingFallback = () => {
   );
 };
 
-export const Building3DViewer = () => {
+export const Building3DViewer = ({ hideHeader = false }: Building3DViewerProps = {}) => {
   const { data: settings, isLoading } = useBuilding3DSettings();
   const [modelError, setModelError] = useState(false);
 
@@ -133,14 +137,16 @@ export const Building3DViewer = () => {
     <section className="py-16 px-4 bg-gradient-to-b from-background to-muted">
       <div className="container mx-auto">
         {/* Header */}
-        <div className="text-center mb-8 animate-fade-up">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            {settings.title}
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            {settings.subtitle}
-          </p>
-        </div>
+        {!hideHeader && (
+          <div className="text-center mb-8 animate-fade-up">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              {settings.title}
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              {settings.subtitle}
+            </p>
+          </div>
+        )}
 
         {/* 3D Canvas */}
         <div className="relative h-[400px] md:h-[500px] rounded-2xl overflow-hidden shadow-2xl">
