@@ -1,12 +1,18 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useBuilding3DSettings } from "@/hooks/useBuilding3DSettings";
 import { Skeleton } from "./ui/skeleton";
 
-const HotelModel = ({ url }: { url: string }) => {
-  const { scene } = useGLTF(url);
-  return <primitive object={scene} scale={1.5} />;
+const HotelModel = ({ url, onError }: { url: string; onError: () => void }) => {
+  try {
+    const { scene } = useGLTF(url);
+    return <primitive object={scene} scale={1.5} />;
+  } catch (error) {
+    console.error("Failed to load 3D model:", error);
+    onError();
+    return null;
+  }
 };
 
 const PlaceholderBuilding = () => {
@@ -68,6 +74,7 @@ const LoadingFallback = () => {
 
 export const Building3DViewer = () => {
   const { data: settings, isLoading } = useBuilding3DSettings();
+  const [modelError, setModelError] = useState(false);
 
   if (isLoading) {
     return (
@@ -124,8 +131,11 @@ export const Building3DViewer = () => {
               <pointLight position={[-10, 10, -5]} intensity={0.5} />
 
               {/* Model */}
-              {settings.model_url && settings.model_type === "uploaded" ? (
-                <HotelModel url={settings.model_url} />
+              {settings.model_url && settings.model_type === "uploaded" && !modelError ? (
+                <HotelModel 
+                  url={settings.model_url} 
+                  onError={() => setModelError(true)}
+                />
               ) : (
                 <PlaceholderBuilding />
               )}
