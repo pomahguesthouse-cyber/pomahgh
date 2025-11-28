@@ -82,12 +82,28 @@ interface Booking {
   };
 }
 const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+
+// Timezone Indonesia (WIB = UTC+7)
+const getIndonesiaToday = (): Date => {
+  const now = new Date();
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const wibTime = new Date(utcTime + (7 * 60 * 60 * 1000));
+  return new Date(wibTime.getFullYear(), wibTime.getMonth(), wibTime.getDate());
+};
+
+const getIndonesiaTodayString = (): string => {
+  const today = getIndonesiaToday();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 type ViewRange = 7 | 14 | 30;
 export const MonthlyBookingCalendar = () => {
-  // Initialize to start of today for timezone consistency
+  // Initialize to start of today using Indonesia timezone (WIB)
   const [currentDate, setCurrentDate] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return getIndonesiaToday();
   });
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [viewRange, setViewRange] = useState<ViewRange>(30);
@@ -202,8 +218,8 @@ export const MonthlyBookingCalendar = () => {
       const checkIn = booking.check_in.substring(0, 10);
       const checkOut = booking.check_out.substring(0, 10);
 
-      // Include booking if date is within range
-      return dateStr >= checkIn && dateStr < checkOut;
+      // Include booking if date is within range (including checkout date - guest is still present)
+      return dateStr >= checkIn && dateStr <= checkOut;
     });
 
     // Return the first matching booking (validation prevents double bookings)
@@ -244,7 +260,7 @@ export const MonthlyBookingCalendar = () => {
   // Check if this is the first day of a booking
   const isBookingStart = (booking: Booking, date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return dateStr === booking.check_in;
+    return dateStr === booking.check_in.substring(0, 10);
   };
 
   // Check if this is the last day of a booking
@@ -299,7 +315,7 @@ export const MonthlyBookingCalendar = () => {
     setCurrentDate(addDays(currentDate, viewRange));
   };
   const handleGoToToday = () => {
-    setCurrentDate(new Date());
+    setCurrentDate(getIndonesiaToday());
   };
   const handleMonthYearChange = (value: string) => {
     // value format: "2024-11"
@@ -1337,7 +1353,7 @@ const RoomCell = ({
   // Check if this is where the booking should start rendering
   const dateStr = format(date, "yyyy-MM-dd");
   const firstVisibleStr = format(firstVisibleDate, "yyyy-MM-dd");
-  const isTodayDate = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+  const isTodayDate = dateStr === getIndonesiaTodayString();
   
   // Normalize booking dates - extract YYYY-MM-DD only
   const bookingCheckIn = booking ? booking.check_in.substring(0, 10) : null;
@@ -1359,17 +1375,16 @@ const RoomCell = ({
     ? bookingCheckIn === dateStr || isTruncatedLeft
     : false;
   
-  const checkOutDate = bookingCheckOut ? new Date(bookingCheckOut) : null;
-  if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
-  const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
+  // Check if this is the last day of the booking (checkout date)
+  const isEnd = booking && bookingCheckOut ? dateStr === bookingCheckOut : false;
   
   // Calculate visible nights for bookings that started before the visible range
   let visibleNights: number | undefined;
   
   if (isTruncatedLeft && booking && bookingCheckOut) {
-    // Booking dimulai sebelum visible range, hitung sisa malam yang terlihat
+    // Booking dimulai sebelum visible range, hitung sisa malam yang terlihat (include checkout date)
     const checkOutDateObj = parseISO(bookingCheckOut);
-    const calculatedVisibleNights = differenceInDays(checkOutDateObj, firstVisibleDate);
+    const calculatedVisibleNights = differenceInDays(checkOutDateObj, firstVisibleDate) + 1;
     visibleNights = Math.max(1, calculatedVisibleNights);
     
     if (process.env.NODE_ENV === 'development') {
