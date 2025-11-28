@@ -114,6 +114,25 @@ ${nearbyInfo}
 ${hotelSettings?.tax_name && hotelSettings?.tax_rate ? `- Pajak: ${hotelSettings.tax_name} ${hotelSettings.tax_rate}%` : ''}
 - Mata uang: ${hotelSettings?.currency_code || 'IDR'}
 
+📋 KEBIJAKAN REFUND:
+${hotelSettings.refund_policy_enabled ? (() => {
+  if (hotelSettings.refund_policy_type === 'custom' && hotelSettings.refund_policy_text) {
+    return hotelSettings.refund_policy_text;
+  }
+  if (hotelSettings.refund_policy_type === 'non-refundable') {
+    return '❌ Tidak ada pengembalian dana untuk pembatalan apapun';
+  }
+  if (hotelSettings.refund_policy_type === 'full') {
+    const days = hotelSettings.full_refund_days_before || 7;
+    return `✅ Pembatalan ${days}+ hari sebelum: Refund 100%\n❌ Pembatalan kurang dari ${days} hari: Tidak ada refund`;
+  }
+  // Partial (default)
+  const fullDays = hotelSettings.full_refund_days_before || 7;
+  const partialDays = hotelSettings.partial_refund_days_before || 3;
+  const partialPercent = hotelSettings.partial_refund_percentage || 50;
+  return `✅ Pembatalan ${fullDays}+ hari sebelum: Refund 100%\n⚠️ Pembatalan ${partialDays}-${fullDays-1} hari sebelum: Refund ${partialPercent}%\n❌ Pembatalan kurang dari ${partialDays} hari: Tidak ada refund`;
+})() : 'Hubungi admin untuk informasi refund'}
+
 TOOLS YANG TERSEDIA:
 1. check_availability - Cek ketersediaan real-time kamar untuk tanggal tertentu
 2. get_room_details - Info lengkap kamar spesifik

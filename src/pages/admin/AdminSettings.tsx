@@ -10,6 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefundPolicyDisplay } from "@/components/RefundPolicyDisplay";
 
 export default function AdminSettings() {
   const { settings, isLoading, updateSettings, isUpdating, uploadFile } = useHotelSettings();
@@ -73,13 +75,14 @@ export default function AdminSettings() {
     <div className="space-y-6">
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList className="grid grid-cols-6 w-full">
+          <TabsList className="grid grid-cols-7 w-full">
             <TabsTrigger value="basic">Basic</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="location">Location</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="social">Social Media</TabsTrigger>
             <TabsTrigger value="business">Business</TabsTrigger>
+            <TabsTrigger value="policies">Policies</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4">
@@ -360,6 +363,139 @@ export default function AdminSettings() {
                     />
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="policies" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Kebijakan Pembatalan</CardTitle>
+                <CardDescription>Atur kebijakan refund dan pembatalan booking</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2 pb-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label htmlFor="refund_policy_enabled">Tampilkan Kebijakan Refund</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Aktifkan untuk menampilkan kebijakan refund di halaman booking
+                      </p>
+                    </div>
+                    <Switch
+                      id="refund_policy_enabled"
+                      checked={settings.refund_policy_enabled || false}
+                      onCheckedChange={(checked) => updateSettings({ refund_policy_enabled: checked })}
+                    />
+                  </div>
+                </div>
+
+                {settings.refund_policy_enabled && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="refund_policy_type">Tipe Kebijakan</Label>
+                      <Select
+                        value={settings.refund_policy_type || "partial"}
+                        onValueChange={(value) => updateSettings({ refund_policy_type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="full">Full Refundable</SelectItem>
+                          <SelectItem value="partial">Partial Refundable</SelectItem>
+                          <SelectItem value="non-refundable">Non-Refundable</SelectItem>
+                          <SelectItem value="custom">Custom Text</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {settings.refund_policy_type === "custom" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="refund_policy_text">Kebijakan Custom</Label>
+                        <Textarea
+                          id="refund_policy_text"
+                          name="refund_policy_text"
+                          defaultValue={settings.refund_policy_text || ""}
+                          placeholder="Tulis kebijakan refund Anda di sini..."
+                          rows={6}
+                        />
+                      </div>
+                    ) : settings.refund_policy_type !== "non-refundable" && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="full_refund_days_before">Refund Penuh (100%)</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id="full_refund_days_before"
+                              name="full_refund_days_before"
+                              type="number"
+                              min="1"
+                              defaultValue={settings.full_refund_days_before || 7}
+                              className="w-24"
+                            />
+                            <span className="text-sm text-muted-foreground">hari atau lebih sebelum check-in</span>
+                          </div>
+                        </div>
+
+                        {settings.refund_policy_type === "partial" && (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="partial_refund_days_before">Refund Sebagian</Label>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    id="partial_refund_days_before"
+                                    name="partial_refund_days_before"
+                                    type="number"
+                                    min="1"
+                                    defaultValue={settings.partial_refund_days_before || 3}
+                                    className="w-24"
+                                  />
+                                  <span className="text-sm text-muted-foreground">hari sebelum check-in</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    id="partial_refund_percentage"
+                                    name="partial_refund_percentage"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    defaultValue={settings.partial_refund_percentage || 50}
+                                    className="w-24"
+                                  />
+                                  <span className="text-sm text-muted-foreground">% refund</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="no_refund_days_before">Tidak Ada Refund</Label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  id="no_refund_days_before"
+                                  name="no_refund_days_before"
+                                  type="number"
+                                  min="0"
+                                  defaultValue={settings.no_refund_days_before || 1}
+                                  className="w-24"
+                                />
+                                <span className="text-sm text-muted-foreground">hari sebelum check-in</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    <div className="pt-4 border-t">
+                      <Label className="mb-2 block">Preview Kebijakan</Label>
+                      <div className="bg-muted/50 p-4 rounded-lg">
+                        <RefundPolicyDisplay settings={settings} />
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -1,8 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { RoomBookingCardProps } from "./types";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { RefundPolicyDisplay } from "@/components/RefundPolicyDisplay";
 
 export const RoomBookingCard = ({ room, hasPromo, displayPrice, onBookNow }: RoomBookingCardProps) => {
+  const { settings } = useHotelSettings();
+  
   return (
     <Card className="sticky top-4">
       <CardContent className="p-6 space-y-6">
@@ -42,6 +46,13 @@ export const RoomBookingCard = ({ room, hasPromo, displayPrice, onBookNow }: Roo
             <span className="font-medium text-green-600">Available</span>
           </div>
         </div>
+
+        {settings?.refund_policy_enabled && (
+          <div className="pt-4 border-t">
+            <p className="text-sm font-medium mb-2">Kebijakan Pembatalan</p>
+            <RefundPolicyDisplay settings={settings} compact />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

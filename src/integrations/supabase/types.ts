@@ -742,6 +742,7 @@ export type Database = {
           email_reservations: string | null
           facebook_url: string | null
           favicon_url: string | null
+          full_refund_days_before: number | null
           header_bg_color: string | null
           header_bg_opacity: number | null
           header_blur: number | null
@@ -756,6 +757,9 @@ export type Database = {
           longitude: number | null
           max_stay_nights: number | null
           min_stay_nights: number | null
+          no_refund_days_before: number | null
+          partial_refund_days_before: number | null
+          partial_refund_percentage: number | null
           payment_instructions: string | null
           phone_primary: string | null
           phone_secondary: string | null
@@ -763,6 +767,9 @@ export type Database = {
           primary_color: string | null
           reception_hours_end: string | null
           reception_hours_start: string | null
+          refund_policy_enabled: boolean | null
+          refund_policy_text: string | null
+          refund_policy_type: string | null
           secondary_color: string | null
           state: string | null
           tagline: string | null
@@ -793,6 +800,7 @@ export type Database = {
           email_reservations?: string | null
           facebook_url?: string | null
           favicon_url?: string | null
+          full_refund_days_before?: number | null
           header_bg_color?: string | null
           header_bg_opacity?: number | null
           header_blur?: number | null
@@ -807,6 +815,9 @@ export type Database = {
           longitude?: number | null
           max_stay_nights?: number | null
           min_stay_nights?: number | null
+          no_refund_days_before?: number | null
+          partial_refund_days_before?: number | null
+          partial_refund_percentage?: number | null
           payment_instructions?: string | null
           phone_primary?: string | null
           phone_secondary?: string | null
@@ -814,6 +825,9 @@ export type Database = {
           primary_color?: string | null
           reception_hours_end?: string | null
           reception_hours_start?: string | null
+          refund_policy_enabled?: boolean | null
+          refund_policy_text?: string | null
+          refund_policy_type?: string | null
           secondary_color?: string | null
           state?: string | null
           tagline?: string | null
@@ -844,6 +858,7 @@ export type Database = {
           email_reservations?: string | null
           facebook_url?: string | null
           favicon_url?: string | null
+          full_refund_days_before?: number | null
           header_bg_color?: string | null
           header_bg_opacity?: number | null
           header_blur?: number | null
@@ -858,6 +873,9 @@ export type Database = {
           longitude?: number | null
           max_stay_nights?: number | null
           min_stay_nights?: number | null
+          no_refund_days_before?: number | null
+          partial_refund_days_before?: number | null
+          partial_refund_percentage?: number | null
           payment_instructions?: string | null
           phone_primary?: string | null
           phone_secondary?: string | null
@@ -865,6 +883,9 @@ export type Database = {
           primary_color?: string | null
           reception_hours_end?: string | null
           reception_hours_start?: string | null
+          refund_policy_enabled?: boolean | null
+          refund_policy_text?: string | null
+          refund_policy_type?: string | null
           secondary_color?: string | null
           state?: string | null
           tagline?: string | null
