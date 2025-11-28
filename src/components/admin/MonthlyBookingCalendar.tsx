@@ -207,7 +207,18 @@ export const MonthlyBookingCalendar = () => {
     });
 
     // Return the first matching booking (validation prevents double bookings)
-    return matchingBookings[0] || null;
+    const result = matchingBookings[0] || null;
+    
+    // Debug logging
+    if (result && process.env.NODE_ENV === 'development') {
+      console.log(`[getBookingForCell] Room: ${roomNumber}, Date: ${dateStr}`, {
+        bookingId: result.id,
+        checkIn: result.check_in.substring(0, 10),
+        checkOut: result.check_out.substring(0, 10),
+      });
+    }
+
+    return result;
   };
 
   // Check if date is blocked
@@ -1326,17 +1337,20 @@ const RoomCell = ({
   // Check if this is where the booking should start rendering
   const dateStr = format(date, "yyyy-MM-dd");
   const firstVisibleStr = format(firstVisibleDate, "yyyy-MM-dd");
+  const isTodayDate = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
   
   // Normalize booking dates - extract YYYY-MM-DD only
   const bookingCheckIn = booking ? booking.check_in.substring(0, 10) : null;
   const bookingCheckOut = booking ? booking.check_out.substring(0, 10) : null;
   
+  // Check if booking started before visible range
+  const isTruncatedLeft = booking && bookingCheckIn < firstVisibleStr && dateStr === firstVisibleStr;
+  
   // A booking should render if:
   // 1. Its check-in is on this date, OR
-  // 2. Its check-in is before this date AND this is the first visible date AND the booking extends beyond this date
+  // 2. Its check-in is before this date AND this is the first visible date AND the booking is still active
   const isStart = booking 
-    ? bookingCheckIn === dateStr || 
-      (bookingCheckIn < dateStr && dateStr === firstVisibleStr && bookingCheckOut > dateStr)
+    ? bookingCheckIn === dateStr || isTruncatedLeft
     : false;
   
   const checkOutDate = bookingCheckOut ? new Date(bookingCheckOut) : null;
@@ -1345,21 +1359,37 @@ const RoomCell = ({
   
   // Calculate visible nights for bookings that started before the visible range
   let visibleNights = booking?.total_nights;
-  const isTruncatedLeft = booking && bookingCheckIn < firstVisibleStr && dateStr === firstVisibleStr;
   
-  if (isTruncatedLeft) {
-    // Calculate how many nights are visible
-    const checkInDate = parseISO(booking.check_in);
-    const checkOutDate = parseISO(booking.check_out);
-    const calculatedVisibleNights = differenceInDays(checkOutDate, firstVisibleDate);
-    // Ensure minimum of 1 night to prevent invisible bars
+  if (isTruncatedLeft && booking) {
+    const checkOutDateObj = parseISO(bookingCheckOut);
+    const calculatedVisibleNights = differenceInDays(checkOutDateObj, firstVisibleDate);
     visibleNights = Math.max(1, calculatedVisibleNights);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[visibleNights] Truncated booking ${booking.id}:`, {
+        checkOut: bookingCheckOut,
+        firstVisible: firstVisibleStr,
+        calculatedVisibleNights,
+        visibleNights,
+      });
+    }
+  }
+  
+  // Debug logging
+  if (booking && process.env.NODE_ENV === 'development') {
+    console.log(`[RoomCell] Date: ${dateStr}, Booking: ${booking.id}`, {
+      bookingCheckIn,
+      bookingCheckOut,
+      firstVisibleStr,
+      isStart,
+      isTruncatedLeft,
+      visibleNights,
+    });
   }
 
   const isHolidayOrWeekend = isWeekend || holiday !== null;
   const hasBooking = booking !== null;
   const isClickable = !isBlocked && !hasBooking;
-  const isTodayDate = isToday(date);
 
   const cell = (
     <td
@@ -1374,6 +1404,11 @@ const RoomCell = ({
       )}
       title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
     >
+      {/* Today indicator */}
+      {isTodayDate && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-primary/70 rounded-t z-20" />
+      )}
+
       {/* Blocked Date Pattern */}
       {isBlocked && (
         <div
@@ -1408,6 +1443,14 @@ const RoomCell = ({
           onClick={() => handleBookingClick(booking)}
           visibleNights={visibleNights}
           isTruncatedLeft={isTruncatedLeft}
+        />
+      )}
+
+      {/* Debug indicator: Show if booking exists but not rendered */}
+      {booking && (!isStart || isBlocked) && process.env.NODE_ENV === 'development' && (
+        <div 
+          className="absolute bottom-0 right-0 w-2 h-2 bg-yellow-500 rounded-full z-30" 
+          title={`Booking ${booking.id}: isStart=${isStart}, isBlocked=${isBlocked}`} 
         />
       )}
 
