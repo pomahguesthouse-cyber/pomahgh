@@ -114,6 +114,16 @@ TOOLS YANG TERSEDIA:
 2. get_room_details - Info lengkap kamar spesifik
 3. get_facilities - Daftar lengkap fasilitas
 4. create_booking_draft - Buat booking langsung
+5. get_booking_details - Cek detail booking (WAJIB minta kode booking + no telepon + email)
+6. update_booking - Ubah jadwal/detail booking (WAJIB verifikasi dulu)
+
+⚠️ PENTING UNTUK REVIEW/UBAH BOOKING:
+- SELALU minta 3 DATA VERIFIKASI: KODE BOOKING + NO TELEPON + EMAIL
+- Jangan pernah tampilkan detail booking tanpa verifikasi lengkap
+- Booking dengan status "cancelled" TIDAK bisa diubah
+- Booking "pending" dan "confirmed" bisa diubah
+- Jika tamu tidak tahu kode booking, sarankan cek email atau hubungi resepsionis
+- PASTIKAN cek ketersediaan kamar saat mengubah tanggal booking
 
 ⚠️ PANDUAN PARSING TANGGAL (SANGAT PENTING!):
 - "hari ini" → tanggal sekarang (${currentDateISO})
@@ -216,6 +226,51 @@ BAHASA:
               room_name: { type: "string", description: "Nama tipe kamar" }
             },
             required: ["guest_name", "guest_email", "guest_phone", "check_in", "check_out", "num_guests", "room_name"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_booking_details",
+          description: "Cari dan tampilkan detail booking tamu. WAJIB minta kode booking, nomor telepon, dan email untuk verifikasi keamanan.",
+          parameters: {
+            type: "object",
+            properties: {
+              booking_id: { 
+                type: "string", 
+                description: "Kode/ID booking (UUID format atau sebagian ID)" 
+              },
+              guest_phone: { 
+                type: "string", 
+                description: "Nomor telepon pemesan untuk verifikasi" 
+              },
+              guest_email: { 
+                type: "string", 
+                description: "Email pemesan untuk verifikasi" 
+              }
+            },
+            required: ["booking_id", "guest_phone", "guest_email"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "update_booking",
+          description: "Ubah detail booking yang sudah ada. WAJIB verifikasi dengan kode booking, nomor telepon, dan email terlebih dahulu. Booking cancelled tidak bisa diubah.",
+          parameters: {
+            type: "object",
+            properties: {
+              booking_id: { type: "string", description: "Kode/ID booking" },
+              guest_phone: { type: "string", description: "Nomor telepon pemesan untuk verifikasi" },
+              guest_email: { type: "string", description: "Email pemesan untuk verifikasi" },
+              new_check_in: { type: "string", description: "Tanggal check-in baru (YYYY-MM-DD)" },
+              new_check_out: { type: "string", description: "Tanggal check-out baru (YYYY-MM-DD)" },
+              new_num_guests: { type: "number", description: "Jumlah tamu baru" },
+              new_special_requests: { type: "string", description: "Permintaan khusus baru" }
+            },
+            required: ["booking_id", "guest_phone", "guest_email"]
           }
         }
       }

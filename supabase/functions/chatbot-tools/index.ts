@@ -337,6 +337,221 @@ serve(async (req) => {
         break;
       }
 
+      case "get_booking_details": {
+        const { booking_id, guest_phone, guest_email } = parameters;
+        
+        if (!booking_id || !guest_phone || !guest_email) {
+          throw new Error("Kode booking, nomor telepon, dan email wajib diisi untuk keamanan");
+        }
+
+        // Query booking dengan verifikasi email
+        const { data: booking, error } = await supabase
+          .from("bookings")
+          .select(`
+            id, guest_name, guest_email, guest_phone,
+            check_in, check_out, check_in_time, check_out_time,
+            num_guests, total_nights, total_price, status, payment_status,
+            special_requests, allocated_room_number, created_at,
+            rooms:room_id (name, price_per_night, max_guests)
+          `)
+          .or(`id.eq.${booking_id},id.ilike.%${booking_id}%`)
+          .ilike("guest_email", guest_email)
+          .single();
+
+        if (error || !booking) {
+          throw new Error("Booking tidak ditemukan. Pastikan kode booking dan email benar.");
+        }
+
+        // Verify phone number (normalize both for comparison)
+        const normalizedPhone = guest_phone.replace(/\D/g, '');
+        const bookingPhone = booking.guest_phone?.replace(/\D/g, '') || '';
+        if (!bookingPhone.includes(normalizedPhone) && !normalizedPhone.includes(bookingPhone)) {
+          throw new Error("Nomor telepon tidak cocok dengan data booking.");
+        }
+
+        result = {
+          booking_id: booking.id,
+          guest_name: booking.guest_name,
+          guest_email: booking.guest_email,
+          guest_phone: booking.guest_phone,
+          room_name: (booking.rooms as any)?.name,
+          check_in: booking.check_in,
+          check_out: booking.check_out,
+          check_in_time: booking.check_in_time,
+          check_out_time: booking.check_out_time,
+          num_guests: booking.num_guests,
+          total_nights: booking.total_nights,
+          total_price: booking.total_price,
+          status: booking.status,
+          payment_status: booking.payment_status,
+          special_requests: booking.special_requests,
+          allocated_room_number: booking.allocated_room_number,
+          can_modify: booking.status !== 'cancelled'
+        };
+        break;
+      }
+
+      case "update_booking": {
+        let { booking_id, guest_phone, guest_email, new_check_in, new_check_out, new_num_guests, new_special_requests } = parameters;
+
+        // 1. Verify booking dengan 3 faktor
+        const { data: existingBooking, error: findError } = await supabase
+          .from("bookings")
+          .select("id, guest_name, guest_email, guest_phone, room_id, check_in, check_out, num_guests, status, total_price")
+          .or(`id.eq.${booking_id},id.ilike.%${booking_id}%`)
+          .ilike("guest_email", guest_email)
+          .single();
+
+        if (findError || !existingBooking) {
+          throw new Error("Booking tidak ditemukan atau data verifikasi tidak cocok.");
+        }
+
+        // Verify phone number
+        const normalizedPhone = guest_phone.replace(/\D/g, '');
+        const bookingPhone = existingBooking.guest_phone?.replace(/\D/g, '') || '';
+        if (!bookingPhone.includes(normalizedPhone) && !normalizedPhone.includes(bookingPhone)) {
+          throw new Error("Nomor telepon tidak cocok dengan data booking.");
+        }
+
+        // 2. Check if booking can be modified (NOT cancelled)
+        if (existingBooking.status === 'cancelled') {
+          throw new Error("Booking yang sudah dibatalkan tidak dapat diubah. Silakan buat booking baru.");
+        }
+
+        // 3. Prepare update data
+        const updateData: any = { updated_at: new Date().toISOString() };
+
+        // 4. Jika ada perubahan tanggal, CEK KETERSEDIAAN KAMAR
+        if (new_check_in || new_check_out) {
+          new_check_in = new_check_in ? validateAndFixDate(new_check_in, "new_check_in") : existingBooking.check_in;
+          new_check_out = new_check_out ? validateAndFixDate(new_check_out, "new_check_out") : existingBooking.check_out;
+
+          // Get room info
+          const { data: room } = await supabase
+            .from("rooms")
+            .select("id, name, allotment, price_per_night")
+            .eq("id", existingBooking.room_id)
+            .single();
+
+          if (!room) throw new Error("Data kamar tidak ditemukan");
+
+          // Check unavailable dates
+          const { data: unavailableDates } = await supabase
+            .from("room_unavailable_dates")
+            .select("unavailable_date")
+            .eq("room_id", room.id)
+            .gte("unavailable_date", new_check_in)
+            .lt("unavailable_date", new_check_out);
+
+          if (unavailableDates && unavailableDates.length > 0) {
+            throw new Error(`Kamar ${room.name} tidak tersedia di tanggal yang dipilih. Silakan pilih tanggal lain.`);
+          }
+
+          // Check overlapping bookings (exclude current booking)
+          const { data: overlappingBookings } = await supabase
+            .from("bookings")
+            .select("id")
+            .eq("room_id", room.id)
+            .neq("id", existingBooking.id)
+            .neq("status", "cancelled")
+            .lt("check_in", new_check_out)
+            .gt("check_out", new_check_in);
+
+          const bookedCount = overlappingBookings?.length || 0;
+          const availableCount = room.allotment - bookedCount;
+
+          if (availableCount <= 0) {
+            throw new Error(`Maaf, kamar ${room.name} sudah penuh di tanggal tersebut. Silakan pilih tanggal lain.`);
+          }
+
+          // Calculate new price
+          const total_nights = Math.ceil(
+            (new Date(new_check_out).getTime() - new Date(new_check_in).getTime()) / (1000 * 60 * 60 * 24)
+          );
+          
+          updateData.check_in = new_check_in;
+          updateData.check_out = new_check_out;
+          updateData.total_nights = total_nights;
+          updateData.total_price = total_nights * room.price_per_night;
+          updateData.allocated_room_number = null; // Reset allocation
+        }
+
+        // 5. Update other fields
+        if (new_num_guests) updateData.num_guests = new_num_guests;
+        if (new_special_requests !== undefined) updateData.special_requests = new_special_requests;
+
+        // 6. Save to database
+        const { data: updatedBooking, error: updateError } = await supabase
+          .from("bookings")
+          .update(updateData)
+          .eq("id", existingBooking.id)
+          .select(`
+            id, guest_name, guest_email, guest_phone,
+            check_in, check_out, num_guests, total_nights, total_price,
+            special_requests, status, payment_status,
+            rooms:room_id (name)
+          `)
+          .single();
+
+        if (updateError) throw new Error(`Gagal mengubah booking: ${updateError.message}`);
+
+        // 7. Send WhatsApp notification
+        const { data: hotelSettings } = await supabase
+          .from("hotel_settings")
+          .select("whatsapp_number, hotel_name")
+          .single();
+
+        if (hotelSettings?.whatsapp_number) {
+          const adminMessage = `🔄 *PERUBAHAN BOOKING*\n\nNama: ${updatedBooking.guest_name}\nEmail: ${updatedBooking.guest_email}\nTelp: ${updatedBooking.guest_phone || '-'}\nKamar: ${(updatedBooking.rooms as any)?.name}\nCheck-in: ${updatedBooking.check_in}\nCheck-out: ${updatedBooking.check_out}\nTamu: ${updatedBooking.num_guests}\nTotal: Rp ${updatedBooking.total_price.toLocaleString('id-ID')}\n\nBooking ID: ${updatedBooking.id}\nStatus: ${updatedBooking.status}`;
+          
+          // Send to admin
+          fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+            },
+            body: JSON.stringify({
+              phone: hotelSettings.whatsapp_number,
+              message: adminMessage,
+              type: "admin"
+            })
+          }).catch(err => console.error("Failed to send admin WhatsApp:", err));
+
+          // Send to customer
+          if (updatedBooking.guest_phone) {
+            const customerMessage = `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${(updatedBooking.rooms as any)?.name}\n📅 Check-in: ${updatedBooking.check_in}\n📅 Check-out: ${updatedBooking.check_out}\n👥 Tamu: ${updatedBooking.num_guests}\n💰 Total: Rp ${updatedBooking.total_price.toLocaleString('id-ID')}\n\n📝 Booking ID: ${updatedBooking.id}\n📊 Status: ${updatedBooking.status}`;
+            
+            fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+              },
+              body: JSON.stringify({
+                phone: updatedBooking.guest_phone,
+                message: customerMessage,
+                type: "customer"
+              })
+            }).catch(err => console.error("Failed to send customer WhatsApp:", err));
+          }
+        }
+
+        result = {
+          message: "Booking berhasil diubah!",
+          booking_id: updatedBooking.id,
+          room_name: (updatedBooking.rooms as any)?.name,
+          check_in: updatedBooking.check_in,
+          check_out: updatedBooking.check_out,
+          num_guests: updatedBooking.num_guests,
+          total_nights: updatedBooking.total_nights,
+          total_price: updatedBooking.total_price,
+          special_requests: updatedBooking.special_requests,
+          status: updatedBooking.status
+        };
+        break;
+      }
+
       default:
         throw new Error(`Unknown tool: ${tool_name}`);
     }
