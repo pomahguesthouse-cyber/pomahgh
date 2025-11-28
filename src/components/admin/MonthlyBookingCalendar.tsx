@@ -1461,23 +1461,15 @@ const RoomCell = ({
       )}
 
       {/* Render single booking */}
-      {booking && !isBlocked && isStart && (
+      {booking && !isBlocked && (isStart || isCheckoutDay) && (
         <BookingCell 
           booking={booking} 
           isStart={isStart} 
           isEnd={isEnd} 
           onClick={() => handleBookingClick(booking)}
-          visibleNights={visibleNights}
+          visibleNights={isCheckoutDay && !isStart ? 1 : visibleNights}
           isTruncatedLeft={isTruncatedLeft}
-          isCheckoutDay={isCheckoutDay}
-        />
-      )}
-
-      {/* Debug indicator: Show if booking exists but not rendered */}
-      {booking && (!isStart || isBlocked) && process.env.NODE_ENV === 'development' && (
-        <div 
-          className="absolute bottom-0 right-0 w-2 h-2 bg-yellow-500 rounded-full z-30" 
-          title={`Booking ${booking.id}: isStart=${isStart}, isBlocked=${isBlocked}`} 
+          isCheckoutDay={isCheckoutDay && !isStart}
         />
       )}
 
