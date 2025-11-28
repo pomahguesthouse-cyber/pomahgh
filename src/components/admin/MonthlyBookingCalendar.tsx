@@ -37,6 +37,8 @@ import {
   Edit2,
   Save,
   X,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import {
   Dialog,
@@ -82,7 +84,11 @@ interface Booking {
 const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 type ViewRange = 7 | 14 | 30;
 export const MonthlyBookingCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Initialize to start of today for timezone consistency
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  });
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [viewRange, setViewRange] = useState<ViewRange>(30);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -113,7 +119,7 @@ export const MonthlyBookingCalendar = () => {
     open: false,
   });
 
-  const { bookings, updateBooking, isUpdating } = useAdminBookings();
+  const { bookings, updateBooking, isUpdating, isLoading } = useAdminBookings();
   const { rooms } = useAdminRooms();
   const { unavailableDates, addUnavailableDates, removeUnavailableDates } = useRoomAvailability();
   const queryClient = useQueryClient();
@@ -522,10 +528,28 @@ export const MonthlyBookingCalendar = () => {
                 <Button onClick={handleNextMonth} variant="outline" size="icon">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
+
+                <Button 
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-bookings"] })} 
+                  variant="outline" 
+                  size="icon"
+                  disabled={isLoading}
+                  title="Refresh data booking"
+                >
+                  <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                </Button>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center h-32 gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground">Memuat data booking...</span>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
@@ -1303,10 +1327,10 @@ const RoomCell = ({
   
   // A booking should render if:
   // 1. Its check-in is on this date, OR
-  // 2. Its check-in is before the first visible date AND this is the first visible date AND the booking is active
+  // 2. Its check-in is before the first visible date AND this is the first visible date AND the booking is still active
   const isStart = booking 
     ? booking.check_in === dateStr || 
-      (booking.check_in < firstVisibleStr && dateStr === firstVisibleStr && booking.check_out > dateStr)
+      (booking.check_in < firstVisibleStr && dateStr === firstVisibleStr && booking.check_out > firstVisibleStr)
     : false;
   
   const checkOutDate = booking ? new Date(booking.check_out) : null;
