@@ -16,20 +16,25 @@ export const useRoomAvailability = (roomId?: string) => {
   const queryClient = useQueryClient();
 
   const { data: unavailableDates, isLoading } = useQuery({
-    queryKey: ["room-unavailable-dates", roomId],
+    queryKey: ["room-unavailable-dates", roomId || "all"],
     queryFn: async () => {
-      if (!roomId) return [];
-      
-      const { data, error } = await supabase
+      let query = supabase
         .from("room_unavailable_dates")
         .select("*")
-        .eq("room_id", roomId)
         .order("unavailable_date");
+      
+      // If roomId provided, filter by specific room
+      // Otherwise, fetch ALL unavailable dates for calendar view
+      if (roomId) {
+        query = query.eq("room_id", roomId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as UnavailableDate[];
     },
-    enabled: !!roomId,
+    enabled: true,
   });
 
   const addUnavailableDates = useMutation({
