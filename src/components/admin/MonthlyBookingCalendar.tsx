@@ -1345,34 +1345,21 @@ const RoomCell = ({
       {/* Blocked Date Pattern */}
       {isBlocked && (
         <div
-          className="absolute inset-0 z-10 pointer-events-none"
+          className="absolute inset-0 z-10 pointer-events-none bg-muted/20"
           style={{
-            background: `
-              linear-gradient(135deg, 
-                hsl(var(--muted-foreground) / 0.3) 25%, 
-                transparent 25%
-              ),
-              linear-gradient(225deg, 
-                hsl(var(--muted-foreground) / 0.3) 25%, 
-                transparent 25%
-              ),
-              linear-gradient(45deg, 
-                hsl(var(--muted-foreground) / 0.3) 25%, 
-                transparent 25%
-              ),
-              linear-gradient(315deg, 
-                hsl(var(--muted-foreground) / 0.3) 25%, 
-                transparent 25%
-              )
-            `,
-            backgroundSize: "8px 8px",
-            backgroundPosition: "0 0, 4px 0, 4px -4px, 0px 4px",
+            backgroundImage: `repeating-linear-gradient(
+              -45deg,
+              transparent,
+              transparent 6px,
+              hsl(var(--muted-foreground) / 0.6) 6px,
+              hsl(var(--muted-foreground) / 0.6) 8px
+            )`,
           }}
         >
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center bg-background/40">
             <div className="flex flex-col items-center gap-0.5">
-              <Ban className="w-4 h-4 text-muted-foreground" />
-              <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider">
+              <Ban className="w-5 h-5 text-muted-foreground drop-shadow-sm" />
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider drop-shadow-sm">
                 BLOCKED
               </span>
             </div>
