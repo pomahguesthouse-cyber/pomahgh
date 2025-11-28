@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send, Tag, CalendarIcon, Users, Globe, UserCheck, HelpCircle, X } from "lucide-react";
+import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send, Tag, CalendarIcon, Users, Globe, UserCheck, HelpCircle, X, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -63,6 +63,9 @@ const AdminBookings = () => {
   const [bookingSourceEdit, setBookingSourceEdit] = useState<"direct" | "ota" | "walk_in" | "other">("direct");
   const [otaNameEdit, setOtaNameEdit] = useState<string>("");
   const [otherSourceEdit, setOtherSourceEdit] = useState<string>("");
+  
+  // Copied booking ID state
+  const [copiedBookingId, setCopiedBookingId] = useState<string | null>(null);
 
   // Real-time subscription
   useEffect(() => {
@@ -392,9 +395,30 @@ const AdminBookings = () => {
                 {/* Header Row */}
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold text-lg">
-                      Booking #{booking.id.slice(0, 8)}
-                    </h3>
+                    <div className="flex items-center gap-1">
+                      <h3 className="font-semibold text-lg">
+                        {booking.id}
+                      </h3>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(booking.id);
+                          setCopiedBookingId(booking.id);
+                          toast.success("Booking ID copied!");
+                          setTimeout(() => setCopiedBookingId(null), 2000);
+                        }}
+                        title="Copy booking ID"
+                      >
+                        {copiedBookingId === booking.id ? (
+                          <Check className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
                     <Badge 
                       variant={
                         booking.status === 'confirmed' || booking.status === 'checked-in' 
