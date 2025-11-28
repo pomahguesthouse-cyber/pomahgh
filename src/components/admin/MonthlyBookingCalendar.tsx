@@ -210,7 +210,9 @@ export const MonthlyBookingCalendar = () => {
   const getBookingForCell = (roomNumber: string, date: Date): Booking | null => {
     if (!bookings) return null;
     const dateStr = format(date, "yyyy-MM-dd");
-    const matchingBookings = bookings.filter((booking) => {
+    
+    // First check direct bookings (backward compatibility)
+    const directBooking = bookings.find((booking) => {
       if (booking.status === "cancelled") return false;
       if (booking.allocated_room_number !== roomNumber) return false;
       
@@ -222,19 +224,7 @@ export const MonthlyBookingCalendar = () => {
       return dateStr >= checkIn && dateStr <= checkOut;
     });
 
-    // Return the first matching booking (validation prevents double bookings)
-    const result = matchingBookings[0] || null;
-    
-    // Debug logging
-    if (result && process.env.NODE_ENV === 'development') {
-      console.log(`[getBookingForCell] Room: ${roomNumber}, Date: ${dateStr}`, {
-        bookingId: result.id,
-        checkIn: result.check_in.substring(0, 10),
-        checkOut: result.check_out.substring(0, 10),
-      });
-    }
-
-    return result;
+    return directBooking || null;
   };
 
   // Check if date is blocked
@@ -1241,6 +1231,7 @@ const BookingCell = ({
   onClick,
   visibleNights,
   isTruncatedLeft,
+  isCheckoutDay,
 }: {
   booking: Booking;
   isStart: boolean;
@@ -1248,10 +1239,24 @@ const BookingCell = ({
   onClick: () => void;
   visibleNights?: number;
   isTruncatedLeft?: boolean;
+  isCheckoutDay?: boolean;
 }) => {
   const isPending = booking.status === "pending";
   const totalNights = visibleNights ?? booking.total_nights;
   const bookingWidth = `${totalNights * 100}%`;
+
+  // Special styling for checkout day - small centered box
+  const style = isCheckoutDay 
+    ? {
+        left: "25%",
+        width: "50%",
+        transform: "translateX(0)",
+      }
+    : {
+        left: isTruncatedLeft ? "0" : "50%",
+        width: bookingWidth,
+        transform: isTruncatedLeft ? "translateX(0%)" : "translateX(0%)",
+      };
 
   const getBackgroundClass = () => {
     if (isPending) {
@@ -1270,12 +1275,6 @@ const BookingCell = ({
     return colors[colorIndex];
   };
 
-  const style = {
-    left: isTruncatedLeft === true ? "0" : "50%",
-    width: bookingWidth,
-    transform: isTruncatedLeft ? "translateX(0%)" : "translateX(0%)",
-  };
-
   return (
     <div
       onClick={onClick}
@@ -1292,7 +1291,7 @@ const BookingCell = ({
         <div className="font-bold text-xs text-white drop-shadow-sm truncate">{booking.guest_name.split(" ")[0]}</div>
 
         {/* Nights count */}
-        <div className="text-[10px] text-white/90 font-medium">{booking.total_nights} Malam</div>
+        <div className="text-[10px] text-white/90 font-medium">{totalNights} Malam</div>
       </div>
 
       {/* LCO Badge - Show on the end */}
@@ -1359,6 +1358,9 @@ const RoomCell = ({
   const bookingCheckIn = booking ? booking.check_in.substring(0, 10) : null;
   const bookingCheckOut = booking ? booking.check_out.substring(0, 10) : null;
   
+  // Check if this is checkout day (guest checks out today, but booking ends)
+  const isCheckoutDay = booking && bookingCheckOut === dateStr && bookingCheckIn !== dateStr;
+  
   // Check if booking started before visible range - explicit boolean conversion
   const isTruncatedLeft = Boolean(
     booking && 
@@ -1424,16 +1426,14 @@ const RoomCell = ({
       className={cn(
         "border border-border p-0 relative h-14 min-w-[60px] transition-all duration-200",
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
-        !isHolidayOrWeekend && "bg-background",
+        isTodayDate && !isHolidayOrWeekend && "bg-primary/5 ring-1 ring-primary/30",
+        !isTodayDate && !isHolidayOrWeekend && "bg-background",
+        (isBlocked && !booking) && "bg-gray-100/50 dark:bg-gray-800/30",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
         !isClickable && "cursor-context-menu",
       )}
       title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
     >
-      {/* Today indicator */}
-      {isTodayDate && (
-        <div className="absolute top-0 left-0 right-0 h-1 bg-primary/70 rounded-t z-20" />
-      )}
 
       {/* Blocked Date Pattern */}
       {isBlocked && (
@@ -1469,6 +1469,7 @@ const RoomCell = ({
           onClick={() => handleBookingClick(booking)}
           visibleNights={visibleNights}
           isTruncatedLeft={isTruncatedLeft}
+          isCheckoutDay={isCheckoutDay}
         />
       )}
 
