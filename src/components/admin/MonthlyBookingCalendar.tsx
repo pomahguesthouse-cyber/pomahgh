@@ -203,15 +203,23 @@ export const MonthlyBookingCalendar = () => {
   };
 
   // Check if date is blocked
-  const isDateBlocked = (roomId: string, date: Date): boolean => {
+  const isDateBlocked = (roomId: string, roomNumber: string, date: Date): boolean => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return unavailableDates.some((d) => d.room_id === roomId && d.unavailable_date === dateStr);
+    return unavailableDates.some((d) => 
+      d.room_id === roomId && 
+      d.room_number === roomNumber && 
+      d.unavailable_date === dateStr
+    );
   };
 
   // Get block reason
-  const getBlockReason = (roomId: string, date: Date): string | undefined => {
+  const getBlockReason = (roomId: string, roomNumber: string, date: Date): string | undefined => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return unavailableDates.find((d) => d.room_id === roomId && d.unavailable_date === dateStr)?.reason;
+    return unavailableDates.find((d) => 
+      d.room_id === roomId && 
+      d.room_number === roomNumber && 
+      d.unavailable_date === dateStr
+    )?.reason;
   };
 
   // Check if this is the first day of a booking
@@ -400,6 +408,7 @@ export const MonthlyBookingCalendar = () => {
     await removeUnavailableDates([
       {
         room_id: contextMenu.roomId,
+        room_number: contextMenu.roomNumber,
         unavailable_date: dateStr,
       },
     ]);
@@ -420,6 +429,7 @@ export const MonthlyBookingCalendar = () => {
     // Create array of unavailable date objects
     const datesToBlock = datesInRange.map(date => ({
       room_id: blockDialog.roomId!,
+      room_number: blockDialog.roomNumber,
       unavailable_date: format(date, "yyyy-MM-dd"),
       reason: blockDialog.reason || "Blocked by admin",
     }));
@@ -1050,7 +1060,7 @@ export const MonthlyBookingCalendar = () => {
             left: contextMenu.x,
           }}
         >
-          {isDateBlocked(contextMenu.roomId, contextMenu.date) ? (
+          {isDateBlocked(contextMenu.roomId, contextMenu.roomNumber, contextMenu.date) ? (
             <button
               onClick={handleUnblockDate}
               className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
@@ -1434,8 +1444,8 @@ const RoomRow = ({
   getBookingForCell: (roomNumber: string, date: Date) => Booking | null;
   isBookingStart: (booking: Booking, date: Date) => boolean;
   isBookingEnd: (booking: Booking, date: Date) => boolean;
-  isDateBlocked: (roomId: string, date: Date) => boolean;
-  getBlockReason: (roomId: string, date: Date) => string | undefined;
+  isDateBlocked: (roomId: string, roomNumber: string, date: Date) => boolean;
+  getBlockReason: (roomId: string, roomNumber: string, date: Date) => string | undefined;
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
@@ -1449,8 +1459,8 @@ const RoomRow = ({
         const booking = getBookingForCell(room.roomNumber, date);
         const isWeekend = getDay(date) === 0 || getDay(date) === 6;
         const holiday = isIndonesianHoliday(date);
-        const isBlocked = isDateBlocked(room.roomId, date);
-        const blockReason = getBlockReason(room.roomId, date);
+        const isBlocked = isDateBlocked(room.roomId, room.roomNumber, date);
+        const blockReason = getBlockReason(room.roomId, room.roomNumber, date);
         return (
           <RoomCell
             key={date.toISOString()}

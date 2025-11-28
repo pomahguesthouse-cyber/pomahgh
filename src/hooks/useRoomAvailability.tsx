@@ -5,6 +5,7 @@ import { toast } from "sonner";
 interface UnavailableDate {
   id: string;
   room_id: string;
+  room_number?: string;
   unavailable_date: string;
   reason?: string;
   created_by?: string;
@@ -38,7 +39,7 @@ export const useRoomAvailability = (roomId?: string) => {
   });
 
   const addUnavailableDates = useMutation({
-    mutationFn: async (dates: { room_id: string; unavailable_date: string; reason?: string; created_by?: string }[]) => {
+    mutationFn: async (dates: { room_id: string; room_number?: string; unavailable_date: string; reason?: string; created_by?: string }[]) => {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -75,15 +76,21 @@ export const useRoomAvailability = (roomId?: string) => {
   });
 
   const removeUnavailableDates = useMutation({
-    mutationFn: async (dates: { room_id: string; unavailable_date: string }[]) => {
+    mutationFn: async (dates: { room_id: string; room_number?: string; unavailable_date: string }[]) => {
       // Delete matching dates for the room
-      const promises = dates.map(({ room_id, unavailable_date }) =>
-        supabase
+      const promises = dates.map(({ room_id, room_number, unavailable_date }) => {
+        let query = supabase
           .from("room_unavailable_dates")
           .delete()
           .eq("room_id", room_id)
-          .eq("unavailable_date", unavailable_date)
-      );
+          .eq("unavailable_date", unavailable_date);
+        
+        if (room_number) {
+          query = query.eq("room_number", room_number);
+        }
+        
+        return query;
+      });
 
       const results = await Promise.all(promises);
       const errors = results.filter(r => r.error);

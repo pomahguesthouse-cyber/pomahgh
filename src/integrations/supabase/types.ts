@@ -1260,6 +1260,7 @@ export type Database = {
           id: string
           reason: string | null
           room_id: string
+          room_number: string | null
           unavailable_date: string
           updated_at: string | null
         }
@@ -1269,6 +1270,7 @@ export type Database = {
           id?: string
           reason?: string | null
           room_id: string
+          room_number?: string | null
           unavailable_date: string
           updated_at?: string | null
         }
@@ -1278,6 +1280,7 @@ export type Database = {
           id?: string
           reason?: string | null
           room_id?: string
+          room_number?: string | null
           unavailable_date?: string
           updated_at?: string | null
         }
