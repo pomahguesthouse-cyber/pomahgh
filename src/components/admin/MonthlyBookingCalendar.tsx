@@ -99,6 +99,7 @@ export const MonthlyBookingCalendar = () => {
     roomId?: string;
     roomNumber?: string;
     date?: Date;
+    endDate?: Date;
     reason?: string;
   }>({
     open: false,
@@ -388,6 +389,7 @@ export const MonthlyBookingCalendar = () => {
       roomId: contextMenu.roomId,
       roomNumber: contextMenu.roomNumber,
       date: contextMenu.date,
+      endDate: contextMenu.date,
       reason: "",
     });
     setContextMenu(null);
@@ -405,17 +407,30 @@ export const MonthlyBookingCalendar = () => {
   };
   const handleSaveBlock = async () => {
     if (!blockDialog.roomId || !blockDialog.date) return;
-    const dateStr = format(blockDialog.date, "yyyy-MM-dd");
-    await addUnavailableDates([
-      {
-        room_id: blockDialog.roomId,
-        unavailable_date: dateStr,
-        reason: blockDialog.reason || "Blocked by admin",
-      },
-    ]);
+    
+    const startDate = blockDialog.date;
+    const endDate = blockDialog.endDate || blockDialog.date;
+    
+    // Generate all dates in range
+    const datesInRange = eachDayOfInterval({
+      start: startDate,
+      end: endDate,
+    });
+    
+    // Create array of unavailable date objects
+    const datesToBlock = datesInRange.map(date => ({
+      room_id: blockDialog.roomId!,
+      unavailable_date: format(date, "yyyy-MM-dd"),
+      reason: blockDialog.reason || "Blocked by admin",
+    }));
+    
+    await addUnavailableDates(datesToBlock);
+    
     setBlockDialog({
       open: false,
     });
+    
+    toast.success(`${datesToBlock.length} tanggal berhasil diblokir`);
   };
 
   // Close context menu when clicking outside
@@ -1066,14 +1081,47 @@ export const MonthlyBookingCalendar = () => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Block Date</DialogTitle>
-            <DialogDescription>Block this date to prevent new bookings for {blockDialog.roomNumber}</DialogDescription>
+            <DialogTitle>Block Date Range</DialogTitle>
+            <DialogDescription>Block dates to prevent new bookings for {blockDialog.roomNumber}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Date</Label>
-              <Input value={blockDialog.date ? format(blockDialog.date, "PPP") : ""} disabled className="mt-1" />
+              <Label>Start Date</Label>
+              <Input 
+                type="date" 
+                value={blockDialog.date ? format(blockDialog.date, "yyyy-MM-dd") : ""} 
+                onChange={(e) => setBlockDialog({
+                  ...blockDialog,
+                  date: e.target.value ? new Date(e.target.value) : undefined
+                })}
+                className="mt-1" 
+              />
             </div>
+            
+            <div>
+              <Label>End Date</Label>
+              <Input 
+                type="date" 
+                value={blockDialog.endDate ? format(blockDialog.endDate, "yyyy-MM-dd") : ""} 
+                onChange={(e) => setBlockDialog({
+                  ...blockDialog,
+                  endDate: e.target.value ? new Date(e.target.value) : undefined
+                })}
+                min={blockDialog.date ? format(blockDialog.date, "yyyy-MM-dd") : undefined}
+                className="mt-1" 
+              />
+            </div>
+            
+            {blockDialog.date && blockDialog.endDate && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Total: <span className="font-bold text-foreground">
+                    {differenceInDays(blockDialog.endDate, blockDialog.date) + 1} hari
+                  </span> akan diblokir
+                </p>
+              </div>
+            )}
+            
             <div>
               <Label htmlFor="reason">Reason (Optional)</Label>
               <Textarea
@@ -1085,7 +1133,7 @@ export const MonthlyBookingCalendar = () => {
                     reason: e.target.value,
                   })
                 }
-                placeholder="e.g., Maintenance, Private event..."
+                placeholder="e.g., Maintenance, Private event, Renovation..."
                 className="mt-1"
                 rows={3}
               />
@@ -1102,7 +1150,9 @@ export const MonthlyBookingCalendar = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveBlock}>Block Date</Button>
+            <Button onClick={handleSaveBlock}>
+              Block {blockDialog.endDate && blockDialog.date && blockDialog.endDate > blockDialog.date ? 'Dates' : 'Date'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
