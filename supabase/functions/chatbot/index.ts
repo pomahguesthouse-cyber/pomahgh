@@ -79,6 +79,11 @@ serve(async (req) => {
 📅 TANGGAL SEKARANG: ${currentDateIndonesian} (${currentDateISO})
 ⚠️ TAHUN SEKARANG: 2025
 
+⚠️ FORMAT KODE BOOKING:
+- Kode booking baru: PMH-XXXXXX (contoh: PMH-Y739M3, PMH-TBGXC7)
+- JANGAN gunakan UUID panjang seperti "a106ab78-0a9a-4850-8076-59e13d9eb227"
+- Jika tamu memberikan UUID panjang, minta mereka cek email/WhatsApp untuk kode baru format PMH-XXXXXX
+
 INFORMASI LENGKAP ${hotelSettings?.hotel_name || 'POMAH GUESTHOUSE'}:
 
 📍 LOKASI & KONTAK:
@@ -246,7 +251,7 @@ BAHASA:
             properties: {
               booking_id: { 
                 type: "string", 
-                description: "Kode/ID booking (UUID format atau sebagian ID)" 
+                description: "Kode booking format PMH-XXXXXX (contoh: PMH-Y739M3). Bukan UUID panjang." 
               },
               guest_phone: { 
                 type: "string", 
@@ -269,7 +274,7 @@ BAHASA:
           parameters: {
             type: "object",
             properties: {
-              booking_id: { type: "string", description: "Kode/ID booking" },
+              booking_id: { type: "string", description: "Kode booking format PMH-XXXXXX" },
               guest_phone: { type: "string", description: "Nomor telepon pemesan untuk verifikasi" },
               guest_email: { type: "string", description: "Email pemesan untuk verifikasi" },
               new_check_in: { type: "string", description: "Tanggal check-in baru (YYYY-MM-DD)" },
@@ -291,7 +296,7 @@ BAHASA:
             properties: {
               booking_id: { 
                 type: "string", 
-                description: "Kode/ID booking" 
+                description: "Kode booking format PMH-XXXXXX" 
               },
               guest_phone: { 
                 type: "string", 
