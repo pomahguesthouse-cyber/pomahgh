@@ -51,7 +51,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { isIndonesianHoliday, type IndonesianHoliday } from "@/utils/indonesianHolidays";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -140,6 +140,18 @@ export const MonthlyBookingCalendar = () => {
   const { unavailableDates, addUnavailableDates, removeUnavailableDates } = useRoomAvailability();
   const queryClient = useQueryClient();
 
+  // Fetch booking_rooms for multi-room bookings
+  const { data: bookingRooms } = useQuery({
+    queryKey: ["booking-rooms"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("booking_rooms")
+        .select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Calculate date range based on view selection
   const dates = useMemo(() => {
     const startDate = currentDate;
@@ -224,7 +236,28 @@ export const MonthlyBookingCalendar = () => {
       return dateStr >= checkIn && dateStr <= checkOut;
     });
 
-    return directBooking || null;
+    if (directBooking) return directBooking;
+
+    // Check booking_rooms junction table for multi-room bookings
+    if (bookingRooms) {
+      const matchingBookingRoom = bookingRooms.find(br => br.room_number === roomNumber);
+      
+      if (matchingBookingRoom) {
+        const booking = bookings.find(b => {
+          if (b.id !== matchingBookingRoom.booking_id) return false;
+          if (b.status === "cancelled") return false;
+          
+          const checkIn = b.check_in.substring(0, 10);
+          const checkOut = b.check_out.substring(0, 10);
+          
+          return dateStr >= checkIn && dateStr <= checkOut;
+        });
+        
+        if (booking) return booking;
+      }
+    }
+
+    return null;
   };
 
   // Check if date is blocked
@@ -1358,8 +1391,9 @@ const RoomCell = ({
   const bookingCheckIn = booking ? booking.check_in.substring(0, 10) : null;
   const bookingCheckOut = booking ? booking.check_out.substring(0, 10) : null;
   
-  // Check if this is checkout day (guest checks out today, but booking ends)
-  const isCheckoutDay = booking && bookingCheckOut === dateStr && bookingCheckIn !== dateStr;
+  // Check if this is checkout day (guest checks out today)
+  // Checkout day is when: checkout date matches AND check-in is different
+  const isCheckoutDay = Boolean(booking && bookingCheckOut === dateStr && bookingCheckIn !== dateStr);
   
   // Check if booking started before visible range - explicit boolean conversion
   const isTruncatedLeft = Boolean(
@@ -1373,7 +1407,8 @@ const RoomCell = ({
   // A booking should render if:
   // 1. Its check-in is on this date, OR
   // 2. Its check-in is before this date AND this is the first visible date AND the booking is still active
-  const isStart = booking 
+  // Note: Don't mark as start if this is ONLY a checkout day (not the actual start)
+  const isStart = booking && !isCheckoutDay
     ? bookingCheckIn === dateStr || isTruncatedLeft
     : false;
   
@@ -1460,16 +1495,16 @@ const RoomCell = ({
         </div>
       )}
 
-      {/* Render single booking */}
+      {/* Render booking cell */}
       {booking && !isBlocked && (isStart || isCheckoutDay) && (
         <BookingCell 
           booking={booking} 
           isStart={isStart} 
           isEnd={isEnd} 
           onClick={() => handleBookingClick(booking)}
-          visibleNights={isCheckoutDay && !isStart ? 1 : visibleNights}
-          isTruncatedLeft={isTruncatedLeft}
-          isCheckoutDay={isCheckoutDay && !isStart}
+          visibleNights={isCheckoutDay ? 1 : visibleNights}
+          isTruncatedLeft={isTruncatedLeft && !isCheckoutDay}
+          isCheckoutDay={isCheckoutDay}
         />
       )}
 
