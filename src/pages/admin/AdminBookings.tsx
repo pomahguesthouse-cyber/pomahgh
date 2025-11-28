@@ -396,8 +396,8 @@ const AdminBookings = () => {
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="flex items-center gap-1">
-                      <h3 className="font-semibold text-lg">
-                        {booking.id}
+                      <h3 className="font-semibold text-lg text-primary">
+                        {booking.booking_code}
                       </h3>
                       <Button
                         size="icon"
@@ -405,14 +405,14 @@ const AdminBookings = () => {
                         className="h-6 w-6"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigator.clipboard.writeText(booking.id);
-                          setCopiedBookingId(booking.id);
-                          toast.success("Booking ID copied!");
+                          navigator.clipboard.writeText(booking.booking_code);
+                          setCopiedBookingId(booking.booking_code);
+                          toast.success("Booking code copied!");
                           setTimeout(() => setCopiedBookingId(null), 2000);
                         }}
-                        title="Copy booking ID"
+                        title="Copy booking code"
                       >
-                        {copiedBookingId === booking.id ? (
+                        {copiedBookingId === booking.booking_code ? (
                           <Check className="h-3 w-3 text-green-600" />
                         ) : (
                           <Copy className="h-3 w-3" />

@@ -190,6 +190,7 @@ export type Database = {
       bookings: {
         Row: {
           allocated_room_number: string | null
+          booking_code: string
           booking_source: string | null
           check_in: string
           check_in_time: string | null
@@ -216,6 +217,7 @@ export type Database = {
         }
         Insert: {
           allocated_room_number?: string | null
+          booking_code: string
           booking_source?: string | null
           check_in: string
           check_in_time?: string | null
@@ -242,6 +244,7 @@ export type Database = {
         }
         Update: {
           allocated_room_number?: string | null
+          booking_code?: string
           booking_source?: string | null
           check_in?: string
           check_in_time?: string | null
@@ -1540,6 +1543,7 @@ export type Database = {
           total_allotment: number
         }[]
       }
+      generate_booking_code: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       has_role: {
         Args: {

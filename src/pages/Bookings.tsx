@@ -11,6 +11,7 @@ import { Footer } from "@/components/Footer";
 
 interface Booking {
   id: string;
+  booking_code: string;
   room_id: string;
   check_in: string;
   check_out: string;
@@ -123,7 +124,7 @@ const Bookings = () => {
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle>Booking #{booking.id.slice(0, 8)}</CardTitle>
+                        <CardTitle>Booking {booking.booking_code}</CardTitle>
                         <CardDescription>
                           Created {format(new Date(booking.created_at), "MMM dd, yyyy")}
                         </CardDescription>

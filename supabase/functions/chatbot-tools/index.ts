@@ -210,7 +210,7 @@ serve(async (req) => {
         // Check for existing pending booking from chatbot for this guest
         const { data: existingBooking } = await supabase
           .from("bookings")
-          .select("id, check_in, check_out, room_id, total_price")
+          .select("id, booking_code, check_in, check_out, room_id, total_price")
           .eq("guest_email", guest_email)
           .eq("guest_phone", guest_phone)
           .eq("status", "pending")
@@ -296,8 +296,8 @@ serve(async (req) => {
         // Send WhatsApp notifications (background task)
         if (hotelSettings?.whatsapp_number) {
           const adminMessage = isUpdate
-            ? `🔄 *RESCHEDULE BOOKING (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\nKamar: ${room.name}\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\nTotal: Rp ${total_price.toLocaleString('id-ID')}\n\nBooking ID: ${booking.id}\n\n⚠️ Booking ini telah diperbarui oleh guest melalui chatbot.`
-            : `🔔 *BOOKING BARU (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\nKamar: ${room.name}\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\nTotal: Rp ${total_price.toLocaleString('id-ID')}\n\nBooking ID: ${booking.id}`;
+            ? `🔄 *RESCHEDULE BOOKING (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\nKamar: ${room.name}\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\nTotal: Rp ${total_price.toLocaleString('id-ID')}\n\nKode Booking: ${booking.booking_code}\n\n⚠️ Booking ini telah diperbarui oleh guest melalui chatbot.`
+            : `🔔 *BOOKING BARU (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\nKamar: ${room.name}\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\nTotal: Rp ${total_price.toLocaleString('id-ID')}\n\nKode Booking: ${booking.booking_code}`;
           
           // Send to admin
           fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
@@ -316,8 +316,8 @@ serve(async (req) => {
           // Send to customer if phone provided
           if (guest_phone) {
             const customerMessage = isUpdate
-              ? `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${room.name}\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${total_price.toLocaleString('id-ID')}\n\n📝 Booking ID: ${booking.id}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
-              : `Terima kasih ${guest_name}! 🙏\n\nBooking Anda telah kami terima:\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${room.name}\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${total_price.toLocaleString('id-ID')}\n\n📝 Booking ID: ${booking.id}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`;
+              ? `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${room.name}\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${total_price.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${booking.booking_code}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
+              : `Terima kasih ${guest_name}! 🙏\n\nBooking Anda telah kami terima:\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${room.name}\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${total_price.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${booking.booking_code}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`;
             
             fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
               method: "POST",
@@ -336,9 +336,9 @@ serve(async (req) => {
 
         result = {
           message: isUpdate
-            ? `Booking berhasil diperbarui! Nomor booking: ${booking.id}. Check-in baru: ${check_in}, Check-out baru: ${check_out}. Total baru: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
-            : `Booking berhasil dibuat! Nomor booking: ${booking.id}. Status: Menunggu konfirmasi. Total: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran melalui WhatsApp.`,
-          booking_id: booking.id,
+            ? `Booking berhasil diperbarui! Kode booking: ${booking.booking_code}. Check-in baru: ${check_in}, Check-out baru: ${check_out}. Total baru: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
+            : `Booking berhasil dibuat! Kode booking: ${booking.booking_code}. Status: Menunggu konfirmasi. Total: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran melalui WhatsApp.`,
+          booking_code: booking.booking_code,
           total_price,
           status: 'pending',
           is_update: isUpdate
@@ -362,17 +362,17 @@ serve(async (req) => {
 
         console.log(`Original booking_id: "${booking_id}" -> Sanitized: "${sanitizedBookingId}"`);
 
-        // Query booking dengan verifikasi email
+        // Query booking by booking_code dengan verifikasi email
         const { data: booking, error } = await supabase
           .from("bookings")
           .select(`
-            id, guest_name, guest_email, guest_phone,
+            id, booking_code, guest_name, guest_email, guest_phone,
             check_in, check_out, check_in_time, check_out_time,
             num_guests, total_nights, total_price, status, payment_status,
             special_requests, allocated_room_number, created_at,
             rooms:room_id (name, price_per_night, max_guests)
           `)
-          .or(`id.eq.${sanitizedBookingId},id.ilike.%${sanitizedBookingId}%`)
+          .eq("booking_code", sanitizedBookingId.toUpperCase())
           .ilike("guest_email", guest_email)
           .single();
 
@@ -388,7 +388,7 @@ serve(async (req) => {
         }
 
         result = {
-          booking_id: booking.id,
+          booking_code: booking.booking_code,
           guest_name: booking.guest_name,
           guest_email: booking.guest_email,
           guest_phone: booking.guest_phone,
@@ -421,11 +421,11 @@ serve(async (req) => {
 
         console.log(`Original booking_id: "${booking_id}" -> Sanitized: "${sanitizedBookingId}"`);
 
-        // 1. Verify booking dengan 3 faktor
+        // 1. Verify booking by booking_code dengan 3 faktor
         const { data: existingBooking, error: findError } = await supabase
           .from("bookings")
-          .select("id, guest_name, guest_email, guest_phone, room_id, check_in, check_out, num_guests, status, total_price")
-          .or(`id.eq.${sanitizedBookingId},id.ilike.%${sanitizedBookingId}%`)
+          .select("id, booking_code, guest_name, guest_email, guest_phone, room_id, check_in, check_out, num_guests, status, total_price")
+          .eq("booking_code", sanitizedBookingId.toUpperCase())
           .ilike("guest_email", guest_email)
           .single();
 
@@ -513,7 +513,7 @@ serve(async (req) => {
           .update(updateData)
           .eq("id", existingBooking.id)
           .select(`
-            id, guest_name, guest_email, guest_phone,
+            id, booking_code, guest_name, guest_email, guest_phone,
             check_in, check_out, num_guests, total_nights, total_price,
             special_requests, status, payment_status,
             rooms:room_id (name)
@@ -529,7 +529,7 @@ serve(async (req) => {
           .single();
 
         if (hotelSettings?.whatsapp_number) {
-          const adminMessage = `🔄 *PERUBAHAN BOOKING*\n\nNama: ${updatedBooking.guest_name}\nEmail: ${updatedBooking.guest_email}\nTelp: ${updatedBooking.guest_phone || '-'}\nKamar: ${(updatedBooking.rooms as any)?.name}\nCheck-in: ${updatedBooking.check_in}\nCheck-out: ${updatedBooking.check_out}\nTamu: ${updatedBooking.num_guests}\nTotal: Rp ${updatedBooking.total_price.toLocaleString('id-ID')}\n\nBooking ID: ${updatedBooking.id}\nStatus: ${updatedBooking.status}`;
+          const adminMessage = `🔄 *PERUBAHAN BOOKING*\n\nNama: ${updatedBooking.guest_name}\nEmail: ${updatedBooking.guest_email}\nTelp: ${updatedBooking.guest_phone || '-'}\nKamar: ${(updatedBooking.rooms as any)?.name}\nCheck-in: ${updatedBooking.check_in}\nCheck-out: ${updatedBooking.check_out}\nTamu: ${updatedBooking.num_guests}\nTotal: Rp ${updatedBooking.total_price.toLocaleString('id-ID')}\n\nKode Booking: ${updatedBooking.booking_code}\nStatus: ${updatedBooking.status}`;
           
           // Send to admin
           fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
@@ -547,7 +547,7 @@ serve(async (req) => {
 
           // Send to customer
           if (updatedBooking.guest_phone) {
-            const customerMessage = `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${(updatedBooking.rooms as any)?.name}\n📅 Check-in: ${updatedBooking.check_in}\n📅 Check-out: ${updatedBooking.check_out}\n👥 Tamu: ${updatedBooking.num_guests}\n💰 Total: Rp ${updatedBooking.total_price.toLocaleString('id-ID')}\n\n📝 Booking ID: ${updatedBooking.id}\n📊 Status: ${updatedBooking.status}`;
+            const customerMessage = `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${(updatedBooking.rooms as any)?.name}\n📅 Check-in: ${updatedBooking.check_in}\n📅 Check-out: ${updatedBooking.check_out}\n👥 Tamu: ${updatedBooking.num_guests}\n💰 Total: Rp ${updatedBooking.total_price.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${updatedBooking.booking_code}\n📊 Status: ${updatedBooking.status}`;
             
             fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
               method: "POST",
@@ -566,7 +566,7 @@ serve(async (req) => {
 
         result = {
           message: "Booking berhasil diubah!",
-          booking_id: updatedBooking.id,
+          booking_code: updatedBooking.booking_code,
           room_name: (updatedBooking.rooms as any)?.name,
           check_in: updatedBooking.check_in,
           check_out: updatedBooking.check_out,
@@ -595,15 +595,15 @@ serve(async (req) => {
 
       console.log(`Original booking_id: "${booking_id}" -> Sanitized: "${sanitizedBookingId}"`);
 
-      // Query booking dengan verifikasi email
+      // Query booking by booking_code dengan verifikasi email
       const { data: booking, error } = await supabase
           .from("bookings")
         .select(`
-          id, guest_name, guest_email, guest_phone,
+          id, booking_code, guest_name, guest_email, guest_phone,
           check_in, check_out, total_price, payment_status, payment_amount,
           status, rooms:room_id (name)
         `)
-        .or(`id.eq.${sanitizedBookingId},id.ilike.%${sanitizedBookingId}%`)
+        .eq("booking_code", sanitizedBookingId.toUpperCase())
           .ilike("guest_email", guest_email)
           .single();
 
@@ -654,7 +654,7 @@ serve(async (req) => {
         }
 
         result = {
-          booking_id: booking.id,
+          booking_code: booking.booking_code,
           guest_name: booking.guest_name,
           room_name: (booking.rooms as any)?.name,
           check_in: booking.check_in,
