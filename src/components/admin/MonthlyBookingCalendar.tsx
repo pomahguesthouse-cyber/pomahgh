@@ -197,8 +197,10 @@ export const MonthlyBookingCalendar = () => {
     const matchingBookings = bookings.filter((booking) => {
       if (booking.status === "cancelled") return false;
       if (booking.allocated_room_number !== roomNumber) return false;
-      const checkIn = booking.check_in;
-      const checkOut = booking.check_out;
+      
+      // Normalize date formats - extract YYYY-MM-DD only
+      const checkIn = booking.check_in.substring(0, 10);
+      const checkOut = booking.check_out.substring(0, 10);
 
       // Include booking if date is within range
       return dateStr >= checkIn && dateStr < checkOut;
@@ -1325,21 +1327,25 @@ const RoomCell = ({
   const dateStr = format(date, "yyyy-MM-dd");
   const firstVisibleStr = format(firstVisibleDate, "yyyy-MM-dd");
   
+  // Normalize booking dates - extract YYYY-MM-DD only
+  const bookingCheckIn = booking ? booking.check_in.substring(0, 10) : null;
+  const bookingCheckOut = booking ? booking.check_out.substring(0, 10) : null;
+  
   // A booking should render if:
   // 1. Its check-in is on this date, OR
   // 2. Its check-in is before this date AND this is the first visible date AND the booking extends beyond this date
   const isStart = booking 
-    ? booking.check_in === dateStr || 
-      (booking.check_in < dateStr && dateStr === firstVisibleStr && booking.check_out > dateStr)
+    ? bookingCheckIn === dateStr || 
+      (bookingCheckIn < dateStr && dateStr === firstVisibleStr && bookingCheckOut > dateStr)
     : false;
   
-  const checkOutDate = booking ? new Date(booking.check_out) : null;
+  const checkOutDate = bookingCheckOut ? new Date(bookingCheckOut) : null;
   if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
   const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
   
   // Calculate visible nights for bookings that started before the visible range
   let visibleNights = booking?.total_nights;
-  const isTruncatedLeft = booking && booking.check_in < firstVisibleStr && dateStr === firstVisibleStr;
+  const isTruncatedLeft = booking && bookingCheckIn < firstVisibleStr && dateStr === firstVisibleStr;
   
   if (isTruncatedLeft) {
     // Calculate how many nights are visible
