@@ -46,6 +46,13 @@ export interface HotelSettings {
   bank_name?: string;
   account_number?: string;
   account_holder_name?: string;
+  refund_policy_enabled?: boolean;
+  refund_policy_type?: string;
+  full_refund_days_before?: number;
+  partial_refund_days_before?: number;
+  partial_refund_percentage?: number;
+  no_refund_days_before?: number;
+  refund_policy_text?: string;
 }
 
 export const useHotelSettings = () => {

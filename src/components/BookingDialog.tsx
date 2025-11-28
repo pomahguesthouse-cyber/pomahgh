@@ -19,6 +19,8 @@ import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useSearchDates } from "@/contexts/SearchDatesContext";
+import { RefundPolicyDisplay } from "@/components/RefundPolicyDisplay";
+import { AlertCircle } from "lucide-react";
 
 interface BookingDialogProps {
   room: Room | null;
@@ -406,6 +408,17 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
                 <span>Total</span>
                 <span className="text-primary">Rp {totalPrice.toLocaleString("id-ID")}</span>
               </div>
+            </div>
+          )}
+
+          {/* Refund Policy */}
+          {settings?.refund_policy_enabled && (
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg dark:bg-amber-950/20 dark:border-amber-900">
+              <h4 className="font-medium flex items-center gap-2 mb-2">
+                <AlertCircle className="w-4 h-4 text-amber-600" />
+                Kebijakan Pembatalan
+              </h4>
+              <RefundPolicyDisplay settings={settings} compact />
             </div>
           )}
 
