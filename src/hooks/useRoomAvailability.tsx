@@ -56,7 +56,7 @@ export const useRoomAvailability = (roomId?: string) => {
       const { data, error } = await supabase
         .from("room_unavailable_dates")
         .upsert(datesWithUser, {
-          onConflict: 'room_id,unavailable_date',
+          onConflict: 'room_id,unavailable_date,room_number',
           ignoreDuplicates: false
         })
         .select();
