@@ -37,8 +37,6 @@ import {
   Edit2,
   Save,
   X,
-  RefreshCw,
-  Loader2,
 } from "lucide-react";
 import {
   Dialog,
@@ -51,7 +49,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { isIndonesianHoliday, type IndonesianHoliday } from "@/utils/indonesianHolidays";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -82,29 +80,9 @@ interface Booking {
   };
 }
 const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
-
-// Timezone Indonesia (WIB = UTC+7)
-const getIndonesiaToday = (): Date => {
-  const now = new Date();
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const wibTime = new Date(utcTime + (7 * 60 * 60 * 1000));
-  return new Date(wibTime.getFullYear(), wibTime.getMonth(), wibTime.getDate());
-};
-
-const getIndonesiaTodayString = (): string => {
-  const today = getIndonesiaToday();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 type ViewRange = 7 | 14 | 30;
 export const MonthlyBookingCalendar = () => {
-  // Initialize to start of today using Indonesia timezone (WIB)
-  const [currentDate, setCurrentDate] = useState(() => {
-    return getIndonesiaToday();
-  });
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [viewRange, setViewRange] = useState<ViewRange>(30);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -135,22 +113,10 @@ export const MonthlyBookingCalendar = () => {
     open: false,
   });
 
-  const { bookings, updateBooking, isUpdating, isLoading } = useAdminBookings();
+  const { bookings, updateBooking, isUpdating } = useAdminBookings();
   const { rooms } = useAdminRooms();
   const { unavailableDates, addUnavailableDates, removeUnavailableDates } = useRoomAvailability();
   const queryClient = useQueryClient();
-
-  // Fetch booking_rooms for multi-room bookings
-  const { data: bookingRooms } = useQuery({
-    queryKey: ["booking-rooms"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("booking_rooms")
-        .select("*");
-      if (error) throw error;
-      return data;
-    },
-  });
 
   // Calculate date range based on view selection
   const dates = useMemo(() => {
@@ -222,42 +188,18 @@ export const MonthlyBookingCalendar = () => {
   const getBookingForCell = (roomNumber: string, date: Date): Booking | null => {
     if (!bookings) return null;
     const dateStr = format(date, "yyyy-MM-dd");
-    
-    // First check direct bookings (backward compatibility)
-    const directBooking = bookings.find((booking) => {
+    const matchingBookings = bookings.filter((booking) => {
       if (booking.status === "cancelled") return false;
       if (booking.allocated_room_number !== roomNumber) return false;
-      
-      // Normalize date formats - extract YYYY-MM-DD only
-      const checkIn = booking.check_in.substring(0, 10);
-      const checkOut = booking.check_out.substring(0, 10);
+      const checkIn = booking.check_in;
+      const checkOut = booking.check_out;
 
-      // Include booking if date is within range (including checkout date - guest is still present)
-      return dateStr >= checkIn && dateStr <= checkOut;
+      // Include booking if date is within range
+      return dateStr >= checkIn && dateStr < checkOut;
     });
 
-    if (directBooking) return directBooking;
-
-    // Check booking_rooms junction table for multi-room bookings
-    if (bookingRooms) {
-      const matchingBookingRoom = bookingRooms.find(br => br.room_number === roomNumber);
-      
-      if (matchingBookingRoom) {
-        const booking = bookings.find(b => {
-          if (b.id !== matchingBookingRoom.booking_id) return false;
-          if (b.status === "cancelled") return false;
-          
-          const checkIn = b.check_in.substring(0, 10);
-          const checkOut = b.check_out.substring(0, 10);
-          
-          return dateStr >= checkIn && dateStr <= checkOut;
-        });
-        
-        if (booking) return booking;
-      }
-    }
-
-    return null;
+    // Return the first matching booking (validation prevents double bookings)
+    return matchingBookings[0] || null;
   };
 
   // Check if date is blocked
@@ -283,7 +225,7 @@ export const MonthlyBookingCalendar = () => {
   // Check if this is the first day of a booking
   const isBookingStart = (booking: Booking, date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return dateStr === booking.check_in.substring(0, 10);
+    return dateStr === booking.check_in;
   };
 
   // Check if this is the last day of a booking
@@ -338,7 +280,7 @@ export const MonthlyBookingCalendar = () => {
     setCurrentDate(addDays(currentDate, viewRange));
   };
   const handleGoToToday = () => {
-    setCurrentDate(getIndonesiaToday());
+    setCurrentDate(new Date());
   };
   const handleMonthYearChange = (value: string) => {
     // value format: "2024-11"
@@ -580,28 +522,10 @@ export const MonthlyBookingCalendar = () => {
                 <Button onClick={handleNextMonth} variant="outline" size="icon">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-
-                <Button 
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-bookings"] })} 
-                  variant="outline" 
-                  size="icon"
-                  disabled={isLoading}
-                  title="Refresh data booking"
-                >
-                  <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-                </Button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex items-center justify-center h-32 gap-3">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">Memuat data booking...</span>
-          </div>
-        )}
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
@@ -1264,7 +1188,6 @@ const BookingCell = ({
   onClick,
   visibleNights,
   isTruncatedLeft,
-  isCheckoutDay,
 }: {
   booking: Booking;
   isStart: boolean;
@@ -1272,24 +1195,10 @@ const BookingCell = ({
   onClick: () => void;
   visibleNights?: number;
   isTruncatedLeft?: boolean;
-  isCheckoutDay?: boolean;
 }) => {
   const isPending = booking.status === "pending";
-  const totalNights = visibleNights ?? booking.total_nights;
+  const totalNights = visibleNights || booking.total_nights;
   const bookingWidth = `${totalNights * 100}%`;
-
-  // Special styling for checkout day - small centered box
-  const style = isCheckoutDay 
-    ? {
-        left: "25%",
-        width: "50%",
-        transform: "translateX(0)",
-      }
-    : {
-        left: isTruncatedLeft ? "0" : "50%",
-        width: bookingWidth,
-        transform: isTruncatedLeft ? "translateX(0%)" : "translateX(0%)",
-      };
 
   const getBackgroundClass = () => {
     if (isPending) {
@@ -1308,6 +1217,12 @@ const BookingCell = ({
     return colors[colorIndex];
   };
 
+  const style = {
+    left: isTruncatedLeft ? "0" : "50%",
+    width: bookingWidth,
+    transform: isTruncatedLeft ? "translateX(0%)" : "translateX(0%)",
+  };
+
   return (
     <div
       onClick={onClick}
@@ -1324,7 +1239,7 @@ const BookingCell = ({
         <div className="font-bold text-xs text-white drop-shadow-sm truncate">{booking.guest_name.split(" ")[0]}</div>
 
         {/* Nights count */}
-        <div className="text-[10px] text-white/90 font-medium">{totalNights} Malam</div>
+        <div className="text-[10px] text-white/90 font-medium">{booking.total_nights} Malam</div>
       </div>
 
       {/* LCO Badge - Show on the end */}
@@ -1385,74 +1300,34 @@ const RoomCell = ({
   // Check if this is where the booking should start rendering
   const dateStr = format(date, "yyyy-MM-dd");
   const firstVisibleStr = format(firstVisibleDate, "yyyy-MM-dd");
-  const isTodayDate = dateStr === getIndonesiaTodayString();
-  
-  // Normalize booking dates - extract YYYY-MM-DD only
-  const bookingCheckIn = booking ? booking.check_in.substring(0, 10) : null;
-  const bookingCheckOut = booking ? booking.check_out.substring(0, 10) : null;
-  
-  // Check if this is checkout day (guest checks out today)
-  // Checkout day is when: checkout date matches AND check-in is different
-  const isCheckoutDay = Boolean(booking && bookingCheckOut === dateStr && bookingCheckIn !== dateStr);
-  
-  // Check if booking started before visible range - explicit boolean conversion
-  const isTruncatedLeft = Boolean(
-    booking && 
-    bookingCheckIn && 
-    bookingCheckOut &&
-    bookingCheckIn < firstVisibleStr && 
-    dateStr === firstVisibleStr
-  );
   
   // A booking should render if:
   // 1. Its check-in is on this date, OR
-  // 2. Its check-in is before this date AND this is the first visible date AND the booking is still active
-  // Note: Don't mark as start if this is ONLY a checkout day (not the actual start)
-  const isStart = booking && !isCheckoutDay
-    ? bookingCheckIn === dateStr || isTruncatedLeft
+  // 2. Its check-in is before the first visible date AND this is the first visible date AND the booking is active
+  const isStart = booking 
+    ? booking.check_in === dateStr || 
+      (booking.check_in < firstVisibleStr && dateStr === firstVisibleStr && booking.check_out > dateStr)
     : false;
   
-  // Check if this is the last day of the booking (checkout date)
-  const isEnd = booking && bookingCheckOut ? dateStr === bookingCheckOut : false;
+  const checkOutDate = booking ? new Date(booking.check_out) : null;
+  if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
+  const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
   
   // Calculate visible nights for bookings that started before the visible range
-  let visibleNights: number | undefined;
+  let visibleNights = booking?.total_nights;
+  const isTruncatedLeft = booking && booking.check_in < firstVisibleStr && dateStr === firstVisibleStr;
   
-  if (isTruncatedLeft && booking && bookingCheckOut) {
-    // Booking dimulai sebelum visible range, hitung sisa malam yang terlihat (include checkout date)
-    const checkOutDateObj = parseISO(bookingCheckOut);
-    const calculatedVisibleNights = differenceInDays(checkOutDateObj, firstVisibleDate) + 1;
-    visibleNights = Math.max(1, calculatedVisibleNights);
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[visibleNights] Truncated booking ${booking.id}:`, {
-        checkOut: bookingCheckOut,
-        firstVisible: firstVisibleStr,
-        calculatedVisibleNights,
-        visibleNights,
-        isTruncatedLeft,
-      });
-    }
-  } else if (booking) {
-    // Booking dimulai dalam visible range, gunakan total nights asli
-    visibleNights = booking.total_nights;
-  }
-  
-  // Debug logging
-  if (booking && process.env.NODE_ENV === 'development') {
-    console.log(`[RoomCell] Date: ${dateStr}, Booking: ${booking.id}`, {
-      bookingCheckIn,
-      bookingCheckOut,
-      firstVisibleStr,
-      isStart,
-      isTruncatedLeft,
-      visibleNights,
-    });
+  if (isTruncatedLeft) {
+    // Calculate how many nights are visible
+    const checkInDate = parseISO(booking.check_in);
+    const checkOutDate = parseISO(booking.check_out);
+    visibleNights = differenceInDays(checkOutDate, firstVisibleDate);
   }
 
   const isHolidayOrWeekend = isWeekend || holiday !== null;
   const hasBooking = booking !== null;
   const isClickable = !isBlocked && !hasBooking;
+  const isTodayDate = isToday(date);
 
   const cell = (
     <td
@@ -1461,15 +1336,12 @@ const RoomCell = ({
       className={cn(
         "border border-border p-0 relative h-14 min-w-[60px] transition-all duration-200",
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
-        isTodayDate && !isHolidayOrWeekend && "bg-primary/5 ring-1 ring-primary/30",
-        !isTodayDate && !isHolidayOrWeekend && "bg-background",
-        (isBlocked && !booking) && "bg-gray-100/50 dark:bg-gray-800/30",
+        !isHolidayOrWeekend && "bg-background",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
         !isClickable && "cursor-context-menu",
       )}
       title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
     >
-
       {/* Blocked Date Pattern */}
       {isBlocked && (
         <div
@@ -1495,16 +1367,15 @@ const RoomCell = ({
         </div>
       )}
 
-      {/* Render booking cell */}
-      {booking && !isBlocked && (isStart || isCheckoutDay) && (
+      {/* Render single booking */}
+      {booking && !isBlocked && isStart && (
         <BookingCell 
           booking={booking} 
           isStart={isStart} 
           isEnd={isEnd} 
           onClick={() => handleBookingClick(booking)}
-          visibleNights={isCheckoutDay ? 1 : visibleNights}
-          isTruncatedLeft={isTruncatedLeft && !isCheckoutDay}
-          isCheckoutDay={isCheckoutDay}
+          visibleNights={visibleNights}
+          isTruncatedLeft={isTruncatedLeft}
         />
       )}
 

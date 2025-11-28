@@ -26,7 +26,7 @@ interface CreateBookingDialogProps {
   roomId?: string;
   roomNumber?: string;
   initialDate?: Date;
-  rooms: Array<{ id: string; name: string; price_per_night: number; room_numbers?: string[]; }>;
+  rooms: Array<{ id: string; name: string; price_per_night: number; }>;
 }
 
 export const CreateBookingDialog = ({
@@ -79,13 +79,6 @@ export const CreateBookingDialog = ({
   const [bookingSource, setBookingSource] = useState<"direct" | "ota" | "walk_in" | "other">("direct");
   const [otaName, setOtaName] = useState<string>("");
   const [otherSource, setOtherSource] = useState<string>("");
-  
-  // Multi-room selection state
-  const [selectedRooms, setSelectedRooms] = useState<Array<{
-    roomId: string;
-    roomNumber: string;
-    pricePerNight: number;
-  }>>([]);
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -111,21 +104,10 @@ export const CreateBookingDialog = ({
       setBookingSource("direct");
       setOtaName("");
       setOtherSource("");
-      // Reset selected rooms - if roomId provided, select it
-      if (roomId && roomNumber) {
-        const room = rooms.find(r => r.id === roomId);
-        if (room) {
-          setSelectedRooms([{
-            roomId: room.id,
-            roomNumber: roomNumber,
-            pricePerNight: room.price_per_night
-          }]);
-        }
-      } else {
-        setSelectedRooms([]);
-      }
     }
-  }, [open, initialDate, roomId, roomNumber, rooms]);
+  }, [open, initialDate]);
+
+  const selectedRoom = rooms.find(r => r.id === roomId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,13 +138,8 @@ export const CreateBookingDialog = ({
       return;
     }
     
-    if (!checkIn || !checkOut) {
-      toast.error("Lengkapi tanggal check-in dan check-out");
-      return;
-    }
-    
-    if (selectedRooms.length === 0) {
-      toast.error("Pilih minimal satu kamar");
+    if (!checkIn || !checkOut || !roomId || !selectedRoom) {
+      toast.error("Lengkapi semua data booking");
       return;
     }
 
@@ -242,78 +219,49 @@ export const CreateBookingDialog = ({
   };
 
   const handleConfirm = async () => {
-    if (!checkIn || !checkOut) return;
-    if (selectedRooms.length === 0) return;
+    if (!checkIn || !checkOut || !roomId || !selectedRoom) return;
 
     setIsSubmitting(true);
 
     try {
-      const totalNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-      
-      // Calculate total price from all selected rooms
-      let totalPriceAllRooms = 0;
-      if (useCustomPrice) {
-        if (pricingMode === "per_night" && customPricePerNight) {
-          totalPriceAllRooms = totalNights * parseFloat(customPricePerNight) * selectedRooms.length;
-        } else if (pricingMode === "total" && customTotalPrice) {
-          totalPriceAllRooms = parseFloat(customTotalPrice);
-        }
-      } else {
-        totalPriceAllRooms = selectedRooms.reduce(
-          (sum, room) => sum + (room.pricePerNight * totalNights), 
-          0
-        );
+    const totalNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    
+    let totalPrice = 0;
+    if (useCustomPrice) {
+      if (pricingMode === "per_night" && customPricePerNight) {
+        totalPrice = totalNights * parseFloat(customPricePerNight);
+      } else if (pricingMode === "total" && customTotalPrice) {
+        totalPrice = parseFloat(customTotalPrice);
       }
+    } else {
+      totalPrice = totalNights * selectedRoom.price_per_night;
+    }
 
-      // Insert main booking (using first room for backward compatibility)
-      const { data: bookingData, error: bookingError } = await supabase
-        .from("bookings")
-        .insert({
-          room_id: selectedRooms[0].roomId,
-          allocated_room_number: selectedRooms[0].roomNumber,
-          guest_name: formData.guest_name,
-          guest_email: formData.guest_email,
-          guest_phone: formData.guest_phone,
-          check_in: format(checkIn, "yyyy-MM-dd"),
-          check_out: format(checkOut, "yyyy-MM-dd"),
-          check_in_time: formData.check_in_time + ":00",
-          check_out_time: formData.check_out_time + ":00",
-          total_nights: totalNights,
-          total_price: totalPriceAllRooms,
-          num_guests: formData.num_guests,
-          special_requests: formData.special_requests || null,
-          status: "confirmed",
-          payment_status: "unpaid",
-          booking_source: bookingSource,
-          ota_name: bookingSource === "ota" ? otaName : null,
-          other_source: bookingSource === "other" ? otherSource : null,
-        })
-        .select()
-        .single();
+      const { error } = await supabase.from("bookings").insert({
+        room_id: roomId,
+        allocated_room_number: roomNumber,
+        guest_name: formData.guest_name,
+        guest_email: formData.guest_email,
+        guest_phone: formData.guest_phone,
+        check_in: format(checkIn, "yyyy-MM-dd"),
+        check_out: format(checkOut, "yyyy-MM-dd"),
+        check_in_time: formData.check_in_time + ":00",
+        check_out_time: formData.check_out_time + ":00",
+        total_nights: totalNights,
+        total_price: totalPrice,
+        num_guests: formData.num_guests,
+        special_requests: formData.special_requests || null,
+        status: "confirmed",
+        payment_status: "unpaid",
+        booking_source: bookingSource,
+        ota_name: bookingSource === "ota" ? otaName : null,
+        other_source: bookingSource === "other" ? otherSource : null,
+      });
 
-      if (bookingError) throw bookingError;
+      if (error) throw error;
 
-      // Insert all selected rooms into booking_rooms junction table
-      if (selectedRooms.length > 0) {
-        const bookingRoomsData = selectedRooms.map(room => ({
-          booking_id: bookingData.id,
-          room_id: room.roomId,
-          room_number: room.roomNumber,
-          price_per_night: useCustomPrice && customPricePerNight 
-            ? parseFloat(customPricePerNight) 
-            : room.pricePerNight,
-        }));
-
-        const { error: roomsError } = await supabase
-          .from("booking_rooms")
-          .insert(bookingRoomsData);
-
-        if (roomsError) throw roomsError;
-      }
-
-      toast.success(`Booking berhasil dibuat untuk ${selectedRooms.length} kamar`);
+      toast.success(`Booking berhasil dibuat untuk kamar ${roomNumber}`);
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["booking-rooms"] });
       setShowConfirmation(false);
       onOpenChange(false);
     } catch (error) {
@@ -326,29 +274,22 @@ export const CreateBookingDialog = ({
 
   const totalNights = checkIn && checkOut ? Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
-  // Calculate effective price based on mode and selected rooms
+  // Calculate effective price based on mode
   let effectiveTotalPrice = 0;
   let effectivePricePerNight = 0;
 
   if (useCustomPrice) {
     if (pricingMode === "per_night" && customPricePerNight) {
       effectivePricePerNight = parseFloat(customPricePerNight);
-      effectiveTotalPrice = totalNights * effectivePricePerNight * selectedRooms.length;
+      effectiveTotalPrice = totalNights * effectivePricePerNight;
     } else if (pricingMode === "total" && customTotalPrice) {
       effectiveTotalPrice = parseFloat(customTotalPrice);
-      effectivePricePerNight = totalNights > 0 && selectedRooms.length > 0 
-        ? effectiveTotalPrice / totalNights / selectedRooms.length 
-        : 0;
+      effectivePricePerNight = totalNights > 0 ? effectiveTotalPrice / totalNights : 0;
     }
   } else {
-    const totalRoomPrice = selectedRooms.reduce((sum, room) => sum + room.pricePerNight, 0);
-    effectivePricePerNight = selectedRooms.length > 0 ? totalRoomPrice / selectedRooms.length : 0;
-    effectiveTotalPrice = totalNights * totalRoomPrice;
+    effectivePricePerNight = selectedRoom?.price_per_night || 0;
+    effectiveTotalPrice = totalNights * effectivePricePerNight;
   }
-
-  const selectedRoom = selectedRooms.length > 0 
-    ? rooms.find(r => r.id === selectedRooms[0].roomId)
-    : rooms.find(r => r.id === roomId);
 
   return (
     <>
@@ -369,72 +310,11 @@ export const CreateBookingDialog = ({
         <DialogHeader>
           <DialogTitle>Buat Booking Baru</DialogTitle>
           <DialogDescription>
-            {selectedRooms.length > 0 
-              ? `${selectedRooms.length} kamar dipilih` 
-              : "Pilih kamar untuk dibooking"}
+            Kamar {roomNumber} - {selectedRoom?.name}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Multi-Room Selection */}
-          <div className="border rounded-lg p-4 space-y-3">
-            <Label className="text-base font-semibold">Pilih Kamar</Label>
-            <p className="text-sm text-muted-foreground">
-              Anda bisa memilih lebih dari satu kamar untuk booking ini
-            </p>
-            <div className="space-y-2 max-h-[200px] overflow-y-auto">
-              {rooms.map(room => {
-                const roomNumbers = room.room_numbers || ["1"];
-                return roomNumbers.map(number => {
-                  const isSelected = selectedRooms.some(
-                    r => r.roomId === room.id && r.roomNumber === number
-                  );
-                  return (
-                    <div 
-                      key={`${room.id}-${number}`}
-                      className={cn(
-                        "flex items-center space-x-3 p-3 rounded-md border cursor-pointer transition-colors",
-                        isSelected 
-                          ? "border-primary bg-primary/5" 
-                          : "border-border hover:bg-accent"
-                      )}
-                      onClick={() => {
-                        if (isSelected) {
-                          setSelectedRooms(selectedRooms.filter(
-                            r => !(r.roomId === room.id && r.roomNumber === number)
-                          ));
-                        } else {
-                          setSelectedRooms([...selectedRooms, {
-                            roomId: room.id,
-                            roomNumber: number,
-                            pricePerNight: room.price_per_night
-                          }]);
-                        }
-                      }}
-                    >
-                      <div className={cn(
-                        "w-5 h-5 rounded border-2 flex items-center justify-center",
-                        isSelected ? "border-primary bg-primary" : "border-muted-foreground"
-                      )}>
-                        {isSelected && (
-                          <svg className="w-3 h-3 text-primary-foreground" fill="currentColor" viewBox="0 0 12 12">
-                            <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" fill="none" />
-                          </svg>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium">{room.name} - Kamar {number}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Rp {room.price_per_night.toLocaleString("id-ID")}/malam
-                        </div>
-                      </div>
-                    </div>
-                  );
-                });
-              })}
-            </div>
-          </div>
-
           {/* Check-in & Check-out Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
