@@ -32,6 +32,19 @@ const ChatbotWidget = () => {
     }
   };
 
+  const handleQuickReply = (message: string) => {
+    if (isLoading) return;
+    sendMessage(message);
+  };
+
+  const quickReplies = [
+    { text: "Cek Ketersediaan", message: "Saya ingin cek ketersediaan kamar" },
+    { text: "Lihat Harga", message: "Berapa harga kamar yang tersedia?" },
+    { text: "Fasilitas Hotel", message: "Apa saja fasilitas yang tersedia di hotel?" },
+    { text: "Cara Booking", message: "Bagaimana cara booking kamar?" },
+    { text: "Hubungi Admin", message: "Saya ingin berbicara dengan admin" },
+  ];
+
   if (!settings) return null;
 
   const position = settings.widget_position === "bottom-left" ? "left-4" : "right-4";
@@ -127,6 +140,30 @@ const ChatbotWidget = () => {
 
             <div ref={messagesEndRef} />
           </ScrollArea>
+
+          {/* Quick Replies */}
+          {messages.length === 0 && (
+            <div className="px-3 py-2 border-t bg-muted/30">
+              <p className="text-xs text-muted-foreground mb-2">Pertanyaan cepat:</p>
+              <div className="flex flex-wrap gap-2">
+                {quickReplies.map((reply, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickReply(reply.message)}
+                    disabled={isLoading}
+                    className="text-xs h-7 px-3 hover:bg-primary hover:text-primary-foreground transition-colors"
+                    style={{
+                      borderColor: settings.primary_color + "40",
+                    }}
+                  >
+                    {reply.text}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Input */}
           <div className="p-3 border-t">
