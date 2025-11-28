@@ -6,6 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to sanitize booking ID input
+function sanitizeBookingId(bookingId: string): string {
+  return bookingId
+    .trim()
+    .replace(/,/g, '')      // Remove commas
+    .replace(/\s+/g, '')    // Remove all whitespace
+    .replace(/[^\w-]/g, ''); // Keep only alphanumeric, underscore, dash
+}
+
 // Helper function to validate and fix dates
 function validateAndFixDate(dateStr: string, fieldName: string): string {
   const date = new Date(dateStr);
@@ -344,6 +353,15 @@ serve(async (req) => {
           throw new Error("Kode booking, nomor telepon, dan email wajib diisi untuk keamanan");
         }
 
+        // Sanitize booking ID to remove commas and special characters
+        const sanitizedBookingId = sanitizeBookingId(booking_id);
+        
+        if (!sanitizedBookingId) {
+          throw new Error("Kode booking tidak valid. Pastikan format kode booking benar.");
+        }
+
+        console.log(`Original booking_id: "${booking_id}" -> Sanitized: "${sanitizedBookingId}"`);
+
         // Query booking dengan verifikasi email
         const { data: booking, error } = await supabase
           .from("bookings")
@@ -354,7 +372,7 @@ serve(async (req) => {
             special_requests, allocated_room_number, created_at,
             rooms:room_id (name, price_per_night, max_guests)
           `)
-          .or(`id.eq.${booking_id},id.ilike.%${booking_id}%`)
+          .or(`id.eq.${sanitizedBookingId},id.ilike.%${sanitizedBookingId}%`)
           .ilike("guest_email", guest_email)
           .single();
 
@@ -394,11 +412,20 @@ serve(async (req) => {
       case "update_booking": {
         let { booking_id, guest_phone, guest_email, new_check_in, new_check_out, new_num_guests, new_special_requests } = parameters;
 
+        // Sanitize booking ID
+        const sanitizedBookingId = sanitizeBookingId(booking_id);
+        
+        if (!sanitizedBookingId) {
+          throw new Error("Kode booking tidak valid.");
+        }
+
+        console.log(`Original booking_id: "${booking_id}" -> Sanitized: "${sanitizedBookingId}"`);
+
         // 1. Verify booking dengan 3 faktor
         const { data: existingBooking, error: findError } = await supabase
           .from("bookings")
           .select("id, guest_name, guest_email, guest_phone, room_id, check_in, check_out, num_guests, status, total_price")
-          .or(`id.eq.${booking_id},id.ilike.%${booking_id}%`)
+          .or(`id.eq.${sanitizedBookingId},id.ilike.%${sanitizedBookingId}%`)
           .ilike("guest_email", guest_email)
           .single();
 
@@ -552,22 +579,31 @@ serve(async (req) => {
         break;
       }
 
-      case "check_payment_status": {
-        const { booking_id, guest_phone, guest_email } = parameters;
-        
-        if (!booking_id || !guest_phone || !guest_email) {
-          throw new Error("Kode booking, nomor telepon, dan email wajib diisi untuk verifikasi");
-        }
+    case "check_payment_status": {
+      const { booking_id, guest_phone, guest_email } = parameters;
+      
+      if (!booking_id || !guest_phone || !guest_email) {
+        throw new Error("Kode booking, nomor telepon, dan email wajib diisi untuk verifikasi");
+      }
 
-        // Query booking dengan verifikasi email
-        const { data: booking, error } = await supabase
+      // Sanitize booking ID
+      const sanitizedBookingId = sanitizeBookingId(booking_id);
+      
+      if (!sanitizedBookingId) {
+        throw new Error("Kode booking tidak valid.");
+      }
+
+      console.log(`Original booking_id: "${booking_id}" -> Sanitized: "${sanitizedBookingId}"`);
+
+      // Query booking dengan verifikasi email
+      const { data: booking, error } = await supabase
           .from("bookings")
-          .select(`
-            id, guest_name, guest_email, guest_phone,
-            check_in, check_out, total_price, payment_status, payment_amount,
-            status, rooms:room_id (name)
-          `)
-          .or(`id.eq.${booking_id},id.ilike.%${booking_id}%`)
+        .select(`
+          id, guest_name, guest_email, guest_phone,
+          check_in, check_out, total_price, payment_status, payment_amount,
+          status, rooms:room_id (name)
+        `)
+        .or(`id.eq.${sanitizedBookingId},id.ilike.%${sanitizedBookingId}%`)
           .ilike("guest_email", guest_email)
           .single();
 
