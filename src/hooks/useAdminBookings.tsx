@@ -6,6 +6,7 @@ import { parseISO } from "date-fns";
 
 interface Booking {
   id: string;
+  booking_code: string;
   room_id: string;
   guest_name: string;
   guest_email: string;
