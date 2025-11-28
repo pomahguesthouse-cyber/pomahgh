@@ -15,6 +15,12 @@ function sanitizeBookingId(bookingId: string): string {
     .replace(/[^\w-]/g, ''); // Keep only alphanumeric, underscore, dash
 }
 
+// Helper function to validate booking code format
+function validateBookingCodeFormat(code: string): boolean {
+  // Format valid: PMH-XXXXXX (6 karakter alfanumerik)
+  return /^PMH-[A-Z0-9]{6}$/i.test(code);
+}
+
 // Helper function to validate and fix dates
 function validateAndFixDate(dateStr: string, fieldName: string): string {
   const date = new Date(dateStr);
@@ -357,7 +363,12 @@ serve(async (req) => {
         const sanitizedBookingId = sanitizeBookingId(booking_id);
         
         if (!sanitizedBookingId) {
-          throw new Error("Kode booking tidak valid. Pastikan format kode booking benar.");
+          throw new Error("Kode booking tidak valid. Mohon berikan kode booking yang benar.");
+        }
+
+        // Validate booking code format
+        if (!validateBookingCodeFormat(sanitizedBookingId)) {
+          throw new Error(`Format kode booking tidak valid. Kode booking seharusnya format PMH-XXXXXX (contoh: PMH-Y739M3). Yang Anda berikan: "${booking_id}"`);
         }
 
         console.log(`Original booking_id: "${booking_id}" -> Sanitized: "${sanitizedBookingId}"`);
@@ -377,7 +388,7 @@ serve(async (req) => {
           .single();
 
         if (error || !booking) {
-          throw new Error("Booking tidak ditemukan. Pastikan kode booking dan email benar.");
+          throw new Error(`Booking dengan kode ${sanitizedBookingId.toUpperCase()} tidak ditemukan. Pastikan kode booking benar (format: PMH-XXXXXX) dan email sesuai dengan data booking.`);
         }
 
         // Verify phone number (normalize both for comparison)
@@ -416,7 +427,12 @@ serve(async (req) => {
         const sanitizedBookingId = sanitizeBookingId(booking_id);
         
         if (!sanitizedBookingId) {
-          throw new Error("Kode booking tidak valid.");
+          throw new Error("Kode booking tidak valid. Mohon berikan kode booking yang benar.");
+        }
+
+        // Validate booking code format
+        if (!validateBookingCodeFormat(sanitizedBookingId)) {
+          throw new Error(`Format kode booking tidak valid. Kode booking seharusnya format PMH-XXXXXX (contoh: PMH-Y739M3). Yang Anda berikan: "${booking_id}"`);
         }
 
         console.log(`Original booking_id: "${booking_id}" -> Sanitized: "${sanitizedBookingId}"`);
@@ -430,7 +446,7 @@ serve(async (req) => {
           .single();
 
         if (findError || !existingBooking) {
-          throw new Error("Booking tidak ditemukan atau data verifikasi tidak cocok.");
+          throw new Error(`Booking dengan kode ${sanitizedBookingId.toUpperCase()} tidak ditemukan. Pastikan kode booking benar (format: PMH-XXXXXX) dan email sesuai dengan data booking.`);
         }
 
         // Verify phone number
@@ -590,7 +606,12 @@ serve(async (req) => {
       const sanitizedBookingId = sanitizeBookingId(booking_id);
       
       if (!sanitizedBookingId) {
-        throw new Error("Kode booking tidak valid.");
+        throw new Error("Kode booking tidak valid. Mohon berikan kode booking yang benar.");
+      }
+
+      // Validate booking code format
+      if (!validateBookingCodeFormat(sanitizedBookingId)) {
+        throw new Error(`Format kode booking tidak valid. Kode booking seharusnya format PMH-XXXXXX (contoh: PMH-Y739M3). Yang Anda berikan: "${booking_id}"`);
       }
 
       console.log(`Original booking_id: "${booking_id}" -> Sanitized: "${sanitizedBookingId}"`);
@@ -608,7 +629,7 @@ serve(async (req) => {
           .single();
 
         if (error || !booking) {
-          throw new Error("Booking tidak ditemukan. Pastikan kode booking dan email benar.");
+          throw new Error(`Booking dengan kode ${sanitizedBookingId.toUpperCase()} tidak ditemukan. Pastikan kode booking benar (format: PMH-XXXXXX) dan email sesuai dengan data booking.`);
         }
 
         // Verify phone number

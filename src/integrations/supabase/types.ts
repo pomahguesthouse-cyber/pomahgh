@@ -217,7 +217,7 @@ export type Database = {
         }
         Insert: {
           allocated_room_number?: string | null
-          booking_code: string
+          booking_code?: string
           booking_source?: string | null
           check_in: string
           check_in_time?: string | null
