@@ -552,6 +552,92 @@ serve(async (req) => {
         break;
       }
 
+      case "check_payment_status": {
+        const { booking_id, guest_phone, guest_email } = parameters;
+        
+        if (!booking_id || !guest_phone || !guest_email) {
+          throw new Error("Kode booking, nomor telepon, dan email wajib diisi untuk verifikasi");
+        }
+
+        // Query booking dengan verifikasi email
+        const { data: booking, error } = await supabase
+          .from("bookings")
+          .select(`
+            id, guest_name, guest_email, guest_phone,
+            check_in, check_out, total_price, payment_status, payment_amount,
+            status, rooms:room_id (name)
+          `)
+          .or(`id.eq.${booking_id},id.ilike.%${booking_id}%`)
+          .ilike("guest_email", guest_email)
+          .single();
+
+        if (error || !booking) {
+          throw new Error("Booking tidak ditemukan. Pastikan kode booking dan email benar.");
+        }
+
+        // Verify phone number
+        const normalizedPhone = guest_phone.replace(/\D/g, '');
+        const bookingPhone = booking.guest_phone?.replace(/\D/g, '') || '';
+        if (!bookingPhone.includes(normalizedPhone) && !normalizedPhone.includes(bookingPhone)) {
+          throw new Error("Nomor telepon tidak cocok dengan data booking.");
+        }
+
+        // Calculate remaining amount
+        const totalPrice = Number(booking.total_price) || 0;
+        const paymentAmount = Number(booking.payment_amount) || 0;
+        const remainingAmount = totalPrice - paymentAmount;
+
+        // Determine status message
+        let statusMessage = '';
+        let isPaid = false;
+        
+        switch (booking.payment_status) {
+          case 'paid':
+            statusMessage = '✅ LUNAS - Pembayaran sudah diterima seluruhnya';
+            isPaid = true;
+            break;
+          case 'partial':
+            statusMessage = '⏳ BAYAR SEBAGIAN - Masih ada sisa yang harus dibayar';
+            break;
+          case 'unpaid':
+          default:
+            statusMessage = '❌ BELUM BAYAR - Belum ada pembayaran yang diterima';
+            break;
+        }
+
+        // Get bank accounts if payment is not complete
+        let bankAccounts: Array<{ bank_name: string; account_number: string; account_holder_name: string }> = [];
+        if (!isPaid) {
+          const { data: banks } = await supabase
+            .from("bank_accounts")
+            .select("bank_name, account_number, account_holder_name")
+            .eq("is_active", true)
+            .order("display_order");
+          
+          bankAccounts = banks || [];
+        }
+
+        result = {
+          booking_id: booking.id,
+          guest_name: booking.guest_name,
+          room_name: (booking.rooms as any)?.name,
+          check_in: booking.check_in,
+          check_out: booking.check_out,
+          booking_status: booking.status,
+          payment_status: booking.payment_status,
+          payment_status_message: statusMessage,
+          total_price: totalPrice,
+          payment_amount: paymentAmount,
+          remaining_amount: remainingAmount,
+          is_fully_paid: isPaid,
+          bank_accounts: bankAccounts,
+          note: isPaid 
+            ? "Terima kasih! Pembayaran Anda sudah kami terima." 
+            : `Silakan transfer sisa pembayaran Rp ${remainingAmount.toLocaleString('id-ID')} ke salah satu rekening bank kami.`
+        };
+        break;
+      }
+
       default:
         throw new Error(`Unknown tool: ${tool_name}`);
     }

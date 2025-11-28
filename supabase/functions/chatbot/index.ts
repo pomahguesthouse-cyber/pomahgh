@@ -116,6 +116,7 @@ TOOLS YANG TERSEDIA:
 4. create_booking_draft - Buat booking langsung
 5. get_booking_details - Cek detail booking (WAJIB minta kode booking + no telepon + email)
 6. update_booking - Ubah jadwal/detail booking (WAJIB verifikasi dulu)
+7. check_payment_status - Cek status pembayaran (WAJIB verifikasi 3 faktor)
 
 ⚠️ PENTING UNTUK REVIEW/UBAH BOOKING:
 - SELALU minta 3 DATA VERIFIKASI: KODE BOOKING + NO TELEPON + EMAIL
@@ -124,6 +125,12 @@ TOOLS YANG TERSEDIA:
 - Booking "pending" dan "confirmed" bisa diubah
 - Jika tamu tidak tahu kode booking, sarankan cek email atau hubungi resepsionis
 - PASTIKAN cek ketersediaan kamar saat mengubah tanggal booking
+
+⚠️ PANDUAN CEK PEMBAYARAN:
+- WAJIB minta 3 DATA VERIFIKASI: KODE BOOKING + NO TELEPON + EMAIL
+- Tampilkan status pembayaran dengan jelas (Belum Bayar/Bayar Sebagian/Lunas)
+- Jika belum lunas, tampilkan sisa yang harus dibayar dan info rekening bank
+- Jika tamu mengklaim sudah bayar tapi status masih unpaid, sarankan hubungi admin
 
 ⚠️ PANDUAN PARSING TANGGAL (SANGAT PENTING!):
 - "hari ini" → tanggal sekarang (${currentDateISO})
@@ -269,6 +276,31 @@ BAHASA:
               new_check_out: { type: "string", description: "Tanggal check-out baru (YYYY-MM-DD)" },
               new_num_guests: { type: "number", description: "Jumlah tamu baru" },
               new_special_requests: { type: "string", description: "Permintaan khusus baru" }
+            },
+            required: ["booking_id", "guest_phone", "guest_email"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "check_payment_status",
+          description: "Cek status pembayaran booking. WAJIB verifikasi dengan kode booking, nomor telepon, dan email untuk keamanan.",
+          parameters: {
+            type: "object",
+            properties: {
+              booking_id: { 
+                type: "string", 
+                description: "Kode/ID booking" 
+              },
+              guest_phone: { 
+                type: "string", 
+                description: "Nomor telepon pemesan untuk verifikasi" 
+              },
+              guest_email: { 
+                type: "string", 
+                description: "Email pemesan untuk verifikasi" 
+              }
             },
             required: ["booking_id", "guest_phone", "guest_email"]
           }
