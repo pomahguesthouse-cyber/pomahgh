@@ -1234,7 +1234,7 @@ const BookingCell = ({
   isTruncatedLeft?: boolean;
 }) => {
   const isPending = booking.status === "pending";
-  const totalNights = visibleNights || booking.total_nights;
+  const totalNights = visibleNights ?? booking.total_nights;
   const bookingWidth = `${totalNights * 100}%`;
 
   const getBackgroundClass = () => {
@@ -1255,7 +1255,7 @@ const BookingCell = ({
   };
 
   const style = {
-    left: isTruncatedLeft ? "0" : "50%",
+    left: isTruncatedLeft === true ? "0" : "50%",
     width: bookingWidth,
     transform: isTruncatedLeft ? "translateX(0%)" : "translateX(0%)",
   };
@@ -1343,8 +1343,14 @@ const RoomCell = ({
   const bookingCheckIn = booking ? booking.check_in.substring(0, 10) : null;
   const bookingCheckOut = booking ? booking.check_out.substring(0, 10) : null;
   
-  // Check if booking started before visible range
-  const isTruncatedLeft = booking && bookingCheckIn < firstVisibleStr && dateStr === firstVisibleStr;
+  // Check if booking started before visible range - explicit boolean conversion
+  const isTruncatedLeft = Boolean(
+    booking && 
+    bookingCheckIn && 
+    bookingCheckOut &&
+    bookingCheckIn < firstVisibleStr && 
+    dateStr === firstVisibleStr
+  );
   
   // A booking should render if:
   // 1. Its check-in is on this date, OR
@@ -1358,9 +1364,10 @@ const RoomCell = ({
   const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
   
   // Calculate visible nights for bookings that started before the visible range
-  let visibleNights = booking?.total_nights;
+  let visibleNights: number | undefined;
   
-  if (isTruncatedLeft && booking) {
+  if (isTruncatedLeft && booking && bookingCheckOut) {
+    // Booking dimulai sebelum visible range, hitung sisa malam yang terlihat
     const checkOutDateObj = parseISO(bookingCheckOut);
     const calculatedVisibleNights = differenceInDays(checkOutDateObj, firstVisibleDate);
     visibleNights = Math.max(1, calculatedVisibleNights);
@@ -1371,8 +1378,12 @@ const RoomCell = ({
         firstVisible: firstVisibleStr,
         calculatedVisibleNights,
         visibleNights,
+        isTruncatedLeft,
       });
     }
+  } else if (booking) {
+    // Booking dimulai dalam visible range, gunakan total nights asli
+    visibleNights = booking.total_nights;
   }
   
   // Debug logging
