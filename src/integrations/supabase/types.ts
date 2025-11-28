@@ -187,6 +187,51 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_rooms: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          id: string
+          price_per_night: number
+          room_id: string
+          room_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          id?: string
+          price_per_night?: number
+          room_id: string
+          room_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          id?: string
+          price_per_night?: number
+          room_id?: string
+          room_number?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_rooms_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_rooms_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           allocated_room_number: string | null
