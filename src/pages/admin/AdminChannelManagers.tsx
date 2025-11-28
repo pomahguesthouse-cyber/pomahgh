@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAvailabilitySync } from "@/hooks/useAvailabilitySync";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { RefreshCw, CheckCircle, XCircle, Clock, Loader2, AlertCircle, Pencil } from "lucide-react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { ChannelManagerForm } from "@/components/admin/ChannelManagerForm";
 import { DeleteChannelManagerDialog } from "@/components/admin/DeleteChannelManagerDialog";
 import { TestChannelManagerButton } from "@/components/admin/TestChannelManagerButton";
@@ -26,8 +25,7 @@ export default function AdminChannelManagers() {
   useAdminNotifications();
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex items-center justify-between mb-6">
           <p className="text-muted-foreground">
             Monitor dan kelola sinkronisasi availability dengan channel manager OTA
@@ -246,6 +244,5 @@ export default function AdminChannelManagers() {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
   );
 }
