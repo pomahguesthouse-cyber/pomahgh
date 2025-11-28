@@ -1327,10 +1327,10 @@ const RoomCell = ({
   
   // A booking should render if:
   // 1. Its check-in is on this date, OR
-  // 2. Its check-in is before the first visible date AND this is the first visible date AND the booking is still active
+  // 2. Its check-in is before this date AND this is the first visible date AND the booking extends beyond this date
   const isStart = booking 
     ? booking.check_in === dateStr || 
-      (booking.check_in < firstVisibleStr && dateStr === firstVisibleStr && booking.check_out > firstVisibleStr)
+      (booking.check_in < dateStr && dateStr === firstVisibleStr && booking.check_out > dateStr)
     : false;
   
   const checkOutDate = booking ? new Date(booking.check_out) : null;
@@ -1345,7 +1345,9 @@ const RoomCell = ({
     // Calculate how many nights are visible
     const checkInDate = parseISO(booking.check_in);
     const checkOutDate = parseISO(booking.check_out);
-    visibleNights = differenceInDays(checkOutDate, firstVisibleDate);
+    const calculatedVisibleNights = differenceInDays(checkOutDate, firstVisibleDate);
+    // Ensure minimum of 1 night to prevent invisible bars
+    visibleNights = Math.max(1, calculatedVisibleNights);
   }
 
   const isHolidayOrWeekend = isWeekend || holiday !== null;
