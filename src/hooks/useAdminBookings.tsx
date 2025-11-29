@@ -32,6 +32,12 @@ interface Booking {
     room_count: number;
     allotment: number;
   };
+  booking_rooms?: Array<{
+    id: string;
+    room_id: string;
+    room_number: string;
+    price_per_night: number;
+  }>;
 }
 
 export const useAdminBookings = () => {
@@ -49,6 +55,12 @@ export const useAdminBookings = () => {
             name,
             room_count,
             allotment
+          ),
+          booking_rooms (
+            id,
+            room_id,
+            room_number,
+            price_per_night
           )
         `)
         .order("created_at", { ascending: false });
