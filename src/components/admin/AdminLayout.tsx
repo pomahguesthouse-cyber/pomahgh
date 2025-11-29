@@ -3,11 +3,9 @@ import { useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminGuard } from "./AdminGuard";
-
 interface AdminLayoutProps {
   children: ReactNode;
 }
-
 const getPageTitle = (pathname: string): string => {
   const titles: Record<string, string> = {
     "/admin/dashboard": "Dashboard",
@@ -22,17 +20,16 @@ const getPageTitle = (pathname: string): string => {
     "/admin/channel-managers": "Channel Managers",
     "/admin/room-features": "Room Features",
     "/admin/invoice-template": "Invoice Template",
-    "/admin/seo-settings": "SEO Settings",
+    "/admin/seo-settings": "SEO Settings"
   };
   return titles[pathname] || "Admin Panel";
 };
-
-export const AdminLayout = ({ children }: AdminLayoutProps) => {
+export const AdminLayout = ({
+  children
+}: AdminLayoutProps) => {
   const location = useLocation();
   const pageTitle = getPageTitle(location.pathname);
-
-  return (
-    <AdminGuard>
+  return <AdminGuard>
       <SidebarProvider>
         <div className="min-h-screen flex w-full">
           <AdminSidebar />
@@ -42,10 +39,9 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
               <SidebarTrigger />
               <h1 className="ml-4 text-lg font-semibold">{pageTitle}</h1>
             </header>
-            <main className="flex-1 p-6 max-w-5xl mx-auto w-full">{children}</main>
+            <main className="flex-1 p-6 max-w-5xl mx-auto w-full px-0">{children}</main>
           </div>
         </div>
       </SidebarProvider>
-    </AdminGuard>
-  );
+    </AdminGuard>;
 };
