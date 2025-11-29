@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, isWithinInterval } from "date-fns";
+import { getWIBToday } from "@/utils/wibTimezone";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -27,7 +28,7 @@ export const RoomAvailabilityCalendar = ({
   roomName,
   totalRooms 
 }: RoomAvailabilityCalendarProps) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(getWIBToday());
   const queryClient = useQueryClient();
 
   const { data: bookings, isLoading } = useQuery({

@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Edit2, X, Save } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns";
+import { getWIBToday } from "@/utils/wibTimezone";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { cn } from "@/lib/utils";
@@ -71,7 +72,7 @@ const DroppableCell = ({ roomNumber, date, children, isOccupied }: DroppableCell
 type ViewMode = 'month' | 'week' | '2months';
 
 export const BookingCalendarTable = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(getWIBToday());
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);

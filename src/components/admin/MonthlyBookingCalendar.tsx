@@ -9,10 +9,10 @@ import {
   eachDayOfInterval,
   getDay,
   addDays,
-  isToday,
   parseISO,
   differenceInDays,
 } from "date-fns";
+import { getWIBToday, isWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,7 +82,7 @@ interface Booking {
 const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 type ViewRange = 7 | 14 | 30;
 export const MonthlyBookingCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(getWIBToday());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [viewRange, setViewRange] = useState<ViewRange>(30);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -280,7 +280,7 @@ export const MonthlyBookingCalendar = () => {
     setCurrentDate(addDays(currentDate, viewRange));
   };
   const handleGoToToday = () => {
-    setCurrentDate(new Date());
+    setCurrentDate(getWIBToday());
   };
   const handleMonthYearChange = (value: string) => {
     // value format: "2024-11"
@@ -465,7 +465,7 @@ export const MonthlyBookingCalendar = () => {
                   size="sm"
                   onClick={() => {
                     setViewRange(7);
-                    setCurrentDate(new Date());
+                    setCurrentDate(getWIBToday());
                   }}
                   className="text-xs px-4"
                 >
@@ -476,7 +476,7 @@ export const MonthlyBookingCalendar = () => {
                   size="sm"
                   onClick={() => {
                     setViewRange(14);
-                    setCurrentDate(new Date());
+                    setCurrentDate(getWIBToday());
                   }}
                   className="text-xs px-4"
                 >
@@ -487,7 +487,7 @@ export const MonthlyBookingCalendar = () => {
                   size="sm"
                   onClick={() => {
                     setViewRange(30);
-                    setCurrentDate(new Date());
+                    setCurrentDate(getWIBToday());
                   }}
                   className="text-xs px-4"
                 >
@@ -546,7 +546,7 @@ export const MonthlyBookingCalendar = () => {
                   const isWeekend = getDay(date) === 0 || getDay(date) === 6;
                   const holiday = isIndonesianHoliday(date);
                   const isHolidayOrWeekend = isWeekend || holiday !== null;
-                  const isTodayDate = isToday(date);
+                  const isTodayDate = isWIBToday(date);
 
                   const headerCell = (
                     <th
@@ -1198,7 +1198,9 @@ const BookingCell = ({
 }) => {
   const isPending = booking.status === "pending";
   const totalNights = visibleNights || booking.total_nights;
-  const bookingWidth = `${totalNights * 100}%`;
+  // Calculate booking bar width: starts at 50% of check-in cell, ends at 50% of last night
+  // For N nights: bar covers (N * 100%) - 50% width
+  const bookingWidth = `calc(${totalNights * 100}% - 50%)`;
 
   const getBackgroundClass = () => {
     if (isPending) {
@@ -1327,7 +1329,7 @@ const RoomCell = ({
   const isHolidayOrWeekend = isWeekend || holiday !== null;
   const hasBooking = booking !== null;
   const isClickable = !isBlocked && !hasBooking;
-  const isTodayDate = isToday(date);
+  const isTodayDate = isWIBToday(date);
 
   const cell = (
     <td

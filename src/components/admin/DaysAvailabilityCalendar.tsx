@@ -6,9 +6,10 @@ import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameMonth, isWeekend, startOfWeek, endOfWeek } from "date-fns";
+import { getWIBToday } from "@/utils/wibTimezone";
 export const DaysAvailabilityCalendar = () => {
   const [selectedRoomId, setSelectedRoomId] = useState<string>("");
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(getWIBToday());
   const [pendingChanges, setPendingChanges] = useState<{
     toAdd: Set<string>;
     toRemove: Set<string>;
