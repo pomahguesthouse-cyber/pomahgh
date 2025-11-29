@@ -1198,9 +1198,9 @@ const BookingCell = ({
 }) => {
   const isPending = booking.status === "pending";
   const totalNights = visibleNights || booking.total_nights;
-  // Calculate booking bar width: starts at 50% of check-in cell, ends at 50% of last night
-  // For N nights: bar covers (N * 100%) - 50% width
-  const bookingWidth = `calc(${totalNights * 100}% - 50%)`;
+  // Calculate booking bar width: starts at 50% of check-in cell, ends at 50% of checkout cell
+  // For N nights: bar covers (N * 100%) width
+  const bookingWidth = `${totalNights * 100}%`;
 
   const getBackgroundClass = () => {
     if (isPending) {
