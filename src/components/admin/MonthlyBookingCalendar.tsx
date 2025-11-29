@@ -482,13 +482,7 @@ export const MonthlyBookingCalendar = () => {
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-20">
               <tr className="bg-muted/50">
-                <th className="
-    sticky left-0 z-30
-    min-w-[110px]
-    border border-border
-    bg-muted
-    p-2 shadow-sm
-  ">
+                <th className="sticky left-0 z-30 min-w-[110px] border border-border p-2 shadow-sm bg-gray-300">
                   <span className="text-[10px] font-bold uppercase tracking-wide">Kamar</span>
                 </th>
                 {dates.map(date => {
