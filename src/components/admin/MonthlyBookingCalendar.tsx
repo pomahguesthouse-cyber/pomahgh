@@ -197,18 +197,18 @@ export const MonthlyBookingCalendar = () => {
     const dateStr = format(date, "yyyy-MM-dd");
     const matchingBookings = bookings.filter((booking) => {
       if (booking.status === "cancelled") return false;
-      
+
       // Check if date is within booking range
       const checkIn = booking.check_in;
       const checkOut = booking.check_out;
       const isInRange = dateStr >= checkIn && dateStr < checkOut;
-      
+
       if (!isInRange) return false;
-      
+
       // Check if this room is part of the booking (primary or via booking_rooms)
       const isPrimaryRoom = booking.allocated_room_number === roomNumber;
-      const isInBookingRooms = booking.booking_rooms?.some(br => br.room_number === roomNumber);
-      
+      const isInBookingRooms = booking.booking_rooms?.some((br) => br.room_number === roomNumber);
+
       return isPrimaryRoom || isInBookingRooms;
     });
 
@@ -219,20 +219,16 @@ export const MonthlyBookingCalendar = () => {
   // Check if date is blocked
   const isDateBlocked = (roomId: string, roomNumber: string, date: Date): boolean => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return unavailableDates.some((d) => 
-      d.room_id === roomId && 
-      d.room_number === roomNumber && 
-      d.unavailable_date === dateStr
+    return unavailableDates.some(
+      (d) => d.room_id === roomId && d.room_number === roomNumber && d.unavailable_date === dateStr,
     );
   };
 
   // Get block reason
   const getBlockReason = (roomId: string, roomNumber: string, date: Date): string | undefined => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return unavailableDates.find((d) => 
-      d.room_id === roomId && 
-      d.room_number === roomNumber && 
-      d.unavailable_date === dateStr
+    return unavailableDates.find(
+      (d) => d.room_id === roomId && d.room_number === roomNumber && d.unavailable_date === dateStr,
     )?.reason;
   };
 
@@ -289,7 +285,7 @@ export const MonthlyBookingCalendar = () => {
   const handlePrevMonth = () => {
     setCurrentDate(addDays(currentDate, -viewRange));
   };
-  
+
   const handleNextMonth = () => {
     setCurrentDate(addDays(currentDate, viewRange));
   };
@@ -430,30 +426,30 @@ export const MonthlyBookingCalendar = () => {
   };
   const handleSaveBlock = async () => {
     if (!blockDialog.roomId || !blockDialog.date) return;
-    
+
     const startDate = blockDialog.date;
     const endDate = blockDialog.endDate || blockDialog.date;
-    
+
     // Generate all dates in range
     const datesInRange = eachDayOfInterval({
       start: startDate,
       end: endDate,
     });
-    
+
     // Create array of unavailable date objects
-    const datesToBlock = datesInRange.map(date => ({
+    const datesToBlock = datesInRange.map((date) => ({
       room_id: blockDialog.roomId!,
       room_number: blockDialog.roomNumber,
       unavailable_date: format(date, "yyyy-MM-dd"),
       reason: blockDialog.reason || "Blocked by admin",
     }));
-    
+
     await addUnavailableDates(datesToBlock);
-    
+
     setBlockDialog({
       open: false,
     });
-    
+
     toast.success(`${datesToBlock.length} tanggal berhasil diblokir`);
   };
 
@@ -613,13 +609,11 @@ export const MonthlyBookingCalendar = () => {
               </tr>
             </thead>
             <tbody>
-                {Object.entries(roomsByType).map(([roomType]) => (
+              {Object.entries(roomsByType).map(([roomType]) => (
                 <React.Fragment key={roomType}>
                   {/* Room type header */}
                   <tr className="border-y border-border bg-muted/30">
-                    <td
-                      className="sticky left-0 z-30 p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm shadow-sm border-r border-border"
-                    >
+                    <td className="sticky left-0 z-30 p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm shadow-sm border-r border-border">
                       {roomType}
                     </td>
                     {dates.map((date) => (
@@ -1111,41 +1105,47 @@ export const MonthlyBookingCalendar = () => {
           <div className="space-y-4 py-4">
             <div>
               <Label>Start Date</Label>
-              <Input 
-                type="date" 
-                value={blockDialog.date ? format(blockDialog.date, "yyyy-MM-dd") : ""} 
-                onChange={(e) => setBlockDialog({
-                  ...blockDialog,
-                  date: e.target.value ? new Date(e.target.value) : undefined
-                })}
-                className="mt-1" 
+              <Input
+                type="date"
+                value={blockDialog.date ? format(blockDialog.date, "yyyy-MM-dd") : ""}
+                onChange={(e) =>
+                  setBlockDialog({
+                    ...blockDialog,
+                    date: e.target.value ? new Date(e.target.value) : undefined,
+                  })
+                }
+                className="mt-1"
               />
             </div>
-            
+
             <div>
               <Label>End Date</Label>
-              <Input 
-                type="date" 
-                value={blockDialog.endDate ? format(blockDialog.endDate, "yyyy-MM-dd") : ""} 
-                onChange={(e) => setBlockDialog({
-                  ...blockDialog,
-                  endDate: e.target.value ? new Date(e.target.value) : undefined
-                })}
+              <Input
+                type="date"
+                value={blockDialog.endDate ? format(blockDialog.endDate, "yyyy-MM-dd") : ""}
+                onChange={(e) =>
+                  setBlockDialog({
+                    ...blockDialog,
+                    endDate: e.target.value ? new Date(e.target.value) : undefined,
+                  })
+                }
                 min={blockDialog.date ? format(blockDialog.date, "yyyy-MM-dd") : undefined}
-                className="mt-1" 
+                className="mt-1"
               />
             </div>
-            
+
             {blockDialog.date && blockDialog.endDate && (
               <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  Total: <span className="font-bold text-foreground">
+                  Total:{" "}
+                  <span className="font-bold text-foreground">
                     {differenceInDays(blockDialog.endDate, blockDialog.date) + 1} hari
-                  </span> akan diblokir
+                  </span>{" "}
+                  akan diblokir
                 </p>
               </div>
             )}
-            
+
             <div>
               <Label htmlFor="reason">Reason (Optional)</Label>
               <Textarea
@@ -1175,7 +1175,8 @@ export const MonthlyBookingCalendar = () => {
               Cancel
             </Button>
             <Button onClick={handleSaveBlock}>
-              Block {blockDialog.endDate && blockDialog.date && blockDialog.endDate > blockDialog.date ? 'Dates' : 'Date'}
+              Block{" "}
+              {blockDialog.endDate && blockDialog.date && blockDialog.endDate > blockDialog.date ? "Dates" : "Date"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1222,7 +1223,7 @@ const BookingCell = ({
     if (isLateCheckout) {
       return "from-red-500/90 to-red-600/90"; // RED gradient for LCO
     }
-    
+
     if (isPending) {
       return "from-gray-400/90 to-gray-500/90";
     }
@@ -1322,23 +1323,23 @@ const RoomCell = ({
   // Check if this is where the booking should start rendering
   const dateStr = format(date, "yyyy-MM-dd");
   const firstVisibleStr = format(firstVisibleDate, "yyyy-MM-dd");
-  
+
   // A booking should render if:
   // 1. Its check-in is on this date, OR
   // 2. Its check-in is before the first visible date AND this is the first visible date AND the booking is active
-  const isStart = booking 
-    ? booking.check_in === dateStr || 
+  const isStart = booking
+    ? booking.check_in === dateStr ||
       (booking.check_in < firstVisibleStr && dateStr === firstVisibleStr && booking.check_out > dateStr)
     : false;
-  
+
   const checkOutDate = booking ? new Date(booking.check_out) : null;
   if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
   const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
-  
+
   // Calculate visible nights for bookings that started before the visible range
   let visibleNights = booking?.total_nights;
   const isTruncatedLeft = booking && booking.check_in < firstVisibleStr && dateStr === firstVisibleStr;
-  
+
   if (isTruncatedLeft) {
     // Calculate how many nights are visible
     const checkInDate = parseISO(booking.check_in);
@@ -1391,10 +1392,10 @@ const RoomCell = ({
 
       {/* Render single booking */}
       {booking && !isBlocked && isStart && (
-        <BookingCell 
-          booking={booking} 
-          isStart={isStart} 
-          isEnd={isEnd} 
+        <BookingCell
+          booking={booking}
+          isStart={isStart}
+          isEnd={isEnd}
           onClick={() => handleBookingClick(booking)}
           visibleNights={visibleNights}
           isTruncatedLeft={isTruncatedLeft}
@@ -1461,7 +1462,7 @@ const RoomRow = ({
 }) => {
   return (
     <tr className="hover:bg-muted/10 transition-colors">
-      <td className="border border-border p-2 sticky left-0 z-30 font-semibold text-xs shadow-sm bg-background">
+      <td className="border border-border p-2 sticky left-0 z-30 font-semibold text-xs shadow-sm bg-background/80 text-center">
         {room.roomNumber}
       </td>
       {dates.map((date) => {
