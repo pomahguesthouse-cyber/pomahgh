@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon, Tag, Users, Globe, UserCheck, HelpCircle } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
+import { getWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,11 +41,14 @@ export const CreateBookingDialog = ({
   const queryClient = useQueryClient();
   const { settings } = useHotelSettings();
   
-  // Set default dates: initialDate or today, and next day for checkout
+  // Set default dates: initialDate or today (WIB), and next day for checkout
   const getDefaultCheckIn = () => {
-    const date = initialDate || new Date();
-    date.setHours(0, 0, 0, 0);
-    return date;
+    if (initialDate) {
+      const date = new Date(initialDate);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+    return getWIBToday();
   };
   
   const getDefaultCheckOut = (checkInDate: Date) => {

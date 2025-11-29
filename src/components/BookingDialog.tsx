@@ -10,6 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Users } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
+import { getWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Room } from "@/hooks/useRooms";
@@ -49,18 +50,15 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
   const { settings } = useHotelSettings();
   const { checkIn: searchCheckIn, checkOut: searchCheckOut } = useSearchDates();
   
-  // Set default dates: use search dates if available, otherwise today and tomorrow
+  // Set default dates: use search dates if available, otherwise today and tomorrow (WIB)
   const getDefaultCheckIn = () => {
     if (searchCheckIn) return searchCheckIn;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
+    return getWIBToday();
   };
   
   const getDefaultCheckOut = () => {
     if (searchCheckOut) return searchCheckOut;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getWIBToday();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow;
