@@ -120,8 +120,9 @@ export const MonthlyBookingCalendar = () => {
 
   // Calculate date range based on view selection
   const dates = useMemo(() => {
-    const startDate = currentDate;
-    const endDate = addDays(startDate, viewRange - 1);
+    // Start 1 day before currentDate to show previous day's check-ins properly
+    const startDate = addDays(currentDate, -1);
+    const endDate = addDays(currentDate, viewRange - 1);
     return eachDayOfInterval({
       start: startDate,
       end: endDate,
