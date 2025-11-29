@@ -67,6 +67,7 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
   const [checkIn, setCheckIn] = useState<Date>(getDefaultCheckIn());
   const [checkOut, setCheckOut] = useState<Date>(getDefaultCheckOut());
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [roomQuantity, setRoomQuantity] = useState(1);
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
@@ -172,6 +173,7 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
         check_in_time: formData.check_in_time + ":00",
         check_out_time: formData.check_out_time + ":00",
         price_per_night: room.price_per_night,
+        room_quantity: roomQuantity,
       };
 
       createBooking(bookingData, {
@@ -185,6 +187,7 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
           resetTomorrow.setDate(resetTomorrow.getDate() + 1);
           setCheckIn(resetToday);
           setCheckOut(resetTomorrow);
+          setRoomQuantity(1);
           setFormData({
             guest_name: "",
             guest_email: "",
@@ -205,7 +208,7 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
   };
 
   const totalNights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
-  const totalPrice = room ? totalNights * room.price_per_night : 0;
+  const totalPrice = room ? totalNights * room.price_per_night * roomQuantity : 0;
 
   if (!room) return null;
 
@@ -222,6 +225,7 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
         totalNights={totalNights}
         totalPrice={totalPrice}
         numGuests={formData.num_guests}
+        roomQuantity={roomQuantity}
       />
       <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -296,6 +300,37 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
             </div>
           </div>
           {errors.dates && <p className="text-sm text-destructive">{errors.dates}</p>}
+
+          {/* Room Quantity Selector */}
+          <div className="bg-primary/5 p-4 rounded-lg">
+            <Label className="text-base font-semibold">Jumlah Kamar</Label>
+            <div className="flex items-center gap-4 mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setRoomQuantity(Math.max(1, roomQuantity - 1))}
+                disabled={roomQuantity <= 1}
+              >
+                -
+              </Button>
+              <span className="text-2xl font-bold text-primary w-12 text-center">
+                {roomQuantity}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setRoomQuantity(Math.min(room.allotment || 10, roomQuantity + 1))}
+                disabled={roomQuantity >= (room.allotment || 10)}
+              >
+                +
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Maks: {room.allotment} kamar
+              </span>
+            </div>
+          </div>
 
           {/* Time Selection */}
           <div className="grid grid-cols-2 gap-4">
@@ -399,7 +434,7 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
           {totalNights > 0 && (
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Rp {room.price_per_night.toLocaleString("id-ID")} x {totalNights} malam</span>
+                <span>Rp {room.price_per_night.toLocaleString("id-ID")} x {totalNights} malam x {roomQuantity} kamar</span>
                 <span>Rp {totalPrice.toLocaleString("id-ID")}</span>
               </div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">

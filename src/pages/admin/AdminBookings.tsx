@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useRooms } from "@/hooks/useRooms";
 import { useInvoice } from "@/hooks/useInvoice";
@@ -37,6 +37,17 @@ const AdminBookings = () => {
   const { sendInvoice, isSending } = useInvoice();
   const { settings: hotelSettings } = useHotelSettings();
   const { bankAccounts } = useBankAccounts();
+  
+  // Create room name lookup map
+  const roomNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    rooms?.forEach(room => {
+      map[room.id] = room.name;
+    });
+    return map;
+  }, [rooms]);
+
+  const getRoomName = (roomId: string) => roomNameMap[roomId] || "Unknown Room";
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [editingBooking, setEditingBooking] = useState<any>(null);
@@ -500,11 +511,24 @@ const AdminBookings = () => {
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                   {/* Room & Guest */}
                   <div className="col-span-2 md:col-span-1">
-                    {booking.rooms && (
+                    {booking.booking_rooms && booking.booking_rooms.length > 0 ? (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          🛏️ {booking.booking_rooms.length} Kamar:
+                        </p>
+                        <div className="space-y-0.5">
+                          {booking.booking_rooms.map((br, idx) => (
+                            <p key={idx} className="text-primary font-medium text-sm">
+                              {getRoomName(br.room_id)} • #{br.room_number}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    ) : booking.rooms ? (
                       <p className="text-primary font-medium">
                         {booking.rooms.name} • #{booking.allocated_room_number || "TBA"}
                       </p>
-                    )}
+                    ) : null}
                     <p className="font-medium mt-1">{booking.guest_name}</p>
                     <p className="text-xs text-muted-foreground">{booking.num_guests} guests</p>
                   </div>
@@ -600,17 +624,23 @@ const AdminBookings = () => {
                     <p className="text-xs text-muted-foreground">Phone</p>
                     <p className="text-sm font-medium">{booking.guest_phone || "-"}</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Room Number</p>
-                    {booking.allocated_room_number ? (
-                      <p className="font-semibold text-primary text-lg">
-                        #{booking.allocated_room_number}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground italic">Not allocated</p>
-                    )}
-                  </div>
                 </div>
+
+                {/* Room Details Section */}
+                {booking.booking_rooms && booking.booking_rooms.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Kamar yang Dipesan</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {booking.booking_rooms.map((br, idx) => (
+                        <div key={idx} className="bg-primary/5 p-2 rounded border">
+                          <p className="font-medium">#{br.room_number}</p>
+                          <p className="text-xs text-muted-foreground">{getRoomName(br.room_id)}</p>
+                          <p className="text-xs">Rp {br.price_per_night.toLocaleString()}/malam</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Special Requests */}
                 {booking.special_requests && (
