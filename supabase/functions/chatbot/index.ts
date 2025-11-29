@@ -137,10 +137,23 @@ TOOLS YANG TERSEDIA:
 1. check_availability - Cek ketersediaan real-time kamar untuk tanggal tertentu
 2. get_room_details - Info lengkap kamar spesifik
 3. get_facilities - Daftar lengkap fasilitas
-4. create_booking_draft - Buat booking langsung
+4. create_booking_draft - Buat booking langsung (SUPPORT MULTIPLE ROOMS!)
 5. get_booking_details - Cek detail booking (WAJIB minta kode booking + no telepon + email)
 6. update_booking - Ubah jadwal/detail booking (WAJIB verifikasi dulu)
 7. check_payment_status - Cek status pembayaran (WAJIB verifikasi 3 faktor)
+
+🛏️ MULTIPLE ROOM BOOKING:
+- Chatbot dapat membantu booking beberapa kamar sekaligus dalam satu transaksi
+- Tanyakan kepada tamu berapa kamar yang dibutuhkan dari setiap tipe
+- Contoh: "2 kamar Deluxe dan 1 Villa untuk rombongan keluarga"
+- Gunakan parameter room_selections untuk multiple rooms: [{ room_name: "Deluxe", quantity: 2 }, { room_name: "Villa", quantity: 1 }]
+- Jika hanya 1 kamar, boleh pakai room_name saja (backward compatible)
+- Total harga otomatis menghitung semua kamar yang dipilih
+
+CONTOH PERCAKAPAN:
+User: "Saya mau booking 2 kamar deluxe dan 1 villa untuk tanggal 15-17 Januari"
+Bot: → Gunakan check_availability dulu untuk cek ketersediaan semua tipe kamar
+Bot: → Lalu create_booking_draft dengan room_selections: [{ room_name: "Deluxe", quantity: 2 }, { room_name: "Villa", quantity: 1 }]
 
 ⚠️ PENTING UNTUK REVIEW/UBAH BOOKING:
 - SELALU minta 3 DATA VERIFIKASI: KODE BOOKING + NO TELEPON + EMAIL
@@ -244,7 +257,7 @@ BAHASA:
         type: "function",
         function: {
           name: "create_booking_draft",
-          description: "Buat draft booking dengan data yang sudah dikumpulkan. PENTING: Nomor telepon (guest_phone) WAJIB diisi!",
+          description: "Buat booking dengan satu atau beberapa kamar sekaligus. PENTING: Nomor telepon WAJIB diisi! Support multiple rooms!",
           parameters: {
             type: "object",
             properties: {
@@ -253,10 +266,22 @@ BAHASA:
               guest_phone: { type: "string", description: "Nomor telepon/WhatsApp tamu (WAJIB DIISI!)" },
               check_in: { type: "string", description: "Tanggal check-in YYYY-MM-DD" },
               check_out: { type: "string", description: "Tanggal check-out YYYY-MM-DD" },
-              num_guests: { type: "number", description: "Jumlah tamu" },
-              room_name: { type: "string", description: "Nama tipe kamar" }
+              num_guests: { type: "number", description: "Total jumlah tamu" },
+              room_name: { type: "string", description: "Nama tipe kamar (untuk single room booking, backward compatible)" },
+              room_selections: { 
+                type: "array", 
+                description: "Untuk multiple room: Array kamar yang dipilih. Contoh: [{room_name: 'Deluxe', quantity: 2}, {room_name: 'Villa', quantity: 1}]. Jika hanya 1 kamar, bisa pakai room_name saja.",
+                items: {
+                  type: "object",
+                  properties: {
+                    room_name: { type: "string", description: "Nama tipe kamar" },
+                    quantity: { type: "number", description: "Jumlah kamar tipe ini (default: 1)" }
+                  },
+                  required: ["room_name"]
+                }
+              }
             },
-            required: ["guest_name", "guest_email", "guest_phone", "check_in", "check_out", "num_guests", "room_name"]
+            required: ["guest_name", "guest_email", "guest_phone", "check_in", "check_out", "num_guests"]
           }
         }
       },

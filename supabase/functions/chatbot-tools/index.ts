@@ -157,7 +157,7 @@ serve(async (req) => {
       }
 
       case "create_booking_draft": {
-        let { guest_name, guest_email, guest_phone, check_in, check_out, room_name, num_guests, special_requests } = parameters;
+        let { guest_name, guest_email, guest_phone, check_in, check_out, room_name, room_selections, num_guests, special_requests } = parameters;
         
         // Validate required fields
         if (!guest_phone || !guest_phone.trim()) {
@@ -168,7 +168,30 @@ serve(async (req) => {
         check_in = validateAndFixDate(check_in, "check_in");
         check_out = validateAndFixDate(check_out, "check_out");
         
-        console.log("Creating booking with params:", { guest_name, guest_email, guest_phone, check_in, check_out, room_name });
+        console.log("Creating booking with params:", { guest_name, guest_email, guest_phone, check_in, check_out, room_name, room_selections });
+        
+        // Calculate nights
+        const checkInDate = new Date(check_in);
+        const checkOutDate = new Date(check_out);
+        const total_nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Normalize room selections - support both single and multiple
+        let roomsToBook: Array<{ room_name: string; quantity: number }> = [];
+        
+        if (room_selections && room_selections.length > 0) {
+          // Multiple room mode
+          roomsToBook = room_selections.map((r: any) => ({
+            room_name: r.room_name,
+            quantity: r.quantity || 1
+          }));
+          console.log("Multiple room mode:", roomsToBook);
+        } else if (room_name) {
+          // Single room mode (backward compatible)
+          roomsToBook = [{ room_name, quantity: 1 }];
+          console.log("Single room mode:", roomsToBook);
+        } else {
+          throw new Error("Mohon pilih minimal satu kamar untuk booking");
+        }
         
         // Normalize room name by removing common words
         const normalizeRoomName = (name: string) => {
@@ -181,7 +204,7 @@ serve(async (req) => {
         // Get all available rooms
         const { data: allRooms, error: roomsError } = await supabase
           .from("rooms")
-          .select("id, name, price_per_night")
+          .select("id, name, price_per_night, allotment, room_numbers")
           .eq("available", true);
 
         if (roomsError) {
@@ -189,29 +212,65 @@ serve(async (req) => {
           throw new Error(`Error fetching rooms: ${roomsError.message}`);
         }
 
-        // Find best matching room
-        const normalizedSearchName = normalizeRoomName(room_name);
-        const room = allRooms?.find(r => {
-          const normalizedRoomName = normalizeRoomName(r.name);
-          return normalizedRoomName.includes(normalizedSearchName) || 
-                 normalizedSearchName.includes(normalizedRoomName);
-        });
+        // Match and validate each room selection
+        const matchedRooms: Array<{
+          roomId: string;
+          roomName: string;
+          pricePerNight: number;
+          quantity: number;
+          availableNumbers: string[];
+        }> = [];
 
-        if (!room) {
-          const roomList = allRooms?.map(r => r.name).join(", ") || "none";
-          console.error(`Room "${room_name}" not found. Available rooms: ${roomList}`);
-          throw new Error(`Kamar "${room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
+        let totalPrice = 0;
+        const roomsSummary: string[] = [];
+
+        for (const selection of roomsToBook) {
+          // Find matching room
+          const normalizedSearch = normalizeRoomName(selection.room_name);
+          const room = allRooms?.find(r => {
+            const normalized = normalizeRoomName(r.name);
+            return normalized.includes(normalizedSearch) || normalizedSearch.includes(normalized);
+          });
+
+          if (!room) {
+            const roomList = allRooms?.map(r => r.name).join(", ") || "none";
+            throw new Error(`Kamar "${selection.room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
+          }
+
+          console.log(`Matched "${selection.room_name}" to room "${room.name}"`);
+
+          // Check availability for this room type
+          const { data: bookedRooms } = await supabase
+            .from("bookings")
+            .select("allocated_room_number")
+            .eq("room_id", room.id)
+            .or(`status.eq.confirmed,status.eq.pending`)
+            .gte("check_out", check_in)
+            .lte("check_in", check_out);
+
+          const bookedNumbers = bookedRooms?.map(b => b.allocated_room_number).filter((n): n is string => n !== null) || [];
+          const availableNumbers = (room.room_numbers || []).filter((n: string) => !bookedNumbers.includes(n));
+
+          if (availableNumbers.length < selection.quantity) {
+            throw new Error(`Kamar ${room.name} hanya tersisa ${availableNumbers.length}, tidak cukup untuk ${selection.quantity} kamar yang diminta`);
+          }
+
+          const roomPrice = room.price_per_night * selection.quantity * total_nights;
+          totalPrice += roomPrice;
+
+          matchedRooms.push({
+            roomId: room.id,
+            roomName: room.name,
+            pricePerNight: room.price_per_night,
+            quantity: selection.quantity,
+            availableNumbers: availableNumbers.slice(0, selection.quantity)
+          });
+
+          roomsSummary.push(`${selection.quantity}x ${room.name}`);
         }
 
-        console.log(`Matched "${room_name}" to room "${room.name}"`);
-
-        // Calculate nights and price
-        const checkInDate = new Date(check_in);
-        const checkOutDate = new Date(check_out);
-        const total_nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-        const total_price = total_nights * room.price_per_night;
-
-        console.log("Calculated:", { total_nights, total_price, room_id: room.id });
+        console.log("Matched rooms:", matchedRooms);
+        console.log("Total price:", totalPrice);
 
         // Check for existing pending booking from chatbot for this guest
         const { data: existingBooking } = await supabase
@@ -229,6 +288,9 @@ serve(async (req) => {
         let booking;
         let isUpdate = false;
 
+        // Use first room for primary booking (backward compatibility)
+        const primaryRoom = matchedRooms[0];
+
         if (existingBooking) {
           // UPDATE existing booking (reschedule)
           console.log(`Found existing booking ${existingBooking.id}, updating...`);
@@ -238,12 +300,12 @@ serve(async (req) => {
             .update({
               check_in,
               check_out,
-              room_id: room.id,
+              room_id: primaryRoom.roomId,
+              allocated_room_number: primaryRoom.availableNumbers[0],
               num_guests: num_guests || 1,
               special_requests: special_requests || null,
               total_nights,
-              total_price,
-              allocated_room_number: null, // Reset room allocation
+              total_price: totalPrice,
               updated_at: new Date().toISOString()
             })
             .eq("id", existingBooking.id)
@@ -258,6 +320,12 @@ serve(async (req) => {
           booking = updatedBooking;
           isUpdate = true;
           console.log("Booking updated successfully:", booking.id);
+
+          // Delete old booking_rooms entries
+          await supabase
+            .from("booking_rooms")
+            .delete()
+            .eq("booking_id", booking.id);
         } else {
           // CREATE new booking
           console.log("No existing booking found, creating new...");
@@ -270,11 +338,12 @@ serve(async (req) => {
               guest_phone,
               check_in,
               check_out,
-              room_id: room.id,
+              room_id: primaryRoom.roomId,
+              allocated_room_number: primaryRoom.availableNumbers[0],
               num_guests: num_guests || 1,
               special_requests: special_requests || null,
               total_nights,
-              total_price,
+              total_price: totalPrice,
               status: 'pending',
               payment_status: 'unpaid',
               booking_source: 'other',
@@ -293,17 +362,52 @@ serve(async (req) => {
           console.log("Booking created successfully:", booking.id);
         }
 
+        // Insert all rooms into booking_rooms table
+        const bookingRoomsData: Array<{
+          booking_id: string;
+          room_id: string;
+          room_number: string;
+          price_per_night: number;
+        }> = [];
+
+        for (const room of matchedRooms) {
+          for (let i = 0; i < room.quantity; i++) {
+            bookingRoomsData.push({
+              booking_id: booking.id,
+              room_id: room.roomId,
+              room_number: room.availableNumbers[i],
+              price_per_night: room.pricePerNight
+            });
+          }
+        }
+
+        if (bookingRoomsData.length > 0) {
+          const { error: bookingRoomsError } = await supabase
+            .from("booking_rooms")
+            .insert(bookingRoomsData);
+          
+          if (bookingRoomsError) {
+            console.error("Failed to insert booking_rooms:", bookingRoomsError);
+          } else {
+            console.log(`Inserted ${bookingRoomsData.length} room entries into booking_rooms`);
+          }
+        }
+
         // Get hotel settings for WhatsApp
         const { data: hotelSettings } = await supabase
           .from("hotel_settings")
           .select("whatsapp_number, hotel_name")
           .single();
 
+        // Prepare room summary text
+        const roomsText = roomsSummary.join(", ");
+        const totalRooms = bookingRoomsData.length;
+
         // Send WhatsApp notifications (background task)
         if (hotelSettings?.whatsapp_number) {
           const adminMessage = isUpdate
-            ? `🔄 *RESCHEDULE BOOKING (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\nKamar: ${room.name}\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\nTotal: Rp ${total_price.toLocaleString('id-ID')}\n\nKode Booking: ${booking.booking_code}\n\n⚠️ Booking ini telah diperbarui oleh guest melalui chatbot.`
-            : `🔔 *BOOKING BARU (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\nKamar: ${room.name}\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\nTotal: Rp ${total_price.toLocaleString('id-ID')}\n\nKode Booking: ${booking.booking_code}`;
+            ? `🔄 *RESCHEDULE BOOKING (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\n🛏️ Kamar: ${roomsText} (${totalRooms} unit)\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\nKode Booking: ${booking.booking_code}\n\n⚠️ Booking ini telah diperbarui oleh guest melalui chatbot.`
+            : `🔔 *BOOKING BARU (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\n🛏️ Kamar: ${roomsText} (${totalRooms} unit)\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\nKode Booking: ${booking.booking_code}`;
           
           // Send to admin
           fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
@@ -322,8 +426,8 @@ serve(async (req) => {
           // Send to customer if phone provided
           if (guest_phone) {
             const customerMessage = isUpdate
-              ? `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${room.name}\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${total_price.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${booking.booking_code}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
-              : `Terima kasih ${guest_name}! 🙏\n\nBooking Anda telah kami terima:\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${room.name}\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${total_price.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${booking.booking_code}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`;
+              ? `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${roomsText} (${totalRooms} kamar)\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${booking.booking_code}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
+              : `Terima kasih ${guest_name}! 🙏\n\nBooking Anda telah kami terima:\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${roomsText} (${totalRooms} kamar)\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${booking.booking_code}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`;
             
             fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
               method: "POST",
@@ -342,10 +446,12 @@ serve(async (req) => {
 
         result = {
           message: isUpdate
-            ? `Booking berhasil diperbarui! Kode booking: ${booking.booking_code}. Check-in baru: ${check_in}, Check-out baru: ${check_out}. Total baru: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
-            : `Booking berhasil dibuat! Kode booking: ${booking.booking_code}. Status: Menunggu konfirmasi. Total: Rp ${total_price.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran melalui WhatsApp.`,
+            ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}. Total baru: Rp ${totalPrice.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
+            : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar). Total: Rp ${totalPrice.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`,
           booking_code: booking.booking_code,
-          total_price,
+          rooms_booked: roomsSummary,
+          total_rooms: totalRooms,
+          total_price: totalPrice,
           status: 'pending',
           is_update: isUpdate
         };
