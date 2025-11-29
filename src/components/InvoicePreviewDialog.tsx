@@ -97,36 +97,69 @@ export const InvoicePreviewDialog = ({
     toast.loading("Generating PDF...");
 
     try {
-      // Create a temporary container
+      // Create styled container for PDF with A4 dimensions
       const container = document.createElement('div');
       const sanitizedHtml = DOMPurify.sanitize(invoiceHtml);
-      container.innerHTML = sanitizedHtml;
+      
+      // Wrap with PDF-optimized container
+      container.innerHTML = `
+        <div style="
+          width: 210mm;
+          min-height: 297mm;
+          padding: 15mm;
+          background: white;
+          font-family: Arial, Helvetica, sans-serif;
+        ">
+          ${sanitizedHtml}
+        </div>
+      `;
+      
       container.style.position = 'absolute';
       container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '210mm';
       document.body.appendChild(container);
+
+      // Wait for images to load
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       // PDF options for better quality
       const opt = {
-        margin: [10, 10, 10, 10] as [number, number, number, number],
-        filename: `Invoice-${booking.invoice_number || booking.id}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
+        margin: [15, 10, 15, 10] as [number, number, number, number],
+        filename: `Invoice-${booking.invoice_number || booking.booking_code}.pdf`,
+        image: { 
+          type: 'jpeg' as const, 
+          quality: 1.0
+        },
         html2canvas: { 
-          scale: 2,
+          scale: 3,
           useCORS: true,
+          allowTaint: true,
           letterRendering: true,
-          logging: false
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: 850,
+          scrollY: 0,
+          scrollX: 0
         },
         jsPDF: { 
           unit: 'mm' as const, 
           format: 'a4' as const, 
           orientation: 'portrait' as const,
-          compress: true
+          compress: true,
+          putOnlyUsedFonts: true,
+          floatPrecision: 16
         },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] as const }
+        pagebreak: { 
+          mode: ['avoid-all', 'css', 'legacy'] as const,
+          before: '.page-break-before',
+          after: '.page-break-after',
+          avoid: ['.no-page-break', 'tr', 'td']
+        }
       };
 
       // Generate PDF
-      await html2pdf().set(opt).from(container).save();
+      await html2pdf().set(opt).from(container.firstChild as HTMLElement).save();
 
       // Clean up
       document.body.removeChild(container);

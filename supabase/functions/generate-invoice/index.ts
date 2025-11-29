@@ -64,6 +64,8 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
     body {
@@ -71,7 +73,9 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
       font-size: ${fontSizeBase}pt;
       color: ${textColor};
       line-height: 1.6;
-      background: #f5f5f5;
+      background: white;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
 
     .invoice-container {
@@ -414,20 +418,40 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
       color: #991b1b;
     }
 
-    /* Print Styles */
+    /* Print Styles - PDF Optimization */
     @media print {
       @page {
         size: A4;
-        margin: 1cm;
+        margin: 15mm 10mm;
       }
       
       body {
-        background: white;
+        background: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       
       .invoice-container {
-        margin: 0;
-        padding: 40px;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+      }
+      
+      /* Avoid page breaks inside elements */
+      .header, .info-section, .totals-section, .payment-section, .footer {
+        page-break-inside: avoid;
+      }
+      
+      /* Ensure tables don't break mid-row */
+      .table-clean tr {
+        page-break-inside: avoid;
+      }
+      
+      /* Force page break before footer if needed */
+      .footer {
+        page-break-before: auto;
       }
     }
   </style>
@@ -440,7 +464,8 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
         ${showLogo && hotelSettings.logo_url ? `
           <img src="${hotelSettings.logo_url}" 
                class="logo" 
-               alt="${hotelSettings.hotel_name}" 
+               alt="${hotelSettings.hotel_name}"
+               crossorigin="anonymous"
                onerror="this.style.display='none'" />
         ` : ''}
         <div>
