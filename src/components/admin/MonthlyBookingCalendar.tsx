@@ -454,7 +454,7 @@ export const MonthlyBookingCalendar = () => {
 
   return (
     <>
-      <Card className="w-full shadow-lg rounded-xl overflow-hidden border-border/50">
+      <Card className="w-full shadow-lg rounded-xl border-border/50">
         <div className="p-4 bg-muted/20 border-b border-border">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-2 flex-wrap">
@@ -1336,7 +1336,7 @@ const RoomCell = ({
       onClick={() => handleCellClick(roomId, roomNumber, date, isBlocked, hasBooking)}
       onContextMenu={(e) => handleRightClick(e, roomId, roomNumber, date)}
       className={cn(
-        "border border-border p-0 relative h-14 min-w-[60px] transition-all duration-200",
+        "border border-border p-0 relative h-14 min-w-[60px] transition-all duration-200 overflow-visible",
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
         !isHolidayOrWeekend && "bg-background",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
