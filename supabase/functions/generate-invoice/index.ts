@@ -17,31 +17,23 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
   const { booking, room, hotelSettings, bankAccounts, bookingRooms } = data;
   
   // Use template settings or defaults
-  const primaryColor = template?.primary_color || '#8B4513';
-  const secondaryColor = template?.secondary_color || '#D2691E';
+  const primaryColor = template?.primary_color || '#333333';
+  const secondaryColor = template?.secondary_color || '#666666';
   const textColor = template?.text_color || '#1a1a1a';
   const backgroundColor = template?.background_color || '#ffffff';
-  const accentColor = template?.accent_color || '#f0f8ff';
-  const fontFamily = template?.font_family || 'Arial';
-  const fontSizeBase = template?.font_size_base || 12;
-  const fontSizeHeading = template?.font_size_heading || 24;
+  const fontFamily = template?.font_family || 'Arial, sans-serif';
+  const fontSizeBase = template?.font_size_base || 11;
   const showLogo = template?.show_logo !== false;
-  const logoSize = template?.logo_size || 'medium';
   const showGuestDetails = template?.show_guest_details !== false;
-  const showHotelDetails = template?.show_hotel_details !== false;
   const showSpecialRequests = template?.show_special_requests !== false;
   const showPaymentInstructions = template?.show_payment_instructions !== false;
-  const customHeaderText = template?.custom_header_text || null;
   const customFooterText = template?.custom_footer_text || null;
   const paymentTitle = template?.payment_title || 'Instruksi Pembayaran';
-  const layoutStyle = template?.layout_style || 'modern';
-  const borderStyle = template?.border_style || 'solid';
-  const spacing = template?.spacing || 'normal';
   
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
+      day: '2-digit',
+      month: 'short',
       year: 'numeric'
     });
   };
@@ -79,771 +71,537 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
       font-size: ${fontSizeBase}pt;
       color: ${textColor};
       line-height: 1.6;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+      background: #f5f5f5;
     }
 
     .invoice-container {
-      max-width: 900px;
+      max-width: 850px;
       margin: 40px auto;
-      background: white;
-      padding: 40px;
-      border-radius: 16px;
-      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.1);
-      position: relative;
-      overflow: hidden;
+      background: ${backgroundColor};
+      padding: 60px;
     }
 
-    /* Subtle watermark */
-    .invoice-container::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 400px;
-      height: 400px;
-      background: url('${hotelSettings.logo_url || ''}') center/contain no-repeat;
-      opacity: 0.03;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .invoice-container > * {
-      position: relative;
-      z-index: 1;
-    }
-
-    /* Corner decorations */
-    .corner-decoration {
-      position: absolute;
-      width: 80px;
-      height: 80px;
-      pointer-events: none;
-    }
-
-    .corner-decoration.top-left {
-      top: 0;
-      left: 0;
-      background: linear-gradient(135deg, ${primaryColor}15, transparent);
-      border-radius: 0 0 80px 0;
-    }
-
-    .corner-decoration.top-right {
-      top: 0;
-      right: 0;
-      background: linear-gradient(225deg, ${secondaryColor}15, transparent);
-      border-radius: 0 0 0 80px;
-    }
-
-    /* Premium Header */
-    .header-premium {
+    /* Clean Header */
+    .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      padding-bottom: 30px;
-      margin-bottom: 40px;
-      border-bottom: 3px solid;
-      border-image: linear-gradient(90deg, ${primaryColor}, ${secondaryColor}) 1;
-      position: relative;
+      margin-bottom: 50px;
     }
 
-    .logo-container {
+    .header-left {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
     }
 
-    .logo-premium {
-      max-height: ${logoSize === 'small' ? '50px' : logoSize === 'large' ? '100px' : '70px'};
-      max-width: 200px;
+    .logo {
+      max-height: 80px;
+      max-width: 150px;
       object-fit: contain;
-      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
     }
 
-    .hotel-info h1 {
-      font-size: ${fontSizeHeading}pt;
-      color: ${primaryColor};
-      margin: 0 0 5px 0;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-
-    .hotel-info .tagline {
-      color: ${textColor}99;
-      font-size: 11pt;
-      margin: 0;
-      font-style: italic;
-    }
-
-    .invoice-number-elegant {
-      text-align: right;
-      background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});
-      padding: 20px 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(139, 69, 19, 0.25);
-      min-width: 200px;
-    }
-
-    .invoice-number-elegant .ribbon {
-      color: white;
-      font-size: 9pt;
-      text-transform: uppercase;
-      letter-spacing: 2px;
+    .hotel-name {
+      font-size: 13pt;
       font-weight: 600;
-      opacity: 0.95;
-      margin-bottom: 8px;
+      color: ${primaryColor};
     }
 
-    .invoice-number-elegant .number {
-      color: white;
-      font-size: 16pt;
-      font-weight: 700;
-      margin: 5px 0;
+    .hotel-rating {
+      color: #fbbf24;
+      font-size: 10pt;
+      margin-top: 4px;
     }
 
-    .invoice-number-elegant .date {
-      color: white;
-      font-size: 9pt;
-      opacity: 0.9;
-      margin-top: 8px;
+    .header-right {
+      text-align: right;
     }
 
-    /* Info Grid with Glass Morphism */
-    .info-grid {
+    .invoice-title {
+      font-size: 36pt;
+      font-weight: bold;
+      color: ${primaryColor};
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+    }
+
+    .hotel-address {
+      font-size: 10pt;
+      color: ${secondaryColor};
+      line-height: 1.8;
+    }
+
+    .hotel-address div {
+      margin: 2px 0;
+    }
+
+    /* Info Section */
+    .info-section {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-bottom: 40px;
+      gap: 40px;
+      margin-bottom: 50px;
+      padding-bottom: 30px;
+      border-bottom: 1px solid #e0e0e0;
     }
 
-    .info-card-elegant {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(139, 69, 19, 0.15);
-      border-radius: 16px;
-      box-shadow: 
-        0 4px 24px rgba(139, 69, 19, 0.08),
-        0 1px 2px rgba(0, 0, 0, 0.04);
-      padding: 24px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .info-card-elegant::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, ${primaryColor}, ${secondaryColor});
-    }
-
-    .info-card-elegant .card-icon {
-      font-size: 28px;
-      margin-bottom: 12px;
-    }
-
-    .info-card-elegant h3 {
-      font-size: 12pt;
-      color: ${primaryColor};
-      margin: 0 0 16px 0;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .info-card-elegant p {
-      margin: 8px 0;
-      color: ${textColor};
-    }
-
-    .info-card-elegant .name {
-      font-weight: 700;
-      font-size: 13pt;
-      color: ${textColor};
-    }
-
-    /* Section Headers */
-    .section {
-      margin: 40px 0;
-    }
-
-    .section-title {
-      font-size: 14pt;
-      color: ${primaryColor};
-      font-weight: 700;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .section-icon {
-      font-size: 18pt;
-    }
-
-    /* Elegant Table */
-    .table-elegant {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-      margin-bottom: 30px;
-    }
-
-    .table-elegant thead th {
-      background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});
-      color: white;
-      padding: 16px 20px;
-      text-align: left;
+    .info-block h3 {
+      font-size: 11pt;
       font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      color: ${primaryColor};
+      margin-bottom: 16px;
+    }
+
+    .info-block p {
+      font-size: 10pt;
+      color: ${textColor};
+      margin: 6px 0;
+      line-height: 1.6;
+    }
+
+    .info-block .name {
+      font-weight: 600;
+      font-size: 11pt;
+      color: ${textColor};
+    }
+
+    .info-right {
+      text-align: right;
+    }
+
+    .metadata-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
       font-size: 10pt;
     }
 
-    .table-elegant tbody td {
-      padding: 16px 20px;
-      border-bottom: 1px solid ${accentColor}50;
+    .metadata-row .label {
+      color: ${secondaryColor};
+      font-weight: 600;
     }
 
-    .table-elegant tbody tr {
-      transition: background 0.2s ease;
+    .metadata-row .value {
+      color: ${textColor};
+      font-weight: 400;
     }
 
-    .table-elegant tbody tr:last-child td {
-      border-bottom: none;
+    /* Clean Table */
+    .table-clean {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
     }
 
-    .table-elegant tbody tr:nth-child(even) {
-      background: ${accentColor}20;
-    }
-
-    .table-elegant tbody tr:hover {
-      background: linear-gradient(90deg, ${accentColor}40, transparent);
-    }
-
-    .room-number {
-      font-weight: 700;
+    .table-clean thead th {
+      background: #f5f5f5;
       color: ${primaryColor};
-      background: ${primaryColor}15;
-      padding: 4px 10px;
-      border-radius: 6px;
-      display: inline-block;
-    }
-
-    /* Status Badge Premium */
-    .status-elegant {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      border-radius: 24px;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
       font-size: 9pt;
-      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      letter-spacing: 0.5px;
+      border: 1px solid #e0e0e0;
     }
 
-    .status-elegant::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-      animation: pulse 2s infinite;
+    .table-clean tbody td {
+      padding: 14px 16px;
+      border: 1px solid #e0e0e0;
+      font-size: 10pt;
+      vertical-align: top;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+    .table-clean tbody tr {
+      background: white;
     }
 
-    .status-pending {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
+    .table-clean .align-right {
+      text-align: right;
     }
 
-    .status-confirmed {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
+    .table-clean .align-center {
+      text-align: center;
     }
 
-    .status-cancelled {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
+    .item-description {
+      font-weight: 600;
+      color: ${textColor};
+      margin-bottom: 4px;
     }
 
-    /* Payment Summary Premium */
-    .payment-box-premium {
-      background: linear-gradient(145deg, #fafbfc 0%, #f0f4f8 100%);
-      border-radius: 20px;
-      padding: 32px;
-      margin: 30px 0;
-      position: relative;
-      border: 2px solid transparent;
-      background-clip: padding-box;
+    .item-details {
+      font-size: 9pt;
+      color: ${secondaryColor};
+      line-height: 1.5;
     }
 
-    .payment-box-premium::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 20px;
-      padding: 2px;
-      background: linear-gradient(135deg, ${primaryColor}40, ${secondaryColor}40);
-      -webkit-mask: 
-        linear-gradient(#fff 0 0) content-box, 
-        linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      pointer-events: none;
+    /* Totals Section */
+    .totals-section {
+      margin: 30px 0 40px;
+      display: flex;
+      justify-content: flex-end;
     }
 
-    .payment-summary-title {
-      font-size: 14pt;
-      color: ${primaryColor};
-      font-weight: 700;
-      margin: 0 0 20px 0;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .totals {
-      margin: 20px 0;
+    .totals-box {
+      min-width: 300px;
     }
 
     .total-row {
       display: flex;
       justify-content: space-between;
-      padding: 12px 0;
+      padding: 10px 0;
+      font-size: 11pt;
+      color: ${textColor};
+    }
+
+    .total-row.subtotal {
+      border-top: 1px solid #e0e0e0;
+      padding-top: 15px;
+    }
+
+    .total-row.grand-total {
+      border-top: 2px solid ${primaryColor};
+      padding-top: 15px;
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 13pt;
+    }
+
+    .total-row .label {
+      color: ${secondaryColor};
+    }
+
+    .total-row .amount {
+      font-weight: 600;
+      color: ${textColor};
+    }
+
+    .total-row.grand-total .amount {
+      color: ${primaryColor};
+    }
+
+    /* Payment Section */
+    .payment-section {
+      margin: 40px 0;
+    }
+
+    .payment-section h3 {
       font-size: 12pt;
-      color: ${textColor};
-    }
-
-    .grand-total-elegant {
-      background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});
-      border-radius: 12px;
-      padding: 20px 28px;
-      margin-top: 20px;
-      box-shadow: 0 8px 24px rgba(139, 69, 19, 0.25);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .grand-total-elegant .label {
-      color: white;
-      font-size: 13pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-
-    .grand-total-elegant .amount {
-      color: white;
-      font-size: 20pt;
-      font-weight: 700;
-    }
-
-    /* Special Requests Box Elegant */
-    .special-requests-box {
-      background: linear-gradient(135deg, #fff9e6, #fff4d6);
-      border: 1px solid #f0e68c;
-      border-left: 4px solid #daa520;
-      border-radius: 12px;
-      padding: 20px 20px 20px 24px;
-      margin: 30px 0;
-      position: relative;
-    }
-
-    .special-requests-box::before {
-      content: "📝";
-      position: absolute;
-      top: -12px;
-      left: 20px;
-      background: white;
-      padding: 0 8px;
-      font-size: 18pt;
-    }
-
-    .special-requests-box h4 {
-      color: #b8860b;
-      font-size: 11pt;
-      font-weight: 700;
-      margin: 0 0 10px 0;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .special-requests-box p {
-      color: #666;
-      margin: 0;
-      line-height: 1.8;
-    }
-
-    /* Bank Cards Premium */
-    .payment-instructions {
-      margin: 30px 0;
-    }
-
-    .payment-instructions h3 {
-      font-size: 13pt;
-      color: ${primaryColor};
-      font-weight: 700;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .bank-grid {
-      display: grid;
-      gap: 16px;
-    }
-
-    .bank-card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      border-left: 5px solid ${primaryColor};
-      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .bank-card:hover {
-      transform: translateX(4px);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-
-    .bank-icon {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      flex-shrink: 0;
-    }
-
-    .bank-details {
-      flex: 1;
-    }
-
-    .bank-name {
-      font-weight: 700;
-      font-size: 13pt;
-      color: ${primaryColor};
-      margin-bottom: 6px;
-    }
-
-    .bank-account {
-      color: ${textColor};
-      font-size: 11pt;
-      margin: 4px 0;
-    }
-
-    .bank-holder {
-      color: ${textColor}99;
-      font-size: 10pt;
-      margin: 4px 0;
-    }
-
-    /* Footer Premium */
-    .footer-premium {
-      text-align: center;
-      padding: 40px 20px;
-      background: linear-gradient(180deg, transparent 0%, ${accentColor}30 100%);
-      border-radius: 0 0 16px 16px;
-      margin: 40px -40px -40px;
-    }
-
-    .footer-logo {
-      margin-bottom: 20px;
-    }
-
-    .footer-logo img {
-      height: 50px;
-      opacity: 0.8;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-    }
-
-    .footer-signature {
-      font-family: 'Georgia', serif;
-      font-style: italic;
-      font-size: 13pt;
+      font-weight: bold;
       color: ${primaryColor};
       margin-bottom: 16px;
     }
 
-    .footer-divider {
-      width: 100px;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, ${primaryColor}, transparent);
-      margin: 20px auto;
-    }
-
-    .contact-icons {
-      color: ${textColor}99;
+    .payment-section p {
       font-size: 10pt;
-      margin-top: 16px;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      flex-wrap: wrap;
+      color: ${textColor};
+      line-height: 1.8;
+      margin: 6px 0;
     }
 
-    .contact-icons span {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+    .bank-info {
+      margin: 20px 0;
+      padding: 16px 0;
+    }
+
+    .bank-item {
+      margin: 16px 0;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .bank-item:last-child {
+      border-bottom: none;
+    }
+
+    .bank-name {
+      font-weight: bold;
+      font-size: 11pt;
+      color: ${primaryColor};
+      margin-bottom: 6px;
+    }
+
+    .bank-details {
+      font-size: 10pt;
+      color: ${textColor};
+      margin: 4px 0;
+    }
+
+    /* Special Requests */
+    .special-requests {
+      background: #fffbf0;
+      border: 1px solid #e0e0e0;
+      border-left: 3px solid ${primaryColor};
+      padding: 16px;
+      margin: 30px 0;
+    }
+
+    .special-requests h4 {
+      font-size: 10pt;
+      font-weight: 600;
+      color: ${primaryColor};
+      margin-bottom: 8px;
+    }
+
+    .special-requests p {
+      font-size: 10pt;
+      color: ${textColor};
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 60px;
+      padding-top: 30px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .footer-content {
+      text-align: center;
+    }
+
+    .footer h4 {
+      font-size: 10pt;
+      font-weight: 600;
+      color: ${primaryColor};
+      margin-bottom: 10px;
+    }
+
+    .footer p {
+      font-size: 9pt;
+      color: ${secondaryColor};
+      line-height: 1.8;
+      margin: 6px 0;
+    }
+
+    .footer-divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 20px 0;
+    }
+
+    .page-number {
+      text-align: left;
+      font-size: 9pt;
+      color: ${secondaryColor};
+      margin-top: 20px;
+    }
+
+    /* Status Badge */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 9pt;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-confirmed {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-cancelled {
+      background: #fee2e2;
+      color: #991b1b;
     }
 
     /* Print Styles */
     @media print {
       @page {
         size: A4;
-        margin: 1.5cm;
+        margin: 1cm;
       }
       
       body {
-        background: white !important;
+        background: white;
       }
       
       .invoice-container {
-        box-shadow: none !important;
-        margin: 0 !important;
-      }
-      
-      .invoice-container::before {
-        opacity: 0.02 !important;
-      }
-      
-      * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+        margin: 0;
+        padding: 40px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="invoice-container pdf-friendly">
-    <!-- Corner Decorations -->
-    <div class="corner-decoration top-left"></div>
-    <div class="corner-decoration top-right"></div>
-    
-    ${customHeaderText ? `<div style="background: ${accentColor}; padding: 15px; margin-bottom: 20px; border-left: 4px solid ${primaryColor}; font-weight: 600;">${customHeaderText}</div>` : ''}
-    
-    <!-- Premium Header -->
-    <div class="header-premium">
-      <div class="logo-container">
+  <div class="invoice-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
         ${showLogo && hotelSettings.logo_url ? `
           <img src="${hotelSettings.logo_url}" 
-               class="logo-premium" 
+               class="logo" 
                alt="${hotelSettings.hotel_name}" 
                onerror="this.style.display='none'" />
         ` : ''}
-        <div class="hotel-info">
-          <h1>${hotelSettings.hotel_name || 'Pomah Guesthouse'}</h1>
-          ${hotelSettings.tagline ? `<p class="tagline">${hotelSettings.tagline}</p>` : ''}
+        <div>
+          <div class="hotel-name">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
+          <div class="hotel-rating">★★★★</div>
         </div>
       </div>
-      <div class="invoice-number-elegant">
-        <div class="ribbon">INVOICE</div>
-        <div class="number">${booking.invoice_number}</div>
-        <div class="date">${formatDate(booking.created_at)}</div>
+      <div class="header-right">
+        <div class="invoice-title">INVOICE</div>
+        <div class="hotel-address">
+          <div><strong>${hotelSettings.hotel_name || 'Pomah Guesthouse'}</strong></div>
+          <div>${hotelSettings.address}</div>
+          <div>${hotelSettings.city}, ${hotelSettings.postal_code}</div>
+          <div>${hotelSettings.country}</div>
+        </div>
       </div>
     </div>
 
-    <!-- Info Grid with Glass Morphism -->
-    ${showGuestDetails || showHotelDetails ? `<div class="info-grid">` : ''}
+    <!-- Info Section -->
+    <div class="info-section">
       ${showGuestDetails ? `
-      <div class="info-card-elegant">
-        <div class="card-icon">👤</div>
-        <h3>Detail Tamu</h3>
+      <div class="info-block">
+        <h3>Ditagih kepada</h3>
         <p class="name">${booking.guest_name}</p>
         <p>${booking.guest_email}</p>
         ${booking.guest_phone ? `<p>${booking.guest_phone}</p>` : ''}
+        ${hotelSettings.city ? `<p>${hotelSettings.city}, ${hotelSettings.country}</p>` : ''}
       </div>
       ` : ''}
-      ${showHotelDetails ? `
-      <div class="info-card-elegant">
-        <div class="card-icon">🏨</div>
-        <h3>Detail Hotel</h3>
-        <p class="name">${hotelSettings.hotel_name}</p>
-        <p>${hotelSettings.address}</p>
-        <p>${hotelSettings.city}, ${hotelSettings.country}</p>
-        <p>${hotelSettings.phone_primary}</p>
+      <div class="info-block info-right">
+        <div class="metadata-row">
+          <span class="label">Nomor Invoice:</span>
+          <span class="value">${booking.invoice_number}</span>
+        </div>
+        <div class="metadata-row">
+          <span class="label">Tanggal Invoice:</span>
+          <span class="value">${formatDate(booking.created_at)}</span>
+        </div>
+        <div class="metadata-row">
+          <span class="label">Tanggal Jatuh Tempo:</span>
+          <span class="value">${formatDate(booking.check_in)}</span>
+        </div>
       </div>
-      ` : ''}
-    ${showGuestDetails || showHotelDetails ? `</div>` : ''}
+    </div>
 
-    <!-- Booking Details -->
-    <div class="section">
-      <div class="section-title">
-        <span class="section-icon">📅</span>
-        Detail Booking
-      </div>
-      <table class="table-elegant">
-        <thead>
+    <!-- Room Details Table -->
+    <table class="table-clean">
+      <thead>
+        <tr>
+          <th style="width: 50px;">No.</th>
+          <th>Deskripsi</th>
+          <th class="align-right" style="width: 120px;">Harga/Malam</th>
+          <th class="align-center" style="width: 80px;">Malam</th>
+          <th class="align-center" style="width: 80px;">Pajak</th>
+          <th class="align-right" style="width: 120px;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${bookingRooms && bookingRooms.length > 0 ? bookingRooms.map((br: any, index: number) => {
+          const roomSubtotal = br.price_per_night * booking.total_nights;
+          const roomTax = hotelSettings.tax_rate ? (roomSubtotal * hotelSettings.tax_rate / 100) : 0;
+          const roomTotal = roomSubtotal + roomTax;
+          return `
+            <tr>
+              <td class="align-center">${index + 1}</td>
+              <td>
+                <div class="item-description">${br.rooms?.name || room.name} #${br.room_number}</div>
+                <div class="item-details">
+                  Check-in: ${formatDate(booking.check_in)} ${booking.check_in_time || '14:00'}<br>
+                  Check-out: ${formatDate(booking.check_out)} ${booking.check_out_time || '12:00'}
+                </div>
+              </td>
+              <td class="align-right">${formatCurrency(br.price_per_night)}</td>
+              <td class="align-center">${booking.total_nights}</td>
+              <td class="align-center">${hotelSettings.tax_rate || 0}%</td>
+              <td class="align-right">${formatCurrency(roomTotal)}</td>
+            </tr>
+          `;
+        }).join('') : `
           <tr>
-            <th>Kode Booking</th>
-            <th>Check-in</th>
-            <th>Check-out</th>
-            <th>Malam</th>
-            <th>Tamu</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>${booking.booking_code}</strong></td>
-            <td>${formatDate(booking.check_in)}<br><small>${booking.check_in_time || '14:00'}</small></td>
-            <td>${formatDate(booking.check_out)}<br><small>${booking.check_out_time || '12:00'}</small></td>
-            <td>${booking.total_nights}</td>
-            <td>${booking.num_guests}</td>
+            <td class="align-center">1</td>
             <td>
-              <span class="status-elegant status-${booking.status}">${booking.status}</span>
+              <div class="item-description">${room.name} #${booking.allocated_room_number || 'TBA'}</div>
+              <div class="item-details">
+                Check-in: ${formatDate(booking.check_in)} ${booking.check_in_time || '14:00'}<br>
+                Check-out: ${formatDate(booking.check_out)} ${booking.check_out_time || '12:00'}
+              </div>
             </td>
+            <td class="align-right">${formatCurrency(booking.total_price / booking.total_nights)}</td>
+            <td class="align-center">${booking.total_nights}</td>
+            <td class="align-center">${hotelSettings.tax_rate || 0}%</td>
+            <td class="align-right">${formatCurrency(total)}</td>
           </tr>
-        </tbody>
-      </table>
+        `}
+      </tbody>
+    </table>
+
+    <!-- Totals Section -->
+    <div class="totals-section">
+      <div class="totals-box">
+        <div class="total-row subtotal">
+          <span class="label">Subtotal:</span>
+          <span class="amount">${formatCurrency(subtotal)}</span>
+        </div>
+        ${taxAmount > 0 ? `
+        <div class="total-row">
+          <span class="label">${hotelSettings.tax_name || 'Pajak'}:</span>
+          <span class="amount">${formatCurrency(taxAmount)}</span>
+        </div>
+        ` : ''}
+        <div class="total-row grand-total">
+          <span class="label">Total:</span>
+          <span class="amount">${formatCurrency(total)}</span>
+        </div>
+        ${amountPaid > 0 ? `
+        <div class="total-row">
+          <span class="label">Terbayar:</span>
+          <span class="amount">${formatCurrency(amountPaid)}</span>
+        </div>
+        <div class="total-row" style="color: #dc3545;">
+          <span class="label">Sisa:</span>
+          <span class="amount">${formatCurrency(amountDue)}</span>
+        </div>
+        ` : ''}
+      </div>
     </div>
 
     <!-- Special Requests -->
     ${showSpecialRequests && booking.special_requests ? `
-    <div class="special-requests-box">
+    <div class="special-requests">
       <h4>Permintaan Khusus</h4>
       <p>${booking.special_requests}</p>
     </div>
     ` : ''}
 
-    <!-- Room Details -->
-    <div class="section">
-      <div class="section-title">
-        <span class="section-icon">🛏️</span>
-        Detail Kamar
+    <!-- Payment Instructions -->
+    ${showPaymentInstructions && amountDue > 0 && bankAccounts.length > 0 ? `
+    <div class="payment-section">
+      <h3>${paymentTitle}</h3>
+      <p>Silakan melakukan pembayaran ke</p>
+      <p><strong>${hotelSettings.hotel_name}</strong> bank account</p>
+      <div class="bank-info">
+        ${bankAccounts.map((account: any) => `
+          <div class="bank-item">
+            <div class="bank-name">${account.bank_name}</div>
+            <div class="bank-details">${account.account_number}</div>
+            <div class="bank-details">a.n. ${account.account_holder_name}</div>
+          </div>
+        `).join('')}
       </div>
-      <table class="table-elegant">
-        <thead>
-          <tr>
-            <th>Tipe Kamar</th>
-            <th>No. Kamar</th>
-            <th>Malam</th>
-            <th>Harga/Malam</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${bookingRooms && bookingRooms.length > 0 ? bookingRooms.map((br: any) => `
-            <tr>
-              <td><strong>${br.rooms?.name || room.name}</strong></td>
-              <td><span class="room-number">#${br.room_number}</span></td>
-              <td>${booking.total_nights}</td>
-              <td>${formatCurrency(br.price_per_night)}</td>
-              <td>${formatCurrency(br.price_per_night * booking.total_nights)}</td>
-            </tr>
-          `).join('') : `
-            <tr>
-              <td><strong>${room.name}</strong></td>
-              <td><span class="room-number">#${booking.allocated_room_number || 'TBA'}</span></td>
-              <td>${booking.total_nights}</td>
-              <td>${formatCurrency(booking.total_price / booking.total_nights)}</td>
-              <td>${formatCurrency(subtotal)}</td>
-            </tr>
-          `}
-        </tbody>
-      </table>
-
-      <!-- Payment Summary Premium -->
-      <div class="payment-box-premium">
-        <div class="payment-summary-title">Ringkasan Pembayaran</div>
-        <div class="totals">
-          <div class="total-row">
-            <span>Subtotal:</span>
-            <span>${formatCurrency(subtotal)}</span>
-          </div>
-          ${taxAmount > 0 ? `
-          <div class="total-row">
-            <span>${hotelSettings.tax_name || 'Pajak'} (${hotelSettings.tax_rate}%):</span>
-            <span>${formatCurrency(taxAmount)}</span>
-          </div>
-          ` : ''}
-        </div>
-        <div class="grand-total-elegant">
-          <span class="label">Total</span>
-          <span class="amount">${formatCurrency(total)}</span>
-        </div>
-        ${amountPaid > 0 ? `
-        <div class="totals" style="margin-top: 20px;">
-          <div class="total-row">
-            <span>Terbayar:</span>
-            <span>${formatCurrency(amountPaid)}</span>
-          </div>
-          <div class="total-row" style="color: #dc3545; font-weight: bold;">
-            <span>Sisa:</span>
-            <span>${formatCurrency(amountDue)}</span>
-          </div>
-        </div>
-        ` : ''}
-      </div>
-    </div>
-
-    <!-- Payment Instructions Premium -->
-    ${showPaymentInstructions && amountDue > 0 && (bankAccounts.length > 0 || hotelSettings.payment_instructions) ? `
-    <div class="payment-instructions">
-      <h3>
-        <span>💳</span>
-        ${paymentTitle}
-      </h3>
-      ${bankAccounts.length > 0 ? `
-        <p style="margin-bottom: 20px; font-weight: 600; color: ${textColor};">Silakan transfer ke salah satu rekening berikut:</p>
-        <div class="bank-grid">
-          ${bankAccounts.map((account: any, index: number) => `
-            <div class="bank-card">
-              <div class="bank-icon">🏦</div>
-              <div class="bank-details">
-                <div class="bank-name">${account.bank_name}</div>
-                <div class="bank-account">No. Rekening: <strong>${account.account_number}</strong></div>
-                <div class="bank-holder">a.n. ${account.account_holder_name}</div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      ` : ''}
-      ${hotelSettings.payment_instructions ? `<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid ${accentColor}; color: ${textColor}99; line-height: 1.8;">${hotelSettings.payment_instructions}</div>` : ''}
     </div>
     ` : ''}
 
-    <!-- Footer Premium -->
-    <div class="footer-premium">
-      ${hotelSettings.logo_url ? `
-      <div class="footer-logo">
-        <img src="${hotelSettings.logo_url}" alt="${hotelSettings.hotel_name}" />
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-content">
+        <h4>Syarat dan ketentuan</h4>
+        <p>${customFooterText || hotelSettings.invoice_footer_text || 'Terima kasih telah memilih ' + hotelSettings.hotel_name + '. Kami menantikan kedatangan Anda!'}</p>
       </div>
-      ` : ''}
-      <p class="footer-signature">${customFooterText || hotelSettings.invoice_footer_text || 'Terima kasih telah memilih ' + hotelSettings.hotel_name + '!'}</p>
       <div class="footer-divider"></div>
-      <div class="contact-icons">
-        <span>📧 ${hotelSettings.email_primary}</span>
-        <span>📞 ${hotelSettings.phone_primary}</span>
-        ${hotelSettings.whatsapp_number ? `<span>💬 ${hotelSettings.whatsapp_number}</span>` : ''}
-      </div>
+      <div class="page-number">Page 1 of 1</div>
     </div>
   </div>
 </body>
