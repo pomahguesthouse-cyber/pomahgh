@@ -27,7 +27,12 @@ interface CreateBookingDialogProps {
   roomId?: string;
   roomNumber?: string;
   initialDate?: Date;
-  rooms: Array<{ id: string; name: string; price_per_night: number; }>;
+  rooms: Array<{ 
+    id: string; 
+    name: string; 
+    price_per_night: number;
+    room_numbers?: string[];
+  }>;
 }
 
 export const CreateBookingDialog = ({
@@ -73,6 +78,14 @@ export const CreateBookingDialog = ({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Multiple room selection
+  const [selectedRooms, setSelectedRooms] = useState<Array<{
+    roomId: string;
+    roomNumber: string;
+    roomName: string;
+    pricePerNight: number;
+  }>>([]);
+  
   // Custom pricing states
   const [useCustomPrice, setUseCustomPrice] = useState(false);
   const [customPricePerNight, setCustomPricePerNight] = useState<string>("");
@@ -108,8 +121,22 @@ export const CreateBookingDialog = ({
       setBookingSource("direct");
       setOtaName("");
       setOtherSource("");
+      // Reset multi-room selection, but pre-select if roomId provided
+      if (roomId && roomNumber) {
+        const room = rooms.find(r => r.id === roomId);
+        if (room) {
+          setSelectedRooms([{
+            roomId: room.id,
+            roomNumber: roomNumber,
+            roomName: room.name,
+            pricePerNight: room.price_per_night
+          }]);
+        }
+      } else {
+        setSelectedRooms([]);
+      }
     }
-  }, [open, initialDate]);
+  }, [open, initialDate, roomId, roomNumber, rooms]);
 
   const selectedRoom = rooms.find(r => r.id === roomId);
 
@@ -142,8 +169,13 @@ export const CreateBookingDialog = ({
       return;
     }
     
-    if (!checkIn || !checkOut || !roomId || !selectedRoom) {
-      toast.error("Lengkapi semua data booking");
+    if (!checkIn || !checkOut) {
+      toast.error("Pilih tanggal check-in dan check-out");
+      return;
+    }
+    
+    if (selectedRooms.length === 0) {
+      toast.error("Pilih minimal 1 kamar");
       return;
     }
 
@@ -223,27 +255,29 @@ export const CreateBookingDialog = ({
   };
 
   const handleConfirm = async () => {
-    if (!checkIn || !checkOut || !roomId || !selectedRoom) return;
+    if (!checkIn || !checkOut || selectedRooms.length === 0) return;
 
     setIsSubmitting(true);
 
     try {
-    const totalNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-    
-    let totalPrice = 0;
-    if (useCustomPrice) {
-      if (pricingMode === "per_night" && customPricePerNight) {
-        totalPrice = totalNights * parseFloat(customPricePerNight);
-      } else if (pricingMode === "total" && customTotalPrice) {
-        totalPrice = parseFloat(customTotalPrice);
+      const totalNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Calculate total price for all rooms
+      let totalPrice = 0;
+      if (useCustomPrice) {
+        if (pricingMode === "per_night" && customPricePerNight) {
+          totalPrice = totalNights * parseFloat(customPricePerNight) * selectedRooms.length;
+        } else if (pricingMode === "total" && customTotalPrice) {
+          totalPrice = parseFloat(customTotalPrice);
+        }
+      } else {
+        totalPrice = selectedRooms.reduce((sum, room) => sum + (room.pricePerNight * totalNights), 0);
       }
-    } else {
-      totalPrice = totalNights * selectedRoom.price_per_night;
-    }
 
-      const { error } = await supabase.from("bookings").insert({
-        room_id: roomId,
-        allocated_room_number: roomNumber,
+      // Insert main booking (use first room for backward compatibility)
+      const { data: bookingData, error: bookingError } = await supabase.from("bookings").insert({
+        room_id: selectedRooms[0].roomId,
+        allocated_room_number: selectedRooms[0].roomNumber,
         guest_name: formData.guest_name,
         guest_email: formData.guest_email,
         guest_phone: formData.guest_phone,
@@ -260,11 +294,30 @@ export const CreateBookingDialog = ({
         booking_source: bookingSource,
         ota_name: bookingSource === "ota" ? otaName : null,
         other_source: bookingSource === "other" ? otherSource : null,
-      });
+      }).select().single();
 
-      if (error) throw error;
+      if (bookingError) throw bookingError;
 
-      toast.success(`Booking berhasil dibuat untuk kamar ${roomNumber}`);
+      // Insert each room into booking_rooms table
+      const bookingRoomsData = selectedRooms.map(room => ({
+        booking_id: bookingData.id,
+        room_id: room.roomId,
+        room_number: room.roomNumber,
+        price_per_night: useCustomPrice && customPricePerNight 
+          ? parseFloat(customPricePerNight) 
+          : room.pricePerNight,
+      }));
+
+      const { error: bookingRoomsError } = await supabase
+        .from("booking_rooms")
+        .insert(bookingRoomsData);
+
+      if (bookingRoomsError) throw bookingRoomsError;
+
+      const roomsText = selectedRooms.length > 1 
+        ? `${selectedRooms.length} kamar` 
+        : `kamar ${selectedRooms[0].roomNumber}`;
+      toast.success(`Booking berhasil dibuat untuk ${roomsText}`);
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       setShowConfirmation(false);
       onOpenChange(false);
@@ -285,15 +338,25 @@ export const CreateBookingDialog = ({
   if (useCustomPrice) {
     if (pricingMode === "per_night" && customPricePerNight) {
       effectivePricePerNight = parseFloat(customPricePerNight);
-      effectiveTotalPrice = totalNights * effectivePricePerNight;
+      effectiveTotalPrice = totalNights * effectivePricePerNight * selectedRooms.length;
     } else if (pricingMode === "total" && customTotalPrice) {
       effectiveTotalPrice = parseFloat(customTotalPrice);
-      effectivePricePerNight = totalNights > 0 ? effectiveTotalPrice / totalNights : 0;
+      effectivePricePerNight = totalNights > 0 && selectedRooms.length > 0 ? effectiveTotalPrice / totalNights / selectedRooms.length : 0;
     }
   } else {
-    effectivePricePerNight = selectedRoom?.price_per_night || 0;
-    effectiveTotalPrice = totalNights * effectivePricePerNight;
+    const totalRoomPrice = selectedRooms.reduce((sum, room) => sum + room.pricePerNight, 0);
+    effectivePricePerNight = selectedRooms.length > 0 ? totalRoomPrice / selectedRooms.length : 0;
+    effectiveTotalPrice = totalNights * totalRoomPrice;
   }
+  
+  const toggleRoomSelection = (roomId: string, roomNumber: string, roomName: string, pricePerNight: number) => {
+    const exists = selectedRooms.find(r => r.roomId === roomId && r.roomNumber === roomNumber);
+    if (exists) {
+      setSelectedRooms(selectedRooms.filter(r => !(r.roomId === roomId && r.roomNumber === roomNumber)));
+    } else {
+      setSelectedRooms([...selectedRooms, { roomId, roomNumber, roomName, pricePerNight }]);
+    }
+  };
 
   return (
     <>
@@ -302,7 +365,9 @@ export const CreateBookingDialog = ({
         onOpenChange={setShowConfirmation}
         onConfirm={handleConfirm}
         guestName={formData.guest_name}
-        roomName={selectedRoom?.name || ""}
+        roomName={selectedRooms.length > 1 
+          ? `${selectedRooms.length} kamar` 
+          : selectedRooms[0]?.roomName || ""}
         checkIn={checkIn}
         checkOut={checkOut}
         totalNights={totalNights}
@@ -310,15 +375,73 @@ export const CreateBookingDialog = ({
         numGuests={formData.num_guests}
       />
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Buat Booking Baru</DialogTitle>
           <DialogDescription>
-            Kamar {roomNumber} - {selectedRoom?.name}
+            {selectedRooms.length > 0 
+              ? `${selectedRooms.length} kamar dipilih` 
+              : "Pilih kamar untuk booking"}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Room Selection Section */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <Label className="text-base font-semibold">Pilih Kamar (Multiple)</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Pilih satu atau lebih kamar untuk booking ini
+            </p>
+            <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
+              {rooms.map(room => (
+                <div key={room.id} className="space-y-2">
+                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                    <span className="font-medium text-sm">{room.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Rp {room.price_per_night.toLocaleString("id-ID")}/malam
+                    </span>
+                  </div>
+                  {room.room_numbers && room.room_numbers.length > 0 && (
+                    <div className="grid grid-cols-4 gap-2 pl-4">
+                      {room.room_numbers.map(roomNumber => {
+                        const isSelected = selectedRooms.some(
+                          r => r.roomId === room.id && r.roomNumber === roomNumber
+                        );
+                        return (
+                          <button
+                            key={roomNumber}
+                            type="button"
+                            onClick={() => toggleRoomSelection(room.id, roomNumber, room.name, room.price_per_night)}
+                            className={cn(
+                              "px-3 py-2 text-xs rounded border transition-colors",
+                              isSelected
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-background hover:bg-muted border-border"
+                            )}
+                          >
+                            {roomNumber}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {selectedRooms.length > 0 && (
+              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                <p className="text-sm font-medium mb-2">Selected Rooms:</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedRooms.map((room, idx) => (
+                    <Badge key={idx} variant="secondary" className="text-xs">
+                      {room.roomNumber} ({room.roomName})
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Check-in & Check-out Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -743,7 +866,7 @@ export const CreateBookingDialog = ({
           </div>
 
           {/* Price Summary */}
-          {totalNights > 0 && (
+          {totalNights > 0 && selectedRooms.length > 0 && (
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4">
               {useCustomPrice && (customPricePerNight || customTotalPrice) && (
                 <div className="flex items-center gap-2 mb-2">
@@ -757,21 +880,23 @@ export const CreateBookingDialog = ({
                 <div>
                   <p className="text-sm text-muted-foreground">Total</p>
                   <p className="text-xs text-muted-foreground">
-                    {totalNights} malam × Rp {effectivePricePerNight.toLocaleString("id-ID")}
-                    {useCustomPrice && (customPricePerNight || customTotalPrice) && (
-                      <span className="ml-2 line-through text-muted-foreground/50">
-                        (Normal: Rp {(selectedRoom?.price_per_night || 0).toLocaleString("id-ID")})
+                    {selectedRooms.length} kamar × {totalNights} malam
+                    {!useCustomPrice && (
+                      <span className="block mt-0.5">
+                        Avg: Rp {effectivePricePerNight.toLocaleString("id-ID")}/malam
                       </span>
                     )}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold">Rp {effectiveTotalPrice.toLocaleString("id-ID")}</p>
-                  {useCustomPrice && (customPricePerNight || customTotalPrice) && (
+                  {!useCustomPrice && selectedRooms.length > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      <span className="line-through">
-                        Normal: Rp {((selectedRoom?.price_per_night || 0) * totalNights).toLocaleString("id-ID")}
-                      </span>
+                      {selectedRooms.map((room, idx) => (
+                        <span key={idx} className="block">
+                          {room.roomNumber}: Rp {(room.pricePerNight * totalNights).toLocaleString("id-ID")}
+                        </span>
+                      ))}
                     </p>
                   )}
                 </div>
@@ -783,7 +908,7 @@ export const CreateBookingDialog = ({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Batal
             </Button>
-            <Button type="submit" disabled={isSubmitting || !checkIn || !checkOut}>
+            <Button type="submit" disabled={isSubmitting || !checkIn || !checkOut || selectedRooms.length === 0}>
               {isSubmitting ? "Membuat..." : "Buat Booking"}
             </Button>
           </DialogFooter>

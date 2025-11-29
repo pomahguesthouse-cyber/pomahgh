@@ -78,6 +78,12 @@ interface Booking {
     room_count: number;
     allotment: number;
   };
+  booking_rooms?: Array<{
+    id: string;
+    room_id: string;
+    room_number: string;
+    price_per_night: number;
+  }>;
 }
 const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 type ViewRange = 7 | 14 | 30;
@@ -191,12 +197,19 @@ export const MonthlyBookingCalendar = () => {
     const dateStr = format(date, "yyyy-MM-dd");
     const matchingBookings = bookings.filter((booking) => {
       if (booking.status === "cancelled") return false;
-      if (booking.allocated_room_number !== roomNumber) return false;
+      
+      // Check if date is within booking range
       const checkIn = booking.check_in;
       const checkOut = booking.check_out;
-
-      // Include booking if date is within range
-      return dateStr >= checkIn && dateStr < checkOut;
+      const isInRange = dateStr >= checkIn && dateStr < checkOut;
+      
+      if (!isInRange) return false;
+      
+      // Check if this room is part of the booking (primary or via booking_rooms)
+      const isPrimaryRoom = booking.allocated_room_number === roomNumber;
+      const isInBookingRooms = booking.booking_rooms?.some(br => br.room_number === roomNumber);
+      
+      return isPrimaryRoom || isInBookingRooms;
     });
 
     // Return the first matching booking (validation prevents double bookings)
@@ -1204,6 +1217,12 @@ const BookingCell = ({
   const bookingWidth = `${totalNights * 100}%`;
 
   const getBackgroundClass = () => {
+    // Check for Late Check Out first (priority)
+    const isLateCheckout = booking.check_out_time && booking.check_out_time !== "12:00:00";
+    if (isLateCheckout) {
+      return "from-red-500/90 to-red-600/90"; // RED gradient for LCO
+    }
+    
     if (isPending) {
       return "from-gray-400/90 to-gray-500/90";
     }
@@ -1245,11 +1264,11 @@ const BookingCell = ({
         <div className="text-[10px] text-white/90 font-medium">{booking.total_nights} Malam</div>
       </div>
 
-      {/* LCO Badge - Show on the end */}
+      {/* LCO Badge - Smaller, top right corner */}
       {booking.check_out_time && booking.check_out_time !== "12:00:00" && (
-        <div className="absolute -right-1 top-1/2 -translate-y-1/2 z-20">
-          <div className="bg-white text-gray-800 text-[9px] px-1.5 py-0.5 rounded font-bold shadow-md whitespace-nowrap border border-gray-300">
-            LCO {booking.check_out_time.slice(0, 5)}
+        <div className="absolute -right-0.5 -top-1 z-30">
+          <div className="bg-red-600 text-white text-[7px] px-1 py-0.5 rounded-sm font-bold shadow-sm whitespace-nowrap">
+            LCO
           </div>
         </div>
       )}
