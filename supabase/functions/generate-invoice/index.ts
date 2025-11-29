@@ -92,25 +92,25 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
     .header-left {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
     }
 
     .logo {
-      max-height: 80px;
-      max-width: 150px;
+      max-height: 50px;
+      max-width: 100px;
       object-fit: contain;
     }
 
     .hotel-name {
-      font-size: 13pt;
+      font-size: 11pt;
       font-weight: 600;
       color: ${primaryColor};
     }
 
     .hotel-rating {
       color: #fbbf24;
-      font-size: 10pt;
-      margin-top: 4px;
+      font-size: 9pt;
+      margin-top: 2px;
     }
 
     .header-right {
