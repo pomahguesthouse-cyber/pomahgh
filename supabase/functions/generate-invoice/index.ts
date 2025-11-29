@@ -75,359 +75,545 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
     }
     
     body {
-      font-family: '${fontFamily}', 'Helvetica', sans-serif;
-      line-height: 1.6;
-      color: ${textColor};
-      max-width: 800px;
-      margin: 0 auto;
-      padding: ${spacing === 'compact' ? '10px' : spacing === 'spacious' ? '30px' : '20px'};
-      background-color: ${backgroundColor};
+      font-family: ${fontFamily};
       font-size: ${fontSizeBase}pt;
+      color: ${textColor};
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
     }
-    
+
     .invoice-container {
+      max-width: 900px;
+      margin: 40px auto;
       background: white;
       padding: 40px;
-      border: ${borderStyle === 'none' ? 'none' : borderStyle === 'dashed' ? '1px dashed #e0e0e0' : '1px solid #e0e0e0'};
+      border-radius: 16px;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle watermark */
+    .invoice-container::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 400px;
+      height: 400px;
+      background: url('${hotelSettings.logo_url || ''}') center/contain no-repeat;
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .invoice-container > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Corner decorations */
+    .corner-decoration {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      pointer-events: none;
+    }
+
+    .corner-decoration.top-left {
+      top: 0;
+      left: 0;
+      background: linear-gradient(135deg, ${primaryColor}15, transparent);
+      border-radius: 0 0 80px 0;
+    }
+
+    .corner-decoration.top-right {
+      top: 0;
+      right: 0;
+      background: linear-gradient(225deg, ${secondaryColor}15, transparent);
+      border-radius: 0 0 0 80px;
+    }
+
+    /* Premium Header */
+    .header-premium {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 30px;
+      margin-bottom: 40px;
+      border-bottom: 3px solid;
+      border-image: linear-gradient(90deg, ${primaryColor}, ${secondaryColor}) 1;
       position: relative;
     }
-    
-    /* Logo Styles */
-    .logo-image {
-      max-width: 200px;
-      object-fit: contain;
-      margin-bottom: 10px;
-      display: block;
-    }
-    
-    .logo-image.small { max-height: 50px; }
-    .logo-image.medium { max-height: 70px; }
-    .logo-image.large { max-height: 100px; }
-    
-    /* Header Styles */
-    .header {
-      display: table;
-      width: 100%;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 3px solid ${primaryColor};
-    }
-    
-    .header-left {
-      display: table-cell;
-      width: 50%;
-      vertical-align: top;
-    }
-    
-    .header-right {
-      display: table-cell;
-      width: 50%;
-      vertical-align: top;
-      text-align: right;
-    }
-    
-    .hotel-name {
-      font-size: ${fontSizeHeading}pt;
-      font-weight: bold;
-      color: ${primaryColor};
-      margin-bottom: 5px;
-    }
-    
-    .tagline {
-      color: #666;
-      font-size: 10pt;
-      margin-top: 3px;
-      font-style: italic;
-    }
-    
-    /* Invoice Badge */
-    .invoice-badge {
-      background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      text-align: center;
-      display: inline-block;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    
-    .invoice-badge .label {
-      font-size: 9pt;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      opacity: 0.9;
-      display: block;
-    }
-    
-    .invoice-badge .number {
-      font-size: 14pt;
-      font-weight: bold;
-      margin-top: 4px;
-      display: block;
-    }
-    
-    .invoice-date {
-      color: #666;
-      font-size: 10pt;
-      margin-top: 10px;
-    }
-    /* Sections */
-    .section {
-      margin-bottom: 30px;
-    }
-    
-    .section-title {
-      font-size: 13pt;
-      font-weight: bold;
-      color: ${primaryColor};
-      text-transform: uppercase;
-      margin-bottom: 15px;
-      letter-spacing: 1px;
+
+    .logo-container {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 20px;
     }
-    
-    .section-icon {
-      font-size: 16pt;
+
+    .logo-premium {
+      max-height: ${logoSize === 'small' ? '50px' : logoSize === 'large' ? '100px' : '70px'};
+      max-width: 200px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
     }
-    
-    /* Info Cards */
-    .info-grid {
-      display: table;
-      width: 100%;
-      margin-bottom: 30px;
-      border-spacing: 15px 0;
-    }
-    
-    .info-card {
-      display: table-cell;
-      width: 50%;
-      padding: 20px;
-      background: linear-gradient(135deg, ${accentColor}, #ffffff);
-      border: 2px solid ${primaryColor}20;
-      border-radius: 8px;
-      vertical-align: top;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    
-    .info-card .card-icon {
-      font-size: 24pt;
-      margin-bottom: 10px;
-    }
-    
-    .info-card h3 {
-      font-size: 11pt;
-      font-weight: bold;
+
+    .hotel-info h1 {
+      font-size: ${fontSizeHeading}pt;
       color: ${primaryColor};
-      margin-bottom: 10px;
-      text-transform: uppercase;
+      margin: 0 0 5px 0;
+      font-weight: 700;
       letter-spacing: 0.5px;
     }
-    
-    .info-card .name {
-      font-weight: bold;
+
+    .hotel-info .tagline {
+      color: ${textColor}99;
       font-size: 11pt;
-      margin-bottom: 5px;
+      margin: 0;
+      font-style: italic;
     }
-    /* Modern Tables */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-      page-break-inside: avoid;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    
-    thead {
-      display: table-header-group;
-    }
-    
-    tbody {
-      display: table-row-group;
-    }
-    
-    th {
-      background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}) !important;
-      color: white !important;
-      padding: 12px;
-      text-align: left;
-      font-weight: 600;
-      font-size: 10pt;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #e0e0e0;
-      font-size: 10pt;
-    }
-    
-    tbody tr:nth-child(even) {
-      background: ${accentColor}50;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    
-    tbody tr:hover {
-      background: ${accentColor};
-    }
-    
-    tr {
-      page-break-inside: avoid;
-    }
-    
-    .room-number {
-      font-weight: bold;
-      color: ${primaryColor};
-      font-size: 11pt;
-    }
-    .text-right {
+
+    .invoice-number-elegant {
       text-align: right;
-    }
-    
-    /* Payment Summary */
-    .payment-summary {
-      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-      border-radius: 12px;
-      padding: 24px;
-      border: 2px solid ${primaryColor}20;
-      margin-top: 20px;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    
-    .totals {
-      margin-left: auto;
-      width: 100%;
-      page-break-inside: avoid;
-    }
-    
-    .total-row {
-      display: table;
-      width: 100%;
-      padding: 10px 0;
-      border-bottom: 1px solid #e0e0e0;
-    }
-    
-    .total-row > span:first-child {
-      display: table-cell;
-      text-align: left;
-      font-size: 11pt;
-    }
-    
-    .total-row > span:last-child {
-      display: table-cell;
-      text-align: right;
-      font-size: 11pt;
-      font-weight: 600;
-    }
-    
-    .total-row.grand-total {
       background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});
-      color: white !important;
-      border-radius: 8px;
-      padding: 16px 20px;
-      margin-top: 15px;
-      border: none;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      padding: 20px 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(139, 69, 19, 0.25);
+      min-width: 200px;
     }
-    
-    .total-row.grand-total > span {
-      font-size: 16pt;
-      font-weight: bold;
-      color: white !important;
-    }
-    /* Status Badges */
-    .status-badge {
-      display: inline-block;
-      padding: 6px 16px;
-      border-radius: 20px;
+
+    .invoice-number-elegant .ribbon {
+      color: white;
       font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+      opacity: 0.95;
+      margin-bottom: 8px;
+    }
+
+    .invoice-number-elegant .number {
+      color: white;
+      font-size: 16pt;
+      font-weight: 700;
+      margin: 5px 0;
+    }
+
+    .invoice-number-elegant .date {
+      color: white;
+      font-size: 9pt;
+      opacity: 0.9;
+      margin-top: 8px;
+    }
+
+    /* Info Grid with Glass Morphism */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .info-card-elegant {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(139, 69, 19, 0.15);
+      border-radius: 16px;
+      box-shadow: 
+        0 4px 24px rgba(139, 69, 19, 0.08),
+        0 1px 2px rgba(0, 0, 0, 0.04);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .info-card-elegant::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, ${primaryColor}, ${secondaryColor});
+    }
+
+    .info-card-elegant .card-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .info-card-elegant h3 {
+      font-size: 12pt;
+      color: ${primaryColor};
+      margin: 0 0 16px 0;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .info-card-elegant p {
+      margin: 8px 0;
+      color: ${textColor};
+    }
+
+    .info-card-elegant .name {
+      font-weight: 700;
+      font-size: 13pt;
+      color: ${textColor};
+    }
+
+    /* Section Headers */
+    .section {
+      margin: 40px 0;
+    }
+
+    .section-title {
+      font-size: 14pt;
+      color: ${primaryColor};
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .section-icon {
+      font-size: 18pt;
+    }
+
+    /* Elegant Table */
+    .table-elegant {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      margin-bottom: 30px;
+    }
+
+    .table-elegant thead th {
+      background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});
+      color: white;
+      padding: 16px 20px;
+      text-align: left;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    
-    .status-pending {
-      background: linear-gradient(135deg, #f59e0b, #d97706) !important;
-      color: white !important;
-    }
-    
-    .status-confirmed {
-      background: linear-gradient(135deg, #10b981, #059669) !important;
-      color: white !important;
-    }
-    
-    .status-paid {
-      background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
-      color: white !important;
-    }
-    /* Payment Instructions */
-    .payment-instructions {
-      background: linear-gradient(135deg, ${accentColor}, #ffffff);
-      padding: 20px;
-      border: 2px solid ${primaryColor};
-      border-left: 6px solid ${primaryColor};
-      border-radius: 8px;
-      margin-top: 25px;
-      page-break-inside: avoid;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    
-    .bank-option {
-      margin-bottom: 15px;
-      padding: 15px;
-      background: white;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    .bank-option-title {
-      font-weight: bold;
-      color: ${primaryColor};
-      margin-bottom: 10px;
-      font-size: 11pt;
-    }
-    
-    /* Footer */
-    .footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 3px solid ${primaryColor};
-      text-align: center;
-      color: #666;
+      letter-spacing: 1px;
       font-size: 10pt;
-      page-break-inside: avoid;
     }
-    
-    .footer-logo {
-      margin-bottom: 15px;
+
+    .table-elegant tbody td {
+      padding: 16px 20px;
+      border-bottom: 1px solid ${accentColor}50;
     }
-    
-    .footer-logo img {
-      max-height: 40px;
-      opacity: 0.7;
+
+    .table-elegant tbody tr {
+      transition: background 0.2s ease;
     }
-    
-    .contact-icons {
-      margin-top: 10px;
+
+    .table-elegant tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table-elegant tbody tr:nth-child(even) {
+      background: ${accentColor}20;
+    }
+
+    .table-elegant tbody tr:hover {
+      background: linear-gradient(90deg, ${accentColor}40, transparent);
+    }
+
+    .room-number {
+      font-weight: 700;
+      color: ${primaryColor};
+      background: ${primaryColor}15;
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    /* Status Badge Premium */
+    .status-elegant {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 24px;
       font-size: 9pt;
-      color: #666;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    
+
+    .status-elegant::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-pending {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+    }
+
+    .status-confirmed {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    .status-cancelled {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+
+    /* Payment Summary Premium */
+    .payment-box-premium {
+      background: linear-gradient(145deg, #fafbfc 0%, #f0f4f8 100%);
+      border-radius: 20px;
+      padding: 32px;
+      margin: 30px 0;
+      position: relative;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    .payment-box-premium::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      padding: 2px;
+      background: linear-gradient(135deg, ${primaryColor}40, ${secondaryColor}40);
+      -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .payment-summary-title {
+      font-size: 14pt;
+      color: ${primaryColor};
+      font-weight: 700;
+      margin: 0 0 20px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .totals {
+      margin: 20px 0;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      font-size: 12pt;
+      color: ${textColor};
+    }
+
+    .grand-total-elegant {
+      background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});
+      border-radius: 12px;
+      padding: 20px 28px;
+      margin-top: 20px;
+      box-shadow: 0 8px 24px rgba(139, 69, 19, 0.25);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .grand-total-elegant .label {
+      color: white;
+      font-size: 13pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .grand-total-elegant .amount {
+      color: white;
+      font-size: 20pt;
+      font-weight: 700;
+    }
+
+    /* Special Requests Box Elegant */
+    .special-requests-box {
+      background: linear-gradient(135deg, #fff9e6, #fff4d6);
+      border: 1px solid #f0e68c;
+      border-left: 4px solid #daa520;
+      border-radius: 12px;
+      padding: 20px 20px 20px 24px;
+      margin: 30px 0;
+      position: relative;
+    }
+
+    .special-requests-box::before {
+      content: "📝";
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: white;
+      padding: 0 8px;
+      font-size: 18pt;
+    }
+
+    .special-requests-box h4 {
+      color: #b8860b;
+      font-size: 11pt;
+      font-weight: 700;
+      margin: 0 0 10px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .special-requests-box p {
+      color: #666;
+      margin: 0;
+      line-height: 1.8;
+    }
+
+    /* Bank Cards Premium */
+    .payment-instructions {
+      margin: 30px 0;
+    }
+
+    .payment-instructions h3 {
+      font-size: 13pt;
+      color: ${primaryColor};
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .bank-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .bank-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      border-left: 5px solid ${primaryColor};
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .bank-card:hover {
+      transform: translateX(4px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .bank-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .bank-details {
+      flex: 1;
+    }
+
+    .bank-name {
+      font-weight: 700;
+      font-size: 13pt;
+      color: ${primaryColor};
+      margin-bottom: 6px;
+    }
+
+    .bank-account {
+      color: ${textColor};
+      font-size: 11pt;
+      margin: 4px 0;
+    }
+
+    .bank-holder {
+      color: ${textColor}99;
+      font-size: 10pt;
+      margin: 4px 0;
+    }
+
+    /* Footer Premium */
+    .footer-premium {
+      text-align: center;
+      padding: 40px 20px;
+      background: linear-gradient(180deg, transparent 0%, ${accentColor}30 100%);
+      border-radius: 0 0 16px 16px;
+      margin: 40px -40px -40px;
+    }
+
+    .footer-logo {
+      margin-bottom: 20px;
+    }
+
+    .footer-logo img {
+      height: 50px;
+      opacity: 0.8;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
+    .footer-signature {
+      font-family: 'Georgia', serif;
+      font-style: italic;
+      font-size: 13pt;
+      color: ${primaryColor};
+      margin-bottom: 16px;
+    }
+
+    .footer-divider {
+      width: 100px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, ${primaryColor}, transparent);
+      margin: 20px auto;
+    }
+
+    .contact-icons {
+      color: ${textColor}99;
+      font-size: 10pt;
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .contact-icons span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     /* Print Styles */
     @media print {
       @page {
@@ -437,109 +623,91 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
       
       body {
         background: white !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        font-size: 10pt;
       }
       
       .invoice-container {
         box-shadow: none !important;
-        padding: 0 !important;
-        border: none !important;
-        page-break-after: avoid;
+        margin: 0 !important;
       }
       
-      .header {
-        page-break-after: avoid;
+      .invoice-container::before {
+        opacity: 0.02 !important;
       }
       
-      table {
-        page-break-inside: avoid;
-      }
-      
-      .section {
-        page-break-inside: avoid;
-      }
-      
-      /* Force print colors */
       * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      
-      /* Hide elements that shouldn't print */
-      button, .no-print {
-        display: none !important;
-      }
-    }
-    
-    /* PDF Generation Compatibility */
-    .pdf-friendly {
-      background: white;
-      color: black;
     }
   </style>
 </head>
 <body>
   <div class="invoice-container pdf-friendly">
+    <!-- Corner Decorations -->
+    <div class="corner-decoration top-left"></div>
+    <div class="corner-decoration top-right"></div>
+    
     ${customHeaderText ? `<div style="background: ${accentColor}; padding: 15px; margin-bottom: 20px; border-left: 4px solid ${primaryColor}; font-weight: 600;">${customHeaderText}</div>` : ''}
     
-    <div class="header">
-      <div class="header-left">
+    <!-- Premium Header -->
+    <div class="header-premium">
+      <div class="logo-container">
         ${showLogo && hotelSettings.logo_url ? `
           <img src="${hotelSettings.logo_url}" 
-               class="logo-image ${logoSize}" 
+               class="logo-premium" 
                alt="${hotelSettings.hotel_name}" 
                onerror="this.style.display='none'" />
         ` : ''}
-        <div class="hotel-name">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
-        ${hotelSettings.tagline ? `<div class="tagline">${hotelSettings.tagline}</div>` : ''}
-      </div>
-      <div class="header-right">
-        <div class="invoice-badge">
-          <span class="label">Invoice</span>
-          <span class="number">${booking.invoice_number}</span>
+        <div class="hotel-info">
+          <h1>${hotelSettings.hotel_name || 'Pomah Guesthouse'}</h1>
+          ${hotelSettings.tagline ? `<p class="tagline">${hotelSettings.tagline}</p>` : ''}
         </div>
-        <div class="invoice-date">${formatDate(booking.created_at)}</div>
+      </div>
+      <div class="invoice-number-elegant">
+        <div class="ribbon">INVOICE</div>
+        <div class="number">${booking.invoice_number}</div>
+        <div class="date">${formatDate(booking.created_at)}</div>
       </div>
     </div>
 
+    <!-- Info Grid with Glass Morphism -->
     ${showGuestDetails || showHotelDetails ? `<div class="info-grid">` : ''}
       ${showGuestDetails ? `
-      <div class="info-card">
+      <div class="info-card-elegant">
         <div class="card-icon">👤</div>
         <h3>Detail Tamu</h3>
-        <div class="name">${booking.guest_name}</div>
-        <div>${booking.guest_email}</div>
-        ${booking.guest_phone ? `<div>${booking.guest_phone}</div>` : ''}
+        <p class="name">${booking.guest_name}</p>
+        <p>${booking.guest_email}</p>
+        ${booking.guest_phone ? `<p>${booking.guest_phone}</p>` : ''}
       </div>
       ` : ''}
       ${showHotelDetails ? `
-      <div class="info-card">
+      <div class="info-card-elegant">
         <div class="card-icon">🏨</div>
         <h3>Detail Hotel</h3>
-        <div class="name">${hotelSettings.hotel_name}</div>
-        <div>${hotelSettings.address}</div>
-        <div>${hotelSettings.city}, ${hotelSettings.country}</div>
-        <div>${hotelSettings.phone_primary}</div>
+        <p class="name">${hotelSettings.hotel_name}</p>
+        <p>${hotelSettings.address}</p>
+        <p>${hotelSettings.city}, ${hotelSettings.country}</p>
+        <p>${hotelSettings.phone_primary}</p>
       </div>
       ` : ''}
     ${showGuestDetails || showHotelDetails ? `</div>` : ''}
 
+    <!-- Booking Details -->
     <div class="section">
       <div class="section-title">
         <span class="section-icon">📅</span>
         Detail Booking
       </div>
-      <table>
+      <table class="table-elegant">
         <thead>
           <tr>
             <th>Kode Booking</th>
             <th>Check-in</th>
             <th>Check-out</th>
-            <th class="text-right">Malam</th>
-            <th class="text-right">Tamu</th>
-            <th class="text-right">Status</th>
+            <th>Malam</th>
+            <th>Tamu</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -547,36 +715,38 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
             <td><strong>${booking.booking_code}</strong></td>
             <td>${formatDate(booking.check_in)}<br><small>${booking.check_in_time || '14:00'}</small></td>
             <td>${formatDate(booking.check_out)}<br><small>${booking.check_out_time || '12:00'}</small></td>
-            <td class="text-right">${booking.total_nights}</td>
-            <td class="text-right">${booking.num_guests}</td>
-            <td class="text-right">
-              <span class="status-badge status-${booking.status}">${booking.status}</span>
+            <td>${booking.total_nights}</td>
+            <td>${booking.num_guests}</td>
+            <td>
+              <span class="status-elegant status-${booking.status}">${booking.status}</span>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
+    <!-- Special Requests -->
     ${showSpecialRequests && booking.special_requests ? `
-    <div class="section">
-      <div class="section-title">Permintaan Khusus</div>
-      <div class="info-box">${booking.special_requests}</div>
+    <div class="special-requests-box">
+      <h4>Permintaan Khusus</h4>
+      <p>${booking.special_requests}</p>
     </div>
     ` : ''}
 
+    <!-- Room Details -->
     <div class="section">
       <div class="section-title">
         <span class="section-icon">🛏️</span>
         Detail Kamar
       </div>
-      <table>
+      <table class="table-elegant">
         <thead>
           <tr>
             <th>Tipe Kamar</th>
             <th>No. Kamar</th>
-            <th class="text-right">Malam</th>
-            <th class="text-right">Harga/Malam</th>
-            <th class="text-right">Total</th>
+            <th>Malam</th>
+            <th>Harga/Malam</th>
+            <th>Total</th>
           </tr>
         </thead>
         <tbody>
@@ -584,39 +754,43 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
             <tr>
               <td><strong>${br.rooms?.name || room.name}</strong></td>
               <td><span class="room-number">#${br.room_number}</span></td>
-              <td class="text-right">${booking.total_nights}</td>
-              <td class="text-right">${formatCurrency(br.price_per_night)}</td>
-              <td class="text-right">${formatCurrency(br.price_per_night * booking.total_nights)}</td>
+              <td>${booking.total_nights}</td>
+              <td>${formatCurrency(br.price_per_night)}</td>
+              <td>${formatCurrency(br.price_per_night * booking.total_nights)}</td>
             </tr>
           `).join('') : `
             <tr>
               <td><strong>${room.name}</strong></td>
               <td><span class="room-number">#${booking.allocated_room_number || 'TBA'}</span></td>
-              <td class="text-right">${booking.total_nights}</td>
-              <td class="text-right">${formatCurrency(booking.total_price / booking.total_nights)}</td>
-              <td class="text-right">${formatCurrency(subtotal)}</td>
+              <td>${booking.total_nights}</td>
+              <td>${formatCurrency(booking.total_price / booking.total_nights)}</td>
+              <td>${formatCurrency(subtotal)}</td>
             </tr>
           `}
         </tbody>
       </table>
 
-      <div class="payment-summary">
+      <!-- Payment Summary Premium -->
+      <div class="payment-box-premium">
+        <div class="payment-summary-title">Ringkasan Pembayaran</div>
         <div class="totals">
-        <div class="total-row">
-          <span>Subtotal:</span>
-          <span>${formatCurrency(subtotal)}</span>
-        </div>
-        ${taxAmount > 0 ? `
-        <div class="total-row">
-          <span>${hotelSettings.tax_name || 'Pajak'} (${hotelSettings.tax_rate}%):</span>
-          <span>${formatCurrency(taxAmount)}</span>
-        </div>
-        ` : ''}
-          <div class="total-row grand-total">
-            <span>Total:</span>
-            <span>${formatCurrency(total)}</span>
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span>${formatCurrency(subtotal)}</span>
           </div>
-          ${amountPaid > 0 ? `
+          ${taxAmount > 0 ? `
+          <div class="total-row">
+            <span>${hotelSettings.tax_name || 'Pajak'} (${hotelSettings.tax_rate}%):</span>
+            <span>${formatCurrency(taxAmount)}</span>
+          </div>
+          ` : ''}
+        </div>
+        <div class="grand-total-elegant">
+          <span class="label">Total</span>
+          <span class="amount">${formatCurrency(total)}</span>
+        </div>
+        ${amountPaid > 0 ? `
+        <div class="totals" style="margin-top: 20px;">
           <div class="total-row">
             <span>Terbayar:</span>
             <span>${formatCurrency(amountPaid)}</span>
@@ -625,53 +799,50 @@ function generateInvoiceHTML(data: InvoiceData, template: any = null): string {
             <span>Sisa:</span>
             <span>${formatCurrency(amountDue)}</span>
           </div>
-          ` : ''}
         </div>
+        ` : ''}
       </div>
     </div>
 
+    <!-- Payment Instructions Premium -->
     ${showPaymentInstructions && amountDue > 0 && (bankAccounts.length > 0 || hotelSettings.payment_instructions) ? `
     <div class="payment-instructions">
-      <div class="section-title">
-        <span class="section-icon">💳</span>
+      <h3>
+        <span>💳</span>
         ${paymentTitle}
-      </div>
+      </h3>
       ${bankAccounts.length > 0 ? `
-        <p style="margin-bottom: 15px; font-weight: 600;">Silakan transfer ke salah satu rekening berikut:</p>
-        ${bankAccounts.map((account: any, index: number) => `
-          <div class="bank-option">
-            <div class="bank-option-title">Opsi ${index + 1}</div>
-            <table style="width: 100%; border: none; box-shadow: none;">
-              <tr style="border: none;">
-                <td style="border: none; padding: 5px 0; width: 150px;"><strong>Nama Bank:</strong></td>
-                <td style="border: none; padding: 5px 0;">${account.bank_name}</td>
-              </tr>
-              <tr style="border: none;">
-                <td style="border: none; padding: 5px 0;"><strong>Nomor Rekening:</strong></td>
-                <td style="border: none; padding: 5px 0; font-weight: 600; font-size: 11pt;">${account.account_number}</td>
-              </tr>
-              <tr style="border: none;">
-                <td style="border: none; padding: 5px 0;"><strong>Atas Nama:</strong></td>
-                <td style="border: none; padding: 5px 0;">${account.account_holder_name}</td>
-              </tr>
-            </table>
-          </div>
-        `).join('')}
+        <p style="margin-bottom: 20px; font-weight: 600; color: ${textColor};">Silakan transfer ke salah satu rekening berikut:</p>
+        <div class="bank-grid">
+          ${bankAccounts.map((account: any, index: number) => `
+            <div class="bank-card">
+              <div class="bank-icon">🏦</div>
+              <div class="bank-details">
+                <div class="bank-name">${account.bank_name}</div>
+                <div class="bank-account">No. Rekening: <strong>${account.account_number}</strong></div>
+                <div class="bank-holder">a.n. ${account.account_holder_name}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
       ` : ''}
-      ${hotelSettings.payment_instructions ? `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">${hotelSettings.payment_instructions}</div>` : ''}
+      ${hotelSettings.payment_instructions ? `<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid ${accentColor}; color: ${textColor}99; line-height: 1.8;">${hotelSettings.payment_instructions}</div>` : ''}
     </div>
     ` : ''}
 
-    <div class="footer">
+    <!-- Footer Premium -->
+    <div class="footer-premium">
       ${hotelSettings.logo_url ? `
       <div class="footer-logo">
         <img src="${hotelSettings.logo_url}" alt="${hotelSettings.hotel_name}" />
       </div>
       ` : ''}
-      <div><strong>${customFooterText || hotelSettings.invoice_footer_text || 'Terima kasih telah memilih ' + hotelSettings.hotel_name + '!'}</strong></div>
+      <p class="footer-signature">${customFooterText || hotelSettings.invoice_footer_text || 'Terima kasih telah memilih ' + hotelSettings.hotel_name + '!'}</p>
+      <div class="footer-divider"></div>
       <div class="contact-icons">
-        📧 ${hotelSettings.email_primary} • 📞 ${hotelSettings.phone_primary}
-        ${hotelSettings.whatsapp_number ? ` • 💬 ${hotelSettings.whatsapp_number}` : ''}
+        <span>📧 ${hotelSettings.email_primary}</span>
+        <span>📞 ${hotelSettings.phone_primary}</span>
+        ${hotelSettings.whatsapp_number ? `<span>💬 ${hotelSettings.whatsapp_number}</span>` : ''}
       </div>
     </div>
   </div>
