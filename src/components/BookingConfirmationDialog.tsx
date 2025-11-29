@@ -23,6 +23,7 @@ interface BookingConfirmationDialogProps {
   totalNights: number;
   totalPrice: number;
   numGuests: number;
+  roomQuantity?: number;
 }
 
 export const BookingConfirmationDialog = ({
@@ -36,6 +37,7 @@ export const BookingConfirmationDialog = ({
   totalNights,
   totalPrice,
   numGuests,
+  roomQuantity = 1,
 }: BookingConfirmationDialogProps) => {
   // Don't render if dates are not valid
   if (!checkIn || !checkOut) {
@@ -61,6 +63,12 @@ export const BookingConfirmationDialog = ({
             <span className="text-muted-foreground">Kamar:</span>
             <span className="font-medium">{roomName}</span>
           </div>
+          {roomQuantity > 1 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Jumlah Kamar:</span>
+              <span className="font-medium">{roomQuantity} kamar</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Check-in:</span>
             <span className="font-medium">{format(checkIn, "PPP", { locale: localeId })}</span>
