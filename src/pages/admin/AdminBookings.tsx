@@ -920,12 +920,27 @@ const AdminBookings = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Check-in Date</Label>
-                  <Input 
-                    type="date" 
-                    value={editingBooking.check_in} 
-                    onChange={e => handleDateChange('check_in', e.target.value)} 
-                  />
+                  <Label>Tanggal Check-in</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className={cn("w-full justify-start text-left font-normal", !editingBooking.check_in && "text-muted-foreground")}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editingBooking.check_in ? format(new Date(editingBooking.check_in), "PPP", { locale: localeId }) : "Pilih tanggal"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={editingBooking.check_in ? new Date(editingBooking.check_in) : undefined}
+                        onSelect={(date) => date && handleDateChange('check_in', format(date, "yyyy-MM-dd"))}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <Label>Check-in Time</Label>
@@ -938,12 +953,27 @@ const AdminBookings = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Check-out Date</Label>
-                  <Input 
-                    type="date" 
-                    value={editingBooking.check_out} 
-                    onChange={e => handleDateChange('check_out', e.target.value)} 
-                  />
+                  <Label>Tanggal Check-out</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className={cn("w-full justify-start text-left font-normal", !editingBooking.check_out && "text-muted-foreground")}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editingBooking.check_out ? format(new Date(editingBooking.check_out), "PPP", { locale: localeId }) : "Pilih tanggal"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={editingBooking.check_out ? new Date(editingBooking.check_out) : undefined}
+                        onSelect={(date) => date && handleDateChange('check_out', format(date, "yyyy-MM-dd"))}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <Label>Check-out Time</Label>
