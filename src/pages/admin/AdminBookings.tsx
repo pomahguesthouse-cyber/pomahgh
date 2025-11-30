@@ -181,66 +181,80 @@ const AdminBookings = () => {
   };
 
   const handleRoomTypeChange = async (newRoomId: string) => {
+    if (!editingBooking || !editingBooking.check_in || !editingBooking.check_out) return;
+
     const newRoom = rooms?.find(r => r.id === newRoomId);
     if (!newRoom) return;
 
-    // Check for conflicts with the new room type
-    const checkInDate = new Date(editingBooking.check_in);
-    const checkOutDate = new Date(editingBooking.check_out);
-    
-    // Check each available room number for conflicts
-    const availableRooms: string[] = [];
-    for (const roomNumber of newRoom.room_numbers || []) {
-      const conflict = await checkBookingConflict({
-        roomId: newRoomId,
-        roomNumber,
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-        checkInTime: editingBooking.check_in_time,
-        checkOutTime: editingBooking.check_out_time,
-        excludeBookingId: editingBooking.id
-      });
+    setSelectedRoomId(newRoomId);
 
-      if (!conflict.hasConflict) {
-        availableRooms.push(roomNumber);
-      }
-    }
+    // Check availability for the new room type
+    const { availableRooms } = await checkRoomTypeAvailability({
+      roomId: newRoomId,
+      checkIn: new Date(editingBooking.check_in),
+      checkOut: new Date(editingBooking.check_out),
+      excludeBookingId: editingBooking.id,
+    });
 
-    // Show warning if all rooms are booked
     if (availableRooms.length === 0) {
-      toast.error(`Semua ${newRoom.name} sudah dibooking untuk tanggal ini`, {
-        description: "Silakan pilih tipe kamar lain atau ubah tanggal booking"
-      });
+      // No rooms available - suggest alternatives
+      const alternatives = roomTypeAvailability?.filter(
+        rt => rt.roomId !== newRoomId && rt.availableCount > 0
+      ) || [];
+
+      if (alternatives.length > 0) {
+        setAlternativeSuggestions(alternatives);
+        setShowAlternativeDialog(true);
+      } else {
+        toast.error("Tidak ada kamar yang tersedia untuk tanggal ini");
+      }
       return;
     }
 
-    // Show info if only some rooms are available
     if (availableRooms.length < (newRoom.room_numbers?.length || 0)) {
-      toast.warning(`${availableRooms.length} dari ${newRoom.room_numbers?.length} ${newRoom.name} tersedia`, {
-        description: "Beberapa kamar sudah dibooking untuk tanggal ini"
-      });
+      toast.warning(`Hanya ${availableRooms.length} kamar tersedia dari ${newRoom.room_numbers?.length || 0} kamar total`);
     }
 
-    setSelectedRoomId(newRoomId);
     setAvailableRoomNumbers(availableRooms);
+
+    // Check if editing a booking with custom pricing
+    const hasCustomPricing = editingBooking.booking_rooms && 
+      editingBooking.booking_rooms.some((br: any) => 
+        br.price_per_night !== newRoom.price_per_night
+      );
+
     setEditingBooking({
       ...editingBooking,
       room_id: newRoomId,
-      allocated_room_number: availableRooms[0] || ""
+      allocated_room_number: availableRooms[0],
+      total_price: hasCustomPricing 
+        ? editingBooking.total_price 
+        : newRoom.price_per_night * (editingBooking.total_nights || 1),
+    });
+  };
+
+  const selectAlternativeRoom = (suggestion: RoomTypeAvailability) => {
+    if (!editingBooking) return;
+
+    setSelectedRoomId(suggestion.roomId);
+    setAvailableRoomNumbers(suggestion.availableRooms);
+
+    const hasCustomPricing = editingBooking.booking_rooms && 
+      editingBooking.booking_rooms.some((br: any) => 
+        br.price_per_night !== suggestion.pricePerNight
+      );
+
+    setEditingBooking({
+      ...editingBooking,
+      room_id: suggestion.roomId,
+      allocated_room_number: suggestion.availableRooms[0],
+      total_price: hasCustomPricing 
+        ? editingBooking.total_price 
+        : suggestion.pricePerNight * (editingBooking.total_nights || 1),
     });
 
-    // Reset custom pricing when changing room type
-    if (!useCustomPriceEdit) {
-      const totalNights = Math.ceil(
-        (new Date(editingBooking.check_out).getTime() - new Date(editingBooking.check_in).getTime()) 
-        / (1000 * 60 * 60 * 24)
-      );
-      const newTotalPrice = totalNights * (newRoom.price_per_night || 0);
-      setEditingBooking((prev: any) => ({
-        ...prev,
-        total_price: newTotalPrice
-      }));
-    }
+    setShowAlternativeDialog(false);
+    toast.success(`Dipindahkan ke ${suggestion.roomName}`);
   };
 
   const handleDateChange = async (field: 'check_in' | 'check_out', value: string) => {

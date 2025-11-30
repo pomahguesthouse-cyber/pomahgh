@@ -93,7 +93,62 @@ export const useBookingValidation = () => {
     return { hasConflict: false };
   };
 
+  const checkRoomTypeAvailability = async ({
+    roomId,
+    checkIn,
+    checkOut,
+    excludeBookingId
+  }: {
+    roomId: string;
+    checkIn: Date;
+    checkOut: Date;
+    excludeBookingId?: string;
+  }) => {
+    const checkInStr = format(checkIn, "yyyy-MM-dd");
+    const checkOutStr = format(checkOut, "yyyy-MM-dd");
+
+    // Get room info
+    const { data: room } = await supabase
+      .from("rooms")
+      .select("room_numbers")
+      .eq("id", roomId)
+      .single();
+
+    if (!room || !room.room_numbers) {
+      return { availableRooms: [] };
+    }
+
+    // Query overlapping bookings for this room type
+    const { data: bookings, error } = await supabase
+      .from("bookings")
+      .select("allocated_room_number")
+      .eq("room_id", roomId)
+      .neq("status", "cancelled")
+      .or(`and(check_in.lte.${checkOutStr},check_out.gte.${checkInStr})`);
+
+    if (error) {
+      console.error("Error checking room type availability:", error);
+      return { availableRooms: room.room_numbers };
+    }
+
+    // Filter out the current booking if updating
+    const otherBookings = excludeBookingId
+      ? (bookings || []).filter((b: any) => b.id !== excludeBookingId)
+      : bookings || [];
+
+    const bookedRoomNumbers = otherBookings
+      .map((b: any) => b.allocated_room_number)
+      .filter(Boolean);
+
+    const availableRooms = room.room_numbers.filter(
+      rn => !bookedRoomNumbers.includes(rn)
+    );
+
+    return { availableRooms };
+  };
+
   return {
-    checkBookingConflict
+    checkBookingConflict,
+    checkRoomTypeAvailability
   };
 };
