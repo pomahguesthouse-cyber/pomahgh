@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Tag, CalendarIcon, Users, Globe, UserCheck, HelpCircle, X, Copy, Check, FileText } from "lucide-react";
 import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -441,7 +442,7 @@ const AdminBookings = () => {
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate ? format(startDate, "dd/MM/yy") : <span>Start date</span>}
+                {startDate ? format(startDate, "dd MMM yyyy", { locale: localeId }) : <span>Tanggal mulai</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -467,7 +468,7 @@ const AdminBookings = () => {
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {endDate ? format(endDate, "dd/MM/yy") : <span>End date</span>}
+                {endDate ? format(endDate, "dd MMM yyyy", { locale: localeId }) : <span>Tanggal akhir</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -573,7 +574,7 @@ const AdminBookings = () => {
                       {booking.status}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      Created {format(new Date(booking.created_at), "dd/MM/yy 'at' HH:mm")}
+                      Dibuat {format(new Date(booking.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}
                     </span>
                   </div>
                   
@@ -659,17 +660,17 @@ const AdminBookings = () => {
                       </p>
                     ) : null}
                     <p className="font-medium mt-1">{booking.guest_name}</p>
-                    <p className="text-xs text-muted-foreground">{booking.num_guests} guests</p>
+                    <p className="text-xs text-muted-foreground">{booking.num_guests} tamu</p>
                   </div>
 
                   {/* Check-in */}
                   <div>
                     <p className="text-xs text-muted-foreground">Check-in</p>
                     <p className="font-medium">
-                      {format(new Date(booking.check_in), "dd/MM/yy")}
+                      {format(new Date(booking.check_in), "dd MMM yyyy", { locale: localeId })}
                     </p>
                     {booking.check_in_time && (
-                      <p className="text-xs text-muted-foreground">at {booking.check_in_time.slice(0, 5)}</p>
+                      <p className="text-xs text-muted-foreground">pukul {booking.check_in_time.slice(0, 5)}</p>
                     )}
                   </div>
 
@@ -677,17 +678,17 @@ const AdminBookings = () => {
                   <div>
                     <p className="text-xs text-muted-foreground">Check-out</p>
                     <p className="font-medium">
-                      {format(new Date(booking.check_out), "dd/MM/yy")}
+                      {format(new Date(booking.check_out), "dd MMM yyyy", { locale: localeId })}
                     </p>
                     {booking.check_out_time && (
-                      <p className="text-xs text-muted-foreground">at {booking.check_out_time.slice(0, 5)}</p>
+                      <p className="text-xs text-muted-foreground">pukul {booking.check_out_time.slice(0, 5)}</p>
                     )}
                   </div>
 
                   {/* Total Nights */}
                   <div>
-                    <p className="text-xs text-muted-foreground">Total Nights</p>
-                    <p className="font-medium">{booking.total_nights} nights</p>
+                    <p className="text-xs text-muted-foreground">Total Malam</p>
+                    <p className="font-medium">{booking.total_nights} malam</p>
                   </div>
 
                   {/* Total Price & Payment */}
