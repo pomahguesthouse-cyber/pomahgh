@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle, Edit2, Save, X, Download, Layers } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle, Edit2, Save, X, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1173,23 +1173,6 @@ const BookingCell = ({
             LCO
           </div>
         </div>}
-
-      {/* Multi-Room Badge - Top left corner */}
-      {booking.booking_rooms && booking.booking_rooms.length > 1 && <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="absolute -left-0.5 -top-1 z-30">
-                <div className="bg-amber-600 text-white text-[7px] px-1 py-0.5 rounded-sm font-bold shadow-sm whitespace-nowrap flex items-center gap-0.5">
-                  <Layers className="w-2 h-2" />
-                  {booking.booking_rooms.length}
-                </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs">{booking.booking_rooms.length} kamar dalam booking ini</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>}
 
       {/* Status watermark */}
       {!isPending && <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
