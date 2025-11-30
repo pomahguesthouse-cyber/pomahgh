@@ -617,7 +617,7 @@ export const MonthlyBookingCalendar = () => {
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-20">
               <tr className="bg-muted/50">
-                <th className="sticky left-0 z-30 min-w-[110px] border border-border p-2 shadow-sm bg-gray-300">
+                <th className="sticky left-0 top-0 z-40 min-w-[110px] border border-border p-2 shadow-sm bg-gray-300 dark:bg-gray-700">
                   <span className="text-[10px] font-bold uppercase tracking-wide">Kamar</span>
                 </th>
                 {dates.map(date => {
@@ -625,7 +625,7 @@ export const MonthlyBookingCalendar = () => {
                 const holiday = isIndonesianHoliday(date);
                 const isHolidayOrWeekend = isWeekend || holiday !== null;
                 const isTodayDate = isWIBToday(date);
-                const headerCell = <th key={date.toISOString()} className={cn("border border-border p-1.5 min-w-[60px] text-center transition-colors relative", isHolidayOrWeekend && "bg-red-50/50 dark:bg-red-950/10")}>
+                const headerCell = <th key={date.toISOString()} className={cn("border border-border p-1.5 min-w-[60px] text-center transition-colors relative bg-muted/50", isHolidayOrWeekend && "bg-red-100 dark:bg-red-950/30")}>
                       <div className={cn("text-[10px] font-medium uppercase", isHolidayOrWeekend ? "text-red-600" : "text-muted-foreground")}>
                         {DAY_NAMES[getDay(date)]}
                       </div>
@@ -659,11 +659,11 @@ export const MonthlyBookingCalendar = () => {
             <tbody>
               {Object.entries(roomsByType).map(([roomType]) => <React.Fragment key={roomType}>
                   {/* Room type header */}
-                  <tr className="border-y border-border bg-muted/30">
-                    <td className="sticky left-0 z-30 p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 rounded-sm shadow-sm border-r border-border">
+                  <tr className="border-y border-border">
+                    <td className="sticky left-0 z-20 p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 dark:bg-stone-800 shadow-sm border-r border-border">
                       {roomType}
                     </td>
-                    {dates.map(date => <td key={date.toISOString()} className="bg-stone-200 border border-border" />)}
+                    {dates.map(date => <td key={date.toISOString()} className="bg-stone-200 dark:bg-stone-800 border border-border" />)}
                   </tr>
 
                   {/* Room rows */}
@@ -1316,7 +1316,7 @@ const RoomRow = ({
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
 }) => {
   return <tr className="hover:bg-muted/10 transition-colors">
-      <td className="border border-border p-2 sticky left-0 z-30 font-semibold text-xs shadow-sm text-center bg-gray-300">
+      <td className="border border-border p-2 sticky left-0 z-10 font-semibold text-xs shadow-sm text-center bg-gray-100 dark:bg-gray-800">
         {room.roomNumber}
       </td>
       {dates.map(date => {

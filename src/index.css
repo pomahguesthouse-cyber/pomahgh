@@ -228,3 +228,13 @@ All colors MUST be HSL.
 .booking-calendar-scroll::-webkit-scrollbar-corner {
   background: hsl(var(--muted));
 }
+
+/* Sticky table headers and columns shadow effects */
+.booking-calendar-scroll th[class*="sticky"],
+.booking-calendar-scroll td[class*="sticky"] {
+  box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.1);
+}
+
+.booking-calendar-scroll thead {
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+}
