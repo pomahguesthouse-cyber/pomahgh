@@ -52,7 +52,11 @@ export const InvoicePreviewDialog = ({
     if (!invoiceHtml) return;
 
     const element = document.createElement('div');
-    element.innerHTML = DOMPurify.sanitize(invoiceHtml);
+    element.innerHTML = DOMPurify.sanitize(invoiceHtml, {
+      ADD_TAGS: ['style'],
+      ADD_ATTR: ['style'],
+      FORCE_BODY: true
+    });
     
     const opt = {
       margin: 0.5,
@@ -84,7 +88,13 @@ export const InvoicePreviewDialog = ({
               </div>
             ) : invoiceHtml ? (
               <div 
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(invoiceHtml) }}
+                dangerouslySetInnerHTML={{ 
+                  __html: DOMPurify.sanitize(invoiceHtml, {
+                    ADD_TAGS: ['style'],
+                    ADD_ATTR: ['style'],
+                    FORCE_BODY: true
+                  })
+                }}
                 className="p-4"
               />
             ) : (
