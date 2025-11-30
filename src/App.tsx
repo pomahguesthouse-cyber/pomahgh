@@ -24,6 +24,7 @@ import AdminBankAccounts from "./pages/admin/AdminBankAccounts";
 import AdminRoomFeatures from "./pages/admin/AdminRoomFeatures";
 import AdminSeoSettings from "./pages/admin/AdminSeoSettings";
 import RoomDetail from "./pages/RoomDetail";
+import AdminInvoiceTemplate from "./pages/admin/AdminInvoiceTemplate";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import NotFound from "./pages/NotFound";
 
@@ -57,6 +58,7 @@ const App = () => (
           <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
+          <Route path="/admin/invoice-template" element={<AdminLayout><AdminInvoiceTemplate /></AdminLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
