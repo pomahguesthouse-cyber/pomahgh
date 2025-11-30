@@ -348,21 +348,6 @@ export default function AdminSettings() {
                     <Input id="max_stay_nights" name="max_stay_nights" type="number" min="1" defaultValue={settings.max_stay_nights || 30} />
                   </div>
                 </div>
-                <div className="space-y-2 pt-4 border-t">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label htmlFor="auto_send_invoice">Auto-send Invoice</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Otomatis kirim invoice setelah tamu booking
-                      </p>
-                    </div>
-                    <Switch
-                      id="auto_send_invoice"
-                      checked={settings.auto_send_invoice || false}
-                      onCheckedChange={(checked) => updateSettings({ auto_send_invoice: checked })}
-                    />
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>

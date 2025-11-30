@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useRooms } from "@/hooks/useRooms";
-import { useInvoice } from "@/hooks/useInvoice";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
-import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Send, Tag, CalendarIcon, Users, Globe, UserCheck, HelpCircle, X, Copy, Check } from "lucide-react";
+import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Tag, CalendarIcon, Users, Globe, UserCheck, HelpCircle, X, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -34,7 +32,6 @@ const AdminBookings = () => {
   const {
     data: rooms
   } = useRooms();
-  const { sendInvoice, isSending } = useInvoice();
   const { settings: hotelSettings } = useHotelSettings();
   const { bankAccounts } = useBankAccounts();
   
@@ -53,8 +50,6 @@ const AdminBookings = () => {
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
-  const [invoicePreviewOpen, setInvoicePreviewOpen] = useState(false);
-  const [selectedBookingForInvoice, setSelectedBookingForInvoice] = useState<any>(null);
   
   // Date filter states
   const [filterDateType, setFilterDateType] = useState<"check_in" | "check_out">("check_in");
@@ -448,21 +443,7 @@ const AdminBookings = () => {
                   
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedBookingForInvoice(booking);
-                        setInvoicePreviewOpen(true);
-                      }}
-                      disabled={booking.status !== 'confirmed'}
-                      title={booking.status !== 'confirmed' ? 'Only confirmed bookings can send invoice' : 'Preview and send invoice'}
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      Invoice
-                    </Button>
-                    <Select 
+                    <Select
                       value={booking.status} 
                       onValueChange={(value) => {
                         updateBookingStatus({
@@ -1116,17 +1097,6 @@ const AdminBookings = () => {
             </div>}
         </DialogContent>
       </Dialog>
-
-      {/* Invoice Preview Dialog */}
-      <InvoicePreviewDialog
-        booking={selectedBookingForInvoice}
-        open={invoicePreviewOpen}
-        onOpenChange={setInvoicePreviewOpen}
-        onSendInvoice={async (options) => {
-          await sendInvoice(options);
-          setInvoicePreviewOpen(false);
-        }}
-      />
     </div>;
 };
 export default AdminBookings;

@@ -1,4 +1,4 @@
-import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, FileText, Tags, RefreshCw, LayoutDashboard, Search } from "lucide-react";
+import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -23,7 +23,6 @@ const adminItems = [
   { title: "Room Features", url: "/admin/room-features", icon: Tags },
   { title: "Lokasi Terdekat", url: "/admin/nearby-locations", icon: MapPin },
   { title: "Bank Accounts", url: "/admin/bank-accounts", icon: CreditCard },
-  { title: "Invoice Template", url: "/admin/invoice-template", icon: FileText },
   { title: "Chatbot AI", url: "/admin/chatbot", icon: MessageCircle },
   { title: "Channel Managers", url: "/admin/channel-managers", icon: RefreshCw },
   { title: "SEO Settings", url: "/admin/seo-settings", icon: Search },

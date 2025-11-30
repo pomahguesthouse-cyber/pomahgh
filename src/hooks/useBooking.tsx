@@ -99,46 +99,9 @@ export const useBooking = () => {
     onSuccess: async (bookingData) => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       
-      // Check if auto-send invoice is enabled
-      const { data: settings } = await supabase
-        .from('hotel_settings')
-        .select('auto_send_invoice')
-        .single();
-      
-      if (settings?.auto_send_invoice) {
-        toast.info("Mengirim invoice...", { duration: 2000 });
-        
-        try {
-          const { data, error } = await supabase.functions.invoke('send-invoice', {
-            body: { 
-              bookingId: bookingData.id,
-              sendEmail: true,
-              sendWhatsApp: true
-            }
-          });
-          
-          if (error) throw error;
-          
-          if (data.emailSent || data.whatsappSent) {
-            const channels = [];
-            if (data.emailSent) channels.push("email");
-            if (data.whatsappSent) channels.push("WhatsApp");
-            
-            toast.success("Booking & Invoice berhasil dikirim!", {
-              description: `Invoice ${data.invoiceNumber} telah dikirim via ${channels.join(" dan ")}`
-            });
-          }
-        } catch (error) {
-          console.error("Auto-send invoice error:", error);
-          toast.warning("Booking berhasil, tapi invoice gagal dikirim", {
-            description: "Admin dapat mengirim ulang invoice dari halaman Bookings"
-          });
-        }
-      } else {
-        toast.success("Booking berhasil!", {
-          description: "Terima kasih! Kami akan mengirimkan konfirmasi ke email Anda."
-        });
-      }
+      toast.success("Booking berhasil!", {
+        description: "Terima kasih! Kami akan mengirimkan konfirmasi ke email Anda."
+      });
     },
     onError: (error: Error) => {
       console.error("Booking error:", error);
