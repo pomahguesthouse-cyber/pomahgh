@@ -3,6 +3,7 @@ import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 import { useBookingValidation } from "@/hooks/useBookingValidation";
+import { useRoomTypeAvailability, RoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, parseISO, differenceInDays } from "date-fns";
 import { getWIBToday, isWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
@@ -63,6 +64,9 @@ export const MonthlyBookingCalendar = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
   const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
+  const [alternativeSuggestions, setAlternativeSuggestions] = useState<RoomTypeAvailability[]>([]);
+  const [showAlternativeDialog, setShowAlternativeDialog] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     roomId: string;
     roomNumber: string;
@@ -101,8 +105,14 @@ export const MonthlyBookingCalendar = () => {
     addUnavailableDates,
     removeUnavailableDates
   } = useRoomAvailability();
-  const { checkBookingConflict } = useBookingValidation();
+  const { checkBookingConflict, checkRoomTypeAvailability } = useBookingValidation();
   const queryClient = useQueryClient();
+
+  const { data: roomTypeAvailability } = useRoomTypeAvailability(
+    editedBooking?.check_in ? new Date(editedBooking.check_in) : null,
+    editedBooking?.check_out ? new Date(editedBooking.check_out) : null,
+    editedBooking?.id
+  );
 
   // Calculate date range based on view selection
   const dates = useMemo(() => {
@@ -291,7 +301,7 @@ export const MonthlyBookingCalendar = () => {
   };
 
   const handleRoomTypeChange = async (newRoomId: string) => {
-    if (!editingBooking || !editingBooking.check_in || !editingBooking.check_out) return;
+    if (!editedBooking || !editedBooking.check_in || !editedBooking.check_out) return;
 
     const newRoom = rooms?.find(r => r.id === newRoomId);
     if (!newRoom) return;
@@ -301,9 +311,9 @@ export const MonthlyBookingCalendar = () => {
     // Check availability for the new room type
     const { availableRooms } = await checkRoomTypeAvailability({
       roomId: newRoomId,
-      checkIn: new Date(editingBooking.check_in),
-      checkOut: new Date(editingBooking.check_out),
-      excludeBookingId: editingBooking.id,
+      checkIn: new Date(editedBooking.check_in),
+      checkOut: new Date(editedBooking.check_out),
+      excludeBookingId: editedBooking.id,
     });
 
     if (availableRooms.length === 0) {
@@ -327,44 +337,67 @@ export const MonthlyBookingCalendar = () => {
 
     setAvailableRoomNumbers(availableRooms);
 
-    // Check if editing a booking with custom pricing
-    const hasCustomPricing = editingBooking.booking_rooms && 
-      editingBooking.booking_rooms.some((br: any) => 
-        br.price_per_night !== newRoom.price_per_night
-      );
-
-    setEditingBooking({
-      ...editingBooking,
+    // Update editedBooking with new room info
+    const updatedBooking = {
+      ...editedBooking,
       room_id: newRoomId,
       allocated_room_number: availableRooms[0],
-      total_price: hasCustomPricing 
-        ? editingBooking.total_price 
-        : newRoom.price_per_night * (editingBooking.total_nights || 1),
-    });
+    };
+
+    setEditedBooking(updatedBooking);
   };
 
   const selectAlternativeRoom = (suggestion: RoomTypeAvailability) => {
-    if (!editingBooking) return;
+    if (!editedBooking) return;
 
     setSelectedRoomId(suggestion.roomId);
     setAvailableRoomNumbers(suggestion.availableRooms);
 
-    const hasCustomPricing = editingBooking.booking_rooms && 
-      editingBooking.booking_rooms.some((br: any) => 
-        br.price_per_night !== suggestion.pricePerNight
-      );
-
-    setEditingBooking({
-      ...editingBooking,
+    setEditedBooking({
+      ...editedBooking,
       room_id: suggestion.roomId,
       allocated_room_number: suggestion.availableRooms[0],
-      total_price: hasCustomPricing 
-        ? editingBooking.total_price 
-        : suggestion.pricePerNight * (editingBooking.total_nights || 1),
     });
 
     setShowAlternativeDialog(false);
     toast.success(`Dipindahkan ke ${suggestion.roomName}`);
+  };
+
+  const handleDateChange = async (field: 'check_in' | 'check_out', value: string) => {
+    if (!editedBooking) return;
+
+    const updatedBooking = {
+      ...editedBooking,
+      [field]: value,
+    };
+
+    setEditedBooking(updatedBooking);
+
+    // Check conflict if both dates are set
+    if (updatedBooking.check_in && updatedBooking.check_out && updatedBooking.allocated_room_number) {
+      const checkInDate = new Date(updatedBooking.check_in);
+      const checkOutDate = new Date(updatedBooking.check_out);
+
+      if (checkOutDate <= checkInDate) {
+        return; // Invalid date range
+      }
+
+      const conflict = await checkBookingConflict({
+        roomId: updatedBooking.room_id,
+        roomNumber: updatedBooking.allocated_room_number,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        checkInTime: updatedBooking.check_in_time,
+        checkOutTime: updatedBooking.check_out_time,
+        excludeBookingId: updatedBooking.id
+      });
+
+      if (conflict.hasConflict) {
+        toast.error("Konflik booking terdeteksi!", {
+          description: conflict.reason || "Kamar ini sudah dibooking untuk tanggal tersebut"
+        });
+      }
+    }
   };
 
   const handleSaveChanges = async () => {

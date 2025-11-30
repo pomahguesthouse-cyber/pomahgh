@@ -4,6 +4,8 @@ import { useRooms } from "@/hooks/useRooms";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useBookingValidation } from "@/hooks/useBookingValidation";
+import { useRoomTypeAvailability, RoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
+import { formatRupiahID } from "@/utils/indonesianFormat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,7 +38,7 @@ const AdminBookings = () => {
   } = useRooms();
   const { settings: hotelSettings } = useHotelSettings();
   const { bankAccounts } = useBankAccounts();
-  const { checkBookingConflict } = useBookingValidation();
+  const { checkBookingConflict, checkRoomTypeAvailability } = useBookingValidation();
   
   // Create room name lookup map
   const roomNameMap = useMemo(() => {
@@ -54,6 +56,8 @@ const AdminBookings = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string>("");
+  const [alternativeSuggestions, setAlternativeSuggestions] = useState<RoomTypeAvailability[]>([]);
+  const [showAlternativeDialog, setShowAlternativeDialog] = useState(false);
   
   // Date filter states
   const [filterDateType, setFilterDateType] = useState<"check_in" | "check_out">("check_in");
@@ -80,6 +84,13 @@ const AdminBookings = () => {
   // Invoice dialog state
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [selectedBookingForInvoice, setSelectedBookingForInvoice] = useState<any>(null);
+
+  // Room type availability hook - must be after state declarations
+  const { data: roomTypeAvailability } = useRoomTypeAvailability(
+    editingBooking?.check_in ? new Date(editingBooking.check_in) : null,
+    editingBooking?.check_out ? new Date(editingBooking.check_out) : null,
+    editingBooking?.id
+  );
 
   // Real-time subscription
   useEffect(() => {
