@@ -1157,7 +1157,7 @@ const BookingCell = ({
     width: bookingWidth,
     transform: isTruncatedLeft ? "translateX(0%)" : "translateX(0%)"
   };
-  return <div onClick={onClick} className={cn("absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible z-20 cursor-pointer", isTruncatedLeft ? "rounded-r-md" : "rounded-md", getBackgroundClass())} style={style}>
+  return <div onClick={onClick} className={cn("absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible z-[5] cursor-pointer", isTruncatedLeft ? "rounded-r-md" : "rounded-md", getBackgroundClass())} style={style}>
       {/* Content - Guest name and nights */}
       <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
         {/* Guest Name */}
@@ -1316,7 +1316,7 @@ const RoomRow = ({
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
 }) => {
   return <tr className="hover:bg-muted/10 transition-colors">
-      <td className="border border-border p-2 sticky left-0 z-10 font-semibold text-xs shadow-sm text-center bg-gray-100 dark:bg-gray-800">
+      <td className="border border-border p-2 sticky left-0 z-30 font-semibold text-xs shadow-sm text-center bg-gray-100 dark:bg-gray-800">
         {room.roomNumber}
       </td>
       {dates.map(date => {
