@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Edit2, X, Save } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 import { getWIBToday } from "@/utils/wibTimezone";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
@@ -290,11 +291,11 @@ export const BookingCalendarTable = () => {
     if (viewMode === 'week') {
       const start = startOfWeek(currentDate, { weekStartsOn: 0 });
       const end = endOfWeek(currentDate, { weekStartsOn: 0 });
-      return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
+      return `${format(start, 'd MMM', { locale: localeId })} - ${format(end, 'd MMM yyyy', { locale: localeId })}`;
     } else if (viewMode === '2months') {
-      return `${format(currentDate, 'MMMM')} - ${format(addMonths(currentDate, 1), 'MMMM yyyy')}`;
+      return `${format(currentDate, 'MMMM', { locale: localeId })} - ${format(addMonths(currentDate, 1), 'MMMM yyyy', { locale: localeId })}`;
     }
-    return format(currentDate, 'MMMM yyyy');
+    return format(currentDate, 'MMMM yyyy', { locale: localeId });
   };
 
   return (
@@ -363,17 +364,17 @@ export const BookingCalendarTable = () => {
                             "text-xs font-medium",
                             isWeekend ? "text-red-600" : "text-muted-foreground"
                           )}>
-                            {format(date, 'EEE')}
+                            {format(date, 'EEE', { locale: localeId })}
                           </div>
                           <div className={cn(
                             "text-sm font-semibold",
                             isWeekend && "text-red-600"
                           )}>
-                            {format(date, 'd')}
+                            {format(date, 'd', { locale: localeId })}
                           </div>
                           {viewMode !== 'week' && date.getDate() === 1 && (
                             <div className="text-[10px] text-muted-foreground">
-                              {format(date, 'MMM')}
+                              {format(date, 'MMM', { locale: localeId })}
                             </div>
                           )}
                         </div>

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, isWithinInterval } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 import { getWIBToday } from "@/utils/wibTimezone";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -172,7 +173,7 @@ export const RoomAvailabilityCalendar = ({
               <>
                 <div>
                   <h3 className="font-semibold mb-2">
-                    {format(selectedDate, "MMMM d, yyyy")}
+                    {format(selectedDate, "d MMMM yyyy", { locale: localeId })}
                   </h3>
                   {selectedDateAvailability && (
                     <div className="space-y-2">
@@ -203,8 +204,8 @@ export const RoomAvailabilityCalendar = ({
                         >
                           <p className="font-medium">{booking.guest_name}</p>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(booking.check_in), "MMM d")} -{" "}
-                            {format(new Date(booking.check_out), "MMM d, yyyy")}
+                            {format(new Date(booking.check_in), "d MMM", { locale: localeId })} -{" "}
+                            {format(new Date(booking.check_out), "d MMM yyyy", { locale: localeId })}
                           </p>
                           <Badge
                             variant={
