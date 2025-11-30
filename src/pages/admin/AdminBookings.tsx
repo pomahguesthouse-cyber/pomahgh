@@ -15,7 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Tag, CalendarIcon, Users, Globe, UserCheck, HelpCircle, X, Copy, Check } from "lucide-react";
+import { Trash2, Edit, CheckCircle, Clock, Wrench, Mail, Tag, CalendarIcon, Users, Globe, UserCheck, HelpCircle, X, Copy, Check, FileText } from "lucide-react";
+import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -72,6 +73,10 @@ const AdminBookings = () => {
   
   // Copied booking ID state
   const [copiedBookingId, setCopiedBookingId] = useState<string | null>(null);
+  
+  // Invoice dialog state
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [selectedBookingForInvoice, setSelectedBookingForInvoice] = useState<any>(null);
 
   // Real-time subscription
   useEffect(() => {
@@ -463,6 +468,18 @@ const AdminBookings = () => {
                         <SelectItem value="maintenance">Maintenance</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedBookingForInvoice(booking);
+                        setInvoiceDialogOpen(true);
+                      }}
+                      title="Kirim Invoice"
+                    >
+                      <FileText className="h-4 w-4" />
+                    </Button>
                     <Button 
                       size="icon" 
                       variant="outline" 
@@ -1097,6 +1114,18 @@ const AdminBookings = () => {
             </div>}
         </DialogContent>
       </Dialog>
+      
+      {/* Invoice Preview Dialog */}
+      {selectedBookingForInvoice && (
+        <InvoicePreviewDialog
+          open={invoiceDialogOpen}
+          onOpenChange={setInvoiceDialogOpen}
+          bookingId={selectedBookingForInvoice.id}
+          guestName={selectedBookingForInvoice.guest_name}
+          guestPhone={selectedBookingForInvoice.guest_phone || ""}
+          bookingCode={selectedBookingForInvoice.booking_code}
+        />
+      )}
     </div>;
 };
 export default AdminBookings;

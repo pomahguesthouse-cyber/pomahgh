@@ -932,6 +932,42 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_templates: {
+        Row: {
+          created_at: string | null
+          custom_notes: string | null
+          id: string
+          invoice_primary_color: string | null
+          invoice_secondary_color: string | null
+          show_bank_accounts: boolean | null
+          show_logo: boolean | null
+          updated_at: string | null
+          whatsapp_template: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_notes?: string | null
+          id?: string
+          invoice_primary_color?: string | null
+          invoice_secondary_color?: string | null
+          show_bank_accounts?: boolean | null
+          show_logo?: boolean | null
+          updated_at?: string | null
+          whatsapp_template?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_notes?: string | null
+          id?: string
+          invoice_primary_color?: string | null
+          invoice_secondary_color?: string | null
+          show_bank_accounts?: boolean | null
+          show_logo?: boolean | null
+          updated_at?: string | null
+          whatsapp_template?: string | null
+        }
+        Relationships: []
+      }
       nearby_locations: {
         Row: {
           category: string

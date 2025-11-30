@@ -19,7 +19,8 @@ const getPageTitle = (pathname: string): string => {
     "/admin/chatbot": "Chatbot Settings",
     "/admin/channel-managers": "Channel Managers",
     "/admin/room-features": "Room Features",
-    "/admin/seo-settings": "SEO Settings"
+    "/admin/seo-settings": "SEO Settings",
+    "/admin/invoice-template": "Invoice Template"
   };
   return titles[pathname] || "Admin Panel";
 };
