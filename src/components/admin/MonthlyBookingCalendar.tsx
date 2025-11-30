@@ -61,6 +61,7 @@ export const MonthlyBookingCalendar = () => {
   const [viewRange, setViewRange] = useState<ViewRange>(30);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
+  const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
   const [contextMenu, setContextMenu] = useState<{
     roomId: string;
     roomNumber: string;
@@ -271,6 +272,10 @@ export const MonthlyBookingCalendar = () => {
     setSelectedBooking(booking);
     setEditedBooking(booking);
     setIsEditMode(false);
+
+    // Set available room numbers for current room type
+    const room = rooms?.find(r => r.id === booking.room_id);
+    setAvailableRoomNumbers(room?.room_numbers || []);
   };
   const handleEditToggle = () => {
     if (isEditMode) {
@@ -281,6 +286,19 @@ export const MonthlyBookingCalendar = () => {
       // Enter edit mode
       setIsEditMode(true);
     }
+  };
+
+  const handleRoomTypeChange = (newRoomId: string) => {
+    if (!editedBooking) return;
+    const newRoom = rooms?.find(r => r.id === newRoomId);
+    if (!newRoom) return;
+
+    setAvailableRoomNumbers(newRoom.room_numbers || []);
+    setEditedBooking({
+      ...editedBooking,
+      room_id: newRoomId,
+      allocated_room_number: newRoom.room_numbers?.[0] || ""
+    });
   };
   const handleSaveChanges = async () => {
     if (!editedBooking) return;
@@ -315,6 +333,7 @@ export const MonthlyBookingCalendar = () => {
     try {
       await updateBooking({
         id: editedBooking.id,
+        room_id: editedBooking.room_id,
         guest_name: editedBooking.guest_name,
         guest_email: editedBooking.guest_email,
         guest_phone: editedBooking.guest_phone,
@@ -668,11 +687,37 @@ export const MonthlyBookingCalendar = () => {
                         </div>}
                     </div>
                     <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Tipe Kamar</Label>
+                      {isEditMode ? <Select value={editedBooking.room_id} onValueChange={handleRoomTypeChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih tipe kamar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {rooms?.map(room => (
+                              <SelectItem key={room.id} value={room.id}>
+                                {room.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select> : <p className="font-semibold">{editedBooking.rooms?.name || "-"}</p>}
+                    </div>
+                    <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nomor Kamar</Label>
-                      {isEditMode ? <Input value={editedBooking.allocated_room_number || ""} onChange={e => setEditedBooking({
+                      {isEditMode ? <Select value={editedBooking.allocated_room_number || ""} onValueChange={value => setEditedBooking({
                     ...editedBooking,
-                    allocated_room_number: e.target.value
-                  })} className="font-semibold" /> : <p className="font-semibold">{editedBooking.allocated_room_number || "-"}</p>}
+                    allocated_room_number: value
+                  })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih nomor kamar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableRoomNumbers.map(roomNum => (
+                              <SelectItem key={roomNum} value={roomNum}>
+                                {roomNum}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select> : <p className="font-semibold">{editedBooking.allocated_room_number || "-"}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Status Booking</Label>
