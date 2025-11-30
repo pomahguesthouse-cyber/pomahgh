@@ -129,19 +129,26 @@ export const useAdminBookings = () => {
 
       if (error) throw error;
 
-      // Sync booking_rooms table if allocated_room_number changed
-      if (booking.allocated_room_number) {
+      // Sync booking_rooms table if room_id or allocated_room_number changed
+      if (booking.room_id || booking.allocated_room_number) {
         const { data: existingRooms } = await supabase
           .from("booking_rooms")
           .select("*")
           .eq("booking_id", booking.id);
 
         if (existingRooms && existingRooms.length > 0) {
+          const updateData: any = {};
+          if (booking.allocated_room_number) {
+            updateData.room_number = booking.allocated_room_number;
+          }
+          if (booking.room_id) {
+            updateData.room_id = booking.room_id;
+          }
+          
           await supabase
             .from("booking_rooms")
-            .update({ room_number: booking.allocated_room_number })
-            .eq("booking_id", booking.id)
-            .eq("room_number", existingRooms[0].room_number);
+            .update(updateData)
+            .eq("id", existingRooms[0].id);
         }
       }
 

@@ -51,6 +51,7 @@ const AdminBookings = () => {
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
   
   // Date filter states
   const [filterDateType, setFilterDateType] = useState<"check_in" | "check_out">("check_in");
@@ -141,6 +142,9 @@ const AdminBookings = () => {
       check_out: booking.check_out
     });
 
+    // Set selected room type
+    setSelectedRoomId(booking.room_id);
+
     // Get available room numbers for selected room
     const room = rooms?.find(r => r.id === booking.room_id);
     setAvailableRoomNumbers(room?.room_numbers || []);
@@ -173,6 +177,33 @@ const AdminBookings = () => {
     
     setEditDialogOpen(true);
   };
+
+  const handleRoomTypeChange = (newRoomId: string) => {
+    const newRoom = rooms?.find(r => r.id === newRoomId);
+    if (!newRoom) return;
+
+    setSelectedRoomId(newRoomId);
+    setAvailableRoomNumbers(newRoom.room_numbers || []);
+    setEditingBooking({
+      ...editingBooking,
+      room_id: newRoomId,
+      allocated_room_number: newRoom.room_numbers?.[0] || ""
+    });
+
+    // Reset custom pricing when changing room type
+    if (!useCustomPriceEdit) {
+      const totalNights = Math.ceil(
+        (new Date(editingBooking.check_out).getTime() - new Date(editingBooking.check_in).getTime()) 
+        / (1000 * 60 * 60 * 24)
+      );
+      const newTotalPrice = totalNights * (newRoom.price_per_night || 0);
+      setEditingBooking((prev: any) => ({
+        ...prev,
+        total_price: newTotalPrice
+      }));
+    }
+  };
+
   const handleSaveEdit = () => {
     if (editingBooking) {
       const totalNights = Math.ceil(
@@ -230,6 +261,7 @@ const AdminBookings = () => {
       
       updateBooking({
         id: editingBooking.id,
+        room_id: editingBooking.room_id,
         guest_name: editingBooking.guest_name,
         guest_email: editingBooking.guest_email,
         guest_phone: editingBooking.guest_phone,
@@ -829,21 +861,37 @@ const AdminBookings = () => {
               })} />
                 </div>
                 <div>
-                  <Label>Room Number</Label>
-                  <Select value={editingBooking.allocated_room_number || ""} onValueChange={value => setEditingBooking({
-                ...editingBooking,
-                allocated_room_number: value
-              })}>
+                  <Label>Tipe Kamar</Label>
+                  <Select value={selectedRoomId} onValueChange={handleRoomTypeChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select room number" />
+                      <SelectValue placeholder="Pilih tipe kamar" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableRoomNumbers.map(roomNum => <SelectItem key={roomNum} value={roomNum}>
-                          {roomNum}
-                        </SelectItem>)}
+                      {rooms?.map(room => (
+                        <SelectItem key={room.id} value={room.id}>
+                          {room.name} - Rp {room.price_per_night?.toLocaleString("id-ID")}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div>
+                <Label>Nomor Kamar</Label>
+                <Select value={editingBooking.allocated_room_number || ""} onValueChange={value => setEditingBooking({
+              ...editingBooking,
+              allocated_room_number: value
+            })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih nomor kamar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRoomNumbers.map(roomNum => <SelectItem key={roomNum} value={roomNum}>
+                        {roomNum}
+                      </SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
