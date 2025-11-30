@@ -273,7 +273,7 @@ serve(async (req) => {
 <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
   <div class="invoice-container" style="max-width: 800px; margin: 0 auto; background: white; padding: 40px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
     <div class="header" style="text-align: center; border-bottom: 3px solid ${primaryColor}; padding-bottom: 20px; margin-bottom: 30px;">
-      ${showLogo && hotelSettings.logo_url ? `<img src="${hotelSettings.logo_url}" alt="Logo" style="max-height: 80px; margin-bottom: 10px;">` : ''}
+      ${showLogo && hotelSettings.logo_url ? `<img src="${hotelSettings.logo_url}" alt="${hotelSettings.hotel_name} Logo" crossorigin="anonymous" style="max-height: 80px; max-width: 200px; margin-bottom: 10px; object-fit: contain; display: block; margin-left: auto; margin-right: auto;" onerror="this.style.display='none'">` : ''}
       <div class="hotel-name" style="font-size: 28px; font-weight: bold; color: ${primaryColor}; margin: 10px 0;">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
       <div class="tagline" style="color: #666; font-style: italic;">${hotelSettings.tagline || 'Your Home Away From Home'}</div>
       <p style="margin: 10px 0; color: #666; font-size: 14px;">
