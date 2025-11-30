@@ -53,6 +53,8 @@ export interface HotelSettings {
   partial_refund_percentage?: number;
   no_refund_days_before?: number;
   refund_policy_text?: string;
+  hotel_policies_text?: string;
+  hotel_policies_enabled?: boolean;
 }
 
 export const useHotelSettings = () => {

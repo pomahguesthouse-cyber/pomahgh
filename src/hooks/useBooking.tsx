@@ -18,6 +18,7 @@ export interface BookingData {
   price_per_night: number;
   allocated_room_number?: string;
   room_quantity?: number;
+  is_non_refundable?: boolean;
 }
 
 export const useBooking = () => {
@@ -72,6 +73,7 @@ export const useBooking = () => {
         special_requests: bookingData.special_requests,
         status: "pending",
         allocated_room_number: availableNumbers[0],
+        is_non_refundable: bookingData.is_non_refundable || false,
       }).select().single();
 
       if (error) throw error;

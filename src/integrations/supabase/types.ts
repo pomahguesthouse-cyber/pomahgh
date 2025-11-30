@@ -246,6 +246,7 @@ export type Database = {
           guest_name: string
           guest_phone: string | null
           id: string
+          is_non_refundable: boolean | null
           num_guests: number
           ota_name: string | null
           other_source: string | null
@@ -271,6 +272,7 @@ export type Database = {
           guest_name: string
           guest_phone?: string | null
           id?: string
+          is_non_refundable?: boolean | null
           num_guests?: number
           ota_name?: string | null
           other_source?: string | null
@@ -296,6 +298,7 @@ export type Database = {
           guest_name?: string
           guest_phone?: string | null
           id?: string
+          is_non_refundable?: boolean | null
           num_guests?: number
           ota_name?: string | null
           other_source?: string | null
@@ -787,6 +790,8 @@ export type Database = {
           header_show_logo: boolean | null
           header_text_color: string | null
           hotel_name: string
+          hotel_policies_enabled: boolean | null
+          hotel_policies_text: string | null
           id: string
           instagram_url: string | null
           latitude: number | null
@@ -843,6 +848,8 @@ export type Database = {
           header_show_logo?: boolean | null
           header_text_color?: string | null
           hotel_name?: string
+          hotel_policies_enabled?: boolean | null
+          hotel_policies_text?: string | null
           id?: string
           instagram_url?: string | null
           latitude?: number | null
@@ -899,6 +906,8 @@ export type Database = {
           header_show_logo?: boolean | null
           header_text_color?: string | null
           hotel_name?: string
+          hotel_policies_enabled?: boolean | null
+          hotel_policies_text?: string | null
           id?: string
           instagram_url?: string | null
           latitude?: number | null
@@ -1261,11 +1270,14 @@ export type Database = {
           final_price: number | null
           floor_plan_enabled: boolean | null
           floor_plan_url: string | null
+          friday_non_refundable: boolean | null
           friday_price: number | null
           id: string
           image_url: string
           image_urls: string[] | null
+          is_non_refundable: boolean | null
           max_guests: number
+          monday_non_refundable: boolean | null
           monday_price: number | null
           name: string
           price_per_night: number
@@ -1274,15 +1286,20 @@ export type Database = {
           promo_start_date: string | null
           room_count: number
           room_numbers: string[] | null
+          saturday_non_refundable: boolean | null
           saturday_price: number | null
           size_sqm: number | null
           slug: string | null
+          sunday_non_refundable: boolean | null
           sunday_price: number | null
+          thursday_non_refundable: boolean | null
           thursday_price: number | null
           transition_effect: string | null
+          tuesday_non_refundable: boolean | null
           tuesday_price: number | null
           updated_at: string
           virtual_tour_url: string | null
+          wednesday_non_refundable: boolean | null
           wednesday_price: number | null
         }
         Insert: {
@@ -1295,11 +1312,14 @@ export type Database = {
           final_price?: number | null
           floor_plan_enabled?: boolean | null
           floor_plan_url?: string | null
+          friday_non_refundable?: boolean | null
           friday_price?: number | null
           id?: string
           image_url: string
           image_urls?: string[] | null
+          is_non_refundable?: boolean | null
           max_guests?: number
+          monday_non_refundable?: boolean | null
           monday_price?: number | null
           name: string
           price_per_night: number
@@ -1308,15 +1328,20 @@ export type Database = {
           promo_start_date?: string | null
           room_count?: number
           room_numbers?: string[] | null
+          saturday_non_refundable?: boolean | null
           saturday_price?: number | null
           size_sqm?: number | null
           slug?: string | null
+          sunday_non_refundable?: boolean | null
           sunday_price?: number | null
+          thursday_non_refundable?: boolean | null
           thursday_price?: number | null
           transition_effect?: string | null
+          tuesday_non_refundable?: boolean | null
           tuesday_price?: number | null
           updated_at?: string
           virtual_tour_url?: string | null
+          wednesday_non_refundable?: boolean | null
           wednesday_price?: number | null
         }
         Update: {
@@ -1329,11 +1354,14 @@ export type Database = {
           final_price?: number | null
           floor_plan_enabled?: boolean | null
           floor_plan_url?: string | null
+          friday_non_refundable?: boolean | null
           friday_price?: number | null
           id?: string
           image_url?: string
           image_urls?: string[] | null
+          is_non_refundable?: boolean | null
           max_guests?: number
+          monday_non_refundable?: boolean | null
           monday_price?: number | null
           name?: string
           price_per_night?: number
@@ -1342,15 +1370,20 @@ export type Database = {
           promo_start_date?: string | null
           room_count?: number
           room_numbers?: string[] | null
+          saturday_non_refundable?: boolean | null
           saturday_price?: number | null
           size_sqm?: number | null
           slug?: string | null
+          sunday_non_refundable?: boolean | null
           sunday_price?: number | null
+          thursday_non_refundable?: boolean | null
           thursday_price?: number | null
           transition_effect?: string | null
+          tuesday_non_refundable?: boolean | null
           tuesday_price?: number | null
           updated_at?: string
           virtual_tour_url?: string | null
+          wednesday_non_refundable?: boolean | null
           wednesday_price?: number | null
         }
         Relationships: []
