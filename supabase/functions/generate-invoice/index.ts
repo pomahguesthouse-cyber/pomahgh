@@ -135,6 +135,7 @@ serve(async (req) => {
       background: white;
       padding: 40px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     .header {
       text-align: center;
@@ -269,12 +270,12 @@ serve(async (req) => {
     }
   </style>
 </head>
-<body>
-  <div class="invoice-container">
-    <div class="header">
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+  <div class="invoice-container" style="max-width: 800px; margin: 0 auto; background: white; padding: 40px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+    <div class="header" style="text-align: center; border-bottom: 3px solid ${primaryColor}; padding-bottom: 20px; margin-bottom: 30px;">
       ${showLogo && hotelSettings.logo_url ? `<img src="${hotelSettings.logo_url}" alt="Logo" style="max-height: 80px; margin-bottom: 10px;">` : ''}
-      <div class="hotel-name">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
-      <div class="tagline">${hotelSettings.tagline || 'Your Home Away From Home'}</div>
+      <div class="hotel-name" style="font-size: 28px; font-weight: bold; color: ${primaryColor}; margin: 10px 0;">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
+      <div class="tagline" style="color: #666; font-style: italic;">${hotelSettings.tagline || 'Your Home Away From Home'}</div>
       <p style="margin: 10px 0; color: #666; font-size: 14px;">
         📍 ${hotelSettings.address || ''}, ${hotelSettings.city || ''}<br>
         📧 ${hotelSettings.email_primary || ''} | 📞 ${hotelSettings.phone_primary || ''}
@@ -282,13 +283,13 @@ serve(async (req) => {
     </div>
 
     <div style="text-align: center;">
-      <div class="invoice-title">INVOICE</div>
-      <div class="booking-code">#${booking.booking_code}</div>
+      <div class="invoice-title" style="font-size: 36px; font-weight: bold; color: ${primaryColor}; margin: 20px 0;">INVOICE</div>
+      <div class="booking-code" style="font-size: 18px; color: #666;">#${booking.booking_code}</div>
     </div>
 
-    <div class="info-grid">
-      <div class="info-box">
-        <h3>👤 Ditagih Kepada</h3>
+    <div class="info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0;">
+      <div class="info-box" style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+        <h3 style="margin: 0 0 10px 0; color: ${primaryColor}; font-size: 14px; text-transform: uppercase;">👤 Ditagih Kepada</h3>
         <p><strong>${booking.guest_name}</strong></p>
         <p>${booking.guest_email}</p>
         <p>${booking.guest_phone || '-'}</p>
@@ -298,8 +299,8 @@ serve(async (req) => {
         </p>
       </div>
 
-      <div class="info-box">
-        <h3>📋 Detail Booking</h3>
+      <div class="info-box" style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+        <h3 style="margin: 0 0 10px 0; color: ${primaryColor}; font-size: 14px; text-transform: uppercase;">📋 Detail Booking</h3>
         <p>Tanggal: ${format(new Date(booking.created_at), "d MMMM yyyy", { locale: id })}</p>
         <p>Status: <strong>${booking.status.toUpperCase()}</strong></p>
         <p>Total Malam: <strong>${booking.total_nights} malam</strong></p>
@@ -307,35 +308,35 @@ serve(async (req) => {
       </div>
     </div>
 
-    <div class="table-container">
-      <table>
+    <div class="table-container" style="margin: 30px 0;">
+      <table style="width: 100%; border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
         <thead>
           <tr>
-            <th>No</th>
-            <th>Deskripsi</th>
-            <th>Harga/Malam</th>
-            <th>Malam</th>
-            <th>Subtotal</th>
+            <th style="background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">No</th>
+            <th style="background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Deskripsi</th>
+            <th style="background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Harga/Malam</th>
+            <th style="background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Malam</th>
+            <th style="background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Subtotal</th>
           </tr>
         </thead>
         <tbody>
           ${bookingRooms && bookingRooms.length > 0 
             ? bookingRooms.map((br: any, index: number) => `
               <tr>
-                <td>${index + 1}</td>
-                <td>${br.rooms?.name || booking.rooms?.name} #${br.room_number}</td>
-                <td>Rp ${br.price_per_night.toLocaleString('id-ID')}</td>
-                <td>${booking.total_nights}</td>
-                <td>Rp ${(br.price_per_night * booking.total_nights).toLocaleString('id-ID')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${index + 1}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${br.rooms?.name || booking.rooms?.name} #${br.room_number}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #ddd;">Rp ${br.price_per_night.toLocaleString('id-ID')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${booking.total_nights}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #ddd;">Rp ${(br.price_per_night * booking.total_nights).toLocaleString('id-ID')}</td>
               </tr>
             `).join('')
             : `
               <tr>
-                <td>1</td>
-                <td>${booking.rooms?.name}</td>
-                <td>Rp ${(booking.total_price / booking.total_nights).toLocaleString('id-ID')}</td>
-                <td>${booking.total_nights}</td>
-                <td>Rp ${booking.total_price.toLocaleString('id-ID')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #ddd;">1</td>
+                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${booking.rooms?.name}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #ddd;">Rp ${(booking.total_price / booking.total_nights).toLocaleString('id-ID')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${booking.total_nights}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #ddd;">Rp ${booking.total_price.toLocaleString('id-ID')}</td>
               </tr>
             `
           }
@@ -343,48 +344,48 @@ serve(async (req) => {
       </table>
     </div>
 
-    <div class="summary">
-      <div class="summary-row">
+    <div class="summary" style="margin: 30px 0; float: right; width: 300px;">
+      <div class="summary-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
         <span>Subtotal:</span>
         <span>Rp ${booking.total_price.toLocaleString('id-ID')}</span>
       </div>
-      <div class="summary-row">
+      <div class="summary-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
         <span>Pajak (${hotelSettings.tax_rate || 0}%):</span>
         <span>Rp ${((booking.total_price * (hotelSettings.tax_rate || 0)) / 100).toLocaleString('id-ID')}</span>
       </div>
-      <div class="summary-row summary-total">
+      <div class="summary-row summary-total" style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 20px; font-weight: bold; color: ${primaryColor}; border-top: 2px solid ${primaryColor}; padding-top: 10px; margin-top: 10px;">
         <span>TOTAL:</span>
         <span>Rp ${booking.total_price.toLocaleString('id-ID')}</span>
       </div>
-      <div class="summary-row" style="color: #4caf50;">
+      <div class="summary-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; color: #4caf50;">
         <span>Terbayar:</span>
         <span>Rp ${paidAmount.toLocaleString('id-ID')}</span>
       </div>
-      <div class="summary-row" style="font-weight: bold; color: ${remainingBalance > 0 ? '#f44336' : '#4caf50'};">
+      <div class="summary-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold; color: ${remainingBalance > 0 ? '#f44336' : '#4caf50'};">
         <span>Sisa:</span>
         <span>Rp ${remainingBalance.toLocaleString('id-ID')}</span>
       </div>
       <div style="text-align: center;">
-        <span class="payment-status">${paymentStatus}</span>
+        <span class="payment-status" style="display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-top: 10px; background: ${remainingBalance === 0 ? '#4caf50' : (paidAmount === 0 ? '#f44336' : '#ff9800')}; color: white;">${paymentStatus}</span>
       </div>
     </div>
 
     <div style="clear: both;"></div>
 
     ${customNotes ? `
-    <div class="custom-notes">
+    <div class="custom-notes" style="margin-top: 20px; padding: 15px; background-color: ${secondaryColor}; border-radius: 8px; font-style: italic;">
       <h3 style="margin: 0 0 10px 0; color: ${primaryColor};">📌 Catatan</h3>
       <div>${customNotes}</div>
     </div>
     ` : ''}
 
     ${remainingBalance > 0 && showBankAccounts ? `
-    <div class="bank-info">
-      <h3>💳 Instruksi Pembayaran</h3>
+    <div class="bank-info" style="clear: both; background: #f9f9f9; padding: 20px; border-radius: 5px; margin: 30px 0; border-left: 4px solid ${primaryColor};">
+      <h3 style="margin: 0 0 15px 0; color: ${primaryColor};">💳 Instruksi Pembayaran</h3>
       <p style="margin-bottom: 15px;">Silakan transfer sisa pembayaran ke salah satu rekening berikut:</p>
       ${bankAccounts && bankAccounts.length > 0 
         ? bankAccounts.map((bank: any) => `
-          <div class="bank-account">
+          <div class="bank-account" style="margin: 10px 0; padding: 10px; background: white; border-radius: 3px;">
             <strong>🏦 ${bank.bank_name}</strong><br>
             Rekening: ${bank.account_number}<br>
             a.n. ${bank.account_holder_name}
@@ -392,7 +393,7 @@ serve(async (req) => {
         `).join('')
         : hotelSettings.bank_name && hotelSettings.account_number
           ? `
-          <div class="bank-account">
+          <div class="bank-account" style="margin: 10px 0; padding: 10px; background: white; border-radius: 3px;">
             <strong>🏦 ${hotelSettings.bank_name}</strong><br>
             Rekening: ${hotelSettings.account_number}<br>
             a.n. ${hotelSettings.account_holder_name || 'Pomah Guesthouse'}
@@ -404,7 +405,7 @@ serve(async (req) => {
     </div>
     ` : ''}
 
-    <div class="footer">
+    <div class="footer" style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; color: #666;">
       <h3 style="color: ${primaryColor};">🙏 Terima Kasih</h3>
       <p>${footerText}</p>
       <p style="margin-top: 15px; font-size: 12px;">
