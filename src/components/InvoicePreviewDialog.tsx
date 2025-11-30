@@ -53,8 +53,8 @@ export const InvoicePreviewDialog = ({
 
     const element = document.createElement('div');
     element.innerHTML = DOMPurify.sanitize(invoiceHtml, {
-      ADD_TAGS: ['style'],
-      ADD_ATTR: ['style'],
+      ADD_TAGS: ['style', 'img'],
+      ADD_ATTR: ['style', 'src', 'alt', 'class', 'width', 'height', 'crossorigin', 'onerror'],
       FORCE_BODY: true
     });
     
@@ -62,7 +62,7 @@ export const InvoicePreviewDialog = ({
       margin: 0.5,
       filename: `Invoice-${bookingCode}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: false, logging: false },
       jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as const }
     };
 
@@ -90,8 +90,8 @@ export const InvoicePreviewDialog = ({
               <div 
                 dangerouslySetInnerHTML={{ 
                   __html: DOMPurify.sanitize(invoiceHtml, {
-                    ADD_TAGS: ['style'],
-                    ADD_ATTR: ['style'],
+                    ADD_TAGS: ['style', 'img'],
+                    ADD_ATTR: ['style', 'src', 'alt', 'class', 'width', 'height', 'crossorigin', 'onerror'],
                     FORCE_BODY: true
                   })
                 }}
