@@ -43,10 +43,9 @@ export const useRoomTypeAvailability = (
 
       if (bookingsError) throw bookingsError;
 
-      // Filter out the booking being edited
-      const otherBookings = excludeBookingId
-        ? (bookings || []).filter(b => b.id !== excludeBookingId)
-        : bookings || [];
+      // Note: We can't filter by booking ID here since the query doesn't return full booking objects
+      // The excludeBookingId filtering happens in the conflict check logic
+      const otherBookings = bookings || [];
 
       // Calculate availability for each room type
       const availability: RoomTypeAvailability[] = rooms.map(room => {
