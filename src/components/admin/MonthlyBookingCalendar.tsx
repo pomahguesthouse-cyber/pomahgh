@@ -14,9 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle, Edit2, Save, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle, Edit2, Save, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -734,12 +736,26 @@ export const MonthlyBookingCalendar = () => {
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Check-in</Label>
                       {isEditMode ? <div className="space-y-2">
-                          <Input 
-                            type="date" 
-                            value={editedBooking.check_in} 
-                            onChange={e => handleDateChange('check_in', e.target.value)} 
-                            className="font-semibold" 
-                          />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                className={cn("w-full justify-start text-left font-normal", !editedBooking.check_in && "text-muted-foreground")}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {editedBooking.check_in ? format(new Date(editedBooking.check_in), "PPP", { locale: localeId }) : "Pilih tanggal"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={editedBooking.check_in ? new Date(editedBooking.check_in) : undefined}
+                                onSelect={(date) => date && handleDateChange('check_in', format(date, "yyyy-MM-dd"))}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
                           <Input type="time" value={editedBooking.check_in_time || "14:00:00"} onChange={e => setEditedBooking({
                       ...editedBooking,
                       check_in_time: e.target.value
@@ -756,12 +772,26 @@ export const MonthlyBookingCalendar = () => {
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Check-out</Label>
                       {isEditMode ? <div className="space-y-2">
-                          <Input 
-                            type="date" 
-                            value={editedBooking.check_out} 
-                            onChange={e => handleDateChange('check_out', e.target.value)} 
-                            className="font-semibold" 
-                          />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                className={cn("w-full justify-start text-left font-normal", !editedBooking.check_out && "text-muted-foreground")}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {editedBooking.check_out ? format(new Date(editedBooking.check_out), "PPP", { locale: localeId }) : "Pilih tanggal"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={editedBooking.check_out ? new Date(editedBooking.check_out) : undefined}
+                                onSelect={(date) => date && handleDateChange('check_out', format(date, "yyyy-MM-dd"))}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
                           <Input type="time" value={editedBooking.check_out_time || "12:00:00"} onChange={e => setEditedBooking({
                       ...editedBooking,
                       check_out_time: e.target.value
@@ -979,19 +1009,52 @@ export const MonthlyBookingCalendar = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Start Date</Label>
-              <Input type="date" value={blockDialog.date ? format(blockDialog.date, "yyyy-MM-dd") : ""} onChange={e => setBlockDialog({
-              ...blockDialog,
-              date: e.target.value ? new Date(e.target.value) : undefined
-            })} className="mt-1" />
+              <Label>Tanggal Mulai</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className={cn("w-full justify-start text-left font-normal mt-1", !blockDialog.date && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {blockDialog.date ? format(blockDialog.date, "PPP", { locale: localeId }) : "Pilih tanggal"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={blockDialog.date}
+                    onSelect={(date) => setBlockDialog({ ...blockDialog, date: date })}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div>
-              <Label>End Date</Label>
-              <Input type="date" value={blockDialog.endDate ? format(blockDialog.endDate, "yyyy-MM-dd") : ""} onChange={e => setBlockDialog({
-              ...blockDialog,
-              endDate: e.target.value ? new Date(e.target.value) : undefined
-            })} min={blockDialog.date ? format(blockDialog.date, "yyyy-MM-dd") : undefined} className="mt-1" />
+              <Label>Tanggal Akhir</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className={cn("w-full justify-start text-left font-normal mt-1", !blockDialog.endDate && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {blockDialog.endDate ? format(blockDialog.endDate, "PPP", { locale: localeId }) : "Pilih tanggal"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={blockDialog.endDate}
+                    onSelect={(date) => setBlockDialog({ ...blockDialog, endDate: date })}
+                    disabled={(date) => blockDialog.date ? date < blockDialog.date : false}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             {blockDialog.date && blockDialog.endDate && <div className="p-3 bg-muted rounded-lg">

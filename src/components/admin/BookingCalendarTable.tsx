@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 interface DraggableBookingProps {
   booking: any;
@@ -575,25 +577,55 @@ export const BookingCalendarTable = () => {
                   <div className="space-y-2">
                     <Label>Check-in</Label>
                     {isEditMode ? (
-                      <Input
-                        type="date"
-                        value={editedBooking.check_in}
-                        onChange={(e) => setEditedBooking({ ...editedBooking, check_in: e.target.value })}
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            className={cn("w-full justify-start text-left font-normal", !editedBooking.check_in && "text-muted-foreground")}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {editedBooking.check_in ? format(parseISO(editedBooking.check_in), "PPP", { locale: localeId }) : "Pilih tanggal"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={parseISO(editedBooking.check_in)}
+                            onSelect={(date) => date && setEditedBooking({ ...editedBooking, check_in: format(date, "yyyy-MM-dd") })}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
                     ) : (
-                      <div className="font-medium">{format(parseISO(editedBooking.check_in), 'PPP')}</div>
+                      <div className="font-medium">{format(parseISO(editedBooking.check_in), 'PPP', { locale: localeId })}</div>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label>Check-out</Label>
                     {isEditMode ? (
-                      <Input
-                        type="date"
-                        value={editedBooking.check_out}
-                        onChange={(e) => setEditedBooking({ ...editedBooking, check_out: e.target.value })}
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            className={cn("w-full justify-start text-left font-normal", !editedBooking.check_out && "text-muted-foreground")}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {editedBooking.check_out ? format(parseISO(editedBooking.check_out), "PPP", { locale: localeId }) : "Pilih tanggal"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={parseISO(editedBooking.check_out)}
+                            onSelect={(date) => date && setEditedBooking({ ...editedBooking, check_out: format(date, "yyyy-MM-dd") })}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
                     ) : (
-                      <div className="font-medium">{format(parseISO(editedBooking.check_out), 'PPP')}</div>
+                      <div className="font-medium">{format(parseISO(editedBooking.check_out), 'PPP', { locale: localeId })}</div>
                     )}
                   </div>
                 </div>

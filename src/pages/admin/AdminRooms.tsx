@@ -23,6 +23,11 @@ import { PanoramaManager } from "@/components/admin/PanoramaManager";
 import { FloorPlanEditor } from "@/components/admin/FloorPlanEditor";
 import { useAdminRoomPanoramas } from "@/hooks/useRoomPanoramas";
 import { useAdminRoomHotspots } from "@/hooks/useRoomHotspots";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const AdminRooms = () => {
   const { rooms, isLoading, createRoom, updateRoom, deleteRoom } = useAdminRooms();
@@ -529,22 +534,51 @@ const AdminRooms = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="promo_start_date">Start Date</Label>
-                    <Input
-                      id="promo_start_date"
-                      type="date"
-                      value={formData.promo_start_date}
-                      onChange={(e) => setFormData({ ...formData, promo_start_date: e.target.value })}
-                    />
+                    <Label htmlFor="promo_start_date">Tanggal Mulai</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          className={cn("w-full justify-start text-left font-normal", !formData.promo_start_date && "text-muted-foreground")}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.promo_start_date ? format(new Date(formData.promo_start_date), "PPP", { locale: localeId }) : "Pilih tanggal"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formData.promo_start_date ? new Date(formData.promo_start_date) : undefined}
+                          onSelect={(date) => date && setFormData({ ...formData, promo_start_date: format(date, "yyyy-MM-dd") })}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div>
-                    <Label htmlFor="promo_end_date">End Date</Label>
-                    <Input
-                      id="promo_end_date"
-                      type="date"
-                      value={formData.promo_end_date}
-                      onChange={(e) => setFormData({ ...formData, promo_end_date: e.target.value })}
-                    />
+                    <Label htmlFor="promo_end_date">Tanggal Akhir</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          className={cn("w-full justify-start text-left font-normal", !formData.promo_end_date && "text-muted-foreground")}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.promo_end_date ? format(new Date(formData.promo_end_date), "PPP", { locale: localeId }) : "Pilih tanggal"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formData.promo_end_date ? new Date(formData.promo_end_date) : undefined}
+                          onSelect={(date) => date && setFormData({ ...formData, promo_end_date: format(date, "yyyy-MM-dd") })}
+                          disabled={(date) => formData.promo_start_date ? date < new Date(formData.promo_start_date) : false}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
               </div>
