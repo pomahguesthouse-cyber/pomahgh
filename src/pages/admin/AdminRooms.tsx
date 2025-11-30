@@ -71,6 +71,14 @@ const AdminRooms = () => {
     saturday_price: "",
     sunday_price: "",
     transition_effect: "slide",
+    is_non_refundable: false,
+    monday_non_refundable: false,
+    tuesday_non_refundable: false,
+    wednesday_non_refundable: false,
+    thursday_non_refundable: false,
+    friday_non_refundable: false,
+    saturday_non_refundable: false,
+    sunday_non_refundable: false,
   });
 
   const getIconComponent = (iconName: string) => {
@@ -106,6 +114,14 @@ const AdminRooms = () => {
       saturday_price: "",
       sunday_price: "",
       transition_effect: "slide",
+      is_non_refundable: false,
+      monday_non_refundable: false,
+      tuesday_non_refundable: false,
+      wednesday_non_refundable: false,
+      thursday_non_refundable: false,
+      friday_non_refundable: false,
+      saturday_non_refundable: false,
+      sunday_non_refundable: false,
     });
     setEditingRoom(null);
   };
@@ -139,6 +155,14 @@ const AdminRooms = () => {
       saturday_price: room.saturday_price?.toString() || "",
       sunday_price: room.sunday_price?.toString() || "",
       transition_effect: (room as any).transition_effect || "slide",
+      is_non_refundable: (room as any).is_non_refundable || false,
+      monday_non_refundable: (room as any).monday_non_refundable || false,
+      tuesday_non_refundable: (room as any).tuesday_non_refundable || false,
+      wednesday_non_refundable: (room as any).wednesday_non_refundable || false,
+      thursday_non_refundable: (room as any).thursday_non_refundable || false,
+      friday_non_refundable: (room as any).friday_non_refundable || false,
+      saturday_non_refundable: (room as any).saturday_non_refundable || false,
+      sunday_non_refundable: (room as any).sunday_non_refundable || false,
     });
     setIsDialogOpen(true);
   };
@@ -245,6 +269,14 @@ const AdminRooms = () => {
       saturday_price: formData.saturday_price ? Number(formData.saturday_price) : null,
       sunday_price: formData.sunday_price ? Number(formData.sunday_price) : null,
       transition_effect: formData.transition_effect,
+      is_non_refundable: formData.is_non_refundable,
+      monday_non_refundable: formData.monday_non_refundable,
+      tuesday_non_refundable: formData.tuesday_non_refundable,
+      wednesday_non_refundable: formData.wednesday_non_refundable,
+      thursday_non_refundable: formData.thursday_non_refundable,
+      friday_non_refundable: formData.friday_non_refundable,
+      saturday_non_refundable: formData.saturday_non_refundable,
+      sunday_non_refundable: formData.sunday_non_refundable,
     };
 
     if (editingRoom) {
@@ -317,13 +349,26 @@ const AdminRooms = () => {
                 </div>
                 <div>
                   <Label htmlFor="price">Price per Night (Rp) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price_per_night}
-                    onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
-                    required
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="price"
+                      type="number"
+                      value={formData.price_per_night}
+                      onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
+                      required
+                      className="flex-1"
+                    />
+                    <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-muted/50 border">
+                      <Checkbox
+                        id="is_non_refundable"
+                        checked={formData.is_non_refundable}
+                        onCheckedChange={(checked) => setFormData({ ...formData, is_non_refundable: !!checked })}
+                      />
+                      <Label htmlFor="is_non_refundable" className="text-xs cursor-pointer whitespace-nowrap">
+                        Non-Refundable
+                      </Label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -586,7 +631,7 @@ const AdminRooms = () => {
               <div className="space-y-4 border-t pt-4">
                 <h3 className="font-semibold text-lg">Day-of-Week Pricing</h3>
                 <div className="grid grid-cols-4 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="monday_price">Monday (Rp)</Label>
                     <Input
                       id="monday_price"
@@ -594,8 +639,18 @@ const AdminRooms = () => {
                       value={formData.monday_price}
                       onChange={(e) => setFormData({ ...formData, monday_price: e.target.value })}
                     />
+                    <div className="flex items-center gap-1.5">
+                      <Checkbox
+                        id="monday_non_refundable"
+                        checked={formData.monday_non_refundable}
+                        onCheckedChange={(checked) => setFormData({ ...formData, monday_non_refundable: !!checked })}
+                      />
+                      <Label htmlFor="monday_non_refundable" className="text-xs cursor-pointer">
+                        Non-Refundable
+                      </Label>
+                    </div>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="tuesday_price">Tuesday (Rp)</Label>
                     <Input
                       id="tuesday_price"
@@ -603,8 +658,18 @@ const AdminRooms = () => {
                       value={formData.tuesday_price}
                       onChange={(e) => setFormData({ ...formData, tuesday_price: e.target.value })}
                     />
+                    <div className="flex items-center gap-1.5">
+                      <Checkbox
+                        id="tuesday_non_refundable"
+                        checked={formData.tuesday_non_refundable}
+                        onCheckedChange={(checked) => setFormData({ ...formData, tuesday_non_refundable: !!checked })}
+                      />
+                      <Label htmlFor="tuesday_non_refundable" className="text-xs cursor-pointer">
+                        Non-Refundable
+                      </Label>
+                    </div>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="wednesday_price">Wednesday (Rp)</Label>
                     <Input
                       id="wednesday_price"
@@ -612,8 +677,18 @@ const AdminRooms = () => {
                       value={formData.wednesday_price}
                       onChange={(e) => setFormData({ ...formData, wednesday_price: e.target.value })}
                     />
+                    <div className="flex items-center gap-1.5">
+                      <Checkbox
+                        id="wednesday_non_refundable"
+                        checked={formData.wednesday_non_refundable}
+                        onCheckedChange={(checked) => setFormData({ ...formData, wednesday_non_refundable: !!checked })}
+                      />
+                      <Label htmlFor="wednesday_non_refundable" className="text-xs cursor-pointer">
+                        Non-Refundable
+                      </Label>
+                    </div>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="thursday_price">Thursday (Rp)</Label>
                     <Input
                       id="thursday_price"
@@ -621,8 +696,18 @@ const AdminRooms = () => {
                       value={formData.thursday_price}
                       onChange={(e) => setFormData({ ...formData, thursday_price: e.target.value })}
                     />
+                    <div className="flex items-center gap-1.5">
+                      <Checkbox
+                        id="thursday_non_refundable"
+                        checked={formData.thursday_non_refundable}
+                        onCheckedChange={(checked) => setFormData({ ...formData, thursday_non_refundable: !!checked })}
+                      />
+                      <Label htmlFor="thursday_non_refundable" className="text-xs cursor-pointer">
+                        Non-Refundable
+                      </Label>
+                    </div>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="friday_price">Friday (Rp)</Label>
                     <Input
                       id="friday_price"
@@ -630,8 +715,18 @@ const AdminRooms = () => {
                       value={formData.friday_price}
                       onChange={(e) => setFormData({ ...formData, friday_price: e.target.value })}
                     />
+                    <div className="flex items-center gap-1.5">
+                      <Checkbox
+                        id="friday_non_refundable"
+                        checked={formData.friday_non_refundable}
+                        onCheckedChange={(checked) => setFormData({ ...formData, friday_non_refundable: !!checked })}
+                      />
+                      <Label htmlFor="friday_non_refundable" className="text-xs cursor-pointer">
+                        Non-Refundable
+                      </Label>
+                    </div>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="saturday_price">Saturday (Rp)</Label>
                     <Input
                       id="saturday_price"
@@ -639,8 +734,18 @@ const AdminRooms = () => {
                       value={formData.saturday_price}
                       onChange={(e) => setFormData({ ...formData, saturday_price: e.target.value })}
                     />
+                    <div className="flex items-center gap-1.5">
+                      <Checkbox
+                        id="saturday_non_refundable"
+                        checked={formData.saturday_non_refundable}
+                        onCheckedChange={(checked) => setFormData({ ...formData, saturday_non_refundable: !!checked })}
+                      />
+                      <Label htmlFor="saturday_non_refundable" className="text-xs cursor-pointer">
+                        Non-Refundable
+                      </Label>
+                    </div>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="sunday_price">Sunday (Rp)</Label>
                     <Input
                       id="sunday_price"
@@ -648,6 +753,16 @@ const AdminRooms = () => {
                       value={formData.sunday_price}
                       onChange={(e) => setFormData({ ...formData, sunday_price: e.target.value })}
                     />
+                    <div className="flex items-center gap-1.5">
+                      <Checkbox
+                        id="sunday_non_refundable"
+                        checked={formData.sunday_non_refundable}
+                        onCheckedChange={(checked) => setFormData({ ...formData, sunday_non_refundable: !!checked })}
+                      />
+                      <Label htmlFor="sunday_non_refundable" className="text-xs cursor-pointer">
+                        Non-Refundable
+                      </Label>
+                    </div>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">Leave empty to use base price. Promo price overrides day-of-week pricing.</p>

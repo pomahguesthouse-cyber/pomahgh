@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Users } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarIcon, Users, AlertCircle, FileText } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { getWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
@@ -20,8 +21,6 @@ import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useSearchDates } from "@/contexts/SearchDatesContext";
-import { RefundPolicyDisplay } from "@/components/RefundPolicyDisplay";
-import { AlertCircle } from "lucide-react";
 
 interface BookingDialogProps {
   room: Room | null;
@@ -68,6 +67,7 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
   const [checkOut, setCheckOut] = useState<Date>(getDefaultCheckOut());
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [roomQuantity, setRoomQuantity] = useState(1);
+  const [agreeToPolicy, setAgreeToPolicy] = useState(false);
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
@@ -192,6 +192,7 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
         check_out_time: formData.check_out_time + ":00",
         price_per_night: room.price_per_night,
         room_quantity: roomQuantity,
+        is_non_refundable: (room as any).is_non_refundable || false,
       };
 
       createBooking(bookingData, {
@@ -471,18 +472,57 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
             </div>
           )}
 
-          {/* Refund Policy */}
-          {settings?.refund_policy_enabled && (
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg dark:bg-amber-950/20 dark:border-amber-900">
-              <h4 className="font-medium flex items-center gap-2 mb-2">
-                <AlertCircle className="w-4 h-4 text-amber-600" />
-                Kebijakan Pembatalan
-              </h4>
-              <RefundPolicyDisplay settings={settings} compact />
+          {/* Non-Refundable Warning */}
+          {(room as any).is_non_refundable && (
+            <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg dark:bg-amber-950/20 dark:border-amber-900">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <AlertCircle className="w-4 h-4" />
+                <span className="font-medium text-sm">Harga Non-Refundable</span>
+              </div>
+              <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                Pemesanan ini tidak dapat dibatalkan dan tidak ada pengembalian dana.
+              </p>
             </div>
           )}
 
-          <Button type="submit" variant="luxury" size="lg" className="w-full" disabled={isPending}>
+          {/* Hotel Policies with Agreement Checkbox */}
+          {settings?.hotel_policies_enabled !== false && settings?.hotel_policies_text && (
+            <div className="bg-muted/30 p-4 rounded-lg space-y-3 border">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                <h4 className="font-medium text-sm">Kebijakan Hotel</h4>
+              </div>
+              
+              {/* Scrollable Policy Text */}
+              <div className="max-h-32 overflow-y-auto text-sm text-muted-foreground whitespace-pre-line bg-background/50 p-3 rounded border">
+                {settings.hotel_policies_text}
+              </div>
+              
+              {/* Agreement Checkbox */}
+              <div className="flex items-start gap-2 pt-2 border-t">
+                <Checkbox
+                  id="agree_policy"
+                  checked={agreeToPolicy}
+                  onCheckedChange={(checked) => setAgreeToPolicy(!!checked)}
+                  className="mt-0.5"
+                />
+                <Label htmlFor="agree_policy" className="text-sm cursor-pointer leading-tight">
+                  Saya telah membaca dan menyetujui kebijakan hotel di atas
+                </Label>
+              </div>
+            </div>
+          )}
+
+          <Button 
+            type="submit" 
+            variant="luxury" 
+            size="lg" 
+            className="w-full" 
+            disabled={
+              isPending || 
+              (settings?.hotel_policies_enabled !== false && settings?.hotel_policies_text && !agreeToPolicy)
+            }
+          >
             {isPending ? "Memproses..." : "Konfirmasi Booking"}
           </Button>
         </form>
