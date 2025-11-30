@@ -679,7 +679,7 @@ export const MonthlyBookingCalendar = () => {
                     >
                       {/* Badge TODAY - centered */}
                       {isTodayDate && (
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-md">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-b-full rounded-l-full rounded-r-full rounded-t-none font-bold shadow-md">
                           TODAY
                         </div>
                       )}
