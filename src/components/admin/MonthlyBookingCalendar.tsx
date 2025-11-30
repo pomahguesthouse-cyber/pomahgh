@@ -662,7 +662,7 @@ export const MonthlyBookingCalendar = () => {
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-40">
               <tr className="bg-muted/50">
-                <th className="sticky left-0 top-0 z-50 min-w-[110px] border border-border p-2 shadow-sm bg-gray-300 dark:bg-gray-700">
+                <th className="sticky left-0 top-0 z-50 min-w-[110px] border-2 border-border p-2 shadow-lg bg-gray-300/80 dark:bg-gray-700/80 backdrop-blur-md">
                   <span className="text-[10px] font-bold uppercase tracking-wide">Kamar</span>
                 </th>
                 {dates.map((date) => {
@@ -674,8 +674,8 @@ export const MonthlyBookingCalendar = () => {
                     <th
                       key={date.toISOString()}
                       className={cn(
-                        "border border-border p-1.5 min-w-[60px] text-center transition-colors relative bg-muted/50",
-                        isHolidayOrWeekend && "bg-red-100 dark:bg-red-950/30",
+                        "border-2 border-border p-1.5 min-w-[60px] text-center transition-colors relative backdrop-blur-md shadow-md",
+                        isHolidayOrWeekend ? "bg-red-100/70 dark:bg-red-950/40" : "bg-white/60 dark:bg-gray-800/60",
                       )}
                     >
                       {/* Badge TODAY - centered */}
