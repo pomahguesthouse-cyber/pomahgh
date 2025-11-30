@@ -662,17 +662,8 @@ export const MonthlyBookingCalendar = () => {
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-40">
               <tr className="bg-muted/50">
-                <th
-                  className={cn(
-                    "sticky left-0 top-0 z-50 border-2 border-border p-2 shadow-lg bg-gray-300/80 dark:bg-gray-700/80 backdrop-blur-md",
-                    viewRange === 30 ? "min-w-[80px]" : "min-w-[110px]",
-                  )}
-                >
-                  <span
-                    className={cn("font-bold uppercase tracking-wide", viewRange === 30 ? "text-[9px]" : "text-[10px]")}
-                  >
-                    Kamar
-                  </span>
+                <th className="sticky left-0 top-0 z-50 min-w-[80px] border-2 border-border p-2 shadow-lg bg-gray-300/80 dark:bg-gray-700/80 backdrop-blur-md">
+                  <span className="text-[9px] font-bold uppercase tracking-wide">Kamar</span>
                 </th>
                 {dates.map((date) => {
                   const isWeekend = getDay(date) === 0 || getDay(date) === 6;
@@ -683,12 +674,7 @@ export const MonthlyBookingCalendar = () => {
                     <th
                       key={date.toISOString()}
                       className={cn(
-                        "border-2 border-border text-center transition-colors relative backdrop-blur-md shadow-md",
-                        viewRange === 30
-                          ? "p-0.5 min-w-[32px] max-w-[32px] w-[32px]"
-                          : viewRange === 14
-                            ? "p-1 min-w-[45px]"
-                            : "p-1.5 min-w-[60px]",
+                        "border-2 border-border p-0.5 min-w-[32px] max-w-[32px] w-[32px] text-center transition-colors relative backdrop-blur-md shadow-md",
                         isHolidayOrWeekend ? "bg-red-100/70 dark:bg-red-950/40" : "bg-white/60 dark:bg-gray-800/60",
                       )}
                     >
