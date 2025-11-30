@@ -4,7 +4,16 @@ import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 import { useBookingValidation } from "@/hooks/useBookingValidation";
 import { useRoomTypeAvailability, RoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, parseISO, differenceInDays } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  getDay,
+  addDays,
+  parseISO,
+  differenceInDays,
+} from "date-fns";
 import { getWIBToday, isWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
@@ -14,8 +23,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle, Edit2, Save, X, Download } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon,
+  Mail,
+  Phone,
+  Users,
+  CreditCard,
+  Clock,
+  Ban,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  Edit2,
+  Save,
+  X,
+  Download,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -85,7 +118,7 @@ export const MonthlyBookingCalendar = () => {
     endDate?: Date;
     reason?: string;
   }>({
-    open: false
+    open: false,
   });
   const [createBookingDialog, setCreateBookingDialog] = useState<{
     open: boolean;
@@ -93,29 +126,19 @@ export const MonthlyBookingCalendar = () => {
     roomNumber?: string;
     date?: Date;
   }>({
-    open: false
+    open: false,
   });
   const [exportDialog, setExportDialog] = useState(false);
-  const {
-    bookings,
-    updateBooking,
-    isUpdating
-  } = useAdminBookings();
-  const {
-    rooms
-  } = useAdminRooms();
-  const {
-    unavailableDates,
-    addUnavailableDates,
-    removeUnavailableDates
-  } = useRoomAvailability();
+  const { bookings, updateBooking, isUpdating } = useAdminBookings();
+  const { rooms } = useAdminRooms();
+  const { unavailableDates, addUnavailableDates, removeUnavailableDates } = useRoomAvailability();
   const { checkBookingConflict, checkRoomTypeAvailability } = useBookingValidation();
   const queryClient = useQueryClient();
 
   const { data: roomTypeAvailability } = useRoomTypeAvailability(
     editedBooking?.check_in ? new Date(editedBooking.check_in) : null,
     editedBooking?.check_out ? new Date(editedBooking.check_out) : null,
-    editedBooking?.id
+    editedBooking?.id,
   );
 
   // Calculate date range based on view selection
@@ -125,7 +148,7 @@ export const MonthlyBookingCalendar = () => {
     const endDate = addDays(currentDate, viewRange - 1);
     return eachDayOfInterval({
       start: startDate,
-      end: endDate
+      end: endDate,
     });
   }, [currentDate, viewRange]);
 
@@ -141,8 +164,8 @@ export const MonthlyBookingCalendar = () => {
         options.push({
           value: format(date, "yyyy-MM"),
           label: format(date, "MMMM yyyy", {
-            locale: localeId
-          })
+            locale: localeId,
+          }),
         });
       }
     }
@@ -154,7 +177,7 @@ export const MonthlyBookingCalendar = () => {
   const roomsByType = useMemo(() => {
     if (!rooms) return {};
     const grouped: Record<string, typeof rooms> = {};
-    rooms.forEach(room => {
+    rooms.forEach((room) => {
       if (!grouped[room.name]) {
         grouped[room.name] = [];
       }
@@ -171,13 +194,13 @@ export const MonthlyBookingCalendar = () => {
       roomNumber: string;
       roomId: string;
     }> = [];
-    rooms.forEach(room => {
+    rooms.forEach((room) => {
       if (room.room_numbers && room.room_numbers.length > 0) {
-        room.room_numbers.forEach(num => {
+        room.room_numbers.forEach((num) => {
           roomNums.push({
             roomType: room.name,
             roomNumber: num,
-            roomId: room.id
+            roomId: room.id,
           });
         });
       }
@@ -189,7 +212,7 @@ export const MonthlyBookingCalendar = () => {
   const getBookingForCell = (roomNumber: string, date: Date): Booking | null => {
     if (!bookings) return null;
     const dateStr = format(date, "yyyy-MM-dd");
-    const matchingBookings = bookings.filter(booking => {
+    const matchingBookings = bookings.filter((booking) => {
       if (booking.status === "cancelled") return false;
 
       // Check if date is within booking range
@@ -200,7 +223,7 @@ export const MonthlyBookingCalendar = () => {
 
       // Check if this room is part of the booking (primary or via booking_rooms)
       const isPrimaryRoom = booking.allocated_room_number === roomNumber;
-      const isInBookingRooms = booking.booking_rooms?.some(br => br.room_number === roomNumber);
+      const isInBookingRooms = booking.booking_rooms?.some((br) => br.room_number === roomNumber);
       return isPrimaryRoom || isInBookingRooms;
     });
 
@@ -211,13 +234,17 @@ export const MonthlyBookingCalendar = () => {
   // Check if date is blocked
   const isDateBlocked = (roomId: string, roomNumber: string, date: Date): boolean => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return unavailableDates.some(d => d.room_id === roomId && d.room_number === roomNumber && d.unavailable_date === dateStr);
+    return unavailableDates.some(
+      (d) => d.room_id === roomId && d.room_number === roomNumber && d.unavailable_date === dateStr,
+    );
   };
 
   // Get block reason
   const getBlockReason = (roomId: string, roomNumber: string, date: Date): string | undefined => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return unavailableDates.find(d => d.room_id === roomId && d.room_number === roomNumber && d.unavailable_date === dateStr)?.reason;
+    return unavailableDates.find(
+      (d) => d.room_id === roomId && d.room_number === roomNumber && d.unavailable_date === dateStr,
+    )?.reason;
   };
 
   // Check if this is the first day of a booking
@@ -290,7 +317,7 @@ export const MonthlyBookingCalendar = () => {
     setIsEditMode(false);
 
     // Set available room numbers for current room type
-    const room = rooms?.find(r => r.id === booking.room_id);
+    const room = rooms?.find((r) => r.id === booking.room_id);
     setAvailableRoomNumbers(room?.room_numbers || []);
   };
   const handleEditToggle = () => {
@@ -307,7 +334,7 @@ export const MonthlyBookingCalendar = () => {
   const handleRoomTypeChange = async (newRoomId: string) => {
     if (!editedBooking || !editedBooking.check_in || !editedBooking.check_out) return;
 
-    const newRoom = rooms?.find(r => r.id === newRoomId);
+    const newRoom = rooms?.find((r) => r.id === newRoomId);
     if (!newRoom) return;
 
     setSelectedRoomId(newRoomId);
@@ -322,9 +349,7 @@ export const MonthlyBookingCalendar = () => {
 
     if (availableRooms.length === 0) {
       // No rooms available - suggest alternatives
-      const alternatives = roomTypeAvailability?.filter(
-        rt => rt.roomId !== newRoomId && rt.availableCount > 0
-      ) || [];
+      const alternatives = roomTypeAvailability?.filter((rt) => rt.roomId !== newRoomId && rt.availableCount > 0) || [];
 
       if (alternatives.length > 0) {
         setAlternativeSuggestions(alternatives);
@@ -336,7 +361,9 @@ export const MonthlyBookingCalendar = () => {
     }
 
     if (availableRooms.length < (newRoom.room_numbers?.length || 0)) {
-      toast.warning(`Hanya ${availableRooms.length} kamar tersedia dari ${newRoom.room_numbers?.length || 0} kamar total`);
+      toast.warning(
+        `Hanya ${availableRooms.length} kamar tersedia dari ${newRoom.room_numbers?.length || 0} kamar total`,
+      );
     }
 
     setAvailableRoomNumbers(availableRooms);
@@ -367,7 +394,7 @@ export const MonthlyBookingCalendar = () => {
     toast.success(`Dipindahkan ke ${suggestion.roomName}`);
   };
 
-  const handleDateChange = async (field: 'check_in' | 'check_out', value: string) => {
+  const handleDateChange = async (field: "check_in" | "check_out", value: string) => {
     if (!editedBooking) return;
 
     const updatedBooking = {
@@ -393,12 +420,12 @@ export const MonthlyBookingCalendar = () => {
         checkOut: checkOutDate,
         checkInTime: updatedBooking.check_in_time,
         checkOutTime: updatedBooking.check_out_time,
-        excludeBookingId: updatedBooking.id
+        excludeBookingId: updatedBooking.id,
       });
 
       if (conflict.hasConflict) {
         toast.error("Konflik booking terdeteksi!", {
-          description: conflict.reason || "Kamar ini sudah dibooking untuk tanggal tersebut"
+          description: conflict.reason || "Kamar ini sudah dibooking untuk tanggal tersebut",
         });
       }
     }
@@ -452,16 +479,16 @@ export const MonthlyBookingCalendar = () => {
         payment_amount: editedBooking.payment_status === "down_payment" ? editedBooking.payment_amount : 0,
         special_requests: editedBooking.special_requests,
         total_nights: editedBooking.total_nights,
-        total_price: editedBooking.total_price
+        total_price: editedBooking.total_price,
       });
 
       // Wait for query refetch to complete
       await queryClient.invalidateQueries({
-        queryKey: ["admin-bookings"]
+        queryKey: ["admin-bookings"],
       });
 
       // Small delay to ensure UI updates
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       setIsEditMode(false);
       setSelectedBooking(null);
       toast.success("Booking berhasil diupdate");
@@ -476,7 +503,7 @@ export const MonthlyBookingCalendar = () => {
       open: true,
       roomId,
       roomNumber,
-      date
+      date,
     });
   };
   const handleRightClick = (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => {
@@ -486,7 +513,7 @@ export const MonthlyBookingCalendar = () => {
       roomNumber,
       date,
       x: e.clientX,
-      y: e.clientY
+      y: e.clientY,
     });
   };
   const handleBlockDate = () => {
@@ -497,18 +524,20 @@ export const MonthlyBookingCalendar = () => {
       roomNumber: contextMenu.roomNumber,
       date: contextMenu.date,
       endDate: contextMenu.date,
-      reason: ""
+      reason: "",
     });
     setContextMenu(null);
   };
   const handleUnblockDate = async () => {
     if (!contextMenu) return;
     const dateStr = format(contextMenu.date, "yyyy-MM-dd");
-    await removeUnavailableDates([{
-      room_id: contextMenu.roomId,
-      room_number: contextMenu.roomNumber,
-      unavailable_date: dateStr
-    }]);
+    await removeUnavailableDates([
+      {
+        room_id: contextMenu.roomId,
+        room_number: contextMenu.roomNumber,
+        unavailable_date: dateStr,
+      },
+    ]);
     setContextMenu(null);
   };
   const handleSaveBlock = async () => {
@@ -519,19 +548,19 @@ export const MonthlyBookingCalendar = () => {
     // Generate all dates in range
     const datesInRange = eachDayOfInterval({
       start: startDate,
-      end: endDate
+      end: endDate,
     });
 
     // Create array of unavailable date objects
-    const datesToBlock = datesInRange.map(date => ({
+    const datesToBlock = datesInRange.map((date) => ({
       room_id: blockDialog.roomId!,
       room_number: blockDialog.roomNumber,
       unavailable_date: format(date, "yyyy-MM-dd"),
-      reason: blockDialog.reason || "Blocked by admin"
+      reason: blockDialog.reason || "Blocked by admin",
     }));
     await addUnavailableDates(datesToBlock);
     setBlockDialog({
-      open: false
+      open: false,
     });
     toast.success(`${datesToBlock.length} tanggal berhasil diblokir`);
   };
@@ -544,29 +573,45 @@ export const MonthlyBookingCalendar = () => {
       return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [contextMenu]);
-  return <>
+  return (
+    <>
       <Card className="w-full shadow-lg rounded-xl border-border/50">
         <div className="p-4 border-b border-border bg-slate-300">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-2 flex-wrap">
               {/* View Range Selector */}
               <div className="flex gap-1 bg-background rounded-lg p-1 shadow-sm border border-border">
-                <Button variant={viewRange === 7 ? "default" : "ghost"} size="sm" onClick={() => {
-                setViewRange(7);
-                setCurrentDate(getWIBToday());
-              }} className="text-xs px-4">
+                <Button
+                  variant={viewRange === 7 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setViewRange(7);
+                    setCurrentDate(getWIBToday());
+                  }}
+                  className="text-xs px-4"
+                >
                   7 Hari
                 </Button>
-                <Button variant={viewRange === 14 ? "default" : "ghost"} size="sm" onClick={() => {
-                setViewRange(14);
-                setCurrentDate(getWIBToday());
-              }} className="text-xs px-4">
+                <Button
+                  variant={viewRange === 14 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setViewRange(14);
+                    setCurrentDate(getWIBToday());
+                  }}
+                  className="text-xs px-4"
+                >
                   14 Hari
                 </Button>
-                <Button variant={viewRange === 30 ? "default" : "ghost"} size="sm" onClick={() => {
-                setViewRange(30);
-                setCurrentDate(getWIBToday());
-              }} className="text-xs px-4">
+                <Button
+                  variant={viewRange === 30 ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setViewRange(30);
+                    setCurrentDate(getWIBToday());
+                  }}
+                  className="text-xs px-4"
+                >
                   30 Hari
                 </Button>
               </div>
@@ -577,9 +622,11 @@ export const MonthlyBookingCalendar = () => {
                   <SelectValue placeholder="Pilih Bulan" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
-                  {monthYearOptions.map(option => <SelectItem key={option.value} value={option.value}>
+                  {monthYearOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
                       {option.label}
-                    </SelectItem>)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -599,12 +646,7 @@ export const MonthlyBookingCalendar = () => {
               </div>
 
               {/* Export Button */}
-              <Button 
-                onClick={() => setExportDialog(true)} 
-                variant="default" 
-                size="sm" 
-                className="text-xs px-4"
-              >
+              <Button onClick={() => setExportDialog(true)} variant="default" size="sm" className="text-xs px-4">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
@@ -612,35 +654,56 @@ export const MonthlyBookingCalendar = () => {
           </div>
         </div>
 
-        <div className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[70vh] scroll-smooth"
-             style={{ scrollBehavior: 'smooth' }}>
+        <div
+          className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[70vh] scroll-smooth"
+          style={{ scrollBehavior: "smooth" }}
+        >
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-40">
               <tr className="bg-muted/50">
                 <th className="sticky left-0 top-0 z-50 min-w-[110px] border border-border p-2 shadow-sm bg-gray-300 dark:bg-gray-700">
                   <span className="text-[10px] font-bold uppercase tracking-wide">Kamar</span>
                 </th>
-                {dates.map(date => {
-                const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-                const holiday = isIndonesianHoliday(date);
-                const isHolidayOrWeekend = isWeekend || holiday !== null;
-                const isTodayDate = isWIBToday(date);
-                const headerCell = <th key={date.toISOString()} className={cn("border border-border p-1.5 min-w-[60px] text-center transition-colors relative bg-muted/50", isHolidayOrWeekend && "bg-red-100 dark:bg-red-950/30")}>
-                      <div className={cn("text-[10px] font-medium uppercase", isHolidayOrWeekend ? "text-red-600" : "text-muted-foreground")}>
+                {dates.map((date) => {
+                  const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+                  const holiday = isIndonesianHoliday(date);
+                  const isHolidayOrWeekend = isWeekend || holiday !== null;
+                  const isTodayDate = isWIBToday(date);
+                  const headerCell = (
+                    <th
+                      key={date.toISOString()}
+                      className={cn(
+                        "border border-border p-1.5 min-w-[60px] text-center transition-colors relative bg-muted/50",
+                        isHolidayOrWeekend && "bg-red-100 dark:bg-red-950/30",
+                      )}
+                    >
+                      {/* Badge TODAY - centered */}
+                      {isTodayDate && (
+                        <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-md">
+                          TODAY
+                        </div>
+                      )}
+
+                      <div
+                        className={cn(
+                          "text-[10px] font-medium uppercase",
+                          isHolidayOrWeekend ? "text-red-600" : "text-muted-foreground",
+                        )}
+                      >
                         {DAY_NAMES[getDay(date)]}
                       </div>
+
                       <div className={cn("text-base font-bold", isHolidayOrWeekend && "text-red-600")}>
                         {format(date, "d")}
                       </div>
 
-                      {isTodayDate && <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-md">
-                          TODAY
-                        </div>}
-
                       {holiday && <div className="text-[8px] text-red-600 font-semibold mt-0.5">🎉</div>}
-                    </th>;
-                if (holiday) {
-                  return <TooltipProvider key={date.toISOString()}>
+                    </th>
+                  );
+
+                  if (holiday) {
+                    return (
+                      <TooltipProvider key={date.toISOString()}>
                         <Tooltip delayDuration={200}>
                           <TooltipTrigger asChild>{headerCell}</TooltipTrigger>
                           <TooltipContent side="top" className="bg-red-600 text-white font-medium">
@@ -650,54 +713,90 @@ export const MonthlyBookingCalendar = () => {
                             </div>
                           </TooltipContent>
                         </Tooltip>
-                      </TooltipProvider>;
-                }
-                return headerCell;
-              })}
+                      </TooltipProvider>
+                    );
+                  }
+                  return headerCell;
+                })}
               </tr>
             </thead>
             <tbody>
-              {Object.entries(roomsByType).map(([roomType]) => <React.Fragment key={roomType}>
+              {Object.entries(roomsByType).map(([roomType]) => (
+                <React.Fragment key={roomType}>
                   {/* Room type header */}
                   <tr className="border-y border-border">
                     <td className="sticky left-0 z-20 p-2 px-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-stone-200 dark:bg-stone-800 shadow-sm border-r border-border">
                       {roomType}
                     </td>
-                    {dates.map(date => <td key={date.toISOString()} className="bg-stone-200 dark:bg-stone-800 border border-border" />)}
+                    {dates.map((date) => (
+                      <td key={date.toISOString()} className="bg-stone-200 dark:bg-stone-800 border border-border" />
+                    ))}
                   </tr>
 
                   {/* Room rows */}
-                  {allRoomNumbers.filter(r => r.roomType === roomType).map((room, roomIndex) => <RoomRow key={room.roomNumber} room={room} roomIndex={roomIndex} dates={dates} getBookingForCell={getBookingForCell} isBookingStart={isBookingStart} isBookingEnd={isBookingEnd} isDateBlocked={isDateBlocked} getBlockReason={getBlockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} handleCellClick={handleCellClick} />)}
-                </React.Fragment>)}
+                  {allRoomNumbers
+                    .filter((r) => r.roomType === roomType)
+                    .map((room, roomIndex) => (
+                      <RoomRow
+                        key={room.roomNumber}
+                        room={room}
+                        roomIndex={roomIndex}
+                        dates={dates}
+                        getBookingForCell={getBookingForCell}
+                        isBookingStart={isBookingStart}
+                        isBookingEnd={isBookingEnd}
+                        isDateBlocked={isDateBlocked}
+                        getBlockReason={getBlockReason}
+                        handleBookingClick={handleBookingClick}
+                        handleRightClick={handleRightClick}
+                        handleCellClick={handleCellClick}
+                      />
+                    ))}
+                </React.Fragment>
+              ))}
             </tbody>
           </table>
         </div>
 
         {/* Booking Detail Modal */}
-        <Dialog open={!!selectedBooking} onOpenChange={open => {
-        if (!open) {
-          setSelectedBooking(null);
-          setIsEditMode(false);
-          setEditedBooking(null);
-        }
-      }}>
+        <Dialog
+          open={!!selectedBooking}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedBooking(null);
+              setIsEditMode(false);
+              setEditedBooking(null);
+            }
+          }}
+        >
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex-1">
                 <DialogTitle className="text-2xl font-bold mb-1">Detail Booking</DialogTitle>
                 <DialogDescription>{isEditMode ? "Edit informasi booking" : "Lihat detail booking"}</DialogDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={handleEditToggle} disabled={isUpdating} className="flex-shrink-0">
-                {isEditMode ? <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditToggle}
+                disabled={isUpdating}
+                className="flex-shrink-0"
+              >
+                {isEditMode ? (
+                  <>
                     <X className="h-4 w-4 mr-2" />
                     Batal
-                  </> : <>
+                  </>
+                ) : (
+                  <>
                     <Edit2 className="h-4 w-4 mr-2" />
                     Edit
-                  </>}
+                  </>
+                )}
               </Button>
             </div>
-            {editedBooking && <div className="space-y-6">
+            {editedBooking && (
+              <div className="space-y-6">
                 {/* Status Badges */}
                 <div className="flex gap-2">
                   <Badge variant={getStatusVariant(editedBooking.status)} className="text-xs px-3 py-1">
@@ -714,31 +813,75 @@ export const MonthlyBookingCalendar = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nama Tamu</Label>
-                      {isEditMode ? <Input value={editedBooking.guest_name} onChange={e => setEditedBooking({
-                    ...editedBooking,
-                    guest_name: e.target.value
-                  })} className="font-semibold" /> : <p className="font-semibold">{editedBooking.guest_name}</p>}
+                      {isEditMode ? (
+                        <Input
+                          value={editedBooking.guest_name}
+                          onChange={(e) =>
+                            setEditedBooking({
+                              ...editedBooking,
+                              guest_name: e.target.value,
+                            })
+                          }
+                          className="font-semibold"
+                        />
+                      ) : (
+                        <p className="font-semibold">{editedBooking.guest_name}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Email</Label>
-                      {isEditMode ? <Input type="email" value={editedBooking.guest_email} onChange={e => setEditedBooking({
-                    ...editedBooking,
-                    guest_email: e.target.value
-                  })} className="font-semibold" /> : <p className="font-semibold break-all">{editedBooking.guest_email}</p>}
+                      {isEditMode ? (
+                        <Input
+                          type="email"
+                          value={editedBooking.guest_email}
+                          onChange={(e) =>
+                            setEditedBooking({
+                              ...editedBooking,
+                              guest_email: e.target.value,
+                            })
+                          }
+                          className="font-semibold"
+                        />
+                      ) : (
+                        <p className="font-semibold break-all">{editedBooking.guest_email}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Telepon</Label>
-                      {isEditMode ? <Input type="tel" value={editedBooking.guest_phone || ""} onChange={e => setEditedBooking({
-                    ...editedBooking,
-                    guest_phone: e.target.value
-                  })} className="font-semibold" /> : <p className="font-semibold">{editedBooking.guest_phone || "-"}</p>}
+                      {isEditMode ? (
+                        <Input
+                          type="tel"
+                          value={editedBooking.guest_phone || ""}
+                          onChange={(e) =>
+                            setEditedBooking({
+                              ...editedBooking,
+                              guest_phone: e.target.value,
+                            })
+                          }
+                          className="font-semibold"
+                        />
+                      ) : (
+                        <p className="font-semibold">{editedBooking.guest_phone || "-"}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Jumlah Tamu</Label>
-                      {isEditMode ? <Input type="number" min="1" value={editedBooking.num_guests} onChange={e => setEditedBooking({
-                    ...editedBooking,
-                    num_guests: parseInt(e.target.value) || 1
-                  })} className="font-semibold" /> : <p className="font-semibold">{editedBooking.num_guests} orang</p>}
+                      {isEditMode ? (
+                        <Input
+                          type="number"
+                          min="1"
+                          value={editedBooking.num_guests}
+                          onChange={(e) =>
+                            setEditedBooking({
+                              ...editedBooking,
+                              num_guests: parseInt(e.target.value) || 1,
+                            })
+                          }
+                          className="font-semibold"
+                        />
+                      ) : (
+                        <p className="font-semibold">{editedBooking.num_guests} orang</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -749,118 +892,175 @@ export const MonthlyBookingCalendar = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Check-in</Label>
-                      {isEditMode ? <div className="space-y-2">
+                      {isEditMode ? (
+                        <div className="space-y-2">
                           <Popover>
                             <PopoverTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                className={cn("w-full justify-start text-left font-normal", !editedBooking.check_in && "text-muted-foreground")}
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !editedBooking.check_in && "text-muted-foreground",
+                                )}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {editedBooking.check_in ? format(new Date(editedBooking.check_in), "PPP", { locale: localeId }) : "Pilih tanggal"}
+                                {editedBooking.check_in
+                                  ? format(new Date(editedBooking.check_in), "PPP", { locale: localeId })
+                                  : "Pilih tanggal"}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
                                 selected={editedBooking.check_in ? new Date(editedBooking.check_in) : undefined}
-                                onSelect={(date) => date && handleDateChange('check_in', format(date, "yyyy-MM-dd"))}
+                                onSelect={(date) => date && handleDateChange("check_in", format(date, "yyyy-MM-dd"))}
                                 initialFocus
                                 className="pointer-events-auto"
                               />
                             </PopoverContent>
                           </Popover>
-                          <Input type="time" value={editedBooking.check_in_time || "14:00:00"} onChange={e => setEditedBooking({
-                      ...editedBooking,
-                      check_in_time: e.target.value
-                    })} className="text-sm" />
-                        </div> : <div>
+                          <Input
+                            type="time"
+                            value={editedBooking.check_in_time || "14:00:00"}
+                            onChange={(e) =>
+                              setEditedBooking({
+                                ...editedBooking,
+                                check_in_time: e.target.value,
+                              })
+                            }
+                            className="text-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div>
                           <p className="font-semibold">
                             {format(new Date(editedBooking.check_in), "dd MMM yyyy", {
-                        locale: localeId
-                      })}
+                              locale: localeId,
+                            })}
                           </p>
-                          {editedBooking.check_in_time && <p className="text-sm text-muted-foreground">{editedBooking.check_in_time.slice(0, 5)}</p>}
-                        </div>}
+                          {editedBooking.check_in_time && (
+                            <p className="text-sm text-muted-foreground">{editedBooking.check_in_time.slice(0, 5)}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Check-out</Label>
-                      {isEditMode ? <div className="space-y-2">
+                      {isEditMode ? (
+                        <div className="space-y-2">
                           <Popover>
                             <PopoverTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                className={cn("w-full justify-start text-left font-normal", !editedBooking.check_out && "text-muted-foreground")}
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !editedBooking.check_out && "text-muted-foreground",
+                                )}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {editedBooking.check_out ? format(new Date(editedBooking.check_out), "PPP", { locale: localeId }) : "Pilih tanggal"}
+                                {editedBooking.check_out
+                                  ? format(new Date(editedBooking.check_out), "PPP", { locale: localeId })
+                                  : "Pilih tanggal"}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
                                 selected={editedBooking.check_out ? new Date(editedBooking.check_out) : undefined}
-                                onSelect={(date) => date && handleDateChange('check_out', format(date, "yyyy-MM-dd"))}
+                                onSelect={(date) => date && handleDateChange("check_out", format(date, "yyyy-MM-dd"))}
                                 initialFocus
                                 className="pointer-events-auto"
                               />
                             </PopoverContent>
                           </Popover>
-                          <Input type="time" value={editedBooking.check_out_time || "12:00:00"} onChange={e => setEditedBooking({
-                      ...editedBooking,
-                      check_out_time: e.target.value
-                    })} className="text-sm" />
-                        </div> : <div>
+                          <Input
+                            type="time"
+                            value={editedBooking.check_out_time || "12:00:00"}
+                            onChange={(e) =>
+                              setEditedBooking({
+                                ...editedBooking,
+                                check_out_time: e.target.value,
+                              })
+                            }
+                            className="text-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div>
                           <p className="font-semibold">
                             {format(new Date(editedBooking.check_out), "dd MMM yyyy", {
-                        locale: localeId
-                      })}
+                              locale: localeId,
+                            })}
                           </p>
-                          {editedBooking.check_out_time && <p className="text-sm text-muted-foreground">
+                          {editedBooking.check_out_time && (
+                            <p className="text-sm text-muted-foreground">
                               {editedBooking.check_out_time.slice(0, 5)}
-                              {editedBooking.check_out_time !== "12:00:00" && <span className="ml-2 text-orange-600 font-semibold">(Late Check-out)</span>}
-                            </p>}
-                        </div>}
+                              {editedBooking.check_out_time !== "12:00:00" && (
+                                <span className="ml-2 text-orange-600 font-semibold">(Late Check-out)</span>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Tipe Kamar</Label>
-                      {isEditMode ? <Select value={editedBooking.room_id} onValueChange={handleRoomTypeChange}>
+                      {isEditMode ? (
+                        <Select value={editedBooking.room_id} onValueChange={handleRoomTypeChange}>
                           <SelectTrigger>
                             <SelectValue placeholder="Pilih tipe kamar" />
                           </SelectTrigger>
                           <SelectContent>
-                            {rooms?.map(room => (
+                            {rooms?.map((room) => (
                               <SelectItem key={room.id} value={room.id}>
                                 {room.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
-                        </Select> : <p className="font-semibold">{editedBooking.rooms?.name || "-"}</p>}
+                        </Select>
+                      ) : (
+                        <p className="font-semibold">{editedBooking.rooms?.name || "-"}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nomor Kamar</Label>
-                      {isEditMode ? <Select value={editedBooking.allocated_room_number || ""} onValueChange={value => setEditedBooking({
-                    ...editedBooking,
-                    allocated_room_number: value
-                  })}>
+                      {isEditMode ? (
+                        <Select
+                          value={editedBooking.allocated_room_number || ""}
+                          onValueChange={(value) =>
+                            setEditedBooking({
+                              ...editedBooking,
+                              allocated_room_number: value,
+                            })
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Pilih nomor kamar" />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableRoomNumbers.map(roomNum => (
+                            {availableRoomNumbers.map((roomNum) => (
                               <SelectItem key={roomNum} value={roomNum}>
                                 {roomNum}
                               </SelectItem>
                             ))}
                           </SelectContent>
-                        </Select> : <p className="font-semibold">{editedBooking.allocated_room_number || "-"}</p>}
+                        </Select>
+                      ) : (
+                        <p className="font-semibold">{editedBooking.allocated_room_number || "-"}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Status Booking</Label>
-                      {isEditMode ? <Select value={editedBooking.status} onValueChange={value => setEditedBooking({
-                    ...editedBooking,
-                    status: value
-                  })}>
+                      {isEditMode ? (
+                        <Select
+                          value={editedBooking.status}
+                          onValueChange={(value) =>
+                            setEditedBooking({
+                              ...editedBooking,
+                              status: value,
+                            })
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -871,7 +1071,10 @@ export const MonthlyBookingCalendar = () => {
                             <SelectItem value="checked-out">Checked Out</SelectItem>
                             <SelectItem value="cancelled">Cancelled</SelectItem>
                           </SelectContent>
-                        </Select> : <p className="font-semibold capitalize">{editedBooking.status}</p>}
+                        </Select>
+                      ) : (
+                        <p className="font-semibold capitalize">{editedBooking.status}</p>
+                      )}
                     </div>
                   </div>
                   <div className="pt-2">
@@ -891,15 +1094,27 @@ export const MonthlyBookingCalendar = () => {
                       <CreditCard className="h-5 w-5 text-primary mt-0.5" />
                       <div className="flex-1 space-y-1">
                         <Label className="text-xs text-muted-foreground uppercase tracking-wide">Total Harga</Label>
-                        {isEditMode ? <div className="relative">
+                        {isEditMode ? (
+                          <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
                               Rp
                             </span>
-                            <Input type="number" min="0" value={editedBooking.total_price} onChange={e => setEditedBooking({
-                        ...editedBooking,
-                        total_price: parseFloat(e.target.value) || 0
-                      })} className="font-bold text-lg pl-10" />
-                          </div> : <p className="font-bold text-2xl">Rp {editedBooking.total_price.toLocaleString("id-ID")}</p>}
+                            <Input
+                              type="number"
+                              min="0"
+                              value={editedBooking.total_price}
+                              onChange={(e) =>
+                                setEditedBooking({
+                                  ...editedBooking,
+                                  total_price: parseFloat(e.target.value) || 0,
+                                })
+                              }
+                              className="font-bold text-lg pl-10"
+                            />
+                          </div>
+                        ) : (
+                          <p className="font-bold text-2xl">Rp {editedBooking.total_price.toLocaleString("id-ID")}</p>
+                        )}
                       </div>
                     </div>
 
@@ -908,11 +1123,17 @@ export const MonthlyBookingCalendar = () => {
                     {/* Payment Status */}
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Status Pembayaran</Label>
-                      {isEditMode ? <Select value={editedBooking.payment_status || "unpaid"} onValueChange={value => setEditedBooking({
-                    ...editedBooking,
-                    payment_status: value,
-                    payment_amount: value === "down_payment" ? editedBooking.payment_amount : 0
-                  })}>
+                      {isEditMode ? (
+                        <Select
+                          value={editedBooking.payment_status || "unpaid"}
+                          onValueChange={(value) =>
+                            setEditedBooking({
+                              ...editedBooking,
+                              payment_status: value,
+                              payment_amount: value === "down_payment" ? editedBooking.payment_amount : 0,
+                            })
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -922,53 +1143,90 @@ export const MonthlyBookingCalendar = () => {
                             <SelectItem value="paid">Lunas</SelectItem>
                             <SelectItem value="pay_at_hotel">Bayar di Hotel</SelectItem>
                           </SelectContent>
-                        </Select> : <p className="font-semibold capitalize">
+                        </Select>
+                      ) : (
+                        <p className="font-semibold capitalize">
                           {editedBooking.payment_status === "unpaid" && "Belum Dibayar"}
                           {editedBooking.payment_status === "down_payment" && "DP (Down Payment)"}
                           {editedBooking.payment_status === "paid" && "Lunas"}
                           {editedBooking.payment_status === "pay_at_hotel" && "Bayar di Hotel"}
                           {!editedBooking.payment_status && "Belum Dibayar"}
-                        </p>}
+                        </p>
+                      )}
                     </div>
 
                     {/* Conditional: Show DP amount input if down_payment */}
-                    {editedBooking.payment_status === "down_payment" && <div className="space-y-2">
+                    {editedBooking.payment_status === "down_payment" && (
+                      <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground uppercase tracking-wide">Jumlah DP</Label>
-                        {isEditMode ? <Input type="number" min="0" max={editedBooking.total_price} value={editedBooking.payment_amount || 0} onChange={e => setEditedBooking({
-                    ...editedBooking,
-                    payment_amount: parseFloat(e.target.value) || 0
-                  })} className="font-semibold" /> : <p className="font-bold text-xl text-green-600">
+                        {isEditMode ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            max={editedBooking.total_price}
+                            value={editedBooking.payment_amount || 0}
+                            onChange={(e) =>
+                              setEditedBooking({
+                                ...editedBooking,
+                                payment_amount: parseFloat(e.target.value) || 0,
+                              })
+                            }
+                            className="font-semibold"
+                          />
+                        ) : (
+                          <p className="font-bold text-xl text-green-600">
                             Rp {(editedBooking.payment_amount || 0).toLocaleString("id-ID")}
-                          </p>}
-                        {editedBooking.payment_amount && <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/30 rounded">
+                          </p>
+                        )}
+                        {editedBooking.payment_amount && (
+                          <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/30 rounded">
                             <p className="text-sm text-muted-foreground">Sisa Pembayaran</p>
                             <p className="font-bold text-orange-600">
                               Rp{" "}
-                              {(editedBooking.total_price - (editedBooking.payment_amount || 0)).toLocaleString("id-ID")}
+                              {(editedBooking.total_price - (editedBooking.payment_amount || 0)).toLocaleString(
+                                "id-ID",
+                              )}
                             </p>
-                          </div>}
-                      </div>}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Status messages */}
-                    {editedBooking.payment_status === "paid" && <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900/30 rounded-lg p-3">
+                    {editedBooking.payment_status === "paid" && (
+                      <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900/30 rounded-lg p-3">
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
                         <span className="font-semibold text-green-700 dark:text-green-300">Pembayaran Lunas</span>
-                      </div>}
+                      </div>
+                    )}
 
-                    {(editedBooking.payment_status === "unpaid" || !editedBooking.payment_status) && <div className="flex items-center gap-2 bg-red-100 dark:bg-red-900/30 rounded-lg p-3">
+                    {(editedBooking.payment_status === "unpaid" || !editedBooking.payment_status) && (
+                      <div className="flex items-center gap-2 bg-red-100 dark:bg-red-900/30 rounded-lg p-3">
                         <AlertCircle className="h-5 w-5 text-red-600" />
                         <span className="font-semibold text-red-700 dark:text-red-300">Belum Ada Pembayaran</span>
-                      </div>}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Special Requests */}
                 <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 rounded-lg p-4 space-y-2">
                   <Label className="font-bold text-sm uppercase tracking-wide">Permintaan Khusus</Label>
-                  {isEditMode ? <Textarea value={editedBooking.special_requests || ""} onChange={e => setEditedBooking({
-                ...editedBooking,
-                special_requests: e.target.value
-              })} placeholder="Permintaan khusus dari tamu..." rows={3} /> : <p className="leading-relaxed">{editedBooking.special_requests || "-"}</p>}
+                  {isEditMode ? (
+                    <Textarea
+                      value={editedBooking.special_requests || ""}
+                      onChange={(e) =>
+                        setEditedBooking({
+                          ...editedBooking,
+                          special_requests: e.target.value,
+                        })
+                      }
+                      placeholder="Permintaan khusus dari tamu..."
+                      rows={3}
+                    />
+                  ) : (
+                    <p className="leading-relaxed">{editedBooking.special_requests || "-"}</p>
+                  )}
                 </div>
 
                 {/* Footer */}
@@ -976,46 +1234,73 @@ export const MonthlyBookingCalendar = () => {
                   <p className="text-xs text-muted-foreground text-center">
                     Dibuat:{" "}
                     {format(new Date(editedBooking.created_at), "dd MMM yyyy HH:mm", {
-                  locale: localeId
-                })}
+                      locale: localeId,
+                    })}
                   </p>
                 </div>
 
                 {/* Action Buttons - Only show in edit mode */}
-                {isEditMode && <div className="flex gap-2 justify-end pt-4 border-t">
+                {isEditMode && (
+                  <div className="flex gap-2 justify-end pt-4 border-t">
                     <Button variant="outline" onClick={handleEditToggle} disabled={isUpdating}>
                       Batal
                     </Button>
                     <Button onClick={handleSaveChanges} disabled={isUpdating}>
-                      {isUpdating ? <>Menyimpan...</> : <>
+                      {isUpdating ? (
+                        <>Menyimpan...</>
+                      ) : (
+                        <>
                           <Save className="h-4 w-4 mr-2" />
                           Simpan Perubahan
-                        </>}
+                        </>
+                      )}
                     </Button>
-                  </div>}
-              </div>}
+                  </div>
+                )}
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </Card>
 
       {/* Context Menu */}
-      {contextMenu && <div className="fixed z-50 bg-card border border-border rounded-lg shadow-xl py-2 min-w-[180px]" style={{
-      top: contextMenu.y,
-      left: contextMenu.x
-    }}>
-          {isDateBlocked(contextMenu.roomId, contextMenu.roomNumber, contextMenu.date) ? <button onClick={handleUnblockDate} className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2">
+      {contextMenu && (
+        <div
+          className="fixed z-50 bg-card border border-border rounded-lg shadow-xl py-2 min-w-[180px]"
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
+          }}
+        >
+          {isDateBlocked(contextMenu.roomId, contextMenu.roomNumber, contextMenu.date) ? (
+            <button
+              onClick={handleUnblockDate}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
+            >
               <Trash2 className="w-4 h-4" />
               Unblock Date
-            </button> : <button onClick={handleBlockDate} className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2">
+            </button>
+          ) : (
+            <button
+              onClick={handleBlockDate}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
+            >
               <Ban className="w-4 h-4" />
               Block Date
-            </button>}
-        </div>}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Block Date Dialog */}
-      <Dialog open={blockDialog.open} onOpenChange={open => setBlockDialog({
-      open
-    })}>
+      <Dialog
+        open={blockDialog.open}
+        onOpenChange={(open) =>
+          setBlockDialog({
+            open,
+          })
+        }
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Block Date Range</DialogTitle>
@@ -1026,9 +1311,12 @@ export const MonthlyBookingCalendar = () => {
               <Label>Tanggal Mulai</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className={cn("w-full justify-start text-left font-normal mt-1", !blockDialog.date && "text-muted-foreground")}
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal mt-1",
+                      !blockDialog.date && "text-muted-foreground",
+                    )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {blockDialog.date ? format(blockDialog.date, "PPP", { locale: localeId }) : "Pilih tanggal"}
@@ -1050,9 +1338,12 @@ export const MonthlyBookingCalendar = () => {
               <Label>Tanggal Akhir</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className={cn("w-full justify-start text-left font-normal mt-1", !blockDialog.endDate && "text-muted-foreground")}
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal mt-1",
+                      !blockDialog.endDate && "text-muted-foreground",
+                    )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {blockDialog.endDate ? format(blockDialog.endDate, "PPP", { locale: localeId }) : "Pilih tanggal"}
@@ -1063,7 +1354,7 @@ export const MonthlyBookingCalendar = () => {
                     mode="single"
                     selected={blockDialog.endDate}
                     onSelect={(date) => setBlockDialog({ ...blockDialog, endDate: date })}
-                    disabled={(date) => blockDialog.date ? date < blockDialog.date : false}
+                    disabled={(date) => (blockDialog.date ? date < blockDialog.date : false)}
                     initialFocus
                     className="pointer-events-auto"
                   />
@@ -1071,7 +1362,8 @@ export const MonthlyBookingCalendar = () => {
               </Popover>
             </div>
 
-            {blockDialog.date && blockDialog.endDate && <div className="p-3 bg-muted rounded-lg">
+            {blockDialog.date && blockDialog.endDate && (
+              <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
                   Total:{" "}
                   <span className="font-bold text-foreground">
@@ -1079,20 +1371,35 @@ export const MonthlyBookingCalendar = () => {
                   </span>{" "}
                   akan diblokir
                 </p>
-              </div>}
+              </div>
+            )}
 
             <div>
               <Label htmlFor="reason">Reason (Optional)</Label>
-              <Textarea id="reason" value={blockDialog.reason || ""} onChange={e => setBlockDialog({
-              ...blockDialog,
-              reason: e.target.value
-            })} placeholder="e.g., Maintenance, Private event, Renovation..." className="mt-1" rows={3} />
+              <Textarea
+                id="reason"
+                value={blockDialog.reason || ""}
+                onChange={(e) =>
+                  setBlockDialog({
+                    ...blockDialog,
+                    reason: e.target.value,
+                  })
+                }
+                placeholder="e.g., Maintenance, Private event, Renovation..."
+                className="mt-1"
+                rows={3}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBlockDialog({
-            open: false
-          })}>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setBlockDialog({
+                  open: false,
+                })
+              }
+            >
               Cancel
             </Button>
             <Button onClick={handleSaveBlock}>
@@ -1104,18 +1411,28 @@ export const MonthlyBookingCalendar = () => {
       </Dialog>
 
       {/* Create Booking Dialog */}
-      <CreateBookingDialog open={createBookingDialog.open} onOpenChange={open => setCreateBookingDialog({
-      open
-    })} roomId={createBookingDialog.roomId} roomNumber={createBookingDialog.roomNumber} initialDate={createBookingDialog.date} rooms={rooms || []} />
+      <CreateBookingDialog
+        open={createBookingDialog.open}
+        onOpenChange={(open) =>
+          setCreateBookingDialog({
+            open,
+          })
+        }
+        roomId={createBookingDialog.roomId}
+        roomNumber={createBookingDialog.roomNumber}
+        initialDate={createBookingDialog.date}
+        rooms={rooms || []}
+      />
 
       {/* Export Booking Dialog */}
-      <ExportBookingDialog 
+      <ExportBookingDialog
         open={exportDialog}
         onOpenChange={setExportDialog}
         bookings={bookings || []}
         rooms={rooms || []}
       />
-    </>;
+    </>
+  );
 };
 
 // Booking Cell Component
@@ -1125,7 +1442,7 @@ const BookingCell = ({
   isEnd,
   onClick,
   visibleNights,
-  isTruncatedLeft
+  isTruncatedLeft,
 }: {
   booking: Booking;
   isStart: boolean;
@@ -1148,16 +1465,33 @@ const BookingCell = ({
     if (isPending) {
       return "from-gray-400/90 to-gray-500/90";
     }
-    const colors = ["from-teal-500/90 to-teal-600/90", "from-pink-500/90 to-pink-600/90", "from-purple-500/90 to-purple-600/90", "from-blue-500/90 to-blue-600/90", "from-indigo-500/90 to-indigo-600/90", "from-cyan-500/90 to-cyan-600/90", "from-emerald-500/90 to-emerald-600/90"];
+    const colors = [
+      "from-teal-500/90 to-teal-600/90",
+      "from-pink-500/90 to-pink-600/90",
+      "from-purple-500/90 to-purple-600/90",
+      "from-blue-500/90 to-blue-600/90",
+      "from-indigo-500/90 to-indigo-600/90",
+      "from-cyan-500/90 to-cyan-600/90",
+      "from-emerald-500/90 to-emerald-600/90",
+    ];
     const colorIndex = booking.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     return colors[colorIndex];
   };
   const style = {
     left: isTruncatedLeft ? "0" : "50%",
     width: bookingWidth,
-    transform: isTruncatedLeft ? "translateX(0%)" : "translateX(0%)"
+    transform: isTruncatedLeft ? "translateX(0%)" : "translateX(0%)",
   };
-  return <div onClick={onClick} className={cn("absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible z-[5] cursor-pointer", isTruncatedLeft ? "rounded-r-md" : "rounded-md", getBackgroundClass())} style={style}>
+  return (
+    <div
+      onClick={onClick}
+      className={cn(
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible z-[5] cursor-pointer",
+        isTruncatedLeft ? "rounded-r-md" : "rounded-md",
+        getBackgroundClass(),
+      )}
+      style={style}
+    >
       {/* Content - Guest name and nights */}
       <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
         {/* Guest Name */}
@@ -1168,23 +1502,30 @@ const BookingCell = ({
       </div>
 
       {/* LCO Badge - Smaller, top right corner */}
-      {booking.check_out_time && booking.check_out_time !== "12:00:00" && <div className="absolute -right-0.5 -top-1 z-30">
+      {booking.check_out_time && booking.check_out_time !== "12:00:00" && (
+        <div className="absolute -right-0.5 -top-1 z-30">
           <div className="bg-red-600 text-white text-[7px] px-1 py-0.5 rounded-sm font-bold shadow-sm whitespace-nowrap">
             LCO
           </div>
-        </div>}
+        </div>
+      )}
 
       {/* Status watermark */}
-      {!isPending && <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
+      {!isPending && (
+        <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
           <span className="text-white/70 font-bold text-[8px] tracking-wider whitespace-nowrap">
             {booking.status === "confirmed" ? "CONFIRMED" : booking.status.toUpperCase()}
           </span>
-        </div>}
+        </div>
+      )}
 
-      {isPending && <div className="absolute right-1 bottom-0.5 opacity-50 pointer-events-none">
+      {isPending && (
+        <div className="absolute right-1 bottom-0.5 opacity-50 pointer-events-none">
           <span className="text-white/80 font-black text-[8px] tracking-wider whitespace-nowrap">PENDING</span>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
 
 // Room Cell Component
@@ -1200,7 +1541,7 @@ const RoomCell = ({
   handleBookingClick,
   handleRightClick,
   handleCellClick,
-  firstVisibleDate
+  firstVisibleDate,
 }: {
   roomId: string;
   roomNumber: string;
@@ -1222,7 +1563,10 @@ const RoomCell = ({
   // A booking should render if:
   // 1. Its check-in is on this date, OR
   // 2. Its check-in is before the first visible date AND this is the first visible date AND the booking is active
-  const isStart = booking ? booking.check_in === dateStr || booking.check_in < firstVisibleStr && dateStr === firstVisibleStr && booking.check_out > dateStr : false;
+  const isStart = booking
+    ? booking.check_in === dateStr ||
+      (booking.check_in < firstVisibleStr && dateStr === firstVisibleStr && booking.check_out > dateStr)
+    : false;
   const checkOutDate = booking ? new Date(booking.check_out) : null;
   if (checkOutDate) checkOutDate.setDate(checkOutDate.getDate() - 1);
   const isEnd = booking && checkOutDate ? format(date, "yyyy-MM-dd") === format(checkOutDate, "yyyy-MM-dd") : false;
@@ -1240,17 +1584,33 @@ const RoomCell = ({
   const hasBooking = booking !== null;
   const isClickable = !isBlocked && !hasBooking;
   const isTodayDate = isWIBToday(date);
-  const cell = <td onClick={() => handleCellClick(roomId, roomNumber, date, isBlocked, hasBooking)} onContextMenu={e => handleRightClick(e, roomId, roomNumber, date)} className={cn("border border-border p-0 relative h-14 min-w-[60px] transition-all duration-200 overflow-visible", isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10", !isHolidayOrWeekend && "bg-background", isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer", !isClickable && "cursor-context-menu")} title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}>
+  const cell = (
+    <td
+      onClick={() => handleCellClick(roomId, roomNumber, date, isBlocked, hasBooking)}
+      onContextMenu={(e) => handleRightClick(e, roomId, roomNumber, date)}
+      className={cn(
+        "border border-border p-0 relative h-14 min-w-[60px] transition-all duration-200 overflow-visible",
+        isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
+        !isHolidayOrWeekend && "bg-background",
+        isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
+        !isClickable && "cursor-context-menu",
+      )}
+      title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
+    >
       {/* Blocked Date Pattern */}
-      {isBlocked && <div className="absolute inset-0 z-10 pointer-events-none bg-muted/20" style={{
-      backgroundImage: `repeating-linear-gradient(
+      {isBlocked && (
+        <div
+          className="absolute inset-0 z-10 pointer-events-none bg-muted/20"
+          style={{
+            backgroundImage: `repeating-linear-gradient(
               -45deg,
               transparent,
               transparent 6px,
               hsl(var(--muted-foreground) / 0.6) 6px,
               hsl(var(--muted-foreground) / 0.6) 8px
-            )`
-    }}>
+            )`,
+          }}
+        >
           <div className="absolute inset-0 flex items-center justify-center bg-background/40">
             <div className="flex flex-col items-center gap-0.5">
               <Ban className="w-5 h-5 text-muted-foreground drop-shadow-sm" />
@@ -1259,18 +1619,32 @@ const RoomCell = ({
               </span>
             </div>
           </div>
-        </div>}
+        </div>
+      )}
 
       {/* Render single booking */}
-      {booking && !isBlocked && isStart && <BookingCell booking={booking} isStart={isStart} isEnd={isEnd} onClick={() => handleBookingClick(booking)} visibleNights={visibleNights} isTruncatedLeft={isTruncatedLeft} />}
+      {booking && !isBlocked && isStart && (
+        <BookingCell
+          booking={booking}
+          isStart={isStart}
+          isEnd={isEnd}
+          onClick={() => handleBookingClick(booking)}
+          visibleNights={visibleNights}
+          isTruncatedLeft={isTruncatedLeft}
+        />
+      )}
 
       {/* Click hint for empty cells */}
-      {isClickable && <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none z-5">
+      {isClickable && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none z-5">
           <div className="text-[10px] text-primary/60 font-medium">Click to book</div>
-        </div>}
-    </td>;
+        </div>
+      )}
+    </td>
+  );
   if (holiday && !booking) {
-    return <TooltipProvider key={`${roomNumber}-${date.toISOString()}`}>
+    return (
+      <TooltipProvider key={`${roomNumber}-${date.toISOString()}`}>
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>{cell}</TooltipTrigger>
           <TooltipContent side="top" className="bg-red-600 text-white font-medium">
@@ -1280,7 +1654,8 @@ const RoomCell = ({
             </div>
           </TooltipContent>
         </Tooltip>
-      </TooltipProvider>;
+      </TooltipProvider>
+    );
   }
   return cell;
 };
@@ -1297,7 +1672,7 @@ const RoomRow = ({
   getBlockReason,
   handleBookingClick,
   handleRightClick,
-  handleCellClick
+  handleCellClick,
 }: {
   room: {
     roomType: string;
@@ -1315,17 +1690,35 @@ const RoomRow = ({
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
 }) => {
-  return <tr className="hover:bg-muted/10 transition-colors">
+  return (
+    <tr className="hover:bg-muted/10 transition-colors">
       <td className="border border-border p-2 sticky left-0 z-30 font-semibold text-xs shadow-sm text-center bg-gray-100 dark:bg-gray-800">
         {room.roomNumber}
       </td>
-      {dates.map(date => {
-      const booking = getBookingForCell(room.roomNumber, date);
-      const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-      const holiday = isIndonesianHoliday(date);
-      const isBlocked = isDateBlocked(room.roomId, room.roomNumber, date);
-      const blockReason = getBlockReason(room.roomId, room.roomNumber, date);
-      return <RoomCell key={date.toISOString()} roomId={room.roomId} roomNumber={room.roomNumber} date={date} booking={booking} isWeekend={isWeekend} holiday={holiday} isBlocked={isBlocked} blockReason={blockReason} handleBookingClick={handleBookingClick} handleRightClick={handleRightClick} handleCellClick={handleCellClick} firstVisibleDate={dates[0]} />;
-    })}
-    </tr>;
+      {dates.map((date) => {
+        const booking = getBookingForCell(room.roomNumber, date);
+        const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+        const holiday = isIndonesianHoliday(date);
+        const isBlocked = isDateBlocked(room.roomId, room.roomNumber, date);
+        const blockReason = getBlockReason(room.roomId, room.roomNumber, date);
+        return (
+          <RoomCell
+            key={date.toISOString()}
+            roomId={room.roomId}
+            roomNumber={room.roomNumber}
+            date={date}
+            booking={booking}
+            isWeekend={isWeekend}
+            holiday={holiday}
+            isBlocked={isBlocked}
+            blockReason={blockReason}
+            handleBookingClick={handleBookingClick}
+            handleRightClick={handleRightClick}
+            handleCellClick={handleCellClick}
+            firstVisibleDate={dates[0]}
+          />
+        );
+      })}
+    </tr>
+  );
 };
