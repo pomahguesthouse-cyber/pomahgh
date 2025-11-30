@@ -97,6 +97,17 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
     if (searchCheckOut) setCheckOut(searchCheckOut);
   }, [searchCheckIn, searchCheckOut]);
 
+  // Auto-update guest count when room quantity changes
+  useEffect(() => {
+    if (room) {
+      const maxGuests = room.max_guests * roomQuantity;
+      setFormData(prev => ({
+        ...prev,
+        num_guests: maxGuests,
+      }));
+    }
+  }, [roomQuantity, room]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -135,6 +146,13 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
 
     if (nights > maxStay) {
       toast.error(`Maksimal menginap ${maxStay} malam`);
+      return;
+    }
+
+    // Validate guest count based on room quantity
+    const maxGuests = room.max_guests * roomQuantity;
+    if (formData.num_guests > maxGuests) {
+      toast.error(`Maksimal ${maxGuests} tamu untuk ${roomQuantity} kamar (${room.max_guests} tamu/kamar)`);
       return;
     }
 
@@ -409,11 +427,20 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
                   id="num_guests"
                   type="number"
                   min="1"
-                  max={room.max_guests}
+                  max={room.max_guests * roomQuantity}
                   value={formData.num_guests}
-                  onChange={(e) => setFormData({ ...formData, num_guests: parseInt(e.target.value) })}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 1;
+                    const maxAllowed = room.max_guests * roomQuantity;
+                    setFormData({ 
+                      ...formData, 
+                      num_guests: Math.min(value, maxAllowed) 
+                    });
+                  }}
                 />
-                <span className="text-sm text-muted-foreground">Max: {room.max_guests}</span>
+                <span className="text-sm text-muted-foreground">
+                  Max: {room.max_guests * roomQuantity} tamu ({room.max_guests}/kamar × {roomQuantity} kamar)
+                </span>
               </div>
               {errors.num_guests && <p className="text-sm text-destructive mt-1">{errors.num_guests}</p>}
             </div>
