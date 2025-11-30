@@ -615,9 +615,9 @@ export const MonthlyBookingCalendar = () => {
         <div className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[70vh] scroll-smooth"
              style={{ scrollBehavior: 'smooth' }}>
           <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-30">
+            <thead className="sticky top-0 z-40">
               <tr className="bg-muted/50">
-                <th className="sticky left-0 top-0 z-40 min-w-[110px] border border-border p-2 shadow-sm bg-gray-300 dark:bg-gray-700">
+                <th className="sticky left-0 top-0 z-50 min-w-[110px] border border-border p-2 shadow-sm bg-gray-300 dark:bg-gray-700">
                   <span className="text-[10px] font-bold uppercase tracking-wide">Kamar</span>
                 </th>
                 {dates.map(date => {
