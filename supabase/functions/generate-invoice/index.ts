@@ -115,304 +115,436 @@ serve(async (req) => {
     const checkInTime = booking.check_in_time || hotelSettings.check_in_time || "14:00";
     const checkOutTime = booking.check_out_time || hotelSettings.check_out_time || "12:00";
 
+    // Format data for invoice
+    const formattedCheckIn = format(new Date(booking.check_in), "d MMMM yyyy", { locale: id });
+    const formattedCheckOut = format(new Date(booking.check_out), "d MMMM yyyy", { locale: id });
+    const formattedCreatedAt = format(new Date(booking.created_at), "d MMMM yyyy", { locale: id });
+    
+    const formatRupiah = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
+    
+    // Prepare room list items
+    const roomListItems = bookingRooms && bookingRooms.length > 0
+      ? bookingRooms.map((br: any) => ({
+          room_name: br.rooms?.name || booking.rooms?.name,
+          room_number: br.room_number,
+          price_per_night: br.price_per_night
+        }))
+      : [{
+          room_name: booking.rooms?.name,
+          room_number: booking.allocated_room_number || '-',
+          price_per_night: booking.total_price / booking.total_nights
+        }];
+    
+    // Calculate tax
+    const taxRate = hotelSettings.tax_rate || 0;
+    const taxAmount = (booking.total_price * taxRate) / 100;
+    
+    // Prepare bank accounts HTML
+    const bankAccountsHtml = bankAccounts && bankAccounts.length > 0
+      ? bankAccounts.map((bank: any) => `
+        <div class="bank-card">
+          <div class="bank-name">🏦 ${bank.bank_name}</div>
+          <div class="bank-detail">Rekening: <strong>${bank.account_number}</strong></div>
+          <div class="bank-detail">a.n. ${bank.account_holder_name}</div>
+        </div>
+      `).join('')
+      : hotelSettings.bank_name && hotelSettings.account_number
+        ? `
+        <div class="bank-card">
+          <div class="bank-name">🏦 ${hotelSettings.bank_name}</div>
+          <div class="bank-detail">Rekening: <strong>${hotelSettings.account_number}</strong></div>
+          <div class="bank-detail">a.n. ${hotelSettings.account_holder_name || 'Pomah Guesthouse'}</div>
+        </div>
+        `
+        : '<p>Silakan hubungi admin untuk detail pembayaran.</p>';
+
     // Generate HTML invoice
     const invoiceHtml = `
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice - ${booking.booking_code}</title>
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; 
+      background-color: #f8f9fa;
       padding: 20px;
-      background-color: #f5f5f5;
-    }
-    .invoice-container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      padding: 40px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .header {
-      text-align: center;
-      border-bottom: 3px solid ${primaryColor};
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-    }
-    .hotel-name {
-      font-size: 28px;
-      font-weight: bold;
-      color: ${primaryColor};
-      margin: 10px 0;
-    }
-    .tagline {
-      color: #666;
-      font-style: italic;
-    }
-    .invoice-title {
-      font-size: 36px;
-      font-weight: bold;
-      color: ${primaryColor};
-      margin: 20px 0;
-    }
-    .booking-code {
-      font-size: 18px;
-      color: #666;
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin: 30px 0;
-    }
-    .info-box {
-      border: 1px solid #ddd;
-      padding: 15px;
-      border-radius: 5px;
-    }
-    .info-box h3 {
-      margin: 0 0 10px 0;
-      color: ${primaryColor};
-      font-size: 14px;
-      text-transform: uppercase;
-    }
-    .info-box p {
-      margin: 5px 0;
       color: #333;
     }
-    .table-container {
-      margin: 30px 0;
+    .invoice-container { 
+      max-width: 850px; 
+      margin: 0 auto; 
+      background: white; 
+      padding: 50px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: flex-start;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid ${primaryColor};
     }
-    th {
-      background: ${primaryColor};
-      color: white;
-      padding: 12px;
-      text-align: left;
+    .header-left { display: flex; align-items: center; gap: 15px; }
+    .logo { max-height: 60px; max-width: 180px; object-fit: contain; }
+    .hotel-name { font-size: 24px; font-weight: bold; color: ${primaryColor}; }
+    .header-right { text-align: right; font-size: 13px; color: #666; line-height: 1.8; }
+    .invoice-title-section { 
+      text-align: right; 
+      margin-bottom: 40px;
+    }
+    .invoice-title { 
+      font-size: 42px; 
+      font-weight: bold; 
+      font-style: italic; 
+      color: ${primaryColor};
+      margin-bottom: 10px;
+    }
+    .invoice-meta { 
+      font-size: 14px; 
+      color: #666; 
+      line-height: 1.8;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
       font-size: 12px;
+      font-weight: 600;
+      margin-top: 5px;
+    }
+    .status-confirmed { background-color: #d4edda; color: #155724; }
+    .status-pending { background-color: #fff3cd; color: #856404; }
+    .status-cancelled { background-color: #f8d7da; color: #721c24; }
+    .guest-info-box { 
+      background: white;
+      border-left: 4px solid ${primaryColor};
+      padding: 25px 30px;
+      margin-bottom: 40px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .guest-label { 
+      font-style: italic; 
+      color: ${primaryColor}; 
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .guest-name { 
+      font-size: 20px; 
+      font-weight: bold; 
+      margin-bottom: 8px;
+      color: #222;
+    }
+    .guest-detail { 
+      font-size: 14px; 
+      color: #666; 
+      margin: 4px 0;
+    }
+    .section-title { 
+      font-size: 18px; 
+      font-weight: bold; 
+      color: ${primaryColor};
+      margin: 40px 0 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .booking-table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .booking-table thead { 
+      background: ${primaryColor}; 
+      color: white;
+    }
+    .booking-table th { 
+      padding: 14px 12px; 
+      text-align: left; 
+      font-weight: 600;
+      font-size: 13px;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #ddd;
+    .booking-table td { 
+      padding: 14px 12px; 
+      border-bottom: 1px solid #e9ecef;
     }
-    .summary {
-      margin: 30px 0;
-      float: right;
-      width: 300px;
+    .booking-table tbody tr:hover { 
+      background-color: #f8f9fa;
+    }
+    .booking-table .text-right { text-align: right; }
+    .booking-table .text-center { text-align: center; }
+    .stay-details {
+      background: #f8f9fa;
+      padding: 20px 25px;
+      border-radius: 6px;
+      margin-bottom: 30px;
+    }
+    .stay-details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      font-size: 14px;
+    }
+    .stay-detail-item {
+      display: flex;
+      gap: 8px;
+    }
+    .stay-detail-label {
+      font-weight: 600;
+      color: #555;
+      min-width: 80px;
+    }
+    .stay-detail-value {
+      color: #222;
+    }
+    .summary-section { 
+      margin-top: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .summary-table {
+      width: 350px;
+      font-size: 15px;
     }
     .summary-row {
       display: flex;
       justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid #eee;
+      padding: 10px 0;
+      border-bottom: 1px solid #e9ecef;
     }
-    .summary-total {
-      font-size: 20px;
-      font-weight: bold;
-      color: ${primaryColor};
+    .summary-row.total {
       border-top: 2px solid ${primaryColor};
-      padding-top: 10px;
+      border-bottom: none;
+      padding-top: 15px;
       margin-top: 10px;
-    }
-    .payment-status {
-      display: inline-block;
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-size: 12px;
+      font-size: 18px;
       font-weight: bold;
-      margin-top: 10px;
-      background: ${remainingBalance === 0 ? '#4caf50' : (paidAmount === 0 ? '#f44336' : '#ff9800')};
-      color: white;
-    }
-    .bank-info {
-      clear: both;
-      background: #f9f9f9;
-      padding: 20px;
-      border-radius: 5px;
-      margin: 30px 0;
-      border-left: 4px solid ${primaryColor};
-    }
-    .bank-info h3 {
-      margin: 0 0 15px 0;
       color: ${primaryColor};
     }
-    .bank-account {
-      margin: 10px 0;
-      padding: 10px;
-      background: white;
-      border-radius: 3px;
+    .payment-section {
+      background: #f5f5f5;
+      padding: 25px;
+      margin-top: 40px;
+      border-radius: 6px;
     }
-    .custom-notes {
-      margin-top: 20px;
-      padding: 15px;
-      background-color: ${secondaryColor};
-      border-radius: 8px;
-      font-style: italic;
+    .payment-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: ${primaryColor};
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .payment-instruction {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .bank-card {
+      background: white;
+      padding: 20px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .bank-name {
+      font-size: 16px;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bank-detail {
+      font-size: 14px;
+      color: #666;
+      margin: 5px 0;
+    }
+    .paid-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 20px;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 16px;
     }
     .footer {
+      margin-top: 50px;
+      padding-top: 25px;
+      border-top: 2px solid #e9ecef;
       text-align: center;
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 2px solid #eee;
-      color: #666;
+      color: #999;
+      font-size: 13px;
     }
-    @media print {
-      body { background: white; }
-      .invoice-container { box-shadow: none; }
+    .notes-section {
+      background: #fffbf0;
+      padding: 20px;
+      margin-top: 30px;
+      border-radius: 6px;
+      border-left: 4px solid #ffc107;
+    }
+    .notes-title {
+      font-weight: bold;
+      color: #856404;
+      margin-bottom: 10px;
+    }
+    .notes-content {
+      font-size: 14px;
+      color: #856404;
+      line-height: 1.6;
     }
   </style>
 </head>
-<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
-  <div class="invoice-container" style="max-width: 800px; margin: 0 auto; background: white; padding: 40px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-    <div class="header" style="text-align: center; border-bottom: 3px solid ${primaryColor}; padding-bottom: 20px; margin-bottom: 30px;">
-      ${showLogo && hotelSettings.logo_url ? `<img src="${hotelSettings.logo_url}" alt="${hotelSettings.hotel_name} Logo" crossorigin="anonymous" style="max-height: 80px; max-width: 200px; margin-bottom: 10px; object-fit: contain; display: block; margin-left: auto; margin-right: auto;" onerror="this.style.display='none'">` : ''}
-      <div class="hotel-name" style="font-size: 28px; font-weight: bold; color: ${primaryColor}; margin: 10px 0;">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
-      <div class="tagline" style="color: #666; font-style: italic;">${hotelSettings.tagline || 'Your Home Away From Home'}</div>
-      <p style="margin: 10px 0; color: #666; font-size: 14px;">
-        📍 ${hotelSettings.address || ''}, ${hotelSettings.city || ''}<br>
-        📧 ${hotelSettings.email_primary || ''} | 📞 ${hotelSettings.phone_primary || ''}
-      </p>
-    </div>
-
-    <div style="text-align: center;">
-      <div class="invoice-title" style="font-size: 36px; font-weight: bold; color: ${primaryColor}; margin: 20px 0;">INVOICE</div>
-      <div class="booking-code" style="font-size: 18px; color: #666;">#${booking.booking_code}</div>
-    </div>
-
-    <div class="info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0;">
-      <div class="info-box" style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
-        <h3 style="margin: 0 0 10px 0; color: ${primaryColor}; font-size: 14px; text-transform: uppercase;">👤 Ditagih Kepada</h3>
-        <p><strong>${booking.guest_name}</strong></p>
-        <p>${booking.guest_email}</p>
-        <p>${booking.guest_phone || '-'}</p>
-        <p style="margin-top: 15px;">
-          🔑 Check-in: ${checkInDate}, ${checkInTime}<br>
-          🔑 Check-out: ${checkOutDate}, ${checkOutTime}
-        </p>
+<body>
+  <div class="invoice-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        ${showLogo && hotelSettings.logo_url ? `
+          <img 
+            src="${hotelSettings.logo_url}" 
+            alt="${hotelSettings.hotel_name} Logo" 
+            class="logo"
+            crossorigin="anonymous"
+            onerror="this.style.display='none'"
+          >
+        ` : ''}
+        <div class="hotel-name">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
       </div>
-
-      <div class="info-box" style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
-        <h3 style="margin: 0 0 10px 0; color: ${primaryColor}; font-size: 14px; text-transform: uppercase;">📋 Detail Booking</h3>
-        <p>Tanggal: ${format(new Date(booking.created_at), "d MMMM yyyy", { locale: id })}</p>
-        <p>Status: <strong>${booking.status.toUpperCase()}</strong></p>
-        <p>Total Malam: <strong>${booking.total_nights} malam</strong></p>
-        <p>Jumlah Tamu: <strong>${booking.num_guests} orang</strong></p>
+      <div class="header-right">
+        ${hotelSettings.address ? `📍 ${hotelSettings.address}` : ''}<br>
+        ${hotelSettings.city ? `${hotelSettings.city}, ${hotelSettings.country || 'Indonesia'}` : ''}<br>
+        ${hotelSettings.email_primary ? `📧 ${hotelSettings.email_primary}` : ''}<br>
+        ${hotelSettings.phone_primary ? `📞 ${hotelSettings.phone_primary}` : ''}
       </div>
     </div>
 
-    <div class="table-container" style="margin: 30px 0;">
-      <table style="width: 100%; border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <thead>
+    <!-- Invoice Title Section -->
+    <div class="invoice-title-section">
+      <div class="invoice-title">INVOICE</div>
+      <div class="invoice-meta">
+        <strong>Kode Booking #${booking.booking_code}</strong><br>
+        Tanggal: ${formattedCreatedAt}<br>
+        <span class="status-badge status-${booking.status}">${booking.status.toUpperCase()}</span>
+      </div>
+    </div>
+
+    <!-- Guest Information -->
+    <div class="guest-info-box">
+      <div class="guest-label">Nama Tamu</div>
+      <div class="guest-name">${booking.guest_name}</div>
+      <div class="guest-detail">${booking.guest_email}</div>
+      ${booking.guest_phone ? `<div class="guest-detail">${booking.guest_phone}</div>` : ''}
+    </div>
+
+    <!-- Detail Booking -->
+    <div class="section-title">📋 DETAIL BOOKING</div>
+    <table class="booking-table">
+      <thead>
+        <tr>
+          <th style="width: 60px;">NO</th>
+          <th>DESKRIPSI</th>
+          <th class="text-right" style="width: 140px;">HARGA/MALAM</th>
+          <th class="text-center" style="width: 80px;">MALAM</th>
+          <th class="text-right" style="width: 140px;">SUBTOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${roomListItems.map((room: any, index: number) => `
           <tr>
-            <th style="background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">No</th>
-            <th style="background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Deskripsi</th>
-            <th style="background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Harga/Malam</th>
-            <th style="background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Malam</th>
-            <th style="background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase;">Subtotal</th>
+            <td>${index + 1}</td>
+            <td>
+              <strong>${room.room_name}</strong><br>
+              <small style="color: #666;">Nomor Kamar: ${room.room_number}</small>
+            </td>
+            <td class="text-right">${formatRupiah(room.price_per_night)}</td>
+            <td class="text-center">${booking.total_nights}</td>
+            <td class="text-right"><strong>${formatRupiah(room.price_per_night * booking.total_nights)}</strong></td>
           </tr>
-        </thead>
-        <tbody>
-          ${bookingRooms && bookingRooms.length > 0 
-            ? bookingRooms.map((br: any, index: number) => `
-              <tr>
-                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${index + 1}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${br.rooms?.name || booking.rooms?.name} #${br.room_number}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #ddd;">Rp ${br.price_per_night.toLocaleString('id-ID')}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${booking.total_nights}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #ddd;">Rp ${(br.price_per_night * booking.total_nights).toLocaleString('id-ID')}</td>
-              </tr>
-            `).join('')
-            : `
-              <tr>
-                <td style="padding: 12px; border-bottom: 1px solid #ddd;">1</td>
-                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${booking.rooms?.name}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #ddd;">Rp ${(booking.total_price / booking.total_nights).toLocaleString('id-ID')}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${booking.total_nights}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #ddd;">Rp ${booking.total_price.toLocaleString('id-ID')}</td>
-              </tr>
-            `
-          }
-        </tbody>
-      </table>
-    </div>
+        `).join('')}
+      </tbody>
+    </table>
 
-    <div class="summary" style="margin: 30px 0; float: right; width: 300px;">
-      <div class="summary-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
-        <span>Subtotal:</span>
-        <span>Rp ${booking.total_price.toLocaleString('id-ID')}</span>
-      </div>
-      <div class="summary-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
-        <span>Pajak (${hotelSettings.tax_rate || 0}%):</span>
-        <span>Rp ${((booking.total_price * (hotelSettings.tax_rate || 0)) / 100).toLocaleString('id-ID')}</span>
-      </div>
-      <div class="summary-row summary-total" style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 20px; font-weight: bold; color: ${primaryColor}; border-top: 2px solid ${primaryColor}; padding-top: 10px; margin-top: 10px;">
-        <span>TOTAL:</span>
-        <span>Rp ${booking.total_price.toLocaleString('id-ID')}</span>
-      </div>
-      <div class="summary-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; color: #4caf50;">
-        <span>Terbayar:</span>
-        <span>Rp ${paidAmount.toLocaleString('id-ID')}</span>
-      </div>
-      <div class="summary-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold; color: ${remainingBalance > 0 ? '#f44336' : '#4caf50'};">
-        <span>Sisa:</span>
-        <span>Rp ${remainingBalance.toLocaleString('id-ID')}</span>
-      </div>
-      <div style="text-align: center;">
-        <span class="payment-status" style="display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-top: 10px; background: ${remainingBalance === 0 ? '#4caf50' : (paidAmount === 0 ? '#f44336' : '#ff9800')}; color: white;">${paymentStatus}</span>
+    <!-- Detail Menginap -->
+    <div class="section-title">🗓️ Detail Menginap</div>
+    <div class="stay-details">
+      <div class="stay-details-grid">
+        <div class="stay-detail-item">
+          <span class="stay-detail-label">Check-in:</span>
+          <span class="stay-detail-value">${formattedCheckIn}, ${booking.check_in_time || '14:00'} WIB</span>
+        </div>
+        <div class="stay-detail-item">
+          <span class="stay-detail-label">Check-out:</span>
+          <span class="stay-detail-value">${formattedCheckOut}, ${booking.check_out_time || '12:00'} WIB</span>
+        </div>
+        <div class="stay-detail-item">
+          <span class="stay-detail-label">Durasi:</span>
+          <span class="stay-detail-value">${booking.total_nights} malam</span>
+        </div>
+        <div class="stay-detail-item">
+          <span class="stay-detail-label">Tamu:</span>
+          <span class="stay-detail-value">${booking.num_guests} orang</span>
+        </div>
       </div>
     </div>
 
-    <div style="clear: both;"></div>
-
-    ${customNotes ? `
-    <div class="custom-notes" style="margin-top: 20px; padding: 15px; background-color: ${secondaryColor}; border-radius: 8px; font-style: italic;">
-      <h3 style="margin: 0 0 10px 0; color: ${primaryColor};">📌 Catatan</h3>
-      <div>${customNotes}</div>
+    <!-- Summary -->
+    <div class="summary-section">
+      <div class="summary-table">
+        <div class="summary-row">
+          <span>Subtotal:</span>
+          <span>${formatRupiah(booking.total_price)}</span>
+        </div>
+        <div class="summary-row">
+          <span>Pajak (${taxRate}%):</span>
+          <span>${formatRupiah(taxAmount)}</span>
+        </div>
+        <div class="summary-row total">
+          <span>TOTAL:</span>
+          <span>${formatRupiah(booking.total_price)}</span>
+        </div>
+      </div>
     </div>
-    ` : ''}
 
+    <!-- Payment Instructions or Paid Message -->
     ${remainingBalance > 0 && showBankAccounts ? `
-    <div class="bank-info" style="clear: both; background: #f9f9f9; padding: 20px; border-radius: 5px; margin: 30px 0; border-left: 4px solid ${primaryColor};">
-      <h3 style="margin: 0 0 15px 0; color: ${primaryColor};">💳 Instruksi Pembayaran</h3>
-      <p style="margin-bottom: 15px;">Silakan transfer sisa pembayaran ke salah satu rekening berikut:</p>
-      ${bankAccounts && bankAccounts.length > 0 
-        ? bankAccounts.map((bank: any) => `
-          <div class="bank-account" style="margin: 10px 0; padding: 10px; background: white; border-radius: 3px;">
-            <strong>🏦 ${bank.bank_name}</strong><br>
-            Rekening: ${bank.account_number}<br>
-            a.n. ${bank.account_holder_name}
-          </div>
-        `).join('')
-        : hotelSettings.bank_name && hotelSettings.account_number
-          ? `
-          <div class="bank-account" style="margin: 10px 0; padding: 10px; background: white; border-radius: 3px;">
-            <strong>🏦 ${hotelSettings.bank_name}</strong><br>
-            Rekening: ${hotelSettings.account_number}<br>
-            a.n. ${hotelSettings.account_holder_name || 'Pomah Guesthouse'}
-          </div>
-          `
-          : '<p>Silakan hubungi admin untuk detail pembayaran.</p>'
-      }
-      <p style="margin-top: 15px; color: #f44336;">⚠️ <strong>Pembayaran paling lambat sebelum check-in</strong></p>
-    </div>
+      <div class="payment-section">
+        <div class="payment-title">💳 Instruksi Pembayaran</div>
+        <div class="payment-instruction">
+          Silakan transfer ${remainingBalance === booking.total_price ? 'pembayaran' : 'sisa pembayaran'} sebesar <strong>${formatRupiah(remainingBalance)}</strong> ke salah satu rekening berikut:
+        </div>
+        ${bankAccountsHtml}
+      </div>
+    ` : remainingBalance === 0 ? `
+      <div class="paid-message">
+        ✓ Pembayaran sudah lunas - Terima kasih!
+      </div>
     ` : ''}
 
-    <div class="footer" style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; color: #666;">
-      <h3 style="color: ${primaryColor};">🙏 Terima Kasih</h3>
-      <p>${footerText}</p>
-      <p style="margin-top: 15px; font-size: 12px;">
-        📧 ${hotelSettings.email_primary || ''} | 
-        📞 ${hotelSettings.phone_primary || ''} | 
-        🌐 ${hotelSettings.canonical_url || ''}
-      </p>
+    <!-- Custom Notes -->
+    ${customNotes ? `
+      <div class="notes-section">
+        <div class="notes-title">📌 Catatan Penting</div>
+        <div class="notes-content">${customNotes}</div>
+      </div>
+    ` : ''}
+
+    <!-- Footer -->
+    <div class="footer">
+      ${footerText || 'Terima kasih telah memilih ' + (hotelSettings.hotel_name || 'Pomah Guesthouse') + '. Kami menantikan kedatangan Anda!'}<br>
+      <small>Invoice ini dibuat secara otomatis pada ${formattedCreatedAt}</small>
     </div>
   </div>
 </body>
