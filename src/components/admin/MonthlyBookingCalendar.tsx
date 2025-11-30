@@ -575,6 +575,7 @@ export const MonthlyBookingCalendar = () => {
   }, [contextMenu]);
   return (
     <>
+      <h2 className="text-xl font-bold mb-3 px-4">Booking Calendar</h2>
       <Card className="w-full shadow-lg rounded-xl border-border/50">
         <div className="p-4 border-b border-border bg-slate-300">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
