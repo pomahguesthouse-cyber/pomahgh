@@ -10,6 +10,7 @@ import { DeleteChannelManagerDialog } from "@/components/admin/DeleteChannelMana
 import { TestChannelManagerButton } from "@/components/admin/TestChannelManagerButton";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
+import { formatDateTimeID } from "@/utils/indonesianFormat";
 
 export default function AdminChannelManagers() {
   const { 
@@ -147,7 +148,7 @@ export default function AdminChannelManagers() {
                               {log.channel_managers?.name} - {log.rooms?.name}
                             </p>
                             <p className="text-muted-foreground text-xs">
-                              {new Date(log.created_at).toLocaleString('id-ID')}
+                              {formatDateTimeID(log.created_at)}
                             </p>
                             {log.error_message && (
                               <p className="text-xs text-red-500 mt-1 truncate">

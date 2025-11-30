@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PlaneIcon, PlaneLanding, Search, X } from "lucide-react";
-import { format, isToday, isTomorrow, isYesterday, parseISO } from "date-fns";
-import { id as localeId } from "date-fns/locale";
+import { isToday, isTomorrow, isYesterday, parseISO } from "date-fns";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { cn } from "@/lib/utils";
+import { formatDateShortID, formatTimeID } from "@/utils/indonesianFormat";
 
 type FilterType = "today" | "tomorrow" | "yesterday";
 
@@ -90,9 +90,9 @@ export const ArrivingDepartingWidgets = () => {
           <thead>
             <tr className="border-b">
               <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">ID</th>
-              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">CUSTOMER NAME</th>
-              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">ADULTS</th>
-              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">ROOMS</th>
+              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">NAMA TAMU</th>
+              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">TAMU</th>
+              <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">KAMAR</th>
               <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">
                 {type === "arriving" ? "CHECK-OUT" : "CHECK-IN"}
               </th>
@@ -112,21 +112,21 @@ export const ArrivingDepartingWidgets = () => {
                     </div>
                   </td>
                   <td className="py-2 px-2 text-sm font-medium">{booking.guest_name}</td>
-                  <td className="py-2 px-2 text-sm">{booking.num_guests} Adults</td>
+                  <td className="py-2 px-2 text-sm">{booking.num_guests} Tamu</td>
                   <td className="py-2 px-2 text-sm">
                     {booking.allocated_room_number || booking.rooms?.name || "N/A"}
                   </td>
                   <td className="py-2 px-2">
                     <div className="text-sm">
-                      {format(parseISO(displayDate), "dd/MM/yyyy", { locale: localeId })}
+                      {formatDateShortID(displayDate)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {displayTime ? displayTime.slice(0, 5) : "N/A"}
+                      {displayTime ? formatTimeID(displayTime.slice(0, 5)) : "N/A"}
                     </div>
                   </td>
                   <td className="py-2 px-2">
                     <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs px-2 py-0.5">
-                      Confirmed
+                      Terkonfirmasi
                     </Badge>
                   </td>
                 </tr>

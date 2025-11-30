@@ -7,6 +7,7 @@ import { ArrivingDepartingWidgets } from "@/components/admin/ArrivingDepartingWi
 import { DollarSign, Users, Calendar, TrendingUp, Building2, PercentIcon } from "lucide-react";
 import { useMemo } from "react";
 import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { formatRupiahID } from "@/utils/indonesianFormat";
 
 
 const AdminDashboard = () => {
@@ -93,9 +94,9 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              Rp {analytics.totalRevenue.toLocaleString()}
+              {formatRupiahID(analytics.totalRevenue)}
             </div>
-            <p className="text-xs text-muted-foreground">All-time earnings</p>
+            <p className="text-xs text-muted-foreground">Total pendapatan</p>
           </CardContent>
         </Card>
 
@@ -106,9 +107,9 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              Rp {analytics.monthlyRevenue.toLocaleString()}
+              {formatRupiahID(analytics.monthlyRevenue)}
             </div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <p className="text-xs text-muted-foreground">Bulan ini</p>
           </CardContent>
         </Card>
 
@@ -120,7 +121,7 @@ const AdminDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{analytics.totalBookings}</div>
             <p className="text-xs text-muted-foreground">
-              {analytics.confirmedBookings} confirmed
+              {analytics.confirmedBookings} terkonfirmasi
             </p>
           </CardContent>
         </Card>
@@ -134,7 +135,7 @@ const AdminDashboard = () => {
             <div className="text-2xl font-bold">
               {analytics.occupancyRate.toFixed(1)}%
             </div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <p className="text-xs text-muted-foreground">Bulan ini</p>
           </CardContent>
         </Card>
       </div>
@@ -147,19 +148,19 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Avg. Stay Duration</span>
+              <span className="text-sm text-muted-foreground">Rata-rata Menginap</span>
               <span className="font-semibold">
-                {analytics.avgBookingDuration.toFixed(1)} nights
+                {analytics.avgBookingDuration.toFixed(1)} malam
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Cancellation Rate</span>
+              <span className="text-sm text-muted-foreground">Tingkat Pembatalan</span>
               <span className="font-semibold">
                 {analytics.cancellationRate.toFixed(1)}%
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Confirmed Bookings</span>
+              <span className="text-sm text-muted-foreground">Booking Terkonfirmasi</span>
               <span className="font-semibold">{analytics.confirmedBookings}</span>
             </div>
           </CardContent>
@@ -175,7 +176,7 @@ const AdminDashboard = () => {
                 <div key={idx} className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">{item.roomName}</span>
                   <span className="font-semibold">
-                    Rp {item.revenue.toLocaleString()}
+                    {formatRupiahID(item.revenue)}
                   </span>
                 </div>
               ))}
@@ -194,14 +195,14 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Total Rooms</p>
+                <p className="text-sm text-muted-foreground">Total Kamar</p>
                 <p className="text-2xl font-bold">{analytics.totalRooms}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Confirmed Guests</p>
+                <p className="text-sm text-muted-foreground">Tamu Terkonfirmasi</p>
                 <p className="text-2xl font-bold">{analytics.confirmedBookings}</p>
               </div>
             </div>

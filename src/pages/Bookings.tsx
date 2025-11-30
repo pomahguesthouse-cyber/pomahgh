@@ -5,9 +5,9 @@ import { User } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { formatDateID, formatRupiahID } from "@/utils/indonesianFormat";
 
 interface Booking {
   id: string;
@@ -102,8 +102,8 @@ const Bookings = () => {
       <main className="flex-1 container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">My Bookings</h1>
-            <p className="text-muted-foreground">View and manage your reservations</p>
+            <h1 className="text-3xl font-bold mb-2">Booking Saya</h1>
+            <p className="text-muted-foreground">Lihat dan kelola reservasi Anda</p>
           </div>
 
           {isLoading ? (
@@ -113,8 +113,8 @@ const Bookings = () => {
           ) : bookings.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground mb-4">You don't have any bookings yet.</p>
-                <Button onClick={() => navigate("/#rooms")}>Browse Rooms</Button>
+                <p className="text-muted-foreground mb-4">Anda belum memiliki booking.</p>
+                <Button onClick={() => navigate("/#rooms")}>Lihat Kamar</Button>
               </CardContent>
             </Card>
           ) : (
@@ -126,7 +126,7 @@ const Bookings = () => {
                       <div>
                         <CardTitle>Booking {booking.booking_code}</CardTitle>
                         <CardDescription>
-                          Created {format(new Date(booking.created_at), "MMM dd, yyyy")}
+                          Dibuat {formatDateID(new Date(booking.created_at))}
                         </CardDescription>
                       </div>
                       <span
@@ -147,31 +147,31 @@ const Bookings = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">Check-in</p>
                         <p className="font-medium">
-                          {format(new Date(booking.check_in), "MMM dd, yyyy")}
+                          {formatDateID(new Date(booking.check_in))}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Check-out</p>
                         <p className="font-medium">
-                          {format(new Date(booking.check_out), "MMM dd, yyyy")}
+                          {formatDateID(new Date(booking.check_out))}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Nights</p>
+                        <p className="text-sm text-muted-foreground">Malam</p>
                         <p className="font-medium">{booking.total_nights}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Guests</p>
+                        <p className="text-sm text-muted-foreground">Tamu</p>
                         <p className="font-medium">{booking.num_guests}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Total Price</p>
-                        <p className="font-medium">Rp {booking.total_price.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">Total Harga</p>
+                        <p className="font-medium">{formatRupiahID(booking.total_price)}</p>
                       </div>
                     </div>
                     {booking.special_requests && (
                       <div className="mb-4">
-                        <p className="text-sm text-muted-foreground">Special Requests</p>
+                        <p className="text-sm text-muted-foreground">Permintaan Khusus</p>
                         <p className="text-sm">{booking.special_requests}</p>
                       </div>
                     )}
@@ -181,7 +181,7 @@ const Bookings = () => {
                         size="sm"
                         onClick={() => handleCancelBooking(booking.id)}
                       >
-                        Cancel Booking
+                        Batal Booking
                       </Button>
                     )}
                   </CardContent>

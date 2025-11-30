@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { useChatbot } from "@/hooks/useChatbot";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { formatTimeID } from "@/utils/indonesianFormat";
 
 const ChatbotWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -122,10 +123,10 @@ const ChatbotWidget = () => {
                 >
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   <p className="text-xs opacity-70 mt-1">
-                    {message.timestamp.toLocaleTimeString("id-ID", {
+                    {formatTimeID(message.timestamp.toLocaleTimeString("id-ID", {
                       hour: "2-digit",
                       minute: "2-digit",
-                    })}
+                    }))}
                   </p>
                 </div>
               </div>
