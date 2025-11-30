@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
+import { useBookingValidation } from "@/hooks/useBookingValidation";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addDays, parseISO, differenceInDays } from "date-fns";
 import { getWIBToday, isWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
@@ -100,6 +101,7 @@ export const MonthlyBookingCalendar = () => {
     addUnavailableDates,
     removeUnavailableDates
   } = useRoomAvailability();
+  const { checkBookingConflict } = useBookingValidation();
   const queryClient = useQueryClient();
 
   // Calculate date range based on view selection
@@ -288,18 +290,98 @@ export const MonthlyBookingCalendar = () => {
     }
   };
 
-  const handleRoomTypeChange = (newRoomId: string) => {
+  const handleRoomTypeChange = async (newRoomId: string) => {
     if (!editedBooking) return;
     const newRoom = rooms?.find(r => r.id === newRoomId);
     if (!newRoom) return;
 
-    setAvailableRoomNumbers(newRoom.room_numbers || []);
+    // Check for conflicts with the new room type
+    const checkInDate = new Date(editedBooking.check_in);
+    const checkOutDate = new Date(editedBooking.check_out);
+    
+    // Check each available room number for conflicts
+    const availableRooms: string[] = [];
+    for (const roomNumber of newRoom.room_numbers || []) {
+      const conflict = await checkBookingConflict({
+        roomId: newRoomId,
+        roomNumber,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        checkInTime: editedBooking.check_in_time,
+        checkOutTime: editedBooking.check_out_time,
+        excludeBookingId: editedBooking.id
+      });
+
+      if (!conflict.hasConflict) {
+        availableRooms.push(roomNumber);
+      }
+    }
+
+    // Show warning if all rooms are booked
+    if (availableRooms.length === 0) {
+      toast.error(`Semua ${newRoom.name} sudah dibooking untuk tanggal ini`, {
+        description: "Silakan pilih tipe kamar lain atau ubah tanggal booking"
+      });
+      return;
+    }
+
+    // Show info if only some rooms are available
+    if (availableRooms.length < (newRoom.room_numbers?.length || 0)) {
+      toast.warning(`${availableRooms.length} dari ${newRoom.room_numbers?.length} ${newRoom.name} tersedia`, {
+        description: "Beberapa kamar sudah dibooking untuk tanggal ini"
+      });
+    }
+
+    setAvailableRoomNumbers(availableRooms);
     setEditedBooking({
       ...editedBooking,
       room_id: newRoomId,
-      allocated_room_number: newRoom.room_numbers?.[0] || ""
+      allocated_room_number: availableRooms[0] || ""
     });
   };
+
+  const handleDateChange = async (field: 'check_in' | 'check_out', value: string) => {
+    if (!editedBooking) return;
+
+    const nights = field === 'check_in' 
+      ? differenceInDays(new Date(editedBooking.check_out), new Date(value))
+      : differenceInDays(new Date(value), new Date(editedBooking.check_in));
+
+    const updatedBooking = {
+      ...editedBooking,
+      [field]: value,
+      total_nights: nights > 0 ? nights : 1
+    };
+
+    setEditedBooking(updatedBooking);
+
+    // Only check conflict if both dates are set and allocated_room_number exists
+    if (updatedBooking.check_in && updatedBooking.check_out && updatedBooking.allocated_room_number) {
+      const checkInDate = new Date(updatedBooking.check_in);
+      const checkOutDate = new Date(updatedBooking.check_out);
+
+      if (checkOutDate <= checkInDate) {
+        return; // Invalid date range, will be caught by form validation
+      }
+
+      const conflict = await checkBookingConflict({
+        roomId: updatedBooking.room_id,
+        roomNumber: updatedBooking.allocated_room_number,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        checkInTime: updatedBooking.check_in_time,
+        checkOutTime: updatedBooking.check_out_time,
+        excludeBookingId: updatedBooking.id
+      });
+
+      if (conflict.hasConflict) {
+        toast.error("Konflik booking terdeteksi!", {
+          description: conflict.reason || "Kamar ini sudah dibooking untuk tanggal tersebut"
+        });
+      }
+    }
+  };
+
   const handleSaveChanges = async () => {
     if (!editedBooking) return;
 
@@ -634,16 +716,12 @@ export const MonthlyBookingCalendar = () => {
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Check-in</Label>
                       {isEditMode ? <div className="space-y-2">
-                          <Input type="date" value={editedBooking.check_in} onChange={e => {
-                      const newCheckIn = e.target.value;
-                      const checkOut = editedBooking.check_out;
-                      const nights = differenceInDays(new Date(checkOut), new Date(newCheckIn));
-                      setEditedBooking({
-                        ...editedBooking,
-                        check_in: newCheckIn,
-                        total_nights: nights > 0 ? nights : 1
-                      });
-                    }} className="font-semibold" />
+                          <Input 
+                            type="date" 
+                            value={editedBooking.check_in} 
+                            onChange={e => handleDateChange('check_in', e.target.value)} 
+                            className="font-semibold" 
+                          />
                           <Input type="time" value={editedBooking.check_in_time || "14:00:00"} onChange={e => setEditedBooking({
                       ...editedBooking,
                       check_in_time: e.target.value
@@ -660,16 +738,12 @@ export const MonthlyBookingCalendar = () => {
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Check-out</Label>
                       {isEditMode ? <div className="space-y-2">
-                          <Input type="date" value={editedBooking.check_out} onChange={e => {
-                      const newCheckOut = e.target.value;
-                      const checkIn = editedBooking.check_in;
-                      const nights = differenceInDays(new Date(newCheckOut), new Date(checkIn));
-                      setEditedBooking({
-                        ...editedBooking,
-                        check_out: newCheckOut,
-                        total_nights: nights > 0 ? nights : 1
-                      });
-                    }} className="font-semibold" />
+                          <Input 
+                            type="date" 
+                            value={editedBooking.check_out} 
+                            onChange={e => handleDateChange('check_out', e.target.value)} 
+                            className="font-semibold" 
+                          />
                           <Input type="time" value={editedBooking.check_out_time || "12:00:00"} onChange={e => setEditedBooking({
                       ...editedBooking,
                       check_out_time: e.target.value

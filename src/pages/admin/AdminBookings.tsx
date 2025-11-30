@@ -3,6 +3,7 @@ import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useRooms } from "@/hooks/useRooms";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
+import { useBookingValidation } from "@/hooks/useBookingValidation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,6 +36,7 @@ const AdminBookings = () => {
   } = useRooms();
   const { settings: hotelSettings } = useHotelSettings();
   const { bankAccounts } = useBankAccounts();
+  const { checkBookingConflict } = useBookingValidation();
   
   // Create room name lookup map
   const roomNameMap = useMemo(() => {
@@ -178,16 +180,53 @@ const AdminBookings = () => {
     setEditDialogOpen(true);
   };
 
-  const handleRoomTypeChange = (newRoomId: string) => {
+  const handleRoomTypeChange = async (newRoomId: string) => {
     const newRoom = rooms?.find(r => r.id === newRoomId);
     if (!newRoom) return;
 
+    // Check for conflicts with the new room type
+    const checkInDate = new Date(editingBooking.check_in);
+    const checkOutDate = new Date(editingBooking.check_out);
+    
+    // Check each available room number for conflicts
+    const availableRooms: string[] = [];
+    for (const roomNumber of newRoom.room_numbers || []) {
+      const conflict = await checkBookingConflict({
+        roomId: newRoomId,
+        roomNumber,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        checkInTime: editingBooking.check_in_time,
+        checkOutTime: editingBooking.check_out_time,
+        excludeBookingId: editingBooking.id
+      });
+
+      if (!conflict.hasConflict) {
+        availableRooms.push(roomNumber);
+      }
+    }
+
+    // Show warning if all rooms are booked
+    if (availableRooms.length === 0) {
+      toast.error(`Semua ${newRoom.name} sudah dibooking untuk tanggal ini`, {
+        description: "Silakan pilih tipe kamar lain atau ubah tanggal booking"
+      });
+      return;
+    }
+
+    // Show info if only some rooms are available
+    if (availableRooms.length < (newRoom.room_numbers?.length || 0)) {
+      toast.warning(`${availableRooms.length} dari ${newRoom.room_numbers?.length} ${newRoom.name} tersedia`, {
+        description: "Beberapa kamar sudah dibooking untuk tanggal ini"
+      });
+    }
+
     setSelectedRoomId(newRoomId);
-    setAvailableRoomNumbers(newRoom.room_numbers || []);
+    setAvailableRoomNumbers(availableRooms);
     setEditingBooking({
       ...editingBooking,
       room_id: newRoomId,
-      allocated_room_number: newRoom.room_numbers?.[0] || ""
+      allocated_room_number: availableRooms[0] || ""
     });
 
     // Reset custom pricing when changing room type
@@ -201,6 +240,41 @@ const AdminBookings = () => {
         ...prev,
         total_price: newTotalPrice
       }));
+    }
+  };
+
+  const handleDateChange = async (field: 'check_in' | 'check_out', value: string) => {
+    const updatedBooking = {
+      ...editingBooking,
+      [field]: value
+    };
+
+    setEditingBooking(updatedBooking);
+
+    // Only check conflict if both dates are set and allocated_room_number exists
+    if (updatedBooking.check_in && updatedBooking.check_out && updatedBooking.allocated_room_number) {
+      const checkInDate = new Date(updatedBooking.check_in);
+      const checkOutDate = new Date(updatedBooking.check_out);
+
+      if (checkOutDate <= checkInDate) {
+        return; // Invalid date range, will be caught by form validation
+      }
+
+      const conflict = await checkBookingConflict({
+        roomId: updatedBooking.room_id,
+        roomNumber: updatedBooking.allocated_room_number,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        checkInTime: updatedBooking.check_in_time,
+        checkOutTime: updatedBooking.check_out_time,
+        excludeBookingId: updatedBooking.id
+      });
+
+      if (conflict.hasConflict) {
+        toast.error("Konflik booking terdeteksi!", {
+          description: conflict.reason || "Kamar ini sudah dibooking untuk tanggal tersebut"
+        });
+      }
     }
   };
 
@@ -821,10 +895,11 @@ const AdminBookings = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Check-in Date</Label>
-                  <Input type="date" value={editingBooking.check_in} onChange={e => setEditingBooking({
-                ...editingBooking,
-                check_in: e.target.value
-              })} />
+                  <Input 
+                    type="date" 
+                    value={editingBooking.check_in} 
+                    onChange={e => handleDateChange('check_in', e.target.value)} 
+                  />
                 </div>
                 <div>
                   <Label>Check-in Time</Label>
@@ -838,10 +913,11 @@ const AdminBookings = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Check-out Date</Label>
-                  <Input type="date" value={editingBooking.check_out} onChange={e => setEditingBooking({
-                ...editingBooking,
-                check_out: e.target.value
-              })} />
+                  <Input 
+                    type="date" 
+                    value={editingBooking.check_out} 
+                    onChange={e => handleDateChange('check_out', e.target.value)} 
+                  />
                 </div>
                 <div>
                   <Label>Check-out Time</Label>
