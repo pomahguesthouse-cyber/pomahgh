@@ -64,7 +64,7 @@ export function AdminSidebar() {
     open
   } = useSidebar();
   const location = useLocation();
-  return <Sidebar className={open ? "w-60" : "w-14"} collapsible="icon">
+  return <Sidebar className={`${open ? "w-60" : "w-14"} z-50`} collapsible="icon">
       <SidebarContent>
         <SidebarGroup className="bg-primary-foreground shadow opacity-100 border-solid">
           <SidebarGroupLabel>Admin Panel</SidebarGroupLabel>
