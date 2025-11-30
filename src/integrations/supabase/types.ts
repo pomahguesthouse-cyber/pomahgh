@@ -246,8 +246,6 @@ export type Database = {
           guest_name: string
           guest_phone: string | null
           id: string
-          invoice_number: string | null
-          last_invoice_sent_at: string | null
           num_guests: number
           ota_name: string | null
           other_source: string | null
@@ -273,8 +271,6 @@ export type Database = {
           guest_name: string
           guest_phone?: string | null
           id?: string
-          invoice_number?: string | null
-          last_invoice_sent_at?: string | null
           num_guests?: number
           ota_name?: string | null
           other_source?: string | null
@@ -300,8 +296,6 @@ export type Database = {
           guest_name?: string
           guest_phone?: string | null
           id?: string
-          invoice_number?: string | null
-          last_invoice_sent_at?: string | null
           num_guests?: number
           ota_name?: string | null
           other_source?: string | null
@@ -773,7 +767,6 @@ export type Database = {
           account_holder_name: string | null
           account_number: string | null
           address: string
-          auto_send_invoice: boolean | null
           bank_name: string | null
           check_in_time: string | null
           check_out_time: string | null
@@ -796,7 +789,6 @@ export type Database = {
           hotel_name: string
           id: string
           instagram_url: string | null
-          invoice_footer_text: string | null
           latitude: number | null
           logo_url: string | null
           longitude: number | null
@@ -831,7 +823,6 @@ export type Database = {
           account_holder_name?: string | null
           account_number?: string | null
           address?: string
-          auto_send_invoice?: boolean | null
           bank_name?: string | null
           check_in_time?: string | null
           check_out_time?: string | null
@@ -854,7 +845,6 @@ export type Database = {
           hotel_name?: string
           id?: string
           instagram_url?: string | null
-          invoice_footer_text?: string | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
@@ -889,7 +879,6 @@ export type Database = {
           account_holder_name?: string | null
           account_number?: string | null
           address?: string
-          auto_send_invoice?: boolean | null
           bank_name?: string | null
           check_in_time?: string | null
           check_out_time?: string | null
@@ -912,7 +901,6 @@ export type Database = {
           hotel_name?: string
           id?: string
           instagram_url?: string | null
-          invoice_footer_text?: string | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
@@ -941,146 +929,6 @@ export type Database = {
           updated_at?: string | null
           whatsapp_number?: string | null
           youtube_url?: string | null
-        }
-        Relationships: []
-      }
-      invoice_logs: {
-        Row: {
-          booking_id: string
-          created_at: string | null
-          created_by: string | null
-          email_sent: boolean | null
-          error_message: string | null
-          id: string
-          invoice_number: string
-          sent_at: string | null
-          sent_to_email: string | null
-          sent_to_whatsapp: string | null
-          whatsapp_sent: boolean | null
-        }
-        Insert: {
-          booking_id: string
-          created_at?: string | null
-          created_by?: string | null
-          email_sent?: boolean | null
-          error_message?: string | null
-          id?: string
-          invoice_number: string
-          sent_at?: string | null
-          sent_to_email?: string | null
-          sent_to_whatsapp?: string | null
-          whatsapp_sent?: boolean | null
-        }
-        Update: {
-          booking_id?: string
-          created_at?: string | null
-          created_by?: string | null
-          email_sent?: boolean | null
-          error_message?: string | null
-          id?: string
-          invoice_number?: string
-          sent_at?: string | null
-          sent_to_email?: string | null
-          sent_to_whatsapp?: string | null
-          whatsapp_sent?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invoice_logs_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      invoice_templates: {
-        Row: {
-          accent_color: string | null
-          background_color: string | null
-          border_style: string | null
-          created_at: string | null
-          custom_footer_text: string | null
-          custom_header_text: string | null
-          font_family: string | null
-          font_size_base: number | null
-          font_size_heading: number | null
-          header_height: number | null
-          id: string
-          is_active: boolean | null
-          layout_style: string | null
-          logo_position: string | null
-          logo_size: string | null
-          payment_title: string | null
-          primary_color: string | null
-          secondary_color: string | null
-          show_guest_details: boolean | null
-          show_hotel_details: boolean | null
-          show_logo: boolean | null
-          show_payment_instructions: boolean | null
-          show_special_requests: boolean | null
-          spacing: string | null
-          terms_and_conditions: string | null
-          text_color: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          accent_color?: string | null
-          background_color?: string | null
-          border_style?: string | null
-          created_at?: string | null
-          custom_footer_text?: string | null
-          custom_header_text?: string | null
-          font_family?: string | null
-          font_size_base?: number | null
-          font_size_heading?: number | null
-          header_height?: number | null
-          id?: string
-          is_active?: boolean | null
-          layout_style?: string | null
-          logo_position?: string | null
-          logo_size?: string | null
-          payment_title?: string | null
-          primary_color?: string | null
-          secondary_color?: string | null
-          show_guest_details?: boolean | null
-          show_hotel_details?: boolean | null
-          show_logo?: boolean | null
-          show_payment_instructions?: boolean | null
-          show_special_requests?: boolean | null
-          spacing?: string | null
-          terms_and_conditions?: string | null
-          text_color?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          accent_color?: string | null
-          background_color?: string | null
-          border_style?: string | null
-          created_at?: string | null
-          custom_footer_text?: string | null
-          custom_header_text?: string | null
-          font_family?: string | null
-          font_size_base?: number | null
-          font_size_heading?: number | null
-          header_height?: number | null
-          id?: string
-          is_active?: boolean | null
-          layout_style?: string | null
-          logo_position?: string | null
-          logo_size?: string | null
-          payment_title?: string | null
-          primary_color?: string | null
-          secondary_color?: string | null
-          show_guest_details?: boolean | null
-          show_hotel_details?: boolean | null
-          show_logo?: boolean | null
-          show_payment_instructions?: boolean | null
-          show_special_requests?: boolean | null
-          spacing?: string | null
-          terms_and_conditions?: string | null
-          text_color?: string | null
-          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1610,7 +1458,6 @@ export type Database = {
         }[]
       }
       generate_booking_code: { Args: never; Returns: string }
-      generate_invoice_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
