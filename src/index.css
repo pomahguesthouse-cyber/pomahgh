@@ -198,3 +198,33 @@ All colors MUST be HSL.
     box-shadow: 0 0 0 10px hsl(var(--accent) / 0);
   }
 }
+
+/* Smooth scroll for booking calendar */
+.booking-calendar-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.booking-calendar-scroll::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+.booking-calendar-scroll::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 5px;
+}
+
+.booking-calendar-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 5px;
+  transition: background 0.2s ease;
+}
+
+.booking-calendar-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}
+
+.booking-calendar-scroll::-webkit-scrollbar-corner {
+  background: hsl(var(--muted));
+}

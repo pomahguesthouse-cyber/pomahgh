@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle, Edit2, Save, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Mail, Phone, Users, CreditCard, Clock, Ban, Trash2, CheckCircle2, AlertCircle, Edit2, Save, X, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { isIndonesianHoliday, type IndonesianHoliday } from "@/utils/indonesianHolidays";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CreateBookingDialog } from "./CreateBookingDialog";
+import { ExportBookingDialog } from "./ExportBookingDialog";
 interface Booking {
   id: string;
   room_id: string;
@@ -94,6 +95,7 @@ export const MonthlyBookingCalendar = () => {
   }>({
     open: false
   });
+  const [exportDialog, setExportDialog] = useState(false);
   const {
     bookings,
     updateBooking,
@@ -595,11 +597,23 @@ export const MonthlyBookingCalendar = () => {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
+
+              {/* Export Button */}
+              <Button 
+                onClick={() => setExportDialog(true)} 
+                variant="default" 
+                size="sm" 
+                className="text-xs px-4"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
             </div>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[70vh] scroll-smooth"
+             style={{ scrollBehavior: 'smooth' }}>
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-20">
               <tr className="bg-muted/50">
@@ -1093,6 +1107,14 @@ export const MonthlyBookingCalendar = () => {
       <CreateBookingDialog open={createBookingDialog.open} onOpenChange={open => setCreateBookingDialog({
       open
     })} roomId={createBookingDialog.roomId} roomNumber={createBookingDialog.roomNumber} initialDate={createBookingDialog.date} rooms={rooms || []} />
+
+      {/* Export Booking Dialog */}
+      <ExportBookingDialog 
+        open={exportDialog}
+        onOpenChange={setExportDialog}
+        bookings={bookings || []}
+        rooms={rooms || []}
+      />
     </>;
 };
 
