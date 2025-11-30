@@ -10,6 +10,7 @@ export interface InvoiceTemplate {
   show_logo: boolean;
   show_bank_accounts: boolean;
   custom_notes?: string;
+  footer_text?: string;
   created_at?: string;
   updated_at?: string;
 }

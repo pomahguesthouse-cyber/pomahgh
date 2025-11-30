@@ -936,6 +936,7 @@ export type Database = {
         Row: {
           created_at: string | null
           custom_notes: string | null
+          footer_text: string | null
           id: string
           invoice_primary_color: string | null
           invoice_secondary_color: string | null
@@ -947,6 +948,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           custom_notes?: string | null
+          footer_text?: string | null
           id?: string
           invoice_primary_color?: string | null
           invoice_secondary_color?: string | null
@@ -958,6 +960,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           custom_notes?: string | null
+          footer_text?: string | null
           id?: string
           invoice_primary_color?: string | null
           invoice_secondary_color?: string | null

@@ -54,6 +54,12 @@ serve(async (req) => {
 
     if (settingsError) throw settingsError;
 
+    // Fetch invoice template settings
+    const { data: invoiceTemplate } = await supabase
+      .from("invoice_templates")
+      .select("*")
+      .maybeSingle();
+
     // Fetch active bank accounts
     const { data: bankAccounts, error: banksError } = await supabase
       .from("bank_accounts")
@@ -63,6 +69,14 @@ serve(async (req) => {
 
     if (banksError) throw banksError;
 
+    // Get invoice settings (use defaults if not configured)
+    const primaryColor = invoiceTemplate?.invoice_primary_color || '#8B4513';
+    const secondaryColor = invoiceTemplate?.invoice_secondary_color || '#f8f4f0';
+    const showLogo = invoiceTemplate?.show_logo ?? true;
+    const showBankAccounts = invoiceTemplate?.show_bank_accounts ?? true;
+    const footerText = invoiceTemplate?.footer_text || 'Kami menantikan kedatangan Anda!';
+    const customNotes = invoiceTemplate?.custom_notes || '';
+
     // Format room list
     const roomsList = bookingRooms && bookingRooms.length > 0
       ? bookingRooms.map((br: any) => 
@@ -70,18 +84,22 @@ serve(async (req) => {
         ).join('\n')
       : `• ${booking.rooms?.name} - Rp ${booking.total_price.toLocaleString('id-ID')}`;
 
-    // Format bank accounts
-    const bankAccountsList = bankAccounts && bankAccounts.length > 0
-      ? bankAccounts.map((bank: any) => 
-          `🏦 ${bank.bank_name}: ${bank.account_number}\n   a.n. ${bank.account_holder_name}`
-        ).join('\n')
-      : hotelSettings.bank_name && hotelSettings.account_number
-        ? `🏦 ${hotelSettings.bank_name}: ${hotelSettings.account_number}\n   a.n. ${hotelSettings.account_holder_name || 'Pomah Guesthouse'}`
-        : 'Silakan hubungi admin untuk detail pembayaran';
-
-    // Calculate payment status
+    // Calculate remaining balance
     const paidAmount = booking.payment_amount || 0;
     const remainingBalance = booking.total_price - paidAmount;
+    
+    // Format bank accounts for display - show "Lunas" message if fully paid
+    const bankAccountsList = remainingBalance > 0 
+      ? (bankAccounts && bankAccounts.length > 0
+          ? bankAccounts.map((bank: any) => 
+              `🏦 ${bank.bank_name}: ${bank.account_number}\n   a.n. ${bank.account_holder_name}`
+            ).join('\n\n')
+          : hotelSettings.bank_name && hotelSettings.account_number
+            ? `🏦 ${hotelSettings.bank_name}: ${hotelSettings.account_number}\n   a.n. ${hotelSettings.account_holder_name || 'Pomah Guesthouse'}`
+            : 'Silakan hubungi admin untuk detail pembayaran')
+      : '✓ Pembayaran sudah lunas - Terima kasih!';
+
+    // Calculate payment status
     let paymentStatus = "BELUM LUNAS";
     if (paidAmount === 0) {
       paymentStatus = "BELUM BAYAR";
@@ -120,14 +138,14 @@ serve(async (req) => {
     }
     .header {
       text-align: center;
-      border-bottom: 3px solid ${hotelSettings.primary_color || '#8B4513'};
+      border-bottom: 3px solid ${primaryColor};
       padding-bottom: 20px;
       margin-bottom: 30px;
     }
     .hotel-name {
       font-size: 28px;
       font-weight: bold;
-      color: ${hotelSettings.primary_color || '#8B4513'};
+      color: ${primaryColor};
       margin: 10px 0;
     }
     .tagline {
@@ -137,7 +155,7 @@ serve(async (req) => {
     .invoice-title {
       font-size: 36px;
       font-weight: bold;
-      color: ${hotelSettings.primary_color || '#8B4513'};
+      color: ${primaryColor};
       margin: 20px 0;
     }
     .booking-code {
@@ -157,7 +175,7 @@ serve(async (req) => {
     }
     .info-box h3 {
       margin: 0 0 10px 0;
-      color: ${hotelSettings.primary_color || '#8B4513'};
+      color: ${primaryColor};
       font-size: 14px;
       text-transform: uppercase;
     }
@@ -173,7 +191,7 @@ serve(async (req) => {
       border-collapse: collapse;
     }
     th {
-      background: ${hotelSettings.primary_color || '#8B4513'};
+      background: ${primaryColor};
       color: white;
       padding: 12px;
       text-align: left;
@@ -198,8 +216,8 @@ serve(async (req) => {
     .summary-total {
       font-size: 20px;
       font-weight: bold;
-      color: ${hotelSettings.primary_color || '#8B4513'};
-      border-top: 2px solid ${hotelSettings.primary_color || '#8B4513'};
+      color: ${primaryColor};
+      border-top: 2px solid ${primaryColor};
       padding-top: 10px;
       margin-top: 10px;
     }
@@ -219,17 +237,24 @@ serve(async (req) => {
       padding: 20px;
       border-radius: 5px;
       margin: 30px 0;
-      border-left: 4px solid ${hotelSettings.primary_color || '#8B4513'};
+      border-left: 4px solid ${primaryColor};
     }
     .bank-info h3 {
       margin: 0 0 15px 0;
-      color: ${hotelSettings.primary_color || '#8B4513'};
+      color: ${primaryColor};
     }
     .bank-account {
       margin: 10px 0;
       padding: 10px;
       background: white;
       border-radius: 3px;
+    }
+    .custom-notes {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: ${secondaryColor};
+      border-radius: 8px;
+      font-style: italic;
     }
     .footer {
       text-align: center;
@@ -247,7 +272,7 @@ serve(async (req) => {
 <body>
   <div class="invoice-container">
     <div class="header">
-      ${hotelSettings.logo_url ? `<img src="${hotelSettings.logo_url}" alt="Logo" style="max-height: 80px; margin-bottom: 10px;">` : ''}
+      ${showLogo && hotelSettings.logo_url ? `<img src="${hotelSettings.logo_url}" alt="Logo" style="max-height: 80px; margin-bottom: 10px;">` : ''}
       <div class="hotel-name">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
       <div class="tagline">${hotelSettings.tagline || 'Your Home Away From Home'}</div>
       <p style="margin: 10px 0; color: #666; font-size: 14px;">
@@ -346,7 +371,14 @@ serve(async (req) => {
 
     <div style="clear: both;"></div>
 
-    ${remainingBalance > 0 ? `
+    ${customNotes ? `
+    <div class="custom-notes">
+      <h3 style="margin: 0 0 10px 0; color: ${primaryColor};">📌 Catatan</h3>
+      <div>${customNotes}</div>
+    </div>
+    ` : ''}
+
+    ${remainingBalance > 0 && showBankAccounts ? `
     <div class="bank-info">
       <h3>💳 Instruksi Pembayaran</h3>
       <p style="margin-bottom: 15px;">Silakan transfer sisa pembayaran ke salah satu rekening berikut:</p>
@@ -373,8 +405,8 @@ serve(async (req) => {
     ` : ''}
 
     <div class="footer">
-      <h3 style="color: ${hotelSettings.primary_color || '#8B4513'};">🙏 Terima Kasih</h3>
-      <p>Kami menantikan kedatangan Anda di ${hotelSettings.hotel_name || 'Pomah Guesthouse'}</p>
+      <h3 style="color: ${primaryColor};">🙏 Terima Kasih</h3>
+      <p>${footerText}</p>
       <p style="margin-top: 15px; font-size: 12px;">
         📧 ${hotelSettings.email_primary || ''} | 
         📞 ${hotelSettings.phone_primary || ''} | 
