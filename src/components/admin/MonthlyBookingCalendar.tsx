@@ -659,7 +659,7 @@ export const MonthlyBookingCalendar = () => {
           className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[70vh] scroll-smooth"
           style={{ scrollBehavior: "smooth" }}
         >
-          <table className="w-full border-collapse">
+          <table className="w-full border-collapse table-fixed">
             <thead className="sticky top-0 z-40">
               <tr className="bg-muted/50">
                 <th className="sticky left-0 top-0 z-50 min-w-[110px] border-2 border-border p-2 shadow-lg bg-gray-300/80 dark:bg-gray-700/80 backdrop-blur-md">
@@ -1454,9 +1454,9 @@ const BookingCell = ({
 }) => {
   const isPending = booking.status === "pending";
   const totalNights = visibleNights || booking.total_nights;
-  // Calculate booking bar width: starts at 50% of check-in cell, ends at 50% of checkout cell
-  // For N nights: bar covers (N * 100%) width
-  const bookingWidth = `${totalNights * 100}%`;
+  // Calculate booking bar width: starts at 50% of check-in cell, ends at 100% of checkout cell
+  // For N nights: bar covers (N * 100% + 50%) to reach end of checkout day
+  const bookingWidth = `calc(${totalNights * 100}% + 50%)`;
   const getBackgroundClass = () => {
     // Check for Late Check Out first (priority)
     const isLateCheckout = booking.check_out_time && booking.check_out_time !== "12:00:00";
