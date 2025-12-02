@@ -59,6 +59,8 @@ export interface RoomBookingCardProps {
   hasPromo: boolean;
   displayPrice: number;
   onBookNow: () => void;
+  availability?: number;
+  isAvailabilityLoaded?: boolean;
 }
 
 export interface RoomRelatedRoomsProps {

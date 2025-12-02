@@ -5,6 +5,8 @@ import { useRooms } from "@/hooks/useRooms";
 import { useRoomFeatures } from "@/hooks/useRoomFeatures";
 import { useRoomHotspots } from "@/hooks/useRoomHotspots";
 import { useRoomPanoramas } from "@/hooks/useRoomPanoramas";
+import { useSearchDates } from "@/contexts/SearchDatesContext";
+import { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -36,6 +38,12 @@ const RoomDetail = () => {
   const { data: hotspots = [] } = useRoomHotspots(room?.id, currentPanoramaId);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
+
+  // Get search dates and check availability
+  const { checkIn, checkOut } = useSearchDates();
+  const { data: availability, isLoading: isCheckingAvailability } = useRoomAvailabilityCheck(checkIn, checkOut);
+  const roomAvailability = room ? availability?.[room.id] : undefined;
+  const isAvailabilityLoaded = !!checkIn && !!checkOut && !isCheckingAvailability;
 
   const { handleHotspotClick } = useRoomNavigation(
     panoramas,
@@ -157,6 +165,8 @@ const RoomDetail = () => {
                 hasPromo={hasPromo}
                 displayPrice={displayPrice}
                 onBookNow={() => setBookingOpen(true)}
+                availability={roomAvailability}
+                isAvailabilityLoaded={isAvailabilityLoaded}
               />
             </div>
           </div>
