@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, differenceInDays, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import {
   CreditCard,
@@ -55,12 +55,30 @@ export const BookingDetailDialog = ({
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
 
+  // Initialize from booking prop - auto-enable edit mode if booking was modified (drag & drop)
   useEffect(() => {
     if (booking) {
       setEditedBooking(booking);
-      setIsEditMode(false);
+      // Auto-enable edit mode if this is from drag & drop (dates/room changed)
+      const isFromDragDrop = booking !== editedBooking;
+      setIsEditMode(isFromDragDrop);
     }
   }, [booking]);
+
+  // Auto-calculate total_nights when dates change
+  useEffect(() => {
+    if (editedBooking && isEditMode) {
+      const checkIn = parseISO(editedBooking.check_in);
+      const checkOut = parseISO(editedBooking.check_out);
+      const nights = differenceInDays(checkOut, checkIn);
+
+      if (nights > 0 && nights !== editedBooking.total_nights) {
+        setEditedBooking((prev) =>
+          prev ? { ...prev, total_nights: nights } : null
+        );
+      }
+    }
+  }, [editedBooking?.check_in, editedBooking?.check_out, isEditMode]);
 
   const handleEditToggle = () => {
     if (isEditMode) {
