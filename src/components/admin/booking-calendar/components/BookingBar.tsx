@@ -94,7 +94,7 @@ export const BookingBar = ({
       ref={setNodeRef}
       onClick={handleClick}
       className={cn(
-        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center transition-all text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-visible group",
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center transition-all text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-hidden group",
         isTruncatedLeft ? "rounded-r-md" : "rounded-md",
         getBookingColor(booking),
         isDragging && "ring-2 ring-primary shadow-lg",
@@ -102,18 +102,17 @@ export const BookingBar = ({
       )}
       style={style}
     >
-      {/* Drag handle - top left corner, icon shows on hover */}
+      {/* Drag handle - compact, icon shows on hover */}
       {!isTruncatedLeft && (
         <div
           {...listeners}
           {...attributes}
-          className="absolute left-0 top-0 bottom-0 w-8 cursor-grab active:cursor-grabbing z-20 flex items-center justify-center group/drag"
+          className="absolute left-0 top-0 bottom-0 w-5 cursor-grab active:cursor-grabbing z-20 flex items-center justify-center group/drag"
         >
-          {/* 3 horizontal lines icon - only visible on hover */}
           <div className="flex flex-col gap-0.5 opacity-0 group-hover/drag:opacity-100 transition-opacity">
-            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
-            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
-            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-2 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-2 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-2 h-0.5 bg-white/90 rounded-full" />
           </div>
         </div>
       )}
@@ -134,12 +133,12 @@ export const BookingBar = ({
         title="Drag to change check-out date"
       />
 
-      {/* Content - offset to the right to make room for drag handle */}
-      <div className="relative z-5 text-left px-2 py-1 w-full space-y-0.5 pointer-events-none ml-6">
+      {/* Content - compact margin for drag handle */}
+      <div className="relative z-5 text-left px-1.5 py-0.5 flex-1 min-w-0 pointer-events-none ml-4">
         <div className="font-bold text-xs text-white drop-shadow-sm truncate">
           {booking.guest_name.split(" ")[0]}
         </div>
-        <div className="text-[10px] text-white/90 font-medium">
+        <div className="text-[10px] text-white/90 font-medium truncate">
           {resizePreview?.edge ? `${adjustedNights} Malam` : `${booking.total_nights} Malam`}
         </div>
       </div>
