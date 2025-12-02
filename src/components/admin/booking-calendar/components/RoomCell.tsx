@@ -23,6 +23,7 @@ interface RoomCellProps {
   onResizeStart?: (e: React.MouseEvent, booking: Booking, edge: "left" | "right") => void;
   getResizePreview?: (bookingId: string) => { previewDays: number; edge: "left" | "right" | null };
   isResizing?: boolean;
+  activeBooking?: Booking | null;
 }
 
 export const RoomCell = ({
@@ -40,6 +41,7 @@ export const RoomCell = ({
   onResizeStart,
   getResizePreview,
   isResizing,
+  activeBooking,
 }: RoomCellProps) => {
   const isWeekend = getDay(date) === 0 || getDay(date) === 6;
   const holiday = isIndonesianHoliday(date);
@@ -83,6 +85,9 @@ export const RoomCell = ({
   // Get resize preview for current booking
   const resizePreview = booking && getResizePreview ? getResizePreview(booking.id) : undefined;
 
+  // Get dragged booking info for preview bar
+  const draggedBooking = activeBooking || (active?.data?.current?.booking as Booking | undefined);
+
   const cell = (
     <td
       ref={setNodeRef}
@@ -100,9 +105,6 @@ export const RoomCell = ({
       style={{ width: cellWidth, minWidth: cellWidth, maxWidth: cellWidth }}
       title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
     >
-      {/* Center divider */}
-      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/30 -translate-x-px pointer-events-none z-[1]" />
-
       {/* Blocked overlay */}
       {isBlocked && <BlockedCellOverlay reason={blockReason} />}
 
@@ -122,10 +124,29 @@ export const RoomCell = ({
         />
       )}
 
-      {/* Drag drop preview - show target check-in date */}
-      {showDropIndicator && canDrop && (
-        <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] px-2 py-1 rounded shadow-lg z-50 whitespace-nowrap font-medium">
-          Check-in: {format(date, "dd MMM")}
+      {/* Preview booking bar at drop target */}
+      {showDropIndicator && canDrop && draggedBooking && (
+        <div 
+          className="absolute top-0.5 bottom-0.5 left-0 bg-gradient-to-r from-cyan-400/60 to-cyan-500/60 rounded-md flex items-center border-2 border-dashed border-cyan-400 pointer-events-none"
+          style={{
+            width: `${draggedBooking.total_nights * cellWidth}px`,
+            zIndex: 50,
+          }}
+        >
+          {/* Drag handle icon (3 horizontal lines) */}
+          <div className="flex flex-col gap-0.5 ml-2">
+            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
+          </div>
+          {/* Guest name */}
+          <div className="ml-2 text-xs font-bold text-white drop-shadow-sm truncate">
+            {draggedBooking.guest_name.split(" ")[0]}
+          </div>
+          {/* Nights */}
+          <div className="ml-2 text-[10px] text-white/80 font-medium">
+            {draggedBooking.total_nights} Malam
+          </div>
         </div>
       )}
 
