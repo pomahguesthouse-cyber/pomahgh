@@ -129,7 +129,7 @@ export const BookingBar = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center transition-all text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-hidden group",
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center transition-all text-xs shadow-sm hover:shadow-md hover:brightness-110 group",
         isTruncatedLeft ? "rounded-r-md" : "rounded-md",
         getBookingColor(booking),
         isDragging && "ring-2 ring-primary shadow-lg",
