@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatWIBDate } from "@/utils/wibTimezone";
 
 interface AvailabilityResult {
   [roomId: string]: number; // roomId -> available count
@@ -11,9 +12,9 @@ export const useRoomAvailabilityCheck = (checkIn?: Date, checkOut?: Date) => {
     queryFn: async () => {
       if (!checkIn || !checkOut) return {} as AvailabilityResult;
 
-      // Format dates for edge function
-      const checkInStr = checkIn.toISOString().split('T')[0];
-      const checkOutStr = checkOut.toISOString().split('T')[0];
+      // Format dates for edge function using local timezone
+      const checkInStr = formatWIBDate(checkIn);
+      const checkOutStr = formatWIBDate(checkOut);
 
       // Call edge function to bypass RLS and get accurate availability
       const { data, error } = await supabase.functions.invoke('check-room-availability', {

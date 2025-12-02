@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { differenceInDays } from "date-fns";
 import { useBookingValidation } from "./useBookingValidation";
+import { formatWIBDate } from "@/utils/wibTimezone";
 
 export interface BookingData {
   room_id: string;
@@ -46,7 +47,7 @@ export const useBooking = () => {
         .select("allocated_room_number")
         .eq("room_id", bookingData.room_id)
         .in("status", ["confirmed", "pending"])
-        .or(`and(check_in.lte.${bookingData.check_out.toISOString().split("T")[0]},check_out.gte.${bookingData.check_in.toISOString().split("T")[0]})`);
+        .or(`and(check_in.lte.${formatWIBDate(bookingData.check_out)},check_out.gte.${formatWIBDate(bookingData.check_in)})`);
 
       if (bookedError) throw bookedError;
 
@@ -63,8 +64,8 @@ export const useBooking = () => {
         guest_name: bookingData.guest_name,
         guest_email: bookingData.guest_email,
         guest_phone: bookingData.guest_phone,
-        check_in: bookingData.check_in.toISOString().split("T")[0],
-        check_out: bookingData.check_out.toISOString().split("T")[0],
+        check_in: formatWIBDate(bookingData.check_in),
+        check_out: formatWIBDate(bookingData.check_out),
         check_in_time: bookingData.check_in_time || "14:00:00",
         check_out_time: bookingData.check_out_time || "12:00:00",
         total_nights: totalNights,

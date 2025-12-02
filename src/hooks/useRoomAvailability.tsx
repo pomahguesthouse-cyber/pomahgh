@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatWIBDate } from "@/utils/wibTimezone";
 
 interface UnavailableDate {
   id: string;
@@ -109,7 +110,7 @@ export const useRoomAvailability = (roomId?: string) => {
 
   const isDateUnavailable = (date: Date): boolean => {
     if (!unavailableDates) return false;
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatWIBDate(date);
     return unavailableDates.some(d => d.unavailable_date === dateStr);
   };
 
