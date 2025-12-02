@@ -506,35 +506,40 @@ export const BookingDetailDialog = ({
 
          {/* Action Buttons */}
 {isEditMode && (
-  <div className="flex gap-2 justify-end pt-4 border-t">
-    <Button
-      variant="outline"
-      onClick={() => {
-        setEditedBooking(booking);
-        setIsEditMode(false);
-      }}
-      disabled={isUpdating}
-    >
-      Batal
-    </Button>
+            <div className="flex gap-2 justify-end pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditedBooking(booking);
+                  setIsEditMode(false);
+                }}
+                disabled={isUpdating}
+              >
+                Batal
+              </Button>
 
-    <Button
-      onClick={handleSaveChanges}
-      disabled={isUpdating}
-      className="flex items-center gap-2"
-    >
-      {isUpdating ? (
-        <>
-          <Clock className="h-4 w-4 animate-spin" />
-          Menyimpan...
-        </>
-      ) : (
-        <>
-          <Save className="h-4 w-4" />
-          Simpan
-        </>
-      )}
-    </Button>
-  </div>
-)}
+              <Button
+                onClick={handleSaveChanges}
+                disabled={isUpdating}
+                className="flex items-center gap-2"
+              >
+                {isUpdating ? (
+                  <>
+                    <Clock className="h-4 w-4 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Simpan
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
