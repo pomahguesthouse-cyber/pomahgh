@@ -22,10 +22,21 @@ export const getWIBNow = (): Date => {
 };
 
 /**
+ * Format any Date to yyyy-MM-dd string using local date components (NOT UTC)
+ * This prevents date shifting when converting to string
+ */
+export const formatWIBDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
  * Get WIB date string in yyyy-MM-dd format
  */
 export const getWIBTodayString = (): string => {
-  return getWIBToday().toISOString().split('T')[0];
+  return formatWIBDate(getWIBToday());
 };
 
 /**
@@ -35,14 +46,7 @@ export const isWIBToday = (date: Date): boolean => {
   const wibToday = getWIBToday();
   const compareDate = new Date(date);
   compareDate.setHours(0, 0, 0, 0);
-  return compareDate.toISOString().split('T')[0] === wibToday.toISOString().split('T')[0];
-};
-
-/**
- * Format date for database storage (yyyy-MM-dd)
- */
-export const formatWIBDate = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+  return formatWIBDate(compareDate) === formatWIBDate(wibToday);
 };
 
 /**

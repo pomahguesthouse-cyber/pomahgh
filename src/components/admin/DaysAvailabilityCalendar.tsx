@@ -6,7 +6,7 @@ import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameMonth, isWeekend, startOfWeek, endOfWeek } from "date-fns";
-import { getWIBToday } from "@/utils/wibTimezone";
+import { getWIBToday, formatWIBDate } from "@/utils/wibTimezone";
 export const DaysAvailabilityCalendar = () => {
   const [selectedRoomId, setSelectedRoomId] = useState<string>("");
   const [currentMonth, setCurrentMonth] = useState(getWIBToday());
@@ -40,7 +40,7 @@ export const DaysAvailabilityCalendar = () => {
     });
   };
   const getDateStatus = (date: Date): 'default' | 'unavailable' | 'pending-unavailable' | 'pending-available' => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatWIBDate(date);
     if (pendingChanges.toRemove.has(dateStr)) return 'pending-available';
     if (pendingChanges.toAdd.has(dateStr)) return 'pending-unavailable';
     if (isDateUnavailable(date)) return 'unavailable';
@@ -48,7 +48,7 @@ export const DaysAvailabilityCalendar = () => {
   };
   const handleDateClick = (date: Date) => {
     if (!selectedRoomId) return;
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatWIBDate(date);
     const status = getDateStatus(date);
     setPendingChanges(prev => {
       const toAdd = new Set(prev.toAdd);
