@@ -1,4 +1,5 @@
 import { format, differenceInDays, parseISO, getDay } from "date-fns";
+import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { isWIBToday } from "@/utils/wibTimezone";
 import { isIndonesianHoliday, type IndonesianHoliday } from "@/utils/indonesianHolidays";
@@ -41,6 +42,16 @@ export const RoomCell = ({
   const dateStr = format(date, "yyyy-MM-dd");
   const firstVisibleStr = format(firstVisibleDate, "yyyy-MM-dd");
 
+  // Droppable setup
+  const { setNodeRef, isOver, active } = useDroppable({
+    id: `cell-${roomId}-${roomNumber}-${dateStr}`,
+    data: {
+      roomId,
+      roomNumber,
+      date,
+    },
+  });
+
   // Determine if booking should start rendering here
   const isStart = booking
     ? booking.check_in === dateStr ||
@@ -57,9 +68,15 @@ export const RoomCell = ({
 
   const hasBooking = booking !== null;
   const isClickable = !isBlocked && !hasBooking;
+  const canDrop = !isBlocked && !hasBooking;
+
+  // Check if dragging is active and this is a valid drop target
+  const isDragging = active !== null;
+  const showDropIndicator = isOver && isDragging;
 
   const cell = (
     <td
+      ref={setNodeRef}
       onClick={() => handleCellClick(roomId, roomNumber, date, isBlocked, hasBooking)}
       onContextMenu={(e) => handleRightClick(e, roomId, roomNumber, date)}
       className={cn(
@@ -67,7 +84,9 @@ export const RoomCell = ({
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
         !isHolidayOrWeekend && "bg-background",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
-        !isClickable && "cursor-context-menu"
+        !isClickable && "cursor-context-menu",
+        showDropIndicator && canDrop && "bg-primary/20 ring-2 ring-primary",
+        showDropIndicator && !canDrop && "bg-destructive/20 ring-2 ring-destructive"
       )}
       style={{ width: cellWidth, minWidth: cellWidth, maxWidth: cellWidth }}
       title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
@@ -86,11 +105,13 @@ export const RoomCell = ({
           visibleNights={visibleNights}
           isTruncatedLeft={isTruncatedLeft || false}
           cellWidth={cellWidth}
+          roomNumber={roomNumber}
+          roomId={roomId}
         />
       )}
 
       {/* Click hint */}
-      {isClickable && (
+      {isClickable && !isDragging && (
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none z-5">
           <div className="text-[10px] text-primary/60 font-medium">Click to book</div>
         </div>
