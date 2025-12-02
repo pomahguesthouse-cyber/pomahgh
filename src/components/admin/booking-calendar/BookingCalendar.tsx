@@ -300,6 +300,9 @@ export const BookingCalendar = () => {
           <div className="bg-primary text-primary-foreground px-3 py-2 rounded-md shadow-lg text-xs font-bold opacity-90 whitespace-nowrap">
             <div>{activeBooking.guest_name.split(" ")[0]}</div>
             <div className="text-[10px] opacity-80">{activeBooking.total_nights} Malam</div>
+            <div className="text-[10px] opacity-60 mt-1 border-t border-primary-foreground/20 pt-1">
+              📍 Drop = Check-in baru
+            </div>
           </div>
         )}
       </DragOverlay>

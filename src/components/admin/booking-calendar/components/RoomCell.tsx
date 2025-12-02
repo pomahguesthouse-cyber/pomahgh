@@ -122,6 +122,13 @@ export const RoomCell = ({
         />
       )}
 
+      {/* Drag drop preview - show target check-in date */}
+      {showDropIndicator && canDrop && (
+        <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] px-2 py-1 rounded shadow-lg z-50 whitespace-nowrap font-medium">
+          Check-in: {format(date, "dd MMM")}
+        </div>
+      )}
+
       {/* Click hint */}
       {isClickable && !isDragging && !isResizing && (
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none z-5">
