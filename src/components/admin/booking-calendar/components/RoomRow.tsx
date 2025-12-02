@@ -1,72 +1,49 @@
-import { Booking, RoomInfo } from "../types";
-import { RoomCell } from "./RoomCell";
+import React, { useState, useRef } from "react";
 
-interface RoomRowProps {
-  room: RoomInfo;
-  dates: Date[];
-  getBookingForCell: (roomNumber: string, date: Date) => Booking | null;
-  isDateBlocked: (roomId: string, roomNumber: string, date: Date) => boolean;
-  getBlockReason: (roomId: string, roomNumber: string, date: Date) => string | undefined;
-  handleBookingClick: (booking: Booking) => void;
-  handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
-  handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
-  cellWidth: number;
-  onResizeStart?: (e: React.MouseEvent, booking: Booking, edge: "left" | "right") => void;
-  getResizePreview?: (bookingId: string) => { previewDays: number; edge: "left" | "right" | null };
-  isResizing?: boolean;
-  activeBooking?: Booking | null;
-}
+export const RoomCell = ({ booking, ...props }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const hoverTimer = useRef<NodeJS.Timeout | null>(null);
 
-export const RoomRow = ({
-  room,
-  dates,
-  getBookingForCell,
-  isDateBlocked,
-  getBlockReason,
-  handleBookingClick,
-  handleRightClick,
-  handleCellClick,
-  cellWidth,
-  onResizeStart,
-  getResizePreview,
-  isResizing,
-  activeBooking,
-}: RoomRowProps) => {
-  const { roomId, roomNumber } = room;
-  const firstVisibleDate = dates[0];
+  const handleMouseEnter = () => {
+    if (booking) {
+      hoverTimer.current = setTimeout(() => {
+        setShowTooltip(true);
+      }, 2000); // 2 detik bro
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+    setShowTooltip(false);
+  };
+
+  const nights =
+    booking &&
+    Math.ceil(
+      (new Date(booking.checkoutDate).getTime() - new Date(booking.checkinDate).getTime()) / (1000 * 60 * 60 * 24),
+    );
 
   return (
-    <tr className="hover:bg-muted/10 transition-colors">
-      <td className="border border-border p-2 sticky left-0 z-30 font-semibold text-xs shadow-sm text-center bg-gray-100 dark:bg-gray-800">
-        {roomNumber}
-      </td>
+    <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+      {/* Booking Bar */}
+      {booking && <div className="booking-bar bg-blue-500 rounded-sm h-5 w-full" />}
 
-      {dates.map((date) => {
-        const booking = getBookingForCell(roomNumber, date);
-        const isBlocked = isDateBlocked(roomId, roomNumber, date);
-        const blockReason = getBlockReason(roomId, roomNumber, date);
-
-        return (
-          <RoomCell
-            key={date.toISOString()}
-            roomId={roomId}
-            roomNumber={roomNumber}
-            date={date}
-            booking={booking}
-            isBlocked={isBlocked}
-            blockReason={blockReason}
-            handleBookingClick={handleBookingClick}
-            handleRightClick={handleRightClick}
-            handleCellClick={handleCellClick}
-            firstVisibleDate={firstVisibleDate}
-            cellWidth={cellWidth}
-            onResizeStart={onResizeStart}
-            getResizePreview={getResizePreview}
-            isResizing={isResizing}
-            activeBooking={activeBooking}
-          />
-        );
-      })}
-    </tr>
+      {/* Tooltip muncul setelah hover 2 detik */}
+      {showTooltip && booking && (
+        <div
+          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 
+                        bg-black text-white text-xs p-2 rounded shadow-md w-max max-w-[180px]"
+        >
+          <div>
+            <strong>{booking.fullName}</strong>
+          </div>
+          <div>{nights} malam</div>
+          <div>Sumber: {booking.source}</div>
+        </div>
+      )}
+    </div>
   );
 };
