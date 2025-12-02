@@ -26,6 +26,8 @@ interface BookingDialogProps {
   room: Room | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialRoomQuantity?: number;
+  initialNumGuests?: number;
 }
 
 const bookingSchema = z.object({
@@ -43,7 +45,7 @@ const bookingSchema = z.object({
   special_requests: z.string().max(500).optional(),
 });
 
-export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) => {
+export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 1, initialNumGuests = 1 }: BookingDialogProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { settings } = useHotelSettings();
@@ -66,17 +68,25 @@ export const BookingDialog = ({ room, open, onOpenChange }: BookingDialogProps) 
   const [checkIn, setCheckIn] = useState<Date>(getDefaultCheckIn());
   const [checkOut, setCheckOut] = useState<Date>(getDefaultCheckOut());
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [roomQuantity, setRoomQuantity] = useState(1);
+  const [roomQuantity, setRoomQuantity] = useState(initialRoomQuantity);
   const [agreeToPolicy, setAgreeToPolicy] = useState(false);
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
     guest_phone: "",
-    num_guests: 1,
+    num_guests: initialNumGuests,
     special_requests: "",
     check_in_time: "14:00",
     check_out_time: "12:00",
   });
+  
+  // Update from initial values when dialog opens
+  useEffect(() => {
+    if (open) {
+      setRoomQuantity(initialRoomQuantity);
+      setFormData(prev => ({ ...prev, num_guests: initialNumGuests }));
+    }
+  }, [open, initialRoomQuantity, initialNumGuests]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { mutate: createBooking, isPending } = useBooking();

@@ -38,6 +38,8 @@ const RoomDetail = () => {
   const { data: hotspots = [] } = useRoomHotspots(room?.id, currentPanoramaId);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
+  const [initialRoomQuantity, setInitialRoomQuantity] = useState(1);
+  const [initialNumGuests, setInitialNumGuests] = useState(1);
 
   // Get search dates and check availability
   const { checkIn, checkOut } = useSearchDates();
@@ -164,7 +166,11 @@ const RoomDetail = () => {
                 room={room}
                 hasPromo={hasPromo}
                 displayPrice={displayPrice}
-                onBookNow={() => setBookingOpen(true)}
+                onBookNow={(roomQty, guests) => {
+                  setInitialRoomQuantity(roomQty);
+                  setInitialNumGuests(guests);
+                  setBookingOpen(true);
+                }}
                 availability={roomAvailability}
                 isAvailabilityLoaded={isAvailabilityLoaded}
               />
@@ -181,6 +187,8 @@ const RoomDetail = () => {
         room={room as Room}
         open={bookingOpen}
         onOpenChange={setBookingOpen}
+        initialRoomQuantity={initialRoomQuantity}
+        initialNumGuests={initialNumGuests}
       />
 
       <VirtualTourViewer
