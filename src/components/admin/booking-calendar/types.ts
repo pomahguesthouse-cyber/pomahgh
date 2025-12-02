@@ -19,6 +19,9 @@ export interface Booking {
   allocated_room_number?: string | null;
   payment_status?: string;
   payment_amount?: number;
+  booking_source?: string | null;
+  ota_name?: string | null;
+  other_source?: string | null;
   rooms?: {
     name: string;
     room_count: number;

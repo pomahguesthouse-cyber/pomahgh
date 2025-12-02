@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { useState, useRef } from "react";
 import { Booking } from "../types";
 import { getBookingColor } from "../utils/styleHelpers";
 
@@ -29,7 +30,39 @@ export const BookingBar = ({
   resizePreview,
   isResizing,
 }: BookingBarProps) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const hoverTimer = useRef<NodeJS.Timeout | null>(null);
+  
   const totalNights = visibleNights ?? booking.total_nights;
+  
+  const handleMouseEnter = () => {
+    hoverTimer.current = setTimeout(() => {
+      setShowTooltip(true);
+    }, 2000);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+    setShowTooltip(false);
+  };
+
+  const getBookingSourceLabel = () => {
+    switch (booking.booking_source) {
+      case "direct":
+        return "Direct Booking";
+      case "ota":
+        return booking.ota_name || "OTA";
+      case "walk_in":
+        return "Walk-in";
+      case "other":
+        return booking.other_source || "Lainnya";
+      default:
+        return "Direct";
+    }
+  };
   
   // Calculate width with resize preview
   let adjustedNights = totalNights;
@@ -93,6 +126,8 @@ export const BookingBar = ({
     <div
       ref={setNodeRef}
       onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={cn(
         "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center transition-all text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-hidden group",
         isTruncatedLeft ? "rounded-r-md" : "rounded-md",
@@ -102,6 +137,17 @@ export const BookingBar = ({
       )}
       style={style}
     >
+      {/* Tooltip - appears after 2 second hover */}
+      {showTooltip && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[200] pointer-events-none">
+          <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
+            <div className="font-semibold">{booking.guest_name}</div>
+            <div className="text-gray-300 mt-1">{booking.total_nights} Malam</div>
+            <div className="text-gray-300">Sumber: {getBookingSourceLabel()}</div>
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+          </div>
+        </div>
+      )}
       {/* Drag handle - compact, icon shows on hover */}
       {!isTruncatedLeft && (
         <div
