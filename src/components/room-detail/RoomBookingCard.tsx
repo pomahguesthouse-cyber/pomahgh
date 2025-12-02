@@ -4,8 +4,17 @@ import type { RoomBookingCardProps } from "./types";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { RefundPolicyDisplay } from "@/components/RefundPolicyDisplay";
 
-export const RoomBookingCard = ({ room, hasPromo, displayPrice, onBookNow }: RoomBookingCardProps) => {
+export const RoomBookingCard = ({ 
+  room, 
+  hasPromo, 
+  displayPrice, 
+  onBookNow,
+  availability,
+  isAvailabilityLoaded 
+}: RoomBookingCardProps) => {
   const { settings } = useHotelSettings();
+  
+  const isUnavailable = isAvailabilityLoaded && availability !== undefined && availability === 0;
   
   return (
     <Card className="sticky top-4">
@@ -28,8 +37,9 @@ export const RoomBookingCard = ({ room, hasPromo, displayPrice, onBookNow }: Roo
           size="lg"
           className="w-full"
           onClick={onBookNow}
+          disabled={isUnavailable}
         >
-          Book This Room
+          {isUnavailable ? "Tidak Tersedia" : "Book This Room"}
         </Button>
 
         <div className="pt-4 border-t space-y-2 text-sm">
@@ -43,7 +53,15 @@ export const RoomBookingCard = ({ room, hasPromo, displayPrice, onBookNow }: Roo
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Availability</span>
-            <span className="font-medium text-green-600">Available</span>
+            {!isAvailabilityLoaded ? (
+              <span className="font-medium text-muted-foreground">-</span>
+            ) : isUnavailable ? (
+              <span className="font-medium text-red-500">Tidak Tersedia</span>
+            ) : (
+              <span className="font-medium text-green-600">
+                {availability} kamar tersedia
+              </span>
+            )}
           </div>
         </div>
 
