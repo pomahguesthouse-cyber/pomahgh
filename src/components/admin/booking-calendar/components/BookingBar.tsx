@@ -139,7 +139,7 @@ export const BookingBar = ({
     >
       {/* Tooltip - appears after 2 second hover */}
       {showTooltip && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[200] pointer-events-none">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] pointer-events-none animate-fade-in">
           <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
             <div className="font-semibold">{booking.guest_name}</div>
             <div className="text-gray-300 mt-1">{booking.total_nights} Malam</div>
