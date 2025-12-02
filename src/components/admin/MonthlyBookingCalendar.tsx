@@ -1455,8 +1455,10 @@ const BookingCell = ({
   const isPending = booking.status === "pending";
   const totalNights = visibleNights || booking.total_nights;
   // Calculate booking bar width: pixel-based for precision
-  // Each cell is 60px, bar spans across all nights
-  const bookingWidth = `${totalNights * 60 - (isTruncatedLeft ? 0 : 30) - 30}px`;
+  // Each cell is 60px
+  // Check-in at 13:00 (afternoon) = bar starts at 30px (center)
+  // Check-out at 12:00 (noon) = bar ends at 30px (center) of checkout date
+  const bookingWidth = `${totalNights * 60}px`; // Full width from center check-in to center check-out
   const getBackgroundClass = () => {
     // Check for Late Check Out first (priority)
     const isLateCheckout = booking.check_out_time && booking.check_out_time !== "12:00:00";
@@ -1479,7 +1481,7 @@ const BookingCell = ({
     return colors[colorIndex];
   };
   const style = {
-    left: isTruncatedLeft ? "0" : "30px", // 30px = center of 60px cell
+    left: isTruncatedLeft ? "0" : "30px", // 30px = tengah cell untuk check-in 13:00
     width: bookingWidth,
   };
   return (
