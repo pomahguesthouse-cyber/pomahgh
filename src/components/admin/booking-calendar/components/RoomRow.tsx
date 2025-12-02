@@ -14,6 +14,7 @@ interface RoomRowProps {
   onResizeStart?: (e: React.MouseEvent, booking: Booking, edge: "left" | "right") => void;
   getResizePreview?: (bookingId: string) => { previewDays: number; edge: "left" | "right" | null };
   isResizing?: boolean;
+  activeBooking?: Booking | null;
 }
 
 export const RoomRow = ({
@@ -29,6 +30,7 @@ export const RoomRow = ({
   onResizeStart,
   getResizePreview,
   isResizing,
+  activeBooking,
 }: RoomRowProps) => {
   return (
     <tr className="hover:bg-muted/10 transition-colors">
@@ -57,6 +59,7 @@ export const RoomRow = ({
             onResizeStart={onResizeStart}
             getResizePreview={getResizePreview}
             isResizing={isResizing}
+            activeBooking={activeBooking}
           />
         );
       })}

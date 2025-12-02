@@ -56,7 +56,8 @@ export const BookingBar = ({
   });
 
   // Calculate left offset with resize preview for left edge
-  let leftOffset = isTruncatedLeft ? 0 : cellWidth / 2;
+  // Booking bar starts at left edge of cell (left: 0) - this is the check-in date
+  let leftOffset = isTruncatedLeft ? 0 : 0;
   if (resizePreview?.edge === "left") {
     leftOffset += resizePreview.previewDays * cellWidth;
   }
@@ -93,7 +94,7 @@ export const BookingBar = ({
       ref={setNodeRef}
       onClick={handleClick}
       className={cn(
-        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-visible group",
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center transition-all text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-visible group",
         isTruncatedLeft ? "rounded-r-md" : "rounded-md",
         getBookingColor(booking),
         isDragging && "ring-2 ring-primary shadow-lg",
@@ -101,11 +102,27 @@ export const BookingBar = ({
       )}
       style={style}
     >
+      {/* Drag handle - top left corner, icon shows on hover */}
+      {!isTruncatedLeft && (
+        <div
+          {...listeners}
+          {...attributes}
+          className="absolute left-0 top-0 bottom-0 w-8 cursor-grab active:cursor-grabbing z-20 flex items-center justify-center group/drag"
+        >
+          {/* 3 horizontal lines icon - only visible on hover */}
+          <div className="flex flex-col gap-0.5 opacity-0 group-hover/drag:opacity-100 transition-opacity">
+            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
+          </div>
+        </div>
+      )}
+
       {/* Left resize handle */}
       {!isTruncatedLeft && (
         <div
           onMouseDown={handleLeftResizeStart}
-          className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-20 opacity-0 group-hover:opacity-100 hover:bg-white/30 transition-opacity rounded-l-md"
+          className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-10 opacity-0 group-hover:opacity-100 hover:bg-white/30 transition-opacity rounded-l-md"
           title="Drag to change check-in date"
         />
       )}
@@ -117,15 +134,8 @@ export const BookingBar = ({
         title="Drag to change check-out date"
       />
 
-      {/* Draggable center area */}
-      <div
-        {...listeners}
-        {...attributes}
-        className="absolute inset-0 left-2 right-2 cursor-grab active:cursor-grabbing z-10"
-      />
-
-      {/* Content */}
-      <div className="relative z-5 text-left px-2 py-1 w-full space-y-0.5 pointer-events-none">
+      {/* Content - offset to the right to make room for drag handle */}
+      <div className="relative z-5 text-left px-2 py-1 w-full space-y-0.5 pointer-events-none ml-6">
         <div className="font-bold text-xs text-white drop-shadow-sm truncate">
           {booking.guest_name.split(" ")[0]}
         </div>

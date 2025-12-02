@@ -11,7 +11,6 @@ import { useCalendarData } from "./hooks/useCalendarData";
 import { useCalendarHelpers } from "./hooks/useCalendarHelpers";
 import { useDragDrop } from "./hooks/useDragDrop";
 import { useBookingResize } from "./hooks/useBookingResize";
-import { useBookingHistory } from "./hooks/useBookingHistory";
 
 import { CalendarHeader } from "./components/CalendarHeader";
 import { CalendarTable } from "./components/CalendarTable";
@@ -61,19 +60,6 @@ export const BookingCalendar = () => {
   const [createBookingDialog, setCreateBookingDialog] = useState<CreateBookingDialogState>({ open: false });
   const [exportDialog, setExportDialog] = useState(false);
 
-  // Booking history for undo functionality
-  const handleUndoComplete = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-    toast.success("Perubahan dibatalkan");
-  };
-
-  const bookingHistory = useBookingHistory({
-    updateBooking: async (data) => {
-      await updateBooking(data);
-    },
-    onUndoComplete: handleUndoComplete,
-  });
-
   // Drag & Drop sensors
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -97,9 +83,6 @@ export const BookingCalendar = () => {
     newCheckIn: string,
     newCheckOut: string
   ) => {
-    // Save snapshot for undo
-    bookingHistory.saveSnapshot(booking);
-
     // Calculate new total nights
     const checkIn = parseISO(newCheckIn);
     const checkOut = parseISO(newCheckOut);
@@ -131,18 +114,10 @@ export const BookingCalendar = () => {
         message = `Booking dipindahkan ke kamar ${newRoomNumber}`;
       }
 
-      // Show toast with Undo button
-      toast.success(message, {
-        duration: 8000,
-        action: {
-          label: "Undo",
-          onClick: () => bookingHistory.undo(),
-        },
-      });
+      toast.success(message);
     } catch (error) {
       console.error("Error moving booking:", error);
       toast.error("Gagal memindahkan booking");
-      bookingHistory.clearHistory();
     }
   };
 
@@ -159,9 +134,6 @@ export const BookingCalendar = () => {
     newCheckIn: string,
     newCheckOut: string
   ) => {
-    // Save snapshot for undo
-    bookingHistory.saveSnapshot(booking);
-
     // Calculate new total nights
     const checkIn = parseISO(newCheckIn);
     const checkOut = parseISO(newCheckOut);
@@ -178,18 +150,10 @@ export const BookingCalendar = () => {
 
       await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
 
-      // Show toast with Undo button
-      toast.success(`Durasi diubah: ${newTotalNights} malam`, {
-        duration: 8000,
-        action: {
-          label: "Undo",
-          onClick: () => bookingHistory.undo(),
-        },
-      });
+      toast.success(`Durasi diubah: ${newTotalNights} malam`);
     } catch (error) {
       console.error("Error resizing booking:", error);
       toast.error("Gagal mengubah durasi booking");
-      bookingHistory.clearHistory();
     }
   };
 
@@ -340,20 +304,13 @@ export const BookingCalendar = () => {
           onResizeStart={startResize}
           getResizePreview={getResizePreview}
           isResizing={isResizing}
+          activeBooking={activeBooking}
         />
       </Card>
 
-      {/* Drag Overlay - ghost preview when dragging */}
+      {/* Empty DragOverlay - preview handled in RoomCell */}
       <DragOverlay>
-        {activeBooking && (
-          <div className="bg-primary text-primary-foreground px-3 py-2 rounded-md shadow-lg text-xs font-bold opacity-90 whitespace-nowrap">
-            <div>{activeBooking.guest_name.split(" ")[0]}</div>
-            <div className="text-[10px] opacity-80">{activeBooking.total_nights} Malam</div>
-            <div className="text-[10px] opacity-60 mt-1 border-t border-primary-foreground/20 pt-1">
-              📍 Drop = Check-in baru
-            </div>
-          </div>
-        )}
+        {activeBooking && <div className="opacity-0 w-0 h-0" />}
       </DragOverlay>
 
       {/* Context Menu */}

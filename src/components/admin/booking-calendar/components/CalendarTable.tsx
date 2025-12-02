@@ -17,6 +17,7 @@ interface CalendarTableProps {
   onResizeStart?: (e: React.MouseEvent, booking: Booking, edge: "left" | "right") => void;
   getResizePreview?: (bookingId: string) => { previewDays: number; edge: "left" | "right" | null };
   isResizing?: boolean;
+  activeBooking?: Booking | null;
 }
 
 export const CalendarTable = ({
@@ -33,6 +34,7 @@ export const CalendarTable = ({
   onResizeStart,
   getResizePreview,
   isResizing,
+  activeBooking,
 }: CalendarTableProps) => {
   return (
     <div
@@ -77,6 +79,7 @@ export const CalendarTable = ({
                     onResizeStart={onResizeStart}
                     getResizePreview={getResizePreview}
                     isResizing={isResizing}
+                    activeBooking={activeBooking}
                   />
                 ))}
             </React.Fragment>
