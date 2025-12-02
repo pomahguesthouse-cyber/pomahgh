@@ -1457,9 +1457,9 @@ const BookingCell = ({
 }) => {
   const isPending = booking.status === "pending";
   const totalNights = visibleNights || booking.total_nights;
-  // Calculate booking bar width: starts at 50% of check-in cell, ends at 50% of checkout cell
-  // For N nights: bar covers (N * 100%) width
-  const bookingWidth = `${totalNights * 100}%`;
+  // Calculate booking bar width: pixel-based for precision
+  // Each cell is 60px, bar starts 30px into check-in cell, ends 30px into checkout cell
+  const bookingWidth = `${totalNights * 60}px`;
   const getBackgroundClass = () => {
     // Check for Late Check Out first (priority)
     const isLateCheckout = booking.check_out_time && booking.check_out_time !== "12:00:00";
@@ -1482,9 +1482,8 @@ const BookingCell = ({
     return colors[colorIndex];
   };
   const style = {
-    left: isTruncatedLeft ? "0" : "50%",
+    left: isTruncatedLeft ? "0" : "30px", // 30px = center of 60px cell
     width: bookingWidth,
-    transform: isTruncatedLeft ? "translateX(0%)" : "translateX(0%)",
   };
   return (
     <div
