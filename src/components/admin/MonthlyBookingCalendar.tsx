@@ -1480,7 +1480,7 @@ const BookingCell = ({
   // Each cell is dynamic width based on view range
   // Check-in at 13:00 (afternoon) = bar starts at center
   // Check-out at 12:00 (noon) = bar ends at center of checkout date
-  const bookingWidth = `${totalNights * cellWidth}px`; // Full width from center check-in to center check-out
+  const bookingWidth = `${totalNights * cellWidth - 1}px`; // Subtract 1px for clean edge at center divider
   const getBackgroundClass = () => {
     // Check for Late Check Out first (priority)
     const isLateCheckout = booking.check_out_time && booking.check_out_time !== "12:00:00";
@@ -1505,12 +1505,13 @@ const BookingCell = ({
   const style = {
     left: isTruncatedLeft ? "0" : `${cellWidth / 2}px`, // Center of cell for check-in
     width: bookingWidth,
+    boxSizing: 'border-box' as const,
   };
   return (
     <div
       onClick={onClick}
       className={cn(
-        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 overflow-visible z-[5] cursor-pointer",
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-visible z-[5] cursor-pointer",
         isTruncatedLeft ? "rounded-r-md" : "rounded-md",
         getBackgroundClass(),
       )}
