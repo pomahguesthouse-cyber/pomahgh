@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,9 +34,9 @@ interface CreateBookingDialogProps {
   roomId?: string;
   roomNumber?: string;
   initialDate?: Date;
-  rooms: Array<{ 
-    id: string; 
-    name: string; 
+  rooms: Array<{
+    id: string;
+    name: string;
     price_per_night: number;
     room_numbers?: string[];
   }>;
@@ -41,11 +48,11 @@ export const CreateBookingDialog = ({
   roomId,
   roomNumber,
   initialDate,
-  rooms
+  rooms,
 }: CreateBookingDialogProps) => {
   const queryClient = useQueryClient();
   const { settings } = useHotelSettings();
-  
+
   // Set default dates: initialDate or today (WIB), and next day for checkout
   const getDefaultCheckIn = () => {
     if (initialDate) {
@@ -55,17 +62,15 @@ export const CreateBookingDialog = ({
     }
     return getWIBToday();
   };
-  
+
   const getDefaultCheckOut = (checkInDate: Date) => {
     const nextDay = new Date(checkInDate);
     nextDay.setDate(nextDay.getDate() + 1);
     return nextDay;
   };
-  
+
   const [checkIn, setCheckIn] = useState<Date | undefined>(getDefaultCheckIn());
-  const [checkOut, setCheckOut] = useState<Date | undefined>(
-    checkIn ? getDefaultCheckOut(checkIn) : undefined
-  );
+  const [checkOut, setCheckOut] = useState<Date | undefined>(checkIn ? getDefaultCheckOut(checkIn) : undefined);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [formData, setFormData] = useState({
     guest_name: "",
@@ -77,21 +82,23 @@ export const CreateBookingDialog = ({
     check_out_time: "12:00",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Multiple room selection
-  const [selectedRooms, setSelectedRooms] = useState<Array<{
-    roomId: string;
-    roomNumber: string;
-    roomName: string;
-    pricePerNight: number;
-  }>>([]);
-  
+  const [selectedRooms, setSelectedRooms] = useState<
+    Array<{
+      roomId: string;
+      roomNumber: string;
+      roomName: string;
+      pricePerNight: number;
+    }>
+  >([]);
+
   // Custom pricing states
   const [useCustomPrice, setUseCustomPrice] = useState(false);
   const [customPricePerNight, setCustomPricePerNight] = useState<string>("");
   const [pricingMode, setPricingMode] = useState<"per_night" | "total">("per_night");
   const [customTotalPrice, setCustomTotalPrice] = useState<string>("");
-  
+
   // Booking source states
   const [bookingSource, setBookingSource] = useState<"direct" | "ota" | "walk_in" | "other">("direct");
   const [otaName, setOtaName] = useState<string>("");
@@ -123,14 +130,16 @@ export const CreateBookingDialog = ({
       setOtherSource("");
       // Reset multi-room selection, but pre-select if roomId provided
       if (roomId && roomNumber) {
-        const room = rooms.find(r => r.id === roomId);
+        const room = rooms.find((r) => r.id === roomId);
         if (room) {
-          setSelectedRooms([{
-            roomId: room.id,
-            roomNumber: roomNumber,
-            roomName: room.name,
-            pricePerNight: room.price_per_night
-          }]);
+          setSelectedRooms([
+            {
+              roomId: room.id,
+              roomNumber: roomNumber,
+              roomName: room.name,
+              pricePerNight: room.price_per_night,
+            },
+          ]);
         }
       } else {
         setSelectedRooms([]);
@@ -138,11 +147,11 @@ export const CreateBookingDialog = ({
     }
   }, [open, initialDate, roomId, roomNumber, rooms]);
 
-  const selectedRoom = rooms.find(r => r.id === roomId);
+  const selectedRoom = rooms.find((r) => r.id === roomId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!formData.guest_name.trim()) {
       toast.error("Nama wajib diisi");
@@ -164,16 +173,16 @@ export const CreateBookingDialog = ({
       toast.error("Format nomor telepon tidak valid");
       return;
     }
-    if (formData.guest_phone.replace(/\D/g, '').length < 10) {
+    if (formData.guest_phone.replace(/\D/g, "").length < 10) {
       toast.error("Nomor telepon minimal 10 digit");
       return;
     }
-    
+
     if (!checkIn || !checkOut) {
       toast.error("Pilih tanggal check-in dan check-out");
       return;
     }
-    
+
     if (selectedRooms.length === 0) {
       toast.error("Pilih minimal 1 kamar");
       return;
@@ -183,7 +192,7 @@ export const CreateBookingDialog = ({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (checkIn < today) {
-      toast.error("Tanggal check-in tidak boleh di masa lalu");
+      toast.error("Tanggal check-in tidak boleh sebelum tanggal sekarang");
       return;
     }
 
@@ -261,7 +270,7 @@ export const CreateBookingDialog = ({
 
     try {
       const totalNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       // Calculate total price for all rooms
       let totalPrice = 0;
       if (useCustomPrice) {
@@ -271,52 +280,51 @@ export const CreateBookingDialog = ({
           totalPrice = parseFloat(customTotalPrice);
         }
       } else {
-        totalPrice = selectedRooms.reduce((sum, room) => sum + (room.pricePerNight * totalNights), 0);
+        totalPrice = selectedRooms.reduce((sum, room) => sum + room.pricePerNight * totalNights, 0);
       }
 
       // Insert main booking (use first room for backward compatibility)
-      const { data: bookingData, error: bookingError } = await supabase.from("bookings").insert({
-        room_id: selectedRooms[0].roomId,
-        allocated_room_number: selectedRooms[0].roomNumber,
-        guest_name: formData.guest_name,
-        guest_email: formData.guest_email,
-        guest_phone: formData.guest_phone,
-        check_in: format(checkIn, "yyyy-MM-dd"),
-        check_out: format(checkOut, "yyyy-MM-dd"),
-        check_in_time: formData.check_in_time + ":00",
-        check_out_time: formData.check_out_time + ":00",
-        total_nights: totalNights,
-        total_price: totalPrice,
-        num_guests: formData.num_guests,
-        special_requests: formData.special_requests || null,
-        status: "confirmed",
-        payment_status: "unpaid",
-        booking_source: bookingSource,
-        ota_name: bookingSource === "ota" ? otaName : null,
-        other_source: bookingSource === "other" ? otherSource : null,
-      }).select().single();
+      const { data: bookingData, error: bookingError } = await supabase
+        .from("bookings")
+        .insert({
+          room_id: selectedRooms[0].roomId,
+          allocated_room_number: selectedRooms[0].roomNumber,
+          guest_name: formData.guest_name,
+          guest_email: formData.guest_email,
+          guest_phone: formData.guest_phone,
+          check_in: format(checkIn, "yyyy-MM-dd"),
+          check_out: format(checkOut, "yyyy-MM-dd"),
+          check_in_time: formData.check_in_time + ":00",
+          check_out_time: formData.check_out_time + ":00",
+          total_nights: totalNights,
+          total_price: totalPrice,
+          num_guests: formData.num_guests,
+          special_requests: formData.special_requests || null,
+          status: "confirmed",
+          payment_status: "unpaid",
+          booking_source: bookingSource,
+          ota_name: bookingSource === "ota" ? otaName : null,
+          other_source: bookingSource === "other" ? otherSource : null,
+        })
+        .select()
+        .single();
 
       if (bookingError) throw bookingError;
 
       // Insert each room into booking_rooms table
-      const bookingRoomsData = selectedRooms.map(room => ({
+      const bookingRoomsData = selectedRooms.map((room) => ({
         booking_id: bookingData.id,
         room_id: room.roomId,
         room_number: room.roomNumber,
-        price_per_night: useCustomPrice && customPricePerNight 
-          ? parseFloat(customPricePerNight) 
-          : room.pricePerNight,
+        price_per_night: useCustomPrice && customPricePerNight ? parseFloat(customPricePerNight) : room.pricePerNight,
       }));
 
-      const { error: bookingRoomsError } = await supabase
-        .from("booking_rooms")
-        .insert(bookingRoomsData);
+      const { error: bookingRoomsError } = await supabase.from("booking_rooms").insert(bookingRoomsData);
 
       if (bookingRoomsError) throw bookingRoomsError;
 
-      const roomsText = selectedRooms.length > 1 
-        ? `${selectedRooms.length} kamar` 
-        : `kamar ${selectedRooms[0].roomNumber}`;
+      const roomsText =
+        selectedRooms.length > 1 ? `${selectedRooms.length} kamar` : `kamar ${selectedRooms[0].roomNumber}`;
       toast.success(`Booking berhasil dibuat untuk ${roomsText}`);
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       setShowConfirmation(false);
@@ -329,7 +337,8 @@ export const CreateBookingDialog = ({
     }
   };
 
-  const totalNights = checkIn && checkOut ? Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const totalNights =
+    checkIn && checkOut ? Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
   // Calculate effective price based on mode
   let effectiveTotalPrice = 0;
@@ -341,18 +350,19 @@ export const CreateBookingDialog = ({
       effectiveTotalPrice = totalNights * effectivePricePerNight * selectedRooms.length;
     } else if (pricingMode === "total" && customTotalPrice) {
       effectiveTotalPrice = parseFloat(customTotalPrice);
-      effectivePricePerNight = totalNights > 0 && selectedRooms.length > 0 ? effectiveTotalPrice / totalNights / selectedRooms.length : 0;
+      effectivePricePerNight =
+        totalNights > 0 && selectedRooms.length > 0 ? effectiveTotalPrice / totalNights / selectedRooms.length : 0;
     }
   } else {
     const totalRoomPrice = selectedRooms.reduce((sum, room) => sum + room.pricePerNight, 0);
     effectivePricePerNight = selectedRooms.length > 0 ? totalRoomPrice / selectedRooms.length : 0;
     effectiveTotalPrice = totalNights * totalRoomPrice;
   }
-  
+
   const toggleRoomSelection = (roomId: string, roomNumber: string, roomName: string, pricePerNight: number) => {
-    const exists = selectedRooms.find(r => r.roomId === roomId && r.roomNumber === roomNumber);
+    const exists = selectedRooms.find((r) => r.roomId === roomId && r.roomNumber === roomNumber);
     if (exists) {
-      setSelectedRooms(selectedRooms.filter(r => !(r.roomId === roomId && r.roomNumber === roomNumber)));
+      setSelectedRooms(selectedRooms.filter((r) => !(r.roomId === roomId && r.roomNumber === roomNumber)));
     } else {
       setSelectedRooms([...selectedRooms, { roomId, roomNumber, roomName, pricePerNight }]);
     }
@@ -365,556 +375,536 @@ export const CreateBookingDialog = ({
         onOpenChange={setShowConfirmation}
         onConfirm={handleConfirm}
         guestName={formData.guest_name}
-        roomName={selectedRooms.length > 1 
-          ? `${selectedRooms.length} kamar` 
-          : selectedRooms[0]?.roomName || ""}
+        roomName={selectedRooms.length > 1 ? `${selectedRooms.length} kamar` : selectedRooms[0]?.roomName || ""}
         checkIn={checkIn}
         checkOut={checkOut}
         totalNights={totalNights}
         totalPrice={effectiveTotalPrice}
         numGuests={formData.num_guests}
       />
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Buat Booking Baru</DialogTitle>
-          <DialogDescription>
-            {selectedRooms.length > 0 
-              ? `${selectedRooms.length} kamar dipilih` 
-              : "Pilih kamar untuk booking"}
-          </DialogDescription>
-        </DialogHeader>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Buat Booking Baru</DialogTitle>
+            <DialogDescription>
+              {selectedRooms.length > 0 ? `${selectedRooms.length} kamar dipilih` : "Pilih kamar untuk booking"}
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Room Selection Section */}
-          <div className="border rounded-lg p-4 space-y-3">
-            <Label className="text-base font-semibold">Pilih Kamar (Multiple)</Label>
-            <p className="text-xs text-muted-foreground mb-2">
-              Pilih satu atau lebih kamar untuk booking ini
-            </p>
-            <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
-              {rooms.map(room => (
-                <div key={room.id} className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                    <span className="font-medium text-sm">{room.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      Rp {room.price_per_night.toLocaleString("id-ID")}/malam
-                    </span>
-                  </div>
-                  {room.room_numbers && room.room_numbers.length > 0 && (
-                    <div className="grid grid-cols-4 gap-2 pl-4">
-                      {room.room_numbers.map(roomNumber => {
-                        const isSelected = selectedRooms.some(
-                          r => r.roomId === room.id && r.roomNumber === roomNumber
-                        );
-                        return (
-                          <button
-                            key={roomNumber}
-                            type="button"
-                            onClick={() => toggleRoomSelection(room.id, roomNumber, room.name, room.price_per_night)}
-                            className={cn(
-                              "px-3 py-2 text-xs rounded border transition-colors",
-                              isSelected
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-background hover:bg-muted border-border"
-                            )}
-                          >
-                            {roomNumber}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            {selectedRooms.length > 0 && (
-              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                <p className="text-sm font-medium mb-2">Selected Rooms:</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedRooms.map((room, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-xs">
-                      {room.roomNumber} ({room.roomName})
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Check-in & Check-out Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Check-in</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal mt-1",
-                      !checkIn && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {checkIn ? format(checkIn, "PPP", { locale: localeId }) : "Pilih tanggal"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={checkIn}
-                    onSelect={setCheckIn}
-                    disabled={(date) => {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      return date < today;
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div>
-              <Label>Check-out</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal mt-1",
-                      !checkOut && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {checkOut ? format(checkOut, "PPP", { locale: localeId }) : "Pilih tanggal"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={checkOut}
-                    onSelect={setCheckOut}
-                    disabled={(date) => !checkIn || date <= checkIn}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {/* Check-in & Check-out Times */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="check_in_time">Waktu Check-in</Label>
-              <Input
-                id="check_in_time"
-                type="time"
-                value={formData.check_in_time}
-                onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="check_out_time">Waktu Check-out</Label>
-              <Input
-                id="check_out_time"
-                type="time"
-                value={formData.check_out_time}
-                onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-          </div>
-
-          {/* Guest Information */}
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="guest_name">Nama Tamu *</Label>
-              <Input
-                id="guest_name"
-                value={formData.guest_name}
-                onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
-                placeholder="Nama lengkap tamu"
-                required
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="guest_email">Email *</Label>
-              <Input
-                id="guest_email"
-                type="email"
-                value={formData.guest_email}
-                onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
-                placeholder="email@example.com"
-                required
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="guest_phone">Nomor Telepon <span className="text-destructive">*</span></Label>
-              <Input
-                id="guest_phone"
-                type="tel"
-                value={formData.guest_phone}
-                onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
-                placeholder="+62 812 3456 7890"
-                required
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="num_guests">Jumlah Tamu *</Label>
-              <Input
-                id="num_guests"
-                type="number"
-                min="1"
-                max="10"
-                value={formData.num_guests}
-                onChange={(e) => setFormData({ ...formData, num_guests: parseInt(e.target.value) || 1 })}
-                required
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="special_requests">Permintaan Khusus</Label>
-              <Textarea
-                id="special_requests"
-                value={formData.special_requests}
-                onChange={(e) => setFormData({ ...formData, special_requests: e.target.value })}
-                placeholder="Catatan atau permintaan khusus..."
-                rows={3}
-                className="mt-1"
-              />
-            </div>
-          </div>
-
-          {/* Booking Source Section */}
-          <div className="space-y-4 border-t pt-4 mt-4">
-            <div>
-              <Label htmlFor="booking_source" className="text-base font-semibold">
-                Jenis Booking
-              </Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Pilih sumber booking untuk tracking
-              </p>
-              <Select
-                value={bookingSource}
-                onValueChange={(value: "direct" | "ota" | "walk_in" | "other") => {
-                  setBookingSource(value);
-                  if (value !== "ota") setOtaName("");
-                  if (value !== "other") setOtherSource("");
-                }}
-              >
-                <SelectTrigger id="booking_source" className="mt-1">
-                  <SelectValue placeholder="Pilih jenis booking" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="direct">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span>Direct</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="ota">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      <span>OTA (Online Travel Agency)</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="walk_in">
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="h-4 w-4" />
-                      <span>Walk-in</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="other">
-                    <div className="flex items-center gap-2">
-                      <HelpCircle className="h-4 w-4" />
-                      <span>Lainnya</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {bookingSource === "ota" && (
-              <div className="animate-in slide-in-from-top-2 duration-200">
-                <Label htmlFor="ota_name">
-                  Nama OTA <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="ota_name"
-                  value={otaName}
-                  onChange={(e) => setOtaName(e.target.value)}
-                  placeholder="Contoh: Traveloka, Booking.com, Agoda, Tiket.com"
-                  className="mt-1"
-                  required
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Masukkan nama platform OTA tempat booking dilakukan
-                </p>
-              </div>
-            )}
-
-            {bookingSource === "other" && (
-              <div className="animate-in slide-in-from-top-2 duration-200">
-                <Label htmlFor="other_source">
-                  Keterangan Sumber <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="other_source"
-                  value={otherSource}
-                  onChange={(e) => setOtherSource(e.target.value)}
-                  placeholder="Contoh: Referral teman, Event, Corporate booking"
-                  className="mt-1"
-                  required
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Jelaskan sumber booking lainnya
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Custom Pricing Section */}
-          <div className="border-t pt-4 mt-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="space-y-0.5">
-                <Label htmlFor="use-custom-price" className="text-base">
-                  Gunakan Harga Custom
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Override harga normal kamar dengan harga custom
-                </p>
-              </div>
-              <Switch
-                id="use-custom-price"
-                checked={useCustomPrice}
-                onCheckedChange={(checked) => {
-                  setUseCustomPrice(checked);
-                  if (!checked) {
-                    setCustomPricePerNight("");
-                    setCustomTotalPrice("");
-                    setPricingMode("per_night");
-                  }
-                }}
-              />
-            </div>
-
-            {useCustomPrice && (
-              <div className="mt-3 space-y-4 animate-in slide-in-from-top-2 duration-200">
-                {/* Pricing Mode Selection */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Mode Harga Custom</Label>
-                  <RadioGroup
-                    value={pricingMode}
-                    onValueChange={(value: "per_night" | "total") => {
-                      setPricingMode(value);
-                      if (value === "per_night") {
-                        setCustomTotalPrice("");
-                      } else {
-                        setCustomPricePerNight("");
-                      }
-                    }}
-                    className="grid grid-cols-2 gap-4"
-                  >
-                    <div>
-                      <RadioGroupItem
-                        value="per_night"
-                        id="mode-per-night"
-                        className="peer sr-only"
-                      />
-                      <Label
-                        htmlFor="mode-per-night"
-                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                      >
-                        <CalendarIcon className="mb-2 h-5 w-5" />
-                        <span className="text-sm font-medium">Per Malam</span>
-                      </Label>
-                    </div>
-                    <div>
-                      <RadioGroupItem
-                        value="total"
-                        id="mode-total"
-                        className="peer sr-only"
-                      />
-                      <Label
-                        htmlFor="mode-total"
-                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                      >
-                        <Tag className="mb-2 h-5 w-5" />
-                        <span className="text-sm font-medium">Total Harga</span>
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {/* Per Night Input */}
-                {pricingMode === "per_night" && (
-                  <div className="animate-in slide-in-from-top-2 duration-200">
-                    <Label htmlFor="custom_price_per_night">
-                      Harga per Malam (Custom) <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative mt-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        Rp
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Room Selection Section */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <Label className="text-base font-semibold">Pilih Kamar (Multiple)</Label>
+              <p className="text-xs text-muted-foreground mb-2">Pilih satu atau lebih kamar untuk booking ini</p>
+              <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
+                {rooms.map((room) => (
+                  <div key={room.id} className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                      <span className="font-medium text-sm">{room.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        Rp {room.price_per_night.toLocaleString("id-ID")}/malam
                       </span>
-                      <Input
-                        id="custom_price_per_night"
-                        type="number"
-                        min="10000"
-                        step="1000"
-                        value={customPricePerNight}
-                        onChange={(e) => setCustomPricePerNight(e.target.value)}
-                        placeholder="Masukkan harga per malam"
-                        className="pl-10"
-                        required
-                      />
                     </div>
-                    <div className="mt-2 space-y-1">
-                      <p className="text-xs text-muted-foreground">
-                        Harga normal: Rp {selectedRoom?.price_per_night.toLocaleString("id-ID")} /malam
-                      </p>
-                      {customPricePerNight && totalNights > 0 && (
-                        <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                          Total akan menjadi: Rp {(parseFloat(customPricePerNight) * totalNights).toLocaleString("id-ID")}
-                        </p>
-                      )}
-                    </div>
-                    {/* Quick Discount Buttons */}
-                    <div className="flex gap-2 mt-2">
-                      <p className="text-xs text-muted-foreground mr-2 self-center">Quick discount:</p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const discount10 = (selectedRoom?.price_per_night || 0) * 0.9;
-                          setCustomPricePerNight(Math.round(discount10).toString());
-                        }}
-                      >
-                        -10%
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const discount20 = (selectedRoom?.price_per_night || 0) * 0.8;
-                          setCustomPricePerNight(Math.round(discount20).toString());
-                        }}
-                      >
-                        -20%
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const discount50 = (selectedRoom?.price_per_night || 0) * 0.5;
-                          setCustomPricePerNight(Math.round(discount50).toString());
-                        }}
-                      >
-                        -50%
-                      </Button>
-                    </div>
+                    {room.room_numbers && room.room_numbers.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2 pl-4">
+                        {room.room_numbers.map((roomNumber) => {
+                          const isSelected = selectedRooms.some(
+                            (r) => r.roomId === room.id && r.roomNumber === roomNumber,
+                          );
+                          return (
+                            <button
+                              key={roomNumber}
+                              type="button"
+                              onClick={() => toggleRoomSelection(room.id, roomNumber, room.name, room.price_per_night)}
+                              className={cn(
+                                "px-3 py-2 text-xs rounded border transition-colors",
+                                isSelected
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background hover:bg-muted border-border",
+                              )}
+                            >
+                              {roomNumber}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {/* Total Price Input */}
-                {pricingMode === "total" && (
-                  <div className="animate-in slide-in-from-top-2 duration-200">
-                    <Label htmlFor="custom_total_price">
-                      Total Harga (Custom) <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative mt-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        Rp
-                      </span>
-                      <Input
-                        id="custom_total_price"
-                        type="number"
-                        min="10000"
-                        step="1000"
-                        value={customTotalPrice}
-                        onChange={(e) => setCustomTotalPrice(e.target.value)}
-                        placeholder="Masukkan total harga"
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                    <div className="mt-2 space-y-1">
-                      <p className="text-xs text-muted-foreground">
-                        Total normal: Rp {((selectedRoom?.price_per_night || 0) * totalNights).toLocaleString("id-ID")}
-                      </p>
-                      {customTotalPrice && totalNights > 0 && (
-                        <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                          Harga per malam: Rp {(parseFloat(customTotalPrice) / totalNights).toLocaleString("id-ID")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
+                ))}
               </div>
-            )}
-          </div>
-
-          {/* Price Summary */}
-          {totalNights > 0 && selectedRooms.length > 0 && (
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4">
-              {useCustomPrice && (customPricePerNight || customTotalPrice) && (
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary" className="text-xs">
-                    <Tag className="w-3 h-3 mr-1" />
-                    Custom Price ({pricingMode === "per_night" ? "Per Malam" : "Total"})
-                  </Badge>
+              {selectedRooms.length > 0 && (
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                  <p className="text-sm font-medium mb-2">Selected Rooms:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRooms.map((room, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {room.roomNumber} ({room.roomName})
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total</p>
-                  <p className="text-xs text-muted-foreground">
-                    {selectedRooms.length} kamar × {totalNights} malam
-                    {!useCustomPrice && (
-                      <span className="block mt-0.5">
-                        Avg: Rp {effectivePricePerNight.toLocaleString("id-ID")}/malam
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold">Rp {effectiveTotalPrice.toLocaleString("id-ID")}</p>
-                  {!useCustomPrice && selectedRooms.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {selectedRooms.map((room, idx) => (
-                        <span key={idx} className="block">
-                          {room.roomNumber}: Rp {(room.pricePerNight * totalNights).toLocaleString("id-ID")}
-                        </span>
-                      ))}
-                    </p>
-                  )}
-                </div>
+            </div>
+
+            {/* Check-in & Check-out Dates */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Check-in</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal mt-1",
+                        !checkIn && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {checkIn ? format(checkIn, "PPP", { locale: localeId }) : "Pilih tanggal"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={checkIn}
+                      onSelect={setCheckIn}
+                      disabled={(date) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        return date < today;
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div>
+                <Label>Check-out</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal mt-1",
+                        !checkOut && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {checkOut ? format(checkOut, "PPP", { locale: localeId }) : "Pilih tanggal"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={checkOut}
+                      onSelect={setCheckOut}
+                      disabled={(date) => !checkIn || date <= checkIn}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
-          )}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Batal
-            </Button>
-            <Button type="submit" disabled={isSubmitting || !checkIn || !checkOut || selectedRooms.length === 0}>
-              {isSubmitting ? "Membuat..." : "Buat Booking"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            {/* Check-in & Check-out Times */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="check_in_time">Waktu Check-in</Label>
+                <Input
+                  id="check_in_time"
+                  type="time"
+                  value={formData.check_in_time}
+                  onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="check_out_time">Waktu Check-out</Label>
+                <Input
+                  id="check_out_time"
+                  type="time"
+                  value={formData.check_out_time}
+                  onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            {/* Guest Information */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="guest_name">Nama Tamu *</Label>
+                <Input
+                  id="guest_name"
+                  value={formData.guest_name}
+                  onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
+                  placeholder="Nama lengkap tamu"
+                  required
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="guest_email">Email *</Label>
+                <Input
+                  id="guest_email"
+                  type="email"
+                  value={formData.guest_email}
+                  onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
+                  placeholder="email@example.com"
+                  required
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="guest_phone">
+                  Nomor Telepon <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="guest_phone"
+                  type="tel"
+                  value={formData.guest_phone}
+                  onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
+                  placeholder="+62 812 3456 7890"
+                  required
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="num_guests">Jumlah Tamu *</Label>
+                <Input
+                  id="num_guests"
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={formData.num_guests}
+                  onChange={(e) => setFormData({ ...formData, num_guests: parseInt(e.target.value) || 1 })}
+                  required
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="special_requests">Permintaan Khusus</Label>
+                <Textarea
+                  id="special_requests"
+                  value={formData.special_requests}
+                  onChange={(e) => setFormData({ ...formData, special_requests: e.target.value })}
+                  placeholder="Catatan atau permintaan khusus..."
+                  rows={3}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            {/* Booking Source Section */}
+            <div className="space-y-4 border-t pt-4 mt-4">
+              <div>
+                <Label htmlFor="booking_source" className="text-base font-semibold">
+                  Jenis Booking
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">Pilih sumber booking untuk tracking</p>
+                <Select
+                  value={bookingSource}
+                  onValueChange={(value: "direct" | "ota" | "walk_in" | "other") => {
+                    setBookingSource(value);
+                    if (value !== "ota") setOtaName("");
+                    if (value !== "other") setOtherSource("");
+                  }}
+                >
+                  <SelectTrigger id="booking_source" className="mt-1">
+                    <SelectValue placeholder="Pilih jenis booking" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="direct">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        <span>Direct</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="ota">
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4" />
+                        <span>OTA (Online Travel Agency)</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="walk_in">
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="h-4 w-4" />
+                        <span>Walk-in</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="other">
+                      <div className="flex items-center gap-2">
+                        <HelpCircle className="h-4 w-4" />
+                        <span>Lainnya</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {bookingSource === "ota" && (
+                <div className="animate-in slide-in-from-top-2 duration-200">
+                  <Label htmlFor="ota_name">
+                    Nama OTA <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="ota_name"
+                    value={otaName}
+                    onChange={(e) => setOtaName(e.target.value)}
+                    placeholder="Contoh: Traveloka, Booking.com, Agoda, Tiket.com"
+                    className="mt-1"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Masukkan nama platform OTA tempat booking dilakukan
+                  </p>
+                </div>
+              )}
+
+              {bookingSource === "other" && (
+                <div className="animate-in slide-in-from-top-2 duration-200">
+                  <Label htmlFor="other_source">
+                    Keterangan Sumber <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="other_source"
+                    value={otherSource}
+                    onChange={(e) => setOtherSource(e.target.value)}
+                    placeholder="Contoh: Referral teman, Event, Corporate booking"
+                    className="mt-1"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Jelaskan sumber booking lainnya</p>
+                </div>
+              )}
+            </div>
+
+            {/* Custom Pricing Section */}
+            <div className="border-t pt-4 mt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="use-custom-price" className="text-base">
+                    Gunakan Harga Custom
+                  </Label>
+                  <p className="text-sm text-muted-foreground">Override harga normal kamar dengan harga custom</p>
+                </div>
+                <Switch
+                  id="use-custom-price"
+                  checked={useCustomPrice}
+                  onCheckedChange={(checked) => {
+                    setUseCustomPrice(checked);
+                    if (!checked) {
+                      setCustomPricePerNight("");
+                      setCustomTotalPrice("");
+                      setPricingMode("per_night");
+                    }
+                  }}
+                />
+              </div>
+
+              {useCustomPrice && (
+                <div className="mt-3 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                  {/* Pricing Mode Selection */}
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Mode Harga Custom</Label>
+                    <RadioGroup
+                      value={pricingMode}
+                      onValueChange={(value: "per_night" | "total") => {
+                        setPricingMode(value);
+                        if (value === "per_night") {
+                          setCustomTotalPrice("");
+                        } else {
+                          setCustomPricePerNight("");
+                        }
+                      }}
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <div>
+                        <RadioGroupItem value="per_night" id="mode-per-night" className="peer sr-only" />
+                        <Label
+                          htmlFor="mode-per-night"
+                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                        >
+                          <CalendarIcon className="mb-2 h-5 w-5" />
+                          <span className="text-sm font-medium">Per Malam</span>
+                        </Label>
+                      </div>
+                      <div>
+                        <RadioGroupItem value="total" id="mode-total" className="peer sr-only" />
+                        <Label
+                          htmlFor="mode-total"
+                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                        >
+                          <Tag className="mb-2 h-5 w-5" />
+                          <span className="text-sm font-medium">Total Harga</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Per Night Input */}
+                  {pricingMode === "per_night" && (
+                    <div className="animate-in slide-in-from-top-2 duration-200">
+                      <Label htmlFor="custom_price_per_night">
+                        Harga per Malam (Custom) <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative mt-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rp</span>
+                        <Input
+                          id="custom_price_per_night"
+                          type="number"
+                          min="10000"
+                          step="1000"
+                          value={customPricePerNight}
+                          onChange={(e) => setCustomPricePerNight(e.target.value)}
+                          placeholder="Masukkan harga per malam"
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          Harga normal: Rp {selectedRoom?.price_per_night.toLocaleString("id-ID")} /malam
+                        </p>
+                        {customPricePerNight && totalNights > 0 && (
+                          <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                            Total akan menjadi: Rp{" "}
+                            {(parseFloat(customPricePerNight) * totalNights).toLocaleString("id-ID")}
+                          </p>
+                        )}
+                      </div>
+                      {/* Quick Discount Buttons */}
+                      <div className="flex gap-2 mt-2">
+                        <p className="text-xs text-muted-foreground mr-2 self-center">Quick discount:</p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const discount10 = (selectedRoom?.price_per_night || 0) * 0.9;
+                            setCustomPricePerNight(Math.round(discount10).toString());
+                          }}
+                        >
+                          -10%
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const discount20 = (selectedRoom?.price_per_night || 0) * 0.8;
+                            setCustomPricePerNight(Math.round(discount20).toString());
+                          }}
+                        >
+                          -20%
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const discount50 = (selectedRoom?.price_per_night || 0) * 0.5;
+                            setCustomPricePerNight(Math.round(discount50).toString());
+                          }}
+                        >
+                          -50%
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Total Price Input */}
+                  {pricingMode === "total" && (
+                    <div className="animate-in slide-in-from-top-2 duration-200">
+                      <Label htmlFor="custom_total_price">
+                        Total Harga (Custom) <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative mt-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">Rp</span>
+                        <Input
+                          id="custom_total_price"
+                          type="number"
+                          min="10000"
+                          step="1000"
+                          value={customTotalPrice}
+                          onChange={(e) => setCustomTotalPrice(e.target.value)}
+                          placeholder="Masukkan total harga"
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          Total normal: Rp{" "}
+                          {((selectedRoom?.price_per_night || 0) * totalNights).toLocaleString("id-ID")}
+                        </p>
+                        {customTotalPrice && totalNights > 0 && (
+                          <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                            Harga per malam: Rp {(parseFloat(customTotalPrice) / totalNights).toLocaleString("id-ID")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Price Summary */}
+            {totalNights > 0 && selectedRooms.length > 0 && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4">
+                {useCustomPrice && (customPricePerNight || customTotalPrice) && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="secondary" className="text-xs">
+                      <Tag className="w-3 h-3 mr-1" />
+                      Custom Price ({pricingMode === "per_night" ? "Per Malam" : "Total"})
+                    </Badge>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total</p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedRooms.length} kamar × {totalNights} malam
+                      {!useCustomPrice && (
+                        <span className="block mt-0.5">
+                          Avg: Rp {effectivePricePerNight.toLocaleString("id-ID")}/malam
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold">Rp {effectiveTotalPrice.toLocaleString("id-ID")}</p>
+                    {!useCustomPrice && selectedRooms.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {selectedRooms.map((room, idx) => (
+                          <span key={idx} className="block">
+                            {room.roomNumber}: Rp {(room.pricePerNight * totalNights).toLocaleString("id-ID")}
+                          </span>
+                        ))}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Batal
+              </Button>
+              <Button type="submit" disabled={isSubmitting || !checkIn || !checkOut || selectedRooms.length === 0}>
+                {isSubmitting ? "Membuat..." : "Buat Booking"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
