@@ -75,22 +75,46 @@ export const BookingCalendar = () => {
   );
 
   // Handle booking move via drag & drop
-  const handleBookingMove = (booking: Booking, newRoomId: string, newRoomNumber: string) => {
-    // Prepare booking with new room assignment
+  const handleBookingMove = (
+    booking: Booking,
+    newRoomId: string,
+    newRoomNumber: string,
+    newCheckIn: string,
+    newCheckOut: string
+  ) => {
+    // Prepare booking with new room and dates
     const movedBooking = {
       ...booking,
       room_id: newRoomId,
       allocated_room_number: newRoomNumber,
+      check_in: newCheckIn,
+      check_out: newCheckOut,
     };
 
-    // Open edit dialog with pre-filled new room
+    // Open edit dialog with pre-filled new room & dates
     setSelectedBooking(movedBooking);
     const room = rooms?.find((r) => r.id === newRoomId);
     setAvailableRoomNumbers(room?.room_numbers || []);
-    toast.info(`Booking dipindahkan ke kamar ${newRoomNumber}. Silakan simpan perubahan.`);
+
+    // Show appropriate message
+    const isDateChanged = booking.check_in !== newCheckIn;
+    const isRoomChanged = booking.allocated_room_number !== newRoomNumber;
+
+    if (isDateChanged && isRoomChanged) {
+      toast.info(`Booking dipindahkan ke ${newRoomNumber}, tanggal ${newCheckIn}. Silakan simpan.`);
+    } else if (isDateChanged) {
+      toast.info(`Booking dijadwalkan ulang ke ${newCheckIn}. Silakan simpan.`);
+    } else {
+      toast.info(`Booking dipindahkan ke kamar ${newRoomNumber}. Silakan simpan.`);
+    }
   };
 
-  const { activeBooking, handleDragStart, handleDragEnd } = useDragDrop(rooms || [], handleBookingMove);
+  const { activeBooking, handleDragStart, handleDragEnd } = useDragDrop(
+    rooms || [],
+    bookings,
+    unavailableDates,
+    handleBookingMove
+  );
 
   // Event handlers
   const handleBookingClick = (booking: Booking) => {
