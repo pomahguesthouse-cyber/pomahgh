@@ -42,7 +42,7 @@ export const BookingBar = ({
     adjustedNights = Math.max(1, adjustedNights); // Minimum 1 night
   }
   
-  const bookingWidth = `${adjustedNights * cellWidth - 1}px`;
+  const bookingWidth = `${adjustedNights * cellWidth}px`;
   const isPending = booking.status === "pending";
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
