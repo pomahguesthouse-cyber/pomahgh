@@ -694,6 +694,9 @@ export const MonthlyBookingCalendar = () => {
                       )}
                       style={{ width: cellWidth, minWidth: cellWidth, maxWidth: cellWidth }}
                     >
+                      {/* Vertical divider - visual guide for AM/PM split */}
+                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/40 -translate-x-px pointer-events-none" />
+                      
                       {/* Badge TODAY - centered */}
                       {isTodayDate && (
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-b-full rounded-l-full rounded-r-full rounded-t-none font-bold shadow-md">
@@ -1621,6 +1624,9 @@ const RoomCell = ({
       style={{ width: cellWidth, minWidth: cellWidth, maxWidth: cellWidth }}
       title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
     >
+      {/* Vertical divider - visual guide for AM/PM split (check-in/check-out boundary) */}
+      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/30 -translate-x-px pointer-events-none z-[1]" />
+      
       {/* Blocked Date Pattern */}
       {isBlocked && (
         <div
