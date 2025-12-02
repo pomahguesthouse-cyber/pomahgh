@@ -2,7 +2,7 @@ import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DaysAvailabilityCalendar } from "@/components/admin/DaysAvailabilityCalendar";
-import { MonthlyBookingCalendar } from "@/components/admin/MonthlyBookingCalendar";
+import { BookingCalendar } from "@/components/admin/booking-calendar";
 import { ArrivingDepartingWidgets } from "@/components/admin/ArrivingDepartingWidgets";
 import { DollarSign, Users, Calendar, TrendingUp, Building2, PercentIcon } from "lucide-react";
 import { useMemo } from "react";
@@ -80,7 +80,7 @@ const AdminDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Monthly Booking Calendar - At the top */}
-      <MonthlyBookingCalendar />
+      <BookingCalendar />
       
       {/* Arriving & Departing Widgets */}
       <ArrivingDepartingWidgets />
