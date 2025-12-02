@@ -132,15 +132,7 @@ const BookingCell = ({ booking, visibleNights, isTruncatedLeft, onClick, CELL_WI
       className="absolute top-0.5 bottom-0.5 bg-blue-500 text-white rounded-md z-10 cursor-pointer px-2 flex items-center"
       style={{
         width: widthPx,
-        left: isTruncatedLeft ? 0 : `${CELL_WIDTH / 2 - 1}px`,
-      }}
-    >
-      {booking.guest_name}
-    </div>
-  );
-};
-
-const RenderBookingCell = ({ date, room, booking, onClick, CELL_WIDTH }) => {
+        left: isTruncatedLeft ? 0 : `${CELL_WIDTH / 2 - 1}px`, room, booking, onClick, CELL_WIDTH }) => {
   const isStart = booking && booking.check_in === format(date, "yyyy-MM-dd");
   const firstVisible = format(date, "yyyy-MM-dd");
 
