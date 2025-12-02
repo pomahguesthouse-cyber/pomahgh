@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, eachDayOfInterval } from "date-fns";
+import { DndContext, DragOverlay, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import { Booking, BlockDialogState, CreateBookingDialogState, ContextMenuState }
 import { useCalendarState } from "./hooks/useCalendarState";
 import { useCalendarData } from "./hooks/useCalendarData";
 import { useCalendarHelpers } from "./hooks/useCalendarHelpers";
+import { useDragDrop } from "./hooks/useDragDrop";
 
 import { CalendarHeader } from "./components/CalendarHeader";
 import { CalendarTable } from "./components/CalendarTable";
@@ -56,6 +58,39 @@ export const BookingCalendar = () => {
   const [blockDialog, setBlockDialog] = useState<BlockDialogState>({ open: false });
   const [createBookingDialog, setCreateBookingDialog] = useState<CreateBookingDialogState>({ open: false });
   const [exportDialog, setExportDialog] = useState(false);
+
+  // Drag & Drop sensors
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement before drag starts
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 5,
+      },
+    })
+  );
+
+  // Handle booking move via drag & drop
+  const handleBookingMove = (booking: Booking, newRoomId: string, newRoomNumber: string) => {
+    // Prepare booking with new room assignment
+    const movedBooking = {
+      ...booking,
+      room_id: newRoomId,
+      allocated_room_number: newRoomNumber,
+    };
+
+    // Open edit dialog with pre-filled new room
+    setSelectedBooking(movedBooking);
+    const room = rooms?.find((r) => r.id === newRoomId);
+    setAvailableRoomNumbers(room?.room_numbers || []);
+    toast.info(`Booking dipindahkan ke kamar ${newRoomNumber}. Silakan simpan perubahan.`);
+  };
+
+  const { activeBooking, handleDragStart, handleDragEnd } = useDragDrop(rooms || [], handleBookingMove);
 
   // Event handlers
   const handleBookingClick = (booking: Booking) => {
@@ -163,7 +198,12 @@ export const BookingCalendar = () => {
   }, [contextMenu]);
 
   return (
-    <>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <h2 className="text-xl font-bold mb-3 px-4">Booking Calendar</h2>
       <Card className="w-full shadow-lg rounded-xl border-border/50">
         <CalendarHeader
@@ -191,6 +231,16 @@ export const BookingCalendar = () => {
           handleCellClick={handleCellClick}
         />
       </Card>
+
+      {/* Drag Overlay - ghost preview when dragging */}
+      <DragOverlay>
+        {activeBooking && (
+          <div className="bg-primary text-primary-foreground px-3 py-2 rounded-md shadow-lg text-xs font-bold opacity-90 whitespace-nowrap">
+            <div>{activeBooking.guest_name.split(" ")[0]}</div>
+            <div className="text-[10px] opacity-80">{activeBooking.total_nights} Malam</div>
+          </div>
+        )}
+      </DragOverlay>
 
       {/* Context Menu */}
       {contextMenu && (
@@ -239,6 +289,6 @@ export const BookingCalendar = () => {
         bookings={bookings || []}
         rooms={rooms || []}
       />
-    </>
+    </DndContext>
   );
 };

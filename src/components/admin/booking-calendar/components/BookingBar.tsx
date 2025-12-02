@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { Booking } from "../types";
 import { getBookingColor } from "../utils/styleHelpers";
 
@@ -8,6 +10,8 @@ interface BookingBarProps {
   visibleNights?: number;
   isTruncatedLeft?: boolean;
   cellWidth: number;
+  roomNumber: string;
+  roomId: string;
 }
 
 export const BookingBar = ({
@@ -16,24 +20,48 @@ export const BookingBar = ({
   visibleNights,
   isTruncatedLeft,
   cellWidth,
+  roomNumber,
+  roomId,
 }: BookingBarProps) => {
   const totalNights = visibleNights ?? booking.total_nights;
   const bookingWidth = `${totalNights * cellWidth - 1}px`;
   const isPending = booking.status === "pending";
 
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `booking-${booking.id}`,
+    data: {
+      booking,
+      sourceRoomNumber: roomNumber,
+      sourceRoomId: roomId,
+    },
+  });
+
   const style = {
     left: isTruncatedLeft ? "0" : `${cellWidth / 2}px`,
     width: bookingWidth,
     boxSizing: "border-box" as const,
+    transform: CSS.Transform.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 100 : 5,
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!isDragging) {
+      onClick();
+    }
   };
 
   return (
     <div
-      onClick={onClick}
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={handleClick}
       className={cn(
-        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-visible z-[5] cursor-pointer",
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-visible cursor-grab active:cursor-grabbing",
         isTruncatedLeft ? "rounded-r-md" : "rounded-md",
-        getBookingColor(booking)
+        getBookingColor(booking),
+        isDragging && "ring-2 ring-primary shadow-lg"
       )}
       style={style}
     >
