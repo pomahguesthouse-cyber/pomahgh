@@ -636,3 +636,274 @@ export const MonthlyBookingCalendar = () => {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
+            </div>
+
+            <Button
+              onClick={() => setExportDialog(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-20 bg-muted p-2 border text-left font-semibold text-sm min-w-[120px]">
+                  Room
+                </th>
+                {dates.map((date) => {
+                  const isToday = isWIBToday(date);
+                  const holiday = isIndonesianHoliday(date);
+                  return (
+                    <th
+                      key={date.toISOString()}
+                      className={cn(
+                        "p-2 border text-center font-medium text-xs min-w-[80px]",
+                        isToday && "bg-primary/10",
+                        holiday && "bg-red-50"
+                      )}
+                    >
+                      <div className="flex flex-col items-center">
+                        <div className={cn("text-xs", holiday && "text-red-600")}>
+                          {DAY_NAMES[getDay(date)]}
+                        </div>
+                        <div className={cn("text-sm font-bold", isToday && "text-primary", holiday && "text-red-600")}>
+                          {format(date, "d")}
+                        </div>
+                        {holiday && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="text-[10px] text-red-600 truncate max-w-[70px]">
+                                  {holiday.name}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{holiday.name}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {allRoomNumbers.map((roomInfo) => (
+                <tr key={roomInfo.roomNumber} className="hover:bg-muted/30 transition-colors">
+                  <td className="sticky left-0 z-10 bg-background border p-2 font-medium text-sm">
+                    <div className="text-xs text-muted-foreground">{roomInfo.roomType}</div>
+                    <div>{roomInfo.roomNumber}</div>
+                  </td>
+                  {dates.map((date) => {
+                    const booking = getBookingForCell(roomInfo.roomNumber, date);
+                    const isBlocked = isDateBlocked(roomInfo.roomId, roomInfo.roomNumber, date);
+                    const blockReason = getBlockReason(roomInfo.roomId, roomInfo.roomNumber, date);
+                    const isStart = booking && isBookingStart(booking, date);
+                    const isEnd = booking && isBookingEnd(booking, date);
+
+                    return (
+                      <td
+                        key={`${roomInfo.roomNumber}-${date.toISOString()}`}
+                        className={cn(
+                          "border p-0 relative overflow-visible",
+                          !booking && !isBlocked && "cursor-pointer hover:bg-muted/50"
+                        )}
+                        onClick={() => !isBlocked && !booking && handleCellClick(roomInfo.roomId, roomInfo.roomNumber, date, isBlocked, !!booking)}
+                        onContextMenu={(e) => handleRightClick(e, roomInfo.roomId, roomInfo.roomNumber, date)}
+                      >
+                        {isBlocked && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="absolute inset-0 bg-gray-200 flex items-center justify-center z-10 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(0,0,0,0.1)_10px,rgba(0,0,0,0.1)_20px)]">
+                                  <Ban className="h-4 w-4 text-gray-500" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-semibold">BLOCKED</p>
+                                {blockReason && <p className="text-xs">{blockReason}</p>}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+
+                        {booking && isStart && (
+                          <div
+                            className={cn(
+                              "absolute top-1 rounded px-2 py-1 text-white text-xs font-medium cursor-pointer hover:opacity-90 transition-all z-10",
+                              booking.check_out_time && booking.check_out_time !== "12:00:00"
+                                ? "bg-gradient-to-r from-red-500/90 to-red-600/90"
+                                : booking.status === "confirmed"
+                                  ? "bg-gradient-to-r from-blue-500/90 to-blue-600/90"
+                                  : booking.status === "pending"
+                                    ? "bg-gradient-to-r from-gray-400/90 to-gray-500/90"
+                                    : "bg-gradient-to-r from-purple-500/90 to-purple-600/90",
+                              isEnd && "rounded-r-lg",
+                              !isEnd && "rounded-r-none"
+                            )}
+                            style={{
+                              left: "50%",
+                              width: `${((booking.total_nights - 1) * 80 + 40)}px`,
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleBookingClick(booking);
+                            }}
+                          >
+                            <div className="flex items-center gap-1">
+                              {booking.check_out_time && booking.check_out_time !== "12:00:00" && (
+                                <Badge className="absolute -top-1 -right-1 text-[8px] px-1 py-0 h-4 bg-red-600">
+                                  LCO
+                                </Badge>
+                              )}
+                              <span className="font-semibold truncate">{booking.guest_name}</span>
+                              <Badge variant={getStatusVariant(booking.status)} className="text-[9px] px-1 py-0">
+                                {booking.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed bg-background border rounded-lg shadow-lg p-2 z-50"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start"
+            onClick={handleBlockDate}
+          >
+            <Ban className="h-4 w-4 mr-2" />
+            Block Date
+          </Button>
+          {isDateBlocked(contextMenu.roomId, contextMenu.roomNumber, contextMenu.date) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start"
+              onClick={handleUnblockDate}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Unblock Date
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Block Date Dialog */}
+      <Dialog open={blockDialog.open} onOpenChange={(open) => setBlockDialog({ ...blockDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Block Date Range</DialogTitle>
+            <DialogDescription>
+              Block dates for room {blockDialog.roomNumber}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Start Date</Label>
+                <Input
+                  type="date"
+                  value={blockDialog.date ? format(blockDialog.date, "yyyy-MM-dd") : ""}
+                  onChange={(e) => setBlockDialog({ ...blockDialog, date: new Date(e.target.value) })}
+                />
+              </div>
+              <div>
+                <Label>End Date</Label>
+                <Input
+                  type="date"
+                  value={blockDialog.endDate ? format(blockDialog.endDate, "yyyy-MM-dd") : ""}
+                  onChange={(e) => setBlockDialog({ ...blockDialog, endDate: new Date(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Reason (Optional)</Label>
+              <Textarea
+                value={blockDialog.reason || ""}
+                onChange={(e) => setBlockDialog({ ...blockDialog, reason: e.target.value })}
+                placeholder="Maintenance, renovation, etc."
+              />
+            </div>
+            {blockDialog.date && blockDialog.endDate && (
+              <p className="text-sm text-muted-foreground">
+                Will block {differenceInDays(blockDialog.endDate, blockDialog.date) + 1} days
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBlockDialog({ open: false })}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveBlock}>Block Dates</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Alternative Rooms Dialog */}
+      <Dialog open={showAlternativeDialog} onOpenChange={setShowAlternativeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Room Type Not Available</DialogTitle>
+            <DialogDescription>
+              The selected room type is fully booked. Choose an alternative:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {alternativeSuggestions.map((suggestion) => (
+              <Button
+                key={suggestion.roomId}
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => selectAlternativeRoom(suggestion)}
+              >
+                <span>{suggestion.roomName}</span>
+                <Badge>{suggestion.availableCount} available</Badge>
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Booking Dialog */}
+      <CreateBookingDialog
+        open={createBookingDialog.open}
+        onOpenChange={(open) => setCreateBookingDialog({ ...createBookingDialog, open })}
+        roomId={createBookingDialog.roomId}
+        roomNumber={createBookingDialog.roomNumber}
+        initialDate={createBookingDialog.date}
+        rooms={rooms || []}
+      />
+
+      {/* Export Dialog */}
+      <ExportBookingDialog
+        open={exportDialog}
+        onOpenChange={setExportDialog}
+        bookings={bookings || []}
+        rooms={rooms || []}
+      />
+    </>
+  );
+};
