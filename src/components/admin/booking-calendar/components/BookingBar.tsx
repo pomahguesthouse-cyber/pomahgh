@@ -56,8 +56,8 @@ export const BookingBar = ({
   });
 
   // Calculate left offset with resize preview for left edge
-  // Booking bar starts at left edge of cell (left: 0) - this is the check-in date
-  let leftOffset = isTruncatedLeft ? 0 : 0;
+  // Booking bar starts at CENTER of check-in cell (left: cellWidth/2)
+  let leftOffset = isTruncatedLeft ? 0 : cellWidth / 2;
   if (resizePreview?.edge === "left") {
     leftOffset += resizePreview.previewDays * cellWidth;
   }
