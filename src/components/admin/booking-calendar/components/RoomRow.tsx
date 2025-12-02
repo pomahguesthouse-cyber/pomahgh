@@ -32,21 +32,25 @@ export const RoomRow = ({
   isResizing,
   activeBooking,
 }: RoomRowProps) => {
+  const { roomId, roomNumber } = room;
+  const firstVisibleDate = dates[0];
+
   return (
     <tr className="hover:bg-muted/10 transition-colors">
       <td className="border border-border p-2 sticky left-0 z-30 font-semibold text-xs shadow-sm text-center bg-gray-100 dark:bg-gray-800">
-        {room.roomNumber}
+        {roomNumber}
       </td>
+
       {dates.map((date) => {
-        const booking = getBookingForCell(room.roomNumber, date);
-        const isBlocked = isDateBlocked(room.roomId, room.roomNumber, date);
-        const blockReason = getBlockReason(room.roomId, room.roomNumber, date);
+        const booking = getBookingForCell(roomNumber, date);
+        const isBlocked = isDateBlocked(roomId, roomNumber, date);
+        const blockReason = getBlockReason(roomId, roomNumber, date);
 
         return (
           <RoomCell
             key={date.toISOString()}
-            roomId={room.roomId}
-            roomNumber={room.roomNumber}
+            roomId={roomId}
+            roomNumber={roomNumber}
             date={date}
             booking={booking}
             isBlocked={isBlocked}
@@ -54,7 +58,7 @@ export const RoomRow = ({
             handleBookingClick={handleBookingClick}
             handleRightClick={handleRightClick}
             handleCellClick={handleCellClick}
-            firstVisibleDate={dates[0]}
+            firstVisibleDate={firstVisibleDate}
             cellWidth={cellWidth}
             onResizeStart={onResizeStart}
             getResizePreview={getResizePreview}
