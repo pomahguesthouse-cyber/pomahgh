@@ -75,7 +75,7 @@ export default function Hero() {
 
   // Keep a ref to autoplay plugin so we can re-create when duration changes
   const autoplayRef = useRef<any>(null);
-  const carouselRootOpts = useMemo(() => ({ align: "start", loop: true }), []);
+  const carouselRootOpts = useMemo(() => ({ align: "start" as const, loop: true }), []);
 
   // fallback slides
   const heroSlides = (

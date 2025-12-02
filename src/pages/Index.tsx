@@ -1,5 +1,5 @@
 import Header from "@/components/Header";
-import { Hero } from "@/components/Hero";
+import Hero from "@/components/Hero";
 import { Welcome } from "@/components/Welcome";
 import { Rooms } from "@/components/Rooms";
 import { Amenities } from "@/components/Amenities";
