@@ -1,8 +1,9 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Users, BedDouble, Minus, Plus } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -19,13 +20,37 @@ export const RoomBookingCard = ({
   isAvailabilityLoaded 
 }: RoomBookingCardProps) => {
   const { checkIn, checkOut, setCheckIn, setCheckOut } = useSearchDates();
+  const [roomQuantity, setRoomQuantity] = useState(1);
+  const [numGuests, setNumGuests] = useState(1);
   
   const isUnavailable = isAvailabilityLoaded && availability !== undefined && availability === 0;
   const today = getWIBToday();
   
+  // Max rooms based on availability or allotment
+  const maxRooms = isAvailabilityLoaded && availability !== undefined 
+    ? availability 
+    : room.allotment;
+  
+  // Max guests based on room capacity × quantity
+  const maxGuests = room.max_guests * roomQuantity;
+  
   // Calculate nights and total price
   const totalNights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
-  const estimatedTotal = totalNights > 0 ? totalNights * displayPrice : 0;
+  const estimatedTotal = totalNights > 0 ? totalNights * displayPrice * roomQuantity : 0;
+  
+  // Reset roomQuantity if it exceeds availability
+  useEffect(() => {
+    if (isAvailabilityLoaded && availability !== undefined && roomQuantity > availability) {
+      setRoomQuantity(Math.max(1, availability));
+    }
+  }, [availability, isAvailabilityLoaded, roomQuantity]);
+  
+  // Auto-adjust numGuests when roomQuantity changes
+  useEffect(() => {
+    if (numGuests > maxGuests) {
+      setNumGuests(maxGuests);
+    }
+  }, [maxGuests, numGuests]);
   
   const handleCheckInSelect = (date: Date | undefined) => {
     setCheckIn(date);
@@ -115,12 +140,78 @@ export const RoomBookingCard = ({
           </div>
         </div>
 
+        {/* Room Quantity Selector */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium flex items-center gap-2">
+            <BedDouble className="h-4 w-4 text-muted-foreground" />
+            Jumlah Kamar
+          </label>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setRoomQuantity(Math.max(1, roomQuantity - 1))}
+              disabled={roomQuantity <= 1}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <span className="text-lg font-semibold w-8 text-center">{roomQuantity}</span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setRoomQuantity(Math.min(maxRooms, roomQuantity + 1))}
+              disabled={roomQuantity >= maxRooms || isUnavailable}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {isAvailabilityLoaded && availability !== undefined 
+                ? `${availability} tersedia` 
+                : `Maks ${room.allotment}`}
+            </span>
+          </div>
+        </div>
+
+        {/* Guest Count Selector */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            Jumlah Tamu
+          </label>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setNumGuests(Math.max(1, numGuests - 1))}
+              disabled={numGuests <= 1}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <span className="text-lg font-semibold w-8 text-center">{numGuests}</span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setNumGuests(Math.min(maxGuests, numGuests + 1))}
+              disabled={numGuests >= maxGuests}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Maks {maxGuests} ({room.max_guests}/kamar)
+            </span>
+          </div>
+        </div>
+
         {/* Nights & Total Estimate */}
         {totalNights > 0 && (
           <div className="p-4 bg-muted/50 rounded-lg space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                Rp {displayPrice.toLocaleString("id-ID")} × {totalNights} malam
+                Rp {displayPrice.toLocaleString("id-ID")} × {totalNights} malam {roomQuantity > 1 && `× ${roomQuantity} kamar`}
               </span>
             </div>
             <div className="flex justify-between font-semibold text-lg">
@@ -134,8 +225,8 @@ export const RoomBookingCard = ({
           variant="luxury"
           size="lg"
           className="w-full"
-          onClick={onBookNow}
-          disabled={isUnavailable}
+          onClick={() => onBookNow(roomQuantity, numGuests)}
+          disabled={isUnavailable || (isAvailabilityLoaded && roomQuantity > (availability || 0))}
         >
           {isUnavailable ? "Tidak Tersedia" : "Book This Room"}
         </Button>
