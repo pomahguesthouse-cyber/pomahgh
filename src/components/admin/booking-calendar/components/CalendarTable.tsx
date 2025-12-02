@@ -14,6 +14,9 @@ interface CalendarTableProps {
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
+  onResizeStart?: (e: React.MouseEvent, booking: Booking, edge: "left" | "right") => void;
+  getResizePreview?: (bookingId: string) => { previewDays: number; edge: "left" | "right" | null };
+  isResizing?: boolean;
 }
 
 export const CalendarTable = ({
@@ -27,6 +30,9 @@ export const CalendarTable = ({
   handleBookingClick,
   handleRightClick,
   handleCellClick,
+  onResizeStart,
+  getResizePreview,
+  isResizing,
 }: CalendarTableProps) => {
   return (
     <div
@@ -68,6 +74,9 @@ export const CalendarTable = ({
                     handleRightClick={handleRightClick}
                     handleCellClick={handleCellClick}
                     cellWidth={cellWidth}
+                    onResizeStart={onResizeStart}
+                    getResizePreview={getResizePreview}
+                    isResizing={isResizing}
                   />
                 ))}
             </React.Fragment>

@@ -12,6 +12,9 @@ interface BookingBarProps {
   cellWidth: number;
   roomNumber: string;
   roomId: string;
+  onResizeStart?: (e: React.MouseEvent, booking: Booking, edge: "left" | "right") => void;
+  resizePreview?: { previewDays: number; edge: "left" | "right" | null };
+  isResizing?: boolean;
 }
 
 export const BookingBar = ({
@@ -22,9 +25,24 @@ export const BookingBar = ({
   cellWidth,
   roomNumber,
   roomId,
+  onResizeStart,
+  resizePreview,
+  isResizing,
 }: BookingBarProps) => {
   const totalNights = visibleNights ?? booking.total_nights;
-  const bookingWidth = `${totalNights * cellWidth - 1}px`;
+  
+  // Calculate width with resize preview
+  let adjustedNights = totalNights;
+  if (resizePreview && resizePreview.edge) {
+    if (resizePreview.edge === "left") {
+      adjustedNights = totalNights - resizePreview.previewDays;
+    } else {
+      adjustedNights = totalNights + resizePreview.previewDays;
+    }
+    adjustedNights = Math.max(1, adjustedNights); // Minimum 1 night
+  }
+  
+  const bookingWidth = `${adjustedNights * cellWidth - 1}px`;
   const isPending = booking.status === "pending";
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -34,44 +52,85 @@ export const BookingBar = ({
       sourceRoomNumber: roomNumber,
       sourceRoomId: roomId,
     },
+    disabled: isResizing,
   });
 
+  // Calculate left offset with resize preview for left edge
+  let leftOffset = isTruncatedLeft ? 0 : cellWidth / 2;
+  if (resizePreview?.edge === "left") {
+    leftOffset += resizePreview.previewDays * cellWidth;
+  }
+
   const style = {
-    left: isTruncatedLeft ? "0" : `${cellWidth / 2}px`,
+    left: `${leftOffset}px`,
     width: bookingWidth,
     boxSizing: "border-box" as const,
     transform: CSS.Transform.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 100 : 5,
+    zIndex: isDragging || isResizing ? 100 : 5,
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (!isDragging) {
+    if (!isDragging && !isResizing) {
       onClick();
     }
+  };
+
+  const handleLeftResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onResizeStart?.(e, booking, "left");
+  };
+
+  const handleRightResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onResizeStart?.(e, booking, "right");
   };
 
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       onClick={handleClick}
       className={cn(
-        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-visible cursor-grab active:cursor-grabbing",
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all text-xs shadow-sm hover:shadow-md hover:brightness-110 overflow-visible group",
         isTruncatedLeft ? "rounded-r-md" : "rounded-md",
         getBookingColor(booking),
-        isDragging && "ring-2 ring-primary shadow-lg"
+        isDragging && "ring-2 ring-primary shadow-lg",
+        isResizing && "ring-2 ring-yellow-400 shadow-lg"
       )}
       style={style}
     >
+      {/* Left resize handle */}
+      {!isTruncatedLeft && (
+        <div
+          onMouseDown={handleLeftResizeStart}
+          className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-20 opacity-0 group-hover:opacity-100 hover:bg-white/30 transition-opacity rounded-l-md"
+          title="Drag to change check-in date"
+        />
+      )}
+
+      {/* Right resize handle */}
+      <div
+        onMouseDown={handleRightResizeStart}
+        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize z-20 opacity-0 group-hover:opacity-100 hover:bg-white/30 transition-opacity rounded-r-md"
+        title="Drag to change check-out date"
+      />
+
+      {/* Draggable center area */}
+      <div
+        {...listeners}
+        {...attributes}
+        className="absolute inset-0 left-2 right-2 cursor-grab active:cursor-grabbing z-10"
+      />
+
       {/* Content */}
-      <div className="relative z-10 text-left px-2 py-1 w-full space-y-0.5">
+      <div className="relative z-5 text-left px-2 py-1 w-full space-y-0.5 pointer-events-none">
         <div className="font-bold text-xs text-white drop-shadow-sm truncate">
           {booking.guest_name.split(" ")[0]}
         </div>
         <div className="text-[10px] text-white/90 font-medium">
-          {booking.total_nights} Malam
+          {resizePreview?.edge ? `${adjustedNights} Malam` : `${booking.total_nights} Malam`}
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format, eachDayOfInterval } from "date-fns";
+import { format, eachDayOfInterval, differenceInDays, parseISO } from "date-fns";
 import { DndContext, DragOverlay, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { useCalendarState } from "./hooks/useCalendarState";
 import { useCalendarData } from "./hooks/useCalendarData";
 import { useCalendarHelpers } from "./hooks/useCalendarHelpers";
 import { useDragDrop } from "./hooks/useDragDrop";
+import { useBookingResize } from "./hooks/useBookingResize";
 
 import { CalendarHeader } from "./components/CalendarHeader";
 import { CalendarTable } from "./components/CalendarTable";
@@ -114,6 +115,40 @@ export const BookingCalendar = () => {
     bookings,
     unavailableDates,
     handleBookingMove
+  );
+
+  // Handle booking resize
+  const handleResizeComplete = (
+    booking: Booking,
+    newCheckIn: string,
+    newCheckOut: string
+  ) => {
+    // Calculate new total nights
+    const checkIn = parseISO(newCheckIn);
+    const checkOut = parseISO(newCheckOut);
+    const newTotalNights = differenceInDays(checkOut, checkIn);
+
+    // Prepare booking with new dates
+    const resizedBooking = {
+      ...booking,
+      check_in: newCheckIn,
+      check_out: newCheckOut,
+      total_nights: newTotalNights,
+    };
+
+    // Open edit dialog with pre-filled new dates
+    setSelectedBooking(resizedBooking);
+    const room = rooms?.find((r) => r.id === booking.room_id);
+    setAvailableRoomNumbers(room?.room_numbers || []);
+
+    toast.info(`Durasi booking diubah menjadi ${newTotalNights} malam. Silakan simpan.`);
+  };
+
+  const { isResizing, startResize, getResizePreview } = useBookingResize(
+    bookings,
+    unavailableDates,
+    cellWidth,
+    handleResizeComplete
   );
 
   // Event handlers
@@ -253,6 +288,9 @@ export const BookingCalendar = () => {
           handleBookingClick={handleBookingClick}
           handleRightClick={handleRightClick}
           handleCellClick={handleCellClick}
+          onResizeStart={startResize}
+          getResizePreview={getResizePreview}
+          isResizing={isResizing}
         />
       </Card>
 
