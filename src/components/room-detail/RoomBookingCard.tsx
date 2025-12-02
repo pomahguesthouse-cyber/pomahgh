@@ -1,8 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import type { RoomBookingCardProps } from "./types";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { RefundPolicyDisplay } from "@/components/RefundPolicyDisplay";
+import { useSearchDates } from "@/contexts/SearchDatesContext";
+import { getWIBToday } from "@/utils/wibTimezone";
 
 export const RoomBookingCard = ({ 
   room, 
@@ -13,8 +21,24 @@ export const RoomBookingCard = ({
   isAvailabilityLoaded 
 }: RoomBookingCardProps) => {
   const { settings } = useHotelSettings();
+  const { checkIn, checkOut, setCheckIn, setCheckOut } = useSearchDates();
   
   const isUnavailable = isAvailabilityLoaded && availability !== undefined && availability === 0;
+  const today = getWIBToday();
+  
+  const handleCheckInSelect = (date: Date | undefined) => {
+    setCheckIn(date);
+    // Auto-adjust checkout if it's before or same as new check-in
+    if (date && checkOut && checkOut <= date) {
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      setCheckOut(nextDay);
+    }
+  };
+
+  const handleCheckOutSelect = (date: Date | undefined) => {
+    setCheckOut(date);
+  };
   
   return (
     <Card className="sticky top-4">
@@ -30,6 +54,65 @@ export const RoomBookingCard = ({
             Rp {displayPrice.toLocaleString("id-ID")}
           </p>
           <p className="text-sm text-muted-foreground">per night</p>
+        </div>
+
+        {/* Date Pickers */}
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Check-in</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !checkIn && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {checkIn ? format(checkIn, "PPP", { locale: id }) : "Pilih tanggal"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={checkIn}
+                  onSelect={handleCheckInSelect}
+                  disabled={(date) => date < today}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Check-out</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !checkOut && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {checkOut ? format(checkOut, "PPP", { locale: id }) : "Pilih tanggal"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={checkOut}
+                  onSelect={handleCheckOutSelect}
+                  disabled={(date) => date <= (checkIn || today)}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         <Button
