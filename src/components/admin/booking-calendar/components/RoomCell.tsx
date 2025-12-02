@@ -127,8 +127,9 @@ export const RoomCell = ({
       {/* Preview booking bar at drop target */}
       {showDropIndicator && canDrop && draggedBooking && (
         <div 
-          className="absolute top-0.5 bottom-0.5 left-0 bg-gradient-to-r from-cyan-400/60 to-cyan-500/60 rounded-md flex items-center border-2 border-dashed border-cyan-400 pointer-events-none"
+          className="absolute top-0.5 bottom-0.5 bg-gradient-to-r from-cyan-400/60 to-cyan-500/60 rounded-md flex items-center border-2 border-dashed border-cyan-400 pointer-events-none"
           style={{
+            left: `${cellWidth / 2}px`,
             width: `${draggedBooking.total_nights * cellWidth}px`,
             zIndex: 50,
           }}
