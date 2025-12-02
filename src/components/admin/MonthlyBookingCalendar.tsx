@@ -1489,7 +1489,7 @@ const BookingCell = ({
     <div
       onClick={onClick}
       className={cn(
-        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 relative overflow-visible z-[5] cursor-pointer",
+        "absolute top-0.5 bottom-0.5 bg-gradient-to-r flex items-center justify-center transition-all duration-200 text-xs shadow-md hover:shadow-lg hover:brightness-110 overflow-visible z-[5] cursor-pointer",
         isTruncatedLeft ? "rounded-r-md" : "rounded-md",
         getBackgroundClass(),
       )}
