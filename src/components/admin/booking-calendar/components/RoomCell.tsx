@@ -20,6 +20,9 @@ interface RoomCellProps {
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
   firstVisibleDate: Date;
   cellWidth: number;
+  onResizeStart?: (e: React.MouseEvent, booking: Booking, edge: "left" | "right") => void;
+  getResizePreview?: (bookingId: string) => { previewDays: number; edge: "left" | "right" | null };
+  isResizing?: boolean;
 }
 
 export const RoomCell = ({
@@ -34,6 +37,9 @@ export const RoomCell = ({
   handleCellClick,
   firstVisibleDate,
   cellWidth,
+  onResizeStart,
+  getResizePreview,
+  isResizing,
 }: RoomCellProps) => {
   const isWeekend = getDay(date) === 0 || getDay(date) === 6;
   const holiday = isIndonesianHoliday(date);
@@ -72,7 +78,10 @@ export const RoomCell = ({
 
   // Check if dragging is active and this is a valid drop target
   const isDragging = active !== null;
-  const showDropIndicator = isOver && isDragging;
+  const showDropIndicator = isOver && isDragging && !isResizing;
+
+  // Get resize preview for current booking
+  const resizePreview = booking && getResizePreview ? getResizePreview(booking.id) : undefined;
 
   const cell = (
     <td
@@ -107,11 +116,14 @@ export const RoomCell = ({
           cellWidth={cellWidth}
           roomNumber={roomNumber}
           roomId={roomId}
+          onResizeStart={onResizeStart}
+          resizePreview={resizePreview}
+          isResizing={isResizing}
         />
       )}
 
       {/* Click hint */}
-      {isClickable && !isDragging && (
+      {isClickable && !isDragging && !isResizing && (
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none z-5">
           <div className="text-[10px] text-primary/60 font-medium">Click to book</div>
         </div>

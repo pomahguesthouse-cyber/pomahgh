@@ -11,6 +11,9 @@ interface RoomRowProps {
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
   cellWidth: number;
+  onResizeStart?: (e: React.MouseEvent, booking: Booking, edge: "left" | "right") => void;
+  getResizePreview?: (bookingId: string) => { previewDays: number; edge: "left" | "right" | null };
+  isResizing?: boolean;
 }
 
 export const RoomRow = ({
@@ -23,6 +26,9 @@ export const RoomRow = ({
   handleRightClick,
   handleCellClick,
   cellWidth,
+  onResizeStart,
+  getResizePreview,
+  isResizing,
 }: RoomRowProps) => {
   return (
     <tr className="hover:bg-muted/10 transition-colors">
@@ -48,6 +54,9 @@ export const RoomRow = ({
             handleCellClick={handleCellClick}
             firstVisibleDate={dates[0]}
             cellWidth={cellWidth}
+            onResizeStart={onResizeStart}
+            getResizePreview={getResizePreview}
+            isResizing={isResizing}
           />
         );
       })}
