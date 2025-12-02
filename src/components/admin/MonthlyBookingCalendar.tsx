@@ -152,6 +152,21 @@ export const MonthlyBookingCalendar = () => {
     });
   }, [currentDate, viewRange]);
 
+  // Calculate cell width based on view range
+  const cellWidth = useMemo(() => {
+    switch (viewRange) {
+      case 7:
+        return 100; // Wider cells for 7-day view
+      case 14:
+        return 80;  // Medium cells for 14-day view
+      case 30:
+      default:
+        return 60;  // Narrower cells for 30-day view
+    }
+  }, [viewRange]);
+
+  const halfCellWidth = cellWidth / 2; // For booking bar positioning (center)
+
   // Generate month/year options for dropdown
   const monthYearOptions = useMemo(() => {
     const options = [];
@@ -659,7 +674,7 @@ export const MonthlyBookingCalendar = () => {
           className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[70vh] scroll-smooth"
           style={{ scrollBehavior: "smooth" }}
         >
-          <table className="border-collapse table-fixed" style={{ width: `${(dates.length + 1) * 60 + 110}px` }}>
+          <table className="border-collapse table-fixed" style={{ width: `${(dates.length + 1) * cellWidth + 110}px` }}>
             <thead className="sticky top-0 z-40">
               <tr className="bg-muted/50">
                 <th className="sticky left-0 top-0 z-50 w-[110px] min-w-[110px] border-2 border-border p-2 shadow-lg bg-gray-300/80 dark:bg-gray-700/80 backdrop-blur-md">
@@ -674,9 +689,10 @@ export const MonthlyBookingCalendar = () => {
                     <th
                       key={date.toISOString()}
                       className={cn(
-                        "border-2 border-border p-1.5 w-[60px] min-w-[60px] max-w-[60px] text-center transition-colors relative backdrop-blur-md shadow-md",
+                        "border-2 border-border p-1.5 text-center transition-colors relative backdrop-blur-md shadow-md",
                         isHolidayOrWeekend ? "bg-red-100/70 dark:bg-red-950/40" : "bg-white/60 dark:bg-gray-800/60",
                       )}
+                      style={{ width: cellWidth, minWidth: cellWidth, maxWidth: cellWidth }}
                     >
                       {/* Badge TODAY - centered */}
                       {isTodayDate && (
@@ -751,6 +767,7 @@ export const MonthlyBookingCalendar = () => {
                         handleBookingClick={handleBookingClick}
                         handleRightClick={handleRightClick}
                         handleCellClick={handleCellClick}
+                        cellWidth={cellWidth}
                       />
                     ))}
                 </React.Fragment>
@@ -1444,6 +1461,7 @@ const BookingCell = ({
   onClick,
   visibleNights,
   isTruncatedLeft,
+  cellWidth = 60,
 }: {
   booking: Booking;
   isStart: boolean;
@@ -1451,14 +1469,15 @@ const BookingCell = ({
   onClick: () => void;
   visibleNights?: number;
   isTruncatedLeft?: boolean;
+  cellWidth?: number;
 }) => {
   const isPending = booking.status === "pending";
   const totalNights = visibleNights || booking.total_nights;
   // Calculate booking bar width: pixel-based for precision
-  // Each cell is 60px
-  // Check-in at 13:00 (afternoon) = bar starts at 30px (center)
-  // Check-out at 12:00 (noon) = bar ends at 30px (center) of checkout date
-  const bookingWidth = `${totalNights * 60}px`; // Full width from center check-in to center check-out
+  // Each cell is dynamic width based on view range
+  // Check-in at 13:00 (afternoon) = bar starts at center
+  // Check-out at 12:00 (noon) = bar ends at center of checkout date
+  const bookingWidth = `${totalNights * cellWidth}px`; // Full width from center check-in to center check-out
   const getBackgroundClass = () => {
     // Check for Late Check Out first (priority)
     const isLateCheckout = booking.check_out_time && booking.check_out_time !== "12:00:00";
@@ -1481,7 +1500,7 @@ const BookingCell = ({
     return colors[colorIndex];
   };
   const style = {
-    left: isTruncatedLeft ? "0" : "30px", // 30px = tengah cell untuk check-in 13:00
+    left: isTruncatedLeft ? "0" : `${cellWidth / 2}px`, // Center of cell for check-in
     width: bookingWidth,
   };
   return (
@@ -1544,6 +1563,7 @@ const RoomCell = ({
   handleRightClick,
   handleCellClick,
   firstVisibleDate,
+  cellWidth,
 }: {
   roomId: string;
   roomNumber: string;
@@ -1557,6 +1577,7 @@ const RoomCell = ({
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
   firstVisibleDate: Date;
+  cellWidth: number;
 }) => {
   // Check if this is where the booking should start rendering
   const dateStr = format(date, "yyyy-MM-dd");
@@ -1591,12 +1612,13 @@ const RoomCell = ({
       onClick={() => handleCellClick(roomId, roomNumber, date, isBlocked, hasBooking)}
       onContextMenu={(e) => handleRightClick(e, roomId, roomNumber, date)}
       className={cn(
-        "border border-border p-0 relative h-14 w-[60px] min-w-[60px] max-w-[60px] transition-all duration-200 overflow-visible",
+        "border border-border p-0 relative h-14 transition-all duration-200 overflow-visible",
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
         !isHolidayOrWeekend && "bg-background",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
         !isClickable && "cursor-context-menu",
       )}
+      style={{ width: cellWidth, minWidth: cellWidth, maxWidth: cellWidth }}
       title={isBlocked ? `Blocked: ${blockReason || "No reason specified"}` : undefined}
     >
       {/* Blocked Date Pattern */}
@@ -1633,6 +1655,7 @@ const RoomCell = ({
           onClick={() => handleBookingClick(booking)}
           visibleNights={visibleNights}
           isTruncatedLeft={isTruncatedLeft}
+          cellWidth={cellWidth}
         />
       )}
 
@@ -1675,6 +1698,7 @@ const RoomRow = ({
   handleBookingClick,
   handleRightClick,
   handleCellClick,
+  cellWidth,
 }: {
   room: {
     roomType: string;
@@ -1691,6 +1715,7 @@ const RoomRow = ({
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
+  cellWidth: number;
 }) => {
   return (
     <tr className="hover:bg-muted/10 transition-colors">
@@ -1718,6 +1743,7 @@ const RoomRow = ({
             handleRightClick={handleRightClick}
             handleCellClick={handleCellClick}
             firstVisibleDate={dates[0]}
+            cellWidth={cellWidth}
           />
         );
       })}
