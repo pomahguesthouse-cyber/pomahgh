@@ -659,7 +659,7 @@ export const MonthlyBookingCalendar = () => {
           className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[70vh] scroll-smooth"
           style={{ scrollBehavior: "smooth" }}
         >
-          <table className="border-collapse table-fixed" style={{ minWidth: `${(dates.length + 1) * 60 + 110}px` }}>
+          <table className="border-collapse table-fixed" style={{ width: `${(dates.length + 1) * 60 + 110}px` }}>
             <thead className="sticky top-0 z-40">
               <tr className="bg-muted/50">
                 <th className="sticky left-0 top-0 z-50 w-[110px] min-w-[110px] border-2 border-border p-2 shadow-lg bg-gray-300/80 dark:bg-gray-700/80 backdrop-blur-md">
@@ -674,7 +674,7 @@ export const MonthlyBookingCalendar = () => {
                     <th
                       key={date.toISOString()}
                       className={cn(
-                        "border-2 border-border p-1.5 w-[60px] min-w-[60px] text-center transition-colors relative backdrop-blur-md shadow-md",
+                        "border-2 border-border p-1.5 w-[60px] min-w-[60px] max-w-[60px] text-center transition-colors relative backdrop-blur-md shadow-md",
                         isHolidayOrWeekend ? "bg-red-100/70 dark:bg-red-950/40" : "bg-white/60 dark:bg-gray-800/60",
                       )}
                     >
@@ -1591,7 +1591,7 @@ const RoomCell = ({
       onClick={() => handleCellClick(roomId, roomNumber, date, isBlocked, hasBooking)}
       onContextMenu={(e) => handleRightClick(e, roomId, roomNumber, date)}
       className={cn(
-        "border border-border p-0 relative h-14 w-[60px] min-w-[60px] transition-all duration-200 overflow-visible",
+        "border border-border p-0 relative h-14 w-[60px] min-w-[60px] max-w-[60px] transition-all duration-200 overflow-visible",
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
         !isHolidayOrWeekend && "bg-background",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
