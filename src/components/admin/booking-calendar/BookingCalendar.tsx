@@ -11,6 +11,7 @@ import { useCalendarData } from "./hooks/useCalendarData";
 import { useCalendarHelpers } from "./hooks/useCalendarHelpers";
 import { useDragDrop } from "./hooks/useDragDrop";
 import { useBookingResize } from "./hooks/useBookingResize";
+import { useBookingHistory } from "./hooks/useBookingHistory";
 
 import { CalendarHeader } from "./components/CalendarHeader";
 import { CalendarTable } from "./components/CalendarTable";
@@ -60,11 +61,24 @@ export const BookingCalendar = () => {
   const [createBookingDialog, setCreateBookingDialog] = useState<CreateBookingDialogState>({ open: false });
   const [exportDialog, setExportDialog] = useState(false);
 
+  // Booking history for undo functionality
+  const handleUndoComplete = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+    toast.success("Perubahan dibatalkan");
+  };
+
+  const bookingHistory = useBookingHistory({
+    updateBooking: async (data) => {
+      await updateBooking(data);
+    },
+    onUndoComplete: handleUndoComplete,
+  });
+
   // Drag & Drop sensors
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8, // 8px movement before drag starts
+        distance: 8,
       },
     }),
     useSensor(TouchSensor, {
@@ -75,38 +89,60 @@ export const BookingCalendar = () => {
     })
   );
 
-  // Handle booking move via drag & drop
-  const handleBookingMove = (
+  // Handle booking move via drag & drop - AUTO SAVE
+  const handleBookingMove = async (
     booking: Booking,
     newRoomId: string,
     newRoomNumber: string,
     newCheckIn: string,
     newCheckOut: string
   ) => {
-    // Prepare booking with new room and dates
-    const movedBooking = {
-      ...booking,
-      room_id: newRoomId,
-      allocated_room_number: newRoomNumber,
-      check_in: newCheckIn,
-      check_out: newCheckOut,
-    };
+    // Save snapshot for undo
+    bookingHistory.saveSnapshot(booking);
 
-    // Open edit dialog with pre-filled new room & dates
-    setSelectedBooking(movedBooking);
-    const room = rooms?.find((r) => r.id === newRoomId);
-    setAvailableRoomNumbers(room?.room_numbers || []);
+    // Calculate new total nights
+    const checkIn = parseISO(newCheckIn);
+    const checkOut = parseISO(newCheckOut);
+    const newTotalNights = differenceInDays(checkOut, checkIn);
 
-    // Show appropriate message
-    const isDateChanged = booking.check_in !== newCheckIn;
-    const isRoomChanged = booking.allocated_room_number !== newRoomNumber;
+    try {
+      // Auto-save to database
+      await updateBooking({
+        id: booking.id,
+        room_id: newRoomId,
+        allocated_room_number: newRoomNumber,
+        check_in: newCheckIn,
+        check_out: newCheckOut,
+        total_nights: newTotalNights,
+      });
 
-    if (isDateChanged && isRoomChanged) {
-      toast.info(`Booking dipindahkan ke ${newRoomNumber}, tanggal ${newCheckIn}. Silakan simpan.`);
-    } else if (isDateChanged) {
-      toast.info(`Booking dijadwalkan ulang ke ${newCheckIn}. Silakan simpan.`);
-    } else {
-      toast.info(`Booking dipindahkan ke kamar ${newRoomNumber}. Silakan simpan.`);
+      await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+
+      // Determine message based on what changed
+      const isDateChanged = booking.check_in !== newCheckIn;
+      const isRoomChanged = booking.allocated_room_number !== newRoomNumber;
+
+      let message = "";
+      if (isDateChanged && isRoomChanged) {
+        message = `Booking dipindahkan ke ${newRoomNumber}, tanggal ${format(checkIn, "dd MMM")}`;
+      } else if (isDateChanged) {
+        message = `Booking dijadwalkan ulang ke ${format(checkIn, "dd MMM")}`;
+      } else {
+        message = `Booking dipindahkan ke kamar ${newRoomNumber}`;
+      }
+
+      // Show toast with Undo button
+      toast.success(message, {
+        duration: 8000,
+        action: {
+          label: "Undo",
+          onClick: () => bookingHistory.undo(),
+        },
+      });
+    } catch (error) {
+      console.error("Error moving booking:", error);
+      toast.error("Gagal memindahkan booking");
+      bookingHistory.clearHistory();
     }
   };
 
@@ -117,31 +153,44 @@ export const BookingCalendar = () => {
     handleBookingMove
   );
 
-  // Handle booking resize
-  const handleResizeComplete = (
+  // Handle booking resize - AUTO SAVE
+  const handleResizeComplete = async (
     booking: Booking,
     newCheckIn: string,
     newCheckOut: string
   ) => {
+    // Save snapshot for undo
+    bookingHistory.saveSnapshot(booking);
+
     // Calculate new total nights
     const checkIn = parseISO(newCheckIn);
     const checkOut = parseISO(newCheckOut);
     const newTotalNights = differenceInDays(checkOut, checkIn);
 
-    // Prepare booking with new dates
-    const resizedBooking = {
-      ...booking,
-      check_in: newCheckIn,
-      check_out: newCheckOut,
-      total_nights: newTotalNights,
-    };
+    try {
+      // Auto-save to database
+      await updateBooking({
+        id: booking.id,
+        check_in: newCheckIn,
+        check_out: newCheckOut,
+        total_nights: newTotalNights,
+      });
 
-    // Open edit dialog with pre-filled new dates
-    setSelectedBooking(resizedBooking);
-    const room = rooms?.find((r) => r.id === booking.room_id);
-    setAvailableRoomNumbers(room?.room_numbers || []);
+      await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
 
-    toast.info(`Durasi booking diubah menjadi ${newTotalNights} malam. Silakan simpan.`);
+      // Show toast with Undo button
+      toast.success(`Durasi diubah: ${newTotalNights} malam`, {
+        duration: 8000,
+        action: {
+          label: "Undo",
+          onClick: () => bookingHistory.undo(),
+        },
+      });
+    } catch (error) {
+      console.error("Error resizing booking:", error);
+      toast.error("Gagal mengubah durasi booking");
+      bookingHistory.clearHistory();
+    }
   };
 
   const { isResizing, startResize, getResizePreview } = useBookingResize(
@@ -151,7 +200,7 @@ export const BookingCalendar = () => {
     handleResizeComplete
   );
 
-  // Event handlers
+  // Event handlers - Manual click opens dialog
   const handleBookingClick = (booking: Booking) => {
     setSelectedBooking(booking);
     const room = rooms?.find((r) => r.id === booking.room_id);
@@ -325,7 +374,7 @@ export const BookingCalendar = () => {
         onSave={handleSaveBlock}
       />
 
-      {/* Booking Detail Dialog */}
+      {/* Booking Detail Dialog - only for manual edits */}
       <BookingDetailDialog
         booking={selectedBooking}
         open={!!selectedBooking}

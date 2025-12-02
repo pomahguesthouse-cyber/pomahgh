@@ -55,14 +55,13 @@ export const BookingDetailDialog = ({
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
 
-  // Initialize from booking prop - sync dates properly after resize/drag
+  // Initialize from booking prop - always start in view mode (manual click only)
   useEffect(() => {
     if (booking) {
       setEditedBooking(booking);
-      // Always enable edit mode when booking changes (from drag/resize)
-      setIsEditMode(true);
+      setIsEditMode(false); // Always start in view mode
     }
-  }, [booking?.id, booking?.check_in, booking?.check_out, booking?.room_id, booking?.allocated_room_number]);
+  }, [booking?.id]);
 
   // Auto-calculate total_nights when dates change
   useEffect(() => {
