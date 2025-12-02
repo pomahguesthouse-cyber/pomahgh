@@ -3,12 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import type { RoomBookingCardProps } from "./types";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
-import { RefundPolicyDisplay } from "@/components/RefundPolicyDisplay";
 import { useSearchDates } from "@/contexts/SearchDatesContext";
 import { getWIBToday } from "@/utils/wibTimezone";
 
@@ -20,15 +18,17 @@ export const RoomBookingCard = ({
   availability,
   isAvailabilityLoaded 
 }: RoomBookingCardProps) => {
-  const { settings } = useHotelSettings();
   const { checkIn, checkOut, setCheckIn, setCheckOut } = useSearchDates();
   
   const isUnavailable = isAvailabilityLoaded && availability !== undefined && availability === 0;
   const today = getWIBToday();
   
+  // Calculate nights and total price
+  const totalNights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
+  const estimatedTotal = totalNights > 0 ? totalNights * displayPrice : 0;
+  
   const handleCheckInSelect = (date: Date | undefined) => {
     setCheckIn(date);
-    // Auto-adjust checkout if it's before or same as new check-in
     if (date && checkOut && checkOut <= date) {
       const nextDay = new Date(date);
       nextDay.setDate(nextDay.getDate() + 1);
@@ -115,6 +115,21 @@ export const RoomBookingCard = ({
           </div>
         </div>
 
+        {/* Nights & Total Estimate */}
+        {totalNights > 0 && (
+          <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                Rp {displayPrice.toLocaleString("id-ID")} × {totalNights} malam
+              </span>
+            </div>
+            <div className="flex justify-between font-semibold text-lg">
+              <span>Estimasi Total</span>
+              <span className="text-primary">Rp {estimatedTotal.toLocaleString("id-ID")}</span>
+            </div>
+          </div>
+        )}
+
         <Button
           variant="luxury"
           size="lg"
@@ -147,13 +162,6 @@ export const RoomBookingCard = ({
             )}
           </div>
         </div>
-
-        {settings?.refund_policy_enabled && (
-          <div className="pt-4 border-t">
-            <p className="text-sm font-medium mb-2">Kebijakan Pembatalan</p>
-            <RefundPolicyDisplay settings={settings} compact />
-          </div>
-        )}
       </CardContent>
     </Card>
   );
