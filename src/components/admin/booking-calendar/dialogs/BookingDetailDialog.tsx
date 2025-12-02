@@ -55,15 +55,14 @@ export const BookingDetailDialog = ({
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
 
-  // Initialize from booking prop - auto-enable edit mode if booking was modified (drag & drop)
+  // Initialize from booking prop - sync dates properly after resize/drag
   useEffect(() => {
     if (booking) {
       setEditedBooking(booking);
-      // Auto-enable edit mode if this is from drag & drop (dates/room changed)
-      const isFromDragDrop = booking !== editedBooking;
-      setIsEditMode(isFromDragDrop);
+      // Always enable edit mode when booking changes (from drag/resize)
+      setIsEditMode(true);
     }
-  }, [booking]);
+  }, [booking?.id, booking?.check_in, booking?.check_out, booking?.room_id, booking?.allocated_room_number]);
 
   // Auto-calculate total_nights when dates change
   useEffect(() => {
@@ -307,7 +306,13 @@ export const BookingDetailDialog = ({
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">Tipe Kamar</Label>
                 {isEditMode ? (
-                  <Select value={editedBooking.room_id} onValueChange={onRoomTypeChange}>
+                  <Select 
+                    value={editedBooking.room_id} 
+                    onValueChange={(newRoomId) => {
+                      setEditedBooking({ ...editedBooking, room_id: newRoomId, allocated_room_number: "" });
+                      onRoomTypeChange(newRoomId);
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih tipe kamar" />
                     </SelectTrigger>
