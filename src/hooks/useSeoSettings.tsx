@@ -34,6 +34,7 @@ export interface SeoSettings {
   sitemap_change_freq?: string;
   sitemap_priority_home?: number;
   sitemap_priority_rooms?: number;
+  custom_json_ld?: string;
 }
 
 export const useSeoSettings = () => {

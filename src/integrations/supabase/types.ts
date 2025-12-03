@@ -1396,6 +1396,7 @@ export type Database = {
           canonical_url: string | null
           created_at: string | null
           custom_head_scripts: string | null
+          custom_json_ld: string | null
           default_og_image: string | null
           facebook_app_id: string | null
           facebook_pixel_id: string | null
@@ -1429,6 +1430,7 @@ export type Database = {
           canonical_url?: string | null
           created_at?: string | null
           custom_head_scripts?: string | null
+          custom_json_ld?: string | null
           default_og_image?: string | null
           facebook_app_id?: string | null
           facebook_pixel_id?: string | null
@@ -1462,6 +1464,7 @@ export type Database = {
           canonical_url?: string | null
           created_at?: string | null
           custom_head_scripts?: string | null
+          custom_json_ld?: string | null
           default_og_image?: string | null
           facebook_app_id?: string | null
           facebook_pixel_id?: string | null

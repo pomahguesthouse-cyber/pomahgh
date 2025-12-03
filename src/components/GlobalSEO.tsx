@@ -175,6 +175,10 @@ export const GlobalSEO = () => {
           <script type="application/ld+json">{JSON.stringify(orgSchema)}</script>
           <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
 
+          {/* Custom JSON-LD from dashboard */}
+          {settings.custom_json_ld && (
+            <script type="application/ld+json">{settings.custom_json_ld}</script>
+          )}
         </>
       )}
     </Helmet>

@@ -509,6 +509,21 @@ const AdminSeoSettings = () => {
                         onCheckedChange={(v) => handleUpdate("structured_data_enabled", v)}
                       />
                     </div>
+
+                    {/* Custom JSON-LD */}
+                    <div>
+                      <Label>Custom JSON-LD Schema</Label>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Add custom structured data in JSON-LD format. Must be valid JSON.
+                      </p>
+                      <Textarea
+                        rows={8}
+                        value={formData.custom_json_ld || ""}
+                        onChange={(e) => handleUpdate("custom_json_ld", e.target.value)}
+                        className="font-mono text-sm"
+                        placeholder='{"@context": "https://schema.org", "@type": "FAQPage", ...}'
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               </div>
