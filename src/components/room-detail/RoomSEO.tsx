@@ -4,55 +4,67 @@ import { useSeoSettings } from "@/hooks/useSeoSettings";
 
 export const RoomSEO = ({ room, images, displayPrice, roomSlug }: RoomSEOProps) => {
   const { settings } = useSeoSettings();
-  
+
+  const safeDescription =
+    room.description?.substring(0, 155) || `Discover ${room.name} at ${settings?.og_site_name || "Pomah Guesthouse"}.`;
+
+  const mainImage = images?.length > 0 ? images[0] : `${settings?.canonical_url}/default-room.jpg`;
+
+  const canonicalUrl = `${settings?.canonical_url || "https://pomahguesthouse.com"}/rooms/${roomSlug}`;
+
+  /** ----------------------
+   * JSON-LD structured data
+   * Using Product + Offers (best for Room SEO)
+   ------------------------- */
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "Hotel",
-    "name": room.name,
-    "description": room.description,
-    "image": images,
-    "priceRange": `Rp ${displayPrice.toLocaleString("id-ID")}`,
-    "address": {
-      "@type": "PostalAddress",
-      "addressCountry": "ID"
-    }
+    "@type": "Product",
+    name: room.name,
+    description: safeDescription,
+    image: images,
+    brand: {
+      "@type": "Brand",
+      name: settings?.og_site_name || "Pomah Guesthouse",
+    },
+    offers: {
+      "@type": "Offer",
+      url: canonicalUrl,
+      priceCurrency: "IDR",
+      price: displayPrice,
+      availability: "https://schema.org/InStock",
+      itemCondition: "https://schema.org/NewCondition",
+    },
   };
 
-  const pageTitle = `${room.name} - ${settings?.og_site_name || 'Pomah Guesthouse'} | Luxury Accommodation in Bali`;
-  const canonicalUrl = `${settings?.canonical_url || 'https://pomahguesthouse.com'}/rooms/${roomSlug}`;
+  const pageTitle = `${room.name} – ${settings?.og_site_name || "Pomah Guesthouse"} | Luxury Accommodation in Bali`;
 
   return (
     <Helmet>
+      {/* Title */}
       <title>{pageTitle}</title>
-      <meta name="description" content={room.description} />
-      
-      {/* Open Graph */}
-      <meta property="og:type" content="hotel" />
-      <meta property="og:title" content={`${room.name} - ${settings?.og_site_name || 'Pomah Guesthouse'}`} />
-      <meta property="og:description" content={room.description} />
-      <meta property="og:image" content={images[0]} />
-      <meta property="og:url" content={canonicalUrl} />
-      {settings?.og_site_name && (
-        <meta property="og:site_name" content={settings.og_site_name} />
-      )}
-      
-      {/* Twitter Card */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={`${room.name} - ${settings?.og_site_name || 'Pomah Guesthouse'}`} />
-      <meta name="twitter:description" content={room.description} />
-      <meta name="twitter:image" content={images[0]} />
-      {settings?.twitter_handle && (
-        <meta name="twitter:site" content={`@${settings.twitter_handle}`} />
-      )}
-      
-      {/* Canonical URL */}
+      <meta name="description" content={safeDescription} />
+
+      {/* Canonical */}
       <link rel="canonical" href={canonicalUrl} />
-      
-      {/* Schema.org structured data */}
+
+      {/* --- Open Graph --- */}
+      <meta property="og:type" content="product" />
+      <meta property="og:title" content={pageTitle} />
+      <meta property="og:description" content={safeDescription} />
+      <meta property="og:image" content={mainImage} />
+      <meta property="og:url" content={canonicalUrl} />
+      {settings?.og_site_name && <meta property="og:site_name" content={settings.og_site_name} />}
+
+      {/* --- Twitter Card --- */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={pageTitle} />
+      <meta name="twitter:description" content={safeDescription} />
+      <meta name="twitter:image" content={mainImage} />
+      {settings?.twitter_handle && <meta name="twitter:site" content={`@${settings.twitter_handle}`} />}
+
+      {/* --- JSON-LD (Structured Data) --- */}
       {settings?.structured_data_enabled && (
-        <script type="application/ld+json">
-          {JSON.stringify(structuredData)}
-        </script>
+        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       )}
     </Helmet>
   );
