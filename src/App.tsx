@@ -27,6 +27,9 @@ import RoomDetail from "./pages/RoomDetail";
 import AdminInvoiceTemplate from "./pages/admin/AdminInvoiceTemplate";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import NotFound from "./pages/NotFound";
+import ExploreSemarang from "./pages/ExploreSemarang";
+import AttractionDetail from "./pages/AttractionDetail";
+import AdminCityAttractions from "./pages/admin/AdminCityAttractions";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +47,8 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/rooms/:roomSlug" element={<RoomDetail />} />
+            <Route path="/explore-semarang" element={<ExploreSemarang />} />
+            <Route path="/explore-semarang/:slug" element={<AttractionDetail />} />
             <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
           <Route path="/admin/rooms" element={<AdminLayout><AdminRooms /></AdminLayout>} />
@@ -59,6 +64,7 @@ const App = () => (
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
           <Route path="/admin/invoice-template" element={<AdminLayout><AdminInvoiceTemplate /></AdminLayout>} />
+          <Route path="/admin/city-attractions" element={<AdminLayout><AdminCityAttractions /></AdminLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

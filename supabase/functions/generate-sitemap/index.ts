@@ -27,6 +27,12 @@ Deno.serve(async (req) => {
       .select('slug, updated_at')
       .eq('available', true);
 
+    // Fetch all active city attractions
+    const { data: attractions } = await supabase
+      .from('city_attractions')
+      .select('slug, updated_at')
+      .eq('is_active', true);
+
     const baseUrl = seoSettings?.canonical_url || 'https://pomahguesthouse.com';
     const changefreq = seoSettings?.sitemap_change_freq || 'weekly';
     const priorityHome = seoSettings?.sitemap_priority_home || 1.0;
@@ -66,6 +72,27 @@ Deno.serve(async (req) => {
         xml += `    <changefreq>${changefreq}</changefreq>\n`;
         if (room.updated_at) {
           xml += `    <lastmod>${new Date(room.updated_at).toISOString().split('T')[0]}</lastmod>\n`;
+        }
+        xml += '  </url>\n';
+      }
+    }
+
+    // Explore Semarang page
+    xml += '  <url>\n';
+    xml += `    <loc>${baseUrl}/explore-semarang</loc>\n`;
+    xml += '    <priority>0.9</priority>\n';
+    xml += `    <changefreq>${changefreq}</changefreq>\n`;
+    xml += '  </url>\n';
+
+    // City attraction detail pages
+    if (attractions && attractions.length > 0) {
+      for (const attraction of attractions) {
+        xml += '  <url>\n';
+        xml += `    <loc>${baseUrl}/explore-semarang/${attraction.slug}</loc>\n`;
+        xml += '    <priority>0.7</priority>\n';
+        xml += `    <changefreq>${changefreq}</changefreq>\n`;
+        if (attraction.updated_at) {
+          xml += `    <lastmod>${new Date(attraction.updated_at).toISOString().split('T')[0]}</lastmod>\n`;
         }
         xml += '  </url>\n';
       }
