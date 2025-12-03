@@ -44,6 +44,7 @@ export interface RoomCardPriceProps {
 export interface RoomFeaturesProps {
   features: string[];
   roomFeatures: RoomFeature[] | undefined;
+  layout?: "default" | "compact";
 }
 
 export interface RoomsHeaderProps {
