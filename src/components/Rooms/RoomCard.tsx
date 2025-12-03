@@ -2,25 +2,11 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import type { Room } from "@/hooks/useRooms";
-import type { RoomFeature } from "./types";
 
-interface RoomCardProps {
-  room: Room;
-  features: RoomFeature[] | undefined;
-  availability: Record<string, number> | undefined;
-  onBook: (room: Room) => void;
-  onTour: (room: Room) => void;
-}
-
-export default function RoomCard({ room, features, availability, onBook, onTour }: RoomCardProps) {
+export default function RoomCard({ room, features, availability, onBook, onTour }) {
   const [hovered, setHovered] = useState(false);
 
-  const availableCount = availability?.[room.id];
-  const isAvailable = availableCount === undefined || availableCount > 0;
-
-  // Filter features that this room has
-  const roomFeatures = features?.filter(f => room.features?.includes(f.feature_key)) || [];
+  const isAvailable = availability?.[room.id]?.is_available;
 
   return (
     <motion.div
@@ -35,38 +21,38 @@ export default function RoomCard({ room, features, availability, onBook, onTour 
       >
         <CardContent className="p-0">
           <div className="relative w-full h-52 overflow-hidden rounded-t-2xl">
-            <img src={room.image_url} alt={room.name} className="w-full h-full object-cover" />
+            <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
 
             {!isAvailable && (
               <div className="absolute top-2 left-2 bg-red-600 text-white text-sm px-3 py-1 rounded-full shadow-lg">
-                Tidak Tersedia
+                Not Available
               </div>
             )}
           </div>
 
           <div className="p-4 space-y-3">
             <h3 className="text-lg font-semibold">{room.name}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-2">{room.description}</p>
+            <p className="text-sm text-gray-600">{room.description}</p>
 
             <div className="flex flex-wrap gap-2 mt-2">
-              {roomFeatures.slice(0, 4).map((f) => (
-                <span key={f.id} className="text-xs bg-secondary px-2 py-1 rounded-md">
-                  {f.label}
+              {features?.[room.id]?.map((f, i) => (
+                <span key={i} className="text-xs bg-gray-100 px-2 py-1 rounded-md">
+                  {f.name}
                 </span>
               ))}
             </div>
 
             <div className="flex items-center justify-between pt-4">
               <div>
-                <p className="text-sm text-muted-foreground">Mulai dari</p>
-                <p className="text-xl font-bold">Rp {(room.price_per_night || 0).toLocaleString('id-ID')}</p>
+                <p className="text-sm text-gray-500">Start from</p>
+                <p className="text-xl font-bold">Rp {room.price.toLocaleString()}</p>
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => onTour(room)}>
-                  360° Tour
+                <Button variant="outline" onClick={() => onTour(room)}>
+                  Virtual Tour
                 </Button>
-                <Button size="sm" disabled={!isAvailable} onClick={() => onBook(room)}>
+                <Button disabled={!isAvailable} onClick={() => onBook(room)}>
                   Book Now
                 </Button>
               </div>
