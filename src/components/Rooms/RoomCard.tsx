@@ -64,7 +64,16 @@ export const RoomCard = ({
           </div>
 
           {/* DESCRIPTION */}
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{room.description}</p>
+          <p
+            className="
+    text-sm text-muted-foreground 
+    mb-3 
+    line-clamp-2
+    overflow-hidden
+  "
+          >
+            {room.description}
+          </p>
 
           {/* FEATURES – tampil penuh, tidak di modal */}
           <div className="flex-grow overflow-y-hidden">
