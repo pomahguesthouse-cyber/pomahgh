@@ -1,7 +1,7 @@
 import * as Icons from "lucide-react";
 import type { RoomFeaturesProps } from "./types";
 
-export const RoomFeatures = ({ features, roomFeatures }: RoomFeaturesProps) => {
+export const RoomFeatures = ({ features, roomFeatures, layout = "default" }: RoomFeaturesProps) => {
   const getIconComponent = (iconName: string) => {
     const IconComponent = Icons[iconName as keyof typeof Icons] as any;
     return IconComponent || Icons.Circle;
