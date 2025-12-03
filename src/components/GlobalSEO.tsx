@@ -98,18 +98,11 @@ export const GlobalSEO = () => {
    * --------------------- */
   const orgSchema = {
     "@context": "https://schema.org",
-    "@type": settings.is_hotel ? "Hotel" : "Organization",
+    "@type": "Organization",
     name: settings.og_site_name || settings.site_title,
     url: canonical,
     description: settings.meta_description || "",
-    logo: settings.logo_url || `${canonical}/logo.png`,
-    sameAs: [
-      settings.facebook_url,
-      settings.instagram_url,
-      settings.twitter_url,
-      settings.youtube_url,
-      settings.tiktok_url,
-    ].filter(Boolean),
+    logo: `${canonical}/logo.png`,
   };
 
   const websiteSchema = {
@@ -173,8 +166,6 @@ export const GlobalSEO = () => {
           <script type="application/ld+json">{JSON.stringify(orgSchema)}</script>
           <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
 
-          {/* Custom JSON-LD from dashboard */}
-          {settings.custom_json_ld && <script type="application/ld+json">{settings.custom_json_ld}</script>}
         </>
       )}
     </Helmet>
