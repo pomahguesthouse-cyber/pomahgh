@@ -30,6 +30,7 @@ import NotFound from "./pages/NotFound";
 import ExploreSemarang from "./pages/ExploreSemarang";
 import AttractionDetail from "./pages/AttractionDetail";
 import AdminCityAttractions from "./pages/admin/AdminCityAttractions";
+import Chat from "./pages/Chat";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/rooms/:roomSlug" element={<RoomDetail />} />
             <Route path="/explore-semarang" element={<ExploreSemarang />} />
             <Route path="/explore-semarang/:slug" element={<AttractionDetail />} />
+            <Route path="/chat" element={<Chat />} />
             <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
           <Route path="/admin/rooms" element={<AdminLayout><AdminRooms /></AdminLayout>} />
