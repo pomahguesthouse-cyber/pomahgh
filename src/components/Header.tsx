@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, User, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,19 @@ export default function Header({ scrollToRooms, variant = "transparent" }: Heade
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { settings } = useHotelSettings();
+
+  // Smart navigation handler for anchor links
+  const handleNavClick = (sectionId: string) => {
+    setIsMenuOpen(false);
+    if (location.pathname === '/') {
+      const element = document.getElementById(sectionId);
+      element?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate(`/#${sectionId}`);
+    }
+  };
   
   useEffect(() => {
     const handleScroll = () => {
@@ -122,18 +134,21 @@ export default function Header({ scrollToRooms, variant = "transparent" }: Heade
 
           {/* Navigation on the right */}
           <nav className="hidden md:flex items-center gap-6 text-white">
-            <a href="#home" className="hover:text-white/70 transition">
+            <button onClick={() => handleNavClick('home')} className="hover:text-white/70 transition">
               Home
-            </a>
-            <a href="#rooms" className="hover:text-white/70 transition">
+            </button>
+            <button onClick={() => handleNavClick('rooms')} className="hover:text-white/70 transition">
               Rooms
-            </a>
-            <a href="#amenities" className="hover:text-white/70 transition">
+            </button>
+            <Link to="/explore-semarang" className="hover:text-white/70 transition">
+              Explore Semarang
+            </Link>
+            <button onClick={() => handleNavClick('amenities')} className="hover:text-white/70 transition">
               Amenities
-            </a>
-            <a href="#contact" className="hover:text-white/70 transition">
+            </button>
+            <button onClick={() => handleNavClick('contact')} className="hover:text-white/70 transition">
               Contact
-            </a>
+            </button>
 
             {user ? (
               <>
@@ -203,21 +218,24 @@ export default function Header({ scrollToRooms, variant = "transparent" }: Heade
           </button>
         </div>
 
-        {/* 🔥 MOBILE MENU PUTIH */}
+        {/* Mobile Menu */}
         {isMenuOpen && (
           <nav className="md:hidden pb-4 flex flex-col gap-4 text-white">
-            <a href="#home" className="py-2" onClick={() => setIsMenuOpen(false)}>
+            <button onClick={() => handleNavClick('home')} className="py-2 text-left">
               Home
-            </a>
-            <a href="#rooms" className="py-2" onClick={() => setIsMenuOpen(false)}>
+            </button>
+            <button onClick={() => handleNavClick('rooms')} className="py-2 text-left">
               Rooms
-            </a>
-            <a href="#amenities" className="py-2" onClick={() => setIsMenuOpen(false)}>
+            </button>
+            <Link to="/explore-semarang" className="py-2" onClick={() => setIsMenuOpen(false)}>
+              Explore Semarang
+            </Link>
+            <button onClick={() => handleNavClick('amenities')} className="py-2 text-left">
               Amenities
-            </a>
-            <a href="#contact" className="py-2" onClick={() => setIsMenuOpen(false)}>
+            </button>
+            <button onClick={() => handleNavClick('contact')} className="py-2 text-left">
               Contact
-            </a>
+            </button>
 
             {user ? (
               <>
