@@ -6,6 +6,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Indonesian month names
+const INDONESIAN_MONTHS = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+const INDONESIAN_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+// Helper function to format date in Indonesian (e.g., "15 Januari 2025")
+function formatDateIndonesian(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = date.getDate();
+  const month = INDONESIAN_MONTHS[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+}
+
+// Helper function to format date with day name (e.g., "Rabu, 15 Januari 2025")
+function formatDateWithDay(dateStr: string): string {
+  const date = new Date(dateStr);
+  const dayName = INDONESIAN_DAYS[date.getDay()];
+  const day = date.getDate();
+  const month = INDONESIAN_MONTHS[date.getMonth()];
+  const year = date.getFullYear();
+  return `${dayName}, ${day} ${month} ${year}`;
+}
+
 // Helper function to sanitize booking ID input
 function sanitizeBookingId(bookingId: string): string {
   return bookingId
@@ -142,8 +169,10 @@ serve(async (req) => {
         }).filter(r => r.available_count > 0);
 
         result = {
-          check_in,
-          check_out,
+          check_in: formatDateIndonesian(check_in),
+          check_out: formatDateIndonesian(check_out),
+          check_in_raw: check_in,
+          check_out_raw: check_out,
           available_rooms: availableRooms
         };
         break;
@@ -487,9 +516,12 @@ serve(async (req) => {
 
         // Send WhatsApp notifications (background task)
         if (hotelSettings?.whatsapp_number) {
+          const checkInFormatted = formatDateWithDay(check_in);
+          const checkOutFormatted = formatDateWithDay(check_out);
+          
           const adminMessage = isUpdate
-            ? `🔄 *RESCHEDULE BOOKING (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\n🛏️ Kamar: ${roomsText} (${totalRooms} unit)\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\nKode Booking: ${booking.booking_code}\n\n⚠️ Booking ini telah diperbarui oleh guest melalui chatbot.`
-            : `🔔 *BOOKING BARU (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\n🛏️ Kamar: ${roomsText} (${totalRooms} unit)\nCheck-in: ${check_in}\nCheck-out: ${check_out}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\nKode Booking: ${booking.booking_code}`;
+            ? `🔄 *RESCHEDULE BOOKING (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\n🛏️ Kamar: ${roomsText} (${totalRooms} unit)\nCheck-in: ${checkInFormatted}\nCheck-out: ${checkOutFormatted}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\nKode Booking: ${booking.booking_code}\n\n⚠️ Booking ini telah diperbarui oleh guest melalui chatbot.`
+            : `🔔 *BOOKING BARU (Chatbot AI)*\n\nNama: ${guest_name}\nEmail: ${guest_email}\nTelp: ${guest_phone || '-'}\n🛏️ Kamar: ${roomsText} (${totalRooms} unit)\nCheck-in: ${checkInFormatted}\nCheck-out: ${checkOutFormatted}\nTamu: ${num_guests}\nTotal Malam: ${total_nights}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\nKode Booking: ${booking.booking_code}`;
           
           // Send to admin
           fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
@@ -508,8 +540,8 @@ serve(async (req) => {
           // Send to customer if phone provided
           if (guest_phone) {
             const customerMessage = isUpdate
-              ? `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${roomsText} (${totalRooms} kamar)\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${booking.booking_code}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
-              : `Terima kasih ${guest_name}! 🙏\n\nBooking Anda telah kami terima:\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${roomsText} (${totalRooms} kamar)\n📅 Check-in: ${check_in}\n📅 Check-out: ${check_out}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${booking.booking_code}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`;
+              ? `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${roomsText} (${totalRooms} kamar)\n📅 Check-in: ${checkInFormatted}\n📅 Check-out: ${checkOutFormatted}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${booking.booking_code}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
+              : `Terima kasih ${guest_name}! 🙏\n\nBooking Anda telah kami terima:\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${roomsText} (${totalRooms} kamar)\n📅 Check-in: ${checkInFormatted}\n📅 Check-out: ${checkOutFormatted}\n👥 Tamu: ${num_guests}\n💰 Total: Rp ${totalPrice.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${booking.booking_code}\n⏳ Status: Menunggu konfirmasi\n\nKami akan segera menghubungi Anda untuk konfirmasi pembayaran.`;
             
             fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
               method: "POST",
@@ -592,8 +624,8 @@ serve(async (req) => {
           guest_email: booking.guest_email,
           guest_phone: booking.guest_phone,
           room_name: (booking.rooms as any)?.name,
-          check_in: booking.check_in,
-          check_out: booking.check_out,
+          check_in: formatDateIndonesian(booking.check_in),
+          check_out: formatDateIndonesian(booking.check_out),
           check_in_time: booking.check_in_time,
           check_out_time: booking.check_out_time,
           num_guests: booking.num_guests,
@@ -733,7 +765,10 @@ serve(async (req) => {
           .single();
 
         if (hotelSettings?.whatsapp_number) {
-          const adminMessage = `🔄 *PERUBAHAN BOOKING*\n\nNama: ${updatedBooking.guest_name}\nEmail: ${updatedBooking.guest_email}\nTelp: ${updatedBooking.guest_phone || '-'}\nKamar: ${(updatedBooking.rooms as any)?.name}\nCheck-in: ${updatedBooking.check_in}\nCheck-out: ${updatedBooking.check_out}\nTamu: ${updatedBooking.num_guests}\nTotal: Rp ${updatedBooking.total_price.toLocaleString('id-ID')}\n\nKode Booking: ${updatedBooking.booking_code}\nStatus: ${updatedBooking.status}`;
+          const checkInFormatted = formatDateWithDay(updatedBooking.check_in);
+          const checkOutFormatted = formatDateWithDay(updatedBooking.check_out);
+          
+          const adminMessage = `🔄 *PERUBAHAN BOOKING*\n\nNama: ${updatedBooking.guest_name}\nEmail: ${updatedBooking.guest_email}\nTelp: ${updatedBooking.guest_phone || '-'}\nKamar: ${(updatedBooking.rooms as any)?.name}\nCheck-in: ${checkInFormatted}\nCheck-out: ${checkOutFormatted}\nTamu: ${updatedBooking.num_guests}\nTotal: Rp ${updatedBooking.total_price.toLocaleString('id-ID')}\n\nKode Booking: ${updatedBooking.booking_code}\nStatus: ${updatedBooking.status}`;
           
           // Send to admin
           fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
@@ -751,7 +786,7 @@ serve(async (req) => {
 
           // Send to customer
           if (updatedBooking.guest_phone) {
-            const customerMessage = `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${(updatedBooking.rooms as any)?.name}\n📅 Check-in: ${updatedBooking.check_in}\n📅 Check-out: ${updatedBooking.check_out}\n👥 Tamu: ${updatedBooking.num_guests}\n💰 Total: Rp ${updatedBooking.total_price.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${updatedBooking.booking_code}\n📊 Status: ${updatedBooking.status}`;
+            const customerMessage = `Booking Anda telah diperbarui! 🔄\n\n📍 ${hotelSettings.hotel_name}\n🛏️ Kamar: ${(updatedBooking.rooms as any)?.name}\n📅 Check-in: ${checkInFormatted}\n📅 Check-out: ${checkOutFormatted}\n👥 Tamu: ${updatedBooking.num_guests}\n💰 Total: Rp ${updatedBooking.total_price.toLocaleString('id-ID')}\n\n📝 Kode Booking: ${updatedBooking.booking_code}\n📊 Status: ${updatedBooking.status}`;
             
             fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-whatsapp`, {
               method: "POST",
@@ -772,8 +807,8 @@ serve(async (req) => {
           message: "Booking berhasil diubah!",
           booking_code: updatedBooking.booking_code,
           room_name: (updatedBooking.rooms as any)?.name,
-          check_in: updatedBooking.check_in,
-          check_out: updatedBooking.check_out,
+          check_in: formatDateIndonesian(updatedBooking.check_in),
+          check_out: formatDateIndonesian(updatedBooking.check_out),
           num_guests: updatedBooking.num_guests,
           total_nights: updatedBooking.total_nights,
           total_price: updatedBooking.total_price,
@@ -866,8 +901,8 @@ serve(async (req) => {
           booking_code: booking.booking_code,
           guest_name: booking.guest_name,
           room_name: (booking.rooms as any)?.name,
-          check_in: booking.check_in,
-          check_out: booking.check_out,
+          check_in: formatDateIndonesian(booking.check_in),
+          check_out: formatDateIndonesian(booking.check_out),
           booking_status: booking.status,
           payment_status: booking.payment_status,
           payment_status_message: statusMessage,
