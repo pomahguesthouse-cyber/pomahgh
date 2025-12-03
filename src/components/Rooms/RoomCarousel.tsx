@@ -1,10 +1,7 @@
 import { useRef } from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-
 import Autoplay from "embla-carousel-autoplay";
-import { RoomCard } from "./RoomCard";
-import { getRoomImages } from "./utils/getRoomImages";
-import { checkPromo, getDisplayPrice } from "./utils/checkPromo";
+import RoomCard from "./RoomCard";
 import type { RoomCarouselProps } from "./types";
 
 export const RoomCarousel = ({
@@ -39,37 +36,25 @@ export const RoomCarousel = ({
             px-1 sm:px-2 
           "
         >
-          {rooms?.map((room) => {
-            const images = getRoomImages(room);
-            const hasPromo = checkPromo(room);
-            const displayPrice = getDisplayPrice(room);
-
-            const isAvailabilityLoaded = checkIn && checkOut && !isCheckingAvailability && !!availability;
-
-            return (
-              <CarouselItem
-                key={room.id}
-                className="
-                  basis-full
-                  sm:basis-1/2 
-                  lg:basis-1/3
-                  overflow-visible
-                "
-              >
-                <RoomCard
-                  room={room}
-                  hasPromo={hasPromo}
-                  displayPrice={displayPrice}
-                  images={images}
-                  availability={availability?.[room.id]}
-                  isAvailabilityLoaded={!!isAvailabilityLoaded}
-                  roomFeatures={roomFeatures}
-                  onBookRoom={onBookRoom}
-                  onViewTour={onViewTour}
-                />
-              </CarouselItem>
-            );
-          })}
+        {rooms?.map((room) => (
+          <CarouselItem
+            key={room.id}
+            className="
+              basis-full
+              sm:basis-1/2 
+              lg:basis-1/3
+              overflow-visible
+            "
+          >
+            <RoomCard
+              room={room}
+              features={roomFeatures}
+              availability={availability}
+              onBook={onBookRoom}
+              onTour={onViewTour}
+            />
+          </CarouselItem>
+        ))}
         </CarouselContent>
 
         {/* ARROWS */}
