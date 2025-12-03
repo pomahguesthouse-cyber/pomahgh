@@ -7,17 +7,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useRef } from "react";
+
+import { useState, useRef, useEffect } from "react";
 import { Loader2, Upload, RefreshCw } from "lucide-react";
 import { SeoPreview } from "@/components/admin/SeoPreview";
 import { toast } from "@/hooks/use-toast";
 
+type SeoSettingsType = Record<string, any>; // fallback safe type
+
 const AdminSeoSettings = () => {
-  const { settings, isLoading, updateSettings, isUpdating, uploadOgImage, generateSitemap, isGeneratingSitemap } = useSeoSettings();
-  const [formData, setFormData] = useState<Partial<typeof settings>>(settings || {});
+  const { settings, isLoading, updateSettings, isUpdating, uploadOgImage, generateSitemap, isGeneratingSitemap } =
+    useSeoSettings();
+
+  const [formData, setFormData] = useState<SeoSettingsType>({});
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Refs for smooth scrolling to sections
+  // Sync settings → formData when loaded
+  useEffect(() => {
+    if (settings) setFormData(settings);
+  }, [settings]);
+
+  // Refs for smooth scroll
   const generalRef = useRef<HTMLDivElement>(null);
   const socialRef = useRef<HTMLDivElement>(null);
   const localRef = useRef<HTMLDivElement>(null);
@@ -25,27 +35,25 @@ const AdminSeoSettings = () => {
   const analyticsRef = useRef<HTMLDivElement>(null);
   const advancedRef = useRef<HTMLDivElement>(null);
 
-  const handleUpdate = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const refMap: Record<string, React.RefObject<HTMLDivElement>> = {
+    general: generalRef,
+    social: socialRef,
+    local: localRef,
+    indexing: indexingRef,
+    analytics: analyticsRef,
+    advanced: advancedRef,
   };
 
-  const handleSave = () => {
-    updateSettings(formData);
+  const handleUpdate = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const handleSave = () => updateSettings(formData);
 
   const handleTabChange = (value: string) => {
-    const refMap: Record<string, React.RefObject<HTMLDivElement>> = {
-      general: generalRef,
-      social: socialRef,
-      local: localRef,
-      indexing: indexingRef,
-      analytics: analyticsRef,
-      advanced: advancedRef,
-    };
-    
     refMap[value]?.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
+      behavior: "smooth",
+      block: "start",
     });
   };
 
@@ -56,7 +64,8 @@ const AdminSeoSettings = () => {
     setUploadingImage(true);
     try {
       const url = await uploadOgImage(file);
-      handleUpdate('default_og_image', url);
+      handleUpdate("default_og_image", url);
+
       toast({
         title: "Image Uploaded",
         description: "OG image has been uploaded successfully.",
@@ -64,7 +73,7 @@ const AdminSeoSettings = () => {
     } catch (error) {
       toast({
         title: "Upload Failed",
-        description: "Failed to upload image. Please try again.",
+        description: "Failed to upload image.",
         variant: "destructive",
       });
     } finally {
@@ -72,7 +81,7 @@ const AdminSeoSettings = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !settings) {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -82,175 +91,177 @@ const AdminSeoSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-muted-foreground">Manage your website's SEO configuration</p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <p className="text-muted-foreground">Manage your website&apos;s SEO configuration</p>
         <Button onClick={handleSave} disabled={isUpdating}>
           {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save Changes
         </Button>
       </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="general" onValueChange={handleTabChange} className="space-y-4">
-              <TabsList className="flex w-full overflow-x-auto scrollbar-hide sticky top-0 z-10 bg-background/95 backdrop-blur-sm shadow-sm">
-                <TabsTrigger value="general" className="flex-shrink-0 px-4">General</TabsTrigger>
-                <TabsTrigger value="social" className="flex-shrink-0 px-4">Social</TabsTrigger>
-                <TabsTrigger value="local" className="flex-shrink-0 px-4">Local</TabsTrigger>
-                <TabsTrigger value="indexing" className="flex-shrink-0 px-4">Indexing</TabsTrigger>
-                <TabsTrigger value="analytics" className="flex-shrink-0 px-4">Analytics</TabsTrigger>
-                <TabsTrigger value="advanced" className="flex-shrink-0 px-4">Advanced</TabsTrigger>
-              </TabsList>
+      {/* Main Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Panel */}
+        <div className="lg:col-span-2">
+          <Tabs className="space-y-4" defaultValue="general" onValueChange={handleTabChange}>
+            <TabsList
+              className="
+                flex w-full overflow-x-auto scrollbar-hide
+                sticky top-0 z-10 bg-background/95 backdrop-blur-sm shadow-sm
+              "
+            >
+              <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="social">Social</TabsTrigger>
+              <TabsTrigger value="local">Local</TabsTrigger>
+              <TabsTrigger value="indexing">Indexing</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="advanced">Advanced</TabsTrigger>
+            </TabsList>
 
-              {/* General SEO */}
-              <TabsContent value="general" ref={generalRef} className="space-y-4 scroll-mt-20">
+            {/* GENERAL */}
+            <TabsContent value="general">
+              <div ref={generalRef} className="scroll-mt-20 space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle>General SEO</CardTitle>
-                    <CardDescription>Basic SEO settings for your website</CardDescription>
+                    <CardDescription>Basic SEO settings</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/* Title */}
                     <div className="space-y-2">
-                      <Label htmlFor="site_title">Site Title</Label>
+                      <Label>Site Title</Label>
                       <Input
-                        id="site_title"
-                        value={formData.site_title || ''}
-                        onChange={(e) => handleUpdate('site_title', e.target.value)}
+                        value={formData.site_title || ""}
+                        onChange={(e) => handleUpdate("site_title", e.target.value)}
                         placeholder="Pomah Guesthouse - Your Perfect Stay"
                       />
-                      <p className="text-sm text-muted-foreground">
-                        {formData.site_title?.length || 0}/60 characters
-                      </p>
+                      <p className="text-sm text-muted-foreground">{formData.site_title?.length || 0}/60 characters</p>
                     </div>
 
+                    {/* Meta Description */}
                     <div className="space-y-2">
-                      <Label htmlFor="meta_description">Meta Description</Label>
+                      <Label>Meta Description</Label>
                       <Textarea
-                        id="meta_description"
-                        value={formData.meta_description || ''}
-                        onChange={(e) => handleUpdate('meta_description', e.target.value)}
-                        placeholder="Brief description of your website..."
                         rows={3}
+                        value={formData.meta_description || ""}
+                        onChange={(e) => handleUpdate("meta_description", e.target.value)}
                       />
                       <p className="text-sm text-muted-foreground">
                         {formData.meta_description?.length || 0}/160 characters
                       </p>
                     </div>
 
+                    {/* Keywords */}
                     <div className="space-y-2">
-                      <Label htmlFor="meta_keywords">Meta Keywords</Label>
+                      <Label>Meta Keywords</Label>
                       <Input
-                        id="meta_keywords"
-                        value={formData.meta_keywords || ''}
-                        onChange={(e) => handleUpdate('meta_keywords', e.target.value)}
-                        placeholder="hotel, guesthouse, accommodation"
+                        value={formData.meta_keywords || ""}
+                        onChange={(e) => handleUpdate("meta_keywords", e.target.value)}
                       />
                     </div>
 
+                    {/* Canonical */}
                     <div className="space-y-2">
-                      <Label htmlFor="canonical_url">Canonical URL</Label>
+                      <Label>Canonical URL</Label>
                       <Input
-                        id="canonical_url"
-                        value={formData.canonical_url || ''}
-                        onChange={(e) => handleUpdate('canonical_url', e.target.value)}
-                        placeholder="https://pomahguesthouse.com"
+                        value={formData.canonical_url || ""}
+                        onChange={(e) => handleUpdate("canonical_url", e.target.value)}
                       />
                     </div>
 
+                    {/* OG Image */}
                     <div className="space-y-2">
-                      <Label htmlFor="og_image">Default OG Image</Label>
+                      <Label>Default OG Image</Label>
                       <div className="flex gap-2">
-                        <Input
-                          type="file"
-                          id="og_image"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          disabled={uploadingImage}
-                        />
+                        <Input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} />
                         <Button variant="outline" size="icon" disabled={uploadingImage}>
-                          {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {uploadingImage ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
+
                       {formData.default_og_image && (
-                        <img src={formData.default_og_image} alt="OG Preview" className="mt-2 h-32 rounded object-cover" />
+                        <img src={formData.default_og_image} className="mt-2 h-32 w-full object-cover rounded" />
                       )}
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </div>
+            </TabsContent>
 
-              {/* Social Media SEO */}
-              <TabsContent value="social" ref={socialRef} className="space-y-4 scroll-mt-20">
+            {/* SOCIAL */}
+            <TabsContent value="social">
+              <div ref={socialRef} className="scroll-mt-20 space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle>Social Media SEO</CardTitle>
-                    <CardDescription>Configure social media sharing settings</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/* OG Site Name */}
                     <div className="space-y-2">
-                      <Label htmlFor="og_site_name">OG Site Name</Label>
+                      <Label>OG Site Name</Label>
                       <Input
-                        id="og_site_name"
-                        value={formData.og_site_name || ''}
-                        onChange={(e) => handleUpdate('og_site_name', e.target.value)}
-                        placeholder="Pomah Guesthouse"
+                        value={formData.og_site_name || ""}
+                        onChange={(e) => handleUpdate("og_site_name", e.target.value)}
                       />
                     </div>
 
+                    {/* Locale */}
                     <div className="space-y-2">
-                      <Label htmlFor="og_locale">OG Locale</Label>
-                      <Select
-                        value={formData.og_locale || 'id_ID'}
-                        onValueChange={(value) => handleUpdate('og_locale', value)}
-                      >
+                      <Label>OG Locale</Label>
+                      <Select value={formData.og_locale || "id_ID"} onValueChange={(v) => handleUpdate("og_locale", v)}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="id_ID">Indonesian (id_ID)</SelectItem>
-                          <SelectItem value="en_US">English (en_US)</SelectItem>
-                          <SelectItem value="en_GB">English UK (en_GB)</SelectItem>
+                          <SelectItem value="id_ID">Indonesian</SelectItem>
+                          <SelectItem value="en_US">English US</SelectItem>
+                          <SelectItem value="en_GB">English UK</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
+                    {/* Twitter Handle */}
                     <div className="space-y-2">
-                      <Label htmlFor="twitter_handle">Twitter Handle</Label>
+                      <Label>Twitter Handle</Label>
                       <Input
-                        id="twitter_handle"
-                        value={formData.twitter_handle || ''}
-                        onChange={(e) => handleUpdate('twitter_handle', e.target.value)}
+                        value={formData.twitter_handle || ""}
+                        onChange={(e) => handleUpdate("twitter_handle", e.target.value)}
                         placeholder="pomahguesthouse"
                       />
-                      <p className="text-sm text-muted-foreground">Without @ symbol</p>
                     </div>
 
+                    {/* FB App ID */}
                     <div className="space-y-2">
-                      <Label htmlFor="facebook_app_id">Facebook App ID</Label>
+                      <Label>Facebook App ID</Label>
                       <Input
-                        id="facebook_app_id"
-                        value={formData.facebook_app_id || ''}
-                        onChange={(e) => handleUpdate('facebook_app_id', e.target.value)}
-                        placeholder="1234567890"
+                        value={formData.facebook_app_id || ""}
+                        onChange={(e) => handleUpdate("facebook_app_id", e.target.value)}
                       />
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </div>
+            </TabsContent>
 
-              {/* Local SEO */}
-              <TabsContent value="local" ref={localRef} className="space-y-4 scroll-mt-20">
+            {/* LOCAL */}
+            <TabsContent value="local">
+              <div ref={localRef} className="scroll-mt-20 space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle>Local SEO</CardTitle>
-                    <CardDescription>Configure local business SEO</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/* Type */}
                     <div className="space-y-2">
-                      <Label htmlFor="business_type">Business Type</Label>
+                      <Label>Business Type</Label>
                       <Select
-                        value={formData.business_type || 'Hotel'}
-                        onValueChange={(value) => handleUpdate('business_type', value)}
+                        value={formData.business_type || "Hotel"}
+                        onValueChange={(v) => handleUpdate("business_type", v)}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -265,95 +276,77 @@ const AdminSeoSettings = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="geo_region">Geo Region</Label>
+                      <Label>Geo Region</Label>
                       <Input
-                        id="geo_region"
-                        value={formData.geo_region || ''}
-                        onChange={(e) => handleUpdate('geo_region', e.target.value)}
-                        placeholder="ID-JT"
+                        value={formData.geo_region || ""}
+                        onChange={(e) => handleUpdate("geo_region", e.target.value)}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="geo_placename">Geo Place Name</Label>
+                      <Label>Place Name</Label>
                       <Input
-                        id="geo_placename"
-                        value={formData.geo_placename || ''}
-                        onChange={(e) => handleUpdate('geo_placename', e.target.value)}
-                        placeholder="Semarang"
+                        value={formData.geo_placename || ""}
+                        onChange={(e) => handleUpdate("geo_placename", e.target.value)}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="geo_coordinates">Geo Coordinates</Label>
+                      <Label>Coordinates</Label>
                       <Input
-                        id="geo_coordinates"
-                        value={formData.geo_coordinates || ''}
-                        onChange={(e) => handleUpdate('geo_coordinates', e.target.value)}
-                        placeholder="-6.966667, 110.416664"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="price_range">Price Range</Label>
-                      <Input
-                        id="price_range"
-                        value={formData.price_range || ''}
-                        onChange={(e) => handleUpdate('price_range', e.target.value)}
-                        placeholder="Rp"
+                        value={formData.geo_coordinates || ""}
+                        onChange={(e) => handleUpdate("geo_coordinates", e.target.value)}
                       />
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </div>
+            </TabsContent>
 
-              {/* Indexing Control */}
-              <TabsContent value="indexing" ref={indexingRef} className="space-y-4 scroll-mt-20">
+            {/* INDEXING */}
+            <TabsContent value="indexing">
+              <div ref={indexingRef} className="scroll-mt-20 space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle>Indexing Control</CardTitle>
-                    <CardDescription>Control search engine indexing</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/* Indexing Switch */}
                     <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
+                      <div>
                         <Label>Allow Indexing</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Allow search engines to index this site
-                        </p>
                       </div>
                       <Switch
                         checked={formData.allow_indexing}
-                        onCheckedChange={(checked) => handleUpdate('allow_indexing', checked)}
+                        onCheckedChange={(v) => handleUpdate("allow_indexing", v)}
                       />
                     </div>
 
+                    {/* Follow Links */}
                     <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Follow Links</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Allow search engines to follow links
-                        </p>
-                      </div>
+                      <Label>Follow Links</Label>
                       <Switch
                         checked={formData.follow_links}
-                        onCheckedChange={(checked) => handleUpdate('follow_links', checked)}
+                        onCheckedChange={(v) => handleUpdate("follow_links", v)}
                       />
                     </div>
 
+                    {/* Robots Preview */}
                     <div className="pt-4 border-t">
-                      <Label>Robots Meta Tag Preview</Label>
-                      <div className="mt-2 p-3 bg-muted rounded-md font-mono text-sm">
-                        {formData.allow_indexing 
-                          ? (formData.follow_links ? 'index, follow' : 'index, nofollow')
-                          : 'noindex, nofollow'
-                        }
+                      <Label>Robots Meta Preview</Label>
+                      <div className="mt-2 p-3 bg-muted rounded font-mono text-sm">
+                        {formData.allow_indexing
+                          ? formData.follow_links
+                            ? "index, follow"
+                            : "index, nofollow"
+                          : "noindex, nofollow"}
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t">
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Sitemap Settings</Label>
+                    {/* Sitemap */}
+                    <div className="pt-4 border-t space-y-4">
+                      <div className="flex justify-between">
+                        <Label>Sitemap Generator</Label>
                         <Button
                           variant="outline"
                           size="sm"
@@ -361,204 +354,180 @@ const AdminSeoSettings = () => {
                           disabled={isGeneratingSitemap}
                         >
                           {isGeneratingSitemap ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className="mr-2 w-4 h-4 animate-spin" />
                           ) : (
-                            <RefreshCw className="mr-2 h-4 w-4" />
+                            <RefreshCw className="mr-2 w-4 h-4" />
                           )}
-                          Generate Sitemap
+                          Generate
                         </Button>
                       </div>
-                      
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label>Auto Generate</Label>
-                            <p className="text-sm text-muted-foreground">
-                              Automatically generate sitemap
-                            </p>
-                          </div>
-                          <Switch
-                            checked={formData.sitemap_auto_generate}
-                            onCheckedChange={(checked) => handleUpdate('sitemap_auto_generate', checked)}
+
+                      {/* Auto Generate */}
+                      <div className="flex justify-between">
+                        <Label>Auto Generate</Label>
+                        <Switch
+                          checked={formData.sitemap_auto_generate}
+                          onCheckedChange={(v) => handleUpdate("sitemap_auto_generate", v)}
+                        />
+                      </div>
+
+                      {/* Frequency */}
+                      <div className="space-y-2">
+                        <Label>Change Frequency</Label>
+                        <Select
+                          value={formData.sitemap_change_freq || "weekly"}
+                          onValueChange={(v) => handleUpdate("sitemap_change_freq", v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="yearly">Yearly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Priority */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Home Priority</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={formData.sitemap_priority_home || 1}
+                            onChange={(e) => handleUpdate("sitemap_priority_home", parseFloat(e.target.value))}
                           />
                         </div>
-
                         <div className="space-y-2">
-                          <Label>Change Frequency</Label>
-                          <Select
-                            value={formData.sitemap_change_freq || 'weekly'}
-                            onValueChange={(value) => handleUpdate('sitemap_change_freq', value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="always">Always</SelectItem>
-                              <SelectItem value="hourly">Hourly</SelectItem>
-                              <SelectItem value="daily">Daily</SelectItem>
-                              <SelectItem value="weekly">Weekly</SelectItem>
-                              <SelectItem value="monthly">Monthly</SelectItem>
-                              <SelectItem value="yearly">Yearly</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Home Priority</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="1"
-                              step="0.1"
-                              value={formData.sitemap_priority_home || 1.0}
-                              onChange={(e) => handleUpdate('sitemap_priority_home', parseFloat(e.target.value))}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Rooms Priority</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="1"
-                              step="0.1"
-                              value={formData.sitemap_priority_rooms || 0.8}
-                              onChange={(e) => handleUpdate('sitemap_priority_rooms', parseFloat(e.target.value))}
-                            />
-                          </div>
+                          <Label>Rooms Priority</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={formData.sitemap_priority_rooms || 0.8}
+                            onChange={(e) => handleUpdate("sitemap_priority_rooms", parseFloat(e.target.value))}
+                          />
                         </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </div>
+            </TabsContent>
 
-              {/* Analytics */}
-              <TabsContent value="analytics" ref={analyticsRef} className="space-y-4 scroll-mt-20">
+            {/* ANALYTICS */}
+            <TabsContent value="analytics">
+              <div ref={analyticsRef} className="scroll-mt-20 space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle>Analytics & Verification</CardTitle>
-                    <CardDescription>Configure analytics and verification tags</CardDescription>
                   </CardHeader>
+
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="google_analytics_id">Google Analytics ID</Label>
+                    {/* Google Analytics */}
+                    <div>
+                      <Label>Google Analytics ID</Label>
                       <Input
-                        id="google_analytics_id"
-                        value={formData.google_analytics_id || ''}
-                        onChange={(e) => handleUpdate('google_analytics_id', e.target.value)}
-                        placeholder="G-XXXXXXXXXX"
+                        value={formData.google_analytics_id || ""}
+                        onChange={(e) => handleUpdate("google_analytics_id", e.target.value)}
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="google_tag_manager_id">Google Tag Manager ID</Label>
+                    {/* GTM */}
+                    <div>
+                      <Label>Google Tag Manager ID</Label>
                       <Input
-                        id="google_tag_manager_id"
-                        value={formData.google_tag_manager_id || ''}
-                        onChange={(e) => handleUpdate('google_tag_manager_id', e.target.value)}
-                        placeholder="GTM-XXXXXXX"
+                        value={formData.google_tag_manager_id || ""}
+                        onChange={(e) => handleUpdate("google_tag_manager_id", e.target.value)}
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="google_search_console_verification">Google Search Console</Label>
+                    {/* Google Verification */}
+                    <div>
+                      <Label>Google Search Console</Label>
                       <Input
-                        id="google_search_console_verification"
-                        value={formData.google_search_console_verification || ''}
-                        onChange={(e) => handleUpdate('google_search_console_verification', e.target.value)}
-                        placeholder="Verification code"
+                        value={formData.google_search_console_verification || ""}
+                        onChange={(e) => handleUpdate("google_search_console_verification", e.target.value)}
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="bing_verification">Bing Webmaster</Label>
+                    {/* Bing */}
+                    <div>
+                      <Label>Bing Webmaster Verification</Label>
                       <Input
-                        id="bing_verification"
-                        value={formData.bing_verification || ''}
-                        onChange={(e) => handleUpdate('bing_verification', e.target.value)}
-                        placeholder="Verification code"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="facebook_pixel_id">Facebook Pixel ID</Label>
-                      <Input
-                        id="facebook_pixel_id"
-                        value={formData.facebook_pixel_id || ''}
-                        onChange={(e) => handleUpdate('facebook_pixel_id', e.target.value)}
-                        placeholder="123456789012345"
+                        value={formData.bing_verification || ""}
+                        onChange={(e) => handleUpdate("bing_verification", e.target.value)}
                       />
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </div>
+            </TabsContent>
 
-              {/* Advanced */}
-              <TabsContent value="advanced" ref={advancedRef} className="space-y-4 scroll-mt-20">
+            {/* ADVANCED */}
+            <TabsContent value="advanced">
+              <div ref={advancedRef} className="scroll-mt-20 space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle>Advanced SEO</CardTitle>
-                    <CardDescription>Advanced SEO configuration</CardDescription>
                   </CardHeader>
+
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="custom_head_scripts">Custom Head Scripts</Label>
+                    {/* Head Script */}
+                    <div>
+                      <Label>Custom Head Scripts</Label>
                       <Textarea
-                        id="custom_head_scripts"
-                        value={formData.custom_head_scripts || ''}
-                        onChange={(e) => handleUpdate('custom_head_scripts', e.target.value)}
-                        placeholder="<script>...</script>"
                         rows={6}
-                        className="font-mono text-sm"
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        Add custom scripts to the head section
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="robots_txt_custom">Custom Robots.txt Rules</Label>
-                      <Textarea
-                        id="robots_txt_custom"
-                        value={formData.robots_txt_custom || ''}
-                        onChange={(e) => handleUpdate('robots_txt_custom', e.target.value)}
-                        placeholder="User-agent: *&#10;Disallow: /admin/"
-                        rows={6}
+                        value={formData.custom_head_scripts || ""}
+                        onChange={(e) => handleUpdate("custom_head_scripts", e.target.value)}
                         className="font-mono text-sm"
                       />
                     </div>
 
+                    {/* Robots */}
+                    <div>
+                      <Label>Custom robots.txt</Label>
+                      <Textarea
+                        rows={6}
+                        value={formData.robots_txt_custom || ""}
+                        onChange={(e) => handleUpdate("robots_txt_custom", e.target.value)}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+
+                    {/* Structured Data */}
                     <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Enable Structured Data</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Enable JSON-LD structured data
-                        </p>
-                      </div>
+                      <Label>Enable Structured Data (JSON-LD)</Label>
                       <Switch
                         checked={formData.structured_data_enabled}
-                        onCheckedChange={(checked) => handleUpdate('structured_data_enabled', checked)}
+                        onCheckedChange={(v) => handleUpdate("structured_data_enabled", v)}
                       />
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
 
-          {/* SEO Preview Sidebar */}
-          <div className="lg:col-span-1">
-            <SeoPreview
-              title={formData.site_title || 'Your Site Title'}
-              description={formData.meta_description || 'Your meta description...'}
-              url={formData.canonical_url || 'https://example.com'}
-              ogImage={formData.default_og_image}
-            />
-          </div>
+        {/* Sidebar */}
+        <div className="lg:col-span-1">
+          <SeoPreview
+            title={formData.site_title || "Your Site Title"}
+            description={formData.meta_description || "Your meta description..."}
+            url={formData.canonical_url || "https://example.com"}
+            ogImage={formData.default_og_image}
+          />
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 export default AdminSeoSettings;
