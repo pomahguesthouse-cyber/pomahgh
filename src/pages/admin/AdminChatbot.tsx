@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
-import { Bot, Palette, Settings, Zap } from 'lucide-react';
+import { Bot, Palette, Settings, Zap, BookOpen } from 'lucide-react';
+import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 
 const AdminChatbot = () => {
   const { data: settings, isLoading } = useChatbotSettings();
@@ -51,7 +52,7 @@ const AdminChatbot = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="personality" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="personality">
             <Bot className="w-4 h-4 mr-2" />
             Kepribadian
@@ -63,6 +64,10 @@ const AdminChatbot = () => {
           <TabsTrigger value="behavior">
             <Zap className="w-4 h-4 mr-2" />
             Perilaku
+          </TabsTrigger>
+          <TabsTrigger value="knowledge">
+            <BookOpen className="w-4 h-4 mr-2" />
+            Knowledge Base
           </TabsTrigger>
           <TabsTrigger value="advanced">
             <Settings className="w-4 h-4 mr-2" />
@@ -283,6 +288,10 @@ const AdminChatbot = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="knowledge" className="space-y-4">
+          <KnowledgeBaseTab />
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-4">

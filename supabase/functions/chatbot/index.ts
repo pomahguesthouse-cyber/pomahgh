@@ -49,6 +49,13 @@ serve(async (req) => {
       .order("distance_km")
       .limit(10);
 
+    // Fetch knowledge base content
+    const { data: knowledgeBase } = await supabase
+      .from("chatbot_knowledge_base")
+      .select("title, content, category")
+      .eq("is_active", true)
+      .order("category");
+
     // Build comprehensive context
     const roomsInfo = rooms?.map(r => 
       `- ${r.name}: ${r.description}. Harga: Rp ${r.price_per_night.toLocaleString()}/malam. Max ${r.max_guests} tamu${r.size_sqm ? `, ${r.size_sqm}m²` : ''}. Fasilitas: ${r.features.join(', ')}`
@@ -61,6 +68,11 @@ serve(async (req) => {
     const nearbyInfo = nearbyLocations?.map(loc => 
       `- ${loc.name} (${loc.category}): ${loc.distance_km}km, ~${loc.travel_time_minutes} menit`
     ).join('\n') || '';
+
+    // Build knowledge base info
+    const knowledgeInfo = knowledgeBase?.map(kb => 
+      `[${kb.category?.toUpperCase() || 'GENERAL'}] ${kb.title}:\n${kb.content.substring(0, 2000)}`
+    ).join('\n\n---\n\n') || '';
 
     // Get current date for context
     const now = new Date();
@@ -132,6 +144,12 @@ ${hotelSettings.refund_policy_enabled ? (() => {
   const partialPercent = hotelSettings.partial_refund_percentage || 50;
   return `✅ Pembatalan ${fullDays}+ hari sebelum: Refund 100%\n⚠️ Pembatalan ${partialDays}-${fullDays-1} hari sebelum: Refund ${partialPercent}%\n❌ Pembatalan kurang dari ${partialDays} hari: Tidak ada refund`;
 })() : 'Hubungi admin untuk informasi refund'}
+
+${knowledgeInfo ? `📚 KNOWLEDGE BASE (Informasi Tambahan dari Admin):
+${knowledgeInfo}
+
+⚠️ PENTING: Gunakan informasi dari Knowledge Base di atas untuk menjawab pertanyaan yang relevan. Ini adalah sumber utama untuk FAQ, kebijakan, promo, dan informasi khusus hotel.
+` : ''}
 
 TOOLS YANG TERSEDIA:
 1. check_availability - Cek ketersediaan real-time kamar untuk tanggal tertentu
