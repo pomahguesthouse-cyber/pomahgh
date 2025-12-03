@@ -82,7 +82,7 @@ export const RoomCard = ({
             }}
             disabled={isUnavailable}
           >
-            {isUnavailable ? "Tidak Tersedia" : "Book Now"}
+            {isUnavailable ? "Tidak Tersedia" : "Cek Ketersediaan"}
           </Button>
         </CardContent>
       </Card>
