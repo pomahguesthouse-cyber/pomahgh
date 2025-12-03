@@ -32,7 +32,7 @@ export default function RoomCard({
         shadow-[0_2px_10px_rgba(0,0,0,0.06)]
         hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)]
         transition-all duration-300 hover:-translate-y-1
-        flex flex-col h-[520px]
+        flex flex-col h-[480px]
       "
     >
       {/* --- IMAGE + LINK --- */}
@@ -47,7 +47,7 @@ export default function RoomCard({
         )}
 
         {/* IMAGE */}
-        <div className="h-56 overflow-hidden relative">
+        <div className="h-48 overflow-hidden relative">
           <img
             src={images?.[0] || "/placeholder.png"}
             alt={room.name}
@@ -61,7 +61,7 @@ export default function RoomCard({
       </Link>
 
       {/* --- CONTENT AREA --- */}
-      <CardContent className="p-5 flex flex-col flex-1 justify-between">
+      <CardContent className="p-4 flex flex-col flex-1 justify-between">
         <div>
           {/* TITLE & PRICE */}
           <div className="flex justify-between items-start mb-4">
@@ -79,7 +79,7 @@ export default function RoomCard({
         {/* BUTTON */}
         <Button
           className="
-            w-full mt-5
+            w-full mt-4
             bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-semibold
             shadow-lg hover:shadow-xl hover:brightness-110
             active:scale-[0.98] transition-all
