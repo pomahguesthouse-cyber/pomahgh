@@ -527,6 +527,51 @@ export type Database = {
           },
         ]
       }
+      chatbot_knowledge_base: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          original_filename: string | null
+          source_type: string
+          source_url: string | null
+          summary: string | null
+          title: string
+          tokens_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          original_filename?: string | null
+          source_type: string
+          source_url?: string | null
+          summary?: string | null
+          title: string
+          tokens_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          original_filename?: string | null
+          source_type?: string
+          source_url?: string | null
+          summary?: string | null
+          title?: string
+          tokens_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chatbot_settings: {
         Row: {
           bot_avatar_style: string | null

@@ -86,3 +86,6 @@ verify_jwt = true
 
 [functions.check-room-availability]
 verify_jwt = false
+
+[functions.parse-knowledge]
+verify_jwt = true
