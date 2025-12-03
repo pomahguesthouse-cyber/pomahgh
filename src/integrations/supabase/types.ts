@@ -587,6 +587,81 @@ export type Database = {
         }
         Relationships: []
       }
+      city_attractions: {
+        Row: {
+          address: string | null
+          best_time_to_visit: string | null
+          category: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          distance_km: number | null
+          gallery_images: string[] | null
+          icon_name: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          latitude: number | null
+          long_description: string | null
+          longitude: number | null
+          name: string
+          price_range: string | null
+          slug: string
+          tips: string | null
+          travel_time_minutes: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          best_time_to_visit?: string | null
+          category: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          distance_km?: number | null
+          gallery_images?: string[] | null
+          icon_name?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          latitude?: number | null
+          long_description?: string | null
+          longitude?: number | null
+          name: string
+          price_range?: string | null
+          slug: string
+          tips?: string | null
+          travel_time_minutes?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          best_time_to_visit?: string | null
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          distance_km?: number | null
+          gallery_images?: string[] | null
+          icon_name?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          latitude?: number | null
+          long_description?: string | null
+          longitude?: number | null
+          name?: string
+          price_range?: string | null
+          slug?: string
+          tips?: string | null
+          travel_time_minutes?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       facilities: {
         Row: {
           created_at: string | null
