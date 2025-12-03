@@ -26,16 +26,16 @@ export const RoomCard = ({
           overflow-hidden 
           transition-all duration-300 
           hover:-translate-y-2 
+          h-[600px]
           cursor-pointer group
           shadow-[0_2px_10px_rgba(0,0,0,0.08)]
           hover:shadow-[0_12px_28px_rgba(0,0,0,0.14)]
           rounded-2xl
           bg-white
-          flex flex-col
         "
       >
         {/* IMAGE */}
-        <div className="overflow-hidden h-64 flex-shrink-0">
+        <div className="overflow-hidden h-64">
           <img
             src={images?.[0] || "/placeholder.png"}
             alt={room.name}
@@ -43,23 +43,20 @@ export const RoomCard = ({
           />
         </div>
         {/* CONTENT */}
-        <CardContent className="p-4 sm:p-6 flex flex-col flex-grow">
+        <CardContent className="p-4 sm:p-6 flex flex-col h-[336px]">
           {/* TITLE + PRICE */}
-          <div className="flex justify-between items-start mb-3 gap-4">
+          <div className="flex justify-between items-start mb-3">
             <RoomCardInfo room={room} availability={availability} isAvailabilityLoaded={isAvailabilityLoaded} />
             <RoomCardPrice room={room} hasPromo={hasPromo} displayPrice={displayPrice} />
           </div>
-
-          {/* DESCRIPTION */}
-          <div className="mb-4 min-h-[60px]">
-            <p className="text-sm text-muted-foreground leading-relaxed">{room.description}</p>
+          {/* DESCRIPTION – FIX MAX 3 LINES */}
+          <div className="mb-4">
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3">{room.description}</p>
           </div>
-
           {/* FEATURES */}
-          <div className="mb-4 flex-grow">
+          <div className="flex-grow overflow-hidden mb-4">
             <RoomFeatures features={room.features} roomFeatures={roomFeatures} />
           </div>
-
           {/* BUTTON */}
           <Button
             className="
@@ -73,7 +70,6 @@ export const RoomCard = ({
               active:scale-[0.98] 
               transition-all 
               duration-200
-              mt-auto
             "
             onClick={(e) => {
               e.preventDefault();
