@@ -1,4 +1,5 @@
 import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 
 export const Footer = () => {
@@ -23,24 +24,29 @@ export const Footer = () => {
             <h4 className="text-lg font-bold mb-4">Quick Links</h4>
             <ul className="space-y-2">
               <li>
-                <a href="#home" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                <Link to="/#home" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                   Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#rooms" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                <Link to="/#rooms" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                   Rooms
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#amenities" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                <Link to="/explore-semarang" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                  Explore Semarang
+                </Link>
+              </li>
+              <li>
+                <Link to="/#amenities" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                   Amenities
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#contact" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                <Link to="/#contact" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                   Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
