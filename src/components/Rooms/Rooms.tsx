@@ -1,5 +1,3 @@
-// Updated Rooms component with improved spacing, layout, carousel behavior, and fixed shadow clipping
-
 import { useState, useEffect } from "react";
 import { useRooms } from "@/hooks/useRooms";
 import { useRoomFeatures } from "@/hooks/useRoomFeatures";
@@ -35,7 +33,7 @@ export const Rooms = () => {
 
   const totalNights = calculateTotalNights(checkIn, checkOut);
 
-  // ----- Improved Carousel Listener (prevents unnecessary updates) -----
+  // Carousel listener
   useEffect(() => {
     if (!api) return;
 
@@ -43,12 +41,13 @@ export const Rooms = () => {
     update();
 
     api.on("select", update);
+
     return () => {
       api.off("select", update);
     };
   }, [api]);
 
-  // ----- Handlers -----
+  // Handlers
   const handleBookRoom = (room: Room) => {
     setSelectedRoom(room);
     setBookingOpen(true);
@@ -71,45 +70,22 @@ export const Rooms = () => {
 
   return (
     <>
-      <section
-        id="rooms"
-        className="
-          py-20 px-4 bg-secondary/30
-          overflow-visible
-        "
-      >
-        <div
-          className="
-            container mx-auto
-            overflow-visible
-          "
-        >
-          {/* Header */}
+      <section id="rooms" className="py-20 px-4 bg-secondary/30">
+        <div className="container mx-auto">
           <RoomsHeader checkIn={checkIn} checkOut={checkOut} totalNights={totalNights} />
 
-          {/* ----- Room Carousel Wrapper (Fix shadow clipping) ----- */}
-          <div
-            className="
-              relative
-              overflow-visible
-              pt-4 pb-10
-              -mx-2 sm:-mx-4
-            "
-          >
-            <RoomCarousel
-              rooms={rooms}
-              availability={availability}
-              isCheckingAvailability={isCheckingAvailability}
-              roomFeatures={roomFeatures}
-              onBookRoom={handleBookRoom}
-              onViewTour={handleViewTour}
-              setApi={setApi}
-              checkIn={checkIn}
-              checkOut={checkOut}
-            />
-          </div>
+          <RoomCarousel
+            rooms={rooms}
+            availability={availability}
+            isCheckingAvailability={isCheckingAvailability}
+            roomFeatures={roomFeatures}
+            onBookRoom={handleBookRoom}
+            onViewTour={handleViewTour}
+            setApi={setApi}
+            checkIn={checkIn}
+            checkOut={checkOut}
+          />
 
-          {/* Dots */}
           <RoomDots total={rooms?.length || 0} current={current} onDotClick={(index) => api?.scrollTo(index)} />
         </div>
       </section>
