@@ -1,9 +1,11 @@
 import { Helmet } from "react-helmet-async";
 import { useSeoSettings } from "@/hooks/useSeoSettings";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { useEffect } from "react";
 
 export const GlobalSEO = () => {
   const { settings } = useSeoSettings();
+  const { settings: hotelSettings } = useHotelSettings();
 
   /* --------------------------------------------------
    * Inject third-party scripts (Analytics, GTM, Pixel)
@@ -98,11 +100,18 @@ export const GlobalSEO = () => {
    * --------------------- */
   const orgSchema = {
     "@context": "https://schema.org",
-    "@type": "Organization",
+    "@type": settings.business_type === "Hotel" ? "Hotel" : "Organization",
     name: settings.og_site_name || settings.site_title,
     url: canonical,
     description: settings.meta_description || "",
-    logo: `${canonical}/logo.png`,
+    logo: hotelSettings?.logo_url || `${canonical}/logo.png`,
+    sameAs: [
+      hotelSettings?.facebook_url,
+      hotelSettings?.instagram_url,
+      hotelSettings?.twitter_url,
+      hotelSettings?.youtube_url,
+      hotelSettings?.tiktok_url,
+    ].filter(Boolean),
   };
 
   const websiteSchema = {
