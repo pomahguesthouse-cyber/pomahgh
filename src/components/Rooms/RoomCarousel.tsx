@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { RoomCard } from "./RoomCard";
@@ -16,6 +17,10 @@ export const RoomCarousel = ({
   checkIn,
   checkOut,
 }: RoomCarouselProps) => {
+  const autoplayPlugin = useRef(
+    Autoplay({ delay: 4000, stopOnInteraction: true })
+  );
+
   return (
     <Carousel
       setApi={setApi}
@@ -23,11 +28,7 @@ export const RoomCarousel = ({
         align: "start",
         loop: true,
       }}
-      plugins={[
-        Autoplay({
-          delay: 4000,
-        }),
-      ]}
+      plugins={[autoplayPlugin.current]}
       className="w-full max-w-7xl mx-auto"
     >
       <CarouselContent className="-ml-2 md:-ml-4">
