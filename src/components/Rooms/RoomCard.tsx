@@ -32,7 +32,7 @@ export default function RoomCard({
         shadow-[0_2px_10px_rgba(0,0,0,0.06)]
         hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)]
         transition-all duration-300 hover:-translate-y-1
-        flex flex-col h-[600px]
+        flex flex-col h-[520px]
       "
     >
       {/* --- IMAGE + LINK --- */}
@@ -47,7 +47,7 @@ export default function RoomCard({
         )}
 
         {/* IMAGE */}
-        <div className="h-64 overflow-hidden relative">
+        <div className="h-56 overflow-hidden relative">
           <img
             src={images?.[0] || "/placeholder.png"}
             alt={room.name}
@@ -83,7 +83,7 @@ export default function RoomCard({
             bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-semibold
             shadow-lg hover:shadow-xl hover:brightness-110
             active:scale-[0.98] transition-all
-            py-5 rounded-xl
+            py-4 rounded-xl
           "
           onClick={(e) => {
             e.stopPropagation();
