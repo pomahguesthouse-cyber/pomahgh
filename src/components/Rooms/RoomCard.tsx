@@ -17,7 +17,6 @@ export const RoomCard = ({
   onBookRoom,
 }: RoomCardProps) => {
   const isUnavailable = isAvailabilityLoaded && availability !== undefined && availability === 0;
-
   const slug = room.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
   return (
@@ -39,10 +38,10 @@ export const RoomCard = ({
         <div className="overflow-hidden h-72">
           <img
             src={images?.[0] || "/placeholder.png"}
+            alt={room.name}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
         </div>
-
         {/* CONTENT */}
         <CardContent className="p-4 sm:p-6 flex flex-col h-[calc(520px-18rem)]">
           {/* TITLE + PRICE */}
@@ -50,17 +49,14 @@ export const RoomCard = ({
             <RoomCardInfo room={room} availability={availability} isAvailabilityLoaded={isAvailabilityLoaded} />
             <RoomCardPrice room={room} hasPromo={hasPromo} displayPrice={displayPrice} />
           </div>
-
           {/* DESCRIPTION – FIX MAX 2 LINES */}
           <div className="h-[44px] mb-3 overflow-hidden">
             <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{room.description}</p>
           </div>
-
           {/* FEATURES */}
           <div className="flex-grow overflow-hidden">
             <RoomFeatures features={room.features} roomFeatures={roomFeatures} />
           </div>
-
           {/* BUTTON */}
           <Button
             className="
