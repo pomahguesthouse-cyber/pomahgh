@@ -41,10 +41,7 @@ export const Rooms = () => {
     update();
 
     api.on("select", update);
-
-    return () => {
-      api.off("select", update);
-    };
+    return () => api.off("select", update);
   }, [api]);
 
   // Handlers
@@ -70,23 +67,31 @@ export const Rooms = () => {
 
   return (
     <>
-      <section id="rooms" className="py-20 px-4 bg-secondary/30">
-        <div className="container mx-auto">
+      <section id="rooms" className="py-20 bg-secondary/30">
+        {/* Main container with padding + overflow fix */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
+          {/* Header */}
           <RoomsHeader checkIn={checkIn} checkOut={checkOut} totalNights={totalNights} />
 
-          <RoomCarousel
-            rooms={rooms}
-            availability={availability}
-            isCheckingAvailability={isCheckingAvailability}
-            roomFeatures={roomFeatures}
-            onBookRoom={handleBookRoom}
-            onViewTour={handleViewTour}
-            setApi={setApi}
-            checkIn={checkIn}
-            checkOut={checkOut}
-          />
+          {/* Carousel wrapper with overflow fix */}
+          <div className="overflow-visible">
+            <RoomCarousel
+              rooms={rooms}
+              availability={availability}
+              isCheckingAvailability={isCheckingAvailability}
+              roomFeatures={roomFeatures}
+              onBookRoom={handleBookRoom}
+              onViewTour={handleViewTour}
+              setApi={setApi}
+              checkIn={checkIn}
+              checkOut={checkOut}
+            />
+          </div>
 
-          <RoomDots total={rooms?.length || 0} current={current} onDotClick={(index) => api?.scrollTo(index)} />
+          {/* Dots */}
+          <div className="flex justify-center mt-6">
+            <RoomDots total={rooms?.length || 0} current={current} onDotClick={(index) => api?.scrollTo(index)} />
+          </div>
         </div>
       </section>
 
