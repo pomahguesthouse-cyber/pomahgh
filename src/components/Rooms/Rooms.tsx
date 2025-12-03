@@ -42,7 +42,9 @@ export const Rooms = () => {
 
     api.on("select", update);
 
-    return () => api.off("select", update);
+    return () => {
+      api.off("select", update);
+    };
   }, [api]);
 
   // Handlers
