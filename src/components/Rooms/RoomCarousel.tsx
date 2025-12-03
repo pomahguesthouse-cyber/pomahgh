@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { RoomCard } from "./RoomCard";
+import RoomCard from "./RoomCard";
 import { getRoomImages } from "./utils/getRoomImages";
 import { checkPromo, getDisplayPrice } from "./utils/checkPromo";
 import type { RoomCarouselProps } from "./types";
