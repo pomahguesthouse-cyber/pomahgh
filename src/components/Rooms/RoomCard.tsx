@@ -43,6 +43,7 @@ export const RoomCard = ({
           />
         </div>
 
+        {/* CONTENT */}
         <CardContent className="p-4 sm:p-6 flex flex-col h-[calc(520px-18rem)]">
           {/* TITLE + PRICE */}
           <div className="flex justify-between items-start mb-2">
@@ -50,18 +51,10 @@ export const RoomCard = ({
             <RoomCardPrice room={room} hasPromo={hasPromo} displayPrice={displayPrice} />
           </div>
 
-          {/* DESCRIPTION — FIX 2 LINES */}
-          <p
-            className="
-              text-xs sm:text-sm 
-              text-muted-foreground 
-              mb-3 
-              line-clamp-2 
-              overflow-hidden
-            "
-          >
-            {room.description}
-          </p>
+          {/* DESCRIPTION – FIX MAX 2 LINES */}
+          <div className="h-[44px] mb-3 overflow-hidden">
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{room.description}</p>
+          </div>
 
           {/* FEATURES */}
           <div className="flex-grow overflow-hidden">
