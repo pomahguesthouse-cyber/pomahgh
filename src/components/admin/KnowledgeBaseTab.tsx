@@ -28,7 +28,8 @@ import {
   Plus,
   Loader2,
   File,
-  Edit
+  Edit,
+  Search
 } from 'lucide-react';
 import { formatDateID } from '@/utils/indonesianFormat';
 
@@ -69,6 +70,19 @@ const KnowledgeBaseTab = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editCategory, setEditCategory] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter knowledge based on search query
+  const filteredKnowledge = knowledge?.filter(entry => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      entry.title.toLowerCase().includes(query) ||
+      entry.category?.toLowerCase().includes(query) ||
+      entry.content?.toLowerCase().includes(query) ||
+      entry.source_type.toLowerCase().includes(query)
+    );
+  });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -244,23 +258,37 @@ const KnowledgeBaseTab = () => {
       {/* Knowledge List */}
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Knowledge ({knowledge?.length || 0})</CardTitle>
+          <CardTitle>Daftar Knowledge ({filteredKnowledge?.length || 0})</CardTitle>
           <CardDescription>
             Kelola konten knowledge base untuk chatbot
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari knowledge (judul, kategori, konten...)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
-          ) : knowledge?.length === 0 ? (
+          ) : !knowledge?.length ? (
             <div className="text-center py-8 text-muted-foreground">
               Belum ada knowledge. Upload file atau tambah URL untuk memulai.
             </div>
+          ) : !filteredKnowledge?.length ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Tidak ada knowledge yang cocok dengan pencarian "{searchQuery}"
+            </div>
           ) : (
             <div className="space-y-3">
-              {knowledge?.map((entry) => {
+              {filteredKnowledge?.map((entry) => {
                 const SourceIcon = SOURCE_ICONS[entry.source_type] || FileText;
                 const categoryLabel = CATEGORIES.find(c => c.value === entry.category)?.label || entry.category;
                 
