@@ -22,78 +22,78 @@ export default function RoomCard({
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-
   const isUnavailable = isAvailabilityLoaded && availability === 0;
 
   return (
-    <Card
-      className="
-        overflow-hidden rounded-2xl bg-white
-        shadow-[0_2px_10px_rgba(0,0,0,0.06)]
-        hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)]
-        transition-all duration-300 hover:-translate-y-1
-        flex flex-col h-[480px]
-      "
-    >
-      {/* --- IMAGE + LINK --- */}
-      <Link to={`/rooms/${slug}`} className="block relative">
-        {/* BADGES */}
-        {hasPromo && (
-          <Badge className="absolute top-3 left-3 bg-red-600 text-white px-3 py-1 rounded-full z-20">Promo</Badge>
-        )}
+    <div className="p-2">
+      <Card
+        className="
+          overflow-hidden rounded-2xl bg-white
+          shadow-[0_2px_10px_rgba(0,0,0,0.06)]
+          hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)]
+          transition-all duration-300 hover:-translate-y-1
+          flex flex-col h-[460px]
+        "
+      >
+        {/* --- IMAGE + LINK --- */}
+        <Link to={`/rooms/${slug}`} className="block relative group">
+          {/* BADGES */}
+          {hasPromo && (
+            <Badge className="absolute top-3 left-3 bg-red-600 text-white px-3 py-1 rounded-full z-20">Promo</Badge>
+          )}
+          {isUnavailable && (
+            <Badge className="absolute top-3 right-3 bg-gray-800 text-white px-3 py-1 rounded-full z-20">
+              Sold Out
+            </Badge>
+          )}
+          {/* IMAGE */}
+          <div className="h-44 overflow-hidden relative">
+            <img
+              src={images?.[0] || "/placeholder.png"}
+              alt={room.name}
+              loading="lazy"
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+            {/* GRADIENT OVERLAY */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none" />
+          </div>
+        </Link>
 
-        {isUnavailable && (
-          <Badge className="absolute top-3 right-3 bg-gray-800 text-white px-3 py-1 rounded-full z-20">Sold Out</Badge>
-        )}
+        {/* --- CONTENT AREA --- */}
+        <CardContent className="p-4 flex flex-col flex-1 justify-between">
+          <div>
+            {/* TITLE & PRICE */}
+            <div className="flex justify-between items-start mb-3 gap-2">
+              <RoomCardInfo room={room} availability={availability} isAvailabilityLoaded={isAvailabilityLoaded} />
+              <RoomCardPrice room={room} hasPromo={hasPromo} displayPrice={displayPrice} />
+            </div>
 
-        {/* IMAGE */}
-        <div className="h-48 overflow-hidden relative">
-          <img
-            src={images?.[0] || "/placeholder.png"}
-            alt={room.name}
-            loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          />
+            {/* DESCRIPTION */}
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{room.description}</p>
 
-          {/* GRADIENT OVERLAY */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none" />
-        </div>
-      </Link>
-
-      {/* --- CONTENT AREA --- */}
-      <CardContent className="p-4 flex flex-col flex-1 justify-between">
-        <div>
-          {/* TITLE & PRICE */}
-          <div className="flex justify-between items-start mb-4">
-            <RoomCardInfo room={room} availability={availability} isAvailabilityLoaded={isAvailabilityLoaded} />
-            <RoomCardPrice room={room} hasPromo={hasPromo} displayPrice={displayPrice} />
+            {/* FEATURES */}
+            <RoomFeatures features={room.features} roomFeatures={roomFeatures} />
           </div>
 
-          {/* DESCRIPTION */}
-          <p className="text-sm text-muted-foreground line-clamp-3 mb-4">{room.description}</p>
-
-          {/* FEATURES */}
-          <RoomFeatures features={room.features} roomFeatures={roomFeatures} />
-        </div>
-
-        {/* BUTTON */}
-        <Button
-          className="
-            w-full mt-4
-            bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-semibold
-            shadow-lg hover:shadow-xl hover:brightness-110
-            active:scale-[0.98] transition-all
-            py-4 rounded-xl
-          "
-          onClick={(e) => {
-            e.stopPropagation();
-            onBookRoom(room);
-          }}
-          disabled={isUnavailable}
-        >
-          {isUnavailable ? "Tidak Tersedia" : "Book Now"}
-        </Button>
-      </CardContent>
-    </Card>
+          {/* BUTTON */}
+          <Button
+            className="
+              w-full mt-3
+              bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-semibold
+              shadow-lg hover:shadow-xl hover:brightness-110
+              active:scale-[0.98] transition-all
+              py-3 rounded-xl text-sm
+            "
+            onClick={(e) => {
+              e.stopPropagation();
+              onBookRoom(room);
+            }}
+            disabled={isUnavailable}
+          >
+            {isUnavailable ? "Tidak Tersedia" : "Book Now"}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
