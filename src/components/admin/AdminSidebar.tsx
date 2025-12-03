@@ -1,4 +1,4 @@
-import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText } from "lucide-react";
+import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
@@ -34,6 +34,10 @@ const adminItems = [{
   title: "Lokasi Terdekat",
   url: "/admin/nearby-locations",
   icon: MapPin
+}, {
+  title: "City Attractions",
+  url: "/admin/city-attractions",
+  icon: Compass
 }, {
   title: "Bank Accounts",
   url: "/admin/bank-accounts",

@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { useCityAttractions, CityAttraction } from "@/hooks/useCityAttractions";
+import { useAttractionImageUpload } from "@/hooks/useAttractionImageUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Star, MapPin, Clock } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, MapPin, Clock, Loader2, X, Upload, Image as ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const categories = [
@@ -33,6 +34,7 @@ const emptyAttraction: Partial<CityAttraction> = {
   long_description: "",
   category: "wisata",
   image_url: "",
+  gallery_images: [],
   address: "",
   distance_km: undefined,
   travel_time_minutes: undefined,
@@ -47,6 +49,7 @@ const emptyAttraction: Partial<CityAttraction> = {
 
 const AdminCityAttractions = () => {
   const { attractions, isLoading, createAttraction, updateAttraction, deleteAttraction, isCreating, isUpdating } = useCityAttractions();
+  const { uploading, uploadingGallery, uploadMainImage, uploadGalleryImages } = useAttractionImageUpload();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAttraction, setEditingAttraction] = useState<Partial<CityAttraction> | null>(null);
   const [formData, setFormData] = useState<Partial<CityAttraction>>(emptyAttraction);
@@ -63,8 +66,43 @@ const AdminCityAttractions = () => {
 
   const handleOpenEdit = (attraction: CityAttraction) => {
     setEditingAttraction(attraction);
-    setFormData(attraction);
+    setFormData({
+      ...attraction,
+      gallery_images: attraction.gallery_images || []
+    });
     setDialogOpen(true);
+  };
+
+  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const url = await uploadMainImage(file);
+      setFormData({ ...formData, image_url: url });
+    } catch (error) {
+      // Error already handled in hook
+    }
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      const urls = await uploadGalleryImages(files);
+      setFormData({
+        ...formData,
+        gallery_images: [...(formData.gallery_images || []), ...urls]
+      });
+    } catch (error) {
+      // Error already handled in hook
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    const newImages = formData.gallery_images?.filter((_, i) => i !== index) || [];
+    setFormData({ ...formData, gallery_images: newImages });
   };
 
   const handleSubmit = () => {
@@ -184,13 +222,105 @@ const AdminCityAttractions = () => {
                 />
               </div>
               
+              {/* Main Image Upload */}
               <div>
-                <Label>URL Gambar</Label>
-                <Input
-                  value={formData.image_url || ""}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
+                <Label>Gambar Utama</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1">
+                      <div className="flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors">
+                        {uploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        <span className="text-sm">{uploading ? "Uploading..." : "Upload gambar"}</span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleMainImageUpload}
+                        disabled={uploading}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  
+                  {formData.image_url && (
+                    <div className="relative w-40 h-28 group">
+                      <img 
+                        src={formData.image_url} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setFormData({ ...formData, image_url: "" })}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <Input
+                    placeholder="atau masukkan URL gambar"
+                    value={formData.image_url || ""}
+                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  />
+                </div>
+              </div>
+              
+              {/* Gallery Images Upload */}
+              <div>
+                <Label>Gallery Images</Label>
+                <div className="space-y-3">
+                  <label>
+                    <div className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors">
+                      {uploadingGallery ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ImageIcon className="h-4 w-4" />
+                      )}
+                      <span className="text-sm">
+                        {uploadingGallery ? "Uploading..." : "Upload multiple gambar"}
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      onChange={handleGalleryUpload}
+                      disabled={uploadingGallery}
+                      className="hidden"
+                    />
+                  </label>
+                  
+                  {formData.gallery_images && formData.gallery_images.length > 0 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {formData.gallery_images.map((url, index) => (
+                        <div key={index} className="relative group aspect-square">
+                          <img 
+                            src={url} 
+                            alt={`Gallery ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg border"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-1 -right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeGalleryImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div>
@@ -277,7 +407,7 @@ const AdminCityAttractions = () => {
                 </div>
               </div>
               
-              <Button onClick={handleSubmit} disabled={isCreating || isUpdating} className="w-full">
+              <Button onClick={handleSubmit} disabled={isCreating || isUpdating || uploading || uploadingGallery} className="w-full">
                 {editingAttraction ? "Simpan Perubahan" : "Tambah Destinasi"}
               </Button>
             </div>
@@ -310,9 +440,17 @@ const AdminCityAttractions = () => {
                       <Badge variant="secondary">Nonaktif</Badge>
                     )}
                   </div>
-                  <Badge variant="outline" className="mb-2">
-                    {categories.find((c) => c.value === attraction.category)?.label}
-                  </Badge>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline">
+                      {categories.find((c) => c.value === attraction.category)?.label}
+                    </Badge>
+                    {attraction.gallery_images && attraction.gallery_images.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        <ImageIcon className="h-3 w-3 mr-1" />
+                        {attraction.gallery_images.length} foto
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground line-clamp-1">{attraction.description}</p>
                   <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                     {attraction.distance_km && (
