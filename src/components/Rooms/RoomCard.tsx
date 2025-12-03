@@ -26,16 +26,16 @@ export const RoomCard = ({
           overflow-hidden 
           transition-all duration-300 
           hover:-translate-y-2 
-          h-[520px]
           cursor-pointer group
           shadow-[0_2px_10px_rgba(0,0,0,0.08)]
           hover:shadow-[0_12px_28px_rgba(0,0,0,0.14)]
           rounded-2xl
           bg-white
+          flex flex-col
         "
       >
         {/* IMAGE */}
-        <div className="overflow-hidden h-72">
+        <div className="overflow-hidden h-64 flex-shrink-0">
           <img
             src={images?.[0] || "/placeholder.png"}
             alt={room.name}
@@ -43,25 +43,27 @@ export const RoomCard = ({
           />
         </div>
         {/* CONTENT */}
-        <CardContent className="p-4 sm:p-6 flex flex-col h-[calc(520px-18rem)]">
+        <CardContent className="p-4 sm:p-6 flex flex-col flex-grow">
           {/* TITLE + PRICE */}
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex justify-between items-start mb-3 gap-4">
             <RoomCardInfo room={room} availability={availability} isAvailabilityLoaded={isAvailabilityLoaded} />
             <RoomCardPrice room={room} hasPromo={hasPromo} displayPrice={displayPrice} />
           </div>
-          {/* DESCRIPTION – FIX MAX 2 LINES */}
-          <div className="h-[44px] mb-3 overflow-hidden">
-            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{room.description}</p>
+
+          {/* DESCRIPTION */}
+          <div className="mb-4 min-h-[60px]">
+            <p className="text-sm text-muted-foreground leading-relaxed">{room.description}</p>
           </div>
+
           {/* FEATURES */}
-          <div className="flex-grow overflow-hidden">
+          <div className="mb-4 flex-grow">
             <RoomFeatures features={room.features} roomFeatures={roomFeatures} />
           </div>
+
           {/* BUTTON */}
           <Button
             className="
               w-full 
-              mt-4
               bg-gradient-to-r from-amber-500 to-yellow-400 
               text-black 
               font-semibold 
@@ -71,6 +73,7 @@ export const RoomCard = ({
               active:scale-[0.98] 
               transition-all 
               duration-200
+              mt-auto
             "
             onClick={(e) => {
               e.preventDefault();
