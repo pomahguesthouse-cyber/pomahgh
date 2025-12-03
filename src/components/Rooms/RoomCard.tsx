@@ -1,69 +1,32 @@
-import { Link } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RoomCardImage } from "./RoomCardImage";
-import { RoomCardInfo } from "./RoomCardInfo";
-import { RoomCardPrice } from "./RoomCardPrice";
-import { RoomFeatures } from "./RoomFeatures";
-import type { RoomCardProps } from "./types";
+<Link to={`/rooms/${slug}`}>
+  <Card
+    className="
+      h-[520px]                   /* tinggi card konsisten */
+      flex flex-col               /* biar gambar & content rapi */
+      overflow-hidden
+      shadow-lg                   /* drop shadow default */
+      hover:shadow-2xl            /* glow saat hover */
+      transition-all duration-300 
+      hover:-translate-y-1
+      cursor-pointer
+      group
+    "
+  >
+    {/* IMAGE */}
+    <div className="overflow-hidden">
+      <img
+        src={images?.[0] || "/placeholder.png"}
+        className="
+          w-full
+          h-[260px]               /* tinggi gambar konsisten */
+          object-cover
+          transition-transform duration-500
+          group-hover:scale-110   /* hover zoom */
+        "
+      />
+    </div>
 
-export const RoomCard = ({
-  room,
-  hasPromo,
-  displayPrice,
-  images,
-  availability,
-  isAvailabilityLoaded,
-  roomFeatures,
-  onBookRoom,
-  onViewTour,
-}: RoomCardProps) => {
-  const isUnavailable = isAvailabilityLoaded && availability !== undefined && availability === 0;
-
-  return (
-    <Link to={`/rooms/${room.slug}`}>
-      <Card className="h-[520px] flex flex-col overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
-        <RoomCardImage
-          room={room}
-          images={images}
-          hasPromo={hasPromo}
-          onViewTour={onViewTour}
-        />
-
-        <CardContent className="p-4 flex flex-col flex-1">
-          <div className="flex justify-between items-start mb-2">
-            <RoomCardInfo
-              room={room}
-              availability={availability}
-              isAvailabilityLoaded={isAvailabilityLoaded}
-            />
-            <RoomCardPrice
-              room={room}
-              hasPromo={hasPromo}
-              displayPrice={displayPrice}
-            />
-          </div>
-
-          <RoomFeatures
-            features={room.features}
-            roomFeatures={roomFeatures}
-          />
-
-          <div className="mt-auto flex gap-2">
-            <Button
-              className="flex-1"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onBookRoom(room);
-              }}
-              disabled={isUnavailable}
-            >
-              {isUnavailable ? "Tidak Tersedia" : "Book Now"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-};
+    {/* CONTENT */}
+    <CardContent className="p-4 flex flex-col flex-1">{/* ... your content here ... */}</CardContent>
+  </Card>
+</Link>;
