@@ -63,6 +63,36 @@ function formatForWhatsApp(text: string): string {
   return text.trim();
 }
 
+// Remove consecutive duplicate assistant messages to prevent stuck loops
+function deduplicateHistory(messages: Array<{role: string, content: string}>) {
+  const cleaned: typeof messages = [];
+  let lastAssistantContent = '';
+  
+  for (const msg of messages) {
+    if (msg.role === 'assistant') {
+      // Skip if same as previous assistant message
+      if (msg.content === lastAssistantContent) {
+        console.log("⚠️ Skipping duplicate assistant message");
+        continue;
+      }
+      lastAssistantContent = msg.content;
+    }
+    cleaned.push(msg);
+  }
+  return cleaned;
+}
+
+// Detect if AI is stuck repeating itself
+function detectStuckLoop(messages: Array<{role: string, content: string}>): boolean {
+  const assistantMessages = messages.filter(m => m.role === 'assistant');
+  if (assistantMessages.length < 3) return false;
+  
+  const lastThree = assistantMessages.slice(-3);
+  // If last 3 assistant responses are identical or very similar, AI is stuck
+  const firstContent = lastThree[0].content.substring(0, 200);
+  return lastThree.every(m => m.content.substring(0, 200) === firstContent);
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -276,18 +306,28 @@ serve(async (req) => {
       .update({ message_count: (session?.context?.message_count || 0) + 1 })
       .eq('id', conversationId);
 
-    // Build conversation history for AI
+    // Build conversation history for AI (reduced from 20 to 12 for better context)
     const { data: history } = await supabase
       .from('chat_messages')
       .select('role, content')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
-      .limit(20);
+      .limit(12);
 
-    const messages = history?.map(m => ({
+    // Apply deduplication to remove consecutive duplicate assistant messages
+    const rawMessages = history?.map(m => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })) || [{ role: 'user' as const, content: message }];
+
+    // Deduplicate and check for stuck loop
+    let messages = deduplicateHistory(rawMessages);
+    
+    // If AI is stuck in a loop, reset context to only last 2 messages
+    if (detectStuckLoop(messages)) {
+      console.log("⚠️ Detected stuck AI loop - resetting context to last 2 messages");
+      messages = messages.slice(-2);
+    }
 
     // Call chatbot edge function
     console.log("Calling chatbot function...");

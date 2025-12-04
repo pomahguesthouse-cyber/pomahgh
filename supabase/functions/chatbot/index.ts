@@ -134,6 +134,15 @@ Bot: "${ex.ideal_answer}"`
     const persona = chatbotSettings?.persona || defaultPersona;
     const systemPrompt = `${persona}
 
+⚠️ ATURAN ANTI-REPETISI (SANGAT PENTING!):
+- DILARANG mengulangi respons yang sama persis dengan pesan sebelumnya
+- Jika user bertanya hal BARU, JAWAB PERTANYAAN BARU tersebut - jangan ulangi topik lama!
+- Setelah suatu topik selesai (misal: pembatalan berhasil), LANJUT ke topik berikutnya
+- Jika user sudah dapat jawaban, jangan ulangi jawaban yang sama
+- Contoh SALAH: User tanya ketersediaan kamar setelah cancel, bot tetap bahas pembatalan
+- Contoh BENAR: User tanya ketersediaan kamar setelah cancel, bot jawab soal ketersediaan kamar
+- FOKUS pada pesan TERAKHIR user, bukan pesan-pesan sebelumnya
+
 📅 TANGGAL SEKARANG: ${currentDateIndonesian} (${currentDateISO})
 ⚠️ TAHUN SEKARANG: 2025
 
