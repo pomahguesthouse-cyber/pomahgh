@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,24 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { useHotelSettings, WhatsAppContact } from "@/hooks/useHotelSettings";
-import { Loader2, Upload, Plus, Trash2, MessageSquare, Phone, Ban } from "lucide-react";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { Loader2, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 
 export default function AdminSettings() {
   const { settings, isLoading, updateSettings, isUpdating, uploadFile } = useHotelSettings();
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  
-  // WhatsApp contact management
-  const [newContactNumber, setNewContactNumber] = useState("");
-  const [newContactLabel, setNewContactLabel] = useState("");
-  
-  // Whitelist management
-  const [newWhitelistNumber, setNewWhitelistNumber] = useState("");
 
   if (isLoading) {
     return (
@@ -82,7 +72,7 @@ export default function AdminSettings() {
     <div className="space-y-6">
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList className="grid grid-cols-8 w-full">
+          <TabsList className="grid grid-cols-7 w-full">
             <TabsTrigger value="basic">Basic</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="location">Location</TabsTrigger>
@@ -90,7 +80,6 @@ export default function AdminSettings() {
             <TabsTrigger value="social">Social Media</TabsTrigger>
             <TabsTrigger value="business">Business</TabsTrigger>
             <TabsTrigger value="policies">Policies</TabsTrigger>
-            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4">
@@ -422,188 +411,6 @@ export default function AdminSettings() {
             </Card>
           </TabsContent>
 
-          {/* WhatsApp Tab */}
-          <TabsContent value="whatsapp" className="space-y-4">
-            {/* Session Timeout */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  Pengaturan Session
-                </CardTitle>
-                <CardDescription>Atur timeout session chatbot WhatsApp</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp_session_timeout">Session Timeout</Label>
-                  <Select
-                    value={String(settings.whatsapp_session_timeout_minutes || 15)}
-                    onValueChange={(value) => updateSettings({ whatsapp_session_timeout_minutes: parseInt(value) })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih timeout" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5 menit</SelectItem>
-                      <SelectItem value="10">10 menit</SelectItem>
-                      <SelectItem value="15">15 menit</SelectItem>
-                      <SelectItem value="30">30 menit</SelectItem>
-                      <SelectItem value="60">1 jam</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground">
-                    Session akan direset setelah tidak ada aktivitas selama waktu ini
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Contact Numbers */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="w-5 h-5" />
-                  Daftar Kontak
-                </CardTitle>
-                <CardDescription>Nomor-nomor kontak yang bisa dihubungi tamu</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Add new contact */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Nomor (e.g. 628123456789)"
-                    value={newContactNumber}
-                    onChange={(e) => setNewContactNumber(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Input
-                    placeholder="Label (e.g. Reservasi)"
-                    value={newContactLabel}
-                    onChange={(e) => setNewContactLabel(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      if (!newContactNumber || !newContactLabel) {
-                        toast({ title: "Error", description: "Isi nomor dan label", variant: "destructive" });
-                        return;
-                      }
-                      const contacts = [...(settings.whatsapp_contact_numbers || [])];
-                      contacts.push({ number: newContactNumber, label: newContactLabel });
-                      updateSettings({ whatsapp_contact_numbers: contacts });
-                      setNewContactNumber("");
-                      setNewContactLabel("");
-                    }}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* List contacts */}
-                <div className="space-y-2">
-                  {(settings.whatsapp_contact_numbers || []).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Belum ada kontak</p>
-                  ) : (
-                    (settings.whatsapp_contact_numbers || []).map((contact: WhatsAppContact, index: number) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <div>
-                          <p className="font-medium">{contact.label}</p>
-                          <p className="text-sm text-muted-foreground">{contact.number}</p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const contacts = [...(settings.whatsapp_contact_numbers || [])];
-                            contacts.splice(index, 1);
-                            updateSettings({ whatsapp_contact_numbers: contacts });
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* AI Whitelist (numbers that won't be served by AI) */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Ban className="w-5 h-5" />
-                  Whitelist Nomor (Non-AI)
-                </CardTitle>
-                <CardDescription>Nomor-nomor yang TIDAK akan dilayani oleh AI (hanya admin yang merespon)</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Add new whitelist */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Nomor (e.g. 628123456789)"
-                    value={newWhitelistNumber}
-                    onChange={(e) => setNewWhitelistNumber(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      if (!newWhitelistNumber) {
-                        toast({ title: "Error", description: "Isi nomor", variant: "destructive" });
-                        return;
-                      }
-                      const whitelist = [...(settings.whatsapp_ai_whitelist || [])];
-                      // Normalize number
-                      let normalized = newWhitelistNumber.replace(/\D/g, '');
-                      if (normalized.startsWith('0')) normalized = '62' + normalized.slice(1);
-                      if (!normalized.startsWith('62')) normalized = '62' + normalized;
-                      
-                      if (whitelist.includes(normalized)) {
-                        toast({ title: "Error", description: "Nomor sudah ada", variant: "destructive" });
-                        return;
-                      }
-                      whitelist.push(normalized);
-                      updateSettings({ whatsapp_ai_whitelist: whitelist });
-                      setNewWhitelistNumber("");
-                    }}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* List whitelist */}
-                <div className="flex flex-wrap gap-2">
-                  {(settings.whatsapp_ai_whitelist || []).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Belum ada nomor whitelist</p>
-                  ) : (
-                    (settings.whatsapp_ai_whitelist || []).map((number: string, index: number) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        {number}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const whitelist = [...(settings.whatsapp_ai_whitelist || [])];
-                            whitelist.splice(index, 1);
-                            updateSettings({ whatsapp_ai_whitelist: whitelist });
-                          }}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))
-                  )}
-                </div>
-
-                <p className="text-sm text-muted-foreground">
-                  Nomor di whitelist akan otomatis masuk mode takeover (admin harus merespon manual)
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
 
         <div className="flex justify-end mt-6">

@@ -8,7 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
-import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone } from 'lucide-react';
+import { useHotelSettings, WhatsAppContact } from '@/hooks/useHotelSettings';
+import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import ChatLogsTab from '@/components/admin/ChatLogsTab';
 import TrainingTab from '@/components/admin/TrainingTab';
@@ -17,6 +20,13 @@ import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
 const AdminChatbot = () => {
   const { data: settings, isLoading } = useChatbotSettings();
   const updateSettings = useUpdateChatbotSettings();
+  const { settings: hotelSettings, updateSettings: updateHotelSettings } = useHotelSettings();
+  
+  // WhatsApp contact management
+  const [newContactNumber, setNewContactNumber] = useState("");
+  const [newContactLabel, setNewContactLabel] = useState("");
+  const [newWhitelistNumber, setNewWhitelistNumber] = useState("");
+  
   const [formData, setFormData] = useState({
     persona: '',
     greeting_message: '',
@@ -318,6 +328,182 @@ const AdminChatbot = () => {
         </TabsContent>
 
         <TabsContent value="whatsapp" className="space-y-4">
+          {/* Session Timeout */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Pengaturan Session
+              </CardTitle>
+              <CardDescription>Atur timeout session chatbot WhatsApp</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp_session_timeout">Session Timeout</Label>
+                <Select
+                  value={String(hotelSettings?.whatsapp_session_timeout_minutes || 15)}
+                  onValueChange={(value) => updateHotelSettings({ whatsapp_session_timeout_minutes: parseInt(value) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih timeout" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 menit</SelectItem>
+                    <SelectItem value="10">10 menit</SelectItem>
+                    <SelectItem value="15">15 menit</SelectItem>
+                    <SelectItem value="30">30 menit</SelectItem>
+                    <SelectItem value="60">1 jam</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Session akan direset setelah tidak ada aktivitas selama waktu ini
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Contact Numbers */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Phone className="w-5 h-5" />
+                Daftar Kontak
+              </CardTitle>
+              <CardDescription>Nomor-nomor kontak yang bisa dihubungi tamu</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nomor (e.g. 628123456789)"
+                  value={newContactNumber}
+                  onChange={(e) => setNewContactNumber(e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="Label (e.g. Reservasi)"
+                  value={newContactLabel}
+                  onChange={(e) => setNewContactLabel(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!newContactNumber || !newContactLabel) {
+                      toast({ title: "Error", description: "Isi nomor dan label", variant: "destructive" });
+                      return;
+                    }
+                    const contacts = [...(hotelSettings?.whatsapp_contact_numbers || [])];
+                    contacts.push({ number: newContactNumber, label: newContactLabel });
+                    updateHotelSettings({ whatsapp_contact_numbers: contacts });
+                    setNewContactNumber("");
+                    setNewContactLabel("");
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {(hotelSettings?.whatsapp_contact_numbers || []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Belum ada kontak</p>
+                ) : (
+                  (hotelSettings?.whatsapp_contact_numbers || []).map((contact: WhatsAppContact, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-medium">{contact.label}</p>
+                        <p className="text-sm text-muted-foreground">{contact.number}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const contacts = [...(hotelSettings?.whatsapp_contact_numbers || [])];
+                          contacts.splice(index, 1);
+                          updateHotelSettings({ whatsapp_contact_numbers: contacts });
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AI Whitelist */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Ban className="w-5 h-5" />
+                Whitelist Nomor (Non-AI)
+              </CardTitle>
+              <CardDescription>Nomor-nomor yang TIDAK akan dilayani oleh AI (hanya admin yang merespon)</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nomor (e.g. 628123456789)"
+                  value={newWhitelistNumber}
+                  onChange={(e) => setNewWhitelistNumber(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!newWhitelistNumber) {
+                      toast({ title: "Error", description: "Isi nomor", variant: "destructive" });
+                      return;
+                    }
+                    const whitelist = [...(hotelSettings?.whatsapp_ai_whitelist || [])];
+                    let normalized = newWhitelistNumber.replace(/\D/g, '');
+                    if (normalized.startsWith('0')) normalized = '62' + normalized.slice(1);
+                    if (!normalized.startsWith('62')) normalized = '62' + normalized;
+                    
+                    if (whitelist.includes(normalized)) {
+                      toast({ title: "Error", description: "Nomor sudah ada", variant: "destructive" });
+                      return;
+                    }
+                    whitelist.push(normalized);
+                    updateHotelSettings({ whatsapp_ai_whitelist: whitelist });
+                    setNewWhitelistNumber("");
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {(hotelSettings?.whatsapp_ai_whitelist || []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Belum ada nomor whitelist</p>
+                ) : (
+                  (hotelSettings?.whatsapp_ai_whitelist || []).map((number: string, index: number) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {number}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const whitelist = [...(hotelSettings?.whatsapp_ai_whitelist || [])];
+                          whitelist.splice(index, 1);
+                          updateHotelSettings({ whatsapp_ai_whitelist: whitelist });
+                        }}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))
+                )}
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Nomor di whitelist akan otomatis masuk mode takeover (admin harus merespon manual)
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* WhatsApp Sessions */}
           <WhatsAppSessionsTab />
         </TabsContent>
 
