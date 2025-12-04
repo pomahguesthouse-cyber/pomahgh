@@ -64,6 +64,7 @@ export interface HotelSettings {
   whatsapp_session_timeout_minutes?: number;
   whatsapp_ai_whitelist?: string[];
   whatsapp_contact_numbers?: WhatsAppContact[];
+  whatsapp_response_mode?: 'ai' | 'manual';
 }
 
 export const useHotelSettings = () => {

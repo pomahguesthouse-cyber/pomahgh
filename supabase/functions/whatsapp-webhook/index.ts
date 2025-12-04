@@ -351,13 +351,14 @@ serve(async (req) => {
     // Get hotel settings for WhatsApp configuration
     const { data: hotelSettings } = await supabase
       .from('hotel_settings')
-      .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_contact_numbers')
+      .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_contact_numbers, whatsapp_response_mode')
       .single();
     
     const sessionTimeoutMinutes = hotelSettings?.whatsapp_session_timeout_minutes || 15;
     const aiWhitelist: string[] = hotelSettings?.whatsapp_ai_whitelist || [];
+    const responseMode = hotelSettings?.whatsapp_response_mode || 'ai';
     
-    console.log(`Session timeout: ${sessionTimeoutMinutes} minutes, AI whitelist: ${aiWhitelist.length} numbers`);
+    console.log(`Session timeout: ${sessionTimeoutMinutes} minutes, AI whitelist: ${aiWhitelist.length} numbers, Response mode: ${responseMode}`);
 
     // Check if phone is blocked
     const { data: session } = await supabase
@@ -369,6 +370,62 @@ serve(async (req) => {
     if (session?.is_blocked) {
       console.log(`Blocked phone: ${phone}`);
       return new Response(JSON.stringify({ status: "blocked" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if MANUAL response mode is enabled (all messages go to admin)
+    if (responseMode === 'manual') {
+      console.log(`📱 MANUAL MODE - skipping AI for ${phone}`);
+      
+      // Get or create conversation for logging
+      let manualConversationId = session?.conversation_id;
+      if (!manualConversationId) {
+        const { data: newConv } = await supabase
+          .from('chat_conversations')
+          .insert({ session_id: `wa_${phone}_${Date.now()}`, message_count: 0 })
+          .select()
+          .single();
+        manualConversationId = newConv?.id;
+      }
+      
+      // Log user message without AI processing
+      if (manualConversationId) {
+        await supabase.from('chat_messages').insert({
+          conversation_id: manualConversationId,
+          role: 'user',
+          content: message,
+        });
+        
+        const { data: convData } = await supabase
+          .from('chat_conversations')
+          .select('message_count')
+          .eq('id', manualConversationId)
+          .single();
+        
+        await supabase
+          .from('chat_conversations')
+          .update({ message_count: (convData?.message_count || 0) + 1 })
+          .eq('id', manualConversationId);
+      }
+      
+      // Auto-set session to takeover mode for admin
+      await supabase
+        .from('whatsapp_sessions')
+        .upsert({
+          phone_number: phone,
+          conversation_id: manualConversationId,
+          last_message_at: new Date().toISOString(),
+          is_active: true,
+          is_takeover: true,
+          takeover_at: new Date().toISOString(),
+        }, { onConflict: 'phone_number' });
+      
+      return new Response(JSON.stringify({ 
+        status: "manual_mode", 
+        message: "Message logged for admin response",
+        conversation_id: manualConversationId,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
