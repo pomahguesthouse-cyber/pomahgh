@@ -862,24 +862,43 @@ serve(async (req) => {
       });
 
     // Send response via Fonnte
+    console.log("📤 Sending WhatsApp to:", phone);
+    console.log("📝 Message length:", aiResponse.length);
+    console.log("🔑 API Key exists:", !!FONNTE_API_KEY);
+    
+    const fonntPayload = {
+      target: phone,
+      message: aiResponse,
+      countryCode: "62",
+    };
+    console.log("📦 Fonnte payload:", JSON.stringify(fonntPayload));
+    
     const sendResponse = await fetch("https://api.fonnte.com/send", {
       method: "POST",
       headers: {
         "Authorization": FONNTE_API_KEY,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        target: phone,
-        message: aiResponse,
-        countryCode: "62",
-      }),
+      body: JSON.stringify(fonntPayload),
     });
 
-    const sendResult = await sendResponse.json();
-    console.log("Fonnte send result:", sendResult);
+    const sendResultText = await sendResponse.text();
+    console.log("📨 Fonnte raw response:", sendResultText);
+    console.log("📊 Fonnte status:", sendResponse.status);
+    
+    let sendResult;
+    try {
+      sendResult = JSON.parse(sendResultText);
+      console.log("✅ Fonnte parsed result:", JSON.stringify(sendResult));
+    } catch (e) {
+      console.error("❌ Failed to parse Fonnte response:", sendResultText);
+      sendResult = { error: sendResultText };
+    }
 
-    if (!sendResponse.ok) {
-      console.error("Failed to send WhatsApp:", sendResult);
+    if (!sendResponse.ok || sendResult.status === false) {
+      console.error("❌ Failed to send WhatsApp:", sendResult);
+    } else {
+      console.log("✅ WhatsApp sent successfully");
     }
 
     return new Response(JSON.stringify({ 
