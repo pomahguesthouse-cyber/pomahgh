@@ -81,6 +81,35 @@ serve(async (req) => {
     let result;
 
     switch (tool_name) {
+      case "get_all_rooms": {
+        // Get all available room types with prices (no date needed)
+        const { data: rooms, error: roomsError } = await supabase
+          .from("rooms")
+          .select("name, description, price_per_night, max_guests, size_sqm, features, allotment")
+          .eq("available", true)
+          .order("price_per_night");
+
+        if (roomsError) throw roomsError;
+
+        const roomList = (rooms || []).map(room => ({
+          name: room.name,
+          price_per_night: room.price_per_night,
+          price_formatted: `Rp ${room.price_per_night.toLocaleString('id-ID')}`,
+          max_guests: room.max_guests,
+          size_sqm: room.size_sqm,
+          total_units: room.allotment,
+          description: room.description,
+          features: room.features || []
+        }));
+
+        result = {
+          message: "Daftar tipe kamar yang tersedia:",
+          rooms: roomList,
+          note: "Untuk cek ketersediaan tanggal tertentu, silakan sebutkan tanggal check-in dan check-out yang diinginkan."
+        };
+        break;
+      }
+
       case "check_availability": {
         let { check_in, check_out, num_guests } = parameters;
         
