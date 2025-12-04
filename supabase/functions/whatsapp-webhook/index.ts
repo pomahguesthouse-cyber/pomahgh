@@ -92,9 +92,47 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse incoming webhook from Fonnte
-    const body = await req.json();
-    console.log("Incoming WhatsApp webhook:", JSON.stringify(body));
+    // Parse incoming webhook - handle JSON, form-urlencoded, or raw text
+    let body: any;
+    const contentType = req.headers.get('content-type') || '';
+    console.log("Request content-type:", contentType);
+    console.log("Request method:", req.method);
+    console.log("Request URL:", req.url);
+
+    try {
+      if (contentType.includes('application/json')) {
+        body = await req.json();
+      } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+        const formData = await req.formData();
+        body = Object.fromEntries(formData.entries());
+      } else {
+        // Try raw text and parse as either JSON or form-urlencoded
+        const text = await req.text();
+        console.log("Raw request body:", text.substring(0, 500));
+        
+        if (!text || text.trim() === '') {
+          console.log("Empty body, skipping");
+          return new Response(JSON.stringify({ status: "skipped", reason: "empty body" }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        
+        try {
+          body = JSON.parse(text);
+        } catch {
+          // Try form-urlencoded parsing
+          const params = new URLSearchParams(text);
+          body = Object.fromEntries(params.entries());
+        }
+      }
+    } catch (parseError) {
+      console.error("Body parse error:", parseError);
+      return new Response(JSON.stringify({ status: "error", reason: "invalid body format" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("Parsed webhook body:", JSON.stringify(body));
 
     const { sender, message, device, url: mediaUrl } = body;
 
