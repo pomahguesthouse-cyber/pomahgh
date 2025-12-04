@@ -100,6 +100,24 @@ function detectRoomListIntent(message: string): boolean {
   return listPatterns.test(lowerMsg);
 }
 
+// Detect follow-up date question (user asking about different date without room type)
+function detectFollowUpDateIntent(message: string): { isFollowUp: boolean; dateHint?: string } {
+  const lowerMsg = message.toLowerCase();
+  // Patterns like "kalau tanggal 6?", "gimana tanggal 15 januari?", "kalau 6 desember?"
+  const followUpPatterns = /(kalau|kalua|gimana|bagaimana|kalo|gimana kalau|bagaimana kalau|kl|klu).*(tanggal|tgl|\d+\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)|desember|januari|februari)/i;
+  const dateOnlyPattern = /^(kalau|kalua|gimana|bagaimana|kalo|kl|klu)\s+(tanggal\s*)?\d+(\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember))?\s*\??$/i;
+  
+  const isFollowUp = followUpPatterns.test(lowerMsg) || dateOnlyPattern.test(lowerMsg);
+  
+  // Extract date hint
+  const dateMatch = lowerMsg.match(/(\d+\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)|tanggal\s*\d+)/i);
+  
+  return {
+    isFollowUp,
+    dateHint: dateMatch?.[0]
+  };
+}
+
 // Detect booking intent in user message (room type + date)
 function detectBookingIntent(message: string): {
   hasRoomType: boolean;
@@ -525,6 +543,40 @@ serve(async (req) => {
         console.log("Booking intent retry response:", JSON.stringify(chatbotData).substring(0, 500));
       }
     }
+    
+    // Handle follow-up date questions (user asks "kalau tanggal X?" without room type)
+    const followUpIntent = detectFollowUpDateIntent(message);
+    if (followUpIntent.isFollowUp && !aiMessage?.tool_calls && (!aiResponse || aiResponse.trim() === '')) {
+      console.log(`⚠️ Follow-up date question detected: "${followUpIntent.dateHint}" - forcing check_availability for ALL rooms`);
+      
+      const retryMessages = [
+        ...messages,
+        { 
+          role: 'system' as const, 
+          content: `PERINTAH SISTEM: User menanyakan ketersediaan untuk tanggal ALTERNATIF "${followUpIntent.dateHint}". Ini adalah pertanyaan FOLLOW-UP dari percakapan sebelumnya. WAJIB PANGGIL check_availability untuk tanggal yang disebutkan dan tampilkan ketersediaan SEMUA tipe kamar! JANGAN return empty response!` 
+        }
+      ];
+      
+      const retryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          messages: retryMessages,
+          session_id: `wa_${phone}`,
+          channel: 'whatsapp',
+        }),
+      });
+      
+      if (retryResponse.ok) {
+        chatbotData = await retryResponse.json();
+        aiMessage = chatbotData.choices?.[0]?.message;
+        aiResponse = aiMessage?.content || aiResponse;
+        console.log("Follow-up date retry response:", JSON.stringify(chatbotData).substring(0, 500));
+      }
+    }
 
     // Handle tool calls if present
     if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {
@@ -594,9 +646,44 @@ serve(async (req) => {
       }
     }
 
-    // Fallback if no response
-    if (!aiResponse) {
-      aiResponse = "Maaf, terjadi kesalahan. Silakan coba lagi.";
+    // Improved fallback with recovery for empty responses
+    if (!aiResponse || aiResponse.trim() === '') {
+      console.log("⚠️ Empty AI response detected - attempting recovery...");
+      
+      const recoveryMessages = [
+        ...messages,
+        { 
+          role: 'system' as const, 
+          content: `Pesan user terakhir belum dijawab. Berikan respons yang membantu! Jika user menanyakan tanggal, bantu cek ketersediaan dengan panggil check_availability. Jika tidak jelas, tanyakan dengan sopan apa yang bisa dibantu.` 
+        }
+      ];
+      
+      const recoveryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          messages: recoveryMessages,
+          session_id: `wa_${phone}`,
+          channel: 'whatsapp',
+        }),
+      });
+      
+      if (recoveryResponse.ok) {
+        const recoveryData = await recoveryResponse.json();
+        const recoveryContent = recoveryData.choices?.[0]?.message?.content;
+        if (recoveryContent && recoveryContent.trim() !== '') {
+          aiResponse = recoveryContent;
+          console.log("Recovery successful:", aiResponse.substring(0, 100));
+        }
+      }
+      
+      // Final fallback
+      if (!aiResponse || aiResponse.trim() === '') {
+        aiResponse = "Maaf, ada kendala teknis. Silakan ulangi pertanyaan Anda atau ketik 'menu' untuk melihat pilihan yang tersedia.";
+      }
     }
 
     // Format response for WhatsApp
