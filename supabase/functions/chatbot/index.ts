@@ -56,6 +56,20 @@ serve(async (req) => {
       .eq("is_active", true)
       .order("category");
 
+    // Fetch training examples for few-shot learning
+    const { data: trainingExamples } = await supabase
+      .from("chatbot_training_examples")
+      .select("question, ideal_answer, category")
+      .eq("is_active", true)
+      .order("display_order");
+
+    // Fetch good-rated message examples (promoted responses)
+    const { data: goodRatings } = await supabase
+      .from("chat_message_ratings")
+      .select("message_id")
+      .eq("is_good_example", true)
+      .gte("rating", 4);
+
     // Build comprehensive context
     const roomsInfo = rooms?.map(r => 
       `- ${r.name}: ${r.description}. Harga: Rp ${r.price_per_night.toLocaleString()}/malam. Max ${r.max_guests} tamu${r.size_sqm ? `, ${r.size_sqm}m²` : ''}. Fasilitas: ${r.features.join(', ')}`
@@ -73,6 +87,13 @@ serve(async (req) => {
     const knowledgeInfo = knowledgeBase?.map(kb => 
       `[${kb.category?.toUpperCase() || 'GENERAL'}] ${kb.title}:\n${kb.content.substring(0, 2000)}`
     ).join('\n\n---\n\n') || '';
+
+    // Build training examples for few-shot learning
+    const trainingExamplesInfo = trainingExamples?.map(ex => 
+      `📌 [${ex.category?.toUpperCase() || 'GENERAL'}]
+User: "${ex.question}"
+Bot: "${ex.ideal_answer}"`
+    ).join('\n\n') || '';
 
     // Get current date for context
     const now = new Date();
@@ -149,6 +170,13 @@ ${knowledgeInfo ? `📚 KNOWLEDGE BASE (Informasi Tambahan dari Admin):
 ${knowledgeInfo}
 
 ⚠️ PENTING: Gunakan informasi dari Knowledge Base di atas untuk menjawab pertanyaan yang relevan. Ini adalah sumber utama untuk FAQ, kebijakan, promo, dan informasi khusus hotel.
+` : ''}
+${trainingExamplesInfo ? `🎯 CONTOH JAWABAN YANG BAIK (Few-Shot Learning):
+Pelajari dan ikuti pola jawaban dari contoh-contoh berikut ini:
+
+${trainingExamplesInfo}
+
+⚠️ PENTING: Gunakan gaya, nada, dan format yang sama dengan contoh di atas saat menjawab pertanyaan serupa. Contoh-contoh ini adalah standar kualitas yang diharapkan.
 ` : ''}
 
 TOOLS YANG TERSEDIA:
