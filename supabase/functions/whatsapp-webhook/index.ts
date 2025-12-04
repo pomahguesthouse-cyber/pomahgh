@@ -287,8 +287,8 @@ serve(async (req) => {
     // Get or create conversation
     let conversationId = session?.conversation_id;
     
-    // Check if session is stale (30 minutes idle = new conversation)
-    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    // Check if session is stale (15 minutes idle = new conversation)
+    const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
     const lastMessageAt = session?.last_message_at ? new Date(session.last_message_at).getTime() : 0;
     const isStale = Date.now() - lastMessageAt > SESSION_TIMEOUT;
 
