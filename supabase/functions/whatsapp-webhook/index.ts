@@ -64,8 +64,21 @@ function formatForWhatsApp(text: string): string {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Handle GET request for Fonnte webhook verification
+  if (req.method === 'GET') {
+    console.log("Webhook verification GET request received");
+    return new Response(JSON.stringify({ 
+      status: "ok", 
+      message: "WhatsApp webhook is active",
+      timestamp: new Date().toISOString()
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
