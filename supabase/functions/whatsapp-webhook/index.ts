@@ -93,6 +93,31 @@ function detectStuckLoop(messages: Array<{role: string, content: string}>): bool
   return lastThree.every(m => m.content.substring(0, 200) === firstContent);
 }
 
+// Detect booking intent in user message (room type + date)
+function detectBookingIntent(message: string): {
+  hasRoomType: boolean;
+  hasDate: boolean;
+  roomType?: string;
+  dateHint?: string;
+} {
+  const lowerMsg = message.toLowerCase();
+  
+  // Room type patterns
+  const roomPatterns = /(deluxe|superior|villa|standard|family|suite|twin|double|single|kamar)/i;
+  const roomMatch = lowerMsg.match(roomPatterns);
+  
+  // Date patterns (Indonesian)
+  const datePatterns = /(besok|lusa|hari ini|tanggal \d+|minggu depan|weekend|akhir pekan|\d+ (januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)|januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)/i;
+  const dateMatch = lowerMsg.match(datePatterns);
+  
+  return {
+    hasRoomType: !!roomMatch,
+    hasDate: !!dateMatch,
+    roomType: roomMatch?.[0],
+    dateHint: dateMatch?.[0]
+  };
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -350,12 +375,47 @@ serve(async (req) => {
       throw new Error(`Chatbot error: ${chatbotResponse.status}`);
     }
 
-    const chatbotData = await chatbotResponse.json();
+    let chatbotData = await chatbotResponse.json();
     console.log("Chatbot response:", JSON.stringify(chatbotData).substring(0, 500));
 
     // Parse OpenAI format response: { choices: [{ message: { content: "...", tool_calls: [...] }}] }
-    const aiMessage = chatbotData.choices?.[0]?.message;
+    let aiMessage = chatbotData.choices?.[0]?.message;
     let aiResponse = aiMessage?.content || "";
+
+    // Detect booking intent and force retry if AI didn't call tools when it should
+    const intent = detectBookingIntent(message);
+    if (intent.hasRoomType && intent.hasDate && !aiMessage?.tool_calls) {
+      console.log(`⚠️ AI didn't use tools for booking intent (room: ${intent.roomType}, date: ${intent.dateHint}) - forcing retry`);
+      
+      // Add forcing hint and retry
+      const retryMessages = [
+        ...messages,
+        { 
+          role: 'system' as const, 
+          content: `PERINTAH SISTEM: User sudah menyebut kamar "${intent.roomType}" dan tanggal "${intent.dateHint}". WAJIB PANGGIL check_availability SEKARANG! JANGAN BERTANYA LAGI!` 
+        }
+      ];
+      
+      const retryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          messages: retryMessages,
+          session_id: `wa_${phone}`,
+          channel: 'whatsapp',
+        }),
+      });
+      
+      if (retryResponse.ok) {
+        chatbotData = await retryResponse.json();
+        aiMessage = chatbotData.choices?.[0]?.message;
+        aiResponse = aiMessage?.content || aiResponse;
+        console.log("Retry response:", JSON.stringify(chatbotData).substring(0, 500));
+      }
+    }
 
     // Handle tool calls if present
     if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {

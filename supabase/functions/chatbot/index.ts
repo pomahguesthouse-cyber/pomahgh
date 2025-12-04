@@ -134,14 +134,30 @@ Bot: "${ex.ideal_answer}"`
     const persona = chatbotSettings?.persona || defaultPersona;
     const systemPrompt = `${persona}
 
-⚠️ ATURAN ANTI-REPETISI (SANGAT PENTING!):
+🚨 ATURAN TOOL CALLING (SANGAT WAJIB - PRIORITAS TERTINGGI!):
+JIKA user menyebut TIPE KAMAR + TANGGAL → WAJIB LANGSUNG panggil check_availability!
+JANGAN PERNAH bertanya "kamar apa?" atau "tanggal berapa?" jika user SUDAH menyebutkannya!
+
+CONTOH WAJIB TOOL CALL:
+❌ SALAH: User: "booking deluxe tanggal 5" → Bot: "Untuk tanggal berapa?" 
+✅ BENAR: User: "booking deluxe tanggal 5" → Bot: *panggil check_availability* → "Deluxe tersedia..."
+
+❌ SALAH: User: "ada kamar villa 15 januari?" → Bot: "Kamar apa yang Anda inginkan?"
+✅ BENAR: User: "ada kamar villa 15 januari?" → Bot: *panggil check_availability* → "Villa tersedia..."
+
+URUTAN YANG BENAR:
+1. User sebut kamar + tanggal → LANGSUNG PANGGIL check_availability (JANGAN TANYA LAGI!)
+2. Tampilkan hasil ketersediaan dari tool
+3. Tanyakan data yang BELUM ADA saja (nama, email, telepon, jumlah tamu)
+4. User lengkapi data → PANGGIL create_booking_draft
+
+KEYWORD TIPE KAMAR: deluxe, superior, villa, standard, family, suite, twin, double, single
+KEYWORD TANGGAL: besok, lusa, tanggal X, januari-desember, hari ini, minggu depan, weekend
+
+⚠️ ATURAN ANTI-REPETISI:
 - DILARANG mengulangi respons yang sama persis dengan pesan sebelumnya
-- Jika user bertanya hal BARU, JAWAB PERTANYAAN BARU tersebut - jangan ulangi topik lama!
-- Setelah suatu topik selesai (misal: pembatalan berhasil), LANJUT ke topik berikutnya
-- Jika user sudah dapat jawaban, jangan ulangi jawaban yang sama
-- Contoh SALAH: User tanya ketersediaan kamar setelah cancel, bot tetap bahas pembatalan
-- Contoh BENAR: User tanya ketersediaan kamar setelah cancel, bot jawab soal ketersediaan kamar
 - FOKUS pada pesan TERAKHIR user, bukan pesan-pesan sebelumnya
+- Jika topik selesai, LANJUT ke topik berikutnya
 
 📅 TANGGAL SEKARANG: ${currentDateIndonesian} (${currentDateISO})
 ⚠️ TAHUN SEKARANG: 2025
@@ -463,7 +479,8 @@ BAHASA:
           ...messages
         ],
         tools,
-        temperature: 0.3, // Lower temperature for more focused, direct responses
+        tool_choice: "auto", // Encourage tool calling
+        temperature: 0.2, // Lower temperature for more deterministic tool usage
         max_tokens: chatbotSettings.response_speed === 'fast' ? 250 : 
                     chatbotSettings.response_speed === 'detailed' ? 600 : 400,
       }),
