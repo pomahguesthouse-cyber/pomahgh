@@ -224,6 +224,11 @@ function getQuickResponse(message: string): string | null {
     return '🎉 *Promo Pomah Guesthouse*\n\nPromo saat ini:\n• 🏷️ Long stay (>7 malam): Diskon 15%\n• 🏷️ Weekend special: Harga khusus\n\n📅 Ketik *"cek ketersediaan [tanggal]"* untuk lihat harga promo real-time.\n\nPromo dapat berubah sewaktu-waktu.';
   }
   
+  // AVAILABILITY patterns - "ada kamar", "kamar kosong", etc.
+  if (/ada kamar|kamar kosong|kamar tersedia|available room|kamar yang ada/i.test(lowerMsg) && !/tanggal|januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember|besok|lusa/i.test(lowerMsg)) {
+    return '🛏️ *Tipe Kamar Pomah Guesthouse*\n\n1️⃣ *Single Room* - Rp 200.000/malam\n   • 1 tamu • 20m²\n\n2️⃣ *Grand Deluxe* - Rp 450.000/malam\n   • 2 tamu • 30m²\n\n3️⃣ *Family Suite* - Rp 700.000/malam\n   • 4 tamu • 60m²\n\n📅 *Untuk cek ketersediaan*, sebutkan tanggal:\n\nContoh: "cek kamar 15-17 Januari untuk 2 orang"';
+  }
+  
   return null;
 }
 
@@ -830,9 +835,16 @@ serve(async (req) => {
         }
       }
       
-      // Final fallback
+      // Final fallback - provide intelligent response based on context
       if (!aiResponse || aiResponse.trim() === '') {
-        aiResponse = "Maaf, ada kendala teknis. Silakan ulangi pertanyaan Anda atau ketik 'menu' untuk melihat pilihan yang tersedia.";
+        const lowerMsg = message.toLowerCase();
+        if (lowerMsg.includes('kamar') || lowerMsg.includes('booking') || lowerMsg.includes('tanggal') || lowerMsg.includes('tersedia')) {
+          aiResponse = '🛏️ Untuk cek ketersediaan kamar:\n\nMohon sebutkan tanggal check-in, check-out, dan jumlah tamu.\n\nContoh: "cek kamar 15-17 Desember untuk 2 orang"\n\nAtau ketik:\n• *kamar* - lihat tipe & harga\n• *fasilitas* - info fasilitas\n• *lokasi* - alamat hotel';
+        } else if (lowerMsg.includes('harga') || lowerMsg.includes('tarif') || lowerMsg.includes('biaya')) {
+          aiResponse = '💰 *Harga Kamar Pomah Guesthouse*\n\n🛏️ Single Room - Rp 200.000/malam\n🛏️ Grand Deluxe - Rp 450.000/malam\n🛏️ Family Suite - Rp 700.000/malam\n\nKetik *"cek ketersediaan [tanggal]"* untuk harga real-time.';
+        } else {
+          aiResponse = 'Halo! 👋 Ada yang bisa saya bantu?\n\nSilakan tanyakan tentang:\n• *Kamar* - tipe & harga\n• *Fasilitas* - info fasilitas hotel\n• *Booking* - cara reservasi\n• *Lokasi* - alamat & kontak\n\nAtau langsung ketik pertanyaan Anda! 😊';
+        }
       }
     }
 
