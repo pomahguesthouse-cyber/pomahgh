@@ -72,10 +72,18 @@ function formatWA(t: string): string {
 }
 
 // -------------------------------------------------------------
+// Types
+// -------------------------------------------------------------
+interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+// -------------------------------------------------------------
 // Prevent Looping AI
 // -------------------------------------------------------------
-function dedupeHistory(h) {
-  const out = [];
+function dedupeHistory(h: ChatMessage[]): ChatMessage[] {
+  const out: ChatMessage[] = [];
   let lastAssistant = "";
   for (const m of h) {
     if (m.role === "assistant" && m.content === lastAssistant) continue;
@@ -85,12 +93,12 @@ function dedupeHistory(h) {
   return out;
 }
 
-function detectLoop(h) {
-  const a = h.filter((m) => m.role === "assistant");
+function detectLoop(h: ChatMessage[]): boolean {
+  const a = h.filter((m: ChatMessage) => m.role === "assistant");
   if (a.length < 3) return false;
   const last3 = a.slice(-3);
   const sig = last3[0].content.slice(0, 200);
-  return last3.every((m) => m.content.slice(0, 200) === sig);
+  return last3.every((m: ChatMessage) => m.content.slice(0, 200) === sig);
 }
 
 // -------------------------------------------------------------
@@ -178,7 +186,7 @@ function detectIntent(msg: string) {
 // -------------------------------------------------------------
 // LOVABLE AI CALLER (Replace URL With Your Runtime Endpoint)
 // -------------------------------------------------------------
-async function askAI(history) {
+async function askAI(history: ChatMessage[]) {
   const res = await fetch("YOUR_LOVABLE_AI_ENDPOINT", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
