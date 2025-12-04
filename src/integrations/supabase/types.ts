@@ -1705,6 +1705,50 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_sessions: {
+        Row: {
+          context: Json | null
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_blocked: boolean | null
+          last_message_at: string | null
+          phone_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          context?: Json | null
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_blocked?: boolean | null
+          last_message_at?: string | null
+          phone_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          context?: Json | null
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_blocked?: boolean | null
+          last_message_at?: string | null
+          phone_number?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_sessions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
