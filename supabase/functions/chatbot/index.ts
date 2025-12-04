@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, chatbotSettings } = await req.json();
+    const { messages, chatbotSettings: providedSettings } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -24,6 +24,19 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Fetch chatbot settings from database if not provided (for WhatsApp webhook)
+    let chatbotSettings = providedSettings;
+    if (!chatbotSettings?.persona) {
+      const { data: dbSettings } = await supabase
+        .from("chatbot_settings")
+        .select("*")
+        .single();
+      
+      chatbotSettings = dbSettings || {
+        persona: "Anda adalah asisten hotel yang ramah dan membantu tamu dengan informasi kamar, booking, fasilitas, dan pertanyaan umum seputar hotel. Jawab dengan bahasa Indonesia yang natural dan profesional."
+      };
+    }
 
     // Fetch hotel settings and data
     const { data: hotelSettings } = await supabase
