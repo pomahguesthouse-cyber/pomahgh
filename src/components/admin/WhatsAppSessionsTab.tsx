@@ -18,7 +18,10 @@ import {
   WhatsAppSessionWithMessages 
 } from '@/hooks/useWhatsAppSessions';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, MessageSquare, Ban, Unlock, Trash2, Eye, Search, Users, ShieldCheck, ShieldX, MessageCircle, CalendarCheck, Hand, Bot, Send } from 'lucide-react';
+import { Phone, MessageSquare, Ban, Unlock, Trash2, Eye, Search, Users, ShieldCheck, ShieldX, MessageCircle, CalendarCheck, Hand, Bot, Send, Settings } from 'lucide-react';
+import { useHotelSettings } from '@/hooks/useHotelSettings';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { formatDateTimeID } from '@/utils/indonesianFormat';
 
 const StatCard = ({ title, value, icon: Icon, variant = 'default' }: { 
@@ -375,14 +378,69 @@ const SessionRow = ({ session }: { session: WhatsAppSessionWithMessages }) => {
 const WhatsAppSessionsTab = () => {
   const { data: sessions, isLoading } = useWhatsAppSessions();
   const { data: stats } = useWhatsAppStats();
+  const { settings, updateSettings, isUpdating } = useHotelSettings();
   const [search, setSearch] = useState('');
 
   const filteredSessions = sessions?.filter(session =>
     session.phone_number.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleModeChange = (mode: 'ai' | 'manual') => {
+    updateSettings({ whatsapp_response_mode: mode });
+  };
+
   return (
     <div className="space-y-6">
+      {/* Response Mode Card */}
+      <Card className={settings?.whatsapp_response_mode === 'manual' ? 'border-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10' : ''}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-muted-foreground" />
+              <CardTitle className="text-base">Mode Balasan WhatsApp</CardTitle>
+            </div>
+            {settings?.whatsapp_response_mode === 'manual' && (
+              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                <Hand className="w-3 h-3 mr-1" />
+                Mode Manual Aktif
+              </Badge>
+            )}
+          </div>
+          <CardDescription>
+            Pilih cara membalas pesan WhatsApp masuk
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup 
+            value={settings?.whatsapp_response_mode || 'ai'} 
+            onValueChange={(value) => handleModeChange(value as 'ai' | 'manual')}
+            disabled={isUpdating}
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer flex-1">
+              <RadioGroupItem value="ai" id="mode-ai" />
+              <Label htmlFor="mode-ai" className="flex items-center gap-2 cursor-pointer flex-1">
+                <Bot className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="font-medium">AI Chatbot (Otomatis)</p>
+                  <p className="text-xs text-muted-foreground">Semua pesan dijawab otomatis oleh AI</p>
+                </div>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer flex-1">
+              <RadioGroupItem value="manual" id="mode-manual" />
+              <Label htmlFor="mode-manual" className="flex items-center gap-2 cursor-pointer flex-1">
+                <Hand className="w-5 h-5 text-yellow-600" />
+                <div>
+                  <p className="font-medium">Manual (Admin Reply)</p>
+                  <p className="text-xs text-muted-foreground">Semua pesan masuk ke admin untuk dijawab manual</p>
+                </div>
+              </Label>
+            </div>
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         <StatCard 
