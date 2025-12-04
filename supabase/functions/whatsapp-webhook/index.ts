@@ -216,6 +216,17 @@ serve(async (req) => {
       });
     }
 
+    // Get hotel settings for WhatsApp configuration
+    const { data: hotelSettings } = await supabase
+      .from('hotel_settings')
+      .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_contact_numbers')
+      .single();
+    
+    const sessionTimeoutMinutes = hotelSettings?.whatsapp_session_timeout_minutes || 15;
+    const aiWhitelist: string[] = hotelSettings?.whatsapp_ai_whitelist || [];
+    
+    console.log(`Session timeout: ${sessionTimeoutMinutes} minutes, AI whitelist: ${aiWhitelist.length} numbers`);
+
     // Check if phone is blocked
     const { data: session } = await supabase
       .from('whatsapp_sessions')
@@ -226,6 +237,62 @@ serve(async (req) => {
     if (session?.is_blocked) {
       console.log(`Blocked phone: ${phone}`);
       return new Response(JSON.stringify({ status: "blocked" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if phone is in AI whitelist (should NOT be served by AI)
+    if (aiWhitelist.includes(phone)) {
+      console.log(`Phone ${phone} is in AI whitelist - auto takeover mode`);
+      
+      // Get or create conversation for logging
+      let whitelistConversationId = session?.conversation_id;
+      if (!whitelistConversationId) {
+        const { data: newConv } = await supabase
+          .from('chat_conversations')
+          .insert({ session_id: `wa_${phone}_${Date.now()}`, message_count: 0 })
+          .select()
+          .single();
+        whitelistConversationId = newConv?.id;
+      }
+      
+      // Log user message without AI processing
+      if (whitelistConversationId) {
+        await supabase.from('chat_messages').insert({
+          conversation_id: whitelistConversationId,
+          role: 'user',
+          content: message,
+        });
+        
+        const { data: convData } = await supabase
+          .from('chat_conversations')
+          .select('message_count')
+          .eq('id', whitelistConversationId)
+          .single();
+        
+        await supabase
+          .from('chat_conversations')
+          .update({ message_count: (convData?.message_count || 0) + 1 })
+          .eq('id', whitelistConversationId);
+      }
+      
+      // Update or create session with takeover mode
+      await supabase
+        .from('whatsapp_sessions')
+        .upsert({
+          phone_number: phone,
+          conversation_id: whitelistConversationId,
+          last_message_at: new Date().toISOString(),
+          is_active: true,
+          is_takeover: true,
+          takeover_at: new Date().toISOString(),
+        }, { onConflict: 'phone_number' });
+      
+      return new Response(JSON.stringify({ 
+        status: "whitelist_takeover", 
+        message: "Phone in AI whitelist - message logged for admin",
+        conversation_id: whitelistConversationId,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -287,8 +354,8 @@ serve(async (req) => {
     // Get or create conversation
     let conversationId = session?.conversation_id;
     
-    // Check if session is stale (15 minutes idle = new conversation)
-    const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+    // Check if session is stale (configurable timeout)
+    const SESSION_TIMEOUT = sessionTimeoutMinutes * 60 * 1000;
     const lastMessageAt = session?.last_message_at ? new Date(session.last_message_at).getTime() : 0;
     const isStale = Date.now() - lastMessageAt > SESSION_TIMEOUT;
 

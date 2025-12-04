@@ -1011,7 +1011,10 @@ export type Database = {
           tiktok_url: string | null
           twitter_url: string | null
           updated_at: string | null
+          whatsapp_ai_whitelist: string[] | null
+          whatsapp_contact_numbers: Json | null
           whatsapp_number: string | null
+          whatsapp_session_timeout_minutes: number | null
           youtube_url: string | null
         }
         Insert: {
@@ -1069,7 +1072,10 @@ export type Database = {
           tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string | null
+          whatsapp_ai_whitelist?: string[] | null
+          whatsapp_contact_numbers?: Json | null
           whatsapp_number?: string | null
+          whatsapp_session_timeout_minutes?: number | null
           youtube_url?: string | null
         }
         Update: {
@@ -1127,7 +1133,10 @@ export type Database = {
           tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string | null
+          whatsapp_ai_whitelist?: string[] | null
+          whatsapp_contact_numbers?: Json | null
           whatsapp_number?: string | null
+          whatsapp_session_timeout_minutes?: number | null
           youtube_url?: string | null
         }
         Relationships: []
