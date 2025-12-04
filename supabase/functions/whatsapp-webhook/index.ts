@@ -118,6 +118,38 @@ function detectFollowUpDateIntent(message: string): { isFollowUp: boolean; dateH
   };
 }
 
+// Quick response for common simple messages - bypass AI completely
+function getQuickResponse(message: string): string | null {
+  const lowerMsg = message.toLowerCase().trim();
+  
+  const quickResponses: Record<string, string> = {
+    'menu': '📋 *Menu Utama Pomah Guesthouse*\n\n1️⃣ Ketik *"kamar"* - Lihat tipe & harga kamar\n2️⃣ Ketik *"booking"* - Cara booking kamar\n3️⃣ Ketik *"fasilitas"* - Fasilitas hotel\n4️⃣ Ketik *"lokasi"* - Alamat & kontak\n5️⃣ Ketik *"cek booking"* - Cek status booking\n\nAtau ketik pertanyaan Anda langsung! 😊',
+    'halo': 'Halo! 👋 Selamat datang di Pomah Guesthouse. Ada yang bisa saya bantu?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
+    'hai': 'Hai! 👋 Selamat datang di Pomah Guesthouse. Ada yang bisa saya bantu?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
+    'hi': 'Hi! 👋 Selamat datang di Pomah Guesthouse. Ada yang bisa saya bantu?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
+    'hello': 'Hello! 👋 Selamat datang di Pomah Guesthouse. Ada yang bisa saya bantu?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
+    'hallo': 'Hallo! 👋 Selamat datang di Pomah Guesthouse. Ada yang bisa saya bantu?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
+    'selamat pagi': 'Selamat pagi! ☀️ Terima kasih menghubungi Pomah Guesthouse.\n\nAda yang bisa saya bantu? Ketik *"menu"* untuk melihat pilihan layanan.',
+    'selamat siang': 'Selamat siang! 🌤️ Terima kasih menghubungi Pomah Guesthouse.\n\nAda yang bisa saya bantu? Ketik *"menu"* untuk melihat pilihan layanan.',
+    'selamat sore': 'Selamat sore! 🌅 Terima kasih menghubungi Pomah Guesthouse.\n\nAda yang bisa saya bantu? Ketik *"menu"* untuk melihat pilihan layanan.',
+    'selamat malam': 'Selamat malam! 🌙 Terima kasih menghubungi Pomah Guesthouse.\n\nAda yang bisa saya bantu? Ketik *"menu"* untuk melihat pilihan layanan.',
+    'pagi': 'Pagi! ☀️ Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu? Ketik *"menu"* untuk melihat pilihan.',
+    'siang': 'Siang! 🌤️ Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu? Ketik *"menu"* untuk melihat pilihan.',
+    'sore': 'Sore! 🌅 Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu? Ketik *"menu"* untuk melihat pilihan.',
+    'malam': 'Malam! 🌙 Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu? Ketik *"menu"* untuk melihat pilihan.',
+    'terima kasih': 'Sama-sama! 🙏 Senang bisa membantu.\n\nJika ada pertanyaan lain, silakan tanya kapan saja.',
+    'makasih': 'Sama-sama! 🙏 Senang bisa membantu.\n\nJika ada pertanyaan lain, silakan tanya kapan saja.',
+    'thanks': 'You\'re welcome! 🙏 Senang bisa membantu.\n\nJika ada pertanyaan lain, silakan tanya kapan saja.',
+    'thank you': 'You\'re welcome! 🙏 Senang bisa membantu.\n\nJika ada pertanyaan lain, silakan tanya kapan saja.',
+    'ok': 'Baik! 👍 Ada yang bisa saya bantu lagi?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
+    'oke': 'Baik! 👍 Ada yang bisa saya bantu lagi?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
+    'okay': 'Baik! 👍 Ada yang bisa saya bantu lagi?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
+    'siap': 'Baik! 👍 Ada yang bisa saya bantu lagi?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
+  };
+  
+  return quickResponses[lowerMsg] || null;
+}
+
 // Detect booking intent in user message (room type + date)
 function detectBookingIntent(message: string): {
   hasRoomType: boolean;
@@ -422,6 +454,47 @@ serve(async (req) => {
       .from('chat_conversations')
       .update({ message_count: (session?.context?.message_count || 0) + 1 })
       .eq('id', conversationId);
+
+    // Check for quick response FIRST - bypass AI for simple messages
+    const quickResponse = getQuickResponse(message);
+    if (quickResponse) {
+      console.log(`✅ Quick response for "${message}" - bypassing AI`);
+      
+      // Log assistant message
+      await supabase
+        .from('chat_messages')
+        .insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: quickResponse,
+        });
+
+      // Send response via Fonnte
+      const sendResponse = await fetch("https://api.fonnte.com/send", {
+        method: "POST",
+        headers: {
+          "Authorization": FONNTE_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          target: phone,
+          message: quickResponse,
+          countryCode: "62",
+        }),
+      });
+
+      const sendResult = await sendResponse.json();
+      console.log("Fonnte quick response result:", sendResult);
+
+      return new Response(JSON.stringify({ 
+        status: "success",
+        conversation_id: conversationId,
+        response_sent: sendResponse.ok,
+        quick_response: true,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Build conversation history for AI (reduced from 20 to 12 for better context)
     const { data: history } = await supabase
