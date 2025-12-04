@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
-import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap } from 'lucide-react';
+import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone } from 'lucide-react';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import ChatLogsTab from '@/components/admin/ChatLogsTab';
 import TrainingTab from '@/components/admin/TrainingTab';
+import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
 
 const AdminChatbot = () => {
   const { data: settings, isLoading } = useChatbotSettings();
@@ -54,7 +55,7 @@ const AdminChatbot = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="personality" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="personality">
             <Bot className="w-4 h-4 mr-2" />
             Kepribadian
@@ -78,6 +79,10 @@ const AdminChatbot = () => {
           <TabsTrigger value="logs">
             <MessageSquare className="w-4 h-4 mr-2" />
             Log Percakapan
+          </TabsTrigger>
+          <TabsTrigger value="whatsapp">
+            <Phone className="w-4 h-4 mr-2" />
+            WhatsApp
           </TabsTrigger>
           <TabsTrigger value="advanced">
             <Settings className="w-4 h-4 mr-2" />
@@ -310,6 +315,10 @@ const AdminChatbot = () => {
 
         <TabsContent value="logs" className="space-y-4">
           <ChatLogsTab />
+        </TabsContent>
+
+        <TabsContent value="whatsapp" className="space-y-4">
+          <WhatsAppSessionsTab />
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-4">
