@@ -122,7 +122,8 @@ function detectFollowUpDateIntent(message: string): { isFollowUp: boolean; dateH
 function getQuickResponse(message: string): string | null {
   const lowerMsg = message.toLowerCase().trim();
   
-  const quickResponses: Record<string, string> = {
+  // Exact match responses
+  const exactResponses: Record<string, string> = {
     'menu': '📋 *Menu Utama Pomah Guesthouse*\n\n1️⃣ Ketik *"kamar"* - Lihat tipe & harga kamar\n2️⃣ Ketik *"booking"* - Cara booking kamar\n3️⃣ Ketik *"fasilitas"* - Fasilitas hotel\n4️⃣ Ketik *"lokasi"* - Alamat & kontak\n5️⃣ Ketik *"cek booking"* - Cek status booking\n\nAtau ketik pertanyaan Anda langsung! 😊',
     'halo': 'Halo! 👋 Selamat datang di Pomah Guesthouse. Ada yang bisa saya bantu?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
     'hai': 'Hai! 👋 Selamat datang di Pomah Guesthouse. Ada yang bisa saya bantu?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
@@ -147,7 +148,84 @@ function getQuickResponse(message: string): string | null {
     'siap': 'Baik! 👍 Ada yang bisa saya bantu lagi?\n\nKetik *"menu"* untuk melihat pilihan layanan.',
   };
   
-  return quickResponses[lowerMsg] || null;
+  // Check exact matches first
+  if (exactResponses[lowerMsg]) {
+    return exactResponses[lowerMsg];
+  }
+  
+  // Pattern-based responses for common questions
+  
+  // LOCATION patterns
+  if (/^(lokasi|alamat|dimana|where|location|map|maps|google map|address)(\?)?$/i.test(lowerMsg)) {
+    return '📍 *Lokasi Pomah Guesthouse*\n\nJl. Dewi Sartika IV No 71\nSemarang, Central Java 50221\n\n📌 Google Maps:\nhttps://maps.google.com/?q=-7.020891,110.388100\n\n🚗 *Akses mudah dari:*\n• Bandara Ahmad Yani: ~15 menit\n• Stasiun Tawang: ~10 menit\n• Simpang Lima: ~5 menit';
+  }
+  
+  // PRICE patterns
+  if (/^(harga|tarif|price|biaya|rate|berapa|harga kamar|tarif kamar|price list)(\?)?$/i.test(lowerMsg)) {
+    return '💰 *Harga Kamar Pomah Guesthouse*\n\n🛏️ *Single Room* - Rp 200.000/malam\n   • 1 tamu • 20m²\n\n🛏️ *Grand Deluxe* - Rp 450.000/malam\n   • 2 tamu • 30m²\n\n🛏️ *Family Suite* - Rp 700.000/malam\n   • 4 tamu • 60m²\n\n💡 Harga dapat berbeda di akhir pekan.\n\nKetik *"cek ketersediaan [tanggal]"* untuk cek harga real-time.';
+  }
+  
+  // FACILITIES patterns
+  if (/^(fasilitas|facility|amenity|amenities|fasility)(\?)?$/i.test(lowerMsg)) {
+    return '🏨 *Fasilitas Pomah Guesthouse*\n\n✅ WiFi Gratis\n✅ Parkir Gratis\n✅ Mini Cafe\n✅ Resepsionis (07:00 - 22:00)\n✅ Area Merokok (Balkon & Lobby Lt.2)\n\n🛏️ *Fasilitas Kamar:*\n• AC\n• Kamar Mandi Dalam\n• Air Panas\n• Amenities Lengkap\n• TV\n\nKetik *"kamar"* untuk detail tiap tipe kamar.';
+  }
+  
+  // ROOMS patterns
+  if (/^(kamar|room|rooms|tipe kamar|jenis kamar|pilihan kamar)(\?)?$/i.test(lowerMsg)) {
+    return '🛏️ *Tipe Kamar Pomah Guesthouse*\n\n1️⃣ *Single Room* - Rp 200.000/malam\n   • 1 tamu • 20m² • AC, WiFi, TV\n\n2️⃣ *Grand Deluxe* - Rp 450.000/malam\n   • 2 tamu • 30m² • AC, WiFi, TV, Balkon\n\n3️⃣ *Family Suite* - Rp 700.000/malam\n   • 4 tamu • 60m² • 2 Kamar, AC, WiFi, TV\n\n📅 Ketik *"cek ketersediaan [tanggal]"* untuk booking.\n\nContoh: "cek ketersediaan 15 januari"';
+  }
+  
+  // BOOKING / HOW TO BOOK patterns
+  if (/^(booking|pesan|reservasi|cara booking|cara pesan|how to book|book|reserve)(\?)?$/i.test(lowerMsg)) {
+    return '📝 *Cara Booking di Pomah Guesthouse*\n\n1️⃣ Ketik tipe kamar & tanggal\n   Contoh: "booking deluxe 15-17 januari"\n\n2️⃣ Isi data tamu (nama, email, telepon)\n\n3️⃣ Terima kode booking & invoice\n\n4️⃣ Transfer ke rekening yang tertera\n\n5️⃣ Kirim bukti transfer via chat ini\n\n✅ Booking confirmed!\n\n📅 Mau booking sekarang?\nKetik: *"cek ketersediaan [tanggal]"*';
+  }
+  
+  // CHECK BOOKING patterns
+  if (/^(cek booking|status booking|lacak|lacak booking|track|tracking|cek pesanan)(\?)?$/i.test(lowerMsg)) {
+    return '🔍 *Cek Status Booking*\n\nUntuk cek status booking, saya butuh:\n\n1️⃣ *Kode Booking* (contoh: PMH-ABC123)\n2️⃣ *Nomor HP* yang didaftarkan\n3️⃣ *Email* yang didaftarkan\n\nKetik dengan format:\n"cek PMH-XXXXXX 08123456789 email@email.com"\n\nAtau langsung tanyakan status booking Anda!';
+  }
+  
+  // PAYMENT patterns
+  if (/^(bayar|transfer|rekening|payment|bank|pembayaran|cara bayar)(\?)?$/i.test(lowerMsg)) {
+    return '💳 *Informasi Pembayaran*\n\n🏦 Transfer ke:\n*Bank BCA*\nNo. Rek: 0095584379\nA/N: Faizal Abdurachman\n\n📝 *Langkah Pembayaran:*\n1. Transfer sesuai total booking\n2. Kirim bukti transfer ke chat ini\n3. Tunggu konfirmasi dari admin\n\n⏰ Batas pembayaran: 1x24 jam setelah booking\n\n❓Ada pertanyaan? Ketik langsung!';
+  }
+  
+  // CHECK-IN/OUT patterns
+  if (/^(checkin|checkout|check in|check out|jam checkin|jam checkout|jam masuk|jam keluar|waktu checkin|waktu checkout)(\?)?$/i.test(lowerMsg)) {
+    return '🕐 *Jam Check-in & Check-out*\n\n📥 *Check-in:* 14:00 WIB (2 siang)\n📤 *Check-out:* 12:00 WIB (12 siang)\n\n⏰ *Early check-in / Late check-out?*\nHubungi admin untuk cek ketersediaan.\nMungkin dikenakan biaya tambahan.\n\n💡 Check-in di luar jam resepsionis (22:00-07:00) harap konfirmasi terlebih dahulu.';
+  }
+  
+  // CONTACT patterns
+  if (/^(kontak|contact|hubungi|telepon|telpon|phone|wa|whatsapp|admin|cs|customer service)(\?)?$/i.test(lowerMsg)) {
+    return '📞 *Kontak Pomah Guesthouse*\n\n📱 WhatsApp: +6281227271799\n📧 Email: info@pomahguesthouse.com\n\n🕐 *Jam Operasional Resepsionis:*\n07:00 - 22:00 WIB\n\n📍 *Alamat:*\nJl. Dewi Sartika IV No 71\nSemarang, Central Java\n\nKetik pertanyaan langsung di sini untuk bantuan cepat! 😊';
+  }
+  
+  // PARKING patterns
+  if (/^(parkir|parking|tempat parkir|area parkir)(\?)?$/i.test(lowerMsg)) {
+    return '🚗 *Informasi Parkir*\n\n✅ *Parkir GRATIS* untuk tamu\n📍 Area parkir tersedia di dalam komplek\n🏍️ Parkir motor & mobil tersedia\n\n💡 Parkir terbatas, first come first served.\nUntuk kendaraan besar, harap konfirmasi terlebih dahulu.';
+  }
+  
+  // WIFI patterns
+  if (/^(wifi|wi-fi|internet|password wifi|koneksi)(\?)?$/i.test(lowerMsg)) {
+    return '📶 *Informasi WiFi*\n\n✅ *WiFi GRATIS* untuk semua tamu\n📍 Tersedia di seluruh area hotel\n\n🔐 Password WiFi akan diberikan saat check-in.\n\n💡 Kecepatan internet cukup untuk streaming & video call.';
+  }
+  
+  // CANCEL/REFUND patterns
+  if (/^(cancel|batal|batalkan|refund|pembatalan|cancelation|cancellation)(\?)?$/i.test(lowerMsg)) {
+    return '❌ *Kebijakan Pembatalan*\n\n📋 Pembatalan booking:\n• Gratis pembatalan H-3 sebelum check-in\n• H-1 sampai H: Dikenakan biaya 50%\n• No-show: Tidak ada refund\n\n⚠️ Rate non-refundable tidak dapat dibatalkan.\n\nUntuk pembatalan, hubungi admin dengan menyebutkan kode booking Anda.';
+  }
+  
+  // BREAKFAST patterns
+  if (/^(sarapan|breakfast|makan pagi|include breakfast)(\?)?$/i.test(lowerMsg)) {
+    return '🍳 *Informasi Sarapan*\n\nSarapan *tidak termasuk* dalam harga kamar.\n\n☕ Mini Cafe tersedia untuk:\n• Kopi & Teh\n• Snack ringan\n\n🍽️ Rekomendasi tempat makan terdekat:\n• Warung Makan Pak Karso (~100m)\n• Soto Bangkong (~500m)\n\nTanya rekomendasi kuliner lainnya! 😊';
+  }
+  
+  // PROMO patterns
+  if (/^(promo|diskon|discount|penawaran|special offer|potongan)(\?)?$/i.test(lowerMsg)) {
+    return '🎉 *Promo Pomah Guesthouse*\n\nPromo saat ini:\n• 🏷️ Long stay (>7 malam): Diskon 15%\n• 🏷️ Weekend special: Harga khusus\n\n📅 Ketik *"cek ketersediaan [tanggal]"* untuk lihat harga promo real-time.\n\nPromo dapat berubah sewaktu-waktu.';
+  }
+  
+  return null;
 }
 
 // Detect booking intent in user message (room type + date)
