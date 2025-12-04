@@ -93,6 +93,13 @@ function detectStuckLoop(messages: Array<{role: string, content: string}>): bool
   return lastThree.every(m => m.content.substring(0, 200) === firstContent);
 }
 
+// Detect if user is asking about room list (no dates needed)
+function detectRoomListIntent(message: string): boolean {
+  const lowerMsg = message.toLowerCase();
+  const listPatterns = /(ada kamar apa|tipe kamar|list kamar|daftar kamar|harga kamar|pilihan kamar|kamar apa saja|kamar yang tersedia|jenis kamar|macam kamar)/i;
+  return listPatterns.test(lowerMsg);
+}
+
 // Detect booking intent in user message (room type + date)
 function detectBookingIntent(message: string): {
   hasRoomType: boolean;
@@ -103,7 +110,7 @@ function detectBookingIntent(message: string): {
   const lowerMsg = message.toLowerCase();
   
   // Room type patterns
-  const roomPatterns = /(deluxe|superior|villa|standard|family|suite|twin|double|single|kamar)/i;
+  const roomPatterns = /(deluxe|superior|villa|standard|family|suite|twin|double|single)/i;
   const roomMatch = lowerMsg.match(roomPatterns);
   
   // Date patterns (Indonesian)
@@ -382,9 +389,44 @@ serve(async (req) => {
     let aiMessage = chatbotData.choices?.[0]?.message;
     let aiResponse = aiMessage?.content || "";
 
-    // Detect booking intent and force retry if AI didn't call tools when it should
+    // Detect room list intent (user asking "ada kamar apa saja" without dates)
+    const roomListIntent = detectRoomListIntent(message);
     const intent = detectBookingIntent(message);
-    if (intent.hasRoomType && intent.hasDate && !aiMessage?.tool_calls) {
+    
+    // Force get_all_rooms if user asks about room list but AI didn't call tools
+    if (roomListIntent && !intent.hasDate && !aiMessage?.tool_calls) {
+      console.log(`⚠️ AI didn't use get_all_rooms for room list intent - forcing retry`);
+      
+      const retryMessages = [
+        ...messages,
+        { 
+          role: 'system' as const, 
+          content: `PERINTAH SISTEM: User menanyakan daftar kamar/tipe kamar. WAJIB PANGGIL get_all_rooms SEKARANG untuk menampilkan semua tipe kamar dengan harga! JANGAN TANYA TANGGAL!` 
+        }
+      ];
+      
+      const retryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          messages: retryMessages,
+          session_id: `wa_${phone}`,
+          channel: 'whatsapp',
+        }),
+      });
+      
+      if (retryResponse.ok) {
+        chatbotData = await retryResponse.json();
+        aiMessage = chatbotData.choices?.[0]?.message;
+        aiResponse = aiMessage?.content || aiResponse;
+        console.log("Room list retry response:", JSON.stringify(chatbotData).substring(0, 500));
+      }
+    }
+    // Force check_availability if user provides room type + date but AI didn't call tools
+    else if (intent.hasRoomType && intent.hasDate && !aiMessage?.tool_calls) {
       console.log(`⚠️ AI didn't use tools for booking intent (room: ${intent.roomType}, date: ${intent.dateHint}) - forcing retry`);
       
       // Add forcing hint and retry
@@ -413,7 +455,7 @@ serve(async (req) => {
         chatbotData = await retryResponse.json();
         aiMessage = chatbotData.choices?.[0]?.message;
         aiResponse = aiMessage?.content || aiResponse;
-        console.log("Retry response:", JSON.stringify(chatbotData).substring(0, 500));
+        console.log("Booking intent retry response:", JSON.stringify(chatbotData).substring(0, 500));
       }
     }
 

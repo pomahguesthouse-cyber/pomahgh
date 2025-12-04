@@ -135,10 +135,20 @@ Bot: "${ex.ideal_answer}"`
     const systemPrompt = `${persona}
 
 🚨 ATURAN TOOL CALLING (SANGAT WAJIB - PRIORITAS TERTINGGI!):
-JIKA user menyebut TIPE KAMAR + TANGGAL → WAJIB LANGSUNG panggil check_availability!
-JANGAN PERNAH bertanya "kamar apa?" atau "tanggal berapa?" jika user SUDAH menyebutkannya!
+
+📋 PERTANYAAN UMUM TENTANG KAMAR (TANPA TANGGAL):
+- User: "ada kamar apa saja?" / "tipe kamar?" / "list kamar" → LANGSUNG panggil get_all_rooms!
+- User: "harga kamar?" / "berapa harga?" → LANGSUNG panggil get_all_rooms!
+- JANGAN bertanya tanggal jika user belum bermaksud booking!
+
+🗓️ PERTANYAAN DENGAN TANGGAL (BOOKING INTENT):
+- User menyebut TIPE KAMAR + TANGGAL → LANGSUNG panggil check_availability!
+- JANGAN PERNAH bertanya "kamar apa?" atau "tanggal berapa?" jika user SUDAH menyebutkannya!
 
 CONTOH WAJIB TOOL CALL:
+❌ SALAH: User: "ada kamar apa saja?" → Bot: "Untuk tanggal berapa?"
+✅ BENAR: User: "ada kamar apa saja?" → Bot: *panggil get_all_rooms* → "Kami punya 3 tipe kamar..."
+
 ❌ SALAH: User: "booking deluxe tanggal 5" → Bot: "Untuk tanggal berapa?" 
 ✅ BENAR: User: "booking deluxe tanggal 5" → Bot: *panggil check_availability* → "Deluxe tersedia..."
 
@@ -146,13 +156,14 @@ CONTOH WAJIB TOOL CALL:
 ✅ BENAR: User: "ada kamar villa 15 januari?" → Bot: *panggil check_availability* → "Villa tersedia..."
 
 URUTAN YANG BENAR:
-1. User sebut kamar + tanggal → LANGSUNG PANGGIL check_availability (JANGAN TANYA LAGI!)
-2. Tampilkan hasil ketersediaan dari tool
+1. User tanya "ada kamar apa?" (TANPA tanggal) → PANGGIL get_all_rooms → Tampilkan daftar
+2. User sebut kamar + tanggal → PANGGIL check_availability → Tampilkan ketersediaan
 3. Tanyakan data yang BELUM ADA saja (nama, email, telepon, jumlah tamu)
 4. User lengkapi data → PANGGIL create_booking_draft
 
 KEYWORD TIPE KAMAR: deluxe, superior, villa, standard, family, suite, twin, double, single
 KEYWORD TANGGAL: besok, lusa, tanggal X, januari-desember, hari ini, minggu depan, weekend
+KEYWORD LIST KAMAR: ada kamar apa, tipe kamar, list kamar, daftar kamar, harga kamar, pilihan kamar
 
 ⚠️ ATURAN ANTI-REPETISI:
 - DILARANG mengulangi respons yang sama persis dengan pesan sebelumnya
@@ -230,13 +241,14 @@ ${trainingExamplesInfo}
 ` : ''}
 
 TOOLS YANG TERSEDIA:
-1. check_availability - Cek ketersediaan real-time kamar untuk tanggal tertentu
-2. get_room_details - Info lengkap kamar spesifik
-3. get_facilities - Daftar lengkap fasilitas
-4. create_booking_draft - Buat booking langsung (SUPPORT MULTIPLE ROOMS!)
-5. get_booking_details - Cek detail booking (WAJIB minta kode booking + no telepon + email)
-6. update_booking - Ubah jadwal/detail booking (WAJIB verifikasi dulu)
-7. check_payment_status - Cek status pembayaran (WAJIB verifikasi 3 faktor)
+1. get_all_rooms - DAFTAR SEMUA TIPE KAMAR dengan harga (untuk "ada kamar apa?")
+2. check_availability - Cek ketersediaan real-time kamar untuk tanggal tertentu
+3. get_room_details - Info lengkap kamar spesifik
+4. get_facilities - Daftar lengkap fasilitas
+5. create_booking_draft - Buat booking langsung (SUPPORT MULTIPLE ROOMS!)
+6. get_booking_details - Cek detail booking (WAJIB minta kode booking + no telepon + email)
+7. update_booking - Ubah jadwal/detail booking (WAJIB verifikasi dulu)
+8. check_payment_status - Cek status pembayaran (WAJIB verifikasi 3 faktor)
 
 🛏️ MULTIPLE ROOM BOOKING:
 - Chatbot dapat membantu booking beberapa kamar sekaligus dalam satu transaksi
@@ -319,6 +331,17 @@ BAHASA:
 
     // Define tools for the AI
     const tools = [
+      {
+        type: "function",
+        function: {
+          name: "get_all_rooms",
+          description: "GUNAKAN INI saat user tanya 'ada kamar apa?', 'tipe kamar?', 'harga kamar?', 'list kamar'. Menampilkan semua tipe kamar yang tersedia dengan harga TANPA perlu tanggal.",
+          parameters: {
+            type: "object",
+            properties: {}
+          }
+        }
+      },
       {
         type: "function",
         function: {
