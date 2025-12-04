@@ -25,17 +25,28 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // Default persona fallback
+    const defaultPersona = "Anda adalah asisten hotel yang ramah dan membantu tamu dengan informasi kamar, booking, fasilitas, dan pertanyaan umum seputar hotel. Jawab dengan bahasa Indonesia yang natural dan profesional.";
+    
     // Fetch chatbot settings from database if not provided (for WhatsApp webhook)
     let chatbotSettings = providedSettings;
-    if (!chatbotSettings?.persona) {
-      const { data: dbSettings } = await supabase
+    if (!chatbotSettings || !chatbotSettings.persona) {
+      console.log("Fetching chatbot settings from database...");
+      const { data: dbSettings, error: settingsError } = await supabase
         .from("chatbot_settings")
         .select("*")
         .single();
       
+      if (settingsError) {
+        console.log("Error fetching chatbot settings:", settingsError.message);
+      }
+      
       chatbotSettings = dbSettings || {
-        persona: "Anda adalah asisten hotel yang ramah dan membantu tamu dengan informasi kamar, booking, fasilitas, dan pertanyaan umum seputar hotel. Jawab dengan bahasa Indonesia yang natural dan profesional."
+        persona: defaultPersona,
+        greeting_message: "Halo! 👋 Ada yang bisa saya bantu?",
+        bot_name: "Hotel Assistant"
       };
+      console.log("Chatbot settings loaded:", chatbotSettings?.persona ? "OK" : "Using fallback");
     }
 
     // Fetch hotel settings and data
@@ -119,8 +130,9 @@ Bot: "${ex.ideal_answer}"`
     const currentDateIndonesian = now.toLocaleDateString('id-ID', dateOptions);
     const currentDateISO = now.toISOString().split('T')[0];
 
-    // Build enhanced system prompt
-    const systemPrompt = `${chatbotSettings.persona}
+    // Build enhanced system prompt with defensive fallback
+    const persona = chatbotSettings?.persona || defaultPersona;
+    const systemPrompt = `${persona}
 
 📅 TANGGAL SEKARANG: ${currentDateIndonesian} (${currentDateISO})
 ⚠️ TAHUN SEKARANG: 2025
