@@ -504,6 +504,7 @@ BAHASA:
     ];
 
     // Call Lovable AI with optimized settings for direct answers
+    // Increased max_tokens to prevent empty responses
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -518,9 +519,9 @@ BAHASA:
         ],
         tools,
         tool_choice: "auto", // Encourage tool calling
-        temperature: 0.2, // Lower temperature for more deterministic tool usage
-        max_tokens: chatbotSettings.response_speed === 'fast' ? 250 : 
-                    chatbotSettings.response_speed === 'detailed' ? 600 : 400,
+        temperature: 0.3, // Slightly higher for more natural responses
+        max_tokens: chatbotSettings.response_speed === 'fast' ? 400 : 
+                    chatbotSettings.response_speed === 'detailed' ? 800 : 600,
       }),
     });
 
