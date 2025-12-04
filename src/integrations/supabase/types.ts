@@ -495,6 +495,44 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_message_ratings: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          id: string
+          is_good_example: boolean | null
+          message_id: string
+          rated_by: string | null
+          rating: number | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          id?: string
+          is_good_example?: boolean | null
+          message_id: string
+          rated_by?: string | null
+          rating?: number | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          id?: string
+          is_good_example?: boolean | null
+          message_id?: string
+          rated_by?: string | null
+          rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_ratings_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string
@@ -629,6 +667,39 @@ export type Database = {
           sound_enabled?: boolean | null
           updated_at?: string | null
           widget_position?: string | null
+        }
+        Relationships: []
+      }
+      chatbot_training_examples: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          ideal_answer: string
+          is_active: boolean | null
+          question: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          ideal_answer: string
+          is_active?: boolean | null
+          question: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          ideal_answer?: string
+          is_active?: boolean | null
+          question?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

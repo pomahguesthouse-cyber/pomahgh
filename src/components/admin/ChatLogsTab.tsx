@@ -3,14 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { 
   useChatConversations, 
   useChatMessages, 
   useDeleteConversation,
   useChatStats 
 } from '@/hooks/useChatLogs';
+import { useRateMessage, usePromoteToExample, useMessageRatings } from '@/hooks/useTrainingExamples';
 import { formatDateTimeID } from '@/utils/indonesianFormat';
 import { 
   Search, 
@@ -23,7 +26,9 @@ import {
   ChevronRight,
   Loader2,
   Bot,
-  User
+  User,
+  Star,
+  GraduationCap
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -35,6 +40,47 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface StarRatingProps {
+  value: number;
+  onChange: (rating: number) => void;
+  disabled?: boolean;
+}
+
+const StarRating = ({ value, onChange, disabled }: StarRatingProps) => {
+  const [hover, setHover] = useState(0);
+
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(star)}
+          onMouseEnter={() => setHover(star)}
+          onMouseLeave={() => setHover(0)}
+          className="p-0.5 disabled:opacity-50"
+        >
+          <Star
+            className={`w-4 h-4 transition-colors ${
+              star <= (hover || value)
+                ? 'fill-yellow-400 text-yellow-400'
+                : 'text-gray-300'
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const ChatLogsTab = () => {
   const [page, setPage] = useState(1);
@@ -42,12 +88,22 @@ const ChatLogsTab = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
+  const [promoteData, setPromoteData] = useState<{
+    messageId: string;
+    question: string;
+    answer: string;
+    category: string;
+  } | null>(null);
   
   const limit = 10;
   const { data: conversationsData, isLoading } = useChatConversations(page, limit);
   const { data: messages, isLoading: messagesLoading } = useChatMessages(selectedConversationId);
   const { data: stats } = useChatStats();
+  const { data: ratings } = useMessageRatings();
   const deleteConversation = useDeleteConversation();
+  const rateMessage = useRateMessage();
+  const promoteToExample = usePromoteToExample();
 
   const conversations = conversationsData?.data || [];
   const totalCount = conversationsData?.count || 0;
@@ -62,6 +118,14 @@ const ChatLogsTab = () => {
     );
   });
 
+  const getMessageRating = (messageId: string) => {
+    return ratings?.find(r => r.message_id === messageId);
+  };
+
+  const handleRate = async (messageId: string, rating: number) => {
+    await rateMessage.mutateAsync({ messageId, rating });
+  };
+
   const handleDelete = (id: string) => {
     setConversationToDelete(id);
     setDeleteDialogOpen(true);
@@ -73,6 +137,39 @@ const ChatLogsTab = () => {
       setDeleteDialogOpen(false);
       setConversationToDelete(null);
     }
+  };
+
+  const handleOpenPromote = (messageId: string, question: string, answer: string) => {
+    setPromoteData({
+      messageId,
+      question,
+      answer,
+      category: 'general'
+    });
+    setPromoteDialogOpen(true);
+  };
+
+  const handlePromote = async () => {
+    if (promoteData) {
+      await promoteToExample.mutateAsync({
+        messageId: promoteData.messageId,
+        question: promoteData.question,
+        answer: promoteData.answer,
+        category: promoteData.category,
+      });
+      setPromoteDialogOpen(false);
+      setPromoteData(null);
+    }
+  };
+
+  // Find the user message before an assistant message
+  const findUserQuestion = (messages: any[], currentIndex: number) => {
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        return messages[i].content;
+      }
+    }
+    return '';
   };
 
   return (
@@ -122,7 +219,7 @@ const ChatLogsTab = () => {
         <CardHeader>
           <CardTitle>Log Percakapan</CardTitle>
           <CardDescription>
-            Riwayat semua percakapan chatbot dengan tamu
+            Riwayat semua percakapan chatbot dengan tamu. Klik 👁 untuk melihat detail dan beri rating.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -226,7 +323,7 @@ const ChatLogsTab = () => {
         </CardContent>
       </Card>
 
-      {/* Messages Dialog */}
+      {/* Messages Dialog with Rating */}
       <Dialog open={!!selectedConversationId} onOpenChange={() => setSelectedConversationId(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh]">
           <DialogHeader>
@@ -243,40 +340,129 @@ const ChatLogsTab = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {messages?.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {msg.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-4 h-4 text-primary" />
+                {messages?.map((msg, index) => {
+                  const rating = getMessageRating(msg.id);
+                  const userQuestion = msg.role === 'assistant' ? findUserQuestion(messages, index) : '';
+                  
+                  return (
+                    <div key={msg.id} className="space-y-1">
+                      <div
+                        className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {msg.role === 'assistant' && (
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Bot className="w-4 h-4 text-primary" />
+                          </div>
+                        )}
+                        <div
+                          className={`max-w-[80%] p-3 rounded-lg ${
+                            msg.role === 'user'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          <p className={`text-xs mt-1 ${
+                            msg.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                          }`}>
+                            {msg.created_at ? formatDateTimeID(new Date(msg.created_at)) : ''}
+                          </p>
+                        </div>
+                        {msg.role === 'user' && (
+                          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4" />
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <div
-                      className={`max-w-[80%] p-3 rounded-lg ${
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      <p className={`text-xs mt-1 ${
-                        msg.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                      }`}>
-                        {msg.created_at ? formatDateTimeID(new Date(msg.created_at)) : ''}
-                      </p>
+                      
+                      {/* Rating UI for assistant messages */}
+                      {msg.role === 'assistant' && (
+                        <div className="ml-10 flex items-center gap-3">
+                          <StarRating
+                            value={rating?.rating || 0}
+                            onChange={(r) => handleRate(msg.id, r)}
+                            disabled={rateMessage.isPending}
+                          />
+                          {(rating?.rating || 0) >= 4 && !rating?.is_good_example && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-xs"
+                              onClick={() => handleOpenPromote(msg.id, userQuestion, msg.content)}
+                            >
+                              <GraduationCap className="w-3 h-3 mr-1" />
+                              Jadikan Contoh
+                            </Button>
+                          )}
+                          {rating?.is_good_example && (
+                            <Badge variant="secondary" className="text-xs">
+                              ✓ Contoh Training
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    {msg.role === 'user' && (
-                      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4" />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Promote Dialog */}
+      <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Jadikan Contoh Training</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Kategori</Label>
+              <Select
+                value={promoteData?.category || 'general'}
+                onValueChange={(value) => setPromoteData(prev => prev ? { ...prev, category: value } : null)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">Umum</SelectItem>
+                  <SelectItem value="booking">Booking</SelectItem>
+                  <SelectItem value="availability">Ketersediaan</SelectItem>
+                  <SelectItem value="facilities">Fasilitas</SelectItem>
+                  <SelectItem value="promo">Promo</SelectItem>
+                  <SelectItem value="payment">Pembayaran</SelectItem>
+                  <SelectItem value="location">Lokasi</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Pertanyaan User</Label>
+              <Textarea
+                value={promoteData?.question || ''}
+                onChange={(e) => setPromoteData(prev => prev ? { ...prev, question: e.target.value } : null)}
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label>Jawaban Bot (Ideal)</Label>
+              <Textarea
+                value={promoteData?.answer || ''}
+                onChange={(e) => setPromoteData(prev => prev ? { ...prev, answer: e.target.value } : null)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPromoteDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handlePromote} disabled={promoteToExample.isPending}>
+              {promoteToExample.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Simpan sebagai Contoh
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
