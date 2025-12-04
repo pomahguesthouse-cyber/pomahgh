@@ -4,6 +4,7 @@ import { DndContext, DragOverlay, closestCenter, MouseSensor, TouchSensor, useSe
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Booking, BlockDialogState, CreateBookingDialogState, ContextMenuState } from "./types";
 import { useCalendarState } from "./hooks/useCalendarState";
@@ -250,8 +251,8 @@ export const BookingCalendar = () => {
         total_price: editedBooking.total_price,
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Force immediate refetch for cancelled bookings to disappear
+      await queryClient.refetchQueries({ queryKey: ["admin-bookings"] });
       setSelectedBooking(null);
       toast.success("Booking berhasil diupdate");
     } catch (error) {
@@ -268,6 +269,24 @@ export const BookingCalendar = () => {
       return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [contextMenu]);
+
+  // Realtime subscription for booking changes (including cancellations)
+  useEffect(() => {
+    const channel = supabase
+      .channel('booking-calendar-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'bookings'
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   return (
     <DndContext
