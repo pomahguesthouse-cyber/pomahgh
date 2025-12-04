@@ -1,15 +1,11 @@
 import { Helmet } from "react-helmet-async";
-import { ChatHeader, ChatInput, ChatMessages, ChatQuickReplies } from "@/components/chat";
+import { ChatHeader, ChatInput, ChatMessages } from "@/components/chat";
 import { useChatbot } from "@/hooks/useChatbot";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 
 const Chat = () => {
   const { messages, isLoading, sendMessage, clearChat, settings } = useChatbot();
   const { settings: hotelSettings } = useHotelSettings();
-
-  const handleQuickReply = (message: string) => {
-    sendMessage(message);
-  };
 
   return (
     <>
@@ -31,10 +27,6 @@ const Chat = () => {
           isLoading={isLoading}
           botName={settings?.bot_name || undefined}
         />
-
-        {messages.length === 0 && (
-          <ChatQuickReplies onSelect={handleQuickReply} disabled={isLoading} />
-        )}
 
         <ChatInput onSend={sendMessage} disabled={isLoading} maxLength={settings?.max_message_length || 500} />
       </div>
