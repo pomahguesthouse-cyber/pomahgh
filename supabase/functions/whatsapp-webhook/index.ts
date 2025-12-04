@@ -40,6 +40,29 @@ function normalizePhone(phone: string): string {
   return normalized;
 }
 
+// Format AI response for WhatsApp compatibility
+function formatForWhatsApp(text: string): string {
+  // Remove markdown tables
+  text = text.replace(/\|[^\n]+\|/g, '');
+  text = text.replace(/\|-+\|/g, '');
+  
+  // Convert markdown bold to WhatsApp bold
+  text = text.replace(/\*\*([^*]+)\*\*/g, '*$1*');
+  
+  // Convert markdown headers to bold
+  text = text.replace(/^###?\s*(.+)$/gm, '*$1*');
+  
+  // Remove excessive newlines
+  text = text.replace(/\n{3,}/g, '\n\n');
+  
+  // Limit to WhatsApp max (4096 chars)
+  if (text.length > 4000) {
+    text = text.substring(0, 3997) + '...';
+  }
+  
+  return text.trim();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -57,7 +80,6 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse incoming webhook from Fonnte
-    // Fonnte sends: sender, message, device, url (if media), etc.
     const body = await req.json();
     console.log("Incoming WhatsApp webhook:", JSON.stringify(body));
 
@@ -163,6 +185,7 @@ serve(async (req) => {
     })) || [{ role: 'user' as const, content: message }];
 
     // Call chatbot edge function
+    console.log("Calling chatbot function...");
     const chatbotResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
       method: 'POST',
       headers: {
@@ -183,11 +206,87 @@ serve(async (req) => {
     }
 
     const chatbotData = await chatbotResponse.json();
-    let aiResponse = chatbotData.response || chatbotData.content || "Maaf, terjadi kesalahan. Silakan coba lagi.";
+    console.log("Chatbot response:", JSON.stringify(chatbotData).substring(0, 500));
 
-    // Format response for WhatsApp (remove markdown tables, limit length)
+    // Parse OpenAI format response: { choices: [{ message: { content: "...", tool_calls: [...] }}] }
+    const aiMessage = chatbotData.choices?.[0]?.message;
+    let aiResponse = aiMessage?.content || "";
+
+    // Handle tool calls if present
+    if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {
+      console.log("Tool calls detected:", aiMessage.tool_calls.length);
+      
+      // Process each tool call
+      const toolResults: any[] = [];
+      for (const toolCall of aiMessage.tool_calls) {
+        console.log(`Executing tool: ${toolCall.function.name}`);
+        
+        try {
+          const toolResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              tool_name: toolCall.function.name,
+              parameters: JSON.parse(toolCall.function.arguments || '{}'),
+            }),
+          });
+
+          const toolResult = await toolResponse.json();
+          console.log(`Tool ${toolCall.function.name} result:`, JSON.stringify(toolResult).substring(0, 200));
+
+          toolResults.push({
+            role: 'tool',
+            content: JSON.stringify(toolResult),
+            tool_call_id: toolCall.id,
+          });
+        } catch (toolError) {
+          console.error(`Tool ${toolCall.function.name} error:`, toolError);
+          toolResults.push({
+            role: 'tool',
+            content: JSON.stringify({ error: "Tool execution failed" }),
+            tool_call_id: toolCall.id,
+          });
+        }
+      }
+
+      // Send tool results back to AI for final response
+      console.log("Sending tool results back to chatbot...");
+      const finalResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          messages: [
+            ...messages,
+            { role: 'assistant', content: aiMessage.content, tool_calls: aiMessage.tool_calls },
+            ...toolResults,
+          ],
+          session_id: `wa_${phone}`,
+          channel: 'whatsapp',
+        }),
+      });
+
+      if (finalResponse.ok) {
+        const finalData = await finalResponse.json();
+        console.log("Final response:", JSON.stringify(finalData).substring(0, 500));
+        aiResponse = finalData.choices?.[0]?.message?.content || aiResponse;
+      } else {
+        console.error("Final response error:", await finalResponse.text());
+      }
+    }
+
+    // Fallback if no response
+    if (!aiResponse) {
+      aiResponse = "Maaf, terjadi kesalahan. Silakan coba lagi.";
+    }
+
+    // Format response for WhatsApp
     aiResponse = formatForWhatsApp(aiResponse);
-
     console.log(`AI Response for ${phone}: "${aiResponse.substring(0, 100)}..."`);
 
     // Log assistant message
@@ -236,26 +335,3 @@ serve(async (req) => {
     );
   }
 });
-
-// Format AI response for WhatsApp compatibility
-function formatForWhatsApp(text: string): string {
-  // Remove markdown tables
-  text = text.replace(/\|[^\n]+\|/g, '');
-  text = text.replace(/\|-+\|/g, '');
-  
-  // Convert markdown bold to WhatsApp bold
-  text = text.replace(/\*\*([^*]+)\*\*/g, '*$1*');
-  
-  // Convert markdown headers to bold
-  text = text.replace(/^###?\s*(.+)$/gm, '*$1*');
-  
-  // Remove excessive newlines
-  text = text.replace(/\n{3,}/g, '\n\n');
-  
-  // Limit to WhatsApp max (4096 chars)
-  if (text.length > 4000) {
-    text = text.substring(0, 3997) + '...';
-  }
-  
-  return text.trim();
-}
