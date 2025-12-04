@@ -168,6 +168,60 @@ serve(async (req) => {
       });
     }
 
+    // Check if session is in takeover mode (admin handling manually)
+    if (session?.is_takeover) {
+      console.log(`Session ${phone} is in takeover mode - skipping AI, logging message only`);
+      
+      // Get or create conversation for logging
+      let takeoverConversationId = session.conversation_id;
+      if (!takeoverConversationId) {
+        const { data: newConv } = await supabase
+          .from('chat_conversations')
+          .insert({ session_id: `wa_${phone}_${Date.now()}`, message_count: 0 })
+          .select()
+          .single();
+        takeoverConversationId = newConv?.id;
+      }
+      
+      // Log user message without AI processing
+      if (takeoverConversationId) {
+        await supabase.from('chat_messages').insert({
+          conversation_id: takeoverConversationId,
+          role: 'user',
+          content: message,
+        });
+        
+        // Get current count and increment
+        const { data: convData } = await supabase
+          .from('chat_conversations')
+          .select('message_count')
+          .eq('id', takeoverConversationId)
+          .single();
+        
+        await supabase
+          .from('chat_conversations')
+          .update({ message_count: (convData?.message_count || 0) + 1 })
+          .eq('id', takeoverConversationId);
+      }
+      
+      // Update last_message_at so admin sees new message notification
+      await supabase
+        .from('whatsapp_sessions')
+        .update({ 
+          last_message_at: new Date().toISOString(),
+          conversation_id: takeoverConversationId,
+        })
+        .eq('phone_number', phone);
+      
+      return new Response(JSON.stringify({ 
+        status: "takeover_mode", 
+        message: "Message logged, awaiting admin response",
+        conversation_id: takeoverConversationId,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Get or create conversation
     let conversationId = session?.conversation_id;
     
