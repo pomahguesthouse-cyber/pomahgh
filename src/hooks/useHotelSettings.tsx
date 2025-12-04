@@ -2,6 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+export interface WhatsAppContact {
+  number: string;
+  label: string;
+}
+
 export interface HotelSettings {
   id: string;
   created_at?: string;
@@ -55,6 +60,10 @@ export interface HotelSettings {
   refund_policy_text?: string;
   hotel_policies_text?: string;
   hotel_policies_enabled?: boolean;
+  // WhatsApp settings
+  whatsapp_session_timeout_minutes?: number;
+  whatsapp_ai_whitelist?: string[];
+  whatsapp_contact_numbers?: WhatsAppContact[];
 }
 
 export const useHotelSettings = () => {
@@ -69,7 +78,12 @@ export const useHotelSettings = () => {
         .single();
 
       if (error) throw error;
-      return data as HotelSettings;
+      
+      // Cast JSONB fields properly
+      return {
+        ...data,
+        whatsapp_contact_numbers: (data.whatsapp_contact_numbers as unknown as WhatsAppContact[]) || [],
+      } as HotelSettings;
     },
   });
 
@@ -77,9 +91,15 @@ export const useHotelSettings = () => {
     mutationFn: async (updates: Partial<HotelSettings>) => {
       if (!settings?.id) throw new Error("No settings found");
 
+      // Convert WhatsAppContact[] back to Json for database
+      const dbUpdates: Record<string, unknown> = { ...updates };
+      if (updates.whatsapp_contact_numbers) {
+        dbUpdates.whatsapp_contact_numbers = updates.whatsapp_contact_numbers as unknown;
+      }
+
       const { data, error } = await supabase
         .from("hotel_settings")
-        .update(updates)
+        .update(dbUpdates)
         .eq("id", settings.id)
         .select()
         .single();
