@@ -64,28 +64,46 @@ const adminItems = [{
   icon: Settings
 }];
 export function AdminSidebar() {
-  const {
-    open
-  } = useSidebar();
+  const { open, setOpen, isMobile } = useSidebar();
   const location = useLocation();
-  return <Sidebar className={`${open ? "w-60" : "w-14"} z-50`} collapsible="icon">
+
+  const handleNavClick = () => {
+    // Auto-close sidebar on mobile after navigation
+    if (isMobile) {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <Sidebar 
+      className={`${open ? "w-60" : "w-14"} z-50`} 
+      collapsible={isMobile ? "offcanvas" : "icon"}
+    >
       <SidebarContent>
-        <SidebarGroup className="bg-primary-foreground shadow opacity-100 border-solid">
-          <SidebarGroupLabel>Admin Panel</SidebarGroupLabel>
+        <SidebarGroup className="bg-card shadow border-b">
+          <SidebarGroupLabel className="text-sm font-semibold">Admin Panel</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminItems.map(item => <SidebarMenuItem key={item.title}>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className="hover:bg-accent" activeClassName="bg-accent text-accent-foreground font-medium">
-                      <item.icon className="h-4 w-4" />
-                      {open && <span>{item.title}</span>}
+                    <NavLink 
+                      to={item.url} 
+                      end 
+                      className="hover:bg-accent py-2.5"
+                      activeClassName="bg-accent text-accent-foreground font-medium"
+                      onClick={handleNavClick}
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {open && <span className="truncate">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
-                </SidebarMenuItem>)}
+                </SidebarMenuItem>
+              ))}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <NavLink to="/" className="hover:bg-accent">
-                    <Home className="h-4 w-4" />
+                  <NavLink to="/" className="hover:bg-accent py-2.5" onClick={handleNavClick}>
+                    <Home className="h-4 w-4 shrink-0" />
                     {open && <span>Back to Site</span>}
                   </NavLink>
                 </SidebarMenuButton>
@@ -94,5 +112,6 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-    </Sidebar>;
+    </Sidebar>
+  );
 }

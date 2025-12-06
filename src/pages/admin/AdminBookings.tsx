@@ -406,22 +406,23 @@ const AdminBookings = () => {
     value: "maintenance",
     label: "Maintenance"
   }];
-  return <div className="space-y-6">
+  return <div className="space-y-4 md:space-y-6">
       {/* Search Bar */}
-      <div className="w-full max-w-md">
+      <div className="w-full">
         <Input
           type="text"
-          placeholder="Search by name, email, room number, or booking ID..."
+          placeholder="Search booking..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full"
+          className="w-full text-sm"
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-3">
+      {/* Filters - Stack on mobile */}
+      <div className="flex flex-col gap-3">
         {/* Date Filter Type */}
         <Select value={filterDateType} onValueChange={(value: "check_in" | "check_out") => setFilterDateType(value)}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-full md:w-48">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -430,14 +431,14 @@ const AdminBookings = () => {
           </SelectContent>
         </Select>
 
-        {/* Date Range Picker */}
-        <div className="flex items-center gap-2">
+        {/* Date Range Picker - Stack on mobile */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
-                  "w-[240px] justify-start text-left font-normal",
+                  "w-full md:w-[180px] justify-start text-left font-normal text-sm",
                   !startDate && "text-muted-foreground"
                 )}
               >
@@ -456,14 +457,14 @@ const AdminBookings = () => {
             </PopoverContent>
           </Popover>
 
-          <span className="text-muted-foreground">to</span>
+          <span className="text-muted-foreground text-center hidden md:block">to</span>
 
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
-                  "w-[240px] justify-start text-left font-normal",
+                  "w-full md:w-[180px] justify-start text-left font-normal text-sm",
                   !endDate && "text-muted-foreground"
                 )}
               >
@@ -499,7 +500,7 @@ const AdminBookings = () => {
 
         {/* Status Filter */}
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-full md:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -511,7 +512,7 @@ const AdminBookings = () => {
 
         {/* Source Filter */}
         <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-full md:w-40">
             <SelectValue placeholder="All Sources" />
           </SelectTrigger>
           <SelectContent>
@@ -525,7 +526,7 @@ const AdminBookings = () => {
         </Select>
       </div>
 
-      <Accordion type="single" collapsible className="space-y-4">
+      <Accordion type="single" collapsible className="space-y-3 md:space-y-4">
         {filteredBookings?.map(booking => (
           <AccordionItem value={booking.id} key={booking.id} className="border rounded-lg relative overflow-hidden">
             {/* Gray overlay for cancelled bookings */}
@@ -533,19 +534,19 @@ const AdminBookings = () => {
               <div className="absolute inset-0 bg-gray-500/30 pointer-events-none z-10 rounded-lg" />
             )}
             
-            <AccordionTrigger className="hover:no-underline px-6 py-4 relative z-20">
+            <AccordionTrigger className="hover:no-underline px-3 md:px-6 py-3 md:py-4 relative z-20">
               <div className="w-full text-left" onClick={(e) => e.stopPropagation()}>
-                {/* Header Row */}
-                <div className="flex justify-between items-start mb-4">
+                {/* Header Row - Stack on mobile */}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 md:gap-4 mb-3 md:mb-4">
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="flex items-center gap-1">
-                      <h3 className="font-semibold text-lg text-primary">
+                      <h3 className="font-semibold text-sm md:text-lg text-primary">
                         {booking.booking_code}
                       </h3>
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-6 w-6"
+                        className="h-5 w-5 md:h-6 md:w-6"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigator.clipboard.writeText(booking.booking_code);
@@ -570,16 +571,17 @@ const AdminBookings = () => {
                           ? 'destructive'
                           : 'secondary'
                       }
+                      className="text-[10px] md:text-xs"
                     >
                       {booking.status}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      Dibuat {format(new Date(booking.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}
+                    <span className="text-[10px] md:text-xs text-muted-foreground">
+                      {format(new Date(booking.created_at), "dd MMM yyyy", { locale: localeId })}
                     </span>
                   </div>
                   
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  {/* Action Buttons - Compact on mobile */}
+                  <div className="flex items-center gap-1 md:gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
                     <Select
                       value={booking.status} 
                       onValueChange={(value) => {
@@ -589,7 +591,7 @@ const AdminBookings = () => {
                         });
                       }}
                     >
-                      <SelectTrigger className="w-32" onClick={(e) => e.stopPropagation()}>
+                      <SelectTrigger className="w-24 md:w-32 h-8 text-xs md:text-sm" onClick={(e) => e.stopPropagation()}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -603,6 +605,7 @@ const AdminBookings = () => {
                     <Button 
                       size="icon" 
                       variant="outline" 
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedBookingForInvoice(booking);
@@ -610,21 +613,23 @@ const AdminBookings = () => {
                       }}
                       title="Kirim Invoice"
                     >
-                      <FileText className="h-4 w-4" />
+                      <FileText className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </Button>
                     <Button 
                       size="icon" 
-                      variant="outline" 
+                      variant="outline"
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEditClick(booking);
                       }}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </Button>
                     <Button 
                       size="icon" 
-                      variant="destructive" 
+                      variant="destructive"
+                      className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (confirm("Are you sure you want to delete this booking?")) {
@@ -632,70 +637,73 @@ const AdminBookings = () => {
                         }
                       }}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </Button>
                   </div>
                 </div>
 
-                {/* Compact Info Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                {/* Compact Info Grid - 2 cols on mobile, 5 on desktop */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 text-xs md:text-sm">
                   {/* Room & Guest */}
                   <div className="col-span-2 md:col-span-1">
                     {booking.booking_rooms && booking.booking_rooms.length > 0 ? (
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1">
+                        <p className="text-[10px] md:text-xs text-muted-foreground mb-0.5 md:mb-1">
                           🛏️ {booking.booking_rooms.length} Kamar:
                         </p>
                         <div className="space-y-0.5">
-                          {booking.booking_rooms.map((br, idx) => (
-                            <p key={idx} className="text-primary font-medium text-sm">
+                          {booking.booking_rooms.slice(0, 2).map((br, idx) => (
+                            <p key={idx} className="text-primary font-medium text-xs md:text-sm truncate">
                               {getRoomName(br.room_id)} • #{br.room_number}
                             </p>
                           ))}
+                          {booking.booking_rooms.length > 2 && (
+                            <p className="text-[10px] text-muted-foreground">+{booking.booking_rooms.length - 2} more</p>
+                          )}
                         </div>
                       </div>
                     ) : booking.rooms ? (
-                      <p className="text-primary font-medium">
+                      <p className="text-primary font-medium text-xs md:text-sm">
                         {booking.rooms.name} • #{booking.allocated_room_number || "TBA"}
                       </p>
                     ) : null}
-                    <p className="font-medium mt-1">{booking.guest_name}</p>
-                    <p className="text-xs text-muted-foreground">{booking.num_guests} tamu</p>
+                    <p className="font-medium mt-1 text-xs md:text-sm truncate">{booking.guest_name}</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">{booking.num_guests} tamu</p>
                   </div>
 
                   {/* Check-in */}
                   <div>
-                    <p className="text-xs text-muted-foreground">Check-in</p>
-                    <p className="font-medium">
-                      {format(new Date(booking.check_in), "dd MMM yyyy", { locale: localeId })}
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Check-in</p>
+                    <p className="font-medium text-xs md:text-sm">
+                      {format(new Date(booking.check_in), "dd MMM", { locale: localeId })}
                     </p>
                     {booking.check_in_time && (
-                      <p className="text-xs text-muted-foreground">pukul {booking.check_in_time.slice(0, 5)}</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground">{booking.check_in_time.slice(0, 5)}</p>
                     )}
                   </div>
 
                   {/* Check-out */}
                   <div>
-                    <p className="text-xs text-muted-foreground">Check-out</p>
-                    <p className="font-medium">
-                      {format(new Date(booking.check_out), "dd MMM yyyy", { locale: localeId })}
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Check-out</p>
+                    <p className="font-medium text-xs md:text-sm">
+                      {format(new Date(booking.check_out), "dd MMM", { locale: localeId })}
                     </p>
                     {booking.check_out_time && (
-                      <p className="text-xs text-muted-foreground">pukul {booking.check_out_time.slice(0, 5)}</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground">{booking.check_out_time.slice(0, 5)}</p>
                     )}
                   </div>
 
                   {/* Total Nights */}
                   <div>
-                    <p className="text-xs text-muted-foreground">Total Malam</p>
-                    <p className="font-medium">{booking.total_nights} malam</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Malam</p>
+                    <p className="font-medium text-xs md:text-sm">{booking.total_nights}</p>
                   </div>
 
                   {/* Total Price & Payment */}
                   <div>
-                    <p className="text-xs text-muted-foreground">Total Price</p>
-                    <p className="font-bold">Rp {booking.total_price.toLocaleString()}</p>
-                    <p className="text-xs mt-0.5">
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Total</p>
+                    <p className="font-bold text-xs md:text-sm">Rp {(booking.total_price / 1000).toFixed(0)}K</p>
+                    <p className="text-[10px] md:text-xs mt-0.5">
                       {booking.payment_status === 'paid' && <span className="text-green-600 font-medium">Lunas ✓</span>}
                       {booking.payment_status === 'down_payment' && (
                         <span className="text-orange-600 font-medium">
