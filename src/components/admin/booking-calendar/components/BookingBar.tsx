@@ -153,12 +153,12 @@ export const BookingBar = ({
         <div
           {...listeners}
           {...attributes}
-          className="absolute left-0 top-0 bottom-0 w-5 cursor-grab active:cursor-grabbing z-20 flex items-center justify-center group/drag"
+          className="absolute left-0 top-0 bottom-0 w-4 md:w-5 cursor-grab active:cursor-grabbing z-20 flex items-center justify-center group/drag"
         >
           <div className="flex flex-col gap-0.5 opacity-0 group-hover/drag:opacity-100 transition-opacity">
-            <div className="w-2 h-0.5 bg-white/90 rounded-full" />
-            <div className="w-2 h-0.5 bg-white/90 rounded-full" />
-            <div className="w-2 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-1.5 md:w-2 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-1.5 md:w-2 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-1.5 md:w-2 h-0.5 bg-white/90 rounded-full" />
           </div>
         </div>
       )}
@@ -167,7 +167,7 @@ export const BookingBar = ({
       {!isTruncatedLeft && (
         <div
           onMouseDown={handleLeftResizeStart}
-          className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-10 opacity-0 group-hover:opacity-100 hover:bg-white/30 transition-opacity rounded-l-md"
+          className="absolute left-0 top-0 bottom-0 w-1.5 md:w-2 cursor-ew-resize z-10 opacity-0 group-hover:opacity-100 hover:bg-white/30 transition-opacity rounded-l-md"
           title="Drag to change check-in date"
         />
       )}
@@ -175,41 +175,41 @@ export const BookingBar = ({
       {/* Right resize handle */}
       <div
         onMouseDown={handleRightResizeStart}
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize z-20 opacity-0 group-hover:opacity-100 hover:bg-white/30 transition-opacity rounded-r-md"
+        className="absolute right-0 top-0 bottom-0 w-1.5 md:w-2 cursor-ew-resize z-20 opacity-0 group-hover:opacity-100 hover:bg-white/30 transition-opacity rounded-r-md"
         title="Drag to change check-out date"
       />
 
       {/* Content - compact margin for drag handle */}
-      <div className="relative z-5 text-left px-1.5 py-0.5 flex-1 min-w-0 pointer-events-none ml-4">
-        <div className="font-bold text-xs text-white drop-shadow-sm truncate">
+      <div className="relative z-5 text-left px-1 md:px-1.5 py-0.5 flex-1 min-w-0 pointer-events-none ml-3 md:ml-4">
+        <div className="font-bold text-[9px] md:text-xs text-white drop-shadow-sm truncate">
           {booking.guest_name.split(" ")[0]}
         </div>
-        <div className="text-[10px] text-white/90 font-medium truncate">
-          {resizePreview?.edge ? `${adjustedNights} Malam` : `${booking.total_nights} Malam`}
+        <div className="text-[8px] md:text-[10px] text-white/90 font-medium truncate">
+          {resizePreview?.edge ? `${adjustedNights}M` : `${booking.total_nights}M`}
         </div>
       </div>
 
       {/* LCO Badge */}
       {booking.check_out_time && booking.check_out_time !== "12:00:00" && (
         <div className="absolute -right-0.5 -top-1 z-30">
-          <div className="bg-red-600 text-white text-[7px] px-1 py-0.5 rounded-sm font-bold shadow-sm whitespace-nowrap">
+          <div className="bg-red-600 text-white text-[6px] md:text-[7px] px-0.5 md:px-1 py-0.5 rounded-sm font-bold shadow-sm whitespace-nowrap">
             LCO
           </div>
         </div>
       )}
 
-      {/* Status watermark */}
+      {/* Status watermark - hidden on mobile */}
       {!isPending && (
-        <div className="absolute right-1 bottom-0.5 opacity-40 pointer-events-none">
-          <span className="text-white/70 font-bold text-[8px] tracking-wider whitespace-nowrap">
+        <div className="absolute right-0.5 md:right-1 bottom-0.5 opacity-40 pointer-events-none hidden md:block">
+          <span className="text-white/70 font-bold text-[7px] md:text-[8px] tracking-wider whitespace-nowrap">
             {booking.status === "confirmed" ? "CONFIRMED" : booking.status.toUpperCase()}
           </span>
         </div>
       )}
 
       {isPending && (
-        <div className="absolute right-1 bottom-0.5 opacity-50 pointer-events-none">
-          <span className="text-white/80 font-black text-[8px] tracking-wider whitespace-nowrap">
+        <div className="absolute right-0.5 md:right-1 bottom-0.5 opacity-50 pointer-events-none hidden md:block">
+          <span className="text-white/80 font-black text-[7px] md:text-[8px] tracking-wider whitespace-nowrap">
             PENDING
           </span>
         </div>

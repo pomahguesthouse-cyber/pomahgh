@@ -38,7 +38,7 @@ export const RoomRow = ({
   return (
     <tr className="border-b border-border">
       {/* Room number cell */}
-      <td className="sticky left-0 z-20 p-2 px-3 text-xs font-medium bg-card border-r border-border shadow-sm whitespace-nowrap">
+      <td className="sticky left-0 z-20 p-1 md:p-2 px-2 md:px-3 text-[10px] md:text-xs font-medium bg-card border-r border-border shadow-sm whitespace-nowrap w-[80px] md:w-[110px] min-w-[80px] md:min-w-[110px]">
         {room.roomNumber}
       </td>
 

@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
 import { addDays, eachDayOfInterval, format } from "date-fns";
 import { getWIBToday } from "@/utils/wibTimezone";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ViewRange } from "../types";
 
 export const useCalendarState = () => {
   const [currentDate, setCurrentDate] = useState(getWIBToday());
   const [viewRange, setViewRange] = useState<ViewRange>(30);
+  const isMobile = useIsMobile();
 
   // Calculate date range based on view selection
   const dates = useMemo(() => {
@@ -14,15 +16,23 @@ export const useCalendarState = () => {
     return eachDayOfInterval({ start: startDate, end: endDate });
   }, [currentDate, viewRange]);
 
-  // Calculate cell width based on view range
+  // Calculate cell width based on view range and device
   const cellWidth = useMemo(() => {
+    if (isMobile) {
+      switch (viewRange) {
+        case 7: return 55;
+        case 14: return 45;
+        case 30:
+        default: return 38;
+      }
+    }
     switch (viewRange) {
       case 7: return 100;
       case 14: return 80;
       case 30:
       default: return 60;
     }
-  }, [viewRange]);
+  }, [viewRange, isMobile]);
 
   // Generate month/year options for dropdown
   const monthYearOptions = useMemo(() => {
