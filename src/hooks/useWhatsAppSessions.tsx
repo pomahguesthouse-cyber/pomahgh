@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -28,6 +29,59 @@ export interface WhatsAppSessionWithMessages extends WhatsAppSession {
 }
 
 export const useWhatsAppSessions = () => {
+  const queryClient = useQueryClient();
+
+  // Set up real-time subscription for sessions and messages
+  useEffect(() => {
+    // Subscribe to whatsapp_sessions changes
+    const sessionsChannel = supabase
+      .channel('whatsapp-sessions-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'whatsapp_sessions'
+        },
+        () => {
+          console.log('🔄 WhatsApp session updated');
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-stats'] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to chat_messages changes for real-time message updates
+    const messagesChannel = supabase
+      .channel('whatsapp-messages-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages'
+        },
+        (payload) => {
+          console.log('💬 New message received:', payload);
+          // Invalidate the specific conversation's messages
+          if (payload.new && typeof payload.new === 'object' && 'conversation_id' in payload.new) {
+            queryClient.invalidateQueries({ 
+              queryKey: ['whatsapp-session-messages', payload.new.conversation_id] 
+            });
+          }
+          // Also refresh sessions to update message counts
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-stats'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(sessionsChannel);
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['whatsapp-sessions'],
     queryFn: async () => {
