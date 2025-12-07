@@ -94,7 +94,7 @@ export const RoomCell = ({
       onClick={() => handleCellClick(roomId, roomNumber, date, isBlocked, hasBooking)}
       onContextMenu={(e) => handleRightClick(e, roomId, roomNumber, date)}
       className={cn(
-        "border border-border p-0 relative h-14 transition-all duration-200 overflow-visible",
+        "border border-border p-0 relative h-10 md:h-14 transition-all duration-200 overflow-visible",
         isHolidayOrWeekend && "bg-red-50/20 dark:bg-red-950/10",
         !isHolidayOrWeekend && "bg-background",
         isClickable && "hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 cursor-pointer",
@@ -135,25 +135,25 @@ export const RoomCell = ({
           }}
         >
           {/* Drag handle icon (3 horizontal lines) */}
-          <div className="flex flex-col gap-0.5 ml-2">
-            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
-            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
-            <div className="w-3 h-0.5 bg-white/90 rounded-full" />
+          <div className="flex flex-col gap-0.5 ml-1 md:ml-2">
+            <div className="w-2 md:w-3 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-2 md:w-3 h-0.5 bg-white/90 rounded-full" />
+            <div className="w-2 md:w-3 h-0.5 bg-white/90 rounded-full" />
           </div>
           {/* Guest name */}
-          <div className="ml-2 text-xs font-bold text-white drop-shadow-sm truncate">
+          <div className="ml-1 md:ml-2 text-[9px] md:text-xs font-bold text-white drop-shadow-sm truncate">
             {draggedBooking.guest_name.split(" ")[0]}
           </div>
-          {/* Nights */}
-          <div className="ml-2 text-[10px] text-white/80 font-medium">
-            {draggedBooking.total_nights} Malam
+          {/* Nights - hidden on mobile */}
+          <div className="ml-1 md:ml-2 text-[8px] md:text-[10px] text-white/80 font-medium hidden md:block">
+            {draggedBooking.total_nights}M
           </div>
         </div>
       )}
 
-      {/* Click hint */}
+      {/* Click hint - hidden on mobile */}
       {isClickable && !isDragging && !isResizing && (
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none z-5">
+        <div className="absolute inset-0 hidden md:flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none z-5">
           <div className="text-[10px] text-primary/60 font-medium">Click to book</div>
         </div>
       )}

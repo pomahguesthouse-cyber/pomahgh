@@ -39,8 +39,9 @@ export const CalendarTable = ({
   isResizing,
   activeBooking,
 }: CalendarTableProps) => {
-  // Width perhitungan lebih clean
-  const tableWidth = useMemo(() => dates.length * cellWidth + 110, [dates, cellWidth]);
+  // Width perhitungan lebih clean - use 80px for mobile sticky column
+  const stickyColumnWidth = 80; // matches RoomRow and CalendarHeaderRow mobile width
+  const tableWidth = useMemo(() => dates.length * cellWidth + stickyColumnWidth + 30, [dates, cellWidth]);
 
   // Grouping helper biar props ke RoomRow nggak ribet
   const bookingActions = {
@@ -60,7 +61,7 @@ export const CalendarTable = ({
   };
 
   return (
-    <div className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[70vh] scroll-smooth">
+    <div className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[55vh] md:max-h-[70vh] scroll-smooth">
       <table className="border-collapse table-fixed" style={{ width: tableWidth }}>
         {/* Sticky Header */}
         <thead className="sticky top-0 z-50">
@@ -73,7 +74,7 @@ export const CalendarTable = ({
               {/* Room Type Header */}
               <tr className="border-y border-border">
                 <td
-                  className="sticky left-0 z-30 p-2 px-3 font-bold text-xs uppercase tracking-wider 
+                  className="sticky left-0 z-30 p-1 md:p-2 px-2 md:px-3 font-bold text-[10px] md:text-xs uppercase tracking-wider 
                                text-muted-foreground bg-stone-200 dark:bg-stone-800 
                                shadow-sm border-r border-border"
                 >
