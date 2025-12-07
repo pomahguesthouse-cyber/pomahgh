@@ -40,6 +40,154 @@ function normalizePhone(phone: string): string {
   return normalized;
 }
 
+// Indonesian slang/typo normalizer for smarter understanding
+function normalizeIndonesianMessage(msg: string): string {
+  const slangMap: Record<string, string> = {
+    // Room types
+    'dlx': 'deluxe', 'delux': 'deluxe', 'dluxe': 'deluxe',
+    'grnd': 'grand', 'grd': 'grand',
+    'fam': 'family', 'fmly': 'family',
+    'sgl': 'single', 'sngl': 'single',
+    'kmr': 'kamar', 'kmar': 'kamar',
+    
+    // Common words
+    'brp': 'berapa', 'brapa': 'berapa',
+    'bs': 'bisa', 'bsa': 'bisa', 'bza': 'bisa',
+    'gk': 'tidak', 'ga': 'tidak', 'ngga': 'tidak', 'gak': 'tidak', 'nggak': 'tidak',
+    'sy': 'saya', 'aku': 'saya', 'ak': 'saya', 'gw': 'saya', 'gue': 'saya',
+    'mlm': 'malam', 'malem': 'malam',
+    'org': 'orang', 'orng': 'orang',
+    'tgl': 'tanggal', 'tggl': 'tanggal',
+    'kpn': 'kapan', 'kapn': 'kapan',
+    'bsk': 'besok', 'besuk': 'besok',
+    'lsa': 'lusa',
+    'gmn': 'bagaimana', 'gimana': 'bagaimana', 'gmna': 'bagaimana',
+    'emg': 'memang', 'emang': 'memang',
+    'udh': 'sudah', 'udah': 'sudah', 'sdh': 'sudah',
+    'blm': 'belum', 'blum': 'belum',
+    'yg': 'yang', 'yng': 'yang',
+    'dg': 'dengan', 'dgn': 'dengan',
+    'utk': 'untuk', 'utuk': 'untuk', 'buat': 'untuk',
+    'krn': 'karena', 'krna': 'karena', 'soalnya': 'karena',
+    'lg': 'lagi', 'lgi': 'lagi',
+    'msh': 'masih', 'msih': 'masih',
+    'jg': 'juga', 'jga': 'juga',
+    'dlu': 'dulu', 'dl': 'dulu',
+    'ntar': 'nanti', 'ntr': 'nanti',
+    'bgt': 'banget', 'bngt': 'banget',
+    'aja': 'saja', 'aj': 'saja',
+    'klo': 'kalau', 'kalu': 'kalau', 'kl': 'kalau', 'klu': 'kalau',
+    'trus': 'terus', 'trs': 'terus',
+    'abis': 'habis', 'abs': 'habis',
+    'tp': 'tapi', 'tpi': 'tapi',
+    'sm': 'sama', 'ama': 'sama',
+    'pdhl': 'padahal',
+    'trims': 'terima kasih', 'tq': 'terima kasih', 'ty': 'terima kasih', 'thx': 'terima kasih', 'makasih': 'terima kasih', 'mksh': 'terima kasih',
+    
+    // Numbers
+    'satu': '1', 'dua': '2', 'tiga': '3', 'empat': '4', 'lima': '5',
+    'enam': '6', 'tujuh': '7', 'delapan': '8', 'sembilan': '9', 'sepuluh': '10',
+  };
+  
+  let normalized = msg.toLowerCase();
+  
+  // Replace slang words (word boundaries)
+  for (const [slang, replacement] of Object.entries(slangMap)) {
+    const regex = new RegExp(`\\b${slang}\\b`, 'gi');
+    normalized = normalized.replace(regex, replacement);
+  }
+  
+  return normalized;
+}
+
+// Detect user sentiment/mood
+function detectSentiment(message: string): 'positive' | 'neutral' | 'negative' | 'confused' | 'urgent' {
+  const lowerMsg = message.toLowerCase();
+  
+  const negativeWords = ['kecewa', 'mahal', 'lama', 'susah', 'ga jelas', 'bingung', 'ribet', 'jelek', 'buruk', 'lambat', 'kesal', 'marah', 'complaint', 'komplain'];
+  const positiveWords = ['bagus', 'mantap', 'oke', 'siap', 'terima kasih', 'keren', 'senang', 'baik', 'good', 'nice', 'perfect', 'sip', 'mantul', 'makasih', 'thx', 'thanks'];
+  const confusedWords = ['gimana', 'gmn', 'ga ngerti', 'maksudnya', 'apa sih', 'caranya', 'bingung', 'confused', 'gak paham', 'ga mudeng'];
+  const urgentWords = ['urgent', 'segera', 'cepat', 'hari ini', 'sekarang', 'darurat', 'penting', 'asap', 'buru', 'buruan'];
+  
+  if (urgentWords.some(w => lowerMsg.includes(w))) return 'urgent';
+  if (negativeWords.some(w => lowerMsg.includes(w))) return 'negative';
+  if (confusedWords.some(w => lowerMsg.includes(w))) return 'confused';
+  if (positiveWords.some(w => lowerMsg.includes(w))) return 'positive';
+  
+  return 'neutral';
+}
+
+// Extract context from conversation
+function extractContext(messages: Array<{role: string, content: string}>): Record<string, any> {
+  const context: Record<string, any> = {};
+  const allText = messages.map(m => m.content).join(' ').toLowerCase();
+  
+  // Extract guest name (look for "nama saya X" or "saya X" patterns)
+  const namePatterns = [
+    /nama\s+saya\s+([a-zA-Z\s]+?)(?:\s*,|\s+dan|\s+email|\s+hp|\s+wa|\.|$)/i,
+    /saya\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/,
+    /(?:atas\s+nama|a\.?n\.?)\s+([a-zA-Z\s]+?)(?:\s*,|\s+dan|\s+email|\.|$)/i,
+  ];
+  for (const pattern of namePatterns) {
+    const match = allText.match(pattern);
+    if (match && match[1] && match[1].trim().length > 2) {
+      context.guest_name = match[1].trim();
+      break;
+    }
+  }
+  
+  // Extract room preference
+  const roomTypes = ['deluxe', 'grand deluxe', 'family', 'single', 'villa', 'suite', 'standard', 'superior'];
+  for (const room of roomTypes) {
+    if (allText.includes(room)) {
+      context.preferred_room = room.charAt(0).toUpperCase() + room.slice(1);
+      break;
+    }
+  }
+  
+  // Extract guest count
+  const guestMatch = allText.match(/(\d+)\s*(orang|tamu|org|guest)/i);
+  if (guestMatch) {
+    context.guest_count = parseInt(guestMatch[1]);
+  }
+  
+  // Extract date hints
+  const datePatterns = [
+    /(\d{1,2})\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)/gi,
+    /(besok|lusa|hari ini|minggu depan|weekend)/i,
+  ];
+  for (const pattern of datePatterns) {
+    const match = allText.match(pattern);
+    if (match) {
+      context.dates = match[0];
+      break;
+    }
+  }
+  
+  // Detect last topic
+  const lastUserMsg = messages.filter(m => m.role === 'user').pop()?.content.toLowerCase() || '';
+  if (lastUserMsg.includes('kamar') || lastUserMsg.includes('room') || lastUserMsg.includes('tipe')) {
+    context.last_topic = 'rooms';
+  } else if (lastUserMsg.includes('booking') || lastUserMsg.includes('pesan') || lastUserMsg.includes('reservasi')) {
+    context.last_topic = 'booking';
+  } else if (lastUserMsg.includes('harga') || lastUserMsg.includes('tarif') || lastUserMsg.includes('price')) {
+    context.last_topic = 'pricing';
+  } else if (lastUserMsg.includes('fasilitas') || lastUserMsg.includes('facility')) {
+    context.last_topic = 'facilities';
+  } else if (lastUserMsg.includes('bayar') || lastUserMsg.includes('transfer') || lastUserMsg.includes('payment')) {
+    context.last_topic = 'payment';
+  } else if (lastUserMsg.includes('lokasi') || lastUserMsg.includes('alamat') || lastUserMsg.includes('dimana')) {
+    context.last_topic = 'location';
+  } else if (lastUserMsg.match(/tanggal|besok|lusa|\d+\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)/i)) {
+    context.last_topic = 'availability';
+  }
+  
+  // Detect sentiment from last message
+  context.sentiment = detectSentiment(lastUserMsg);
+  
+  return context;
+}
+
 // Format AI response for WhatsApp compatibility
 function formatForWhatsApp(text: string): string {
   // Remove markdown tables
@@ -118,115 +266,144 @@ function detectFollowUpDateIntent(message: string): { isFollowUp: boolean; dateH
   };
 }
 
+// Quick response variations for more natural feel
+function getQuickResponseVariation(type: string, hour: number): string | null {
+  const timeGreeting = hour < 11 ? 'pagi' : hour < 15 ? 'siang' : hour < 18 ? 'sore' : 'malam';
+  
+  const variations: Record<string, string[]> = {
+    greeting: [
+      `Halo! 👋 Selamat ${timeGreeting}!\n\nSaya Rani dari Pomah Guesthouse. Ada yang bisa saya bantu hari ini? 😊`,
+      `Hai! 😊 Selamat ${timeGreeting}!\n\nTerima kasih sudah menghubungi Pomah Guesthouse. Mau tanya-tanya tentang kamar atau booking?`,
+      `Selamat ${timeGreeting}! 👋\n\nSaya Rani, siap bantu Anda. Mau cari kamar untuk tanggal berapa?`,
+    ],
+    thanks: [
+      'Sama-sama! 🙏 Senang bisa membantu.\n\nKalau ada pertanyaan lain, langsung tanya aja ya! 😊',
+      'Terima kasih kembali! 🙏\n\nJangan ragu hubungi saya kalau butuh bantuan lagi.',
+      'Siap! 😊 Semoga membantu ya.\n\nKalau mau booking atau ada pertanyaan, saya standby! 👍',
+    ],
+    ok: [
+      'Baik! 👍 Ada yang bisa saya bantu lagi?',
+      'Siap! 😊 Mau lanjut tanya-tanya atau langsung booking?',
+      'Oke! 👍 Ada hal lain yang ingin ditanyakan?',
+    ],
+  };
+  
+  const opts = variations[type];
+  if (!opts) return null;
+  
+  const index = Math.floor(Math.random() * opts.length);
+  return opts[index];
+}
+
 // Quick response for common simple messages - bypass AI completely
 function getQuickResponse(message: string): string | null {
   const lowerMsg = message.toLowerCase().trim();
+  const hour = new Date().getHours();
   
-  // Exact match responses
-  const exactResponses: Record<string, string> = {
-    'halo': 'Halo! 👋 Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu? Silakan tanyakan tentang kamar, harga, fasilitas, atau booking! 😊',
-    'hai': 'Hai! 👋 Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu? Silakan tanyakan tentang kamar, harga, fasilitas, atau booking! 😊',
-    'hi': 'Hi! 👋 Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu? Silakan tanyakan tentang kamar, harga, fasilitas, atau booking! 😊',
-    'hello': 'Hello! 👋 Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu? Silakan tanyakan tentang kamar, harga, fasilitas, atau booking! 😊',
-    'hallo': 'Hallo! 👋 Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu? Silakan tanyakan tentang kamar, harga, fasilitas, atau booking! 😊',
-    'selamat pagi': 'Selamat pagi! ☀️ Terima kasih menghubungi Pomah Guesthouse.\n\nAda yang bisa saya bantu hari ini?',
-    'selamat siang': 'Selamat siang! 🌤️ Terima kasih menghubungi Pomah Guesthouse.\n\nAda yang bisa saya bantu hari ini?',
-    'selamat sore': 'Selamat sore! 🌅 Terima kasih menghubungi Pomah Guesthouse.\n\nAda yang bisa saya bantu hari ini?',
-    'selamat malam': 'Selamat malam! 🌙 Terima kasih menghubungi Pomah Guesthouse.\n\nAda yang bisa saya bantu malam ini?',
-    'pagi': 'Pagi! ☀️ Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu?',
-    'siang': 'Siang! 🌤️ Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu?',
-    'sore': 'Sore! 🌅 Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu?',
-    'malam': 'Malam! 🌙 Selamat datang di Pomah Guesthouse.\n\nAda yang bisa saya bantu?',
-    'terima kasih': 'Sama-sama! 🙏 Senang bisa membantu.\n\nJika ada pertanyaan lain, silakan tanya kapan saja.',
-    'makasih': 'Sama-sama! 🙏 Senang bisa membantu.\n\nJika ada pertanyaan lain, silakan tanya kapan saja.',
-    'thanks': 'You\'re welcome! 🙏 Senang bisa membantu.\n\nJika ada pertanyaan lain, silakan tanya kapan saja.',
-    'thank you': 'You\'re welcome! 🙏 Senang bisa membantu.\n\nJika ada pertanyaan lain, silakan tanya kapan saja.',
-    'ok': 'Baik! 👍 Ada yang bisa saya bantu lagi?',
-    'oke': 'Baik! 👍 Ada yang bisa saya bantu lagi?',
-    'okay': 'Baik! 👍 Ada yang bisa saya bantu lagi?',
-    'siap': 'Baik! 👍 Ada yang bisa saya bantu lagi?',
-  };
+  // Exact greetings - use variations
+  if (['halo', 'hai', 'hi', 'hello', 'hallo'].includes(lowerMsg)) {
+    return getQuickResponseVariation('greeting', hour);
+  }
   
-  // Check exact matches first
-  if (exactResponses[lowerMsg]) {
-    return exactResponses[lowerMsg];
+  // Time-specific greetings
+  if (['selamat pagi', 'pagi'].includes(lowerMsg)) {
+    return 'Selamat pagi! ☀️ Terima kasih menghubungi Pomah Guesthouse.\n\nSaya Rani, ada yang bisa saya bantu hari ini? 😊';
+  }
+  if (['selamat siang', 'siang'].includes(lowerMsg)) {
+    return 'Selamat siang! 🌤️ Terima kasih menghubungi Pomah Guesthouse.\n\nSaya Rani, ada yang bisa saya bantu? 😊';
+  }
+  if (['selamat sore', 'sore'].includes(lowerMsg)) {
+    return 'Selamat sore! 🌅 Terima kasih menghubungi Pomah Guesthouse.\n\nSaya Rani, ada yang bisa saya bantu? 😊';
+  }
+  if (['selamat malam', 'malam'].includes(lowerMsg)) {
+    return 'Selamat malam! 🌙 Terima kasih menghubungi Pomah Guesthouse.\n\nSaya Rani, ada yang bisa saya bantu malam ini? 😊';
+  }
+  
+  // Thanks - use variations
+  if (['terima kasih', 'makasih', 'thanks', 'thank you', 'tq', 'ty', 'thx', 'mksh', 'trims'].includes(lowerMsg)) {
+    return getQuickResponseVariation('thanks', hour);
+  }
+  
+  // OK acknowledgment - use variations
+  if (['ok', 'oke', 'okay', 'siap', 'sip', 'baik', 'okey'].includes(lowerMsg)) {
+    return getQuickResponseVariation('ok', hour);
   }
   
   // Pattern-based responses for common questions
   
   // LOCATION patterns
   if (/^(lokasi|alamat|dimana|where|location|map|maps|google map|address)(\?)?$/i.test(lowerMsg)) {
-    return '📍 *Lokasi Pomah Guesthouse*\n\nJl. Dewi Sartika IV No 71\nSemarang, Central Java 50221\n\n📌 Google Maps:\nhttps://maps.google.com/?q=-7.020891,110.388100\n\n🚗 *Akses mudah dari:*\n• Bandara Ahmad Yani: ~15 menit\n• Stasiun Tawang: ~10 menit\n• Simpang Lima: ~5 menit';
+    return '📍 *Lokasi Pomah Guesthouse*\n\nJl. Dewi Sartika IV No 71\nSemarang, Central Java 50221\n\n📌 Google Maps:\nhttps://maps.google.com/?q=-7.020891,110.388100\n\n🚗 *Akses mudah dari:*\n• Bandara Ahmad Yani: ~15 menit\n• Stasiun Tawang: ~10 menit\n• Simpang Lima: ~5 menit\n\nMau saya bantu booking? 😊';
   }
   
   // PRICE patterns
   if (/^(harga|tarif|price|biaya|rate|berapa|harga kamar|tarif kamar|price list)(\?)?$/i.test(lowerMsg)) {
-    return '💰 *Harga Kamar Pomah Guesthouse*\n\n🛏️ *Single Room* - Rp 200.000/malam\n   • 1 tamu • 20m²\n\n🛏️ *Grand Deluxe* - Rp 450.000/malam\n   • 2 tamu • 30m²\n\n🛏️ *Family Suite* - Rp 700.000/malam\n   • 4 tamu • 60m²\n\n💡 Harga dapat berbeda di akhir pekan.\n\nKetik *"cek ketersediaan [tanggal]"* untuk cek harga real-time.';
+    return '💰 *Harga Kamar Pomah Guesthouse*\n\n🛏️ *Single Room* - Rp 200.000/malam\n   1 tamu • 20m²\n\n🛏️ *Grand Deluxe* - Rp 450.000/malam\n   2 tamu • 30m²\n\n🛏️ *Family Suite* - Rp 700.000/malam\n   4 tamu • 60m²\n\n💡 Harga dapat berbeda di akhir pekan.\n\nMau cek ketersediaan tanggal berapa? 😊';
   }
   
   // FACILITIES patterns
   if (/^(fasilitas|facility|amenity|amenities|fasility)(\?)?$/i.test(lowerMsg)) {
-    return '🏨 *Fasilitas Pomah Guesthouse*\n\n✅ WiFi Gratis\n✅ Parkir Gratis\n✅ Mini Cafe\n✅ Resepsionis (07:00 - 22:00)\n✅ Area Merokok (Balkon & Lobby Lt.2)\n\n🛏️ *Fasilitas Kamar:*\n• AC\n• Kamar Mandi Dalam\n• Air Panas\n• Amenities Lengkap\n• TV\n\nKetik *"kamar"* untuk detail tiap tipe kamar.';
+    return '🏨 *Fasilitas Pomah Guesthouse*\n\n✅ WiFi Gratis\n✅ Parkir Gratis\n✅ Mini Cafe\n✅ Resepsionis (07:00 - 22:00)\n✅ Area Merokok (Balkon & Lobby Lt.2)\n\n🛏️ *Fasilitas Kamar:*\n• AC • Kamar Mandi Dalam\n• Air Panas • Amenities Lengkap • TV\n\nMau lihat detail kamar? Ketik *"kamar"* 😊';
   }
   
   // ROOMS patterns
   if (/^(kamar|room|rooms|tipe kamar|jenis kamar|pilihan kamar)(\?)?$/i.test(lowerMsg)) {
-    return '🛏️ *Tipe Kamar Pomah Guesthouse*\n\n1️⃣ *Single Room* - Rp 200.000/malam\n   • 1 tamu • 20m² • AC, WiFi, TV\n\n2️⃣ *Grand Deluxe* - Rp 450.000/malam\n   • 2 tamu • 30m² • AC, WiFi, TV, Balkon\n\n3️⃣ *Family Suite* - Rp 700.000/malam\n   • 4 tamu • 60m² • 2 Kamar, AC, WiFi, TV\n\n📅 Ketik *"cek ketersediaan [tanggal]"* untuk booking.\n\nContoh: "cek ketersediaan 15 januari"';
+    return '🛏️ *Tipe Kamar Pomah Guesthouse*\n\n1️⃣ *Single Room* - Rp 200.000/malam\n   1 tamu • 20m² • AC, WiFi, TV\n\n2️⃣ *Grand Deluxe* - Rp 450.000/malam\n   2 tamu • 30m² • AC, WiFi, TV, Balkon\n\n3️⃣ *Family Suite* - Rp 700.000/malam\n   4 tamu • 60m² • 2 Kamar, AC, WiFi, TV\n\n📅 Mau cek ketersediaan? Sebutkan tanggal check-in dan check-out ya!\n\nContoh: "cek kamar 15-17 Januari untuk 2 orang" 😊';
   }
   
   // BOOKING / HOW TO BOOK patterns
   if (/^(booking|pesan|reservasi|cara booking|cara pesan|how to book|book|reserve)(\?)?$/i.test(lowerMsg)) {
-    return '📝 *Cara Booking di Pomah Guesthouse*\n\n1️⃣ Ketik tipe kamar & tanggal\n   Contoh: "booking deluxe 15-17 januari"\n\n2️⃣ Isi data tamu (nama, email, telepon)\n\n3️⃣ Terima kode booking & invoice\n\n4️⃣ Transfer ke rekening yang tertera\n\n5️⃣ Kirim bukti transfer via chat ini\n\n✅ Booking confirmed!\n\n📅 Mau booking sekarang?\nKetik: *"cek ketersediaan [tanggal]"*';
+    return '📝 *Cara Booking di Pomah Guesthouse*\n\n1️⃣ Sebutkan tipe kamar & tanggal\n   Contoh: "booking deluxe 15-17 januari"\n\n2️⃣ Isi data tamu (nama, email, telepon)\n\n3️⃣ Terima kode booking & invoice\n\n4️⃣ Transfer ke rekening yang tertera\n\n5️⃣ Booking confirmed! ✅\n\n📅 Mau booking sekarang? Sebutkan tanggal dan tipe kamar ya! 😊';
   }
   
   // CHECK BOOKING patterns
   if (/^(cek booking|status booking|lacak|lacak booking|track|tracking|cek pesanan)(\?)?$/i.test(lowerMsg)) {
-    return '🔍 *Cek Status Booking*\n\nUntuk cek status booking, saya butuh:\n\n1️⃣ *Kode Booking* (contoh: PMH-ABC123)\n2️⃣ *Nomor HP* yang didaftarkan\n3️⃣ *Email* yang didaftarkan\n\nKetik dengan format:\n"cek PMH-XXXXXX 08123456789 email@email.com"\n\nAtau langsung tanyakan status booking Anda!';
+    return '🔍 *Cek Status Booking*\n\nUntuk keamanan, saya butuh:\n\n1️⃣ *Kode Booking* (contoh: PMH-ABC123)\n2️⃣ *Nomor HP* yang didaftarkan\n3️⃣ *Email* yang didaftarkan\n\nKetik dengan format:\n"cek PMH-XXXXXX 08123456789 email@email.com"\n\nAtau langsung kirim kode booking + telepon + email Anda! 😊';
   }
   
   // PAYMENT patterns
   if (/^(bayar|transfer|rekening|payment|bank|pembayaran|cara bayar)(\?)?$/i.test(lowerMsg)) {
-    return '💳 *Informasi Pembayaran*\n\n🏦 Transfer ke:\n*Bank BCA*\nNo. Rek: 0095584379\nA/N: Faizal Abdurachman\n\n📝 *Langkah Pembayaran:*\n1. Transfer sesuai total booking\n2. Kirim bukti transfer ke chat ini\n3. Tunggu konfirmasi dari admin\n\n⏰ Batas pembayaran: 1x24 jam setelah booking\n\n❓Ada pertanyaan? Ketik langsung!';
+    return '💳 *Informasi Pembayaran*\n\n🏦 Transfer ke:\n*Bank BCA*\nNo. Rek: 0095584379\nA/N: Faizal Abdurachman\n\n📝 *Langkah Pembayaran:*\n1. Transfer sesuai total booking\n2. Kirim bukti transfer ke chat ini\n3. Tunggu konfirmasi dari admin\n\n⏰ Batas pembayaran: 1x24 jam setelah booking\n\nAda pertanyaan lain? 😊';
   }
   
   // CHECK-IN/OUT patterns
   if (/^(checkin|checkout|check in|check out|jam checkin|jam checkout|jam masuk|jam keluar|waktu checkin|waktu checkout)(\?)?$/i.test(lowerMsg)) {
-    return '🕐 *Jam Check-in & Check-out*\n\n📥 *Check-in:* 14:00 WIB (2 siang)\n📤 *Check-out:* 12:00 WIB (12 siang)\n\n⏰ *Early check-in / Late check-out?*\nHubungi admin untuk cek ketersediaan.\nMungkin dikenakan biaya tambahan.\n\n💡 Check-in di luar jam resepsionis (22:00-07:00) harap konfirmasi terlebih dahulu.';
+    return '🕐 *Jam Check-in & Check-out*\n\n📥 *Check-in:* 14:00 WIB (2 siang)\n📤 *Check-out:* 12:00 WIB (12 siang)\n\n⏰ *Early check-in / Late check-out?*\nHubungi admin untuk cek ketersediaan.\nMungkin dikenakan biaya tambahan.\n\n💡 Check-in di luar jam resepsionis (22:00-07:00) harap konfirmasi terlebih dahulu ya! 😊';
   }
   
   // CONTACT patterns
   if (/^(kontak|contact|hubungi|telepon|telpon|phone|wa|whatsapp|admin|cs|customer service)(\?)?$/i.test(lowerMsg)) {
-    return '📞 *Kontak Pomah Guesthouse*\n\n📱 WhatsApp: +6281227271799\n📧 Email: info@pomahguesthouse.com\n\n🕐 *Jam Operasional Resepsionis:*\n07:00 - 22:00 WIB\n\n📍 *Alamat:*\nJl. Dewi Sartika IV No 71\nSemarang, Central Java\n\nKetik pertanyaan langsung di sini untuk bantuan cepat! 😊';
+    return '📞 *Kontak Pomah Guesthouse*\n\n📱 WhatsApp: +6281227271799\n📧 Email: info@pomahguesthouse.com\n\n🕐 *Jam Operasional Resepsionis:*\n07:00 - 22:00 WIB\n\n📍 *Alamat:*\nJl. Dewi Sartika IV No 71\nSemarang, Central Java\n\nTanya langsung di sini juga bisa ya! Saya siap bantu 24 jam 😊';
   }
   
   // PARKING patterns
   if (/^(parkir|parking|tempat parkir|area parkir)(\?)?$/i.test(lowerMsg)) {
-    return '🚗 *Informasi Parkir*\n\n✅ *Parkir GRATIS* untuk tamu\n📍 Area parkir tersedia di dalam komplek\n🏍️ Parkir motor & mobil tersedia\n\n💡 Parkir terbatas, first come first served.\nUntuk kendaraan besar, harap konfirmasi terlebih dahulu.';
+    return '🚗 *Informasi Parkir*\n\n✅ *Parkir GRATIS* untuk tamu\n📍 Area parkir tersedia di dalam komplek\n🏍️ Parkir motor & mobil tersedia\n\n💡 Parkir terbatas, first come first served.\nUntuk kendaraan besar, harap konfirmasi terlebih dahulu ya! 😊';
   }
   
   // WIFI patterns
   if (/^(wifi|wi-fi|internet|password wifi|koneksi)(\?)?$/i.test(lowerMsg)) {
-    return '📶 *Informasi WiFi*\n\n✅ *WiFi GRATIS* untuk semua tamu\n📍 Tersedia di seluruh area hotel\n\n🔐 Password WiFi akan diberikan saat check-in.\n\n💡 Kecepatan internet cukup untuk streaming & video call.';
+    return '📶 *Informasi WiFi*\n\n✅ *WiFi GRATIS* untuk semua tamu\n📍 Tersedia di seluruh area hotel\n\n🔐 Password WiFi akan diberikan saat check-in.\n\n💡 Kecepatan internet cukup untuk streaming & video call. 😊';
   }
   
   // CANCEL/REFUND patterns
   if (/^(cancel|batal|batalkan|refund|pembatalan|cancelation|cancellation)(\?)?$/i.test(lowerMsg)) {
-    return '❌ *Kebijakan Pembatalan*\n\n📋 Pembatalan booking:\n• Gratis pembatalan H-3 sebelum check-in\n• H-1 sampai H: Dikenakan biaya 50%\n• No-show: Tidak ada refund\n\n⚠️ Rate non-refundable tidak dapat dibatalkan.\n\nUntuk pembatalan, hubungi admin dengan menyebutkan kode booking Anda.';
+    return '❌ *Kebijakan Pembatalan*\n\n📋 Pembatalan booking:\n• Gratis pembatalan H-3 sebelum check-in\n• H-1 sampai H: Dikenakan biaya 50%\n• No-show: Tidak ada refund\n\n⚠️ Rate non-refundable tidak dapat dibatalkan.\n\nUntuk pembatalan, hubungi admin dengan menyebutkan kode booking Anda ya! 😊';
   }
   
   // BREAKFAST patterns
   if (/^(sarapan|breakfast|makan pagi|include breakfast)(\?)?$/i.test(lowerMsg)) {
-    return '🍳 *Informasi Sarapan*\n\nSarapan *tidak termasuk* dalam harga kamar.\n\n☕ Mini Cafe tersedia untuk:\n• Kopi & Teh\n• Snack ringan\n\n🍽️ Rekomendasi tempat makan terdekat:\n• Warung Makan Pak Karso (~100m)\n• Soto Bangkong (~500m)\n\nTanya rekomendasi kuliner lainnya! 😊';
+    return '🍳 *Informasi Sarapan*\n\nSarapan *tidak termasuk* dalam harga kamar.\n\n☕ Mini Cafe tersedia untuk:\n• Kopi & Teh\n• Snack ringan\n\n🍽️ Rekomendasi tempat makan terdekat:\n• Warung Makan Pak Karso (~100m)\n• Soto Bangkong (~500m)\n\nMau rekomendasi kuliner lainnya? 😊';
   }
   
   // PROMO patterns
   if (/^(promo|diskon|discount|penawaran|special offer|potongan)(\?)?$/i.test(lowerMsg)) {
-    return '🎉 *Promo Pomah Guesthouse*\n\nPromo saat ini:\n• 🏷️ Long stay (>7 malam): Diskon 15%\n• 🏷️ Weekend special: Harga khusus\n\n📅 Ketik *"cek ketersediaan [tanggal]"* untuk lihat harga promo real-time.\n\nPromo dapat berubah sewaktu-waktu.';
+    return '🎉 *Promo Pomah Guesthouse*\n\nPromo saat ini:\n• 🏷️ Long stay (>7 malam): Diskon 15%\n• 🏷️ Weekend special: Harga khusus\n\n📅 Mau cek harga promo? Sebutkan tanggal check-in dan check-out ya!\n\nPromo dapat berubah sewaktu-waktu. 😊';
   }
   
   // AVAILABILITY patterns - "ada kamar", "kamar kosong", etc.
   if (/ada kamar|kamar kosong|kamar tersedia|available room|kamar yang ada/i.test(lowerMsg) && !/tanggal|januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember|besok|lusa/i.test(lowerMsg)) {
-    return '🛏️ *Tipe Kamar Pomah Guesthouse*\n\n1️⃣ *Single Room* - Rp 200.000/malam\n   • 1 tamu • 20m²\n\n2️⃣ *Grand Deluxe* - Rp 450.000/malam\n   • 2 tamu • 30m²\n\n3️⃣ *Family Suite* - Rp 700.000/malam\n   • 4 tamu • 60m²\n\n📅 *Untuk cek ketersediaan*, sebutkan tanggal:\n\nContoh: "cek kamar 15-17 Januari untuk 2 orang"';
+    return '🛏️ *Tipe Kamar Pomah Guesthouse*\n\n1️⃣ *Single Room* - Rp 200.000/malam\n   1 tamu • 20m²\n\n2️⃣ *Grand Deluxe* - Rp 450.000/malam\n   2 tamu • 30m²\n\n3️⃣ *Family Suite* - Rp 700.000/malam\n   4 tamu • 60m²\n\n📅 *Untuk cek ketersediaan*, sebutkan tanggal:\n\nContoh: "cek kamar 15-17 Januari untuk 2 orang" 😊';
   }
   
   return null;
@@ -255,6 +432,45 @@ function detectBookingIntent(message: string): {
     roomType: roomMatch?.[0],
     dateHint: dateMatch?.[0]
   };
+}
+
+// Smart fallback based on context and sentiment
+function getSmartFallback(message: string, context: Record<string, any>): string {
+  const lowerMsg = message.toLowerCase();
+  const sentiment = context.sentiment || 'neutral';
+  
+  // Sentiment-aware opening
+  let opener = '';
+  if (sentiment === 'negative') {
+    opener = 'Mohon maaf atas ketidaknyamanannya 🙏\n\n';
+  } else if (sentiment === 'confused') {
+    opener = 'Tidak apa-apa, saya bantu jelaskan ya! 😊\n\n';
+  } else if (sentiment === 'urgent') {
+    opener = 'Baik, saya bantu segera! 🏃\n\n';
+  }
+  
+  // Context-aware response
+  if (context.last_topic === 'availability' || lowerMsg.includes('tanggal') || lowerMsg.includes('kapan')) {
+    return opener + '📅 Untuk cek ketersediaan, mohon sebutkan:\n\n1️⃣ Tanggal check-in (contoh: 15 Januari)\n2️⃣ Tanggal check-out (contoh: 17 Januari)\n3️⃣ Jumlah tamu\n\nContoh: "cek kamar 15-17 Januari untuk 2 orang"';
+  }
+  
+  if (context.last_topic === 'booking') {
+    const missing = [];
+    if (!context.guest_name) missing.push('nama lengkap');
+    if (!context.dates) missing.push('tanggal check-in & check-out');
+    if (!context.preferred_room) missing.push('tipe kamar');
+    
+    if (missing.length > 0) {
+      return opener + `📝 Untuk melanjutkan booking, saya butuh informasi berikut:\n\n${missing.map((m, i) => `${i+1}️⃣ ${m.charAt(0).toUpperCase() + m.slice(1)}`).join('\n')}\n\nSilakan lengkapi ya! 😊`;
+    }
+  }
+  
+  if (context.last_topic === 'payment') {
+    return opener + '💳 Untuk informasi pembayaran:\n\n🏦 *Bank BCA*\nNo. Rek: 0095584379\nA/N: Faizal Abdurachman\n\nSetelah transfer, kirim bukti bayar ke chat ini ya! 😊';
+  }
+  
+  // Default helpful response
+  return opener + 'Halo! 👋 Saya Rani dari Pomah Guesthouse.\n\nSilakan tanyakan tentang:\n• *Kamar* - tipe & harga\n• *Fasilitas* - info fasilitas hotel\n• *Booking* - cara reservasi\n• *Lokasi* - alamat & kontak\n\nAtau langsung ketik pertanyaan Anda! 😊';
 }
 
 serve(async (req) => {
@@ -339,6 +555,10 @@ serve(async (req) => {
 
     const phone = normalizePhone(sender);
     console.log(`Processing message from ${phone}: "${message}"`);
+    
+    // Normalize message for better understanding
+    const normalizedMessage = normalizeIndonesianMessage(message);
+    console.log(`Normalized message: "${normalizedMessage}"`);
 
     // Check rate limit
     if (!checkRateLimit(phone)) {
@@ -664,7 +884,11 @@ serve(async (req) => {
       messages = messages.slice(-2);
     }
 
-    // Call chatbot edge function
+    // Extract conversation context for smarter AI responses
+    const conversationContext = extractContext(messages);
+    console.log("📋 Extracted context:", JSON.stringify(conversationContext));
+
+    // Call chatbot edge function with conversation context
     console.log("Calling chatbot function...");
     const chatbotResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
       method: 'POST',
@@ -676,6 +900,7 @@ serve(async (req) => {
         messages,
         session_id: `wa_${phone}`,
         channel: 'whatsapp',
+        conversationContext, // Pass context to AI
       }),
     });
 
@@ -693,8 +918,8 @@ serve(async (req) => {
     let aiResponse = aiMessage?.content || "";
 
     // Detect room list intent (user asking "ada kamar apa saja" without dates)
-    const roomListIntent = detectRoomListIntent(message);
-    const intent = detectBookingIntent(message);
+    const roomListIntent = detectRoomListIntent(normalizedMessage);
+    const intent = detectBookingIntent(normalizedMessage);
     
     // Force get_all_rooms if user asks about room list but AI didn't call tools
     if (roomListIntent && !intent.hasDate && !aiMessage?.tool_calls) {
@@ -718,6 +943,7 @@ serve(async (req) => {
           messages: retryMessages,
           session_id: `wa_${phone}`,
           channel: 'whatsapp',
+          conversationContext,
         }),
       });
       
@@ -751,6 +977,7 @@ serve(async (req) => {
           messages: retryMessages,
           session_id: `wa_${phone}`,
           channel: 'whatsapp',
+          conversationContext,
         }),
       });
       
@@ -763,7 +990,7 @@ serve(async (req) => {
     }
     
     // Handle follow-up date questions (user asks "kalau tanggal X?" without room type)
-    const followUpIntent = detectFollowUpDateIntent(message);
+    const followUpIntent = detectFollowUpDateIntent(normalizedMessage);
     if (followUpIntent.isFollowUp && !aiMessage?.tool_calls && (!aiResponse || aiResponse.trim() === '')) {
       console.log(`⚠️ Follow-up date question detected: "${followUpIntent.dateHint}" - forcing check_availability for ALL rooms`);
       
@@ -785,6 +1012,7 @@ serve(async (req) => {
           messages: retryMessages,
           session_id: `wa_${phone}`,
           channel: 'whatsapp',
+          conversationContext,
         }),
       });
       
@@ -852,6 +1080,7 @@ serve(async (req) => {
           ],
           session_id: `wa_${phone}`,
           channel: 'whatsapp',
+          conversationContext,
         }),
       });
 
@@ -864,15 +1093,15 @@ serve(async (req) => {
       }
     }
 
-    // Improved fallback with recovery for empty responses
+    // Improved fallback with smart context-aware recovery for empty responses
     if (!aiResponse || aiResponse.trim() === '') {
-      console.log("⚠️ Empty AI response detected - attempting recovery...");
+      console.log("⚠️ Empty AI response detected - attempting smart recovery...");
       
       const recoveryMessages = [
         ...messages,
         { 
           role: 'system' as const, 
-          content: `Pesan user terakhir belum dijawab. Berikan respons yang membantu! Jika user menanyakan tanggal, bantu cek ketersediaan dengan panggil check_availability. Jika tidak jelas, tanyakan dengan sopan apa yang bisa dibantu.` 
+          content: `Pesan user terakhir belum dijawab. Berikan respons yang membantu dan ramah! Jika user menanyakan tanggal, panggil check_availability. Jika tidak jelas, tanyakan dengan sopan apa yang bisa dibantu. Respons dalam Bahasa Indonesia yang natural.` 
         }
       ];
       
@@ -886,6 +1115,7 @@ serve(async (req) => {
           messages: recoveryMessages,
           session_id: `wa_${phone}`,
           channel: 'whatsapp',
+          conversationContext,
         }),
       });
       
@@ -898,16 +1128,10 @@ serve(async (req) => {
         }
       }
       
-      // Final fallback - provide intelligent response based on context
+      // Final smart fallback based on context
       if (!aiResponse || aiResponse.trim() === '') {
-        const lowerMsg = message.toLowerCase();
-        if (lowerMsg.includes('kamar') || lowerMsg.includes('booking') || lowerMsg.includes('tanggal') || lowerMsg.includes('tersedia')) {
-          aiResponse = '🛏️ Untuk cek ketersediaan kamar:\n\nMohon sebutkan tanggal check-in, check-out, dan jumlah tamu.\n\nContoh: "cek kamar 15-17 Desember untuk 2 orang"\n\nAtau ketik:\n• *kamar* - lihat tipe & harga\n• *fasilitas* - info fasilitas\n• *lokasi* - alamat hotel';
-        } else if (lowerMsg.includes('harga') || lowerMsg.includes('tarif') || lowerMsg.includes('biaya')) {
-          aiResponse = '💰 *Harga Kamar Pomah Guesthouse*\n\n🛏️ Single Room - Rp 200.000/malam\n🛏️ Grand Deluxe - Rp 450.000/malam\n🛏️ Family Suite - Rp 700.000/malam\n\nKetik *"cek ketersediaan [tanggal]"* untuk harga real-time.';
-        } else {
-          aiResponse = 'Halo! 👋 Ada yang bisa saya bantu?\n\nSilakan tanyakan tentang:\n• *Kamar* - tipe & harga\n• *Fasilitas* - info fasilitas hotel\n• *Booking* - cara reservasi\n• *Lokasi* - alamat & kontak\n\nAtau langsung ketik pertanyaan Anda! 😊';
-        }
+        aiResponse = getSmartFallback(message, conversationContext);
+        console.log("Using smart fallback:", aiResponse.substring(0, 100));
       }
     }
 
@@ -929,6 +1153,15 @@ serve(async (req) => {
     } else {
       console.log('✅ AI assistant message logged to DB');
     }
+
+    // Update session context for future messages
+    await supabase
+      .from('whatsapp_sessions')
+      .update({ 
+        context: conversationContext,
+        last_message_at: new Date().toISOString(),
+      })
+      .eq('phone_number', phone);
 
     // Send response via Fonnte
     console.log("📤 Sending WhatsApp to:", phone);

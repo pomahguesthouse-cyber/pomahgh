@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, chatbotSettings: providedSettings } = await req.json();
+    const { messages, chatbotSettings: providedSettings, conversationContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -28,7 +28,7 @@ serve(async (req) => {
     // Default persona fallback
     const defaultPersona = "Anda adalah asisten hotel yang ramah dan membantu tamu dengan informasi kamar, booking, fasilitas, dan pertanyaan umum seputar hotel. Jawab dengan bahasa Indonesia yang natural dan profesional.";
     
-    // Fetch chatbot settings from database if not provided (for WhatsApp webhook)
+    // Fetch chatbot settings from database if not provided
     let chatbotSettings = providedSettings;
     if (!chatbotSettings || !chatbotSettings.persona) {
       console.log("Fetching chatbot settings from database...");
@@ -44,7 +44,7 @@ serve(async (req) => {
       chatbotSettings = dbSettings || {
         persona: defaultPersona,
         greeting_message: "Halo! 👋 Ada yang bisa saya bantu?",
-        bot_name: "Hotel Assistant"
+        bot_name: "Rani"
       };
       console.log("Chatbot settings loaded:", chatbotSettings?.persona ? "OK" : "Using fallback");
     }
@@ -87,13 +87,6 @@ serve(async (req) => {
       .eq("is_active", true)
       .order("display_order");
 
-    // Fetch good-rated message examples (promoted responses)
-    const { data: goodRatings } = await supabase
-      .from("chat_message_ratings")
-      .select("message_id")
-      .eq("is_good_example", true)
-      .gte("rating", 4);
-
     // Build comprehensive context
     const roomsInfo = rooms?.map(r => 
       `- ${r.name}: ${r.description}. Harga: Rp ${r.price_per_night.toLocaleString()}/malam. Max ${r.max_guests} tamu${r.size_sqm ? `, ${r.size_sqm}m²` : ''}. Fasilitas: ${r.features.join(', ')}`
@@ -109,7 +102,7 @@ serve(async (req) => {
 
     // Build knowledge base info
     const knowledgeInfo = knowledgeBase?.map(kb => 
-      `[${kb.category?.toUpperCase() || 'GENERAL'}] ${kb.title}:\n${kb.content.substring(0, 2000)}`
+      `[${kb.category?.toUpperCase() || 'GENERAL'}] ${kb.title}:\n${kb.content.substring(0, 1500)}`
     ).join('\n\n---\n\n') || '';
 
     // Build training examples for few-shot learning
@@ -129,42 +122,97 @@ Bot: "${ex.ideal_answer}"`
     };
     const currentDateIndonesian = now.toLocaleDateString('id-ID', dateOptions);
     const currentDateISO = now.toISOString().split('T')[0];
+    const currentHour = now.getHours();
+    
+    // Time-based greeting hint
+    const timeGreeting = currentHour < 11 ? 'pagi' : currentHour < 15 ? 'siang' : currentHour < 18 ? 'sore' : 'malam';
 
-    // Build enhanced system prompt - COMPACT VERSION for better AI response
+    // Build conversation context string if provided
+    let contextString = '';
+    if (conversationContext) {
+      const ctx = conversationContext;
+      contextString = `
+📋 KONTEKS PERCAKAPAN (ingat ini!):
+${ctx.guest_name ? `- Nama tamu: ${ctx.guest_name}` : ''}
+${ctx.preferred_room ? `- Kamar diminati: ${ctx.preferred_room}` : ''}
+${ctx.dates ? `- Tanggal rencana: ${ctx.dates}` : ''}
+${ctx.guest_count ? `- Jumlah tamu: ${ctx.guest_count} orang` : ''}
+${ctx.budget_hint ? `- Budget sekitar: ${ctx.budget_hint}` : ''}
+${ctx.sentiment ? `- Mood tamu: ${ctx.sentiment}` : ''}
+${ctx.last_topic ? `- Topik terakhir: ${ctx.last_topic}` : ''}`;
+    }
+
+    // Build enhanced system prompt with personality
     const persona = chatbotSettings?.persona || defaultPersona;
-    const systemPrompt = `${persona}
+    const botName = chatbotSettings?.bot_name || 'Rani';
+    
+    const systemPrompt = `Kamu adalah ${botName}, customer service ${hotelSettings?.hotel_name || 'Pomah Guesthouse'} yang ramah, cerdas, dan helpful.
 
-📅 TANGGAL: ${currentDateIndonesian} (${currentDateISO}) | TAHUN: 2025
+🎭 PERSONALITY:
+- Ramah & hangat seperti teman, tapi tetap profesional
+- Cepat tanggap, jawab langsung tanpa bertele-tele  
+- Proaktif memberikan saran yang relevan
+- Empati tinggi, pahami kebutuhan tamu
+- Gunakan emoji secukupnya 😊 (1-3 per pesan, jangan berlebihan)
+- Ingat nama tamu dan pakai dalam percakapan jika sudah tahu
+- Bahasa santai tapi sopan (campuran formal-informal Indonesia)
 
-🚨 ATURAN UTAMA:
-1. User tanya "ada kamar apa?" tanpa tanggal → PANGGIL get_all_rooms
-2. User sebut kamar + tanggal → PANGGIL check_availability  
-3. User mau booking → collect data lalu PANGGIL create_booking_draft
-4. JANGAN tanya ulang info yang sudah diberikan user!
-5. Follow-up "kalau tanggal X?" → LANGSUNG cek availability tanggal baru
+📅 TANGGAL: ${currentDateIndonesian} (${currentDateISO}) | Sekarang ${timeGreeting} | TAHUN: 2025
+${contextString}
 
-KEYWORD: deluxe, superior, villa, standard, family, suite | besok, lusa, tanggal X, januari-desember
+🧠 INTELLIGENCE RULES:
+1. Kenali typo & singkatan umum:
+   - dlx/delux → deluxe, kmr → kamar, brp → berapa, bs/bsa → bisa
+   - gk/ga/ngga → tidak, sy/aku → saya, mlm → malam, org → orang
+   - tgl → tanggal, kpn → kapan, bsk → besok, lusa → 2 hari lagi
+   - gmn/gimana → bagaimana, emg/emang → memang
 
-📍 ${hotelSettings?.hotel_name || 'POMAH GUESTHOUSE'}
-- Alamat: ${hotelSettings?.address || '-'}
+2. Deteksi konteks dari percakapan sebelumnya:
+   - Jika sudah bicara kamar, pertanyaan "yg lain?" = kamar lain
+   - "Kalau tanggal X?" = cek availability tanggal X untuk kamar yang sedang dibahas
+   - Ingat preferensi: jumlah tamu, tanggal, kamar yang diminati
+
+3. JANGAN PERNAH tanya ulang info yang sudah diberikan user!
+   - User bilang "deluxe 15 januari" → LANGSUNG cek, jangan tanya kamar/tanggal lagi
+   - User bilang "2 orang" sebelumnya → ingat jumlah tamu ini
+
+🚨 ATURAN WAJIB TOOLS:
+1. User tanya "ada kamar apa?" / "tipe kamar?" → PANGGIL get_all_rooms
+2. User sebut kamar + tanggal → PANGGIL check_availability
+3. User mau booking lengkap → PANGGIL create_booking_draft
+4. Follow-up "kalau tanggal X?" → LANGSUNG cek availability tanggal baru
+5. User tanya status/ubah booking → MINTA kode booking + telepon + email dulu
+
+💡 PROACTIVE SUGGESTIONS:
+- Setelah cek availability → "Mau saya bantu booking sekarang? 😊"
+- User bilang "liburan"/"jalan-jalan" → sarankan kamar yang cocok
+- User ragu-ragu → bantu compare 2-3 opsi: "Untuk [kebutuhan], saya rekomendasikan..."
+- Setelah booking → "Pembayaran bisa transfer ke [bank]. Butuh invoice WhatsApp?"
+
+📍 INFO HOTEL:
+- ${hotelSettings?.hotel_name || 'POMAH GUESTHOUSE'}
+- Alamat: ${hotelSettings?.address || 'Jl. Dewi Sartika IV No 71, Semarang'}
 - Check-in: ${hotelSettings?.check_in_time || '14:00'} | Check-out: ${hotelSettings?.check_out_time || '12:00'}
-- WhatsApp: ${hotelSettings?.whatsapp_number || '-'}
+- WhatsApp: ${hotelSettings?.whatsapp_number || '+6281227271799'}
 
-🛏️ KAMAR: ${roomsInfo}
+🛏️ KAMAR:
+${roomsInfo}
 
 ✨ FASILITAS: ${facilitiesInfo}
 
-TOOLS: get_all_rooms, check_availability, get_room_details, get_facilities, create_booking_draft, get_booking_details, update_booking, check_payment_status
+📍 LOKASI SEKITAR: ${nearbyInfo}
 
-⚠️ PENTING:
-- Kode booking format PMH-XXXXXX (bukan UUID)
-- Verifikasi booking: kode + telepon + email
-- Format tanggal output: "15 Januari 2025" (bukan 2025-01-15)
-- Bahasa Indonesia, natural, singkat & jelas
+⚠️ FORMAT OUTPUT:
+- Kode booking: PMH-XXXXXX (bukan UUID)
+- Tanggal: "15 Januari 2025" (bukan 2025-01-15)
+- Harga: "Rp 450.000" dengan titik ribuan
+- Respons singkat & jelas, maksimal 3-4 paragraf
+- Gunakan bullet points untuk list
 
-${knowledgeInfo ? `📚 KNOWLEDGE: ${knowledgeInfo.substring(0, 1500)}` : ''}
-${trainingExamplesInfo ? `🎯 CONTOH: ${trainingExamplesInfo.substring(0, 1000)}` : ''}
-`;
+${knowledgeInfo ? `📚 PENGETAHUAN TAMBAHAN:\n${knowledgeInfo.substring(0, 1200)}` : ''}
+${trainingExamplesInfo ? `🎯 CONTOH RESPONS IDEAL:\n${trainingExamplesInfo.substring(0, 800)}` : ''}
+
+PERSONA ASLI: ${persona}`;
 
     // Define tools for the AI
     const tools = [
@@ -325,8 +373,7 @@ ${trainingExamplesInfo ? `🎯 CONTOH: ${trainingExamplesInfo.substring(0, 1000)
       }
     ];
 
-    // Call Lovable AI with optimized settings for direct answers
-    // Increased max_tokens to prevent empty responses
+    // Call Lovable AI with optimized settings
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -340,10 +387,10 @@ ${trainingExamplesInfo ? `🎯 CONTOH: ${trainingExamplesInfo.substring(0, 1000)
           ...messages
         ],
         tools,
-        tool_choice: "auto", // Encourage tool calling
-        temperature: 0.3, // Slightly higher for more natural responses
-        max_tokens: chatbotSettings.response_speed === 'fast' ? 400 : 
-                    chatbotSettings.response_speed === 'detailed' ? 800 : 600,
+        tool_choice: "auto",
+        temperature: 0.4, // Slightly higher for natural responses
+        max_tokens: chatbotSettings.response_speed === 'fast' ? 500 : 
+                    chatbotSettings.response_speed === 'detailed' ? 900 : 700,
       }),
     });
 
