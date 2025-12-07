@@ -33,13 +33,27 @@ import {
 } from "@/hooks/useTrainingExamples";
 
 const CATEGORIES = [
-  { value: "general", label: "Umum" },
-  { value: "booking", label: "Booking" },
-  { value: "availability", label: "Ketersediaan" },
-  { value: "facilities", label: "Fasilitas" },
-  { value: "promo", label: "Promo" },
-  { value: "payment", label: "Pembayaran" },
-  { value: "location", label: "Lokasi" },
+  { value: "general", label: "Umum", emoji: "💬" },
+  { value: "greeting", label: "Sapaan", emoji: "👋" },
+  { value: "booking", label: "Booking", emoji: "📅" },
+  { value: "availability", label: "Ketersediaan", emoji: "🔍" },
+  { value: "facilities", label: "Fasilitas", emoji: "✨" },
+  { value: "promo", label: "Promo", emoji: "🎉" },
+  { value: "payment", label: "Pembayaran", emoji: "💳" },
+  { value: "location", label: "Lokasi", emoji: "📍" },
+  { value: "complaint", label: "Keluhan", emoji: "😔" },
+  { value: "reschedule", label: "Reschedule", emoji: "🔄" },
+  { value: "cancel", label: "Pembatalan", emoji: "❌" },
+  { value: "special_request", label: "Permintaan Khusus", emoji: "🌟" },
+];
+
+const RESPONSE_TAGS = [
+  { value: "empati", label: "Empati", color: "bg-pink-100 text-pink-800" },
+  { value: "upsell", label: "Upsell", color: "bg-green-100 text-green-800" },
+  { value: "confirm", label: "Konfirmasi", color: "bg-blue-100 text-blue-800" },
+  { value: "guide", label: "Panduan", color: "bg-yellow-100 text-yellow-800" },
+  { value: "apologize", label: "Maaf", color: "bg-red-100 text-red-800" },
+  { value: "thanks", label: "Terima Kasih", color: "bg-purple-100 text-purple-800" },
 ];
 
 export default function TrainingTab() {
@@ -213,8 +227,9 @@ export default function TrainingTab() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline">
+                          {CATEGORIES.find(c => c.value === example.category)?.emoji}{' '}
                           {CATEGORIES.find(c => c.value === example.category)?.label || example.category}
                         </Badge>
                         {!example.is_active && (
@@ -307,7 +322,7 @@ export default function TrainingTab() {
                 <SelectContent>
                   {CATEGORIES.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
+                      {cat.emoji} {cat.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -363,7 +378,7 @@ export default function TrainingTab() {
                 <SelectContent>
                   {CATEGORIES.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
+                      {cat.emoji} {cat.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

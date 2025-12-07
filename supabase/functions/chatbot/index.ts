@@ -6,6 +6,109 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Build persona prompt from structured settings
+const buildPersonaPrompt = (settings: any, hotelName: string): string => {
+  const name = settings?.persona_name || 'Rani';
+  const role = settings?.persona_role || 'Customer Service';
+  const traits = settings?.persona_traits || ['ramah', 'profesional', 'helpful'];
+  const commStyle = settings?.communication_style || 'santai-profesional';
+  const emojiUsage = settings?.emoji_usage || 'moderate';
+  const formality = settings?.language_formality || 'semi-formal';
+  const customInstructions = settings?.custom_instructions || '';
+
+  // Map traits to descriptions
+  const traitDescriptions: Record<string, string> = {
+    'ramah': 'hangat dan bersahabat',
+    'profesional': 'kompeten dan terpercaya',
+    'helpful': 'selalu siap membantu',
+    'ceria': 'penuh semangat positif',
+    'empati': 'memahami perasaan tamu',
+    'lucu': 'bisa menghibur dengan humor ringan',
+    'sabar': 'tidak terburu-buru',
+    'informatif': 'memberikan info lengkap',
+    'proaktif': 'menawarkan bantuan tanpa diminta',
+    'sopan': 'berbahasa santun'
+  };
+
+  const traitsText = traits.map((t: string) => traitDescriptions[t] || t).join(', ');
+
+  // Map communication style
+  const styleMap: Record<string, string> = {
+    'formal': 'gunakan bahasa baku dan resmi, sebut dengan Bapak/Ibu',
+    'semi-formal': 'sopan tapi tidak kaku, gunakan Anda/Kak',
+    'santai-profesional': 'friendly tapi tetap profesional, campuran formal-informal',
+    'casual': 'seperti ngobrol dengan teman, gunakan kamu/aku'
+  };
+
+  // Map emoji usage
+  const emojiMap: Record<string, string> = {
+    'none': 'JANGAN gunakan emoji sama sekali',
+    'minimal': 'gunakan 1-2 emoji saja per pesan (di akhir saja)',
+    'moderate': 'gunakan 2-3 emoji secukupnya untuk ekspresi',
+    'expressive': 'gunakan emoji ekspresif untuk menambah kesan ramah'
+  };
+
+  // Map formality
+  const formalityMap: Record<string, string> = {
+    'formal': 'Saya, Bapak/Ibu, Anda',
+    'semi-formal': 'Saya, Kak, Anda',
+    'informal': 'Aku, Kamu'
+  };
+
+  return `Kamu adalah ${name}, ${role} ${hotelName}.
+
+🎭 KEPRIBADIAN:
+${traitsText}
+
+💬 GAYA KOMUNIKASI:
+- ${styleMap[commStyle] || styleMap['santai-profesional']}
+- ${emojiMap[emojiUsage] || emojiMap['moderate']}
+- Kata ganti: ${formalityMap[formality] || formalityMap['semi-formal']}
+- Ingat nama tamu dan gunakan dalam percakapan jika sudah tahu
+- Respons singkat dan jelas, hindari bertele-tele
+
+${customInstructions ? `📌 INSTRUKSI KHUSUS:\n${customInstructions}` : ''}`;
+};
+
+// Select relevant training examples based on user message
+const selectRelevantExamples = (userMessage: string, examples: any[]): any[] => {
+  if (!examples || examples.length === 0) return [];
+  
+  const message = userMessage.toLowerCase();
+  
+  // Detect category from message
+  let detectedCategory = 'general';
+  
+  if (message.includes('book') || message.includes('pesan') || message.includes('reserv')) {
+    detectedCategory = 'booking';
+  } else if (message.includes('harga') || message.includes('tarif') || message.includes('biaya')) {
+    detectedCategory = 'availability';
+  } else if (message.includes('fasilitas') || message.includes('ada apa') || message.includes('tersedia')) {
+    detectedCategory = 'facilities';
+  } else if (message.includes('promo') || message.includes('diskon') || message.includes('potongan')) {
+    detectedCategory = 'promo';
+  } else if (message.includes('bayar') || message.includes('transfer') || message.includes('payment')) {
+    detectedCategory = 'payment';
+  } else if (message.includes('lokasi') || message.includes('alamat') || message.includes('dimana')) {
+    detectedCategory = 'location';
+  } else if (message.includes('keluhan') || message.includes('komplain') || message.includes('kecewa')) {
+    detectedCategory = 'complaint';
+  } else if (message.includes('ubah') || message.includes('reschedule') || message.includes('ganti')) {
+    detectedCategory = 'reschedule';
+  } else if (message.includes('batal') || message.includes('cancel')) {
+    detectedCategory = 'cancel';
+  } else if (message.includes('halo') || message.includes('hai') || message.includes('selamat')) {
+    detectedCategory = 'greeting';
+  }
+  
+  // Filter by detected category, then add some general examples
+  const categoryExamples = examples.filter(ex => ex.category === detectedCategory);
+  const generalExamples = examples.filter(ex => ex.category === 'general');
+  
+  // Return max 4 relevant examples
+  return [...categoryExamples.slice(0, 3), ...generalExamples.slice(0, 1)].slice(0, 4);
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -19,18 +122,14 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Initialize Supabase client to fetch real data
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Default persona fallback
-    const defaultPersona = "Anda adalah asisten hotel yang ramah dan membantu tamu dengan informasi kamar, booking, fasilitas, dan pertanyaan umum seputar hotel. Jawab dengan bahasa Indonesia yang natural dan profesional.";
-    
-    // Fetch chatbot settings from database if not provided
+    // Fetch chatbot settings from database
     let chatbotSettings = providedSettings;
-    if (!chatbotSettings || !chatbotSettings.persona) {
+    if (!chatbotSettings || !chatbotSettings.persona_name) {
       console.log("Fetching chatbot settings from database...");
       const { data: dbSettings, error: settingsError } = await supabase
         .from("chatbot_settings")
@@ -42,11 +141,14 @@ serve(async (req) => {
       }
       
       chatbotSettings = dbSettings || {
-        persona: defaultPersona,
-        greeting_message: "Halo! 👋 Ada yang bisa saya bantu?",
-        bot_name: "Rani"
+        persona_name: 'Rani',
+        persona_role: 'Customer Service',
+        persona_traits: ['ramah', 'profesional', 'helpful'],
+        communication_style: 'santai-profesional',
+        emoji_usage: 'moderate',
+        language_formality: 'semi-formal',
+        greeting_message: "Halo! 👋 Ada yang bisa saya bantu?"
       };
-      console.log("Chatbot settings loaded:", chatbotSettings?.persona ? "OK" : "Using fallback");
     }
 
     // Fetch hotel settings and data
@@ -73,176 +175,124 @@ serve(async (req) => {
       .order("distance_km")
       .limit(10);
 
-    // Fetch knowledge base content
     const { data: knowledgeBase } = await supabase
       .from("chatbot_knowledge_base")
       .select("title, content, category")
       .eq("is_active", true)
       .order("category");
 
-    // Fetch training examples for few-shot learning
     const { data: trainingExamples } = await supabase
       .from("chatbot_training_examples")
       .select("question, ideal_answer, category")
       .eq("is_active", true)
       .order("display_order");
 
-    // Build comprehensive context
+    // Build context strings
     const roomsInfo = rooms?.map(r => 
-      `- ${r.name}: ${r.description}. Harga: Rp ${r.price_per_night.toLocaleString()}/malam. Max ${r.max_guests} tamu${r.size_sqm ? `, ${r.size_sqm}m²` : ''}. Fasilitas: ${r.features.join(', ')}`
+      `- ${r.name}: Rp ${r.price_per_night.toLocaleString()}/malam. Max ${r.max_guests} tamu${r.size_sqm ? `, ${r.size_sqm}m²` : ''}`
     ).join('\n') || '';
 
-    const facilitiesInfo = facilities?.map(f => 
-      `- ${f.title}: ${f.description}`
-    ).join('\n') || '';
+    const facilitiesInfo = facilities?.map(f => `- ${f.title}`).join(', ') || '';
 
     const nearbyInfo = nearbyLocations?.map(loc => 
-      `- ${loc.name} (${loc.category}): ${loc.distance_km}km, ~${loc.travel_time_minutes} menit`
+      `- ${loc.name}: ${loc.distance_km}km, ~${loc.travel_time_minutes} menit`
     ).join('\n') || '';
 
-    // Build knowledge base info
-    const knowledgeInfo = knowledgeBase?.map(kb => 
-      `[${kb.category?.toUpperCase() || 'GENERAL'}] ${kb.title}:\n${kb.content.substring(0, 1500)}`
-    ).join('\n\n---\n\n') || '';
+    // Get last user message for relevant example selection
+    const lastUserMessage = messages?.filter((m: any) => m.role === 'user').pop()?.content || '';
+    const relevantExamples = selectRelevantExamples(lastUserMessage, trainingExamples || []);
 
-    // Build training examples for few-shot learning
-    const trainingExamplesInfo = trainingExamples?.map(ex => 
-      `📌 [${ex.category?.toUpperCase() || 'GENERAL'}]
-User: "${ex.question}"
-Bot: "${ex.ideal_answer}"`
+    const trainingExamplesInfo = relevantExamples.map(ex => 
+      `User: "${ex.question}"\nBot: "${ex.ideal_answer}"`
     ).join('\n\n') || '';
 
-    // Get current date for context
+    // Knowledge base (truncated)
+    const knowledgeInfo = knowledgeBase?.slice(0, 3).map(kb => 
+      `[${kb.category?.toUpperCase() || 'INFO'}] ${kb.title}: ${kb.content.substring(0, 300)}...`
+    ).join('\n\n') || '';
+
+    // Current date/time
     const now = new Date();
-    const dateOptions: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    const currentDateIndonesian = now.toLocaleDateString('id-ID', dateOptions);
+    const currentDateIndonesian = now.toLocaleDateString('id-ID', { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    });
     const currentDateISO = now.toISOString().split('T')[0];
     const currentHour = now.getHours();
-    
-    // Time-based greeting hint
     const timeGreeting = currentHour < 11 ? 'pagi' : currentHour < 15 ? 'siang' : currentHour < 18 ? 'sore' : 'malam';
 
-    // Build conversation context string if provided
+    // Build conversation context string
     let contextString = '';
     if (conversationContext) {
       const ctx = conversationContext;
-      contextString = `
-📋 KONTEKS PERCAKAPAN (ingat ini!):
-${ctx.guest_name ? `- Nama tamu: ${ctx.guest_name}` : ''}
-${ctx.preferred_room ? `- Kamar diminati: ${ctx.preferred_room}` : ''}
-${ctx.dates ? `- Tanggal rencana: ${ctx.dates}` : ''}
-${ctx.guest_count ? `- Jumlah tamu: ${ctx.guest_count} orang` : ''}
-${ctx.budget_hint ? `- Budget sekitar: ${ctx.budget_hint}` : ''}
-${ctx.sentiment ? `- Mood tamu: ${ctx.sentiment}` : ''}
-${ctx.last_topic ? `- Topik terakhir: ${ctx.last_topic}` : ''}`;
+      const parts = [];
+      if (ctx.guest_name) parts.push(`Nama tamu: ${ctx.guest_name}`);
+      if (ctx.preferred_room) parts.push(`Kamar diminati: ${ctx.preferred_room}`);
+      if (ctx.dates) parts.push(`Tanggal: ${ctx.dates}`);
+      if (ctx.guest_count) parts.push(`Tamu: ${ctx.guest_count} orang`);
+      if (ctx.sentiment) parts.push(`Mood: ${ctx.sentiment}`);
+      if (parts.length > 0) {
+        contextString = `\n📋 KONTEKS:\n${parts.join(' | ')}`;
+      }
     }
 
-    // Build enhanced system prompt with personality
-    const persona = chatbotSettings?.persona || defaultPersona;
-    const botName = chatbotSettings?.bot_name || 'Rani';
-    
-    const systemPrompt = `Kamu adalah ${botName}, customer service ${hotelSettings?.hotel_name || 'Pomah Guesthouse'} yang ramah, cerdas, dan helpful.
+    // Build main persona prompt from structured settings
+    const hotelName = hotelSettings?.hotel_name || 'Pomah Guesthouse';
+    const personaPrompt = buildPersonaPrompt(chatbotSettings, hotelName);
 
-🎭 PERSONALITY:
-- Ramah & hangat seperti teman, tapi tetap profesional
-- Cepat tanggap, jawab langsung tanpa bertele-tele  
-- Proaktif memberikan saran yang relevan
-- Empati tinggi, pahami kebutuhan tamu
-- Gunakan emoji secukupnya 😊 (1-3 per pesan, jangan berlebihan)
-- Ingat nama tamu dan pakai dalam percakapan jika sudah tahu
-- Bahasa santai tapi sopan (campuran formal-informal Indonesia)
+    // Build final system prompt
+    const systemPrompt = `${personaPrompt}
 
 📅 TANGGAL: ${currentDateIndonesian} (${currentDateISO}) | Sekarang ${timeGreeting} | TAHUN: 2025
 ${contextString}
 
-🧠 INTELLIGENCE RULES:
-1. Kenali typo & singkatan umum:
-   - dlx/delux → deluxe, kmr → kamar, brp → berapa, bs/bsa → bisa
-   - gk/ga/ngga → tidak, sy/aku → saya, mlm → malam, org → orang
-   - tgl → tanggal, kpn → kapan, bsk → besok, lusa → 2 hari lagi
-   - gmn/gimana → bagaimana, emg/emang → memang
+🧠 INTELLIGENCE:
+- Kenali typo: dlx→deluxe, kmr→kamar, brp→berapa, bs→bisa, gk/ga→tidak, tgl→tanggal
+- Ingat preferensi dari percakapan sebelumnya
+- JANGAN tanya ulang info yang sudah diberikan user
 
-2. Deteksi konteks dari percakapan sebelumnya:
-   - Jika sudah bicara kamar, pertanyaan "yg lain?" = kamar lain
-   - "Kalau tanggal X?" = cek availability tanggal X untuk kamar yang sedang dibahas
-   - Ingat preferensi: jumlah tamu, tanggal, kamar yang diminati
-
-3. JANGAN PERNAH tanya ulang info yang sudah diberikan user!
-   - User bilang "deluxe 15 januari" → LANGSUNG cek, jangan tanya kamar/tanggal lagi
-   - User bilang "2 orang" sebelumnya → ingat jumlah tamu ini
-
-🚨 ATURAN WAJIB TOOLS:
-1. User tanya "ada kamar apa?" / "tipe kamar?" → PANGGIL get_all_rooms
-2. User sebut kamar + tanggal → PANGGIL check_availability
-3. User mau booking lengkap → PANGGIL create_booking_draft
-4. Follow-up "kalau tanggal X?" → LANGSUNG cek availability tanggal baru
-5. User tanya status/ubah booking → MINTA kode booking + telepon + email dulu
-
-💡 PROACTIVE SUGGESTIONS:
-- Setelah cek availability → "Mau saya bantu booking sekarang? 😊"
-- User bilang "liburan"/"jalan-jalan" → sarankan kamar yang cocok
-- User ragu-ragu → bantu compare 2-3 opsi: "Untuk [kebutuhan], saya rekomendasikan..."
-- Setelah booking → "Pembayaran bisa transfer ke [bank]. Butuh invoice WhatsApp?"
+🚨 TOOLS (WAJIB):
+- "ada kamar apa?" → get_all_rooms
+- kamar + tanggal → check_availability
+- mau booking lengkap → create_booking_draft
+- cek/ubah booking → minta kode PMH-XXXXXX + telepon + email
 
 📍 INFO HOTEL:
-- ${hotelSettings?.hotel_name || 'POMAH GUESTHOUSE'}
-- Alamat: ${hotelSettings?.address || 'Jl. Dewi Sartika IV No 71, Semarang'}
+- ${hotelName}: ${hotelSettings?.address || 'Jl. Dewi Sartika IV No 71, Semarang'}
 - Check-in: ${hotelSettings?.check_in_time || '14:00'} | Check-out: ${hotelSettings?.check_out_time || '12:00'}
-- WhatsApp: ${hotelSettings?.whatsapp_number || '+6281227271799'}
+- WA: ${hotelSettings?.whatsapp_number || '+6281227271799'}
 
-🛏️ KAMAR:
-${roomsInfo}
+🛏️ KAMAR: ${roomsInfo}
 
 ✨ FASILITAS: ${facilitiesInfo}
 
-📍 LOKASI SEKITAR: ${nearbyInfo}
+⚠️ FORMAT:
+- Kode booking: PMH-XXXXXX
+- Tanggal: "15 Januari 2025"
+- Harga: "Rp 450.000"
 
-⚠️ FORMAT OUTPUT:
-- Kode booking: PMH-XXXXXX (bukan UUID)
-- Tanggal: "15 Januari 2025" (bukan 2025-01-15)
-- Harga: "Rp 450.000" dengan titik ribuan
-- Respons singkat & jelas, maksimal 3-4 paragraf
-- Gunakan bullet points untuk list
+${trainingExamplesInfo ? `🎯 CONTOH RESPONS:\n${trainingExamplesInfo}` : ''}
+${knowledgeInfo ? `\n📚 INFO TAMBAHAN:\n${knowledgeInfo}` : ''}`;
 
-${knowledgeInfo ? `📚 PENGETAHUAN TAMBAHAN:\n${knowledgeInfo.substring(0, 1200)}` : ''}
-${trainingExamplesInfo ? `🎯 CONTOH RESPONS IDEAL:\n${trainingExamplesInfo.substring(0, 800)}` : ''}
-
-PERSONA ASLI: ${persona}`;
-
-    // Define tools for the AI
+    // Define tools
     const tools = [
       {
         type: "function",
         function: {
           name: "get_all_rooms",
-          description: "GUNAKAN INI saat user tanya 'ada kamar apa?', 'tipe kamar?', 'harga kamar?', 'list kamar'. Menampilkan semua tipe kamar yang tersedia dengan harga TANPA perlu tanggal.",
-          parameters: {
-            type: "object",
-            properties: {}
-          }
+          description: "Tampilkan semua tipe kamar dengan harga. Gunakan saat user tanya 'ada kamar apa?', 'tipe kamar?', 'harga kamar?'",
+          parameters: { type: "object", properties: {} }
         }
       },
       {
         type: "function",
         function: {
           name: "check_availability",
-          description: "Cek ketersediaan kamar untuk tanggal tertentu. PENTING: Gunakan tahun 2025 atau lebih baru untuk semua tanggal!",
+          description: "Cek ketersediaan kamar untuk tanggal tertentu. WAJIB pakai tahun 2025!",
           parameters: {
             type: "object",
             properties: {
-              check_in: { 
-                type: "string", 
-                description: "Tanggal check-in format YYYY-MM-DD. WAJIB pakai tahun 2025 atau lebih. Contoh: 2025-01-15, 2025-12-20. JANGAN pakai tahun < 2025!" 
-              },
-              check_out: { 
-                type: "string", 
-                description: "Tanggal check-out format YYYY-MM-DD. WAJIB pakai tahun 2025 atau lebih. Contoh: 2025-01-18, 2025-12-25. JANGAN pakai tahun < 2025!" 
-              },
+              check_in: { type: "string", description: "Tanggal check-in YYYY-MM-DD (pakai 2025!)" },
+              check_out: { type: "string", description: "Tanggal check-out YYYY-MM-DD (pakai 2025!)" },
               num_guests: { type: "number", description: "Jumlah tamu" }
             },
             required: ["check_in", "check_out"]
@@ -253,11 +303,11 @@ PERSONA ASLI: ${persona}`;
         type: "function",
         function: {
           name: "get_room_details",
-          description: "Dapatkan detail lengkap tentang kamar tertentu",
+          description: "Detail lengkap kamar tertentu",
           parameters: {
             type: "object",
             properties: {
-              room_name: { type: "string", description: "Nama kamar (contoh: Deluxe Room, Villa)" }
+              room_name: { type: "string", description: "Nama kamar (Deluxe, Villa, dll)" }
             }
           }
         }
@@ -266,32 +316,32 @@ PERSONA ASLI: ${persona}`;
         type: "function",
         function: {
           name: "get_facilities",
-          description: "Dapatkan daftar fasilitas hotel"
+          description: "Daftar fasilitas hotel"
         }
       },
       {
         type: "function",
         function: {
           name: "create_booking_draft",
-          description: "Buat booking dengan satu atau beberapa kamar sekaligus. PENTING: Nomor telepon WAJIB diisi! Support multiple rooms!",
+          description: "Buat booking. Nomor telepon WAJIB!",
           parameters: {
             type: "object",
             properties: {
-              guest_name: { type: "string", description: "Nama lengkap tamu" },
-              guest_email: { type: "string", description: "Email tamu" },
-              guest_phone: { type: "string", description: "Nomor telepon/WhatsApp tamu (WAJIB DIISI!)" },
-              check_in: { type: "string", description: "Tanggal check-in YYYY-MM-DD" },
-              check_out: { type: "string", description: "Tanggal check-out YYYY-MM-DD" },
-              num_guests: { type: "number", description: "Total jumlah tamu" },
-              room_name: { type: "string", description: "Nama tipe kamar (untuk single room booking, backward compatible)" },
+              guest_name: { type: "string", description: "Nama lengkap" },
+              guest_email: { type: "string", description: "Email" },
+              guest_phone: { type: "string", description: "No HP (WAJIB!)" },
+              check_in: { type: "string", description: "Check-in YYYY-MM-DD" },
+              check_out: { type: "string", description: "Check-out YYYY-MM-DD" },
+              num_guests: { type: "number", description: "Jumlah tamu" },
+              room_name: { type: "string", description: "Nama kamar" },
               room_selections: { 
                 type: "array", 
-                description: "Untuk multiple room: Array kamar yang dipilih. Contoh: [{room_name: 'Deluxe', quantity: 2}, {room_name: 'Villa', quantity: 1}]. Jika hanya 1 kamar, bisa pakai room_name saja.",
+                description: "Multi-room: [{room_name, quantity}]",
                 items: {
                   type: "object",
                   properties: {
-                    room_name: { type: "string", description: "Nama tipe kamar" },
-                    quantity: { type: "number", description: "Jumlah kamar tipe ini (default: 1)" }
+                    room_name: { type: "string" },
+                    quantity: { type: "number" }
                   },
                   required: ["room_name"]
                 }
@@ -305,22 +355,13 @@ PERSONA ASLI: ${persona}`;
         type: "function",
         function: {
           name: "get_booking_details",
-          description: "Cari dan tampilkan detail booking tamu. WAJIB minta kode booking, nomor telepon, dan email untuk verifikasi keamanan.",
+          description: "Cari detail booking. WAJIB: kode, telepon, email untuk verifikasi",
           parameters: {
             type: "object",
             properties: {
-              booking_id: { 
-                type: "string", 
-                description: "Kode booking format PMH-XXXXXX (contoh: PMH-Y739M3). Bukan UUID panjang." 
-              },
-              guest_phone: { 
-                type: "string", 
-                description: "Nomor telepon pemesan untuk verifikasi" 
-              },
-              guest_email: { 
-                type: "string", 
-                description: "Email pemesan untuk verifikasi" 
-              }
+              booking_id: { type: "string", description: "Kode PMH-XXXXXX" },
+              guest_phone: { type: "string", description: "Telepon" },
+              guest_email: { type: "string", description: "Email" }
             },
             required: ["booking_id", "guest_phone", "guest_email"]
           }
@@ -330,17 +371,17 @@ PERSONA ASLI: ${persona}`;
         type: "function",
         function: {
           name: "update_booking",
-          description: "Ubah detail booking yang sudah ada. WAJIB verifikasi dengan kode booking, nomor telepon, dan email terlebih dahulu. Booking cancelled tidak bisa diubah.",
+          description: "Ubah booking. WAJIB verifikasi dulu",
           parameters: {
             type: "object",
             properties: {
-              booking_id: { type: "string", description: "Kode booking format PMH-XXXXXX" },
-              guest_phone: { type: "string", description: "Nomor telepon pemesan untuk verifikasi" },
-              guest_email: { type: "string", description: "Email pemesan untuk verifikasi" },
-              new_check_in: { type: "string", description: "Tanggal check-in baru (YYYY-MM-DD)" },
-              new_check_out: { type: "string", description: "Tanggal check-out baru (YYYY-MM-DD)" },
-              new_num_guests: { type: "number", description: "Jumlah tamu baru" },
-              new_special_requests: { type: "string", description: "Permintaan khusus baru" }
+              booking_id: { type: "string", description: "Kode PMH-XXXXXX" },
+              guest_phone: { type: "string", description: "Telepon" },
+              guest_email: { type: "string", description: "Email" },
+              new_check_in: { type: "string", description: "Check-in baru" },
+              new_check_out: { type: "string", description: "Check-out baru" },
+              new_num_guests: { type: "number", description: "Tamu baru" },
+              new_special_requests: { type: "string", description: "Request baru" }
             },
             required: ["booking_id", "guest_phone", "guest_email"]
           }
@@ -350,22 +391,13 @@ PERSONA ASLI: ${persona}`;
         type: "function",
         function: {
           name: "check_payment_status",
-          description: "Cek status pembayaran booking. WAJIB verifikasi dengan kode booking, nomor telepon, dan email untuk keamanan.",
+          description: "Cek status pembayaran. WAJIB verifikasi",
           parameters: {
             type: "object",
             properties: {
-              booking_id: { 
-                type: "string", 
-                description: "Kode booking format PMH-XXXXXX" 
-              },
-              guest_phone: { 
-                type: "string", 
-                description: "Nomor telepon pemesan untuk verifikasi" 
-              },
-              guest_email: { 
-                type: "string", 
-                description: "Email pemesan untuk verifikasi" 
-              }
+              booking_id: { type: "string", description: "Kode PMH-XXXXXX" },
+              guest_phone: { type: "string", description: "Telepon" },
+              guest_email: { type: "string", description: "Email" }
             },
             required: ["booking_id", "guest_phone", "guest_email"]
           }
@@ -373,7 +405,7 @@ PERSONA ASLI: ${persona}`;
       }
     ];
 
-    // Call Lovable AI with optimized settings
+    // Call AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -388,7 +420,7 @@ PERSONA ASLI: ${persona}`;
         ],
         tools,
         tool_choice: "auto",
-        temperature: 0.4, // Slightly higher for natural responses
+        temperature: 0.4,
         max_tokens: chatbotSettings.response_speed === 'fast' ? 500 : 
                     chatbotSettings.response_speed === 'detailed' ? 900 : 700,
       }),
@@ -397,14 +429,8 @@ PERSONA ASLI: ${persona}`;
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+          JSON.stringify({ error: "Rate limit exceeded" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required. Please add credits." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const errorText = await response.text();

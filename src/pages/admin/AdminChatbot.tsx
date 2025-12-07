@@ -16,6 +16,7 @@ import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import ChatLogsTab from '@/components/admin/ChatLogsTab';
 import TrainingTab from '@/components/admin/TrainingTab';
 import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
+import PersonaSettingsTab from '@/components/admin/PersonaSettingsTab';
 
 const AdminChatbot = () => {
   const { data: settings, isLoading } = useChatbotSettings();
@@ -101,50 +102,7 @@ const AdminChatbot = () => {
         </TabsList>
 
         <TabsContent value="personality" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Persona Chatbot</CardTitle>
-              <CardDescription>
-                Tentukan bagaimana chatbot berinteraksi dengan tamu
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="bot_name">Nama Bot</Label>
-                <Input
-                  id="bot_name"
-                  value={formData.bot_name}
-                  onChange={(e) => setFormData({ ...formData, bot_name: e.target.value })}
-                  placeholder="Pomah Assistant"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="persona">Persona / System Prompt</Label>
-                <Textarea
-                  id="persona"
-                  value={formData.persona}
-                  onChange={(e) => setFormData({ ...formData, persona: e.target.value })}
-                  rows={6}
-                  placeholder="Anda adalah asisten ramah yang membantu tamu..."
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Ini adalah instruksi dasar untuk AI. Jelaskan bagaimana bot harus berperilaku.
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="greeting">Pesan Pembuka</Label>
-                <Textarea
-                  id="greeting"
-                  value={formData.greeting_message}
-                  onChange={(e) => setFormData({ ...formData, greeting_message: e.target.value })}
-                  rows={2}
-                  placeholder="Halo! Ada yang bisa saya bantu?"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <PersonaSettingsTab />
         </TabsContent>
 
         <TabsContent value="appearance" className="space-y-4">

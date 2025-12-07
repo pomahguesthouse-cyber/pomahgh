@@ -615,14 +615,21 @@ export type Database = {
           bot_avatar_style: string | null
           bot_avatar_url: string | null
           bot_name: string | null
+          communication_style: string | null
           created_at: string | null
+          custom_instructions: string | null
+          emoji_usage: string | null
           enable_availability_check: boolean | null
           enable_booking_assistance: boolean | null
           enable_facility_info: boolean | null
           greeting_message: string | null
           id: string
+          language_formality: string | null
           max_message_length: number | null
           persona: string
+          persona_name: string | null
+          persona_role: string | null
+          persona_traits: string[] | null
           primary_color: string | null
           response_speed: string | null
           show_typing_indicator: boolean | null
@@ -634,14 +641,21 @@ export type Database = {
           bot_avatar_style?: string | null
           bot_avatar_url?: string | null
           bot_name?: string | null
+          communication_style?: string | null
           created_at?: string | null
+          custom_instructions?: string | null
+          emoji_usage?: string | null
           enable_availability_check?: boolean | null
           enable_booking_assistance?: boolean | null
           enable_facility_info?: boolean | null
           greeting_message?: string | null
           id?: string
+          language_formality?: string | null
           max_message_length?: number | null
           persona?: string
+          persona_name?: string | null
+          persona_role?: string | null
+          persona_traits?: string[] | null
           primary_color?: string | null
           response_speed?: string | null
           show_typing_indicator?: boolean | null
@@ -653,14 +667,21 @@ export type Database = {
           bot_avatar_style?: string | null
           bot_avatar_url?: string | null
           bot_name?: string | null
+          communication_style?: string | null
           created_at?: string | null
+          custom_instructions?: string | null
+          emoji_usage?: string | null
           enable_availability_check?: boolean | null
           enable_booking_assistance?: boolean | null
           enable_facility_info?: boolean | null
           greeting_message?: string | null
           id?: string
+          language_formality?: string | null
           max_message_length?: number | null
           persona?: string
+          persona_name?: string | null
+          persona_role?: string | null
+          persona_traits?: string[] | null
           primary_color?: string | null
           response_speed?: string | null
           show_typing_indicator?: boolean | null
@@ -679,6 +700,7 @@ export type Database = {
           ideal_answer: string
           is_active: boolean | null
           question: string
+          response_tags: string[] | null
           updated_at: string | null
         }
         Insert: {
@@ -689,6 +711,7 @@ export type Database = {
           ideal_answer: string
           is_active?: boolean | null
           question: string
+          response_tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
@@ -699,6 +722,7 @@ export type Database = {
           ideal_answer?: string
           is_active?: boolean | null
           question?: string
+          response_tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: []
