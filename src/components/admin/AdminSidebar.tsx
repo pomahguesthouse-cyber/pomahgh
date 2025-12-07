@@ -101,7 +101,7 @@ export function AdminSidebar() {
       </SidebarHeader>
 
       {/* Menu Groups */}
-      <SidebarContent className="px-2">
+      <SidebarContent className="px-2 overflow-y-auto flex-1">
         {menuGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label} className="py-2">
             <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold mb-1">
@@ -149,7 +149,7 @@ export function AdminSidebar() {
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter className="border-t border-sidebar-border mt-auto">
+      <SidebarFooter className="border-t border-sidebar-border mt-auto shrink-0">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Back to Site">
