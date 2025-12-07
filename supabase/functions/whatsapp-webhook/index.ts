@@ -599,14 +599,20 @@ serve(async (req) => {
     if (quickResponse) {
       console.log(`✅ Quick response for "${message}" - bypassing AI`);
       
-      // Log assistant message
-      await supabase
+      // Log assistant message with error handling
+      const { error: quickMsgError } = await supabase
         .from('chat_messages')
         .insert({
           conversation_id: conversationId,
           role: 'assistant',
           content: quickResponse,
         });
+      
+      if (quickMsgError) {
+        console.error('❌ Failed to log quick response assistant message:', quickMsgError);
+      } else {
+        console.log('✅ Quick response assistant message logged to DB');
+      }
 
       // Send response via Fonnte
       const sendResponse = await fetch("https://api.fonnte.com/send", {
@@ -909,14 +915,20 @@ serve(async (req) => {
     aiResponse = formatForWhatsApp(aiResponse);
     console.log(`AI Response for ${phone}: "${aiResponse.substring(0, 100)}..."`);
 
-    // Log assistant message
-    await supabase
+    // Log assistant message with error handling
+    const { error: aiMsgError } = await supabase
       .from('chat_messages')
       .insert({
         conversation_id: conversationId,
         role: 'assistant',
         content: aiResponse,
       });
+    
+    if (aiMsgError) {
+      console.error('❌ Failed to log AI assistant message:', aiMsgError);
+    } else {
+      console.log('✅ AI assistant message logged to DB');
+    }
 
     // Send response via Fonnte
     console.log("📤 Sending WhatsApp to:", phone);
