@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, AlertCircle } from "lucide-react";
+import { Bell, AlertCircle, MessageCircle } from "lucide-react";
 
 export const useAdminNotifications = () => {
   const queryClient = useQueryClient();
@@ -53,10 +53,54 @@ export const useAdminNotifications = () => {
       )
       .subscribe();
 
+    // Subscribe to new WhatsApp messages (user messages only)
+    const whatsappMessagesChannel = supabase
+      .channel('whatsapp-messages-notify')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: 'role=eq.user'
+        },
+        async (payload) => {
+          console.log('New chat message detected:', payload);
+          
+          // Check if this message is from a WhatsApp session
+          const conversationId = payload.new.conversation_id;
+          if (!conversationId) return;
+
+          const { data: session } = await supabase
+            .from('whatsapp_sessions')
+            .select('phone_number')
+            .eq('conversation_id', conversationId)
+            .single();
+
+          // Only show notification for WhatsApp messages
+          if (session?.phone_number) {
+            const messagePreview = payload.new.content?.substring(0, 50) || '';
+            const truncated = payload.new.content?.length > 50 ? '...' : '';
+            
+            toast.info("WhatsApp Baru", {
+              description: `📱 ${session.phone_number}: "${messagePreview}${truncated}"`,
+              icon: <MessageCircle className="h-4 w-4 text-green-500" />,
+              duration: 8000,
+            });
+
+            // Invalidate WhatsApp-related queries
+            queryClient.invalidateQueries({ queryKey: ["whatsapp-sessions"] });
+            queryClient.invalidateQueries({ queryKey: ["whatsapp-stats"] });
+          }
+        }
+      )
+      .subscribe();
+
     // Cleanup subscriptions
     return () => {
       supabase.removeChannel(syncLogsChannel);
       supabase.removeChannel(bookingsChannel);
+      supabase.removeChannel(whatsappMessagesChannel);
     };
   }, [queryClient]);
 };
