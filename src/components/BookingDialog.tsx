@@ -475,13 +475,29 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
             </div>
           </div>
 
+          {/* Room Add-ons Selector */}
+          {totalNights > 0 && (
+            <AddonSelector
+              roomId={room.id}
+              totalNights={totalNights}
+              numGuests={formData.num_guests}
+              onAddonsChange={setSelectedAddons}
+            />
+          )}
+
           {/* Price Summary */}
           {totalNights > 0 && (
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Rp {room.price_per_night.toLocaleString("id-ID")} x {totalNights} malam x {roomQuantity} kamar</span>
-                <span>Rp {totalPrice.toLocaleString("id-ID")}</span>
+                <span>Kamar: Rp {room.price_per_night.toLocaleString("id-ID")} × {totalNights} malam × {roomQuantity} kamar</span>
+                <span>Rp {roomPrice.toLocaleString("id-ID")}</span>
               </div>
+              {addonsPrice > 0 && (
+                <div className="flex justify-between text-sm text-primary">
+                  <span>Layanan Tambahan</span>
+                  <span>+ Rp {addonsPrice.toLocaleString("id-ID")}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>Total</span>
                 <span className="text-primary">Rp {totalPrice.toLocaleString("id-ID")}</span>
