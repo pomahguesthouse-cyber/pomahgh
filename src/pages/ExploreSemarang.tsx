@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ExploreSEO } from "@/components/explore/ExploreSEO";
-import { ExploreHero } from "@/components/explore/ExploreHero";
+import { ExploreHeroSlider } from "@/components/explore/ExploreHeroSlider";
 import { ExploreIntro } from "@/components/explore/ExploreIntro";
 import { FeaturedAttractions } from "@/components/explore/FeaturedAttractions";
 import { CategoryTabs } from "@/components/explore/CategoryTabs";
@@ -21,7 +21,7 @@ const ExploreSemarang = () => {
       <Header />
       
       <main>
-        <ExploreHero />
+        <ExploreHeroSlider />
         
         <div className="max-w-7xl mx-auto px-4 py-4">
           <Breadcrumb
