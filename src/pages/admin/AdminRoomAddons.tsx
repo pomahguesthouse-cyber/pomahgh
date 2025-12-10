@@ -340,6 +340,7 @@ const AdminRoomAddons = () => {
             {addons.map((addon) => {
               const IconComponent = getIconComponent(addon.icon_name);
               const categoryLabel = CATEGORIES.find((c) => c.value === addon.category)?.label || addon.category;
+              const roomName = addon.room_id ? rooms?.find((r) => r.id === addon.room_id)?.name : null;
 
               return (
                 <Card key={addon.id} className={!addon.is_active ? "opacity-60" : ""}>
@@ -351,7 +352,11 @@ const AdminRoomAddons = () => {
                         </div>
                         <div>
                           <CardTitle className="text-lg">{addon.name}</CardTitle>
-                          <CardDescription className="text-xs">{categoryLabel}</CardDescription>
+                          <CardDescription className="text-xs">
+                            {categoryLabel}
+                            {roomName && <Badge variant="secondary" className="ml-2 text-[10px]">{roomName}</Badge>}
+                            {!roomName && <Badge variant="outline" className="ml-2 text-[10px]">Semua Kamar</Badge>}
+                          </CardDescription>
                         </div>
                       </div>
                       <Switch
