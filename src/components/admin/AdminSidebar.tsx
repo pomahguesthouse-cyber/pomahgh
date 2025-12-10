@@ -1,4 +1,4 @@
-import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight } from "lucide-react";
+import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight, Sparkles } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { 
@@ -30,6 +30,7 @@ const menuGroups = [
     label: "Property",
     items: [
       { title: "Rooms", url: "/admin/rooms", icon: Building2 },
+      { title: "Room Add-ons", url: "/admin/room-addons", icon: Sparkles },
       { title: "Facilities", url: "/admin/facilities", icon: Boxes },
       { title: "Room Features", url: "/admin/room-features", icon: Tags },
     ]
