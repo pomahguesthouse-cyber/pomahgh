@@ -187,6 +187,51 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_addons: {
+        Row: {
+          addon_id: string
+          booking_id: string
+          created_at: string | null
+          id: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          addon_id: string
+          booking_id: string
+          created_at?: string | null
+          id?: string
+          quantity?: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          addon_id?: string
+          booking_id?: string
+          created_at?: string | null
+          id?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_addons_addon_id_fkey"
+            columns: ["addon_id"]
+            isOneToOne: false
+            referencedRelation: "room_addons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_addons_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_rooms: {
         Row: {
           booking_id: string
@@ -1317,6 +1362,62 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      room_addons: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon_name: string | null
+          id: string
+          is_active: boolean | null
+          max_quantity: number | null
+          name: string
+          price: number
+          price_type: string
+          room_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_quantity?: number | null
+          name: string
+          price?: number
+          price_type?: string
+          room_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_quantity?: number | null
+          name?: string
+          price?: number
+          price_type?: string
+          room_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_addons_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       room_features: {
         Row: {

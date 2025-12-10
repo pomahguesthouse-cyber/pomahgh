@@ -25,6 +25,7 @@ import AdminRoomFeatures from "./pages/admin/AdminRoomFeatures";
 import AdminSeoSettings from "./pages/admin/AdminSeoSettings";
 import RoomDetail from "./pages/RoomDetail";
 import AdminInvoiceTemplate from "./pages/admin/AdminInvoiceTemplate";
+import AdminRoomAddons from "./pages/admin/AdminRoomAddons";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import NotFound from "./pages/NotFound";
 import ExploreSemarang from "./pages/ExploreSemarang";
@@ -60,6 +61,7 @@ const App = () => (
           <Route path="/admin/facility-hero-slides" element={<AdminLayout><AdminFacilityHeroSlides /></AdminLayout>} />
             <Route path="/admin/facilities" element={<AdminLayout><AdminFacilities /></AdminLayout>} />
             <Route path="/admin/room-features" element={<AdminLayout><AdminRoomFeatures /></AdminLayout>} />
+          <Route path="/admin/room-addons" element={<AdminLayout><AdminRoomAddons /></AdminLayout>} />
             <Route path="/admin/nearby-locations" element={<AdminLayout><AdminNearbyLocations /></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
           <Route path="/admin/chatbot" element={<AdminLayout><AdminChatbot /></AdminLayout>} />

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { differenceInDays } from "date-fns";
 import { useBookingValidation } from "./useBookingValidation";
 import { formatWIBDate } from "@/utils/wibTimezone";
+import { BookingAddon } from "./useRoomAddons";
 
 export interface BookingData {
   room_id: string;
@@ -20,6 +21,7 @@ export interface BookingData {
   allocated_room_number?: string;
   room_quantity?: number;
   is_non_refundable?: boolean;
+  addons?: BookingAddon[];
 }
 
 export const useBooking = () => {
@@ -30,7 +32,9 @@ export const useBooking = () => {
     mutationFn: async (bookingData: BookingData) => {
       const roomQuantity = bookingData.room_quantity || 1;
       const totalNights = differenceInDays(bookingData.check_out, bookingData.check_in);
-      const totalPrice = totalNights * bookingData.price_per_night * roomQuantity;
+      const roomPrice = totalNights * bookingData.price_per_night * roomQuantity;
+      const addonsPrice = bookingData.addons?.reduce((sum, addon) => sum + addon.total_price, 0) || 0;
+      const totalPrice = roomPrice + addonsPrice;
 
       // Get room to check available room numbers
       const { data: room, error: roomError } = await supabase
@@ -94,6 +98,25 @@ export const useBooking = () => {
 
         if (bookingRoomsError) {
           console.error("Failed to insert booking_rooms:", bookingRoomsError);
+        }
+      }
+
+      // Insert booking addons if any
+      if (bookingData.addons && bookingData.addons.length > 0) {
+        const bookingAddonsData = bookingData.addons.map(addon => ({
+          booking_id: data.id,
+          addon_id: addon.addon_id,
+          quantity: addon.quantity,
+          unit_price: addon.unit_price,
+          total_price: addon.total_price,
+        }));
+
+        const { error: addonsError } = await supabase
+          .from("booking_addons")
+          .insert(bookingAddonsData);
+
+        if (addonsError) {
+          console.error("Failed to insert booking_addons:", addonsError);
         }
       }
 

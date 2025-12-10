@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -18,6 +18,8 @@ import { Room } from "@/hooks/useRooms";
 import { useBooking, BookingData } from "@/hooks/useBooking";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
+import { AddonSelector } from "./booking/AddonSelector";
+import { BookingAddon } from "@/hooks/useRoomAddons";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useSearchDates } from "@/contexts/SearchDatesContext";
@@ -70,6 +72,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [roomQuantity, setRoomQuantity] = useState(initialRoomQuantity);
   const [agreeToPolicy, setAgreeToPolicy] = useState(false);
+  const [selectedAddons, setSelectedAddons] = useState<BookingAddon[]>([]);
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
@@ -203,6 +206,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
         price_per_night: room.price_per_night,
         room_quantity: roomQuantity,
         is_non_refundable: (room as any).is_non_refundable || false,
+        addons: selectedAddons.length > 0 ? selectedAddons : undefined,
       };
 
       createBooking(bookingData, {
@@ -227,6 +231,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
             check_out_time: "12:00",
           });
           setErrors({});
+          setSelectedAddons([]);
         },
       });
     } catch (error) {
@@ -237,7 +242,9 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
   };
 
   const totalNights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
-  const totalPrice = room ? totalNights * room.price_per_night * roomQuantity : 0;
+  const roomPrice = room ? totalNights * room.price_per_night * roomQuantity : 0;
+  const addonsPrice = selectedAddons.reduce((sum, addon) => sum + addon.total_price, 0);
+  const totalPrice = roomPrice + addonsPrice;
 
   if (!room) return null;
 
