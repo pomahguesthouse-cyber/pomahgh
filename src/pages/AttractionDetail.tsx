@@ -161,7 +161,6 @@ const AttractionDetail = () => {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Breadcrumb
             items={[
-              { label: "Home", href: "/" },
               { label: "Explore Semarang", href: "/explore-semarang" },
               { label: attraction.name },
             ]}
