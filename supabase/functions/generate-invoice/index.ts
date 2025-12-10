@@ -69,6 +69,17 @@ serve(async (req) => {
 
     if (banksError) throw banksError;
 
+    // Fetch booking addons
+    const { data: bookingAddons, error: addonsError } = await supabase
+      .from("booking_addons")
+      .select(`
+        *,
+        room_addons (name, icon_name, price_type)
+      `)
+      .eq("booking_id", booking_id);
+
+    if (addonsError) throw addonsError;
+
     // Get invoice settings (use defaults if not configured)
     const primaryColor = invoiceTemplate?.invoice_primary_color || '#8B4513';
     const secondaryColor = invoiceTemplate?.invoice_secondary_color || '#f8f4f0';
@@ -474,6 +485,18 @@ serve(async (req) => {
             <td class="text-right"><strong>${formatRupiah(room.price_per_night * booking.total_nights)}</strong></td>
           </tr>
         `).join('')}
+        ${bookingAddons && bookingAddons.length > 0 ? bookingAddons.map((addon: any, index: number) => `
+          <tr style="background-color: #f8f9fa;">
+            <td>${roomListItems.length + index + 1}</td>
+            <td>
+              <strong>✨ ${addon.room_addons?.name || 'Add-on'}</strong><br>
+              <small style="color: #666;">Qty: ${addon.quantity}</small>
+            </td>
+            <td class="text-right">${formatRupiah(addon.unit_price)}</td>
+            <td class="text-center">-</td>
+            <td class="text-right"><strong>${formatRupiah(addon.total_price)}</strong></td>
+          </tr>
+        `).join('') : ''}
       </tbody>
     </table>
 
