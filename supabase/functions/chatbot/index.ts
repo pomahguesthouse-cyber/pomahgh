@@ -242,7 +242,7 @@ serve(async (req) => {
     // Build final system prompt
     const systemPrompt = `${personaPrompt}
 
-📅 TANGGAL: ${currentDateIndonesian} (${currentDateISO}) | Sekarang ${timeGreeting} | TAHUN: 2025
+📅 TANGGAL: ${currentDateIndonesian} (${currentDateISO}) | Sekarang ${timeGreeting} | TAHUN: ${now.getFullYear()}
 ${contextString}
 
 🧠 INTELLIGENCE:
@@ -287,12 +287,12 @@ ${knowledgeInfo ? `\n📚 INFO TAMBAHAN:\n${knowledgeInfo}` : ''}`;
         type: "function",
         function: {
           name: "check_availability",
-          description: "Cek ketersediaan kamar untuk tanggal tertentu. WAJIB pakai tahun 2025!",
+          description: "Cek ketersediaan kamar untuk tanggal tertentu. Bisa untuk tahun ini atau tahun depan.",
           parameters: {
             type: "object",
             properties: {
-              check_in: { type: "string", description: "Tanggal check-in YYYY-MM-DD (pakai 2025!)" },
-              check_out: { type: "string", description: "Tanggal check-out YYYY-MM-DD (pakai 2025!)" },
+              check_in: { type: "string", description: "Tanggal check-in format YYYY-MM-DD" },
+              check_out: { type: "string", description: "Tanggal check-out format YYYY-MM-DD" },
               num_guests: { type: "number", description: "Jumlah tamu" }
             },
             required: ["check_in", "check_out"]
