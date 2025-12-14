@@ -26,7 +26,7 @@ export interface BookingData {
 
 export const useBooking = () => {
   const queryClient = useQueryClient();
-  const { checkBookingConflict } = useBookingValidation();
+  const { checkBookingConflict, checkRoomTypeAvailability } = useBookingValidation();
 
   return useMutation({
     mutationFn: async (bookingData: BookingData) => {
@@ -45,22 +45,18 @@ export const useBooking = () => {
 
       if (roomError) throw roomError;
 
-      // Get booked room numbers for this date range
-      const { data: bookedRooms, error: bookedError } = await supabase
-        .from("bookings")
-        .select("allocated_room_number")
-        .eq("room_id", bookingData.room_id)
-        .in("status", ["confirmed", "pending"])
-        .or(`and(check_in.lte.${formatWIBDate(bookingData.check_out)},check_out.gte.${formatWIBDate(bookingData.check_in)})`);
+      // Use checkRoomTypeAvailability to get available rooms (includes booking_rooms check)
+      const { availableRooms } = await checkRoomTypeAvailability({
+        roomId: bookingData.room_id,
+        checkIn: bookingData.check_in,
+        checkOut: bookingData.check_out,
+      });
 
-      if (bookedError) throw bookedError;
-
-      const bookedNumbers = bookedRooms?.map(b => b.allocated_room_number).filter(Boolean) || [];
-      const availableNumbers = (room.room_numbers || []).filter(n => !bookedNumbers.includes(n));
-
-      if (availableNumbers.length < roomQuantity) {
-        throw new Error(`Hanya ${availableNumbers.length} kamar tersedia untuk tanggal tersebut`);
+      if (availableRooms.length < roomQuantity) {
+        throw new Error(`Hanya ${availableRooms.length} kamar tersedia untuk tanggal tersebut`);
       }
+
+      const availableNumbers = availableRooms;
 
       // Create main booking with first room number
       const { data, error } = await supabase.from("bookings").insert({
