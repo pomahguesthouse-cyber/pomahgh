@@ -159,9 +159,16 @@ serve(async (req) => {
 
     const { data: rooms } = await supabase
       .from("rooms")
-      .select("name, description, price_per_night, max_guests, features, size_sqm")
+      .select("id, name, description, price_per_night, max_guests, features, size_sqm")
       .eq("available", true)
       .order("price_per_night");
+
+    // Fetch extra bed add-ons for capacity info
+    const { data: extraBedAddons } = await supabase
+      .from("room_addons")
+      .select("room_id, extra_capacity, max_quantity")
+      .eq("is_active", true)
+      .ilike("name", "%extra bed%");
 
     const { data: facilities } = await supabase
       .from("facilities")
@@ -187,10 +194,23 @@ serve(async (req) => {
       .eq("is_active", true)
       .order("display_order");
 
-    // Build context strings
-    const roomsInfo = rooms?.map(r => 
-      `- ${r.name}: Rp ${r.price_per_night.toLocaleString()}/malam. Max ${r.max_guests} tamu${r.size_sqm ? `, ${r.size_sqm}m²` : ''}`
-    ).join('\n') || '';
+    // Build context strings with extra bed capacity info
+    const roomsInfo = rooms?.map(r => {
+      // Find extra bed addon (room-specific or global with null room_id)
+      const extraBed = (extraBedAddons || []).find(a => 
+        a.room_id === r.id || a.room_id === null
+      );
+      
+      const maxExtraBeds = extraBed?.max_quantity || 0;
+      const extraCapacity = extraBed ? (extraBed.extra_capacity || 1) * maxExtraBeds : 0;
+      const maxWithExtraBed = r.max_guests + extraCapacity;
+      
+      const extraBedInfo = maxExtraBeds > 0 
+        ? ` (bisa +${maxExtraBeds} extra bed → maks ${maxWithExtraBed} tamu)` 
+        : '';
+        
+      return `- ${r.name}: Rp ${r.price_per_night.toLocaleString()}/malam. Kapasitas ${r.max_guests} tamu${extraBedInfo}${r.size_sqm ? `, ${r.size_sqm}m²` : ''}`;
+    }).join('\n') || '';
 
     const facilitiesInfo = facilities?.map(f => `- ${f.title}`).join(', ') || '';
 

@@ -87,27 +87,46 @@ serve(async (req) => {
         // Get all available room types with prices (no date needed)
         const { data: rooms, error: roomsError } = await supabase
           .from("rooms")
-          .select("name, description, price_per_night, max_guests, size_sqm, features, allotment")
+          .select("id, name, description, price_per_night, max_guests, size_sqm, features, allotment")
           .eq("available", true)
           .order("price_per_night");
 
         if (roomsError) throw roomsError;
 
-        const roomList = (rooms || []).map(room => ({
-          name: room.name,
-          price_per_night: room.price_per_night,
-          price_formatted: `Rp ${room.price_per_night.toLocaleString('id-ID')}`,
-          max_guests: room.max_guests,
-          size_sqm: room.size_sqm,
-          total_units: room.allotment,
-          description: room.description,
-          features: room.features || []
-        }));
+        // Fetch extra bed add-ons for capacity info
+        const { data: extraBedAddons } = await supabase
+          .from("room_addons")
+          .select("room_id, extra_capacity, max_quantity")
+          .eq("is_active", true)
+          .ilike("name", "%extra bed%");
+
+        const roomList = (rooms || []).map(room => {
+          // Find extra bed addon (room-specific or global with null room_id)
+          const extraBed = (extraBedAddons || []).find(a => 
+            a.room_id === room.id || a.room_id === null
+          );
+          
+          const maxExtraBeds = extraBed?.max_quantity || 0;
+          const extraCapacity = extraBed ? (extraBed.extra_capacity || 1) * maxExtraBeds : 0;
+          
+          return {
+            name: room.name,
+            price_per_night: room.price_per_night,
+            price_formatted: `Rp ${room.price_per_night.toLocaleString('id-ID')}`,
+            max_guests: room.max_guests,
+            max_extra_beds: maxExtraBeds,
+            max_guests_with_extra_bed: room.max_guests + extraCapacity,
+            size_sqm: room.size_sqm,
+            total_units: room.allotment,
+            description: room.description,
+            features: room.features || []
+          };
+        });
 
         result = {
           message: "Daftar tipe kamar yang tersedia:",
           rooms: roomList,
-          note: "Untuk cek ketersediaan tanggal tertentu, silakan sebutkan tanggal check-in dan check-out yang diinginkan."
+          note: "Kapasitas bisa ditambah dengan extra bed (biaya tambahan). Untuk cek ketersediaan tanggal tertentu, silakan sebutkan tanggal check-in dan check-out."
         };
         break;
       }
@@ -128,6 +147,13 @@ serve(async (req) => {
           .eq("available", true);
 
         if (roomsError) throw roomsError;
+
+        // Fetch extra bed add-ons for capacity info
+        const { data: extraBedAddons } = await supabase
+          .from("room_addons")
+          .select("room_id, extra_capacity, max_quantity")
+          .eq("is_active", true)
+          .ilike("name", "%extra bed%");
 
         // Get blocked dates from room_unavailable_dates
         const { data: unavailableDates } = await supabase
@@ -189,13 +215,23 @@ serve(async (req) => {
 
           const availableCount = Math.max(0, totalUnits - unavailableRoomNumbers.size);
           
+          // Calculate extra bed capacity
+          const extraBed = (extraBedAddons || []).find(a => 
+            a.room_id === room.id || a.room_id === null
+          );
+          const maxExtraBeds = extraBed?.max_quantity || 0;
+          const extraCapacity = extraBed ? (extraBed.extra_capacity || 1) * maxExtraBeds : 0;
+          const maxGuestsWithExtraBed = room.max_guests + extraCapacity;
+          
           return {
             name: room.name,
             available_count: availableCount,
             price_per_night: room.price_per_night,
             max_guests: room.max_guests,
+            max_extra_beds: maxExtraBeds,
+            max_guests_with_extra_bed: maxGuestsWithExtraBed,
             description: room.description,
-            suitable: num_guests ? num_guests <= room.max_guests : true
+            suitable: num_guests ? num_guests <= maxGuestsWithExtraBed : true
           };
         }).filter(r => r.available_count > 0);
 
