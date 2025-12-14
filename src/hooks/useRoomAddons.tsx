@@ -14,6 +14,7 @@ export interface RoomAddon {
   display_order: number;
   category: string;
   room_id: string | null;
+  extra_capacity: number;
   created_at: string;
   updated_at: string;
 }
