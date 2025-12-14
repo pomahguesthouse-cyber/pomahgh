@@ -73,6 +73,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
   const [roomQuantity, setRoomQuantity] = useState(initialRoomQuantity);
   const [agreeToPolicy, setAgreeToPolicy] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState<BookingAddon[]>([]);
+  const [extraCapacity, setExtraCapacity] = useState(0);
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
@@ -110,16 +111,16 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
     if (searchCheckOut) setCheckOut(searchCheckOut);
   }, [searchCheckIn, searchCheckOut]);
 
-  // Auto-update guest count when room quantity changes
+  // Auto-update guest count when room quantity or extra capacity changes
   useEffect(() => {
     if (room) {
-      const maxGuests = room.max_guests * roomQuantity;
+      const maxGuests = (room.max_guests * roomQuantity) + extraCapacity;
       setFormData(prev => ({
         ...prev,
-        num_guests: maxGuests,
+        num_guests: Math.min(prev.num_guests, maxGuests) || maxGuests,
       }));
     }
-  }, [roomQuantity, room]);
+  }, [roomQuantity, room, extraCapacity]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,10 +163,10 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
       return;
     }
 
-    // Validate guest count based on room quantity
-    const maxGuests = room.max_guests * roomQuantity;
+    // Validate guest count based on room quantity + extra capacity
+    const maxGuests = (room.max_guests * roomQuantity) + extraCapacity;
     if (formData.num_guests > maxGuests) {
-      toast.error(`Maksimal ${maxGuests} tamu untuk ${roomQuantity} kamar (${room.max_guests} tamu/kamar)`);
+      toast.error(`Maksimal ${maxGuests} tamu untuk ${roomQuantity} kamar${extraCapacity > 0 ? ` + ${extraCapacity} extra bed` : ''}`);
       return;
     }
 
@@ -445,11 +446,11 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
                   id="num_guests"
                   type="number"
                   min="1"
-                  max={room.max_guests * roomQuantity}
+                  max={(room.max_guests * roomQuantity) + extraCapacity}
                   value={formData.num_guests}
                   onChange={(e) => {
                     const value = parseInt(e.target.value) || 1;
-                    const maxAllowed = room.max_guests * roomQuantity;
+                    const maxAllowed = (room.max_guests * roomQuantity) + extraCapacity;
                     setFormData({ 
                       ...formData, 
                       num_guests: Math.min(value, maxAllowed) 
@@ -457,7 +458,11 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
                   }}
                 />
                 <span className="text-sm text-muted-foreground">
-                  Max: {room.max_guests * roomQuantity} tamu ({room.max_guests}/kamar × {roomQuantity} kamar)
+                  Max: {(room.max_guests * roomQuantity) + extraCapacity} tamu
+                  {extraCapacity > 0 
+                    ? ` (${room.max_guests}/kamar × ${roomQuantity} + ${extraCapacity} extra bed)`
+                    : ` (${room.max_guests}/kamar × ${roomQuantity} kamar)`
+                  }
                 </span>
               </div>
               {errors.num_guests && <p className="text-sm text-destructive mt-1">{errors.num_guests}</p>}
@@ -482,6 +487,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
               totalNights={totalNights}
               numGuests={formData.num_guests}
               onAddonsChange={setSelectedAddons}
+              onExtraCapacityChange={setExtraCapacity}
             />
           )}
 

@@ -64,6 +64,7 @@ const AdminRoomAddons = () => {
     category: "general",
     room_id: null as string | null,
     display_order: 0,
+    extra_capacity: 0,
   });
 
   const resetForm = () => {
@@ -78,6 +79,7 @@ const AdminRoomAddons = () => {
       category: "general",
       room_id: null,
       display_order: 0,
+      extra_capacity: 0,
     });
     setEditingAddon(null);
   };
@@ -96,6 +98,7 @@ const AdminRoomAddons = () => {
         category: addon.category,
         room_id: addon.room_id,
         display_order: addon.display_order,
+        extra_capacity: addon.extra_capacity || 0,
       });
     } else {
       resetForm();
@@ -282,6 +285,20 @@ const AdminRoomAddons = () => {
                       onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tambahan Kapasitas Tamu (per unit)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.extra_capacity}
+                    onChange={(e) => setFormData({ ...formData, extra_capacity: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Isi 1 untuk extra bed (menambah kapasitas 1 orang per unit)
+                  </p>
                 </div>
 
                 <div className="space-y-2">

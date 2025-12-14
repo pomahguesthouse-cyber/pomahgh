@@ -20,6 +20,7 @@ interface AddonSelectorProps {
   totalNights: number;
   numGuests: number;
   onAddonsChange: (addons: BookingAddon[]) => void;
+  onExtraCapacityChange?: (extraCapacity: number) => void;
 }
 
 interface SelectedAddon {
@@ -27,7 +28,7 @@ interface SelectedAddon {
   quantity: number;
 }
 
-export const AddonSelector = ({ roomId, totalNights, numGuests, onAddonsChange }: AddonSelectorProps) => {
+export const AddonSelector = ({ roomId, totalNights, numGuests, onAddonsChange, onExtraCapacityChange }: AddonSelectorProps) => {
   const { data: addons, isLoading } = useRoomAddons(roomId);
   const [selectedAddons, setSelectedAddons] = useState<Map<string, SelectedAddon>>(new Map());
 
@@ -40,7 +41,14 @@ export const AddonSelector = ({ roomId, totalNights, numGuests, onAddonsChange }
       total_price: calculateAddonPrice(addon, quantity, totalNights, numGuests),
     }));
     onAddonsChange(bookingAddons);
-  }, [selectedAddons, totalNights, numGuests, onAddonsChange]);
+
+    // Calculate and report extra capacity from add-ons (e.g., extra beds)
+    const totalExtraCapacity = Array.from(selectedAddons.values()).reduce(
+      (sum, { addon, quantity }) => sum + ((addon.extra_capacity || 0) * quantity),
+      0
+    );
+    onExtraCapacityChange?.(totalExtraCapacity);
+  }, [selectedAddons, totalNights, numGuests, onAddonsChange, onExtraCapacityChange]);
 
   const toggleAddon = (addon: RoomAddon) => {
     setSelectedAddons((prev) => {

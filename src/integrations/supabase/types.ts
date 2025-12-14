@@ -1369,6 +1369,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           display_order: number | null
+          extra_capacity: number | null
           icon_name: string | null
           id: string
           is_active: boolean | null
@@ -1384,6 +1385,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           display_order?: number | null
+          extra_capacity?: number | null
           icon_name?: string | null
           id?: string
           is_active?: boolean | null
@@ -1399,6 +1401,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           display_order?: number | null
+          extra_capacity?: number | null
           icon_name?: string | null
           id?: string
           is_active?: boolean | null
