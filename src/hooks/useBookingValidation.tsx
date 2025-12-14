@@ -24,8 +24,8 @@ export const useBookingValidation = () => {
     const checkInStr = format(checkIn, "yyyy-MM-dd");
     const checkOutStr = format(checkOut, "yyyy-MM-dd");
 
-    // Query overlapping bookings
-    const { data: bookings, error } = await supabase
+    // Query overlapping bookings from direct allocations
+    const { data: directBookings, error: directError } = await supabase
       .from("bookings")
       .select("*")
       .eq("room_id", roomId)
@@ -33,19 +33,55 @@ export const useBookingValidation = () => {
       .neq("status", "cancelled")
       .or(`and(check_in.lte.${checkOutStr},check_out.gte.${checkInStr})`);
 
-    if (error) {
-      console.error("Error checking booking conflict:", error);
+    if (directError) {
+      console.error("Error checking booking conflict:", directError);
       return { hasConflict: false };
     }
 
-    if (!bookings || bookings.length === 0) {
+    // Query overlapping bookings from booking_rooms table (multi-room bookings)
+    const { data: bookingRoomsData, error: bookingRoomsError } = await supabase
+      .from("booking_rooms")
+      .select(`
+        room_number,
+        booking_id,
+        bookings!inner(id, check_in, check_out, status, guest_name)
+      `)
+      .eq("room_id", roomId)
+      .eq("room_number", roomNumber);
+
+    if (bookingRoomsError) {
+      console.error("Error checking booking_rooms conflict:", bookingRoomsError);
+    }
+
+    // Filter booking_rooms for overlapping dates and non-cancelled status
+    const overlappingBookingRooms = (bookingRoomsData || []).filter((br: any) => {
+      const booking = br.bookings;
+      if (!booking || booking.status === "cancelled") return false;
+      return booking.check_in <= checkOutStr && booking.check_out >= checkInStr;
+    });
+
+    // Combine all bookings
+    const allBookings = [
+      ...(directBookings || []),
+      ...overlappingBookingRooms.map((br: any) => ({
+        ...br.bookings,
+        allocated_room_number: br.room_number
+      }))
+    ];
+
+    // Remove duplicates by booking id
+    const uniqueBookings = allBookings.filter((booking, index, self) =>
+      index === self.findIndex(b => b.id === booking.id)
+    );
+
+    if (uniqueBookings.length === 0) {
       return { hasConflict: false };
     }
 
     // Filter out the current booking if updating
     const otherBookings = excludeBookingId
-      ? bookings.filter(b => b.id !== excludeBookingId)
-      : bookings;
+      ? uniqueBookings.filter(b => b.id !== excludeBookingId)
+      : uniqueBookings;
 
     // Check for actual time conflicts
     for (const existing of otherBookings) {
@@ -118,30 +154,61 @@ export const useBookingValidation = () => {
       return { availableRooms: [] };
     }
 
-    // Query overlapping bookings for this room type
-    const { data: bookings, error } = await supabase
+    // Query overlapping bookings from direct allocations
+    const { data: directBookings, error: directError } = await supabase
       .from("bookings")
-      .select("allocated_room_number")
+      .select("id, allocated_room_number")
       .eq("room_id", roomId)
       .neq("status", "cancelled")
       .or(`and(check_in.lte.${checkOutStr},check_out.gte.${checkInStr})`);
 
-    if (error) {
-      console.error("Error checking room type availability:", error);
+    if (directError) {
+      console.error("Error checking room type availability:", directError);
       return { availableRooms: room.room_numbers };
     }
 
-    // Filter out the current booking if updating
-    const otherBookings = excludeBookingId
-      ? (bookings || []).filter((b: any) => b.id !== excludeBookingId)
-      : bookings || [];
+    // Query overlapping bookings from booking_rooms table
+    const { data: bookingRoomsData, error: bookingRoomsError } = await supabase
+      .from("booking_rooms")
+      .select(`
+        room_number,
+        booking_id,
+        bookings!inner(id, check_in, check_out, status)
+      `)
+      .eq("room_id", roomId);
 
-    const bookedRoomNumbers = otherBookings
-      .map((b: any) => b.allocated_room_number)
-      .filter(Boolean);
+    if (bookingRoomsError) {
+      console.error("Error checking booking_rooms availability:", bookingRoomsError);
+    }
+
+    // Filter booking_rooms for overlapping dates
+    const overlappingBookingRooms = (bookingRoomsData || []).filter((br: any) => {
+      const booking = br.bookings;
+      if (!booking || booking.status === "cancelled") return false;
+      return booking.check_in <= checkOutStr && booking.check_out >= checkInStr;
+    });
+
+    // Collect all booked room numbers (excluding current booking if updating)
+    const bookedRoomNumbers = new Set<string>();
+
+    // From direct bookings
+    (directBookings || []).forEach((b: any) => {
+      if (excludeBookingId && b.id === excludeBookingId) return;
+      if (b.allocated_room_number) {
+        bookedRoomNumbers.add(b.allocated_room_number);
+      }
+    });
+
+    // From booking_rooms
+    overlappingBookingRooms.forEach((br: any) => {
+      if (excludeBookingId && br.bookings?.id === excludeBookingId) return;
+      if (br.room_number) {
+        bookedRoomNumbers.add(br.room_number);
+      }
+    });
 
     const availableRooms = room.room_numbers.filter(
-      rn => !bookedRoomNumbers.includes(rn)
+      rn => !bookedRoomNumbers.has(rn)
     );
 
     return { availableRooms };
