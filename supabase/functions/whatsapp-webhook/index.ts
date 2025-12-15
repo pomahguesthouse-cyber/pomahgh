@@ -48,6 +48,32 @@ function checkRateLimit(phone: string): boolean {
   return true;
 }
 
+// Detect booking intent with room name
+function detectBookingWithRoom(message: string): { isBooking: boolean; roomName?: string } {
+  const lowerMsg = message.toLowerCase();
+  const bookingPattern = /(booking|pesan|reservasi|mau\s+book|ambil|book)\s+(kamar\s+)?(single|deluxe|grand\s*deluxe|family\s*suite|villa)/i;
+  const match = lowerMsg.match(bookingPattern);
+  
+  if (match) {
+    return {
+      isBooking: true,
+      roomName: match[3].replace(/\s+/g, ' ').trim()
+    };
+  }
+  
+  // Check simpler patterns
+  const simplePattern = /(booking|pesan|book)\s+(single|deluxe|grand|family|villa)/i;
+  const simpleMatch = lowerMsg.match(simplePattern);
+  if (simpleMatch) {
+    return {
+      isBooking: true,
+      roomName: simpleMatch[2]
+    };
+  }
+  
+  return { isBooking: false };
+}
+
 // Format phone number to standard format
 function normalizePhone(phone: string): string {
   let normalized = phone.replace(/\D/g, '');
@@ -267,22 +293,31 @@ function extractContext(messages: Array<{role: string, content: string}>): Recor
     }
   }
   
-  // Detect last topic
-  const lastUserMsg = lastUserMsgRaw.toLowerCase();
-  if (lastUserMsg.includes('kamar') || lastUserMsg.includes('room') || lastUserMsg.includes('tipe')) {
-    context.last_topic = 'rooms';
-  } else if (lastUserMsg.includes('booking') || lastUserMsg.includes('pesan') || lastUserMsg.includes('reservasi')) {
+  // Detect room from booking message and update preferred_room
+  const bookingIntent = detectBookingWithRoom(lastUserMsgRaw);
+  if (bookingIntent.isBooking && bookingIntent.roomName) {
+    context.preferred_room = bookingIntent.roomName;
     context.last_topic = 'booking';
-  } else if (lastUserMsg.includes('harga') || lastUserMsg.includes('tarif') || lastUserMsg.includes('price')) {
-    context.last_topic = 'pricing';
-  } else if (lastUserMsg.includes('fasilitas') || lastUserMsg.includes('facility')) {
-    context.last_topic = 'facilities';
-  } else if (lastUserMsg.includes('bayar') || lastUserMsg.includes('transfer') || lastUserMsg.includes('payment')) {
-    context.last_topic = 'payment';
-  } else if (lastUserMsg.includes('lokasi') || lastUserMsg.includes('alamat') || lastUserMsg.includes('dimana')) {
-    context.last_topic = 'location';
-  } else if (lastUserMsg.match(/tanggal|besok|lusa|\d+\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)/i)) {
-    context.last_topic = 'availability';
+  }
+  
+  // Detect last topic (only if not already set by booking intent)
+  const lastUserMsg = lastUserMsgRaw.toLowerCase();
+  if (!context.last_topic) {
+    if (lastUserMsg.includes('kamar') || lastUserMsg.includes('room') || lastUserMsg.includes('tipe')) {
+      context.last_topic = 'rooms';
+    } else if (lastUserMsg.includes('booking') || lastUserMsg.includes('pesan') || lastUserMsg.includes('reservasi')) {
+      context.last_topic = 'booking';
+    } else if (lastUserMsg.includes('harga') || lastUserMsg.includes('tarif') || lastUserMsg.includes('price')) {
+      context.last_topic = 'pricing';
+    } else if (lastUserMsg.includes('fasilitas') || lastUserMsg.includes('facility')) {
+      context.last_topic = 'facilities';
+    } else if (lastUserMsg.includes('bayar') || lastUserMsg.includes('transfer') || lastUserMsg.includes('payment')) {
+      context.last_topic = 'payment';
+    } else if (lastUserMsg.includes('lokasi') || lastUserMsg.includes('alamat') || lastUserMsg.includes('dimana')) {
+      context.last_topic = 'location';
+    } else if (lastUserMsg.match(/tanggal|besok|lusa|\d+\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)/i)) {
+      context.last_topic = 'availability';
+    }
   }
   
   // Detect sentiment from last message
@@ -1106,39 +1141,63 @@ serve(async (req) => {
         }
       }
       
-      // DIRECT TOOL CALL FALLBACK: If AI still fails but we have parsed_date, bypass AI entirely
+      // DIRECT TOOL CALL FALLBACK with INTENT AWARENESS
       if ((!aiResponse || aiResponse.trim() === '') && conversationContext.parsed_date) {
-        console.log("⚠️ AI failed with parsed_date - directly calling check_availability tool");
+        const bookingIntent = detectBookingWithRoom(message);
         
-        try {
-          const directToolResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-            },
-            body: JSON.stringify({
-              tool_name: 'check_availability',
-              parameters: {
-                check_in: conversationContext.parsed_date.check_in,
-                check_out: conversationContext.parsed_date.check_out,
-                num_guests: conversationContext.guest_count || 2,
-              },
-            }),
-          });
+        // PRIORITAS 1: Booking intent - prompt for guest info instead of availability check
+        if (bookingIntent.isBooking || conversationContext.last_topic === 'booking') {
+          console.log("⚠️ Booking intent detected - prompting for guest info");
           
-          if (directToolResponse.ok) {
-            const directToolResult = await directToolResponse.json();
-            console.log("Direct tool result:", JSON.stringify(directToolResult).substring(0, 300));
+          const roomName = bookingIntent.roomName || conversationContext.preferred_room || 'kamar yang dipilih';
+          const capitalizedRoom = roomName.charAt(0).toUpperCase() + roomName.slice(1);
+          const checkInFormatted = formatDateIndonesian(conversationContext.parsed_date.check_in);
+          const checkOutFormatted = formatDateIndonesian(conversationContext.parsed_date.check_out);
+          
+          aiResponse = `📝 *Siap memproses booking ${capitalizedRoom}!*\n\n` +
+            `📅 Check-in: ${checkInFormatted}\n` +
+            `📅 Check-out: ${checkOutFormatted}\n\n` +
+            `Untuk melanjutkan, mohon kirimkan:\n` +
+            `1️⃣ Nama lengkap\n` +
+            `2️⃣ Nomor HP/WhatsApp\n` +
+            `3️⃣ Email\n` +
+            `4️⃣ Jumlah tamu\n\n` +
+            `Contoh: "Nama: Budi Santoso, HP: 081234567890, Email: budi@email.com, 2 tamu"`;
+        } 
+        // PRIORITAS 2: Availability check untuk pertanyaan ketersediaan
+        else {
+          console.log("⚠️ AI failed with parsed_date - directly calling check_availability tool");
+          
+          try {
+            const directToolResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({
+                tool_name: 'check_availability',
+                parameters: {
+                  check_in: conversationContext.parsed_date.check_in,
+                  check_out: conversationContext.parsed_date.check_out,
+                  num_guests: conversationContext.guest_count || 2,
+                },
+              }),
+            });
             
-            // Format the tool result directly as the response
-            aiResponse = formatAvailabilityResponse(directToolResult, conversationContext.parsed_date);
-            console.log("✅ Direct availability check successful:", aiResponse.substring(0, 100));
-          } else {
-            console.error("❌ Direct tool call failed:", await directToolResponse.text());
+            if (directToolResponse.ok) {
+              const directToolResult = await directToolResponse.json();
+              console.log("Direct tool result:", JSON.stringify(directToolResult).substring(0, 300));
+              
+              // Format the tool result directly as the response
+              aiResponse = formatAvailabilityResponse(directToolResult, conversationContext.parsed_date);
+              console.log("✅ Direct availability check successful:", aiResponse.substring(0, 100));
+            } else {
+              console.error("❌ Direct tool call failed:", await directToolResponse.text());
+            }
+          } catch (directToolError) {
+            console.error("❌ Direct tool call error:", directToolError);
           }
-        } catch (directToolError) {
-          console.error("❌ Direct tool call error:", directToolError);
         }
       }
       
