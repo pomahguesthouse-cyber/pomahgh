@@ -97,6 +97,83 @@ function formatForWhatsApp(text: string): string {
   return text.trim();
 }
 
+// Extract conversation context from message history for booking continuation
+function extractConversationContext(messages: Array<{role: string, content: string}>): any {
+  const context: any = {};
+  
+  // Scan messages from newest to oldest
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    
+    if (msg.role === 'assistant') {
+      // Extract room name from availability responses
+      if (!context.preferred_room) {
+        // Pattern: "Family Suite tersedia" or "untuk Family Suite"
+        const roomPatterns = [
+          /(Single|Deluxe|Grand Deluxe|Family Suite)\s+(tersedia|available)/i,
+          /untuk\s+(Single|Deluxe|Grand Deluxe|Family Suite)/i,
+          /(Single|Deluxe|Grand Deluxe|Family Suite)\s+untuk/i,
+          /kamar\s+(Single|Deluxe|Grand Deluxe|Family Suite)/i,
+          /tipe\s+(Single|Deluxe|Grand Deluxe|Family Suite)/i,
+        ];
+        for (const pattern of roomPatterns) {
+          const match = msg.content.match(pattern);
+          if (match) {
+            context.preferred_room = match[1];
+            break;
+          }
+        }
+      }
+      
+      // Extract dates from availability responses
+      if (!context.check_in || !context.check_out) {
+        // Pattern: "16 Desember 2025" or "16-18 Desember"
+        const datePatterns = [
+          /check-?in[:\s]+(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})/i,
+          /(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})\s*(?:sampai|hingga|s\.?d\.?|-|–)\s*(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})/i,
+          /(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})/i,
+        ];
+        
+        for (const pattern of datePatterns) {
+          const match = msg.content.match(pattern);
+          if (match) {
+            context.dates_mentioned = match[0];
+            break;
+          }
+        }
+      }
+      
+      // Check if AI asked for guest data (means we're in booking flow)
+      if (!context.awaiting_guest_data) {
+        const guestDataPatterns = [
+          /nama\s*(lengkap)?.*email.*hp/i,
+          /mohon\s+info.*nama/i,
+          /butuh\s+info.*nama/i,
+          /data\s+tamu/i,
+          /nama.*email.*nomor/i,
+        ];
+        for (const pattern of guestDataPatterns) {
+          if (pattern.test(msg.content)) {
+            context.awaiting_guest_data = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    // Also check user messages for room preferences
+    if (msg.role === 'user' && !context.preferred_room) {
+      const userRoomMatch = msg.content.match(/(single|deluxe|grand\s*deluxe|family\s*suite)/i);
+      if (userRoomMatch) {
+        context.preferred_room = userRoomMatch[1].replace(/\s+/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      }
+    }
+  }
+  
+  console.log("Extracted conversation context:", JSON.stringify(context));
+  return Object.keys(context).length > 0 ? context : null;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -296,7 +373,9 @@ serve(async (req) => {
     console.log(`Messages array: ${messages.length} items, last user msg: "${messages.filter(m => m.role === 'user').pop()?.content || 'none'}"`);
 
     // === SIMPLE AI FLOW (like web chatbot) ===
-    console.log("Calling chatbot function...");
+    // Extract context from conversation history for booking continuation
+    const conversationContext = extractConversationContext(messages);
+    console.log("Calling chatbot function with context:", JSON.stringify(conversationContext));
     
     const chatbotResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
       method: 'POST',
@@ -308,6 +387,7 @@ serve(async (req) => {
         messages,
         session_id: `wa_${phone}`,
         channel: 'whatsapp',
+        conversationContext, // Pass extracted context to chatbot
       }),
     });
 
@@ -378,6 +458,7 @@ serve(async (req) => {
           ],
           session_id: `wa_${phone}`,
           channel: 'whatsapp',
+          conversationContext, // Pass extracted context to chatbot
         }),
       });
 
