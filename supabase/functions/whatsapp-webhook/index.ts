@@ -270,8 +270,8 @@ serve(async (req) => {
         is_active: true,
       }, { onConflict: 'phone_number' });
 
-    // Log user message
-    await logMessage(supabase, conversationId, 'user', message);
+    // Log user message (normalized)
+    await logMessage(supabase, conversationId, 'user', normalizedMessage);
 
     // Get conversation history
     const { data: history } = await supabase
@@ -281,10 +281,19 @@ serve(async (req) => {
       .order('created_at', { ascending: true })
       .limit(20);
 
-    const messages = history?.map(m => ({
+    // Build messages array - ensure current message is always included
+    let messages = history?.map(m => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
-    })) || [{ role: 'user' as const, content: normalizedMessage }];
+    })) || [];
+    
+    // If history is empty or last message doesn't match current, add it
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.content !== normalizedMessage) {
+      messages.push({ role: 'user' as const, content: normalizedMessage });
+    }
+    
+    console.log(`Messages array: ${messages.length} items, last user msg: "${messages.filter(m => m.role === 'user').pop()?.content || 'none'}"`);
 
     // === SIMPLE AI FLOW (like web chatbot) ===
     console.log("Calling chatbot function...");
