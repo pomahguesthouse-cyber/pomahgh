@@ -485,7 +485,8 @@ function getQuickResponse(message: string): string | null {
   }
   
   // AVAILABILITY patterns - "ada kamar", "kamar kosong", etc.
-  if (/ada kamar|kamar kosong|kamar tersedia|available room|kamar yang ada/i.test(lowerMsg) && !/tanggal|januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember|besok|lusa/i.test(lowerMsg)) {
+  // Exclude if message contains relative dates (hari ini, malam ini, besok, etc.) - let AI handle those
+  if (/ada kamar|kamar kosong|kamar tersedia|available room|kamar yang ada/i.test(lowerMsg) && !/tanggal|januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember|besok|lusa|hari ini|malam ini|sekarang|nanti|minggu depan|weekend|akhir pekan/i.test(lowerMsg)) {
     return '🛏️ *Tipe Kamar Pomah Guesthouse*\n\n1️⃣ *Single Room* - Rp 200.000/malam\n   1 tamu • 20m²\n\n2️⃣ *Grand Deluxe* - Rp 450.000/malam\n   2 tamu • 30m²\n\n3️⃣ *Family Suite* - Rp 700.000/malam\n   4 tamu • 60m²\n\n📅 *Untuk cek ketersediaan*, sebutkan tanggal:\n\nContoh: "cek kamar 15-17 Januari untuk 2 orang" 😊';
   }
   
