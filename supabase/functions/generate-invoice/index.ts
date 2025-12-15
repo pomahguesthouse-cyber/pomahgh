@@ -423,9 +423,9 @@ serve(async (req) => {
     <!-- Header -->
     <div class="header">
       <div class="header-left">
-        ${showLogo && hotelSettings.logo_url ? `
+        ${showLogo && (hotelSettings.invoice_logo_url || hotelSettings.logo_url) ? `
           <img 
-            src="${hotelSettings.logo_url}" 
+            src="${hotelSettings.invoice_logo_url || hotelSettings.logo_url}" 
             alt="${hotelSettings.hotel_name} Logo" 
             class="logo"
             crossorigin="anonymous"
