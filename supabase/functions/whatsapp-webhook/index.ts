@@ -97,6 +97,21 @@ function formatForWhatsApp(text: string): string {
   return text.trim();
 }
 
+// Helper: Convert Indonesian month to number
+function indonesianMonthToNumber(month: string): number {
+  const months: Record<string, number> = {
+    'januari': 1, 'februari': 2, 'maret': 3, 'april': 4, 'mei': 5, 'juni': 6,
+    'juli': 7, 'agustus': 8, 'september': 9, 'oktober': 10, 'november': 11, 'desember': 12
+  };
+  return months[month.toLowerCase()] || 1;
+}
+
+// Helper: Convert Indonesian date to ISO format (YYYY-MM-DD)
+function indonesianDateToISO(day: string, month: string, year: string): string {
+  const monthNum = indonesianMonthToNumber(month);
+  return `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
 // Extract conversation context from message history for booking continuation
 function extractConversationContext(messages: Array<{role: string, content: string}>): any {
   const context: any = {};
@@ -106,55 +121,91 @@ function extractConversationContext(messages: Array<{role: string, content: stri
     const msg = messages[i];
     
     if (msg.role === 'assistant') {
-      // Extract room name from availability responses
+      // Extract room name from availability responses - MORE FLEXIBLE PATTERNS
       if (!context.preferred_room) {
-        // Pattern: "Family Suite tersedia" or "untuk Family Suite"
         const roomPatterns = [
-          /(Single|Deluxe|Grand Deluxe|Family Suite)\s+(tersedia|available)/i,
-          /untuk\s+(Single|Deluxe|Grand Deluxe|Family Suite)/i,
-          /(Single|Deluxe|Grand Deluxe|Family Suite)\s+untuk/i,
-          /kamar\s+(Single|Deluxe|Grand Deluxe|Family Suite)/i,
-          /tipe\s+(Single|Deluxe|Grand Deluxe|Family Suite)/i,
+          // "Untuk Family Suite, tersedia" - with comma
+          /[Uu]ntuk\s+(Single|Deluxe|Grand Deluxe|Family Suite),?\s*(tersedia|available)/i,
+          // "Family Suite tersedia" or "Family Suite, tersedia"
+          /(Single|Deluxe|Grand Deluxe|Family Suite),?\s*(tersedia|available)/i,
+          // "Family Suite untuk check-in"
+          /(Single|Deluxe|Grand Deluxe|Family Suite)\s+untuk\s+check-?in/i,
+          // "kamar Family Suite" or "tipe Family Suite"
+          /(?:kamar|tipe|room)\s+(Single|Deluxe|Grand Deluxe|Family Suite)/i,
+          // "booking Family Suite" or "pesan Family Suite"
+          /(?:booking|pesan|book)\s+(Single|Deluxe|Grand Deluxe|Family Suite)/i,
         ];
         for (const pattern of roomPatterns) {
           const match = msg.content.match(pattern);
           if (match) {
             context.preferred_room = match[1];
+            console.log(`Found room from pattern: ${match[0]} -> ${match[1]}`);
             break;
           }
         }
       }
       
-      // Extract dates from availability responses
-      if (!context.check_in || !context.check_out) {
-        // Pattern: "16 Desember 2025" or "16-18 Desember"
-        const datePatterns = [
-          /check-?in[:\s]+(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})/i,
-          /(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})\s*(?:sampai|hingga|s\.?d\.?|-|–)\s*(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})/i,
-          /(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})/i,
-        ];
+      // Extract dates from availability responses - IMPROVED PATTERNS
+      if (!context.check_in_date || !context.check_out_date) {
+        const monthPattern = '(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)';
         
-        for (const pattern of datePatterns) {
-          const match = msg.content.match(pattern);
-          if (match) {
-            context.dates_mentioned = match[0];
-            break;
+        // Pattern 1: "16 Desember 2025, sampai 18 Desember 2025" (with comma before sampai)
+        const fullDateRangeRegex = new RegExp(
+          `(\\d{1,2})\\s+${monthPattern}\\s+(\\d{4}),?\\s*(?:sampai|hingga|s\\.?d\\.?|ke|-)\\s*(\\d{1,2})\\s+${monthPattern}\\s+(\\d{4})`,
+          'i'
+        );
+        const fullMatch = msg.content.match(fullDateRangeRegex);
+        if (fullMatch) {
+          context.check_in_date = indonesianDateToISO(fullMatch[1], fullMatch[2], fullMatch[3]);
+          context.check_out_date = indonesianDateToISO(fullMatch[4], fullMatch[5], fullMatch[6]);
+          context.dates_mentioned = fullMatch[0];
+          console.log(`Found dates (full): ${fullMatch[0]} -> ${context.check_in_date} to ${context.check_out_date}`);
+        }
+        
+        // Pattern 2: "16-18 Desember 2025" (same month)
+        if (!context.check_in_date) {
+          const shortDateRangeRegex = new RegExp(
+            `(\\d{1,2})\\s*[-–]\\s*(\\d{1,2})\\s+${monthPattern}\\s+(\\d{4})`,
+            'i'
+          );
+          const shortMatch = msg.content.match(shortDateRangeRegex);
+          if (shortMatch) {
+            context.check_in_date = indonesianDateToISO(shortMatch[1], shortMatch[3], shortMatch[4]);
+            context.check_out_date = indonesianDateToISO(shortMatch[2], shortMatch[3], shortMatch[4]);
+            context.dates_mentioned = shortMatch[0];
+            console.log(`Found dates (short): ${shortMatch[0]} -> ${context.check_in_date} to ${context.check_out_date}`);
+          }
+        }
+        
+        // Pattern 3: Single date with "check-in" keyword
+        if (!context.check_in_date) {
+          const checkInRegex = new RegExp(
+            `check-?in[:\\s]+(\\d{1,2})\\s+${monthPattern}\\s+(\\d{4})`,
+            'i'
+          );
+          const checkInMatch = msg.content.match(checkInRegex);
+          if (checkInMatch) {
+            context.check_in_date = indonesianDateToISO(checkInMatch[1], checkInMatch[2], checkInMatch[3]);
+            console.log(`Found check-in date: ${checkInMatch[0]} -> ${context.check_in_date}`);
           }
         }
       }
       
-      // Check if AI asked for guest data (means we're in booking flow)
+      // Check if AI asked for guest data - MORE FLEXIBLE PATTERNS
       if (!context.awaiting_guest_data) {
         const guestDataPatterns = [
-          /nama\s*(lengkap)?.*email.*hp/i,
-          /mohon\s+info.*nama/i,
-          /butuh\s+info.*nama/i,
-          /data\s+tamu/i,
-          /nama.*email.*nomor/i,
+          /mohon\s+informasikan/i,        // "mohon informasikan:"
+          /mohon\s+info/i,                 // "mohon info"
+          /nama\s+lengkap.*anda/i,         // "Nama lengkap Anda"
+          /data\s+(untuk\s+)?booking/i,    // "data untuk booking"
+          /nama.*email.*(?:hp|nomor|telepon|whatsapp)/i,  // "nama, email, hp"
+          /silakan\s+(?:berikan|kirim).*data/i,           // "silakan berikan data"
+          /butuh.*(?:nama|data|informasi)/i,              // "butuh nama/data"
         ];
         for (const pattern of guestDataPatterns) {
           if (pattern.test(msg.content)) {
             context.awaiting_guest_data = true;
+            console.log(`Found awaiting_guest_data from pattern: ${pattern}`);
             break;
           }
         }
@@ -166,6 +217,7 @@ function extractConversationContext(messages: Array<{role: string, content: stri
       const userRoomMatch = msg.content.match(/(single|deluxe|grand\s*deluxe|family\s*suite)/i);
       if (userRoomMatch) {
         context.preferred_room = userRoomMatch[1].replace(/\s+/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        console.log(`Found room from user message: ${userRoomMatch[0]} -> ${context.preferred_room}`);
       }
     }
   }
