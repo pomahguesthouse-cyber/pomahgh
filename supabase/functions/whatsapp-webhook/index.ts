@@ -402,19 +402,19 @@ serve(async (req) => {
     // Log user message (normalized)
     await logMessage(supabase, conversationId, 'user', normalizedMessage);
 
-    // Get conversation history
+    // Get conversation history - get 20 NEWEST messages (descending), then reverse for chronological order
     const { data: history } = await supabase
       .from('chat_messages')
       .select('role, content')
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(20);
 
-    // Build messages array - ensure current message is always included
-    let messages = history?.map(m => ({
+    // Build messages array - reverse to get chronological order (oldest to newest)
+    let messages = (history || []).reverse().map(m => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
-    })) || [];
+    }));
     
     // If history is empty or last message doesn't match current, add it
     const lastMsg = messages[messages.length - 1];
