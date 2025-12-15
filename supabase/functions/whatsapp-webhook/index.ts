@@ -74,6 +74,53 @@ function detectBookingWithRoom(message: string): { isBooking: boolean; roomName?
   return { isBooking: false };
 }
 
+// Detect guest info submission from message
+function detectGuestInfo(message: string): { 
+  hasGuestInfo: boolean; 
+  name?: string; 
+  phone?: string; 
+  email?: string; 
+  guestCount?: number;
+} {
+  const result: any = { hasGuestInfo: false };
+  
+  // Pattern 1: Comma-separated "Nama, Phone, Email, X tamu"
+  const commaSeparatedMatch = message.match(/^([A-Za-z\s]+),\s*(\d{10,13}|0\d{9,12}),\s*([^\s,]+@[^\s,]+),\s*(\d+)\s*(tamu|orang|org)?/i);
+  
+  // Pattern 2: Labeled "Nama: X, HP: Y, Email: Z, N tamu"
+  const labeledMatch = message.match(/nama[:\s]+([^,]+?)(?:,|\s+)(?:hp|wa|telp|phone|no)[:\s]+([0-9\s\-]+)(?:,|\s+)email[:\s]+([^\s,]+@[^\s,]+)/i);
+  const guestCountMatch = message.match(/(\d+)\s*(tamu|orang|org|guest)/i);
+  
+  if (commaSeparatedMatch) {
+    result.hasGuestInfo = true;
+    result.name = commaSeparatedMatch[1].trim();
+    result.phone = commaSeparatedMatch[2].replace(/\D/g, '');
+    result.email = commaSeparatedMatch[3].trim();
+    result.guestCount = parseInt(commaSeparatedMatch[4]);
+  } else if (labeledMatch) {
+    result.hasGuestInfo = true;
+    result.name = labeledMatch[1].trim();
+    result.phone = labeledMatch[2].replace(/\D/g, '');
+    result.email = labeledMatch[3].trim();
+    result.guestCount = guestCountMatch ? parseInt(guestCountMatch[1]) : 1;
+  } else {
+    // Check if message contains email + phone together
+    const phoneMatch = message.match(/(\d{10,13}|0\d{9,12})/);
+    const emailMatch = message.match(/([^\s,]+@[^\s,]+\.[^\s,]+)/);
+    const nameMatch = message.match(/^([A-Z][a-zA-Z]+(?:\s+[A-Z]?[a-zA-Z]+)*)/);
+    
+    if (phoneMatch && emailMatch) {
+      result.hasGuestInfo = true;
+      result.name = nameMatch ? nameMatch[1].trim() : 'Tamu';
+      result.phone = phoneMatch[1].replace(/\D/g, '');
+      result.email = emailMatch[1];
+      result.guestCount = guestCountMatch ? parseInt(guestCountMatch[1]) : 1;
+    }
+  }
+  
+  return result;
+}
+
 // Format phone number to standard format
 function normalizePhone(phone: string): string {
   let normalized = phone.replace(/\D/g, '');
@@ -322,6 +369,14 @@ function extractContext(messages: Array<{role: string, content: string}>): Recor
   
   // Detect sentiment from last message
   context.sentiment = detectSentiment(lastUserMsg);
+  
+  // Detect if previous assistant message was booking prompt (awaiting guest info)
+  const lastAssistantMsg = messages.filter(m => m.role === 'assistant').pop()?.content || '';
+  if (lastAssistantMsg.includes('Siap memproses booking') || 
+      lastAssistantMsg.includes('Untuk melanjutkan, mohon kirimkan')) {
+    context.awaiting_guest_info = true;
+    context.last_topic = 'booking';
+  }
   
   return context;
 }
@@ -1144,9 +1199,72 @@ serve(async (req) => {
       // DIRECT TOOL CALL FALLBACK with INTENT AWARENESS
       if ((!aiResponse || aiResponse.trim() === '') && conversationContext.parsed_date) {
         const bookingIntent = detectBookingWithRoom(message);
+        const guestInfo = detectGuestInfo(message);
         
-        // PRIORITAS 1: Booking intent - prompt for guest info instead of availability check
-        if (bookingIntent.isBooking || conversationContext.last_topic === 'booking') {
+        // PRIORITAS 0: Guest info submission - CREATE BOOKING directly!
+        if (guestInfo.hasGuestInfo && (conversationContext.preferred_room || conversationContext.awaiting_guest_info)) {
+          console.log("✅ Guest info detected - creating booking directly!");
+          console.log("Guest info:", JSON.stringify(guestInfo));
+          console.log("Room:", conversationContext.preferred_room);
+          console.log("Dates:", JSON.stringify(conversationContext.parsed_date));
+          
+          const roomName = conversationContext.preferred_room || 'Single';
+          
+          try {
+            const bookingResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({
+                tool_name: 'create_booking_draft',
+                parameters: {
+                  guest_name: guestInfo.name || 'Tamu',
+                  guest_email: guestInfo.email,
+                  guest_phone: guestInfo.phone,
+                  check_in: conversationContext.parsed_date.check_in,
+                  check_out: conversationContext.parsed_date.check_out,
+                  room_name: roomName,
+                  num_guests: guestInfo.guestCount || conversationContext.guest_count || 1,
+                },
+              }),
+            });
+            
+            if (bookingResponse.ok) {
+              const bookingData = await bookingResponse.json();
+              console.log("Booking result:", JSON.stringify(bookingData).substring(0, 300));
+              
+              if (bookingData.error) {
+                aiResponse = `❌ Maaf, booking gagal: ${bookingData.error}\n\nSilakan coba lagi atau hubungi admin.`;
+              } else {
+                const bookingCode = bookingData.booking_code || 'N/A';
+                const totalPrice = bookingData.total_price?.toLocaleString('id-ID') || '0';
+                const checkInFormatted = formatDateIndonesian(conversationContext.parsed_date.check_in);
+                const checkOutFormatted = formatDateIndonesian(conversationContext.parsed_date.check_out);
+                
+                aiResponse = `✅ *Booking Berhasil!*\n\n` +
+                  `📋 Kode Booking: *${bookingCode}*\n` +
+                  `👤 Nama: ${guestInfo.name}\n` +
+                  `📅 Check-in: ${checkInFormatted}\n` +
+                  `📅 Check-out: ${checkOutFormatted}\n` +
+                  `🛏️ Kamar: ${roomName}\n` +
+                  `💰 Total: Rp ${totalPrice}\n\n` +
+                  `Silakan transfer ke rekening hotel dan konfirmasi pembayaran.\n` +
+                  `Terima kasih! 🙏`;
+              }
+            } else {
+              const errorText = await bookingResponse.text();
+              console.error("❌ Booking API failed:", errorText);
+              aiResponse = `❌ Maaf, terjadi kesalahan saat membuat booking. Silakan coba lagi.`;
+            }
+          } catch (err) {
+            console.error("Booking creation error:", err);
+            aiResponse = `❌ Maaf, terjadi kesalahan saat membuat booking. Silakan coba lagi.`;
+          }
+        }
+        // PRIORITAS 1: Booking intent - prompt for guest info
+        else if (bookingIntent.isBooking || conversationContext.last_topic === 'booking') {
           console.log("⚠️ Booking intent detected - prompting for guest info");
           
           const roomName = bookingIntent.roomName || conversationContext.preferred_room || 'kamar yang dipilih';
@@ -1189,7 +1307,6 @@ serve(async (req) => {
               const directToolResult = await directToolResponse.json();
               console.log("Direct tool result:", JSON.stringify(directToolResult).substring(0, 300));
               
-              // Format the tool result directly as the response
               aiResponse = formatAvailabilityResponse(directToolResult, conversationContext.parsed_date);
               console.log("✅ Direct availability check successful:", aiResponse.substring(0, 100));
             } else {
