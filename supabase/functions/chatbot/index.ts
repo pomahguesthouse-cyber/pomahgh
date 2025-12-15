@@ -6,6 +6,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Quick greeting response - bypass AI for simple greetings
+function getQuickGreetingResponse(message: string, personaName: string): string | null {
+  const lower = message.toLowerCase().trim();
+  
+  const greetings: Record<string, string[]> = {
+    'pagi': ['Selamat pagi! 🌅', 'Pagi! ☀️'],
+    'siang': ['Selamat siang! ☀️', 'Siang! 🌞'],
+    'sore': ['Selamat sore! 🌆', 'Sore! 🌇'],
+    'malam': ['Selamat malam! 🌙', 'Malam! ✨'],
+    'halo': ['Halo! 👋'],
+    'hai': ['Hai! 👋'],
+    'hi': ['Hi! 👋'],
+    'hello': ['Hello! 👋'],
+    'hallo': ['Hallo! 👋'],
+    'p': ['Halo! 👋'],
+    'tes': ['Halo! 👋 Ada yang bisa saya bantu?'],
+    'test': ['Halo! 👋 Ada yang bisa saya bantu?'],
+  };
+  
+  for (const [key, responses] of Object.entries(greetings)) {
+    if (lower === key || lower === `selamat ${key}`) {
+      const response = responses[Math.floor(Math.random() * responses.length)];
+      return `${response}\n\nSaya ${personaName} dari Pomah Guesthouse. Ada yang bisa saya bantu? Mau cek ketersediaan kamar atau ada pertanyaan lain? 🏨`;
+    }
+  }
+  
+  return null;
+}
+
 // Parse relative Indonesian date expressions to concrete dates
 function parseRelativeDate(expression: string): { check_in: string; check_out: string; description: string } | null {
   // Get current date in WIB (UTC+7)
@@ -373,6 +402,20 @@ serve(async (req) => {
 
     // Get last user message for relevant example selection
     const lastUserMessage = messages?.filter((m: any) => m.role === 'user').pop()?.content || '';
+    
+    // Quick response for simple greetings - bypass AI model
+    const quickGreeting = getQuickGreetingResponse(lastUserMessage, chatbotSettings?.persona_name || 'Rani');
+    if (quickGreeting) {
+      console.log("Quick greeting response triggered for:", lastUserMessage);
+      return new Response(JSON.stringify({
+        choices: [{
+          message: { role: 'assistant', content: quickGreeting }
+        }]
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
     const relevantExamples = selectRelevantExamples(lastUserMessage, trainingExamples || []);
 
     const trainingExamplesInfo = relevantExamples.map(ex => 
@@ -594,6 +637,7 @@ ${knowledgeInfo ? `\n📚 INFO TAMBAHAN:\n${knowledgeInfo}` : ''}`;
         }
       }
     ];
+
 
     // Call AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
