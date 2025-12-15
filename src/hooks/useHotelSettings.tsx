@@ -26,6 +26,7 @@ export interface HotelSettings {
   email_reservations?: string;
   whatsapp_number?: string;
   logo_url?: string;
+  invoice_logo_url?: string;
   favicon_url?: string;
   primary_color?: string;
   secondary_color?: string;
@@ -124,7 +125,7 @@ export const useHotelSettings = () => {
     },
   });
 
-  const uploadFile = async (file: File, type: "logo" | "favicon") => {
+  const uploadFile = async (file: File, type: "logo" | "favicon" | "invoice_logo") => {
     const fileExt = file.name.split(".").pop();
     const fileName = `${type}-${Date.now()}.${fileExt}`;
     const filePath = `${fileName}`;

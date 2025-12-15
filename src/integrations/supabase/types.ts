@@ -1102,6 +1102,7 @@ export type Database = {
           hotel_policies_text: string | null
           id: string
           instagram_url: string | null
+          invoice_logo_url: string | null
           latitude: number | null
           logo_url: string | null
           longitude: number | null
@@ -1164,6 +1165,7 @@ export type Database = {
           hotel_policies_text?: string | null
           id?: string
           instagram_url?: string | null
+          invoice_logo_url?: string | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
@@ -1226,6 +1228,7 @@ export type Database = {
           hotel_policies_text?: string | null
           id?: string
           instagram_url?: string | null
+          invoice_logo_url?: string | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null

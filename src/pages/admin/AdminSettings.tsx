@@ -14,6 +14,7 @@ export default function AdminSettings() {
   const { settings, isLoading, updateSettings, isUpdating, uploadFile } = useHotelSettings();
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [invoiceLogoFile, setInvoiceLogoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   if (isLoading) {
@@ -54,9 +55,15 @@ export default function AdminSettings() {
         updates.favicon_url = faviconUrl;
       }
 
+      if (invoiceLogoFile) {
+        const invoiceLogoUrl = await uploadFile(invoiceLogoFile, "invoice_logo");
+        updates.invoice_logo_url = invoiceLogoUrl;
+      }
+
       updateSettings(updates);
       setLogoFile(null);
       setFaviconFile(null);
+      setInvoiceLogoFile(null);
     } catch (error: any) {
       toast({
         title: "Upload Error",
@@ -242,6 +249,22 @@ export default function AdminSettings() {
                     onChange={(e) => setFaviconFile(e.target.files?.[0] || null)}
                   />
                   {faviconFile && <p className="text-sm text-muted-foreground">Selected: {faviconFile.name}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invoice_logo">Logo Invoice & Admin Panel</Label>
+                  <p className="text-sm text-muted-foreground">Logo ini akan digunakan di halaman Invoice dan Admin Panel sidebar</p>
+                  {settings.invoice_logo_url && (
+                    <div className="mb-2">
+                      <img src={settings.invoice_logo_url} alt="Current invoice logo" className="h-16 object-contain" />
+                    </div>
+                  )}
+                  <Input
+                    id="invoice_logo"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setInvoiceLogoFile(e.target.files?.[0] || null)}
+                  />
+                  {invoiceLogoFile && <p className="text-sm text-muted-foreground">Selected: {invoiceLogoFile.name}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">

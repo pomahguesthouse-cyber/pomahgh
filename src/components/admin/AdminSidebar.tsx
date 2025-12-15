@@ -80,9 +80,9 @@ export function AdminSidebar() {
       {/* Header */}
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-3 px-2 py-1">
-          {settings?.logo_url && !isCollapsed ? (
+          {(settings?.invoice_logo_url || settings?.logo_url) && !isCollapsed ? (
             <img 
-              src={settings.logo_url} 
+              src={settings.invoice_logo_url || settings.logo_url} 
               alt={settings?.hotel_name || "Hotel"} 
               className="h-8 w-auto object-contain"
             />
