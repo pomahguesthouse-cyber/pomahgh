@@ -99,6 +99,8 @@ const selectRelevantExamples = (userMessage: string, examples: any[]): any[] => 
     detectedCategory = 'cancel';
   } else if (message.includes('halo') || message.includes('hai') || message.includes('selamat')) {
     detectedCategory = 'greeting';
+  } else if (message.includes('extra') || message.includes('tambahan') || message.includes('add-on') || message.includes('addon') || message.includes('sarapan') || message.includes('breakfast')) {
+    detectedCategory = 'addon';
   }
   
   // Filter by detected category, then add some general examples
@@ -163,12 +165,12 @@ serve(async (req) => {
       .eq("available", true)
       .order("price_per_night");
 
-    // Fetch extra bed add-ons for capacity info
-    const { data: extraBedAddons } = await supabase
+    // Fetch ALL room add-ons for complete info (pricing, capacity, etc.)
+    const { data: roomAddons } = await supabase
       .from("room_addons")
-      .select("room_id, extra_capacity, max_quantity")
+      .select("id, name, description, price, price_type, category, room_id, max_quantity, extra_capacity")
       .eq("is_active", true)
-      .ilike("name", "%extra bed%");
+      .order("display_order");
 
     const { data: facilities } = await supabase
       .from("facilities")
@@ -197,8 +199,8 @@ serve(async (req) => {
     // Build context strings with extra bed capacity info
     const roomsInfo = rooms?.map(r => {
       // Find extra bed addon (room-specific or global with null room_id)
-      const extraBed = (extraBedAddons || []).find(a => 
-        a.room_id === r.id || a.room_id === null
+      const extraBed = (roomAddons || []).find(a => 
+        (a.room_id === r.id || a.room_id === null) && a.name?.toLowerCase().includes('extra bed')
       );
       
       const maxExtraBeds = extraBed?.max_quantity || 0;
@@ -210,6 +212,24 @@ serve(async (req) => {
         : '';
         
       return `- ${r.name}: Rp ${r.price_per_night.toLocaleString()}/malam. Kapasitas ${r.max_guests} tamu${extraBedInfo}${r.size_sqm ? `, ${r.size_sqm}m²` : ''}`;
+    }).join('\n') || '';
+
+    // Build add-ons info for chatbot knowledge
+    const priceTypeLabels: Record<string, string> = {
+      'per_night': '/malam',
+      'per_person_per_night': '/orang/malam',
+      'per_person': '/orang',
+      'once': ' (sekali bayar)'
+    };
+    
+    const addonsInfo = (roomAddons || []).map(addon => {
+      const priceLabel = priceTypeLabels[addon.price_type] || '';
+      const roomName = rooms?.find(r => r.id === addon.room_id)?.name;
+      const roomNote = roomName ? ` (${roomName})` : addon.room_id === null ? ' (Semua Kamar)' : '';
+      const maxQty = addon.max_quantity ? `, maks ${addon.max_quantity}` : '';
+      const extraCap = addon.extra_capacity ? `, +${addon.extra_capacity} tamu/unit` : '';
+      
+      return `- ${addon.name}${roomNote}: Rp ${addon.price?.toLocaleString()}${priceLabel}${maxQty}${extraCap}`;
     }).join('\n') || '';
 
     const facilitiesInfo = facilities?.map(f => `- ${f.title}`).join(', ') || '';
@@ -281,7 +301,11 @@ ${contextString}
 - Check-in: ${hotelSettings?.check_in_time || '14:00'} | Check-out: ${hotelSettings?.check_out_time || '12:00'}
 - WA: ${hotelSettings?.whatsapp_number || '+6281227271799'}
 
-🛏️ KAMAR: ${roomsInfo}
+🛏️ KAMAR:
+${roomsInfo}
+
+🎁 ADD-ONS TERSEDIA:
+${addonsInfo || 'Tidak ada add-on aktif'}
 
 ✨ FASILITAS: ${facilitiesInfo}
 
