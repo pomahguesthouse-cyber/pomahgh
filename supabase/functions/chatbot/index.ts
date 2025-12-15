@@ -6,6 +6,139 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Parse relative Indonesian date expressions to concrete dates
+function parseRelativeDate(expression: string): { check_in: string; check_out: string; description: string } | null {
+  // Get current date in WIB (UTC+7)
+  const now = new Date();
+  const wibOffset = 7 * 60; // UTC+7 in minutes
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const wibTime = new Date(utc + (wibOffset * 60000));
+  
+  const formatDate = (d: Date) => d.toISOString().split('T')[0];
+  const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 24 * 60 * 60 * 1000);
+  
+  // Get next specific day of week
+  const getNextDayOfWeek = (dayIndex: number) => {
+    const result = new Date(wibTime);
+    const currentDay = result.getDay();
+    const daysUntil = (dayIndex - currentDay + 7) % 7 || 7; // At least 1 day ahead
+    result.setDate(result.getDate() + daysUntil);
+    return result;
+  };
+  
+  const lower = expression.toLowerCase();
+  
+  // Today patterns
+  if (lower.match(/\b(malam ini|nanti malam|hari ini|sekarang|tonight|today)\b/)) {
+    return { check_in: formatDate(wibTime), check_out: formatDate(addDays(wibTime, 1)), description: 'malam ini' };
+  }
+  
+  // Tomorrow patterns
+  if (lower.match(/\b(besok|bsk|besuk|tomorrow)\b/)) {
+    const besok = addDays(wibTime, 1);
+    return { check_in: formatDate(besok), check_out: formatDate(addDays(besok, 1)), description: 'besok' };
+  }
+  
+  // Day after tomorrow
+  if (lower.match(/\b(lusa|lsa)\b/)) {
+    const lusa = addDays(wibTime, 2);
+    return { check_in: formatDate(lusa), check_out: formatDate(addDays(lusa, 1)), description: 'lusa' };
+  }
+  
+  // Next week
+  if (lower.match(/\b(minggu depan|pekan depan|next week)\b/)) {
+    const nextWeek = addDays(wibTime, 7);
+    return { check_in: formatDate(nextWeek), check_out: formatDate(addDays(nextWeek, 1)), description: 'minggu depan' };
+  }
+  
+  // This weekend (Saturday)
+  if (lower.match(/\b(weekend ini|akhir pekan ini|weekend|akhir pekan)\b/) && !lower.includes('depan')) {
+    const saturday = getNextDayOfWeek(6);
+    return { check_in: formatDate(saturday), check_out: formatDate(addDays(saturday, 2)), description: 'weekend ini' };
+  }
+  
+  // Next weekend
+  if (lower.match(/\b(weekend depan|akhir pekan depan)\b/)) {
+    const thisSaturday = getNextDayOfWeek(6);
+    const nextSaturday = addDays(thisSaturday, 7);
+    return { check_in: formatDate(nextSaturday), check_out: formatDate(addDays(nextSaturday, 2)), description: 'weekend depan' };
+  }
+  
+  // X days from now: "3 hari lagi", "5 hari kedepan"
+  const daysAheadMatch = lower.match(/(\d+)\s*(hari|hr)\s*(lagi|kedepan|ke depan)/);
+  if (daysAheadMatch) {
+    const days = parseInt(daysAheadMatch[1]);
+    const targetDate = addDays(wibTime, days);
+    return { check_in: formatDate(targetDate), check_out: formatDate(addDays(targetDate, 1)), description: `${days} hari lagi` };
+  }
+  
+  // Specific day names: "hari jumat", "jumat ini", "sabtu depan"
+  const dayNames: Record<string, number> = {
+    'minggu': 0, 'senin': 1, 'selasa': 2, 'rabu': 3, 
+    'kamis': 4, 'jumat': 5, 'jum\'at': 5, 'sabtu': 6
+  };
+  
+  for (const [dayName, dayIndex] of Object.entries(dayNames)) {
+    if (lower.includes(dayName)) {
+      const targetDay = getNextDayOfWeek(dayIndex);
+      // If "depan" mentioned, add another week
+      if (lower.includes('depan')) {
+        targetDay.setDate(targetDay.getDate() + 7);
+      }
+      return { check_in: formatDate(targetDay), check_out: formatDate(addDays(targetDay, 1)), description: `hari ${dayName}` };
+    }
+  }
+  
+  return null;
+}
+
+// Build date reference context for system prompt
+function buildDateReferenceContext(): string {
+  const now = new Date();
+  const wibOffset = 7 * 60;
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const wibTime = new Date(utc + (wibOffset * 60000));
+  
+  const formatIndonesian = (d: Date) => {
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  };
+  
+  const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 24 * 60 * 60 * 1000);
+  
+  // Get next Saturday
+  const getNextSaturday = () => {
+    const result = new Date(wibTime);
+    const currentDay = result.getDay();
+    const daysUntil = (6 - currentDay + 7) % 7 || 7;
+    result.setDate(result.getDate() + daysUntil);
+    return result;
+  };
+  
+  const today = wibTime;
+  const tomorrow = addDays(today, 1);
+  const lusa = addDays(today, 2);
+  const nextWeek = addDays(today, 7);
+  const weekend = getNextSaturday();
+  
+  return `📅 REFERENSI TANGGAL (WIB):
+- Hari ini: ${formatIndonesian(today)}
+- Besok: ${formatIndonesian(tomorrow)}
+- Lusa: ${formatIndonesian(lusa)}
+- Minggu depan: ${formatIndonesian(nextWeek)}
+- Weekend ini: ${formatIndonesian(weekend)}
+
+⚠️ KONVERSI OTOMATIS:
+- "malam ini" / "hari ini" → check-in ${today.toISOString().split('T')[0]}
+- "besok" / "bsk" → check-in ${tomorrow.toISOString().split('T')[0]}
+- "lusa" → check-in ${lusa.toISOString().split('T')[0]}
+- "weekend" / "akhir pekan" → check-in ${weekend.toISOString().split('T')[0]}
+- "minggu depan" → check-in ${nextWeek.toISOString().split('T')[0]}
+
+PENTING: Jika user bilang tanggal relatif, LANGSUNG konversi ke tanggal ISO dan panggil check_availability!`;
+}
+
 // Build persona prompt from structured settings
 const buildPersonaPrompt = (settings: any, hotelName: string): string => {
   const name = settings?.persona_name || 'Rani';
@@ -262,6 +395,7 @@ serve(async (req) => {
 
     // Build conversation context string
     let contextString = '';
+    let parsedDateContext = '';
     if (conversationContext) {
       const ctx = conversationContext;
       const parts = [];
@@ -270,10 +404,20 @@ serve(async (req) => {
       if (ctx.dates) parts.push(`Tanggal: ${ctx.dates}`);
       if (ctx.guest_count) parts.push(`Tamu: ${ctx.guest_count} orang`);
       if (ctx.sentiment) parts.push(`Mood: ${ctx.sentiment}`);
+      
+      // Include parsed relative date context
+      if (ctx.parsed_date) {
+        parts.push(`Tanggal terdeteksi: ${ctx.parsed_date.description} → ${ctx.parsed_date.check_in}`);
+        parsedDateContext = `\n⚠️ USER MENYEBUT "${ctx.parsed_date.description.toUpperCase()}": Gunakan check_in=${ctx.parsed_date.check_in}, check_out=${ctx.parsed_date.check_out}`;
+      }
+      
       if (parts.length > 0) {
         contextString = `\n📋 KONTEKS:\n${parts.join(' | ')}`;
       }
     }
+
+    // Build date reference context
+    const dateReferenceContext = buildDateReferenceContext();
 
     // Build main persona prompt from structured settings
     const hotelName = hotelSettings?.hotel_name || 'Pomah Guesthouse';
@@ -283,16 +427,18 @@ serve(async (req) => {
     const systemPrompt = `${personaPrompt}
 
 📅 TANGGAL: ${currentDateIndonesian} (${currentDateISO}) | Sekarang ${timeGreeting} | TAHUN: ${now.getFullYear()}
-${contextString}
+${contextString}${parsedDateContext}
+
+${dateReferenceContext}
 
 🧠 INTELLIGENCE:
-- Kenali typo: dlx→deluxe, kmr→kamar, brp→berapa, bs→bisa, gk/ga→tidak, tgl→tanggal
+- Kenali typo: dlx→deluxe, kmr→kamar, brp→berapa, bs→bisa, gk/ga→tidak, tgl→tanggal, bsk→besok
 - Ingat preferensi dari percakapan sebelumnya
 - JANGAN tanya ulang info yang sudah diberikan user
 
 🚨 TOOLS (WAJIB):
 - "ada kamar apa?" → get_all_rooms
-- kamar + tanggal → check_availability
+- kamar + tanggal (termasuk "besok", "lusa", "malam ini") → check_availability
 - mau booking lengkap → create_booking_draft
 - cek/ubah booking → minta kode PMH-XXXXXX + telepon + email
 

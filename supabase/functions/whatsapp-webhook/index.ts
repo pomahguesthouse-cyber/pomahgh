@@ -117,6 +117,82 @@ function detectSentiment(message: string): 'positive' | 'neutral' | 'negative' |
   return 'neutral';
 }
 
+// Parse relative Indonesian date expressions to concrete dates
+function parseRelativeDate(expression: string): { check_in: string; check_out: string; description: string } | null {
+  // Get current date in WIB (UTC+7)
+  const now = new Date();
+  const wibOffset = 7 * 60;
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const wibTime = new Date(utc + (wibOffset * 60000));
+  
+  const formatDate = (d: Date) => d.toISOString().split('T')[0];
+  const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 24 * 60 * 60 * 1000);
+  
+  const getNextDayOfWeek = (dayIndex: number) => {
+    const result = new Date(wibTime);
+    const currentDay = result.getDay();
+    const daysUntil = (dayIndex - currentDay + 7) % 7 || 7;
+    result.setDate(result.getDate() + daysUntil);
+    return result;
+  };
+  
+  const lower = expression.toLowerCase();
+  
+  if (lower.match(/\b(malam ini|nanti malam|hari ini|sekarang|tonight|today)\b/)) {
+    return { check_in: formatDate(wibTime), check_out: formatDate(addDays(wibTime, 1)), description: 'malam ini' };
+  }
+  
+  if (lower.match(/\b(besok|bsk|besuk|tomorrow)\b/)) {
+    const besok = addDays(wibTime, 1);
+    return { check_in: formatDate(besok), check_out: formatDate(addDays(besok, 1)), description: 'besok' };
+  }
+  
+  if (lower.match(/\b(lusa|lsa)\b/)) {
+    const lusa = addDays(wibTime, 2);
+    return { check_in: formatDate(lusa), check_out: formatDate(addDays(lusa, 1)), description: 'lusa' };
+  }
+  
+  if (lower.match(/\b(minggu depan|pekan depan|next week)\b/)) {
+    const nextWeek = addDays(wibTime, 7);
+    return { check_in: formatDate(nextWeek), check_out: formatDate(addDays(nextWeek, 1)), description: 'minggu depan' };
+  }
+  
+  if (lower.match(/\b(weekend ini|akhir pekan ini|weekend|akhir pekan)\b/) && !lower.includes('depan')) {
+    const saturday = getNextDayOfWeek(6);
+    return { check_in: formatDate(saturday), check_out: formatDate(addDays(saturday, 2)), description: 'weekend ini' };
+  }
+  
+  if (lower.match(/\b(weekend depan|akhir pekan depan)\b/)) {
+    const thisSaturday = getNextDayOfWeek(6);
+    const nextSaturday = addDays(thisSaturday, 7);
+    return { check_in: formatDate(nextSaturday), check_out: formatDate(addDays(nextSaturday, 2)), description: 'weekend depan' };
+  }
+  
+  const daysAheadMatch = lower.match(/(\d+)\s*(hari|hr)\s*(lagi|kedepan|ke depan)/);
+  if (daysAheadMatch) {
+    const days = parseInt(daysAheadMatch[1]);
+    const targetDate = addDays(wibTime, days);
+    return { check_in: formatDate(targetDate), check_out: formatDate(addDays(targetDate, 1)), description: `${days} hari lagi` };
+  }
+  
+  const dayNames: Record<string, number> = {
+    'minggu': 0, 'senin': 1, 'selasa': 2, 'rabu': 3, 
+    'kamis': 4, 'jumat': 5, 'jum\'at': 5, 'sabtu': 6
+  };
+  
+  for (const [dayName, dayIndex] of Object.entries(dayNames)) {
+    if (lower.includes(dayName)) {
+      const targetDay = getNextDayOfWeek(dayIndex);
+      if (lower.includes('depan')) {
+        targetDay.setDate(targetDay.getDate() + 7);
+      }
+      return { check_in: formatDate(targetDay), check_out: formatDate(addDays(targetDay, 1)), description: `hari ${dayName}` };
+    }
+  }
+  
+  return null;
+}
+
 // Extract context from conversation
 function extractContext(messages: Array<{role: string, content: string}>): Record<string, any> {
   const context: Record<string, any> = {};
@@ -145,6 +221,13 @@ function extractContext(messages: Array<{role: string, content: string}>): Recor
     }
   }
   
+  // Extract parsed relative date from last user message
+  const lastUserMsgRaw = messages.filter(m => m.role === 'user').pop()?.content || '';
+  const parsedDate = parseRelativeDate(lastUserMsgRaw);
+  if (parsedDate) {
+    context.parsed_date = parsedDate;
+  }
+  
   // Extract guest count
   const guestMatch = allText.match(/(\d+)\s*(orang|tamu|org|guest)/i);
   if (guestMatch) {
@@ -165,7 +248,7 @@ function extractContext(messages: Array<{role: string, content: string}>): Recor
   }
   
   // Detect last topic
-  const lastUserMsg = messages.filter(m => m.role === 'user').pop()?.content.toLowerCase() || '';
+  const lastUserMsg = lastUserMsgRaw.toLowerCase();
   if (lastUserMsg.includes('kamar') || lastUserMsg.includes('room') || lastUserMsg.includes('tipe')) {
     context.last_topic = 'rooms';
   } else if (lastUserMsg.includes('booking') || lastUserMsg.includes('pesan') || lastUserMsg.includes('reservasi')) {
