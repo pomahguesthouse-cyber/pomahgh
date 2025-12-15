@@ -6,30 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Indonesian month names for date formatting
-const INDONESIAN_MONTHS = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-];
-
-// Helper function to format date in Indonesian (e.g., "15 Januari 2025")
-function formatDateIndonesian(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    const day = date.getDate();
-    const month = INDONESIAN_MONTHS[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
-  } catch {
-    return dateStr;
-  }
-}
-
 // Rate limiter: track messages per phone number
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX = 10; // max messages
-const RATE_LIMIT_WINDOW = 60 * 1000; // per minute
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW = 60 * 1000;
 
 function checkRateLimit(phone: string): boolean {
   const now = Date.now();
@@ -48,80 +28,7 @@ function checkRateLimit(phone: string): boolean {
   return true;
 }
 
-// Detect booking intent with room name
-function detectBookingWithRoom(message: string): { isBooking: boolean; roomName?: string } {
-  const lowerMsg = message.toLowerCase();
-  const bookingPattern = /(booking|pesan|reservasi|mau\s+book|ambil|book)\s+(kamar\s+)?(single|deluxe|grand\s*deluxe|family\s*suite|villa)/i;
-  const match = lowerMsg.match(bookingPattern);
-  
-  if (match) {
-    return {
-      isBooking: true,
-      roomName: match[3].replace(/\s+/g, ' ').trim()
-    };
-  }
-  
-  // Check simpler patterns
-  const simplePattern = /(booking|pesan|book)\s+(single|deluxe|grand|family|villa)/i;
-  const simpleMatch = lowerMsg.match(simplePattern);
-  if (simpleMatch) {
-    return {
-      isBooking: true,
-      roomName: simpleMatch[2]
-    };
-  }
-  
-  return { isBooking: false };
-}
-
-// Detect guest info submission from message
-function detectGuestInfo(message: string): { 
-  hasGuestInfo: boolean; 
-  name?: string; 
-  phone?: string; 
-  email?: string; 
-  guestCount?: number;
-} {
-  const result: any = { hasGuestInfo: false };
-  
-  // Pattern 1: Comma-separated "Nama, Phone, Email, X tamu"
-  const commaSeparatedMatch = message.match(/^([A-Za-z\s]+),\s*(\d{10,13}|0\d{9,12}),\s*([^\s,]+@[^\s,]+),\s*(\d+)\s*(tamu|orang|org)?/i);
-  
-  // Pattern 2: Labeled "Nama: X, HP: Y, Email: Z, N tamu"
-  const labeledMatch = message.match(/nama[:\s]+([^,]+?)(?:,|\s+)(?:hp|wa|telp|phone|no)[:\s]+([0-9\s\-]+)(?:,|\s+)email[:\s]+([^\s,]+@[^\s,]+)/i);
-  const guestCountMatch = message.match(/(\d+)\s*(tamu|orang|org|guest)/i);
-  
-  if (commaSeparatedMatch) {
-    result.hasGuestInfo = true;
-    result.name = commaSeparatedMatch[1].trim();
-    result.phone = commaSeparatedMatch[2].replace(/\D/g, '');
-    result.email = commaSeparatedMatch[3].trim();
-    result.guestCount = parseInt(commaSeparatedMatch[4]);
-  } else if (labeledMatch) {
-    result.hasGuestInfo = true;
-    result.name = labeledMatch[1].trim();
-    result.phone = labeledMatch[2].replace(/\D/g, '');
-    result.email = labeledMatch[3].trim();
-    result.guestCount = guestCountMatch ? parseInt(guestCountMatch[1]) : 1;
-  } else {
-    // Check if message contains email + phone together
-    const phoneMatch = message.match(/(\d{10,13}|0\d{9,12})/);
-    const emailMatch = message.match(/([^\s,]+@[^\s,]+\.[^\s,]+)/);
-    const nameMatch = message.match(/^([A-Z][a-zA-Z]+(?:\s+[A-Z]?[a-zA-Z]+)*)/);
-    
-    if (phoneMatch && emailMatch) {
-      result.hasGuestInfo = true;
-      result.name = nameMatch ? nameMatch[1].trim() : 'Tamu';
-      result.phone = phoneMatch[1].replace(/\D/g, '');
-      result.email = emailMatch[1];
-      result.guestCount = guestCountMatch ? parseInt(guestCountMatch[1]) : 1;
-    }
-  }
-  
-  return result;
-}
-
-// Format phone number to standard format
+// Normalize phone number to standard format
 function normalizePhone(phone: string): string {
   let normalized = phone.replace(/\D/g, '');
   if (normalized.startsWith('0')) {
@@ -133,17 +40,14 @@ function normalizePhone(phone: string): string {
   return normalized;
 }
 
-// Indonesian slang/typo normalizer for smarter understanding
+// Indonesian slang normalizer for better AI understanding
 function normalizeIndonesianMessage(msg: string): string {
   const slangMap: Record<string, string> = {
-    // Room types
     'dlx': 'deluxe', 'delux': 'deluxe', 'dluxe': 'deluxe',
     'grnd': 'grand', 'grd': 'grand',
     'fam': 'family', 'fmly': 'family',
     'sgl': 'single', 'sngl': 'single',
     'kmr': 'kamar', 'kmar': 'kamar',
-    
-    // Common words
     'brp': 'berapa', 'brapa': 'berapa',
     'bs': 'bisa', 'bsa': 'bisa', 'bza': 'bisa',
     'gk': 'tidak', 'ga': 'tidak', 'ngga': 'tidak', 'gak': 'tidak', 'nggak': 'tidak',
@@ -155,36 +59,21 @@ function normalizeIndonesianMessage(msg: string): string {
     'bsk': 'besok', 'besuk': 'besok',
     'lsa': 'lusa',
     'gmn': 'bagaimana', 'gimana': 'bagaimana', 'gmna': 'bagaimana',
-    'emg': 'memang', 'emang': 'memang',
     'udh': 'sudah', 'udah': 'sudah', 'sdh': 'sudah',
     'blm': 'belum', 'blum': 'belum',
     'yg': 'yang', 'yng': 'yang',
     'dg': 'dengan', 'dgn': 'dengan',
     'utk': 'untuk', 'utuk': 'untuk', 'buat': 'untuk',
-    'krn': 'karena', 'krna': 'karena', 'soalnya': 'karena',
+    'krn': 'karena', 'krna': 'karena',
     'lg': 'lagi', 'lgi': 'lagi',
     'msh': 'masih', 'msih': 'masih',
     'jg': 'juga', 'jga': 'juga',
-    'dlu': 'dulu', 'dl': 'dulu',
-    'ntar': 'nanti', 'ntr': 'nanti',
-    'bgt': 'banget', 'bngt': 'banget',
-    'aja': 'saja', 'aj': 'saja',
-    'klo': 'kalau', 'kalu': 'kalau', 'kl': 'kalau', 'klu': 'kalau',
-    'trus': 'terus', 'trs': 'terus',
-    'abis': 'habis', 'abs': 'habis',
     'tp': 'tapi', 'tpi': 'tapi',
     'sm': 'sama', 'ama': 'sama',
-    'pdhl': 'padahal',
-    'trims': 'terima kasih', 'tq': 'terima kasih', 'ty': 'terima kasih', 'thx': 'terima kasih', 'makasih': 'terima kasih', 'mksh': 'terima kasih',
-    
-    // Numbers
-    'satu': '1', 'dua': '2', 'tiga': '3', 'empat': '4', 'lima': '5',
-    'enam': '6', 'tujuh': '7', 'delapan': '8', 'sembilan': '9', 'sepuluh': '10',
+    'trims': 'terima kasih', 'tq': 'terima kasih', 'makasih': 'terima kasih', 'mksh': 'terima kasih',
   };
   
   let normalized = msg.toLowerCase();
-  
-  // Replace slang words (word boundaries)
   for (const [slang, replacement] of Object.entries(slangMap)) {
     const regex = new RegExp(`\\b${slang}\\b`, 'gi');
     normalized = normalized.replace(regex, replacement);
@@ -193,396 +82,19 @@ function normalizeIndonesianMessage(msg: string): string {
   return normalized;
 }
 
-// Detect user sentiment/mood
-function detectSentiment(message: string): 'positive' | 'neutral' | 'negative' | 'confused' | 'urgent' {
-  const lowerMsg = message.toLowerCase();
-  
-  const negativeWords = ['kecewa', 'mahal', 'lama', 'susah', 'ga jelas', 'bingung', 'ribet', 'jelek', 'buruk', 'lambat', 'kesal', 'marah', 'complaint', 'komplain'];
-  const positiveWords = ['bagus', 'mantap', 'oke', 'siap', 'terima kasih', 'keren', 'senang', 'baik', 'good', 'nice', 'perfect', 'sip', 'mantul', 'makasih', 'thx', 'thanks'];
-  const confusedWords = ['gimana', 'gmn', 'ga ngerti', 'maksudnya', 'apa sih', 'caranya', 'bingung', 'confused', 'gak paham', 'ga mudeng'];
-  const urgentWords = ['urgent', 'segera', 'cepat', 'hari ini', 'sekarang', 'darurat', 'penting', 'asap', 'buru', 'buruan'];
-  
-  if (urgentWords.some(w => lowerMsg.includes(w))) return 'urgent';
-  if (negativeWords.some(w => lowerMsg.includes(w))) return 'negative';
-  if (confusedWords.some(w => lowerMsg.includes(w))) return 'confused';
-  if (positiveWords.some(w => lowerMsg.includes(w))) return 'positive';
-  
-  return 'neutral';
-}
-
-// Parse relative Indonesian date expressions to concrete dates
-function parseRelativeDate(expression: string): { check_in: string; check_out: string; description: string } | null {
-  // Get current date in WIB (UTC+7)
-  const now = new Date();
-  const wibOffset = 7 * 60;
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const wibTime = new Date(utc + (wibOffset * 60000));
-  
-  const formatDate = (d: Date) => d.toISOString().split('T')[0];
-  const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 24 * 60 * 60 * 1000);
-  
-  const getNextDayOfWeek = (dayIndex: number) => {
-    const result = new Date(wibTime);
-    const currentDay = result.getDay();
-    const daysUntil = (dayIndex - currentDay + 7) % 7 || 7;
-    result.setDate(result.getDate() + daysUntil);
-    return result;
-  };
-  
-  const lower = expression.toLowerCase();
-  
-  if (lower.match(/\b(malam ini|nanti malam|hari ini|sekarang|tonight|today)\b/)) {
-    return { check_in: formatDate(wibTime), check_out: formatDate(addDays(wibTime, 1)), description: 'malam ini' };
-  }
-  
-  if (lower.match(/\b(besok|bsk|besuk|tomorrow)\b/)) {
-    const besok = addDays(wibTime, 1);
-    return { check_in: formatDate(besok), check_out: formatDate(addDays(besok, 1)), description: 'besok' };
-  }
-  
-  if (lower.match(/\b(lusa|lsa)\b/)) {
-    const lusa = addDays(wibTime, 2);
-    return { check_in: formatDate(lusa), check_out: formatDate(addDays(lusa, 1)), description: 'lusa' };
-  }
-  
-  if (lower.match(/\b(minggu depan|pekan depan|next week)\b/)) {
-    const nextWeek = addDays(wibTime, 7);
-    return { check_in: formatDate(nextWeek), check_out: formatDate(addDays(nextWeek, 1)), description: 'minggu depan' };
-  }
-  
-  if (lower.match(/\b(weekend ini|akhir pekan ini|weekend|akhir pekan)\b/) && !lower.includes('depan')) {
-    const saturday = getNextDayOfWeek(6);
-    return { check_in: formatDate(saturday), check_out: formatDate(addDays(saturday, 2)), description: 'weekend ini' };
-  }
-  
-  if (lower.match(/\b(weekend depan|akhir pekan depan)\b/)) {
-    const thisSaturday = getNextDayOfWeek(6);
-    const nextSaturday = addDays(thisSaturday, 7);
-    return { check_in: formatDate(nextSaturday), check_out: formatDate(addDays(nextSaturday, 2)), description: 'weekend depan' };
-  }
-  
-  const daysAheadMatch = lower.match(/(\d+)\s*(hari|hr)\s*(lagi|kedepan|ke depan)/);
-  if (daysAheadMatch) {
-    const days = parseInt(daysAheadMatch[1]);
-    const targetDate = addDays(wibTime, days);
-    return { check_in: formatDate(targetDate), check_out: formatDate(addDays(targetDate, 1)), description: `${days} hari lagi` };
-  }
-  
-  const dayNames: Record<string, number> = {
-    'minggu': 0, 'senin': 1, 'selasa': 2, 'rabu': 3, 
-    'kamis': 4, 'jumat': 5, 'jum\'at': 5, 'sabtu': 6
-  };
-  
-  for (const [dayName, dayIndex] of Object.entries(dayNames)) {
-    if (lower.includes(dayName)) {
-      const targetDay = getNextDayOfWeek(dayIndex);
-      if (lower.includes('depan')) {
-        targetDay.setDate(targetDay.getDate() + 7);
-      }
-      return { check_in: formatDate(targetDay), check_out: formatDate(addDays(targetDay, 1)), description: `hari ${dayName}` };
-    }
-  }
-  
-  return null;
-}
-
-// Extract context from conversation
-function extractContext(messages: Array<{role: string, content: string}>): Record<string, any> {
-  const context: Record<string, any> = {};
-  const allText = messages.map(m => m.content).join(' ').toLowerCase();
-  
-  // Extract guest name (look for "nama saya X" or "saya X" patterns)
-  const namePatterns = [
-    /nama\s+saya\s+([a-zA-Z\s]+?)(?:\s*,|\s+dan|\s+email|\s+hp|\s+wa|\.|$)/i,
-    /saya\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/,
-    /(?:atas\s+nama|a\.?n\.?)\s+([a-zA-Z\s]+?)(?:\s*,|\s+dan|\s+email|\.|$)/i,
-  ];
-  for (const pattern of namePatterns) {
-    const match = allText.match(pattern);
-    if (match && match[1] && match[1].trim().length > 2) {
-      context.guest_name = match[1].trim();
-      break;
-    }
-  }
-  
-  // Extract room preference
-  const roomTypes = ['deluxe', 'grand deluxe', 'family', 'single', 'villa', 'suite', 'standard', 'superior'];
-  for (const room of roomTypes) {
-    if (allText.includes(room)) {
-      context.preferred_room = room.charAt(0).toUpperCase() + room.slice(1);
-      break;
-    }
-  }
-  
-  // Extract parsed relative date from last user message
-  const lastUserMsgRaw = messages.filter(m => m.role === 'user').pop()?.content || '';
-  const parsedDate = parseRelativeDate(lastUserMsgRaw);
-  if (parsedDate) {
-    context.parsed_date = parsedDate;
-  }
-  
-  // Extract guest count
-  const guestMatch = allText.match(/(\d+)\s*(orang|tamu|org|guest)/i);
-  if (guestMatch) {
-    context.guest_count = parseInt(guestMatch[1]);
-  }
-  
-  // Extract date hints
-  const datePatterns = [
-    /(\d{1,2})\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)/gi,
-    /(besok|lusa|hari ini|minggu depan|weekend)/i,
-  ];
-  for (const pattern of datePatterns) {
-    const match = allText.match(pattern);
-    if (match) {
-      context.dates = match[0];
-      break;
-    }
-  }
-  
-  // Detect room from booking message and update preferred_room
-  const bookingIntent = detectBookingWithRoom(lastUserMsgRaw);
-  if (bookingIntent.isBooking && bookingIntent.roomName) {
-    context.preferred_room = bookingIntent.roomName;
-    context.last_topic = 'booking';
-  }
-  
-  // Detect last topic (only if not already set by booking intent)
-  const lastUserMsg = lastUserMsgRaw.toLowerCase();
-  if (!context.last_topic) {
-    if (lastUserMsg.includes('kamar') || lastUserMsg.includes('room') || lastUserMsg.includes('tipe')) {
-      context.last_topic = 'rooms';
-    } else if (lastUserMsg.includes('booking') || lastUserMsg.includes('pesan') || lastUserMsg.includes('reservasi')) {
-      context.last_topic = 'booking';
-    } else if (lastUserMsg.includes('harga') || lastUserMsg.includes('tarif') || lastUserMsg.includes('price')) {
-      context.last_topic = 'pricing';
-    } else if (lastUserMsg.includes('fasilitas') || lastUserMsg.includes('facility')) {
-      context.last_topic = 'facilities';
-    } else if (lastUserMsg.includes('bayar') || lastUserMsg.includes('transfer') || lastUserMsg.includes('payment')) {
-      context.last_topic = 'payment';
-    } else if (lastUserMsg.includes('lokasi') || lastUserMsg.includes('alamat') || lastUserMsg.includes('dimana')) {
-      context.last_topic = 'location';
-    } else if (lastUserMsg.match(/tanggal|besok|lusa|\d+\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)/i)) {
-      context.last_topic = 'availability';
-    }
-  }
-  
-  // Detect sentiment from last message
-  context.sentiment = detectSentiment(lastUserMsg);
-  
-  // Detect if previous assistant message was booking prompt (awaiting guest info)
-  const lastAssistantMsg = messages.filter(m => m.role === 'assistant').pop()?.content || '';
-  if (lastAssistantMsg.includes('Siap memproses booking') || 
-      lastAssistantMsg.includes('Untuk melanjutkan, mohon kirimkan')) {
-    context.awaiting_guest_info = true;
-    context.last_topic = 'booking';
-  }
-  
-  return context;
-}
-
 // Format AI response for WhatsApp compatibility
 function formatForWhatsApp(text: string): string {
-  // Remove markdown tables
   text = text.replace(/\|[^\n]+\|/g, '');
   text = text.replace(/\|-+\|/g, '');
-  
-  // Convert markdown bold to WhatsApp bold
   text = text.replace(/\*\*([^*]+)\*\*/g, '*$1*');
-  
-  // Convert markdown headers to bold
   text = text.replace(/^###?\s*(.+)$/gm, '*$1*');
-  
-  // Remove excessive newlines
   text = text.replace(/\n{3,}/g, '\n\n');
   
-  // Limit to WhatsApp max (4096 chars)
   if (text.length > 4000) {
     text = text.substring(0, 3997) + '...';
   }
   
   return text.trim();
-}
-
-// Remove consecutive duplicate assistant messages to prevent stuck loops
-function deduplicateHistory(messages: Array<{role: string, content: string}>) {
-  const cleaned: typeof messages = [];
-  let lastAssistantContent = '';
-  
-  for (const msg of messages) {
-    if (msg.role === 'assistant') {
-      // Skip if same as previous assistant message
-      if (msg.content === lastAssistantContent) {
-        console.log("⚠️ Skipping duplicate assistant message");
-        continue;
-      }
-      lastAssistantContent = msg.content;
-    }
-    cleaned.push(msg);
-  }
-  return cleaned;
-}
-
-// Detect if AI is stuck repeating itself
-function detectStuckLoop(messages: Array<{role: string, content: string}>): boolean {
-  const assistantMessages = messages.filter(m => m.role === 'assistant');
-  if (assistantMessages.length < 3) return false;
-  
-  const lastThree = assistantMessages.slice(-3);
-  // If last 3 assistant responses are identical or very similar, AI is stuck
-  const firstContent = lastThree[0].content.substring(0, 200);
-  return lastThree.every(m => m.content.substring(0, 200) === firstContent);
-}
-
-// Detect if user is asking about room list (no dates needed)
-function detectRoomListIntent(message: string): boolean {
-  const lowerMsg = message.toLowerCase();
-  const listPatterns = /(ada kamar apa|tipe kamar|list kamar|daftar kamar|harga kamar|pilihan kamar|kamar apa saja|kamar yang tersedia|jenis kamar|macam kamar)/i;
-  return listPatterns.test(lowerMsg);
-}
-
-// Detect follow-up date question (user asking about different date without room type)
-function detectFollowUpDateIntent(message: string): { isFollowUp: boolean; dateHint?: string } {
-  const lowerMsg = message.toLowerCase();
-  // Patterns like "kalau tanggal 6?", "gimana tanggal 15 januari?", "kalau 6 desember?"
-  const followUpPatterns = /(kalau|kalua|gimana|bagaimana|kalo|gimana kalau|bagaimana kalau|kl|klu).*(tanggal|tgl|\d+\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)|desember|januari|februari)/i;
-  const dateOnlyPattern = /^(kalau|kalua|gimana|bagaimana|kalo|kl|klu)\s+(tanggal\s*)?\d+(\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember))?\s*\??$/i;
-  
-  const isFollowUp = followUpPatterns.test(lowerMsg) || dateOnlyPattern.test(lowerMsg);
-  
-  // Extract date hint
-  const dateMatch = lowerMsg.match(/(\d+\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)|tanggal\s*\d+)/i);
-  
-  return {
-    isFollowUp,
-    dateHint: dateMatch?.[0]
-  };
-}
-
-// (Quick response system removed - all messages now go through AI)
-
-// Detect booking intent in user message (room type + date)
-function detectBookingIntent(message: string): {
-  hasRoomType: boolean;
-  hasDate: boolean;
-  roomType?: string;
-  dateHint?: string;
-} {
-  const lowerMsg = message.toLowerCase();
-  
-  // Room type patterns
-  const roomPatterns = /(deluxe|superior|villa|standard|family|suite|twin|double|single)/i;
-  const roomMatch = lowerMsg.match(roomPatterns);
-  
-  // Date patterns (Indonesian)
-  const datePatterns = /(besok|lusa|hari ini|tanggal \d+|minggu depan|weekend|akhir pekan|\d+ (januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)|januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)/i;
-  const dateMatch = lowerMsg.match(datePatterns);
-  
-  return {
-    hasRoomType: !!roomMatch,
-    hasDate: !!dateMatch,
-    roomType: roomMatch?.[0],
-    dateHint: dateMatch?.[0]
-  };
-}
-// Format availability response from tool result
-function formatAvailabilityResponse(data: any, parsedDate: any): string {
-  const dateDesc = parsedDate?.description || 'tanggal yang dipilih';
-  const checkIn = parsedDate?.check_in ? formatDateIndonesian(parsedDate.check_in) : '';
-  const checkOut = parsedDate?.check_out ? formatDateIndonesian(parsedDate.check_out) : '';
-  
-  // Handle tool error
-  if (data.error) {
-    return `❌ Maaf, terjadi kesalahan saat cek ketersediaan: ${data.error}\n\nSilakan coba lagi atau hubungi admin 😊`;
-  }
-  
-  // Handle available_rooms format
-  if (data.available_rooms && data.available_rooms.length > 0) {
-    let response = `✅ *Ketersediaan ${dateDesc}*\n📅 ${checkIn}${checkOut ? ` - ${checkOut}` : ''}\n\n`;
-    
-  for (const room of data.available_rooms) {
-    const availableCount = room.available_count ?? room.available ?? 0;
-    const pricePerNight = room.price_per_night ?? room.price ?? 0;
-    const formattedPrice = typeof pricePerNight === 'number' ? pricePerNight.toLocaleString('id-ID') : pricePerNight;
-    response += `🛏️ *${room.name}*\n`;
-    response += `   ${availableCount} unit tersedia\n`;
-    response += `   Rp ${formattedPrice}/malam\n\n`;
-  }
-    
-    response += `Mau booking yang mana? 😊\nKetik: "booking [nama kamar]"`;
-    return response;
-  }
-  
-  // Handle rooms format (alternative structure)
-  if (data.rooms && data.rooms.length > 0) {
-    let response = `✅ *Ketersediaan ${dateDesc}*\n📅 ${checkIn}${checkOut ? ` - ${checkOut}` : ''}\n\n`;
-    
-    for (const room of data.rooms) {
-      if (room.available_count > 0) {
-        const price = typeof room.price_per_night === 'number' ? room.price_per_night.toLocaleString('id-ID') : room.price_per_night;
-        response += `🛏️ *${room.name}*\n`;
-        response += `   ${room.available_count} unit tersedia\n`;
-        response += `   Rp ${price}/malam\n\n`;
-      }
-    }
-    
-    response += `Mau booking yang mana? 😊\nKetik: "booking [nama kamar]"`;
-    return response;
-  }
-  
-  // No rooms available
-  return `❌ Maaf, tidak ada kamar tersedia untuk *${dateDesc}* (${checkIn}).\n\nMau cek tanggal lain? 😊`;
-}
-
-// Smart fallback based on context and sentiment
-function getSmartFallback(message: string, context: Record<string, any>): string {
-  const lowerMsg = message.toLowerCase();
-  const sentiment = context.sentiment || 'neutral';
-  
-  // Sentiment-aware opening
-  let opener = '';
-  if (sentiment === 'negative') {
-    opener = 'Mohon maaf atas ketidaknyamanannya 🙏\n\n';
-  } else if (sentiment === 'confused') {
-    opener = 'Tidak apa-apa, saya bantu jelaskan ya! 😊\n\n';
-  } else if (sentiment === 'urgent') {
-    opener = 'Baik, saya bantu segera! 🏃\n\n';
-  }
-  
-  // If parsed_date exists, this means user mentioned relative date - signal that we detected it
-  if (context.parsed_date) {
-    const dateDesc = context.parsed_date.description || 'tanggal tersebut';
-    return opener + `📅 Saya mendeteksi Anda ingin cek kamar untuk *${dateDesc}*.\n\nMohon tunggu, saya cek ketersediaannya... 🔍`;
-  }
-  
-  // Context-aware response with relative date detection
-  if (context.last_topic === 'availability' || 
-      lowerMsg.includes('tanggal') || 
-      lowerMsg.includes('kapan') ||
-      lowerMsg.includes('malam ini') ||
-      lowerMsg.includes('hari ini') ||
-      lowerMsg.includes('besok') ||
-      lowerMsg.includes('lusa')) {
-    return opener + '📅 Untuk cek ketersediaan, mohon sebutkan:\n\n1️⃣ Tanggal check-in (contoh: 15 Januari)\n2️⃣ Tanggal check-out (contoh: 17 Januari)\n3️⃣ Jumlah tamu\n\nContoh: "cek kamar 15-17 Januari untuk 2 orang"';
-  }
-  
-  if (context.last_topic === 'booking') {
-    const missing = [];
-    if (!context.guest_name) missing.push('nama lengkap');
-    if (!context.dates) missing.push('tanggal check-in & check-out');
-    if (!context.preferred_room) missing.push('tipe kamar');
-    
-    if (missing.length > 0) {
-      return opener + `📝 Untuk melanjutkan booking, saya butuh informasi berikut:\n\n${missing.map((m, i) => `${i+1}️⃣ ${m.charAt(0).toUpperCase() + m.slice(1)}`).join('\n')}\n\nSilakan lengkapi ya! 😊`;
-    }
-  }
-  
-  if (context.last_topic === 'payment') {
-    return opener + '💳 Untuk informasi pembayaran:\n\n🏦 *Bank BCA*\nNo. Rek: 0095584379\nA/N: Faizal Abdurachman\n\nSetelah transfer, kirim bukti bayar ke chat ini ya! 😊';
-  }
-  
-  // Default helpful response
-  return opener + 'Halo! 👋 Saya Rani dari Pomah Guesthouse.\n\nSilakan tanyakan tentang:\n• *Kamar* - tipe & harga\n• *Fasilitas* - info fasilitas hotel\n• *Booking* - cara reservasi\n• *Lokasi* - alamat & kontak\n\nAtau langsung ketik pertanyaan Anda! 😊';
 }
 
 serve(async (req) => {
@@ -591,7 +103,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Handle GET request for Fonnte webhook verification
+  // Handle GET request for webhook verification
   if (req.method === 'GET') {
     console.log("Webhook verification GET request received");
     return new Response(JSON.stringify({ 
@@ -614,12 +126,10 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse incoming webhook - handle JSON, form-urlencoded, or raw text
+    // Parse incoming webhook
     let body: any;
     const contentType = req.headers.get('content-type') || '';
     console.log("Request content-type:", contentType);
-    console.log("Request method:", req.method);
-    console.log("Request URL:", req.url);
 
     try {
       if (contentType.includes('application/json')) {
@@ -628,21 +138,15 @@ serve(async (req) => {
         const formData = await req.formData();
         body = Object.fromEntries(formData.entries());
       } else {
-        // Try raw text and parse as either JSON or form-urlencoded
         const text = await req.text();
-        console.log("Raw request body:", text.substring(0, 500));
-        
         if (!text || text.trim() === '') {
-          console.log("Empty body, skipping");
           return new Response(JSON.stringify({ status: "skipped", reason: "empty body" }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        
         try {
           body = JSON.parse(text);
         } catch {
-          // Try form-urlencoded parsing
           const params = new URLSearchParams(text);
           body = Object.fromEntries(params.entries());
         }
@@ -656,7 +160,7 @@ serve(async (req) => {
 
     console.log("Parsed webhook body:", JSON.stringify(body));
 
-    const { sender, message, device, url: mediaUrl } = body;
+    const { sender, message } = body;
 
     if (!sender || !message) {
       console.log("Missing sender or message, skipping");
@@ -668,7 +172,7 @@ serve(async (req) => {
     const phone = normalizePhone(sender);
     console.log(`Processing message from ${phone}: "${message}"`);
     
-    // Normalize message for better understanding
+    // Normalize message for AI
     const normalizedMessage = normalizeIndonesianMessage(message);
     console.log(`Normalized message: "${normalizedMessage}"`);
 
@@ -680,25 +184,26 @@ serve(async (req) => {
       });
     }
 
-    // Get hotel settings for WhatsApp configuration
+    // Get hotel settings
     const { data: hotelSettings } = await supabase
       .from('hotel_settings')
-      .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_contact_numbers, whatsapp_response_mode')
+      .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_response_mode')
       .single();
     
     const sessionTimeoutMinutes = hotelSettings?.whatsapp_session_timeout_minutes || 15;
     const aiWhitelist: string[] = hotelSettings?.whatsapp_ai_whitelist || [];
     const responseMode = hotelSettings?.whatsapp_response_mode || 'ai';
     
-    console.log(`Session timeout: ${sessionTimeoutMinutes} minutes, AI whitelist: ${aiWhitelist.length} numbers, Response mode: ${responseMode}`);
+    console.log(`Session timeout: ${sessionTimeoutMinutes}min, Response mode: ${responseMode}`);
 
-    // Check if phone is blocked
+    // Get existing session
     const { data: session } = await supabase
       .from('whatsapp_sessions')
       .select('*')
       .eq('phone_number', phone)
       .single();
 
+    // Check if blocked
     if (session?.is_blocked) {
       console.log(`Blocked phone: ${phone}`);
       return new Response(JSON.stringify({ status: "blocked" }), {
@@ -706,201 +211,56 @@ serve(async (req) => {
       });
     }
 
-    // Check if MANUAL response mode is enabled (all messages go to admin)
+    // Handle MANUAL mode - skip AI, log for admin
     if (responseMode === 'manual') {
       console.log(`📱 MANUAL MODE - skipping AI for ${phone}`);
-      
-      // Get or create conversation for logging
-      let manualConversationId = session?.conversation_id;
-      if (!manualConversationId) {
-        const { data: newConv } = await supabase
-          .from('chat_conversations')
-          .insert({ session_id: `wa_${phone}_${Date.now()}`, message_count: 0 })
-          .select()
-          .single();
-        manualConversationId = newConv?.id;
-      }
-      
-      // Log user message without AI processing
-      if (manualConversationId) {
-        await supabase.from('chat_messages').insert({
-          conversation_id: manualConversationId,
-          role: 'user',
-          content: message,
-        });
-        
-        const { data: convData } = await supabase
-          .from('chat_conversations')
-          .select('message_count')
-          .eq('id', manualConversationId)
-          .single();
-        
-        await supabase
-          .from('chat_conversations')
-          .update({ message_count: (convData?.message_count || 0) + 1 })
-          .eq('id', manualConversationId);
-      }
-      
-      // Auto-set session to takeover mode for admin
-      await supabase
-        .from('whatsapp_sessions')
-        .upsert({
-          phone_number: phone,
-          conversation_id: manualConversationId,
-          last_message_at: new Date().toISOString(),
-          is_active: true,
-          is_takeover: true,
-          takeover_at: new Date().toISOString(),
-        }, { onConflict: 'phone_number' });
-      
-      return new Response(JSON.stringify({ 
-        status: "manual_mode", 
-        message: "Message logged for admin response",
-        conversation_id: manualConversationId,
-      }), {
+      const convId = await ensureConversation(supabase, session, phone);
+      await logMessage(supabase, convId, 'user', message);
+      await updateSession(supabase, phone, convId, true);
+      return new Response(JSON.stringify({ status: "manual_mode", conversation_id: convId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check if phone is in AI whitelist (should NOT be served by AI)
+    // Handle AI whitelist - auto takeover
     if (aiWhitelist.includes(phone)) {
-      console.log(`Phone ${phone} is in AI whitelist - auto takeover mode`);
-      
-      // Get or create conversation for logging
-      let whitelistConversationId = session?.conversation_id;
-      if (!whitelistConversationId) {
-        const { data: newConv } = await supabase
-          .from('chat_conversations')
-          .insert({ session_id: `wa_${phone}_${Date.now()}`, message_count: 0 })
-          .select()
-          .single();
-        whitelistConversationId = newConv?.id;
-      }
-      
-      // Log user message without AI processing
-      if (whitelistConversationId) {
-        await supabase.from('chat_messages').insert({
-          conversation_id: whitelistConversationId,
-          role: 'user',
-          content: message,
-        });
-        
-        const { data: convData } = await supabase
-          .from('chat_conversations')
-          .select('message_count')
-          .eq('id', whitelistConversationId)
-          .single();
-        
-        await supabase
-          .from('chat_conversations')
-          .update({ message_count: (convData?.message_count || 0) + 1 })
-          .eq('id', whitelistConversationId);
-      }
-      
-      // Update or create session with takeover mode
-      await supabase
-        .from('whatsapp_sessions')
-        .upsert({
-          phone_number: phone,
-          conversation_id: whitelistConversationId,
-          last_message_at: new Date().toISOString(),
-          is_active: true,
-          is_takeover: true,
-          takeover_at: new Date().toISOString(),
-        }, { onConflict: 'phone_number' });
-      
-      return new Response(JSON.stringify({ 
-        status: "whitelist_takeover", 
-        message: "Phone in AI whitelist - message logged for admin",
-        conversation_id: whitelistConversationId,
-      }), {
+      console.log(`Phone ${phone} in AI whitelist - auto takeover`);
+      const convId = await ensureConversation(supabase, session, phone);
+      await logMessage(supabase, convId, 'user', message);
+      await updateSession(supabase, phone, convId, true);
+      return new Response(JSON.stringify({ status: "whitelist_takeover", conversation_id: convId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check if session is in takeover mode (admin handling manually)
+    // Handle takeover mode - skip AI
     if (session?.is_takeover) {
-      console.log(`Session ${phone} is in takeover mode - skipping AI, logging message only`);
-      
-      // Get or create conversation for logging
-      let takeoverConversationId = session.conversation_id;
-      if (!takeoverConversationId) {
-        const { data: newConv } = await supabase
-          .from('chat_conversations')
-          .insert({ session_id: `wa_${phone}_${Date.now()}`, message_count: 0 })
-          .select()
-          .single();
-        takeoverConversationId = newConv?.id;
-      }
-      
-      // Log user message without AI processing
-      if (takeoverConversationId) {
-        await supabase.from('chat_messages').insert({
-          conversation_id: takeoverConversationId,
-          role: 'user',
-          content: message,
-        });
-        
-        // Get current count and increment
-        const { data: convData } = await supabase
-          .from('chat_conversations')
-          .select('message_count')
-          .eq('id', takeoverConversationId)
-          .single();
-        
-        await supabase
-          .from('chat_conversations')
-          .update({ message_count: (convData?.message_count || 0) + 1 })
-          .eq('id', takeoverConversationId);
-      }
-      
-      // Update last_message_at so admin sees new message notification
-      await supabase
-        .from('whatsapp_sessions')
-        .update({ 
-          last_message_at: new Date().toISOString(),
-          conversation_id: takeoverConversationId,
-        })
-        .eq('phone_number', phone);
-      
-      return new Response(JSON.stringify({ 
-        status: "takeover_mode", 
-        message: "Message logged, awaiting admin response",
-        conversation_id: takeoverConversationId,
-      }), {
+      console.log(`Session ${phone} in takeover mode - logging only`);
+      const convId = await ensureConversation(supabase, session, phone);
+      await logMessage(supabase, convId, 'user', message);
+      await supabase.from('whatsapp_sessions').update({ last_message_at: new Date().toISOString() }).eq('phone_number', phone);
+      return new Response(JSON.stringify({ status: "takeover_mode", conversation_id: convId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Get or create conversation
-    let conversationId = session?.conversation_id;
-    
-    // Check if session is stale (configurable timeout)
     const SESSION_TIMEOUT = sessionTimeoutMinutes * 60 * 1000;
     const lastMessageAt = session?.last_message_at ? new Date(session.last_message_at).getTime() : 0;
     const isStale = Date.now() - lastMessageAt > SESSION_TIMEOUT;
-
+    
+    let conversationId = session?.conversation_id;
     if (!conversationId || isStale) {
-      // Create new conversation
-      const { data: newConv, error: convError } = await supabase
+      const { data: newConv } = await supabase
         .from('chat_conversations')
-        .insert({
-          session_id: `wa_${phone}_${Date.now()}`,
-          message_count: 0,
-        })
+        .insert({ session_id: `wa_${phone}_${Date.now()}`, message_count: 0 })
         .select()
         .single();
-
-      if (convError) {
-        console.error("Error creating conversation:", convError);
-        throw convError;
-      }
-
-      conversationId = newConv.id;
+      conversationId = newConv?.id;
       console.log(`Created new conversation: ${conversationId}`);
     }
 
-    // Update or create WhatsApp session
+    // Update session
     await supabase
       .from('whatsapp_sessions')
       .upsert({
@@ -908,56 +268,27 @@ serve(async (req) => {
         conversation_id: conversationId,
         last_message_at: new Date().toISOString(),
         is_active: true,
-        context: session?.context || {},
       }, { onConflict: 'phone_number' });
 
     // Log user message
-    await supabase
-      .from('chat_messages')
-      .insert({
-        conversation_id: conversationId,
-        role: 'user',
-        content: message,
-      });
+    await logMessage(supabase, conversationId, 'user', message);
 
-    // Update message count
-    await supabase
-      .from('chat_conversations')
-      .update({ message_count: (session?.context?.message_count || 0) + 1 })
-      .eq('id', conversationId);
-
-
-    // All messages now go through AI (quick response system removed)
-
-    // Build conversation history for AI (reduced from 20 to 12 for better context)
+    // Get conversation history
     const { data: history } = await supabase
       .from('chat_messages')
       .select('role, content')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
-      .limit(12);
+      .limit(20);
 
-    // Apply deduplication to remove consecutive duplicate assistant messages
-    const rawMessages = history?.map(m => ({
+    const messages = history?.map(m => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
-    })) || [{ role: 'user' as const, content: message }];
+    })) || [{ role: 'user' as const, content: normalizedMessage }];
 
-    // Deduplicate and check for stuck loop
-    let messages = deduplicateHistory(rawMessages);
-    
-    // If AI is stuck in a loop, reset context to only last 2 messages
-    if (detectStuckLoop(messages)) {
-      console.log("⚠️ Detected stuck AI loop - resetting context to last 2 messages");
-      messages = messages.slice(-2);
-    }
-
-    // Extract conversation context for smarter AI responses
-    const conversationContext = extractContext(messages);
-    console.log("📋 Extracted context:", JSON.stringify(conversationContext));
-
-    // Call chatbot edge function with conversation context
+    // === SIMPLE AI FLOW (like web chatbot) ===
     console.log("Calling chatbot function...");
+    
     const chatbotResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
       method: 'POST',
       headers: {
@@ -968,7 +299,6 @@ serve(async (req) => {
         messages,
         session_id: `wa_${phone}`,
         channel: 'whatsapp',
-        conversationContext, // Pass context to AI
       }),
     });
 
@@ -978,125 +308,16 @@ serve(async (req) => {
       throw new Error(`Chatbot error: ${chatbotResponse.status}`);
     }
 
-    let chatbotData = await chatbotResponse.json();
-    console.log("Chatbot response:", JSON.stringify(chatbotData).substring(0, 500));
+    const chatbotData = await chatbotResponse.json();
+    console.log("Chatbot response:", JSON.stringify(chatbotData).substring(0, 300));
 
-    // Parse OpenAI format response: { choices: [{ message: { content: "...", tool_calls: [...] }}] }
     let aiMessage = chatbotData.choices?.[0]?.message;
     let aiResponse = aiMessage?.content || "";
 
-    // Detect room list intent (user asking "ada kamar apa saja" without dates)
-    const roomListIntent = detectRoomListIntent(normalizedMessage);
-    const intent = detectBookingIntent(normalizedMessage);
-    
-    // Force get_all_rooms if user asks about room list but AI didn't call tools
-    if (roomListIntent && !intent.hasDate && !aiMessage?.tool_calls) {
-      console.log(`⚠️ AI didn't use get_all_rooms for room list intent - forcing retry`);
-      
-      const retryMessages = [
-        ...messages,
-        { 
-          role: 'system' as const, 
-          content: `PERINTAH SISTEM: User menanyakan daftar kamar/tipe kamar. WAJIB PANGGIL get_all_rooms SEKARANG untuk menampilkan semua tipe kamar dengan harga! JANGAN TANYA TANGGAL!` 
-        }
-      ];
-      
-      const retryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
-          messages: retryMessages,
-          session_id: `wa_${phone}`,
-          channel: 'whatsapp',
-          conversationContext,
-        }),
-      });
-      
-      if (retryResponse.ok) {
-        chatbotData = await retryResponse.json();
-        aiMessage = chatbotData.choices?.[0]?.message;
-        aiResponse = aiMessage?.content || aiResponse;
-        console.log("Room list retry response:", JSON.stringify(chatbotData).substring(0, 500));
-      }
-    }
-    // Force check_availability if user provides room type + date but AI didn't call tools
-    else if (intent.hasRoomType && intent.hasDate && !aiMessage?.tool_calls) {
-      console.log(`⚠️ AI didn't use tools for booking intent (room: ${intent.roomType}, date: ${intent.dateHint}) - forcing retry`);
-      
-      // Add forcing hint and retry
-      const retryMessages = [
-        ...messages,
-        { 
-          role: 'system' as const, 
-          content: `PERINTAH SISTEM: User sudah menyebut kamar "${intent.roomType}" dan tanggal "${intent.dateHint}". WAJIB PANGGIL check_availability SEKARANG! JANGAN BERTANYA LAGI!` 
-        }
-      ];
-      
-      const retryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
-          messages: retryMessages,
-          session_id: `wa_${phone}`,
-          channel: 'whatsapp',
-          conversationContext,
-        }),
-      });
-      
-      if (retryResponse.ok) {
-        chatbotData = await retryResponse.json();
-        aiMessage = chatbotData.choices?.[0]?.message;
-        aiResponse = aiMessage?.content || aiResponse;
-        console.log("Booking intent retry response:", JSON.stringify(chatbotData).substring(0, 500));
-      }
-    }
-    
-    // Handle follow-up date questions (user asks "kalau tanggal X?" without room type)
-    const followUpIntent = detectFollowUpDateIntent(normalizedMessage);
-    if (followUpIntent.isFollowUp && !aiMessage?.tool_calls && (!aiResponse || aiResponse.trim() === '')) {
-      console.log(`⚠️ Follow-up date question detected: "${followUpIntent.dateHint}" - forcing check_availability for ALL rooms`);
-      
-      const retryMessages = [
-        ...messages,
-        { 
-          role: 'system' as const, 
-          content: `PERINTAH SISTEM: User menanyakan ketersediaan untuk tanggal ALTERNATIF "${followUpIntent.dateHint}". Ini adalah pertanyaan FOLLOW-UP dari percakapan sebelumnya. WAJIB PANGGIL check_availability untuk tanggal yang disebutkan dan tampilkan ketersediaan SEMUA tipe kamar! JANGAN return empty response!` 
-        }
-      ];
-      
-      const retryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
-          messages: retryMessages,
-          session_id: `wa_${phone}`,
-          channel: 'whatsapp',
-          conversationContext,
-        }),
-      });
-      
-      if (retryResponse.ok) {
-        chatbotData = await retryResponse.json();
-        aiMessage = chatbotData.choices?.[0]?.message;
-        aiResponse = aiMessage?.content || aiResponse;
-        console.log("Follow-up date retry response:", JSON.stringify(chatbotData).substring(0, 500));
-      }
-    }
-
-    // Handle tool calls if present
+    // Handle tool calls (like web chatbot)
     if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {
-      console.log("Tool calls detected:", aiMessage.tool_calls.length);
+      console.log(`Tool calls detected: ${aiMessage.tool_calls.length}`);
       
-      // Process each tool call
       const toolResults: any[] = [];
       for (const toolCall of aiMessage.tool_calls) {
         console.log(`Executing tool: ${toolCall.function.name}`);
@@ -1132,7 +353,7 @@ serve(async (req) => {
         }
       }
 
-      // Send tool results back to AI for final response
+      // Get final response from AI with tool results
       console.log("Sending tool results back to chatbot...");
       const finalResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
         method: 'POST',
@@ -1148,264 +369,120 @@ serve(async (req) => {
           ],
           session_id: `wa_${phone}`,
           channel: 'whatsapp',
-          conversationContext,
         }),
       });
 
       if (finalResponse.ok) {
         const finalData = await finalResponse.json();
-        console.log("Final response:", JSON.stringify(finalData).substring(0, 500));
+        console.log("Final response:", JSON.stringify(finalData).substring(0, 300));
         aiResponse = finalData.choices?.[0]?.message?.content || aiResponse;
       } else {
         console.error("Final response error:", await finalResponse.text());
       }
     }
 
-    // Improved fallback with smart context-aware recovery for empty responses
+    // Simple fallback if empty
     if (!aiResponse || aiResponse.trim() === '') {
-      console.log("⚠️ Empty AI response detected - attempting smart recovery...");
-      
-      const recoveryMessages = [
-        ...messages,
-        { 
-          role: 'system' as const, 
-          content: `Pesan user terakhir belum dijawab. Berikan respons yang membantu dan ramah! Jika user menanyakan tanggal, panggil check_availability. Jika tidak jelas, tanyakan dengan sopan apa yang bisa dibantu. Respons dalam Bahasa Indonesia yang natural.` 
-        }
-      ];
-      
-      const recoveryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
-          messages: recoveryMessages,
-          session_id: `wa_${phone}`,
-          channel: 'whatsapp',
-          conversationContext,
-        }),
-      });
-      
-      if (recoveryResponse.ok) {
-        const recoveryData = await recoveryResponse.json();
-        const recoveryContent = recoveryData.choices?.[0]?.message?.content;
-        if (recoveryContent && recoveryContent.trim() !== '') {
-          aiResponse = recoveryContent;
-          console.log("Recovery successful:", aiResponse.substring(0, 100));
-        }
-      }
-      
-      // DIRECT TOOL CALL FALLBACK with INTENT AWARENESS
-      if ((!aiResponse || aiResponse.trim() === '') && conversationContext.parsed_date) {
-        const bookingIntent = detectBookingWithRoom(message);
-        const guestInfo = detectGuestInfo(message);
-        
-        // PRIORITAS 0: Guest info submission - CREATE BOOKING directly!
-        if (guestInfo.hasGuestInfo && (conversationContext.preferred_room || conversationContext.awaiting_guest_info)) {
-          console.log("✅ Guest info detected - creating booking directly!");
-          console.log("Guest info:", JSON.stringify(guestInfo));
-          console.log("Room:", conversationContext.preferred_room);
-          console.log("Dates:", JSON.stringify(conversationContext.parsed_date));
-          
-          const roomName = conversationContext.preferred_room || 'Single';
-          
-          try {
-            const bookingResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({
-                tool_name: 'create_booking_draft',
-                parameters: {
-                  guest_name: guestInfo.name || 'Tamu',
-                  guest_email: guestInfo.email,
-                  guest_phone: guestInfo.phone,
-                  check_in: conversationContext.parsed_date.check_in,
-                  check_out: conversationContext.parsed_date.check_out,
-                  room_name: roomName,
-                  num_guests: guestInfo.guestCount || conversationContext.guest_count || 1,
-                },
-              }),
-            });
-            
-            if (bookingResponse.ok) {
-              const bookingData = await bookingResponse.json();
-              console.log("Booking result:", JSON.stringify(bookingData).substring(0, 300));
-              
-              if (bookingData.error) {
-                aiResponse = `❌ Maaf, booking gagal: ${bookingData.error}\n\nSilakan coba lagi atau hubungi admin.`;
-              } else {
-                const bookingCode = bookingData.booking_code || 'N/A';
-                const totalPrice = bookingData.total_price?.toLocaleString('id-ID') || '0';
-                const checkInFormatted = formatDateIndonesian(conversationContext.parsed_date.check_in);
-                const checkOutFormatted = formatDateIndonesian(conversationContext.parsed_date.check_out);
-                
-                aiResponse = `✅ *Booking Berhasil!*\n\n` +
-                  `📋 Kode Booking: *${bookingCode}*\n` +
-                  `👤 Nama: ${guestInfo.name}\n` +
-                  `📅 Check-in: ${checkInFormatted}\n` +
-                  `📅 Check-out: ${checkOutFormatted}\n` +
-                  `🛏️ Kamar: ${roomName}\n` +
-                  `💰 Total: Rp ${totalPrice}\n\n` +
-                  `Silakan transfer ke rekening hotel dan konfirmasi pembayaran.\n` +
-                  `Terima kasih! 🙏`;
-              }
-            } else {
-              const errorText = await bookingResponse.text();
-              console.error("❌ Booking API failed:", errorText);
-              aiResponse = `❌ Maaf, terjadi kesalahan saat membuat booking. Silakan coba lagi.`;
-            }
-          } catch (err) {
-            console.error("Booking creation error:", err);
-            aiResponse = `❌ Maaf, terjadi kesalahan saat membuat booking. Silakan coba lagi.`;
-          }
-        }
-        // PRIORITAS 1: Booking intent - prompt for guest info
-        else if (bookingIntent.isBooking || conversationContext.last_topic === 'booking') {
-          console.log("⚠️ Booking intent detected - prompting for guest info");
-          
-          const roomName = bookingIntent.roomName || conversationContext.preferred_room || 'kamar yang dipilih';
-          const capitalizedRoom = roomName.charAt(0).toUpperCase() + roomName.slice(1);
-          const checkInFormatted = formatDateIndonesian(conversationContext.parsed_date.check_in);
-          const checkOutFormatted = formatDateIndonesian(conversationContext.parsed_date.check_out);
-          
-          aiResponse = `📝 *Siap memproses booking ${capitalizedRoom}!*\n\n` +
-            `📅 Check-in: ${checkInFormatted}\n` +
-            `📅 Check-out: ${checkOutFormatted}\n\n` +
-            `Untuk melanjutkan, mohon kirimkan:\n` +
-            `1️⃣ Nama lengkap\n` +
-            `2️⃣ Nomor HP/WhatsApp\n` +
-            `3️⃣ Email\n` +
-            `4️⃣ Jumlah tamu\n\n` +
-            `Contoh: "Nama: Budi Santoso, HP: 081234567890, Email: budi@email.com, 2 tamu"`;
-        } 
-        // PRIORITAS 2: Availability check untuk pertanyaan ketersediaan
-        else {
-          console.log("⚠️ AI failed with parsed_date - directly calling check_availability tool");
-          
-          try {
-            const directToolResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({
-                tool_name: 'check_availability',
-                parameters: {
-                  check_in: conversationContext.parsed_date.check_in,
-                  check_out: conversationContext.parsed_date.check_out,
-                  num_guests: conversationContext.guest_count || 2,
-                },
-              }),
-            });
-            
-            if (directToolResponse.ok) {
-              const directToolResult = await directToolResponse.json();
-              console.log("Direct tool result:", JSON.stringify(directToolResult).substring(0, 300));
-              
-              aiResponse = formatAvailabilityResponse(directToolResult, conversationContext.parsed_date);
-              console.log("✅ Direct availability check successful:", aiResponse.substring(0, 100));
-            } else {
-              console.error("❌ Direct tool call failed:", await directToolResponse.text());
-            }
-          } catch (directToolError) {
-            console.error("❌ Direct tool call error:", directToolError);
-          }
-        }
-      }
-      
-      // Final smart fallback based on context
-      if (!aiResponse || aiResponse.trim() === '') {
-        aiResponse = getSmartFallback(message, conversationContext);
-        console.log("Using smart fallback:", aiResponse.substring(0, 100));
-      }
+      console.log("⚠️ Empty AI response - using fallback");
+      aiResponse = "Maaf, saya tidak bisa memproses permintaan Anda saat ini. Silakan coba lagi atau hubungi admin. 🙏";
     }
 
-    // Format response for WhatsApp
-    aiResponse = formatForWhatsApp(aiResponse);
     console.log(`AI Response for ${phone}: "${aiResponse.substring(0, 100)}..."`);
 
-    // Log assistant message with error handling
-    const { error: aiMsgError } = await supabase
-      .from('chat_messages')
-      .insert({
-        conversation_id: conversationId,
-        role: 'assistant',
-        content: aiResponse,
-      });
-    
-    if (aiMsgError) {
-      console.error('❌ Failed to log AI assistant message:', aiMsgError);
-    } else {
-      console.log('✅ AI assistant message logged to DB');
-    }
+    // Log AI response
+    await logMessage(supabase, conversationId, 'assistant', aiResponse);
 
-    // Update session context for future messages
-    await supabase
-      .from('whatsapp_sessions')
-      .update({ 
-        context: conversationContext,
-        last_message_at: new Date().toISOString(),
-      })
-      .eq('phone_number', phone);
+    // Format for WhatsApp and send
+    const formattedResponse = formatForWhatsApp(aiResponse);
+    console.log(`📤 Sending WhatsApp to: ${phone}`);
 
-    // Send response via Fonnte
-    console.log("📤 Sending WhatsApp to:", phone);
-    console.log("📝 Message length:", aiResponse.length);
-    console.log("🔑 API Key exists:", !!FONNTE_API_KEY);
-    
-    const fonntPayload = {
-      target: phone,
-      message: aiResponse,
-      countryCode: "62",
-    };
-    console.log("📦 Fonnte payload:", JSON.stringify(fonntPayload));
-    
-    const sendResponse = await fetch("https://api.fonnte.com/send", {
-      method: "POST",
+    const fonnteSendResponse = await fetch('https://api.fonnte.com/send', {
+      method: 'POST',
       headers: {
-        "Authorization": FONNTE_API_KEY,
-        "Content-Type": "application/json",
+        'Authorization': FONNTE_API_KEY,
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(fonntPayload),
+      body: JSON.stringify({
+        target: phone,
+        message: formattedResponse,
+        countryCode: '62',
+      }),
     });
 
-    const sendResultText = await sendResponse.text();
-    console.log("📨 Fonnte raw response:", sendResultText);
-    console.log("📊 Fonnte status:", sendResponse.status);
-    
-    let sendResult;
-    try {
-      sendResult = JSON.parse(sendResultText);
-      console.log("✅ Fonnte parsed result:", JSON.stringify(sendResult));
-    } catch (e) {
-      console.error("❌ Failed to parse Fonnte response:", sendResultText);
-      sendResult = { error: sendResultText };
-    }
+    const fonnteResult = await fonnteSendResponse.json();
+    console.log("Fonnte result:", JSON.stringify(fonnteResult));
 
-    if (!sendResponse.ok || sendResult.status === false) {
-      console.error("❌ Failed to send WhatsApp:", sendResult);
-    } else {
+    if (fonnteResult.status) {
       console.log("✅ WhatsApp sent successfully");
+    } else {
+      console.error("❌ Fonnte error:", fonnteResult);
     }
 
     return new Response(JSON.stringify({ 
       status: "success",
       conversation_id: conversationId,
-      response_sent: sendResponse.ok,
+      response_length: formattedResponse.length,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
     console.error("WhatsApp webhook error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ 
+      status: "error", 
+      message: error instanceof Error ? error.message : "Unknown error" 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
+
+// Helper: Ensure conversation exists
+async function ensureConversation(supabase: any, session: any, phone: string): Promise<string> {
+  if (session?.conversation_id) return session.conversation_id;
+  
+  const { data: newConv } = await supabase
+    .from('chat_conversations')
+    .insert({ session_id: `wa_${phone}_${Date.now()}`, message_count: 0 })
+    .select()
+    .single();
+  return newConv?.id;
+}
+
+// Helper: Log message to database
+async function logMessage(supabase: any, conversationId: string, role: string, content: string) {
+  if (!conversationId) return;
+  
+  await supabase.from('chat_messages').insert({
+    conversation_id: conversationId,
+    role,
+    content,
+  });
+  
+  // Update message count
+  const { data: conv } = await supabase
+    .from('chat_conversations')
+    .select('message_count')
+    .eq('id', conversationId)
+    .single();
+  
+  await supabase
+    .from('chat_conversations')
+    .update({ message_count: (conv?.message_count || 0) + 1 })
+    .eq('id', conversationId);
+}
+
+// Helper: Update session
+async function updateSession(supabase: any, phone: string, conversationId: string, isTakeover: boolean) {
+  await supabase
+    .from('whatsapp_sessions')
+    .upsert({
+      phone_number: phone,
+      conversation_id: conversationId,
+      last_message_at: new Date().toISOString(),
+      is_active: true,
+      is_takeover: isTakeover,
+      takeover_at: isTakeover ? new Date().toISOString() : null,
+    }, { onConflict: 'phone_number' });
+}
