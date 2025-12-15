@@ -497,9 +497,40 @@ ${dateReferenceContext}
   User: "Oke booking"
   Bot: "Mau pesan kamar apa dan tanggal berapa?" ❌ INI SALAH!
 
+🔢 DURASI PATTERN (SANGAT PENTING!):
+- Jika user bilang "2 malam", "3 malam", "seminggu" dll SETELAH check_availability:
+  → PAHAMI sebagai PERUBAHAN DURASI dari diskusi sebelumnya
+  → Lakukan check_availability BARU dengan durasi yang diminta
+  → Check-in tetap dari tanggal terakhir yang dibahas
+  → JANGAN tanya ulang tanggal!
+
+- CONTOH BENAR:
+  User: "hari ini" → Bot: check_availability 16-17 Des (1 malam)
+  User: "2 malam" → Bot: check_availability 16-18 Des (2 malam) ✅ BENAR!
+
+- CONTOH SALAH:
+  User: "2 malam" → Bot: "tanggal berapa check-in?" ❌ SALAH!
+
+🛏️ PEMILIHAN KAMAR (SANGAT PENTING!):
+- Jika user sebut NAMA KAMAR SPESIFIK setelah check_availability:
+  → PAHAMI sebagai PEMILIHAN kamar untuk booking
+  → LANGSUNG tanya data tamu (nama, email, HP, jumlah tamu)
+  → JANGAN panggil get_room_details!
+
+- CONTOH BENAR:
+  Bot: "Tersedia Single, Deluxe, Family Suite..."
+  User: "family suite"
+  Bot: "Siap Kak! Untuk booking Family Suite, mohon info: nama lengkap, email, nomor HP, dan jumlah tamu" ✅
+
+- CONTOH SALAH:
+  User: "family suite"
+  Bot: get_room_details → "Family Suite adalah kamar luas..." ❌ SALAH!
+
 🚨 TOOLS (WAJIB):
 - "ada kamar apa?" → get_all_rooms
 - kamar + tanggal (termasuk "besok", "lusa", "malam ini") → check_availability
+- "X malam" setelah check_availability → check_availability BARU dengan durasi updated
+- User sebut nama kamar setelah check_availability → LANGSUNG minta data tamu (JANGAN get_room_details!)
 - User konfirmasi ("ya/oke/booking/pesan/lanjut") setelah check_availability → LANGSUNG minta data tamu
 - Data tamu lengkap → create_booking_draft
 - cek/ubah booking → minta kode PMH-XXXXXX + telepon + email
