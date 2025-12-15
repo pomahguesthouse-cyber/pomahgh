@@ -410,12 +410,14 @@ function formatAvailabilityResponse(data: any, parsedDate: any): string {
   if (data.available_rooms && data.available_rooms.length > 0) {
     let response = `✅ *Ketersediaan ${dateDesc}*\n📅 ${checkIn}${checkOut ? ` - ${checkOut}` : ''}\n\n`;
     
-    for (const room of data.available_rooms) {
-      const price = typeof room.price === 'number' ? room.price.toLocaleString('id-ID') : room.price;
-      response += `🛏️ *${room.name}*\n`;
-      response += `   ${room.available} unit tersedia\n`;
-      response += `   Rp ${price}/malam\n\n`;
-    }
+  for (const room of data.available_rooms) {
+    const availableCount = room.available_count ?? room.available ?? 0;
+    const pricePerNight = room.price_per_night ?? room.price ?? 0;
+    const formattedPrice = typeof pricePerNight === 'number' ? pricePerNight.toLocaleString('id-ID') : pricePerNight;
+    response += `🛏️ *${room.name}*\n`;
+    response += `   ${availableCount} unit tersedia\n`;
+    response += `   Rp ${formattedPrice}/malam\n\n`;
+  }
     
     response += `Mau booking yang mana? 😊\nKetik: "booking [nama kamar]"`;
     return response;
