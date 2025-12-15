@@ -381,10 +381,15 @@ serve(async (req) => {
       }
     }
 
-    // Simple fallback if empty
+    // Smart fallback if empty - detect if it was a greeting
     if (!aiResponse || aiResponse.trim() === '') {
-      console.log("⚠️ Empty AI response - using fallback");
-      aiResponse = "Maaf, saya tidak bisa memproses permintaan Anda saat ini. Silakan coba lagi atau hubungi admin. 🙏";
+      console.log("⚠️ Empty AI response - checking for greeting fallback");
+      const greetingPattern = /^(p|pagi|siang|sore|malam|halo|hai|hi|hello|hallo|selamat|tes|test)/i;
+      if (greetingPattern.test(normalizedMessage)) {
+        aiResponse = "Halo! 👋 Saya Rani dari Pomah Guesthouse. Ada yang bisa saya bantu?\n\nMau cek ketersediaan kamar atau ada pertanyaan lain? 🏨";
+      } else {
+        aiResponse = "Maaf, saya tidak bisa memproses permintaan Anda saat ini. Silakan coba lagi atau hubungi admin. 🙏";
+      }
     }
 
     console.log(`AI Response for ${phone}: "${aiResponse.substring(0, 100)}..."`);
