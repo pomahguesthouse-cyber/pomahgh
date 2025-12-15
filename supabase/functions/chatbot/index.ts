@@ -439,14 +439,23 @@ serve(async (req) => {
     // Build conversation context string
     let contextString = '';
     let parsedDateContext = '';
+    let explicitToolInstruction = '';
     if (conversationContext) {
       const ctx = conversationContext;
       const parts = [];
       if (ctx.guest_name) parts.push(`Nama tamu: ${ctx.guest_name}`);
       if (ctx.preferred_room) parts.push(`Kamar diminati: ${ctx.preferred_room}`);
-      if (ctx.dates) parts.push(`Tanggal: ${ctx.dates}`);
+      
+      // Use check_in_date and check_out_date from context (extracted from conversation)
+      if (ctx.check_in_date && ctx.check_out_date) {
+        parts.push(`Check-in: ${ctx.check_in_date} | Check-out: ${ctx.check_out_date}`);
+      } else if (ctx.dates_mentioned) {
+        parts.push(`Tanggal (text): ${ctx.dates_mentioned}`);
+      }
+      
       if (ctx.guest_count) parts.push(`Tamu: ${ctx.guest_count} orang`);
       if (ctx.sentiment) parts.push(`Mood: ${ctx.sentiment}`);
+      if (ctx.awaiting_guest_data) parts.push(`⚠️ MENUNGGU DATA TAMU UNTUK BOOKING`);
       
       // Include parsed relative date context
       if (ctx.parsed_date) {
@@ -456,6 +465,26 @@ serve(async (req) => {
       
       if (parts.length > 0) {
         contextString = `\n📋 KONTEKS:\n${parts.join(' | ')}`;
+      }
+      
+      // Add explicit tool call instruction when awaiting guest data
+      if (ctx.awaiting_guest_data && ctx.preferred_room && ctx.check_in_date && ctx.check_out_date) {
+        explicitToolInstruction = `
+
+🚨🚨🚨 INSTRUKSI WAJIB - BACA INI! 🚨🚨🚨
+STATUS: Sedang menunggu data tamu untuk booking ${ctx.preferred_room}
+TANGGAL TERSIMPAN: Check-in ${ctx.check_in_date}, Check-out ${ctx.check_out_date}
+
+JIKA USER MEMBERIKAN DATA TAMU (nama/email/HP/jumlah):
+→ LANGSUNG PANGGIL create_booking_draft TANPA BALAS TEXT DULU!
+→ Parameter yang WAJIB digunakan:
+   - room_name: "${ctx.preferred_room}"
+   - check_in: "${ctx.check_in_date}"
+   - check_out: "${ctx.check_out_date}"
+   - guest_name, guest_email, guest_phone, num_guests dari pesan user
+
+❌ JANGAN: Balas "Terima kasih, akan diproses" atau "Mohon tunggu"
+✅ LANGSUNG: Panggil tool create_booking_draft!`;
       }
     }
 
@@ -470,7 +499,7 @@ serve(async (req) => {
     const systemPrompt = `${personaPrompt}
 
 📅 TANGGAL: ${currentDateIndonesian} (${currentDateISO}) | Sekarang ${timeGreeting} | TAHUN: ${now.getFullYear()}
-${contextString}${parsedDateContext}
+${contextString}${parsedDateContext}${explicitToolInstruction}
 
 ${dateReferenceContext}
 
