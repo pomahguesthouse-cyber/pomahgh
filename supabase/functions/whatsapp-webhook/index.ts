@@ -6,6 +6,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Indonesian month names for date formatting
+const INDONESIAN_MONTHS = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+// Helper function to format date in Indonesian (e.g., "15 Januari 2025")
+function formatDateIndonesian(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const day = date.getDate();
+    const month = INDONESIAN_MONTHS[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  } catch {
+    return dateStr;
+  }
+}
+
 // Rate limiter: track messages per phone number
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 10; // max messages
@@ -517,6 +537,52 @@ function detectBookingIntent(message: string): {
     dateHint: dateMatch?.[0]
   };
 }
+// Format availability response from tool result
+function formatAvailabilityResponse(data: any, parsedDate: any): string {
+  const dateDesc = parsedDate?.description || 'tanggal yang dipilih';
+  const checkIn = parsedDate?.check_in ? formatDateIndonesian(parsedDate.check_in) : '';
+  const checkOut = parsedDate?.check_out ? formatDateIndonesian(parsedDate.check_out) : '';
+  
+  // Handle tool error
+  if (data.error) {
+    return `❌ Maaf, terjadi kesalahan saat cek ketersediaan: ${data.error}\n\nSilakan coba lagi atau hubungi admin 😊`;
+  }
+  
+  // Handle available_rooms format
+  if (data.available_rooms && data.available_rooms.length > 0) {
+    let response = `✅ *Ketersediaan ${dateDesc}*\n📅 ${checkIn}${checkOut ? ` - ${checkOut}` : ''}\n\n`;
+    
+    for (const room of data.available_rooms) {
+      const price = typeof room.price === 'number' ? room.price.toLocaleString('id-ID') : room.price;
+      response += `🛏️ *${room.name}*\n`;
+      response += `   ${room.available} unit tersedia\n`;
+      response += `   Rp ${price}/malam\n\n`;
+    }
+    
+    response += `Mau booking yang mana? 😊\nKetik: "booking [nama kamar]"`;
+    return response;
+  }
+  
+  // Handle rooms format (alternative structure)
+  if (data.rooms && data.rooms.length > 0) {
+    let response = `✅ *Ketersediaan ${dateDesc}*\n📅 ${checkIn}${checkOut ? ` - ${checkOut}` : ''}\n\n`;
+    
+    for (const room of data.rooms) {
+      if (room.available_count > 0) {
+        const price = typeof room.price_per_night === 'number' ? room.price_per_night.toLocaleString('id-ID') : room.price_per_night;
+        response += `🛏️ *${room.name}*\n`;
+        response += `   ${room.available_count} unit tersedia\n`;
+        response += `   Rp ${price}/malam\n\n`;
+      }
+    }
+    
+    response += `Mau booking yang mana? 😊\nKetik: "booking [nama kamar]"`;
+    return response;
+  }
+  
+  // No rooms available
+  return `❌ Maaf, tidak ada kamar tersedia untuk *${dateDesc}* (${checkIn}).\n\nMau cek tanggal lain? 😊`;
+}
 
 // Smart fallback based on context and sentiment
 function getSmartFallback(message: string, context: Record<string, any>): string {
@@ -533,8 +599,20 @@ function getSmartFallback(message: string, context: Record<string, any>): string
     opener = 'Baik, saya bantu segera! 🏃\n\n';
   }
   
-  // Context-aware response
-  if (context.last_topic === 'availability' || lowerMsg.includes('tanggal') || lowerMsg.includes('kapan')) {
+  // If parsed_date exists, this means user mentioned relative date - signal that we detected it
+  if (context.parsed_date) {
+    const dateDesc = context.parsed_date.description || 'tanggal tersebut';
+    return opener + `📅 Saya mendeteksi Anda ingin cek kamar untuk *${dateDesc}*.\n\nMohon tunggu, saya cek ketersediaannya... 🔍`;
+  }
+  
+  // Context-aware response with relative date detection
+  if (context.last_topic === 'availability' || 
+      lowerMsg.includes('tanggal') || 
+      lowerMsg.includes('kapan') ||
+      lowerMsg.includes('malam ini') ||
+      lowerMsg.includes('hari ini') ||
+      lowerMsg.includes('besok') ||
+      lowerMsg.includes('lusa')) {
     return opener + '📅 Untuk cek ketersediaan, mohon sebutkan:\n\n1️⃣ Tanggal check-in (contoh: 15 Januari)\n2️⃣ Tanggal check-out (contoh: 17 Januari)\n3️⃣ Jumlah tamu\n\nContoh: "cek kamar 15-17 Januari untuk 2 orang"';
   }
   
@@ -1209,6 +1287,42 @@ serve(async (req) => {
         if (recoveryContent && recoveryContent.trim() !== '') {
           aiResponse = recoveryContent;
           console.log("Recovery successful:", aiResponse.substring(0, 100));
+        }
+      }
+      
+      // DIRECT TOOL CALL FALLBACK: If AI still fails but we have parsed_date, bypass AI entirely
+      if ((!aiResponse || aiResponse.trim() === '') && conversationContext.parsed_date) {
+        console.log("⚠️ AI failed with parsed_date - directly calling check_availability tool");
+        
+        try {
+          const directToolResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              tool_name: 'check_availability',
+              parameters: {
+                check_in: conversationContext.parsed_date.check_in,
+                check_out: conversationContext.parsed_date.check_out,
+                num_guests: conversationContext.guest_count || 2,
+              },
+            }),
+          });
+          
+          if (directToolResponse.ok) {
+            const directToolResult = await directToolResponse.json();
+            console.log("Direct tool result:", JSON.stringify(directToolResult).substring(0, 300));
+            
+            // Format the tool result directly as the response
+            aiResponse = formatAvailabilityResponse(directToolResult, conversationContext.parsed_date);
+            console.log("✅ Direct availability check successful:", aiResponse.substring(0, 100));
+          } else {
+            console.error("❌ Direct tool call failed:", await directToolResponse.text());
+          }
+        } catch (directToolError) {
+          console.error("❌ Direct tool call error:", directToolError);
         }
       }
       
