@@ -154,6 +154,29 @@ export const useBookingValidation = () => {
       return { availableRooms: [] };
     }
 
+    const unavailableRoomNumbers = new Set<string>();
+
+    // Check blocked dates (room_unavailable_dates)
+    const { data: blockedDates, error: blockedError } = await supabase
+      .from("room_unavailable_dates")
+      .select("room_number, unavailable_date")
+      .eq("room_id", roomId)
+      .gte("unavailable_date", checkInStr)
+      .lt("unavailable_date", checkOutStr);
+
+    if (blockedError) {
+      console.error("Error checking blocked dates:", blockedError);
+    } else {
+      (blockedDates || []).forEach((bd) => {
+        if (!bd.room_number) {
+          // If no specific room_number, block all rooms of this type
+          room.room_numbers.forEach(rn => unavailableRoomNumbers.add(rn));
+        } else {
+          unavailableRoomNumbers.add(bd.room_number);
+        }
+      });
+    }
+
     // Query overlapping bookings from direct allocations
     const { data: directBookings, error: directError } = await supabase
       .from("bookings")
@@ -164,7 +187,13 @@ export const useBookingValidation = () => {
 
     if (directError) {
       console.error("Error checking room type availability:", directError);
-      return { availableRooms: room.room_numbers };
+    } else {
+      (directBookings || []).forEach((b: any) => {
+        if (excludeBookingId && b.id === excludeBookingId) return;
+        if (b.allocated_room_number) {
+          unavailableRoomNumbers.add(b.allocated_room_number);
+        }
+      });
     }
 
     // Query overlapping bookings from booking_rooms table
@@ -179,36 +208,22 @@ export const useBookingValidation = () => {
 
     if (bookingRoomsError) {
       console.error("Error checking booking_rooms availability:", bookingRoomsError);
+    } else {
+      // Filter booking_rooms for overlapping dates
+      (bookingRoomsData || []).forEach((br: any) => {
+        const booking = br.bookings;
+        if (!booking || booking.status === "cancelled") return;
+        if (excludeBookingId && booking.id === excludeBookingId) return;
+        if (booking.check_in <= checkOutStr && booking.check_out >= checkInStr) {
+          if (br.room_number) {
+            unavailableRoomNumbers.add(br.room_number);
+          }
+        }
+      });
     }
 
-    // Filter booking_rooms for overlapping dates
-    const overlappingBookingRooms = (bookingRoomsData || []).filter((br: any) => {
-      const booking = br.bookings;
-      if (!booking || booking.status === "cancelled") return false;
-      return booking.check_in <= checkOutStr && booking.check_out >= checkInStr;
-    });
-
-    // Collect all booked room numbers (excluding current booking if updating)
-    const bookedRoomNumbers = new Set<string>();
-
-    // From direct bookings
-    (directBookings || []).forEach((b: any) => {
-      if (excludeBookingId && b.id === excludeBookingId) return;
-      if (b.allocated_room_number) {
-        bookedRoomNumbers.add(b.allocated_room_number);
-      }
-    });
-
-    // From booking_rooms
-    overlappingBookingRooms.forEach((br: any) => {
-      if (excludeBookingId && br.bookings?.id === excludeBookingId) return;
-      if (br.room_number) {
-        bookedRoomNumbers.add(br.room_number);
-      }
-    });
-
     const availableRooms = room.room_numbers.filter(
-      rn => !bookedRoomNumbers.has(rn)
+      rn => !unavailableRoomNumbers.has(rn)
     );
 
     return { availableRooms };
