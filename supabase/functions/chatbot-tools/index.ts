@@ -226,6 +226,7 @@ serve(async (req) => {
           return {
             name: room.name,
             available_count: availableCount,
+            status: availableCount > 0 ? 'tersedia' : 'HABIS',
             price_per_night: room.price_per_night,
             max_guests: room.max_guests,
             max_extra_beds: maxExtraBeds,
@@ -233,14 +234,22 @@ serve(async (req) => {
             description: room.description,
             suitable: num_guests ? num_guests <= maxGuestsWithExtraBed : true
           };
-        }).filter(r => r.available_count > 0);
+        });
+        
+        // Separate available and sold out rooms for clearer AI response
+        const availableRoomsList = availableRooms.filter(r => r.available_count > 0);
+        const soldOutRooms = availableRooms.filter(r => r.available_count === 0);
 
         result = {
           check_in: formatDateIndonesian(check_in),
           check_out: formatDateIndonesian(check_out),
           check_in_raw: check_in,
           check_out_raw: check_out,
-          available_rooms: availableRooms
+          available_rooms: availableRoomsList,
+          sold_out_rooms: soldOutRooms.map(r => r.name),
+          message: soldOutRooms.length > 0 
+            ? `Kamar yang HABIS untuk tanggal ini: ${soldOutRooms.map(r => r.name).join(', ')}`
+            : null
         };
         break;
       }
