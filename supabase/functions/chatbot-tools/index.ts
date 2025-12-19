@@ -257,14 +257,6 @@ serve(async (req) => {
       case "get_room_details": {
         const { room_name } = parameters;
         
-        // Normalize room name by removing common words
-        const normalizeRoomName = (name: string) => {
-          return name
-            .toLowerCase()
-            .replace(/\b(room|kamar|suite)\b/gi, '')
-            .trim();
-        };
-
         // Get all available rooms
         const { data: allRooms, error: roomsError } = await supabase
           .from("rooms")
@@ -273,13 +265,52 @@ serve(async (req) => {
 
         if (roomsError) throw roomsError;
 
+        // Smart room matching with priority order
+        const findBestRoomMatch = (searchName: string, rooms: any[]): any | null => {
+          const normalizeRoomName = (name: string) => {
+            return name
+              .toLowerCase()
+              .replace(/\b(room|kamar|suite)\b/gi, '')
+              .trim();
+          };
+          
+          const normalizedSearch = normalizeRoomName(searchName);
+          console.log(`Room matching: searching for "${searchName}" -> normalized: "${normalizedSearch}"`);
+          
+          // Priority 1: Exact match
+          const exactMatch = rooms.find(r => 
+            normalizeRoomName(r.name) === normalizedSearch
+          );
+          if (exactMatch) {
+            console.log(`Room matching: EXACT match found -> "${exactMatch.name}"`);
+            return exactMatch;
+          }
+          
+          // Priority 2: Starts with (e.g., "deluxe" matches "deluxe room" but NOT "grand deluxe")
+          const startsWithMatch = rooms.find(r => 
+            normalizeRoomName(r.name).startsWith(normalizedSearch)
+          );
+          if (startsWithMatch) {
+            console.log(`Room matching: STARTS WITH match found -> "${startsWithMatch.name}"`);
+            return startsWithMatch;
+          }
+          
+          // Priority 3: Contains (fallback for partial matches like "grand" -> "grand deluxe")
+          const containsMatch = rooms.find(r => {
+            const normalized = normalizeRoomName(r.name);
+            return normalized.includes(normalizedSearch) || normalizedSearch.includes(normalized);
+          });
+          if (containsMatch) {
+            console.log(`Room matching: CONTAINS match found -> "${containsMatch.name}"`);
+            return containsMatch;
+          }
+          
+          console.log(`Room matching: NO match found for "${searchName}"`);
+          return null;
+        };
+
         // Find best matching room
-        const normalizedSearchName = normalizeRoomName(room_name);
-        const room = allRooms?.find(r => {
-          const normalizedRoomName = normalizeRoomName(r.name);
-          return normalizedRoomName.includes(normalizedSearchName) || 
-                 normalizedSearchName.includes(normalizedRoomName);
-        });
+        const room = findBestRoomMatch(room_name, allRooms || []);
 
         if (!room) {
           const roomList = allRooms?.map(r => r.name).join(", ") || "none";
@@ -340,14 +371,6 @@ serve(async (req) => {
           throw new Error("Mohon pilih minimal satu kamar untuk booking");
         }
         
-        // Normalize room name by removing common words
-        const normalizeRoomName = (name: string) => {
-          return name
-            .toLowerCase()
-            .replace(/\b(room|kamar|suite)\b/gi, '')
-            .trim();
-        };
-
         // Get all available rooms
         const { data: allRooms, error: roomsError } = await supabase
           .from("rooms")
@@ -358,6 +381,50 @@ serve(async (req) => {
           console.error("Rooms fetch error:", roomsError);
           throw new Error(`Error fetching rooms: ${roomsError.message}`);
         }
+
+        // Smart room matching with priority order
+        const findBestRoomMatch = (searchName: string, rooms: any[]): any | null => {
+          const normalizeRoomName = (name: string) => {
+            return name
+              .toLowerCase()
+              .replace(/\b(room|kamar|suite)\b/gi, '')
+              .trim();
+          };
+          
+          const normalizedSearch = normalizeRoomName(searchName);
+          console.log(`Room matching: searching for "${searchName}" -> normalized: "${normalizedSearch}"`);
+          
+          // Priority 1: Exact match
+          const exactMatch = rooms.find(r => 
+            normalizeRoomName(r.name) === normalizedSearch
+          );
+          if (exactMatch) {
+            console.log(`Room matching: EXACT match found -> "${exactMatch.name}"`);
+            return exactMatch;
+          }
+          
+          // Priority 2: Starts with (e.g., "deluxe" matches "deluxe room" but NOT "grand deluxe")
+          const startsWithMatch = rooms.find(r => 
+            normalizeRoomName(r.name).startsWith(normalizedSearch)
+          );
+          if (startsWithMatch) {
+            console.log(`Room matching: STARTS WITH match found -> "${startsWithMatch.name}"`);
+            return startsWithMatch;
+          }
+          
+          // Priority 3: Contains (fallback for partial matches like "grand" -> "grand deluxe")
+          const containsMatch = rooms.find(r => {
+            const normalized = normalizeRoomName(r.name);
+            return normalized.includes(normalizedSearch) || normalizedSearch.includes(normalized);
+          });
+          if (containsMatch) {
+            console.log(`Room matching: CONTAINS match found -> "${containsMatch.name}"`);
+            return containsMatch;
+          }
+          
+          console.log(`Room matching: NO match found for "${searchName}"`);
+          return null;
+        };
 
         // Match and validate each room selection
         const matchedRooms: Array<{
@@ -372,12 +439,8 @@ serve(async (req) => {
         const roomsSummary: string[] = [];
 
         for (const selection of roomsToBook) {
-          // Find matching room
-          const normalizedSearch = normalizeRoomName(selection.room_name);
-          const room = allRooms?.find(r => {
-            const normalized = normalizeRoomName(r.name);
-            return normalized.includes(normalizedSearch) || normalizedSearch.includes(normalized);
-          });
+          // Find matching room using smart matching
+          const room = findBestRoomMatch(selection.room_name, allRooms || []);
 
           if (!room) {
             const roomList = allRooms?.map(r => r.name).join(", ") || "none";
