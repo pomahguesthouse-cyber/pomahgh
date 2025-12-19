@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useRoomDetail } from "@/hooks/useRoomDetail";
+import NotFound from "./NotFound";
 import { useRooms } from "@/hooks/useRooms";
 import { useRoomFeatures } from "@/hooks/useRoomFeatures";
 import { useRoomHotspots } from "@/hooks/useRoomHotspots";
@@ -70,7 +71,7 @@ const RoomDetail = () => {
   }
 
   if (error || !room) {
-    return <Navigate to="/404" replace />;
+    return <NotFound />;
   }
 
   const images = room.image_urls && room.image_urls.length > 0 
