@@ -41,6 +41,7 @@ interface BookingDetailDialogProps {
   availableRoomNumbers: string[];
   onRoomTypeChange: (roomId: string) => void;
   isUpdating: boolean;
+  defaultEditMode?: boolean;
 }
 
 export const BookingDetailDialog = ({
@@ -52,6 +53,7 @@ export const BookingDetailDialog = ({
   availableRoomNumbers,
   onRoomTypeChange,
   isUpdating,
+  defaultEditMode = false,
 }: BookingDetailDialogProps) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
@@ -71,11 +73,11 @@ export const BookingDetailDialog = ({
     booking?.id
   );
 
-  // Initialize from booking prop - always start in view mode (manual click only)
+  // Initialize from booking prop - use defaultEditMode prop
   useEffect(() => {
     if (booking) {
       setEditedBooking(booking);
-      setIsEditMode(false);
+      setIsEditMode(defaultEditMode);
       
       // Initialize editedRooms from booking_rooms or fallback to single room
       if (booking.booking_rooms && booking.booking_rooms.length > 0) {
@@ -95,7 +97,7 @@ export const BookingDetailDialog = ({
         }]);
       }
     }
-  }, [booking?.id, rooms]);
+  }, [booking?.id, rooms, defaultEditMode]);
   
   // Toggle room selection (similar to CreateBookingDialog)
   const toggleRoomSelection = (roomId: string, roomNumber: string, pricePerNight: number) => {
