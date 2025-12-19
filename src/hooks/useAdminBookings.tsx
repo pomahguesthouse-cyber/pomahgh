@@ -120,17 +120,38 @@ export const useAdminBookings = () => {
         }
       }
 
+      // Extract booking_rooms from the booking object before updating main table
+      const { booking_rooms, rooms, ...bookingData } = booking as any;
+
       const { data, error } = await supabase
         .from("bookings")
-        .update(booking)
+        .update(bookingData)
         .eq("id", booking.id)
         .select()
         .single();
 
       if (error) throw error;
 
-      // Sync booking_rooms table if room_id or allocated_room_number changed
-      if (booking.room_id || booking.allocated_room_number) {
+      // Update each booking_room individually if booking_rooms array is provided
+      if (booking_rooms && Array.isArray(booking_rooms) && booking_rooms.length > 0) {
+        for (const br of booking_rooms) {
+          if (br.id) {
+            const { error: brError } = await supabase
+              .from("booking_rooms")
+              .update({
+                room_id: br.room_id,
+                room_number: br.room_number,
+                price_per_night: br.price_per_night
+              })
+              .eq("id", br.id);
+            
+            if (brError) {
+              console.error("Error updating booking_room:", brError);
+            }
+          }
+        }
+      } else if (bookingData.room_id || bookingData.allocated_room_number) {
+        // Fallback: Sync booking_rooms table for legacy single-room bookings
         const { data: existingRooms } = await supabase
           .from("booking_rooms")
           .select("*")
@@ -138,11 +159,11 @@ export const useAdminBookings = () => {
 
         if (existingRooms && existingRooms.length > 0) {
           const updateData: any = {};
-          if (booking.allocated_room_number) {
-            updateData.room_number = booking.allocated_room_number;
+          if (bookingData.allocated_room_number) {
+            updateData.room_number = bookingData.allocated_room_number;
           }
-          if (booking.room_id) {
-            updateData.room_id = booking.room_id;
+          if (bookingData.room_id) {
+            updateData.room_id = bookingData.room_id;
           }
           
           await supabase
