@@ -57,6 +57,12 @@ const AdminBookings = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string>("");
+  const [editedRooms, setEditedRooms] = useState<Array<{
+    id?: string;
+    roomId: string;
+    roomNumber: string;
+    pricePerNight: number;
+  }>>([]);
   const [alternativeSuggestions, setAlternativeSuggestions] = useState<RoomTypeAvailability[]>([]);
   const [showAlternativeDialog, setShowAlternativeDialog] = useState(false);
   
@@ -163,6 +169,23 @@ const AdminBookings = () => {
     const room = rooms?.find(r => r.id === booking.room_id);
     setAvailableRoomNumbers(room?.room_numbers || []);
     
+    // Initialize editedRooms from booking_rooms
+    if (booking.booking_rooms && booking.booking_rooms.length > 0) {
+      setEditedRooms(booking.booking_rooms.map((br: any) => ({
+        id: br.id,
+        roomId: br.room_id,
+        roomNumber: br.room_number,
+        pricePerNight: br.price_per_night || 0
+      })));
+    } else {
+      // Fallback for legacy single-room bookings
+      setEditedRooms([{
+        roomId: booking.room_id,
+        roomNumber: booking.allocated_room_number || '',
+        pricePerNight: room?.price_per_night || 0
+      }]);
+    }
+    
     // Check if this booking has custom price
     const totalNights = Math.ceil(
       (new Date(booking.check_out).getTime() - new Date(booking.check_in).getTime()) 
@@ -190,6 +213,15 @@ const AdminBookings = () => {
     setOtherSourceEdit(booking.other_source || "");
     
     setEditDialogOpen(true);
+  };
+
+  const toggleRoomSelection = (roomId: string, roomNumber: string, pricePerNight: number) => {
+    const exists = editedRooms.find(r => r.roomId === roomId && r.roomNumber === roomNumber);
+    if (exists) {
+      setEditedRooms(editedRooms.filter(r => !(r.roomId === roomId && r.roomNumber === roomNumber)));
+    } else {
+      setEditedRooms([...editedRooms, { roomId, roomNumber, pricePerNight }]);
+    }
   };
 
   const handleRoomTypeChange = async (newRoomId: string) => {
@@ -306,13 +338,19 @@ const AdminBookings = () => {
 
   const handleSaveEdit = () => {
     if (editingBooking) {
+      // Validate at least one room selected
+      if (editedRooms.length === 0) {
+        toast.error("Pilih minimal satu kamar");
+        return;
+      }
+
       const totalNights = Math.ceil(
         (new Date(editingBooking.check_out).getTime() - new Date(editingBooking.check_in).getTime()) 
         / (1000 * 60 * 60 * 24)
       );
       
       // Calculate total price based on mode
-      const room = rooms?.find(r => r.id === editingBooking.room_id);
+      const room = rooms?.find(r => r.id === editedRooms[0].roomId);
       let totalPrice = 0;
       
       if (useCustomPriceEdit) {
@@ -326,7 +364,7 @@ const AdminBookings = () => {
             toast.error("Harga per malam minimal Rp 10.000");
             return;
           }
-          totalPrice = totalNights * pricePerNight;
+          totalPrice = totalNights * pricePerNight * editedRooms.length;
         } else if (pricingModeEdit === "total" && customTotalPriceEdit) {
           const customTotal = parseFloat(customTotalPriceEdit);
           if (isNaN(customTotal) || customTotal <= 0) {
@@ -343,9 +381,11 @@ const AdminBookings = () => {
           return;
         }
       } else {
-        // Use normal price
-        const pricePerNight = room?.price_per_night || 0;
-        totalPrice = totalNights * pricePerNight;
+        // Calculate total price from all selected rooms
+        totalPrice = editedRooms.reduce((sum, r) => {
+          const roomData = rooms?.find(rm => rm.id === r.roomId);
+          return sum + (roomData?.price_per_night || 0) * totalNights;
+        }, 0);
       }
       
       // Validate booking source conditional fields
@@ -361,7 +401,7 @@ const AdminBookings = () => {
       
       updateBooking({
         id: editingBooking.id,
-        room_id: editingBooking.room_id,
+        room_id: editedRooms[0].roomId,
         guest_name: editingBooking.guest_name,
         guest_email: editingBooking.guest_email,
         guest_phone: editingBooking.guest_phone,
@@ -372,7 +412,7 @@ const AdminBookings = () => {
         num_guests: editingBooking.num_guests,
         total_nights: totalNights,
         total_price: totalPrice,
-        allocated_room_number: editingBooking.allocated_room_number,
+        allocated_room_number: editedRooms[0].roomNumber,
         special_requests: editingBooking.special_requests,
         status: editingBooking.status,
         payment_status: editingBooking.payment_status,
@@ -380,6 +420,7 @@ const AdminBookings = () => {
         booking_source: bookingSourceEdit,
         ota_name: bookingSourceEdit === "ota" ? otaNameEdit : null,
         other_source: bookingSourceEdit === "other" ? otherSourceEdit : null,
+        editedRooms: editedRooms,
       });
       setEditDialogOpen(false);
     }
@@ -992,46 +1033,70 @@ const AdminBookings = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Number of Guests</Label>
-                  <Input type="number" min="1" value={editingBooking.num_guests} onChange={e => setEditingBooking({
+              <div>
+                <Label>Number of Guests</Label>
+                <Input type="number" min="1" value={editingBooking.num_guests} onChange={e => setEditingBooking({
                 ...editingBooking,
                 num_guests: parseInt(e.target.value)
               })} />
-                </div>
-                <div>
-                  <Label>Tipe Kamar</Label>
-                  <Select value={selectedRoomId} onValueChange={handleRoomTypeChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih tipe kamar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rooms?.map(room => (
-                        <SelectItem key={room.id} value={room.id}>
-                          {room.name} - Rp {room.price_per_night?.toLocaleString("id-ID")}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
-              <div>
-                <Label>Nomor Kamar</Label>
-                <Select value={editingBooking.allocated_room_number || ""} onValueChange={value => setEditingBooking({
-              ...editingBooking,
-              allocated_room_number: value
-            })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih nomor kamar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableRoomNumbers.map(roomNum => <SelectItem key={roomNum} value={roomNum}>
-                        {roomNum}
-                      </SelectItem>)}
-                  </SelectContent>
-                </Select>
+              {/* Grid-based Room Selector */}
+              <div className="space-y-3">
+                <Label>Kamar yang Dipesan (Klik untuk pilih/hapus)</Label>
+                <div className="border rounded-lg p-3 space-y-3 max-h-[250px] overflow-y-auto">
+                  {rooms?.map((room) => (
+                    <div key={room.id} className="space-y-2">
+                      <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                        <span className="font-medium text-sm">{room.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Rp {room.price_per_night?.toLocaleString("id-ID")}/malam
+                        </span>
+                      </div>
+                      {room.room_numbers && room.room_numbers.length > 0 && (
+                        <div className="grid grid-cols-4 gap-2 pl-4">
+                          {room.room_numbers.map((roomNum: string) => {
+                            const isSelected = editedRooms.some(
+                              r => r.roomId === room.id && r.roomNumber === roomNum
+                            );
+                            return (
+                              <button
+                                key={roomNum}
+                                type="button"
+                                onClick={() => toggleRoomSelection(room.id, roomNum, room.price_per_night)}
+                                className={cn(
+                                  "px-3 py-2 text-xs rounded border transition-colors",
+                                  isSelected
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-background hover:bg-muted border-border"
+                                )}
+                              >
+                                {roomNum}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Selected rooms badge display */}
+                {editedRooms.length > 0 && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                    <p className="text-sm font-medium mb-2">Kamar Terpilih ({editedRooms.length}):</p>
+                    <div className="flex flex-wrap gap-2">
+                      {editedRooms.map((room, idx) => {
+                        const roomData = rooms?.find(r => r.id === room.roomId);
+                        return (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {room.roomNumber} ({roomData?.name || "-"})
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
