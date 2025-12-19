@@ -94,7 +94,7 @@ export const useAdminBookings = () => {
   });
 
   const updateBooking = useMutation({
-    mutationFn: async (booking: Partial<Booking> & { id: string }) => {
+    mutationFn: async (booking: Partial<Booking> & { id: string; editedRooms?: Array<{ id?: string; roomId: string; roomNumber: string; pricePerNight: number }> }) => {
       // Check for conflicts if dates/room changed
       if (booking.check_in || booking.check_out || booking.allocated_room_number) {
         const { data: currentBooking } = await supabase
@@ -120,8 +120,8 @@ export const useAdminBookings = () => {
         }
       }
 
-      // Extract booking_rooms from the booking object before updating main table
-      const { booking_rooms, rooms, ...bookingData } = booking as any;
+      // Extract editedRooms, booking_rooms, and rooms from the booking object before updating main table
+      const { editedRooms, booking_rooms, rooms, ...bookingData } = booking as any;
 
       const { data, error } = await supabase
         .from("bookings")
@@ -132,8 +132,35 @@ export const useAdminBookings = () => {
 
       if (error) throw error;
 
-      // Update each booking_room individually if booking_rooms array is provided
-      if (booking_rooms && Array.isArray(booking_rooms) && booking_rooms.length > 0) {
+      // Handle editedRooms (from grid selector) - delete and re-insert approach
+      if (editedRooms && Array.isArray(editedRooms) && editedRooms.length > 0) {
+        // Delete existing booking_rooms
+        const { error: deleteError } = await supabase
+          .from("booking_rooms")
+          .delete()
+          .eq("booking_id", booking.id);
+        
+        if (deleteError) {
+          console.error("Error deleting booking_rooms:", deleteError);
+        }
+
+        // Insert new booking_rooms
+        const bookingRoomsData = editedRooms.map(room => ({
+          booking_id: booking.id,
+          room_id: room.roomId,
+          room_number: room.roomNumber,
+          price_per_night: room.pricePerNight
+        }));
+
+        const { error: insertError } = await supabase
+          .from("booking_rooms")
+          .insert(bookingRoomsData);
+        
+        if (insertError) {
+          console.error("Error inserting booking_rooms:", insertError);
+        }
+      } else if (booking_rooms && Array.isArray(booking_rooms) && booking_rooms.length > 0) {
+        // Fallback: Update each booking_room individually (legacy path)
         for (const br of booking_rooms) {
           if (br.id) {
             const { error: brError } = await supabase
@@ -149,27 +176,6 @@ export const useAdminBookings = () => {
               console.error("Error updating booking_room:", brError);
             }
           }
-        }
-      } else if (bookingData.room_id || bookingData.allocated_room_number) {
-        // Fallback: Sync booking_rooms table for legacy single-room bookings
-        const { data: existingRooms } = await supabase
-          .from("booking_rooms")
-          .select("*")
-          .eq("booking_id", booking.id);
-
-        if (existingRooms && existingRooms.length > 0) {
-          const updateData: any = {};
-          if (bookingData.allocated_room_number) {
-            updateData.room_number = bookingData.allocated_room_number;
-          }
-          if (bookingData.room_id) {
-            updateData.room_id = bookingData.room_id;
-          }
-          
-          await supabase
-            .from("booking_rooms")
-            .update(updateData)
-            .eq("id", existingRooms[0].id);
         }
       }
 
