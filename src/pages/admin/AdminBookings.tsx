@@ -1059,17 +1059,27 @@ const AdminBookings = () => {
                             const isSelected = editedRooms.some(
                               r => r.roomId === room.id && r.roomNumber === roomNum
                             );
+                            // Check availability from roomTypeAvailability
+                            const availabilityData = roomTypeAvailability?.find(rta => rta.roomId === room.id);
+                            const isAvailable = availabilityData?.availableRooms.includes(roomNum) ?? true;
+                            // Room is disabled if not available AND not currently selected by this booking
+                            const isDisabled = !isAvailable && !isSelected;
+                            
                             return (
                               <button
                                 key={roomNum}
                                 type="button"
-                                onClick={() => toggleRoomSelection(room.id, roomNum, room.price_per_night)}
+                                disabled={isDisabled}
+                                onClick={() => !isDisabled && toggleRoomSelection(room.id, roomNum, room.price_per_night)}
                                 className={cn(
                                   "px-3 py-2 text-xs rounded border transition-colors",
                                   isSelected
                                     ? "bg-primary text-primary-foreground border-primary"
-                                    : "bg-background hover:bg-muted border-border"
+                                    : isDisabled
+                                      ? "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-600 cursor-not-allowed"
+                                      : "bg-background hover:bg-muted border-border"
                                 )}
+                                title={isDisabled ? "Kamar sudah dipesan untuk tanggal ini" : undefined}
                               >
                                 {roomNum}
                               </button>
