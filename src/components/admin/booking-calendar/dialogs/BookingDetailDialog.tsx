@@ -302,51 +302,132 @@ export const BookingDetailDialog = ({
                   </div>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Tipe Kamar</Label>
-                {isEditMode ? (
-                  <Select 
-                    value={editedBooking.room_id} 
-                    onValueChange={(newRoomId) => {
-                      setEditedBooking({ ...editedBooking, room_id: newRoomId, allocated_room_number: "" });
-                      onRoomTypeChange(newRoomId);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih tipe kamar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rooms?.map((room) => (
-                        <SelectItem key={room.id} value={room.id}>
-                          {room.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* Multi-room display */}
+              <div className="col-span-2 space-y-3">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Kamar yang Dipesan</Label>
+                {editedBooking.booking_rooms && editedBooking.booking_rooms.length > 0 ? (
+                  <div className="space-y-3">
+                    {editedBooking.booking_rooms.map((br, index) => {
+                      const roomData = rooms?.find(r => r.id === br.room_id);
+                      const roomNumbers = roomData?.room_numbers || [];
+                      
+                      return (
+                        <div key={br.id} className="p-3 border rounded-lg bg-background/50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="text-xs">Kamar #{index + 1}</Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Tipe Kamar</Label>
+                              {isEditMode ? (
+                                <Select 
+                                  value={br.room_id} 
+                                  onValueChange={(newRoomId) => {
+                                    const updatedRooms = [...editedBooking.booking_rooms!];
+                                    updatedRooms[index] = { ...updatedRooms[index], room_id: newRoomId, room_number: "" };
+                                    setEditedBooking({ ...editedBooking, booking_rooms: updatedRooms });
+                                  }}
+                                >
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Pilih tipe" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {rooms?.map((room) => (
+                                      <SelectItem key={room.id} value={room.id}>
+                                        {room.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <p className="font-semibold text-sm">{roomData?.name || "-"}</p>
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Nomor Kamar</Label>
+                              {isEditMode ? (
+                                <Select
+                                  value={br.room_number || ""}
+                                  onValueChange={(value) => {
+                                    const updatedRooms = [...editedBooking.booking_rooms!];
+                                    updatedRooms[index] = { ...updatedRooms[index], room_number: value };
+                                    setEditedBooking({ ...editedBooking, booking_rooms: updatedRooms });
+                                  }}
+                                >
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Pilih nomor" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {roomNumbers.map((roomNum: string) => (
+                                      <SelectItem key={roomNum} value={roomNum}>
+                                        {roomNum}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <p className="font-semibold text-sm">{br.room_number || "-"}</p>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Harga: Rp {br.price_per_night?.toLocaleString('id-ID') || 0}/malam
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : (
-                  <p className="font-semibold">{editedBooking.rooms?.name || "-"}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nomor Kamar</Label>
-                {isEditMode ? (
-                  <Select
-                    value={editedBooking.allocated_room_number || ""}
-                    onValueChange={(value) => setEditedBooking({ ...editedBooking, allocated_room_number: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih nomor kamar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableRoomNumbers.map((roomNum) => (
-                        <SelectItem key={roomNum} value={roomNum}>
-                          {roomNum}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <p className="font-semibold">{editedBooking.allocated_room_number || "-"}</p>
+                  // Fallback for legacy single-room bookings
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Tipe Kamar</Label>
+                      {isEditMode ? (
+                        <Select 
+                          value={editedBooking.room_id} 
+                          onValueChange={(newRoomId) => {
+                            setEditedBooking({ ...editedBooking, room_id: newRoomId, allocated_room_number: "" });
+                            onRoomTypeChange(newRoomId);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih tipe kamar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {rooms?.map((room) => (
+                              <SelectItem key={room.id} value={room.id}>
+                                {room.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <p className="font-semibold">{editedBooking.rooms?.name || "-"}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Nomor Kamar</Label>
+                      {isEditMode ? (
+                        <Select
+                          value={editedBooking.allocated_room_number || ""}
+                          onValueChange={(value) => setEditedBooking({ ...editedBooking, allocated_room_number: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih nomor kamar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableRoomNumbers.map((roomNum) => (
+                              <SelectItem key={roomNum} value={roomNum}>
+                                {roomNum}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <p className="font-semibold">{editedBooking.allocated_room_number || "-"}</p>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
               <div className="space-y-2">
