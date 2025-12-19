@@ -54,14 +54,52 @@ export const BookingDetailDialog = ({
 }: BookingDetailDialogProps) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
+  
+  // State for multi-room selection (grid-based like CreateBookingDialog)
+  const [editedRooms, setEditedRooms] = useState<Array<{
+    id?: string;
+    roomId: string;
+    roomNumber: string;
+    pricePerNight: number;
+  }>>([]);
 
   // Initialize from booking prop - always start in view mode (manual click only)
   useEffect(() => {
     if (booking) {
       setEditedBooking(booking);
-      setIsEditMode(false); // Always start in view mode
+      setIsEditMode(false);
+      
+      // Initialize editedRooms from booking_rooms or fallback to single room
+      if (booking.booking_rooms && booking.booking_rooms.length > 0) {
+        setEditedRooms(booking.booking_rooms.map(br => ({
+          id: br.id,
+          roomId: br.room_id,
+          roomNumber: br.room_number,
+          pricePerNight: br.price_per_night || 0
+        })));
+      } else {
+        // Fallback for legacy single-room bookings
+        const room = rooms?.find(r => r.id === booking.room_id);
+        setEditedRooms([{
+          roomId: booking.room_id,
+          roomNumber: booking.allocated_room_number || '',
+          pricePerNight: room?.price_per_night || 0
+        }]);
+      }
     }
-  }, [booking?.id]);
+  }, [booking?.id, rooms]);
+  
+  // Toggle room selection (similar to CreateBookingDialog)
+  const toggleRoomSelection = (roomId: string, roomNumber: string, pricePerNight: number) => {
+    const exists = editedRooms.find(r => r.roomId === roomId && r.roomNumber === roomNumber);
+    if (exists) {
+      // Remove the room
+      setEditedRooms(editedRooms.filter(r => !(r.roomId === roomId && r.roomNumber === roomNumber)));
+    } else {
+      // Add the room
+      setEditedRooms([...editedRooms, { roomId, roomNumber, pricePerNight }]);
+    }
+  };
 
   // Auto-calculate total_nights when dates change
   useEffect(() => {
@@ -111,8 +149,20 @@ export const BookingDetailDialog = ({
       toast.error("Total harga harus lebih dari 0");
       return;
     }
+    if (editedRooms.length === 0) {
+      toast.error("Pilih minimal 1 kamar");
+      return;
+    }
 
-    await onSave(editedBooking);
+    // Include editedRooms in the save payload
+    const bookingToSave = {
+      ...editedBooking,
+      room_id: editedRooms[0].roomId,
+      allocated_room_number: editedRooms[0].roomNumber,
+      editedRooms: editedRooms
+    };
+
+    await onSave(bookingToSave as any);
     setIsEditMode(false);
   };
 
@@ -302,131 +352,94 @@ export const BookingDetailDialog = ({
                   </div>
                 )}
               </div>
-              {/* Multi-room display */}
+              {/* Multi-room display with grid selector */}
               <div className="col-span-2 space-y-3">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Kamar yang Dipesan</Label>
-                {editedBooking.booking_rooms && editedBooking.booking_rooms.length > 0 ? (
-                  <div className="space-y-3">
-                    {editedBooking.booking_rooms.map((br, index) => {
-                      const roomData = rooms?.find(r => r.id === br.room_id);
-                      const roomNumbers = roomData?.room_numbers || [];
-                      
-                      return (
-                        <div key={br.id} className="p-3 border rounded-lg bg-background/50">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="outline" className="text-xs">Kamar #{index + 1}</Badge>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                  Kamar yang Dipesan {isEditMode && <span className="text-muted-foreground">(Klik untuk pilih/hapus)</span>}
+                </Label>
+                
+                {isEditMode ? (
+                  // EDIT MODE: Grid-based room selector
+                  <div className="space-y-3 border rounded-lg p-3">
+                    <p className="text-xs text-muted-foreground">Pilih satu atau lebih kamar untuk booking ini</p>
+                    <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
+                      {rooms?.map((room) => (
+                        <div key={room.id} className="space-y-2">
+                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                            <span className="font-medium text-sm">{room.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Rp {room.price_per_night?.toLocaleString("id-ID")}/malam
+                            </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Tipe Kamar</Label>
-                              {isEditMode ? (
-                                <Select 
-                                  value={br.room_id} 
-                                  onValueChange={(newRoomId) => {
-                                    const updatedRooms = [...editedBooking.booking_rooms!];
-                                    updatedRooms[index] = { ...updatedRooms[index], room_id: newRoomId, room_number: "" };
-                                    setEditedBooking({ ...editedBooking, booking_rooms: updatedRooms });
-                                  }}
-                                >
-                                  <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Pilih tipe" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {rooms?.map((room) => (
-                                      <SelectItem key={room.id} value={room.id}>
-                                        {room.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <p className="font-semibold text-sm">{roomData?.name || "-"}</p>
-                              )}
+                          {room.room_numbers && room.room_numbers.length > 0 && (
+                            <div className="grid grid-cols-4 gap-2 pl-4">
+                              {room.room_numbers.map((roomNum: string) => {
+                                const isSelected = editedRooms.some(
+                                  (r) => r.roomId === room.id && r.roomNumber === roomNum
+                                );
+                                return (
+                                  <button
+                                    key={roomNum}
+                                    type="button"
+                                    onClick={() => toggleRoomSelection(room.id, roomNum, room.price_per_night)}
+                                    className={cn(
+                                      "px-3 py-2 text-xs rounded border transition-colors",
+                                      isSelected
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : "bg-background hover:bg-muted border-border"
+                                    )}
+                                  >
+                                    {roomNum}
+                                  </button>
+                                );
+                              })}
                             </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Nomor Kamar</Label>
-                              {isEditMode ? (
-                                <Select
-                                  value={br.room_number || ""}
-                                  onValueChange={(value) => {
-                                    const updatedRooms = [...editedBooking.booking_rooms!];
-                                    updatedRooms[index] = { ...updatedRooms[index], room_number: value };
-                                    setEditedBooking({ ...editedBooking, booking_rooms: updatedRooms });
-                                  }}
-                                >
-                                  <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Pilih nomor" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {roomNumbers.map((roomNum: string) => (
-                                      <SelectItem key={roomNum} value={roomNum}>
-                                        {roomNum}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <p className="font-semibold text-sm">{br.room_number || "-"}</p>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Harga: Rp {br.price_per_night?.toLocaleString('id-ID') || 0}/malam
-                          </p>
+                          )}
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
+                    
+                    {/* Selected rooms badge display */}
+                    {editedRooms.length > 0 && (
+                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                        <p className="text-sm font-medium mb-2">Kamar Terpilih ({editedRooms.length}):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {editedRooms.map((room, idx) => {
+                            const roomData = rooms?.find(r => r.id === room.roomId);
+                            return (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {room.roomNumber} ({roomData?.name || "-"})
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  // Fallback for legacy single-room bookings
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Tipe Kamar</Label>
-                      {isEditMode ? (
-                        <Select 
-                          value={editedBooking.room_id} 
-                          onValueChange={(newRoomId) => {
-                            setEditedBooking({ ...editedBooking, room_id: newRoomId, allocated_room_number: "" });
-                            onRoomTypeChange(newRoomId);
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih tipe kamar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {rooms?.map((room) => (
-                              <SelectItem key={room.id} value={room.id}>
-                                {room.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <p className="font-semibold">{editedBooking.rooms?.name || "-"}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Nomor Kamar</Label>
-                      {isEditMode ? (
-                        <Select
-                          value={editedBooking.allocated_room_number || ""}
-                          onValueChange={(value) => setEditedBooking({ ...editedBooking, allocated_room_number: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih nomor kamar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableRoomNumbers.map((roomNum) => (
-                              <SelectItem key={roomNum} value={roomNum}>
-                                {roomNum}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <p className="font-semibold">{editedBooking.allocated_room_number || "-"}</p>
-                      )}
-                    </div>
+                  // VIEW MODE: Display rooms list
+                  <div className="space-y-2">
+                    {editedRooms.length > 0 ? (
+                      editedRooms.map((room, index) => {
+                        const roomData = rooms?.find(r => r.id === room.roomId);
+                        return (
+                          <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-background/50">
+                            <div className="flex items-center gap-3">
+                              <Badge variant="outline" className="text-xs">#{index + 1}</Badge>
+                              <div>
+                                <p className="font-semibold text-sm">{roomData?.name || "-"}</p>
+                                <p className="text-xs text-muted-foreground">Nomor: {room.roomNumber || "-"}</p>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Rp {room.pricePerNight?.toLocaleString('id-ID') || 0}/malam
+                            </p>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Tidak ada kamar</p>
+                    )}
                   </div>
                 )}
               </div>
