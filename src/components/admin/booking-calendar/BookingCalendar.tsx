@@ -350,7 +350,7 @@ export const BookingCalendar = () => {
         onSave={handleSaveBlock}
       />
 
-      {/* Booking Detail Dialog - only for manual edits */}
+      {/* Booking Detail Dialog - opens in edit mode by default */}
       <BookingDetailDialog
         booking={selectedBooking}
         open={!!selectedBooking}
@@ -360,6 +360,7 @@ export const BookingCalendar = () => {
         availableRoomNumbers={availableRoomNumbers}
         onRoomTypeChange={handleRoomTypeChange}
         isUpdating={isUpdating}
+        defaultEditMode={true}
       />
 
       {/* Create Booking Dialog */}
