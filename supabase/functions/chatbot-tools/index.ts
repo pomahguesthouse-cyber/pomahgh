@@ -48,21 +48,26 @@ function validateBookingCodeFormat(code: string): boolean {
   return /^PMH-[A-Z0-9]{6}$/i.test(code);
 }
 
-// Helper function to validate and fix dates
+// Helper function to validate and fix dates - ensures dates are in the future
 function validateAndFixDate(dateStr: string, fieldName: string): string {
   const date = new Date(dateStr);
-  const year = date.getFullYear();
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
   
-  // Only fix if year is in the past (before current year)
-  if (year < currentYear) {
-    console.warn(`⚠️ ${fieldName} has year ${year}, correcting to ${currentYear}`);
+  // Strip time for accurate date comparison
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  // CRITICAL: If date is in the PAST, add 1 year
+  // Example: In December 2025, "January" should become January 2026
+  if (targetDate < today) {
+    const newYear = date.getFullYear() + 1;
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    return `${currentYear}-${month}-${day}`;
+    console.warn(`⚠️ ${fieldName}: Date ${dateStr} is in the past, correcting to ${newYear}`);
+    return `${newYear}-${month}-${day}`;
   }
   
-  // Allow future years (2026, 2027, etc.)
+  // Date is already in the future, keep it as is
   return dateStr;
 }
 
