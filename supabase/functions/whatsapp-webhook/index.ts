@@ -106,10 +106,30 @@ function indonesianMonthToNumber(month: string): number {
   return months[month.toLowerCase()] || 1;
 }
 
-// Helper: Convert Indonesian date to ISO format (YYYY-MM-DD)
+// Helper: Convert Indonesian date to ISO format (YYYY-MM-DD) with smart year inference
 function indonesianDateToISO(day: string, month: string, year: string): string {
   const monthNum = indonesianMonthToNumber(month);
-  return `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const dayNum = parseInt(day);
+  let yearNum = parseInt(year);
+  
+  // Create the target date
+  const targetDate = new Date(yearNum, monthNum - 1, dayNum);
+  
+  // Get today's date (WIB)
+  const now = new Date();
+  const wibOffset = 7 * 60;
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const wibTime = new Date(utc + (wibOffset * 60000));
+  const today = new Date(wibTime.getFullYear(), wibTime.getMonth(), wibTime.getDate());
+  
+  // CRITICAL: If date is in the PAST, add 1 year
+  // Example: In December 2025, "January 2025" should become "January 2026"
+  if (targetDate < today) {
+    yearNum += 1;
+    console.warn(`⚠️ Date ${day} ${month} ${year} is in the past, correcting to ${yearNum}`);
+  }
+  
+  return `${yearNum}-${String(monthNum).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
 }
 
 // Extract conversation context from message history for booking continuation

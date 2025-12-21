@@ -165,6 +165,14 @@ function buildDateReferenceContext(): string {
 - "weekend" / "akhir pekan" → check-in ${weekend.toISOString().split('T')[0]}
 - "minggu depan" → check-in ${nextWeek.toISOString().split('T')[0]}
 
+⚠️ PENTING - INFERENSI TAHUN:
+- Tahun sekarang: ${today.getFullYear()}
+- Jika user menyebut bulan TANPA tahun, PILIH TAHUN yang membuat tanggal di MASA DEPAN (bukan masa lalu)
+- Contoh (sekarang ${formatIndonesian(today)}):
+  - "Januari" → Januari ${today.getMonth() >= 0 ? today.getFullYear() + 1 : today.getFullYear()} ✅ (karena Januari ${today.getFullYear()} sudah lewat)
+  - Bulan yang sudah lewat tahun ini → HARUS gunakan tahun berikutnya
+- ATURAN: Jika tanggal hasil parse < hari ini, tambah 1 tahun!
+
 PENTING: Jika user bilang tanggal relatif, LANGSUNG konversi ke tanggal ISO dan panggil check_availability!`;
 }
 
