@@ -1,4 +1,4 @@
-import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight, Sparkles } from "lucide-react";
+import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight, Sparkles, Percent } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, SidebarSeparator, useSidebar } from "@/components/ui/sidebar";
@@ -21,6 +21,10 @@ const menuGroups = [{
     title: "Rooms",
     url: "/admin/rooms",
     icon: Building2
+  }, {
+    title: "Promotions",
+    url: "/admin/promotions",
+    icon: Percent
   }, {
     title: "Room Add-ons",
     url: "/admin/room-addons",

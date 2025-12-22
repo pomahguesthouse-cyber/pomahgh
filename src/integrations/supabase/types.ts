@@ -1600,6 +1600,71 @@ export type Database = {
           },
         ]
       }
+      room_promotions: {
+        Row: {
+          badge_color: string | null
+          badge_text: string | null
+          created_at: string | null
+          description: string | null
+          discount_percentage: number | null
+          end_date: string
+          id: string
+          is_active: boolean | null
+          min_nights: number | null
+          name: string
+          priority: number | null
+          promo_code: string | null
+          promo_price: number | null
+          room_id: string
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          badge_color?: string | null
+          badge_text?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_percentage?: number | null
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          min_nights?: number | null
+          name: string
+          priority?: number | null
+          promo_code?: string | null
+          promo_price?: number | null
+          room_id: string
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          badge_color?: string | null
+          badge_text?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_percentage?: number | null
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          min_nights?: number | null
+          name?: string
+          priority?: number | null
+          promo_code?: string | null
+          promo_price?: number | null
+          room_id?: string
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_promotions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_unavailable_dates: {
         Row: {
           created_at: string | null
