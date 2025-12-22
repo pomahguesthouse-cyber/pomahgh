@@ -1,6 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface RoomPromotion {
+  id: string;
+  room_id: string;
+  name: string;
+  description: string | null;
+  promo_price: number | null;
+  discount_percentage: number | null;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  min_nights: number;
+  promo_code: string | null;
+  badge_text: string;
+  badge_color: string;
+  priority: number;
+}
+
 export interface Room {
   id: string;
   name: string;
@@ -32,6 +49,8 @@ export interface Room {
   transition_effect?: string | null;
   floor_plan_url?: string | null;
   floor_plan_enabled?: boolean | null;
+  // New promo fields from room_promotions table
+  active_promotion?: RoomPromotion | null;
 }
 
 const getDayPrice = (room: Room, dayOfWeek: number): number => {
@@ -47,10 +66,20 @@ const getDayPrice = (room: Room, dayOfWeek: number): number => {
   return dayPrices[dayOfWeek] || room.price_per_night;
 };
 
-const getCurrentPrice = (room: Room): number => {
+const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null): number => {
   const today = new Date();
   
-  // Check if promo is active
+  // First priority: Check room_promotions table
+  if (activePromo) {
+    if (activePromo.promo_price) {
+      return activePromo.promo_price;
+    }
+    if (activePromo.discount_percentage) {
+      return room.price_per_night * (1 - activePromo.discount_percentage / 100);
+    }
+  }
+  
+  // Second priority: Check legacy promo fields on rooms table
   if (
     room.promo_price &&
     room.promo_start_date &&
@@ -64,7 +93,7 @@ const getCurrentPrice = (room: Room): number => {
     }
   }
   
-  // Check day-of-week pricing
+  // Third priority: Check day-of-week pricing
   const dayOfWeek = today.getDay();
   return getDayPrice(room, dayOfWeek);
 };
@@ -73,19 +102,45 @@ export const useRooms = () => {
   return useQuery({
     queryKey: ["rooms"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const today = new Date().toISOString().split("T")[0];
+      
+      // Fetch rooms
+      const { data: rooms, error: roomsError } = await supabase
         .from("rooms")
         .select("*")
         .eq("available", true)
         .order("price_per_night", { ascending: true });
 
-      if (error) throw error;
+      if (roomsError) throw roomsError;
+      
+      // Fetch active promotions
+      const { data: promotions, error: promosError } = await supabase
+        .from("room_promotions")
+        .select("*")
+        .eq("is_active", true)
+        .lte("start_date", today)
+        .gte("end_date", today)
+        .order("priority", { ascending: false });
+
+      if (promosError) throw promosError;
+
+      // Map promotions to rooms (get best promo per room based on priority)
+      const promosByRoom = new Map<string, RoomPromotion>();
+      promotions?.forEach((promo) => {
+        if (!promosByRoom.has(promo.room_id)) {
+          promosByRoom.set(promo.room_id, promo as RoomPromotion);
+        }
+      });
       
       // Calculate current price for each room
-      return (data as Room[]).map(room => ({
-        ...room,
-        final_price: getCurrentPrice(room)
-      }));
+      return (rooms as Room[]).map(room => {
+        const activePromo = promosByRoom.get(room.id) || null;
+        return {
+          ...room,
+          active_promotion: activePromo,
+          final_price: getCurrentPrice(room, activePromo)
+        };
+      });
     },
   });
 };
