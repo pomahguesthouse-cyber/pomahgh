@@ -75,6 +75,8 @@ export const useBooking = () => {
         status: "pending",
         allocated_room_number: availableNumbers[0],
         is_non_refundable: bookingData.is_non_refundable || false,
+        booking_source: 'other',
+        other_source: 'Website',
       }).select().single();
 
       if (error) throw error;
