@@ -128,9 +128,10 @@ function buildDateReferenceContext(): string {
   const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
   const wibTime = new Date(utc + (wibOffset * 60000));
   
+  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  
   const formatIndonesian = (d: Date) => {
-    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
   };
   
@@ -150,13 +151,43 @@ function buildDateReferenceContext(): string {
   const lusa = addDays(today, 2);
   const nextWeek = addDays(today, 7);
   const weekend = getNextSaturday();
+  const todayDate = today.getDate();
+  const currentMonth = months[today.getMonth()];
+  const currentYear = today.getFullYear();
   
   return `📅 REFERENSI TANGGAL (WIB):
-- Hari ini: ${formatIndonesian(today)}
+- Hari ini: ${formatIndonesian(today)} (${today.toISOString().split('T')[0]})
+- Tanggal SEKARANG: ${todayDate} ${currentMonth} ${currentYear}
 - Besok: ${formatIndonesian(tomorrow)}
 - Lusa: ${formatIndonesian(lusa)}
 - Minggu depan: ${formatIndonesian(nextWeek)}
 - Weekend ini: ${formatIndonesian(weekend)}
+
+🚨🚨🚨 ATURAN VALIDASI TANGGAL (SANGAT KRITIS!) 🚨🚨🚨
+
+❌ DILARANG KERAS bilang "tanggal sudah lewat" TANPA memanggil check_availability!
+❌ DILARANG KERAS menolak tanggal TANPA verifikasi tool!
+✅ WAJIB panggil check_availability untuk SEMUA tanggal yang user sebutkan!
+
+📊 LOGIKA TANGGAL BULAN INI (${currentMonth} ${currentYear}):
+- Hari ini tanggal: ${todayDate}
+- Jika user sebut tanggal ${todayDate + 1} atau lebih di ${currentMonth} → ITU MASA DEPAN, VALID!
+- Contoh: User bilang "23 Januari" dan sekarang 3 Januari → 23 > 3, jadi 23 Januari = MASA DEPAN!
+- JANGAN salah hitung! 23 bukan lebih kecil dari 3!
+
+✅ CONTOH BENAR (sekarang ${todayDate} ${currentMonth} ${currentYear}):
+- User: "23-24 Januari" → Panggil check_availability(check_in="${currentYear}-01-23", check_out="${currentYear}-01-24") → Baru respons!
+- User: "tanggal 15 Januari" → Panggil check_availability → Baru respons!
+- User: "25 Februari" → Panggil check_availability → Baru respons!
+
+❌ CONTOH SALAH (JANGAN PERNAH LAKUKAN!):
+- User: "23 Januari" → AI langsung bilang "Mohon maaf, tanggal sudah lewat" = SALAH FATAL!
+- User: "24-25 Januari" → AI bilang "tidak bisa dipesan" tanpa cek = SALAH FATAL!
+
+⚠️ INFERENSI TAHUN:
+- Tahun sekarang: ${currentYear}
+- Jika user menyebut bulan TANPA tahun, PILIH TAHUN yang membuat tanggal di MASA DEPAN
+- ATURAN: Jika tanggal hasil parse < hari ini, tambah 1 tahun!
 
 ⚠️ KONVERSI OTOMATIS:
 - "malam ini" / "hari ini" → check-in ${today.toISOString().split('T')[0]}
@@ -165,15 +196,7 @@ function buildDateReferenceContext(): string {
 - "weekend" / "akhir pekan" → check-in ${weekend.toISOString().split('T')[0]}
 - "minggu depan" → check-in ${nextWeek.toISOString().split('T')[0]}
 
-⚠️ PENTING - INFERENSI TAHUN:
-- Tahun sekarang: ${today.getFullYear()}
-- Jika user menyebut bulan TANPA tahun, PILIH TAHUN yang membuat tanggal di MASA DEPAN (bukan masa lalu)
-- Contoh (sekarang ${formatIndonesian(today)}):
-  - "Januari" → Januari ${today.getMonth() >= 0 ? today.getFullYear() + 1 : today.getFullYear()} ✅ (karena Januari ${today.getFullYear()} sudah lewat)
-  - Bulan yang sudah lewat tahun ini → HARUS gunakan tahun berikutnya
-- ATURAN: Jika tanggal hasil parse < hari ini, tambah 1 tahun!
-
-PENTING: Jika user bilang tanggal relatif, LANGSUNG konversi ke tanggal ISO dan panggil check_availability!`;
+PENTING: Jika user bilang tanggal APAPUN → WAJIB panggil check_availability DULU, baru respons!`;
 }
 
 // Build persona prompt from structured settings
