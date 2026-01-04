@@ -92,3 +92,6 @@ verify_jwt = true
 
 [functions.whatsapp-webhook]
 verify_jwt = false
+
+[functions.sitemap]
+verify_jwt = false
