@@ -14,4 +14,4 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 
-Sitemap: https://pfvcezyxyaqolrerlwdo.supabase.co/functions/v1/sitemap
+Sitemap: https://www.pomahguesthouse.com/sitemap.xml
