@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DaysAvailabilityCalendar } from "@/components/admin/DaysAvailabilityCalendar";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
 import { ArrivingDepartingWidgets } from "@/components/admin/ArrivingDepartingWidgets";
+import { MonthlyRevenueChart } from "@/components/admin/MonthlyRevenueChart";
 import { DollarSign, Users, Calendar, TrendingUp, Building2, PercentIcon } from "lucide-react";
 import { useMemo } from "react";
-import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval, subMonths, format, isSameMonth } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 import { formatRupiahID } from "@/utils/indonesianFormat";
 
 
@@ -60,6 +62,21 @@ const AdminDashboard = () => {
       ? (cancelledBookings / bookings.length) * 100
       : 0;
 
+    // Monthly revenue data for chart (last 12 months)
+    const monthlyRevenueData = Array.from({ length: 12 }, (_, i) => {
+      const date = subMonths(new Date(), 11 - i);
+      const revenue = bookings
+        .filter(b => {
+          const createdAt = parseISO(b.created_at);
+          return b.status === "confirmed" && isSameMonth(createdAt, date);
+        })
+        .reduce((sum, b) => sum + Number(b.total_price), 0);
+      return {
+        month: format(date, 'MMM yy', { locale: localeId }),
+        revenue,
+      };
+    });
+
     return {
       totalRevenue,
       monthlyRevenue,
@@ -70,8 +87,10 @@ const AdminDashboard = () => {
       avgBookingDuration,
       cancellationRate,
       totalRooms: rooms.length,
+      monthlyRevenueData,
     };
   }, [bookings, rooms]);
+
 
   if (!analytics) {
     return <div>Loading analytics...</div>;
@@ -139,6 +158,9 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly Revenue Chart */}
+      <MonthlyRevenueChart data={analytics.monthlyRevenueData} />
 
       {/* Booking Patterns */}
       <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2">
