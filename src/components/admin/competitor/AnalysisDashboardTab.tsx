@@ -17,6 +17,16 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { formatRupiahID } from "@/utils/indonesianFormat";
 
+// Extended room type for auto-pricing columns (until types are regenerated)
+interface RoomWithAutoPricing {
+  id: string;
+  name: string;
+  auto_pricing_enabled?: boolean;
+  min_auto_price?: number | null;
+  max_auto_price?: number | null;
+  [key: string]: any;
+}
+
 export const AnalysisDashboardTab = () => {
   const { analysis, isLoading, refetch } = usePriceAnalysis();
   const { logs, isLoading: logsLoading } = usePricingAdjustmentLogs(30);
@@ -200,7 +210,7 @@ export const AnalysisDashboardTab = () => {
             </TableHeader>
             <TableBody>
               {analysis.map((item) => {
-                const room = rooms?.find(r => r.id === item.room_id);
+                const room = rooms?.find(r => r.id === item.room_id) as RoomWithAutoPricing | undefined;
                 const isEditing = editingRoom === item.room_id;
                 
                 return (
