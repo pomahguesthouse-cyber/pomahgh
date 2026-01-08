@@ -847,6 +847,140 @@ export type Database = {
         }
         Relationships: []
       }
+      competitor_hotels: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          distance_km: number | null
+          google_maps_url: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          updated_at: string | null
+          website_url: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          distance_km?: number | null
+          google_maps_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          updated_at?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          distance_km?: number | null
+          google_maps_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          updated_at?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      competitor_price_surveys: {
+        Row: {
+          competitor_room_id: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          price: number
+          price_source: string | null
+          survey_date: string
+          surveyed_by: string | null
+        }
+        Insert: {
+          competitor_room_id: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          price: number
+          price_source?: string | null
+          survey_date?: string
+          surveyed_by?: string | null
+        }
+        Update: {
+          competitor_room_id?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          price?: number
+          price_source?: string | null
+          survey_date?: string
+          surveyed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_price_surveys_competitor_room_id_fkey"
+            columns: ["competitor_room_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitor_rooms: {
+        Row: {
+          comparable_room_id: string | null
+          competitor_hotel_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          max_guests: number | null
+          notes: string | null
+          room_name: string
+          room_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          comparable_room_id?: string | null
+          competitor_hotel_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_guests?: number | null
+          notes?: string | null
+          room_name: string
+          room_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          comparable_room_id?: string | null
+          competitor_hotel_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_guests?: number | null
+          notes?: string | null
+          room_name?: string
+          room_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_rooms_comparable_room_id_fkey"
+            columns: ["comparable_room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_rooms_competitor_hotel_id_fkey"
+            columns: ["competitor_hotel_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       explore_hero_slides: {
         Row: {
           created_at: string | null
@@ -1342,6 +1476,47 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_adjustment_logs: {
+        Row: {
+          adjustment_reason: string | null
+          adjustment_type: string | null
+          competitor_avg_price: number | null
+          executed_at: string | null
+          id: string
+          new_price: number | null
+          previous_price: number | null
+          room_id: string | null
+        }
+        Insert: {
+          adjustment_reason?: string | null
+          adjustment_type?: string | null
+          competitor_avg_price?: number | null
+          executed_at?: string | null
+          id?: string
+          new_price?: number | null
+          previous_price?: number | null
+          room_id?: string | null
+        }
+        Update: {
+          adjustment_reason?: string | null
+          adjustment_type?: string | null
+          competitor_avg_price?: number | null
+          executed_at?: string | null
+          id?: string
+          new_price?: number | null
+          previous_price?: number | null
+          room_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_adjustment_logs_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -1709,6 +1884,7 @@ export type Database = {
       rooms: {
         Row: {
           allotment: number
+          auto_pricing_enabled: boolean | null
           available: boolean
           base_price: number | null
           created_at: string
@@ -1723,7 +1899,9 @@ export type Database = {
           image_url: string
           image_urls: string[] | null
           is_non_refundable: boolean | null
+          max_auto_price: number | null
           max_guests: number
+          min_auto_price: number | null
           monday_non_refundable: boolean | null
           monday_price: number | null
           name: string
@@ -1751,6 +1929,7 @@ export type Database = {
         }
         Insert: {
           allotment?: number
+          auto_pricing_enabled?: boolean | null
           available?: boolean
           base_price?: number | null
           created_at?: string
@@ -1765,7 +1944,9 @@ export type Database = {
           image_url: string
           image_urls?: string[] | null
           is_non_refundable?: boolean | null
+          max_auto_price?: number | null
           max_guests?: number
+          min_auto_price?: number | null
           monday_non_refundable?: boolean | null
           monday_price?: number | null
           name: string
@@ -1793,6 +1974,7 @@ export type Database = {
         }
         Update: {
           allotment?: number
+          auto_pricing_enabled?: boolean | null
           available?: boolean
           base_price?: number | null
           created_at?: string
@@ -1807,7 +1989,9 @@ export type Database = {
           image_url?: string
           image_urls?: string[] | null
           is_non_refundable?: boolean | null
+          max_auto_price?: number | null
           max_guests?: number
+          min_auto_price?: number | null
           monday_non_refundable?: boolean | null
           monday_price?: number | null
           name?: string

@@ -1,4 +1,4 @@
-import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight, Sparkles, Percent } from "lucide-react";
+import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight, Sparkles, Percent, TrendingUp } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, SidebarSeparator, useSidebar } from "@/components/ui/sidebar";
@@ -64,6 +64,10 @@ const menuGroups = [{
 }, {
   label: "Operations",
   items: [{
+    title: "Analisis Harga",
+    url: "/admin/competitor-analysis",
+    icon: TrendingUp
+  }, {
     title: "Bank Accounts",
     url: "/admin/bank-accounts",
     icon: CreditCard
