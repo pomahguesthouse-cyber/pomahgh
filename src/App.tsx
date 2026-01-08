@@ -33,6 +33,7 @@ import ExploreSemarang from "./pages/ExploreSemarang";
 import AttractionDetail from "./pages/AttractionDetail";
 import AdminCityAttractions from "./pages/admin/AdminCityAttractions";
 import AdminExploreHeroSlides from "./pages/admin/AdminExploreHeroSlides";
+import AdminCompetitorAnalysis from "./pages/admin/AdminCompetitorAnalysis";
 import Chat from "./pages/Chat";
 
 const queryClient = new QueryClient();
