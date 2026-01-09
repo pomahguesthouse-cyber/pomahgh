@@ -44,14 +44,29 @@ const tools = [
   {
     type: "function",
     function: {
-      name: "search_bookings",
-      description: "Cari booking berdasarkan nama tamu, kode booking, atau tanggal",
+      name: "get_recent_bookings",
+      description: "Dapatkan daftar booking terbaru. Gunakan ini untuk perintah seperti 'tampilkan 5 booking terakhir', 'lihat 10 booking terbaru', atau 'booking terakhir'",
       parameters: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Nama tamu atau kode booking" },
+          limit: { type: "number", description: "Jumlah booking yang ditampilkan (default: 5, max: 20)" },
+          status: { type: "string", enum: ["all", "confirmed", "pending", "cancelled"], description: "Filter status (default: all)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_bookings",
+      description: "Cari booking berdasarkan nama tamu atau kode booking. Gunakan ini untuk perintah seperti 'cari booking atas nama Budi', 'booking dari Ahmad', atau 'cari kode ABC123'",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Nama tamu atau kode booking untuk dicari" },
           date_from: { type: "string", description: "Tanggal mulai (YYYY-MM-DD)" },
-          date_to: { type: "string", description: "Tanggal akhir (YYYY-MM-DD)" }
+          date_to: { type: "string", description: "Tanggal akhir (YYYY-MM-DD)" },
+          limit: { type: "number", description: "Jumlah hasil maksimal (default: 10, max: 50)" }
         }
       }
     }
@@ -186,12 +201,46 @@ async function getBookingStats(supabase: any, period: string) {
   return stats;
 }
 
-async function searchBookings(supabase: any, query?: string, dateFrom?: string, dateTo?: string) {
+async function getRecentBookings(supabase: any, limit: number = 5, status?: string) {
+  const actualLimit = Math.min(Math.max(limit || 5, 1), 20);
+  
   let queryBuilder = supabase
     .from('bookings')
-    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, rooms(name)')
+    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, rooms(name)')
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(actualLimit);
+
+  if (status && status !== 'all') {
+    queryBuilder = queryBuilder.eq('status', status);
+  }
+
+  const { data, error } = await queryBuilder;
+  if (error) throw error;
+
+  return {
+    count: data.length,
+    bookings: data.map((b: any) => ({
+      booking_code: b.booking_code,
+      guest_name: b.guest_name,
+      guest_phone: b.guest_phone,
+      room_name: b.rooms?.name,
+      check_in: b.check_in,
+      check_out: b.check_out,
+      status: b.status,
+      total_price: b.total_price,
+      created_at: b.created_at
+    }))
+  };
+}
+
+async function searchBookings(supabase: any, query?: string, dateFrom?: string, dateTo?: string, limit: number = 10) {
+  const actualLimit = Math.min(Math.max(limit || 10, 1), 50);
+  
+  let queryBuilder = supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, rooms(name)')
+    .order('created_at', { ascending: false })
+    .limit(actualLimit);
 
   if (query) {
     queryBuilder = queryBuilder.or(`guest_name.ilike.%${query}%,booking_code.ilike.%${query}%`);
@@ -206,16 +255,20 @@ async function searchBookings(supabase: any, query?: string, dateFrom?: string, 
   const { data, error } = await queryBuilder;
   if (error) throw error;
 
-  return data.map((b: any) => ({
-    booking_code: b.booking_code,
-    guest_name: b.guest_name,
-    guest_phone: b.guest_phone,
-    room_name: b.rooms?.name,
-    check_in: b.check_in,
-    check_out: b.check_out,
-    status: b.status,
-    total_price: b.total_price
-  }));
+  return {
+    count: data.length,
+    query: query || null,
+    bookings: data.map((b: any) => ({
+      booking_code: b.booking_code,
+      guest_name: b.guest_name,
+      guest_phone: b.guest_phone,
+      room_name: b.rooms?.name,
+      check_in: b.check_in,
+      check_out: b.check_out,
+      status: b.status,
+      total_price: b.total_price
+    }))
+  };
 }
 
 async function getRoomInventory(supabase: any) {
@@ -298,8 +351,10 @@ async function executeTool(supabase: any, toolName: string, args: any) {
       return await getAvailabilitySummary(supabase, args.check_in, args.check_out);
     case 'get_booking_stats':
       return await getBookingStats(supabase, args.period);
+    case 'get_recent_bookings':
+      return await getRecentBookings(supabase, args.limit, args.status);
     case 'search_bookings':
-      return await searchBookings(supabase, args.query, args.date_from, args.date_to);
+      return await searchBookings(supabase, args.query, args.date_from, args.date_to, args.limit);
     case 'get_room_inventory':
       return await getRoomInventory(supabase);
     case 'create_admin_booking':
@@ -413,9 +468,15 @@ Default check-out adalah 1 malam setelah check-in jika tidak disebutkan.
 Kamu bisa:
 1. Cek ketersediaan kamar untuk tanggal tertentu (gunakan get_availability_summary)
 2. Memberikan statistik booking (gunakan get_booking_stats dengan period: today/week/month/all)
-3. Mencari booking berdasarkan nama tamu atau kode booking (gunakan search_bookings)
-4. Melihat daftar kamar dan inventori (gunakan get_room_inventory)
-5. Membuat booking baru langsung (gunakan create_admin_booking)
+3. Menampilkan N booking terakhir (gunakan get_recent_bookings dengan limit sesuai permintaan)
+4. Mencari booking berdasarkan nama tamu atau kode booking (gunakan search_bookings)
+5. Melihat daftar kamar dan inventori (gunakan get_room_inventory)
+6. Membuat booking baru langsung (gunakan create_admin_booking)
+
+📌 PENTING - PILIHAN TOOL YANG BENAR:
+- "Tampilkan 5 booking terakhir" / "booking terbaru" / "lihat 10 booking terakhir" → gunakan get_recent_bookings
+- "Cari booking atas nama Budi" / "booking dari Ahmad" / "cari kode ABC123" → gunakan search_bookings
+- JANGAN gunakan search_bookings untuk menampilkan booking terakhir tanpa kata kunci pencarian!
 
 Gunakan bahasa Indonesia yang singkat dan jelas.
 Format angka dengan Rp dan titik sebagai pemisah ribuan.
