@@ -95,3 +95,6 @@ verify_jwt = false
 
 [functions.sitemap]
 verify_jwt = false
+
+[functions.admin-chatbot]
+verify_jwt = false

@@ -4,7 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminGuard } from "./AdminGuard";
 import { useIsMobile } from "@/hooks/use-mobile";
-
+import { AdminChatbotWidget } from "./AdminChatbotWidget";
 interface AdminLayoutProps {
   children: ReactNode;
 }
@@ -49,6 +49,8 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
 
             <main className="flex-1 p-3 md:p-6 max-w-5xl mx-auto w-full">{children}</main>
           </div>
+          
+          <AdminChatbotWidget />
         </div>
       </SidebarProvider>
     </AdminGuard>
