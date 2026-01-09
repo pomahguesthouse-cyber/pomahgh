@@ -35,7 +35,7 @@ import AdminCityAttractions from "./pages/admin/AdminCityAttractions";
 import AdminExploreHeroSlides from "./pages/admin/AdminExploreHeroSlides";
 import AdminCompetitorAnalysis from "./pages/admin/AdminCompetitorAnalysis";
 import Chat from "./pages/Chat";
-
+import AdminChat from "./pages/admin/AdminChat";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -68,6 +68,7 @@ const App = () => (
             <Route path="/admin/nearby-locations" element={<AdminLayout><AdminNearbyLocations /></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
           <Route path="/admin/chatbot" element={<AdminLayout><AdminChatbot /></AdminLayout>} />
+          <Route path="/admin/chat" element={<AdminLayout><AdminChat /></AdminLayout>} />
           <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
