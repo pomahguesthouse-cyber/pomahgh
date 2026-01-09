@@ -368,12 +368,47 @@ serve(async (req) => {
     const checkInTime = hotelSettings?.check_in_time || '14:00';
     const checkOutTime = hotelSettings?.check_out_time || '12:00';
 
+    // Calculate WIB dates for relative date reference
+    const now = new Date();
+    const wibOffset = 7 * 60;
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const wibTime = new Date(utc + (wibOffset * 60000));
+    const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 24 * 60 * 60 * 1000);
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+    const today = formatDate(wibTime);
+    const tomorrow = formatDate(addDays(wibTime, 1));
+    const lusa = formatDate(addDays(wibTime, 2));
+    const nextWeek = formatDate(addDays(wibTime, 7));
+
+    // Calculate next weekend (Saturday)
+    const currentDay = wibTime.getDay();
+    const daysUntilSaturday = (6 - currentDay + 7) % 7 || 7;
+    const weekend = formatDate(addDays(wibTime, daysUntilSaturday));
+
     const systemPrompt = `Kamu adalah Asisten Booking Admin untuk ${hotelName}.
 Tugasmu membantu admin mengelola booking dengan cepat dan efisien.
 
 Informasi hotel:
 - Check-in: ${checkInTime}
 - Check-out: ${checkOutTime}
+
+📅 REFERENSI TANGGAL (WIB - Waktu Indonesia Barat):
+- Hari ini: ${today}
+- Besok: ${tomorrow}
+- Lusa (2 hari lagi): ${lusa}
+- Minggu depan: ${nextWeek}
+- Weekend terdekat (Sabtu): ${weekend}
+
+⚠️ PENTING - KONVERSI TANGGAL OTOMATIS:
+Ketika admin menyebut tanggal relatif, kamu HARUS mengkonversinya ke format YYYY-MM-DD:
+- "hari ini" / "malam ini" / "sekarang" → check-in: ${today}
+- "besok" / "bsk" / "besuk" → check-in: ${tomorrow}
+- "lusa" → check-in: ${lusa}
+- "minggu depan" / "pekan depan" → check-in: ${nextWeek}
+- "weekend" / "akhir pekan" / "sabtu" → check-in: ${weekend}
+
+Default check-out adalah 1 malam setelah check-in jika tidak disebutkan.
 
 Kamu bisa:
 1. Cek ketersediaan kamar untuk tanggal tertentu (gunakan get_availability_summary)
