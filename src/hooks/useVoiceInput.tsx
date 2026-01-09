@@ -127,7 +127,18 @@ export const useVoiceInput = (options: UseVoiceInputOptions = {}): UseVoiceInput
   }, [isSupported]);
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (err) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore
+        }
+      }
+    }
+    setIsListening(false);
   }, []);
 
   const toggleListening = useCallback(() => {
