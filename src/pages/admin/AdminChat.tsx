@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, Send, Trash2, Sparkles, Calendar, BarChart3, Building, ClipboardList } from "lucide-react";
+import { Bot, Send, Trash2, Sparkles, Calendar, BarChart3, Building, ClipboardList, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminChatbot } from "@/hooks/useAdminChatbot";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { toast } from "sonner";
 
 const quickActions = [
   {
@@ -34,6 +36,18 @@ const AdminChat = () => {
   const { messages, isLoading, sendMessage, clearChat } = useAdminChatbot();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { isListening, isSupported, toggleListening, error: voiceError } = useVoiceInput({
+    onFinalTranscript: (transcript) => {
+      setInput((prev) => prev + transcript);
+    },
+  });
+
+  useEffect(() => {
+    if (voiceError) {
+      toast.error(voiceError);
+    }
+  }, [voiceError]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -171,10 +185,26 @@ const AdminChat = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ketik pesan... (Enter untuk kirim, Shift+Enter untuk baris baru)"
-                className="min-h-[60px] max-h-[120px] resize-none"
+                placeholder={isListening ? "🎤 Mendengarkan..." : "Ketik pesan... (Enter untuk kirim, Shift+Enter untuk baris baru)"}
+                className={`min-h-[60px] max-h-[120px] resize-none ${isListening ? 'border-primary ring-2 ring-primary/20' : ''}`}
                 disabled={isLoading}
               />
+              {isSupported && (
+                <Button
+                  onClick={toggleListening}
+                  disabled={isLoading}
+                  size="lg"
+                  variant={isListening ? "destructive" : "outline"}
+                  className="px-4"
+                  title={isListening ? "Berhenti merekam" : "Mulai bicara"}
+                >
+                  {isListening ? (
+                    <MicOff className="h-5 w-5" />
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
