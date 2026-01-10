@@ -1,7 +1,7 @@
 import type { RoomCardPriceProps } from "./types";
 import { Badge } from "@/components/ui/badge";
 
-export const RoomCardPrice = ({ room, hasPromo, displayPrice }: RoomCardPriceProps) => {
+export const RoomCardPrice = ({ room, hasPromo, displayPrice, isBestPrice }: RoomCardPriceProps) => {
   // Get active promotion from room_promotions table if available
   const activePromo = (room as any).active_promotion;
   const promoBadgeText = activePromo?.badge_text || "PROMO";
@@ -9,6 +9,12 @@ export const RoomCardPrice = ({ room, hasPromo, displayPrice }: RoomCardPricePro
 
   return (
     <div className="text-right flex-shrink-0">
+      {isBestPrice && (
+        <Badge className="mb-1 bg-green-500 hover:bg-green-600 text-white text-[10px]">
+          HARGA TERBAIK
+        </Badge>
+      )}
+      
       {hasPromo && activePromo && (
         <Badge 
           className="mb-1 text-white text-[10px]" 

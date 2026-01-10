@@ -12,6 +12,7 @@ export const RoomCarousel = ({
   availability,
   isCheckingAvailability,
   roomFeatures,
+  priceAnalysis,
   onBookRoom,
   onViewTour,
   setApi,
@@ -45,6 +46,12 @@ export const RoomCarousel = ({
             const displayPrice = getDisplayPrice(room);
 
             const isAvailabilityLoaded = checkIn && checkOut && !isCheckingAvailability && !!availability;
+            
+            // Check if this room has best price compared to competitors
+            const roomAnalysis = priceAnalysis?.find(a => a.room_id === room.id);
+            const isBestPrice = roomAnalysis 
+              && roomAnalysis.competitor_min > 0 
+              && roomAnalysis.our_price < roomAnalysis.competitor_min;
 
             return (
               <CarouselItem
@@ -64,6 +71,7 @@ export const RoomCarousel = ({
                   availability={availability?.[room.id]}
                   isAvailabilityLoaded={!!isAvailabilityLoaded}
                   roomFeatures={roomFeatures}
+                  isBestPrice={!!isBestPrice}
                   onBookRoom={onBookRoom}
                   onViewTour={onViewTour}
                 />

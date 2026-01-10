@@ -3,6 +3,7 @@ import { useRooms } from "@/hooks/useRooms";
 import { useRoomFeatures } from "@/hooks/useRoomFeatures";
 import { useSearchDates } from "@/contexts/SearchDatesContext";
 import { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
+import { usePriceAnalysis } from "@/hooks/usePriceAnalysis";
 
 import { BookingDialog } from "../BookingDialog";
 import { VirtualTourViewer } from "../VirtualTourViewer";
@@ -20,6 +21,7 @@ export const Rooms = () => {
   const { checkIn, checkOut } = useSearchDates();
 
   const { data: availability, isLoading: isCheckingAvailability } = useRoomAvailabilityCheck(checkIn, checkOut);
+  const { analysis: priceAnalysis } = usePriceAnalysis();
 
   // UI states
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -80,6 +82,7 @@ export const Rooms = () => {
               availability={availability}
               isCheckingAvailability={isCheckingAvailability}
               roomFeatures={roomFeatures}
+              priceAnalysis={priceAnalysis}
               onBookRoom={handleBookRoom}
               onViewTour={handleViewTour}
               setApi={setApi}
