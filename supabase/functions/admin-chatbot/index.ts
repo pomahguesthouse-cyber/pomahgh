@@ -1,16 +1,13 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const LOVABLE_API_URL = "https://api.lovable.dev/ai";
 
+// Tool definitions
 const tools = [
   {
     type: "function",
@@ -99,9 +96,45 @@ const tools = [
         required: ["guest_name", "guest_phone", "room_id", "room_number", "check_in", "check_out", "num_guests"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_room_price",
+      description: "Update harga kamar. Gunakan untuk mengubah harga utama, harga per hari (Senin-Minggu), atau harga promo. Contoh: 'ubah harga Deluxe jadi 350000', 'set harga weekend Villa 500000', 'buat promo Superior 275000'",
+      parameters: {
+        type: "object",
+        properties: {
+          room_name: { type: "string", description: "Nama kamar (contoh: 'Deluxe', 'Superior', 'Villa')" },
+          price_type: { 
+            type: "string", 
+            enum: ["main", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "weekday", "weekend", "promo"],
+            description: "Jenis harga: 'main' untuk harga utama, nama hari untuk harga harian, 'weekday' untuk Senin-Jumat, 'weekend' untuk Sabtu-Minggu, 'promo' untuk harga promo"
+          },
+          new_price: { type: "number", description: "Harga baru dalam Rupiah" },
+          promo_start_date: { type: "string", description: "Tanggal mulai promo (YYYY-MM-DD), hanya untuk price_type='promo'" },
+          promo_end_date: { type: "string", description: "Tanggal akhir promo (YYYY-MM-DD), hanya untuk price_type='promo'" }
+        },
+        required: ["room_name", "price_type", "new_price"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_room_prices",
+      description: "Lihat daftar harga kamar saat ini termasuk harga utama, harga per hari, dan promo aktif",
+      parameters: {
+        type: "object",
+        properties: {
+          room_name: { type: "string", description: "Nama kamar spesifik (opsional, kosongkan untuk semua kamar)" }
+        }
+      }
+    }
   }
 ];
 
+// Tool implementations
 async function getAvailabilitySummary(supabase: any, checkIn: string, checkOut: string) {
   // Get all rooms
   const { data: rooms, error: roomsError } = await supabase
@@ -134,18 +167,22 @@ async function getAvailabilitySummary(supabase: any, checkIn: string, checkOut: 
     const roomBookings = bookings?.filter((b: any) => b.room_id === room.id) || [];
     const bookedNumbers = new Set(roomBookings.map((b: any) => b.allocated_room_number));
     const blockedNumbers = new Set(
-      blockedDates?.filter((b: any) => b.room_id === room.id).map((b: any) => b.room_number) || []
+      blockedDates?.filter((d: any) => d.room_id === room.id).map((d: any) => d.room_number) || []
     );
-    
+
     const allNumbers = room.room_numbers || [];
-    const availableNumbers = allNumbers.filter((num: string) => !bookedNumbers.has(num) && !blockedNumbers.has(num));
-    
+    const availableNumbers = allNumbers.filter(
+      (num: string) => !bookedNumbers.has(num) && !blockedNumbers.has(num)
+    );
+
     return {
       room_name: room.name,
       total_units: room.room_count,
       available_units: availableNumbers.length,
-      available_numbers: availableNumbers,
-      price_per_night: room.price_per_night
+      available_room_numbers: availableNumbers,
+      price_per_night: room.price_per_night,
+      booked_numbers: Array.from(bookedNumbers),
+      blocked_numbers: Array.from(blockedNumbers)
     };
   });
 
@@ -153,52 +190,42 @@ async function getAvailabilitySummary(supabase: any, checkIn: string, checkOut: 
     check_in: checkIn,
     check_out: checkOut,
     rooms: result,
-    total_available: result.reduce((sum: number, r: any) => sum + r.available_units, 0),
-    total_rooms: result.reduce((sum: number, r: any) => sum + r.total_units, 0)
+    total_available: result.reduce((sum: number, r: any) => sum + r.available_units, 0)
   };
 }
 
 async function getBookingStats(supabase: any, period: string) {
   const now = new Date();
-  let dateFrom: string;
-  
-  switch (period) {
-    case 'today':
-      dateFrom = now.toISOString().split('T')[0];
-      break;
-    case 'week':
-      const weekAgo = new Date(now);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      dateFrom = weekAgo.toISOString().split('T')[0];
-      break;
-    case 'month':
-      const monthAgo = new Date(now);
-      monthAgo.setMonth(monthAgo.getMonth() - 1);
-      dateFrom = monthAgo.toISOString().split('T')[0];
-      break;
-    default:
-      dateFrom = '2020-01-01';
+  const wibOffset = 7 * 60;
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const wibTime = new Date(utc + (wibOffset * 60000));
+  const today = wibTime.toISOString().split('T')[0];
+
+  let query = supabase.from('bookings').select('id, status, total_price, created_at');
+
+  if (period === 'today') {
+    query = query.eq('created_at::date', today);
+  } else if (period === 'week') {
+    const weekAgo = new Date(wibTime.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    query = query.gte('created_at', weekAgo);
+  } else if (period === 'month') {
+    const monthAgo = new Date(wibTime.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    query = query.gte('created_at', monthAgo);
   }
 
-  const { data: bookings, error } = await supabase
-    .from('bookings')
-    .select('status, total_price, created_at')
-    .gte('created_at', dateFrom);
-
+  const { data: bookings, error } = await query;
   if (error) throw error;
 
   const stats = {
-    period,
-    total: bookings.length,
-    confirmed: bookings.filter((b: any) => b.status === 'confirmed').length,
-    cancelled: bookings.filter((b: any) => b.status === 'cancelled').length,
-    pending: bookings.filter((b: any) => b.status === 'pending').length,
-    total_revenue: bookings
-      .filter((b: any) => b.status === 'confirmed')
-      .reduce((sum: number, b: any) => sum + (b.total_price || 0), 0)
+    total_bookings: bookings?.length || 0,
+    confirmed: bookings?.filter((b: any) => b.status === 'confirmed').length || 0,
+    pending: bookings?.filter((b: any) => b.status === 'pending').length || 0,
+    cancelled: bookings?.filter((b: any) => b.status === 'cancelled').length || 0,
+    total_revenue: bookings?.filter((b: any) => b.status === 'confirmed')
+      .reduce((sum: number, b: any) => sum + (b.total_price || 0), 0) || 0
   };
 
-  return stats;
+  return { period, ...stats };
 }
 
 async function getRecentBookings(supabase: any, limit: number = 5, status?: string) {
@@ -256,9 +283,9 @@ async function searchBookings(supabase: any, query?: string, dateFrom?: string, 
   if (error) throw error;
 
   return {
-    count: data.length,
     query: query || null,
-    bookings: data.map((b: any) => ({
+    count: data?.length || 0,
+    bookings: data?.map((b: any) => ({
       booking_code: b.booking_code,
       guest_name: b.guest_name,
       guest_phone: b.guest_phone,
@@ -267,59 +294,72 @@ async function searchBookings(supabase: any, query?: string, dateFrom?: string, 
       check_out: b.check_out,
       status: b.status,
       total_price: b.total_price
-    }))
+    })) || []
   };
 }
 
 async function getRoomInventory(supabase: any) {
   const { data: rooms, error } = await supabase
     .from('rooms')
-    .select('id, name, room_count, room_numbers, price_per_night, available, max_guests')
+    .select('id, name, room_count, room_numbers, available, price_per_night, max_guests')
     .order('name');
 
   if (error) throw error;
 
-  return rooms.map((r: any) => ({
-    id: r.id,
-    name: r.name,
-    total_units: r.room_count,
-    room_numbers: r.room_numbers || [],
-    price_per_night: r.price_per_night,
-    is_available: r.available,
-    max_guests: r.max_guests
-  }));
+  return {
+    total_room_types: rooms?.length || 0,
+    rooms: rooms?.map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      status: r.available ? 'Tersedia' : 'Tidak Tersedia',
+      total_units: r.room_count,
+      room_numbers: r.room_numbers || [],
+      price_per_night: r.price_per_night,
+      max_guests: r.max_guests
+    })) || []
+  };
 }
 
-async function createAdminBooking(supabase: any, params: any) {
-  const { guest_name, guest_phone, guest_email, room_id, room_number, check_in, check_out, num_guests } = params;
-
-  // Get room details
+async function createAdminBooking(supabase: any, args: any) {
+  // Get room data
   const { data: room, error: roomError } = await supabase
     .from('rooms')
-    .select('name, price_per_night')
-    .eq('id', room_id)
+    .select('id, name, price_per_night, room_numbers')
+    .eq('id', args.room_id)
     .single();
 
-  if (roomError) throw new Error('Kamar tidak ditemukan');
+  if (roomError || !room) {
+    throw new Error('Kamar tidak ditemukan');
+  }
 
-  // Calculate nights and total
-  const checkInDate = new Date(check_in);
-  const checkOutDate = new Date(check_out);
-  const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-  const totalPrice = nights * room.price_per_night;
+  // Validate room number
+  if (!room.room_numbers?.includes(args.room_number)) {
+    throw new Error(`Nomor kamar ${args.room_number} tidak valid untuk ${room.name}`);
+  }
+
+  // Calculate nights
+  const checkIn = new Date(args.check_in);
+  const checkOut = new Date(args.check_out);
+  const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (nights <= 0) {
+    throw new Error('Tanggal check-out harus setelah check-in');
+  }
+
+  const totalPrice = room.price_per_night * nights;
 
   // Create booking
   const { data: booking, error: bookingError } = await supabase
     .from('bookings')
     .insert({
-      guest_name,
-      guest_phone,
-      guest_email: guest_email || `${guest_phone}@admin-booking.local`,
-      room_id,
-      allocated_room_number: room_number,
-      check_in,
-      check_out,
-      num_guests,
+      room_id: args.room_id,
+      allocated_room_number: args.room_number,
+      guest_name: args.guest_name,
+      guest_phone: args.guest_phone,
+      guest_email: args.guest_email || `${args.guest_phone}@guest.local`,
+      check_in: args.check_in,
+      check_out: args.check_out,
+      num_guests: args.num_guests,
       total_nights: nights,
       total_price: totalPrice,
       status: 'confirmed',
@@ -333,13 +373,180 @@ async function createAdminBooking(supabase: any, params: any) {
   return {
     success: true,
     booking_code: booking.booking_code,
-    guest_name,
+    guest_name: args.guest_name,
     room_name: room.name,
-    room_number,
-    check_in,
-    check_out,
-    nights,
+    room_number: args.room_number,
+    check_in: args.check_in,
+    check_out: args.check_out,
+    nights: nights,
     total_price: totalPrice
+  };
+}
+
+async function updateRoomPrice(supabase: any, args: any) {
+  const { room_name, price_type, new_price, promo_start_date, promo_end_date } = args;
+
+  // Find the room by name (case insensitive)
+  const { data: rooms, error: findError } = await supabase
+    .from('rooms')
+    .select('id, name, price_per_night, monday_price, tuesday_price, wednesday_price, thursday_price, friday_price, saturday_price, sunday_price, promo_price, promo_start_date, promo_end_date')
+    .ilike('name', `%${room_name}%`);
+
+  if (findError) throw findError;
+
+  if (!rooms || rooms.length === 0) {
+    throw new Error(`Kamar "${room_name}" tidak ditemukan`);
+  }
+
+  if (rooms.length > 1) {
+    const roomNames = rooms.map((r: any) => r.name).join(', ');
+    throw new Error(`Ditemukan ${rooms.length} kamar yang cocok: ${roomNames}. Mohon sebutkan nama kamar yang lebih spesifik.`);
+  }
+
+  const room = rooms[0];
+  const updateData: any = { updated_at: new Date().toISOString() };
+  let priceFields: string[] = [];
+
+  switch (price_type) {
+    case 'main':
+      updateData.price_per_night = new_price;
+      priceFields = ['Harga Utama'];
+      break;
+    case 'monday':
+      updateData.monday_price = new_price;
+      priceFields = ['Harga Senin'];
+      break;
+    case 'tuesday':
+      updateData.tuesday_price = new_price;
+      priceFields = ['Harga Selasa'];
+      break;
+    case 'wednesday':
+      updateData.wednesday_price = new_price;
+      priceFields = ['Harga Rabu'];
+      break;
+    case 'thursday':
+      updateData.thursday_price = new_price;
+      priceFields = ['Harga Kamis'];
+      break;
+    case 'friday':
+      updateData.friday_price = new_price;
+      priceFields = ['Harga Jumat'];
+      break;
+    case 'saturday':
+      updateData.saturday_price = new_price;
+      priceFields = ['Harga Sabtu'];
+      break;
+    case 'sunday':
+      updateData.sunday_price = new_price;
+      priceFields = ['Harga Minggu'];
+      break;
+    case 'weekday':
+      updateData.monday_price = new_price;
+      updateData.tuesday_price = new_price;
+      updateData.wednesday_price = new_price;
+      updateData.thursday_price = new_price;
+      updateData.friday_price = new_price;
+      priceFields = ['Harga Weekday (Senin-Jumat)'];
+      break;
+    case 'weekend':
+      updateData.saturday_price = new_price;
+      updateData.sunday_price = new_price;
+      priceFields = ['Harga Weekend (Sabtu-Minggu)'];
+      break;
+    case 'promo':
+      updateData.promo_price = new_price;
+      if (promo_start_date) updateData.promo_start_date = promo_start_date;
+      if (promo_end_date) updateData.promo_end_date = promo_end_date;
+      priceFields = ['Harga Promo'];
+      break;
+    default:
+      throw new Error(`Jenis harga "${price_type}" tidak valid`);
+  }
+
+  // Perform update
+  const { error: updateError } = await supabase
+    .from('rooms')
+    .update(updateData)
+    .eq('id', room.id);
+
+  if (updateError) throw updateError;
+
+  // Get the old price for comparison
+  let oldPrice: number | null = null;
+  switch (price_type) {
+    case 'main': oldPrice = room.price_per_night; break;
+    case 'monday': oldPrice = room.monday_price; break;
+    case 'tuesday': oldPrice = room.tuesday_price; break;
+    case 'wednesday': oldPrice = room.wednesday_price; break;
+    case 'thursday': oldPrice = room.thursday_price; break;
+    case 'friday': oldPrice = room.friday_price; break;
+    case 'saturday': oldPrice = room.saturday_price; break;
+    case 'sunday': oldPrice = room.sunday_price; break;
+    case 'weekday': oldPrice = room.monday_price; break;
+    case 'weekend': oldPrice = room.saturday_price; break;
+    case 'promo': oldPrice = room.promo_price; break;
+  }
+
+  const result: any = {
+    success: true,
+    room_name: room.name,
+    price_type: priceFields.join(', '),
+    old_price: oldPrice,
+    new_price: new_price
+  };
+
+  if (price_type === 'promo' && (promo_start_date || promo_end_date)) {
+    result.promo_start_date = promo_start_date || room.promo_start_date;
+    result.promo_end_date = promo_end_date || room.promo_end_date;
+  }
+
+  return result;
+}
+
+async function getRoomPrices(supabase: any, roomName?: string) {
+  let query = supabase
+    .from('rooms')
+    .select('id, name, price_per_night, monday_price, tuesday_price, wednesday_price, thursday_price, friday_price, saturday_price, sunday_price, promo_price, promo_start_date, promo_end_date')
+    .order('name');
+
+  if (roomName) {
+    query = query.ilike('name', `%${roomName}%`);
+  }
+
+  const { data: rooms, error } = await query;
+  if (error) throw error;
+
+  if (!rooms || rooms.length === 0) {
+    throw new Error(roomName ? `Kamar "${roomName}" tidak ditemukan` : 'Tidak ada kamar yang ditemukan');
+  }
+
+  return {
+    count: rooms.length,
+    rooms: rooms.map((r: any) => {
+      const today = new Date().toISOString().split('T')[0];
+      const hasActivePromo = r.promo_price && r.promo_start_date && r.promo_end_date 
+        && r.promo_start_date <= today && r.promo_end_date >= today;
+
+      return {
+        name: r.name,
+        price_per_night: r.price_per_night,
+        daily_prices: {
+          senin: r.monday_price || r.price_per_night,
+          selasa: r.tuesday_price || r.price_per_night,
+          rabu: r.wednesday_price || r.price_per_night,
+          kamis: r.thursday_price || r.price_per_night,
+          jumat: r.friday_price || r.price_per_night,
+          sabtu: r.saturday_price || r.price_per_night,
+          minggu: r.sunday_price || r.price_per_night
+        },
+        promo: r.promo_price ? {
+          price: r.promo_price,
+          start_date: r.promo_start_date,
+          end_date: r.promo_end_date,
+          is_active: hasActivePromo
+        } : null
+      };
+    })
   };
 }
 
@@ -359,55 +566,57 @@ async function executeTool(supabase: any, toolName: string, args: any) {
       return await getRoomInventory(supabase);
     case 'create_admin_booking':
       return await createAdminBooking(supabase, args);
+    case 'update_room_price':
+      return await updateRoomPrice(supabase, args);
+    case 'get_room_prices':
+      return await getRoomPrices(supabase, args.room_name);
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
+    // Verify admin authentication
+    const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Create authenticated client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
     // Verify user is admin
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await createClient(
-      SUPABASE_URL,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    ).auth.getUser();
-
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check admin role
-    const { data: roleData } = await supabase
+    const { data: adminRole } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .eq('role', 'admin')
       .single();
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: 'Admin access required' }), {
+    if (!adminRole) {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -423,7 +632,7 @@ serve(async (req) => {
     const checkInTime = hotelSettings?.check_in_time || '14:00';
     const checkOutTime = hotelSettings?.check_out_time || '12:00';
 
-    // Calculate WIB dates for relative date reference
+    // Calculate dates in WIB
     const now = new Date();
     const wibOffset = 7 * 60;
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -442,7 +651,7 @@ serve(async (req) => {
     const weekend = formatDate(addDays(wibTime, daysUntilSaturday));
 
     const systemPrompt = `Kamu adalah Asisten Booking Admin untuk ${hotelName}.
-Tugasmu membantu admin mengelola booking dengan cepat dan efisien.
+Tugasmu membantu admin mengelola booking dan harga dengan cepat dan efisien.
 
 Informasi hotel:
 - Check-in: ${checkInTime}
@@ -472,183 +681,135 @@ Kamu bisa:
 4. Mencari booking berdasarkan nama tamu atau kode booking (gunakan search_bookings)
 5. Melihat daftar kamar dan inventori (gunakan get_room_inventory)
 6. Membuat booking baru langsung (gunakan create_admin_booking)
+7. **Mengubah harga kamar** (gunakan update_room_price)
+8. **Melihat daftar harga kamar** (gunakan get_room_prices)
+
+💰 PANDUAN UPDATE HARGA:
+- "ubah harga Deluxe jadi 350000" → update_room_price dengan room_name: "Deluxe", price_type: "main", new_price: 350000
+- "set harga weekend Villa 500000" → update_room_price dengan room_name: "Villa", price_type: "weekend", new_price: 500000
+- "harga weekday Superior 275000" → update_room_price dengan room_name: "Superior", price_type: "weekday", new_price: 275000
+- "buat promo kamar Deluxe 299000 sampai akhir bulan" → update_room_price dengan room_name: "Deluxe", price_type: "promo", new_price: 299000, promo_end_date: tanggal akhir bulan
+- "lihat harga kamar" / "daftar harga" → gunakan get_room_prices
+- "harga Deluxe berapa?" → gunakan get_room_prices dengan room_name: "Deluxe"
 
 📌 PENTING - PILIHAN TOOL YANG BENAR:
 - "Tampilkan 5 booking terakhir" / "booking terbaru" / "lihat 10 booking terakhir" → gunakan get_recent_bookings
 - "Cari booking atas nama Budi" / "booking dari Ahmad" / "cari kode ABC123" → gunakan search_bookings
+- "ubah harga" / "update harga" / "set harga" → gunakan update_room_price
+- "lihat harga" / "daftar harga" / "harga kamar" → gunakan get_room_prices
 - JANGAN gunakan search_bookings untuk menampilkan booking terakhir tanpa kata kunci pencarian!
 
 Gunakan bahasa Indonesia yang singkat dan jelas.
-Format angka dengan Rp dan titik sebagai pemisah ribuan.
+Format angka dengan Rp dan titik sebagai pemisah ribuan (contoh: Rp 350.000).
 Untuk tanggal, gunakan format DD MMM YYYY (contoh: 8 Jan 2026).
 
 Jika admin minta buat booking tapi info belum lengkap, tanyakan yang kurang.
-Sebelum buat booking, selalu cek ketersediaan dulu dan konfirmasi detailnya.`;
+Sebelum buat booking, selalu cek ketersediaan dulu dan konfirmasi detailnya.
+Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan baru.`;
 
-    // Initial AI call
-    let response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages
-        ],
-        tools,
-        stream: true
-      })
-    });
+    // Prepare messages for AI
+    const aiMessages = [
+      { role: "system", content: systemPrompt },
+      ...messages.map((m: any) => ({ role: m.role, content: m.content }))
+    ];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI Gateway error:', response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required. Please add credits.' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
-      throw new Error(`AI Gateway error: ${response.status}`);
-    }
-
-    // Process streaming response for tool calls
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let fullContent = '';
-    let toolCalls: any[] = [];
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
-        
+    // Stream response
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
         try {
-          const data = JSON.parse(line.slice(6));
-          const delta = data.choices?.[0]?.delta;
-          
-          if (delta?.content) {
-            fullContent += delta.content;
-          }
-          
-          if (delta?.tool_calls) {
-            for (const tc of delta.tool_calls) {
-              if (tc.index !== undefined) {
-                if (!toolCalls[tc.index]) {
-                  toolCalls[tc.index] = { id: tc.id, function: { name: '', arguments: '' } };
-                }
-                if (tc.function?.name) {
-                  toolCalls[tc.index].function.name = tc.function.name;
-                }
-                if (tc.function?.arguments) {
-                  toolCalls[tc.index].function.arguments += tc.function.arguments;
+          let currentMessages = aiMessages;
+          let iterations = 0;
+          const maxIterations = 5;
+
+          while (iterations < maxIterations) {
+            iterations++;
+            
+            const response = await fetch(`${LOVABLE_API_URL}/chat`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                messages: currentMessages,
+                model: "openai/gpt-5-mini",
+                tools: tools,
+                tool_choice: "auto"
+              })
+            });
+
+            if (!response.ok) {
+              const error = await response.text();
+              console.error("AI API error:", error);
+              throw new Error(`AI API error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            const choice = result.choices?.[0];
+
+            if (!choice) {
+              throw new Error("No response from AI");
+            }
+
+            // Check for tool calls
+            if (choice.message?.tool_calls && choice.message.tool_calls.length > 0) {
+              // Add assistant message with tool calls
+              currentMessages.push(choice.message);
+
+              // Execute each tool call
+              for (const toolCall of choice.message.tool_calls) {
+                const toolName = toolCall.function.name;
+                const toolArgs = JSON.parse(toolCall.function.arguments || "{}");
+
+                try {
+                  const toolResult = await executeTool(supabase, toolName, toolArgs);
+                  currentMessages.push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify(toolResult)
+                  });
+                } catch (toolError: any) {
+                  console.error(`Tool error (${toolName}):`, toolError);
+                  currentMessages.push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify({ error: toolError.message })
+                  });
                 }
               }
+              // Continue loop to get final response
+              continue;
             }
+
+            // No tool calls, stream the final response
+            const content = choice.message?.content || "";
+            if (content) {
+              controller.enqueue(encoder.encode(content));
+            }
+            break;
           }
-        } catch (e) {
-          // Skip invalid JSON
+
+          controller.close();
+        } catch (error: any) {
+          console.error("Stream error:", error);
+          controller.enqueue(encoder.encode(`Error: ${error.message}`));
+          controller.close();
         }
       }
-    }
-
-    // If there are tool calls, execute them
-    if (toolCalls.length > 0) {
-      const toolResults = [];
-      
-      for (const tc of toolCalls) {
-        if (!tc || !tc.function?.name) continue;
-        
-        try {
-          const args = JSON.parse(tc.function.arguments || '{}');
-          const result = await executeTool(supabase, tc.function.name, args);
-          toolResults.push({
-            tool_call_id: tc.id,
-            role: 'tool',
-            content: JSON.stringify(result)
-          });
-        } catch (e: any) {
-          console.error('Tool execution error:', e);
-          toolResults.push({
-            tool_call_id: tc.id,
-            role: 'tool',
-            content: JSON.stringify({ error: e.message })
-          });
-        }
-      }
-
-      // Make final call with tool results
-      const finalResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages,
-            { role: 'assistant', content: fullContent || null, tool_calls: toolCalls },
-            ...toolResults
-          ],
-          stream: true
-        })
-      });
-
-      if (!finalResponse.ok) {
-        throw new Error(`Final AI call failed: ${finalResponse.status}`);
-      }
-
-      return new Response(finalResponse.body, {
-        headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' }
-      });
-    }
-
-    // No tool calls, return original stream (re-fetch for streaming)
-    const streamResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages
-        ],
-        stream: true
-      })
     });
 
-    return new Response(streamResponse.body, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' }
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive"
+      }
     });
 
   } catch (error: any) {
-    console.error('Admin chatbot error:', error);
+    console.error("Admin chatbot error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
