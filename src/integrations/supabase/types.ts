@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_chatbot_audit_logs: {
+        Row: {
+          admin_email: string | null
+          admin_id: string
+          ai_response: string | null
+          created_at: string | null
+          duration_ms: number | null
+          id: string
+          ip_address: string | null
+          session_id: string | null
+          tool_calls: Json | null
+          user_agent: string | null
+          user_message: string
+        }
+        Insert: {
+          admin_email?: string | null
+          admin_id: string
+          ai_response?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          id?: string
+          ip_address?: string | null
+          session_id?: string | null
+          tool_calls?: Json | null
+          user_agent?: string | null
+          user_message: string
+        }
+        Update: {
+          admin_email?: string | null
+          admin_id?: string
+          ai_response?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          id?: string
+          ip_address?: string | null
+          session_id?: string | null
+          tool_calls?: Json | null
+          user_agent?: string | null
+          user_message?: string
+        }
+        Relationships: []
+      }
       availability_sync_logs: {
         Row: {
           channel_manager_id: string | null
