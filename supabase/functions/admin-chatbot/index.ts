@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const LOVABLE_API_URL = "https://api.lovable.dev/ai";
+const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1";
 
 // Tool definitions
 const tools = [
@@ -725,12 +725,20 @@ Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan bar
           while (iterations < maxIterations) {
             iterations++;
             
-            const response = await fetch(`${LOVABLE_API_URL}/chat`, {
+            const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+            if (!LOVABLE_API_KEY) {
+              throw new Error("LOVABLE_API_KEY is not configured");
+            }
+
+            const response = await fetch(`${LOVABLE_API_URL}/chat/completions`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${LOVABLE_API_KEY}`
+              },
               body: JSON.stringify({
                 messages: currentMessages,
-                model: "openai/gpt-5-mini",
+                model: "google/gemini-3-flash-preview",
                 tools: tools,
                 tool_choice: "auto"
               })
