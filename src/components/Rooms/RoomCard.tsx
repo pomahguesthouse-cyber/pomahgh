@@ -14,6 +14,7 @@ export const RoomCard = ({
   availability,
   isAvailabilityLoaded,
   roomFeatures,
+  isBestPrice,
   onBookRoom,
 }: RoomCardProps) => {
   const isUnavailable = isAvailabilityLoaded && availability !== undefined && availability === 0;
@@ -54,7 +55,7 @@ export const RoomCard = ({
           {/* TITLE + PRICE */}
           <div className="flex justify-between items-start">
             <RoomCardInfo room={room} availability={availability} isAvailabilityLoaded={isAvailabilityLoaded} />
-            <RoomCardPrice room={room} hasPromo={hasPromo} displayPrice={displayPrice} />
+            <RoomCardPrice room={room} hasPromo={hasPromo} displayPrice={displayPrice} isBestPrice={isBestPrice} />
           </div>
 
           {/* DESCRIPTION */}
