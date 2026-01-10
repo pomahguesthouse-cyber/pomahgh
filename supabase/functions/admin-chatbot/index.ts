@@ -134,6 +134,50 @@ const tools = [
   }
 ];
 
+// Helper function for smart room matching (prioritized)
+function findBestRoomMatch(searchName: string, rooms: any[]): any | null {
+  const normalizeRoomName = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/\b(room|kamar|suite)\b/gi, '')
+      .trim();
+  };
+  
+  const normalizedSearch = normalizeRoomName(searchName);
+  console.log(`Room matching: searching for "${searchName}" -> normalized: "${normalizedSearch}"`);
+  
+  // Priority 1: Exact match (highest priority)
+  const exactMatch = rooms.find(r => 
+    normalizeRoomName(r.name) === normalizedSearch
+  );
+  if (exactMatch) {
+    console.log(`Room matching: EXACT match found -> "${exactMatch.name}"`);
+    return exactMatch;
+  }
+  
+  // Priority 2: Starts with (e.g., "deluxe" matches "deluxe room" but NOT "grand deluxe")
+  const startsWithMatch = rooms.find(r => 
+    normalizeRoomName(r.name).startsWith(normalizedSearch)
+  );
+  if (startsWithMatch) {
+    console.log(`Room matching: STARTS WITH match found -> "${startsWithMatch.name}"`);
+    return startsWithMatch;
+  }
+  
+  // Priority 3: Contains (fallback for partial matches)
+  const containsMatch = rooms.find(r => {
+    const normalized = normalizeRoomName(r.name);
+    return normalized.includes(normalizedSearch) || normalizedSearch.includes(normalized);
+  });
+  if (containsMatch) {
+    console.log(`Room matching: CONTAINS match found -> "${containsMatch.name}"`);
+    return containsMatch;
+  }
+  
+  console.log(`Room matching: NO match found for "${searchName}"`);
+  return null;
+}
+
 // Tool implementations
 async function getAvailabilitySummary(supabase: any, checkIn: string, checkOut: string) {
   // Get all rooms
@@ -386,24 +430,20 @@ async function createAdminBooking(supabase: any, args: any) {
 async function updateRoomPrice(supabase: any, args: any) {
   const { room_name, price_type, new_price, promo_start_date, promo_end_date } = args;
 
-  // Find the room by name (case insensitive)
-  const { data: rooms, error: findError } = await supabase
+  // Fetch all rooms first for smart matching
+  const { data: allRooms, error: findError } = await supabase
     .from('rooms')
-    .select('id, name, price_per_night, monday_price, tuesday_price, wednesday_price, thursday_price, friday_price, saturday_price, sunday_price, promo_price, promo_start_date, promo_end_date')
-    .ilike('name', `%${room_name}%`);
+    .select('id, name, price_per_night, monday_price, tuesday_price, wednesday_price, thursday_price, friday_price, saturday_price, sunday_price, promo_price, promo_start_date, promo_end_date');
 
   if (findError) throw findError;
 
-  if (!rooms || rooms.length === 0) {
-    throw new Error(`Kamar "${room_name}" tidak ditemukan`);
-  }
+  // Use smart matching to find the best room
+  const room = findBestRoomMatch(room_name, allRooms || []);
 
-  if (rooms.length > 1) {
-    const roomNames = rooms.map((r: any) => r.name).join(', ');
-    throw new Error(`Ditemukan ${rooms.length} kamar yang cocok: ${roomNames}. Mohon sebutkan nama kamar yang lebih spesifik.`);
+  if (!room) {
+    const roomList = allRooms?.map((r: any) => r.name).join(', ') || 'tidak ada';
+    throw new Error(`Kamar "${room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
   }
-
-  const room = rooms[0];
   const updateData: any = { updated_at: new Date().toISOString() };
   let priceFields: string[] = [];
 
@@ -504,20 +544,28 @@ async function updateRoomPrice(supabase: any, args: any) {
 }
 
 async function getRoomPrices(supabase: any, roomName?: string) {
-  let query = supabase
+  // Fetch all rooms first
+  const { data: allRooms, error } = await supabase
     .from('rooms')
     .select('id, name, price_per_night, monday_price, tuesday_price, wednesday_price, thursday_price, friday_price, saturday_price, sunday_price, promo_price, promo_start_date, promo_end_date')
     .order('name');
 
-  if (roomName) {
-    query = query.ilike('name', `%${roomName}%`);
-  }
-
-  const { data: rooms, error } = await query;
   if (error) throw error;
 
-  if (!rooms || rooms.length === 0) {
-    throw new Error(roomName ? `Kamar "${roomName}" tidak ditemukan` : 'Tidak ada kamar yang ditemukan');
+  if (!allRooms || allRooms.length === 0) {
+    throw new Error('Tidak ada kamar yang ditemukan');
+  }
+
+  let rooms = allRooms;
+
+  // If specific room name requested, use smart matching
+  if (roomName) {
+    const matchedRoom = findBestRoomMatch(roomName, allRooms);
+    if (!matchedRoom) {
+      const roomList = allRooms.map((r: any) => r.name).join(', ');
+      throw new Error(`Kamar "${roomName}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
+    }
+    rooms = [matchedRoom];
   }
 
   return {
