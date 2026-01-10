@@ -761,10 +761,43 @@ Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan bar
       ...messages.map((m: any) => ({ role: m.role, content: m.content }))
     ];
 
+    // Audit log data
+    const startTime = Date.now();
+    const sessionId = crypto.randomUUID();
+    const executedTools: any[] = [];
+    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop();
+    const userMessage = lastUserMessage?.content || '';
+    const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
+    // Helper function to log audit entry
+    async function logAuditEntry(aiResponse: string) {
+      try {
+        await supabase
+          .from('admin_chatbot_audit_logs')
+          .insert({
+            admin_id: user!.id,
+            admin_email: user!.email,
+            session_id: sessionId,
+            user_message: userMessage,
+            tool_calls: executedTools,
+            ai_response: aiResponse,
+            duration_ms: Date.now() - startTime,
+            ip_address: ipAddress,
+            user_agent: userAgent,
+          });
+        console.log(`Audit log saved: admin=${user!.email}, message="${userMessage.substring(0, 50)}..."`);
+      } catch (error) {
+        console.error('Failed to log audit entry:', error);
+        // Don't throw - audit logging failure shouldn't break the chatbot
+      }
+    }
+
     // Stream response
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
+        let finalResponse = '';
         try {
           let currentMessages = aiMessages;
           let iterations = 0;
@@ -817,6 +850,16 @@ Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan bar
 
                 try {
                   const toolResult = await executeTool(supabase, toolName, toolArgs);
+                  
+                  // Track tool execution for audit
+                  executedTools.push({
+                    tool_name: toolName,
+                    arguments: toolArgs,
+                    result: toolResult,
+                    success: true,
+                    executed_at: new Date().toISOString()
+                  });
+
                   currentMessages.push({
                     role: "tool",
                     tool_call_id: toolCall.id,
@@ -824,6 +867,16 @@ Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan bar
                   });
                 } catch (toolError: any) {
                   console.error(`Tool error (${toolName}):`, toolError);
+                  
+                  // Track failed tool execution for audit
+                  executedTools.push({
+                    tool_name: toolName,
+                    arguments: toolArgs,
+                    error: toolError.message,
+                    success: false,
+                    executed_at: new Date().toISOString()
+                  });
+
                   currentMessages.push({
                     role: "tool",
                     tool_call_id: toolCall.id,
@@ -838,15 +891,24 @@ Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan bar
             // No tool calls, stream the final response
             const content = choice.message?.content || "";
             if (content) {
+              finalResponse = content;
               controller.enqueue(encoder.encode(content));
             }
             break;
           }
 
+          // Log audit entry after successful completion
+          await logAuditEntry(finalResponse);
+
           controller.close();
         } catch (error: any) {
           console.error("Stream error:", error);
-          controller.enqueue(encoder.encode(`Error: ${error.message}`));
+          const errorMsg = `Error: ${error.message}`;
+          controller.enqueue(encoder.encode(errorMsg));
+          
+          // Log audit entry even on error
+          await logAuditEntry(`ERROR: ${error.message}`);
+          
           controller.close();
         }
       }
