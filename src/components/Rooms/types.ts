@@ -44,6 +44,7 @@ export interface RoomCardProps {
   isAvailabilityLoaded: boolean;
   roomFeatures: RoomFeature[] | undefined;
   isBestPrice?: boolean;
+  hasDateRange?: boolean;
   onBookRoom: (room: Room) => void;
   onViewTour: (room: Room) => void;
 }
@@ -66,6 +67,7 @@ export interface RoomCardPriceProps {
   hasPromo: boolean;
   displayPrice: number;
   isBestPrice?: boolean;
+  hasDateRange?: boolean;
 }
 
 export interface RoomFeaturesProps {

@@ -1,11 +1,9 @@
 import type { RoomCardPriceProps } from "./types";
 import { Badge } from "@/components/ui/badge";
 
-export const RoomCardPrice = ({ room, hasPromo, displayPrice, isBestPrice }: RoomCardPriceProps) => {
+export const RoomCardPrice = ({ room, hasPromo, displayPrice, isBestPrice, hasDateRange }: RoomCardPriceProps) => {
   // Get active promotion from room_promotions table if available
   const activePromo = (room as any).active_promotion;
-  const promoBadgeText = activePromo?.badge_text || "PROMO";
-  const promoBadgeColor = activePromo?.badge_color || "#EF4444";
 
   return (
     <div className="text-right flex-shrink-0">
@@ -24,7 +22,9 @@ export const RoomCardPrice = ({ room, hasPromo, displayPrice, isBestPrice }: Roo
         </Badge>
       )}
       
-      <p className="text-xs text-muted-foreground">From</p>
+      <p className="text-xs text-muted-foreground">
+        {hasDateRange ? "Rata-rata" : "Harga hari ini"}
+      </p>
 
       {hasPromo && (
         <p className="text-xs line-through text-muted-foreground">
@@ -40,7 +40,9 @@ export const RoomCardPrice = ({ room, hasPromo, displayPrice, isBestPrice }: Roo
         Rp {Math.round(displayPrice).toLocaleString("id-ID")}
       </p>
 
-      <p className="text-xs text-muted-foreground">per night</p>
+      {hasDateRange && (
+        <p className="text-xs text-muted-foreground">per malam</p>
+      )}
     </div>
   );
 };
