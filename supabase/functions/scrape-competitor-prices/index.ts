@@ -14,9 +14,7 @@ interface ScrapedRoom {
 interface FirecrawlResponse {
   success: boolean;
   data?: {
-    json?: {
-      rooms?: ScrapedRoom[];
-    };
+    json?: ScrapedRoom[] | { rooms?: ScrapedRoom[] } | Record<string, unknown>;
     markdown?: string;
   };
   error?: string;
@@ -98,7 +96,7 @@ Deno.serve(async (req) => {
       try {
         console.log(`Scraping hotel: ${hotel.name} (${hotel.scrape_url})`);
 
-        // Call Firecrawl API with JSON extraction
+        // Call Firecrawl API with simpler extraction approach
         const firecrawlResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
           method: "POST",
           headers: {
@@ -107,45 +105,47 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             url: hotel.scrape_url,
-            formats: [
-              {
-                type: "json",
-                schema: {
-                  type: "object",
-                  properties: {
-                    rooms: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          room_name: { type: "string" },
-                          price: { type: "number" },
-                          original_price: { type: "number" }
-                        },
-                        required: ["room_name", "price"]
-                      }
-                    }
-                  }
-                },
-                prompt: "Extract all hotel room types with their prices in Indonesian Rupiah (IDR). Remove 'Rp' prefix and convert to number. If there's a discount, capture original_price as well."
-              }
-            ],
+            formats: ["markdown", "json"],
+            jsonOptions: {
+              prompt: "Extract all hotel room types with their names and prices. Return as JSON array with objects containing 'room_name' (string) and 'price' (number in IDR, remove 'Rp' and dots). Example: [{\"room_name\": \"Deluxe Room\", \"price\": 500000}]"
+            },
             onlyMainContent: true,
-            waitFor: 3000,
-            location: {
-              country: "ID",
-              languages: ["id"]
-            }
+            waitFor: 5000,
+            timeout: 30000
           }),
         });
 
-        const firecrawlData: FirecrawlResponse = await firecrawlResponse.json();
+        const responseText = await firecrawlResponse.text();
+        console.log(`Firecrawl response status: ${firecrawlResponse.status}`);
+        
+        let firecrawlData: FirecrawlResponse;
+        try {
+          firecrawlData = JSON.parse(responseText);
+        } catch {
+          console.error("Failed to parse Firecrawl response:", responseText.substring(0, 500));
+          throw new Error(`Invalid JSON response from Firecrawl`);
+        }
 
         if (!firecrawlResponse.ok || !firecrawlData.success) {
+          console.error("Firecrawl API error:", firecrawlData);
           throw new Error(firecrawlData.error || `Firecrawl request failed with status ${firecrawlResponse.status}`);
         }
 
-        const scrapedRooms = firecrawlData.data?.json?.rooms || [];
+        // Try to extract rooms from JSON or parse from markdown
+        let scrapedRooms: ScrapedRoom[] = [];
+        
+        const jsonData = firecrawlData.data?.json;
+        if (jsonData) {
+          // If json is an array of rooms directly
+          if (Array.isArray(jsonData)) {
+            scrapedRooms = jsonData as ScrapedRoom[];
+          } else if (typeof jsonData === 'object' && 'rooms' in jsonData && Array.isArray(jsonData.rooms)) {
+            scrapedRooms = jsonData.rooms as ScrapedRoom[];
+          }
+        }
+        
+        console.log(`Extracted ${scrapedRooms.length} rooms from JSON`);
+        
         roomsScraped = scrapedRooms.length;
 
         if (roomsScraped === 0) {
