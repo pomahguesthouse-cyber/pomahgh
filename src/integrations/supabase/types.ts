@@ -897,8 +897,11 @@ export type Database = {
           google_maps_url: string | null
           id: string
           is_active: boolean | null
+          last_scraped_at: string | null
           name: string
           notes: string | null
+          scrape_enabled: boolean | null
+          scrape_url: string | null
           updated_at: string | null
           website_url: string | null
         }
@@ -909,8 +912,11 @@ export type Database = {
           google_maps_url?: string | null
           id?: string
           is_active?: boolean | null
+          last_scraped_at?: string | null
           name: string
           notes?: string | null
+          scrape_enabled?: boolean | null
+          scrape_url?: string | null
           updated_at?: string | null
           website_url?: string | null
         }
@@ -921,8 +927,11 @@ export type Database = {
           google_maps_url?: string | null
           id?: string
           is_active?: boolean | null
+          last_scraped_at?: string | null
           name?: string
           notes?: string | null
+          scrape_enabled?: boolean | null
+          scrape_url?: string | null
           updated_at?: string | null
           website_url?: string | null
         }
@@ -2060,6 +2069,47 @@ export type Database = {
           wednesday_price?: number | null
         }
         Relationships: []
+      }
+      scrape_logs: {
+        Row: {
+          competitor_hotel_id: string | null
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          prices_added: number | null
+          rooms_scraped: number | null
+          status: string
+        }
+        Insert: {
+          competitor_hotel_id?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          prices_added?: number | null
+          rooms_scraped?: number | null
+          status: string
+        }
+        Update: {
+          competitor_hotel_id?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          prices_added?: number | null
+          rooms_scraped?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_logs_competitor_hotel_id_fkey"
+            columns: ["competitor_hotel_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_hotels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       seo_settings: {
         Row: {

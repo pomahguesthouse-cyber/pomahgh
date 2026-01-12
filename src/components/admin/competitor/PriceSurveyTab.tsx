@@ -2,13 +2,15 @@ import { useState } from "react";
 import { useCompetitorPriceSurveys, CompetitorPriceSurveyInsert } from "@/hooks/useCompetitorPriceSurveys";
 import { useCompetitorRooms } from "@/hooks/useCompetitorRooms";
 import { useCompetitorHotels } from "@/hooks/useCompetitorHotels";
+import { usePriceScraping } from "@/hooks/usePriceScraping";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Plus, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Plus, TrendingUp, RefreshCw, Loader2, Bot } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { formatRupiahID } from "@/utils/indonesianFormat";
@@ -16,6 +18,7 @@ import { getWIBTodayString } from "@/utils/wibTimezone";
 
 const PRICE_SOURCES = [
   { value: "manual", label: "Input Manual" },
+  { value: "auto-scrape", label: "Auto Scrape" },
   { value: "traveloka", label: "Traveloka" },
   { value: "agoda", label: "Agoda" },
   { value: "booking", label: "Booking.com" },
@@ -28,6 +31,7 @@ export const PriceSurveyTab = () => {
   const { surveys, isLoading, createSurvey, deleteSurvey } = useCompetitorPriceSurveys(30);
   const { rooms } = useCompetitorRooms();
   const { hotels } = useCompetitorHotels();
+  const { scrapeLogs, isLoadingLogs, triggerScrape } = usePriceScraping();
   
   const today = getWIBTodayString();
   const [formData, setFormData] = useState<CompetitorPriceSurveyInsert>({
@@ -42,6 +46,8 @@ export const PriceSurveyTab = () => {
   const filteredRooms = selectedHotel 
     ? rooms.filter(r => r.competitor_hotel_id === selectedHotel)
     : rooms;
+
+  const enabledHotelsCount = hotels.filter(h => h.scrape_enabled && h.scrape_url).length;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +71,67 @@ export const PriceSurveyTab = () => {
     }
   };
 
+  const handleScrapeAll = async () => {
+    await triggerScrape.mutateAsync(undefined);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Auto Scraping Card */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              Scraping Otomatis
+            </CardTitle>
+            <CardDescription>
+              Scrape harga dari {enabledHotelsCount} hotel kompetitor yang diaktifkan
+            </CardDescription>
+          </div>
+          <Button 
+            onClick={handleScrapeAll} 
+            disabled={triggerScrape.isPending || enabledHotelsCount === 0}
+          >
+            {triggerScrape.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Scraping...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Scrape Semua
+              </>
+            )}
+          </Button>
+        </CardHeader>
+        {scrapeLogs.length > 0 && (
+          <CardContent>
+            <h4 className="text-sm font-medium mb-2">Log Terakhir</h4>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {scrapeLogs.slice(0, 5).map((log) => (
+                <div key={log.id} className="flex items-center justify-between text-sm border-b pb-2">
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={log.status === 'success' ? 'default' : log.status === 'partial' ? 'secondary' : 'destructive'}
+                      className="text-xs"
+                    >
+                      {log.status}
+                    </Badge>
+                    <span className="font-medium">{log.competitor_hotels?.name || 'Unknown'}</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-muted-foreground">
+                    <span>{log.rooms_scraped} rooms, {log.prices_added} prices</span>
+                    <span>{format(new Date(log.created_at), "dd/MM HH:mm", { locale: idLocale })}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
       {/* Quick Input Form */}
       <Card>
         <CardHeader>
@@ -215,7 +280,14 @@ export const PriceSurveyTab = () => {
                       {formatRupiahID(survey.price)}
                     </TableCell>
                     <TableCell>
-                      {PRICE_SOURCES.find(s => s.value === survey.price_source)?.label || survey.price_source}
+                      {survey.price_source === 'auto-scrape' ? (
+                        <Badge variant="secondary" className="text-xs">
+                          <Bot className="h-3 w-3 mr-1" />
+                          Auto
+                        </Badge>
+                      ) : (
+                        PRICE_SOURCES.find(s => s.value === survey.price_source)?.label || survey.price_source
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground max-w-[200px] truncate">
                       {survey.notes || "-"}
