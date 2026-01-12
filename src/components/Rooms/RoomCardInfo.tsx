@@ -4,7 +4,7 @@ import type { RoomCardInfoProps } from "./types";
 export const RoomCardInfo = ({ room, availability, isAvailabilityLoaded }: RoomCardInfoProps) => {
   return (
     <div className="flex-1 min-w-0 pr-2">
-      <h3 className="text-lg sm:text-xl md:text-2xl font-playfair font-bold text-foreground mb-1 truncate">
+      <h3 className="text-lg sm:text-xl md:text-2xl font-cormorant font-semibold tracking-wide text-foreground mb-1 truncate">
         {room.name}
       </h3>
       
