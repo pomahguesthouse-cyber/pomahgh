@@ -98,3 +98,6 @@ verify_jwt = false
 
 [functions.admin-chatbot]
 verify_jwt = false
+
+[functions.scrape-competitor-prices]
+verify_jwt = false

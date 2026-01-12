@@ -11,12 +11,15 @@ export interface CompetitorHotel {
   google_maps_url: string | null;
   notes: string | null;
   is_active: boolean;
+  scrape_url: string | null;
+  scrape_enabled: boolean;
+  last_scraped_at: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export type CompetitorHotelInsert = Omit<CompetitorHotel, 'id' | 'created_at' | 'updated_at'>;
-export type CompetitorHotelUpdate = Partial<CompetitorHotelInsert>;
+export type CompetitorHotelInsert = Omit<CompetitorHotel, 'id' | 'created_at' | 'updated_at' | 'last_scraped_at'>;
+export type CompetitorHotelUpdate = Partial<Omit<CompetitorHotelInsert, 'last_scraped_at'>>;
 
 export const useCompetitorHotels = () => {
   const { toast } = useToast();
