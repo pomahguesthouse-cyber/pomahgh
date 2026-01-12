@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RoomCardInfo } from "./RoomCardInfo";
@@ -77,6 +78,7 @@ export const RoomCard = ({
               hover:brightness-110 
               active:scale-[0.98] 
               transition-all duration-200
+              overflow-hidden
             "
             onClick={(e) => {
               e.preventDefault(); // prevent link navigation
@@ -84,7 +86,21 @@ export const RoomCard = ({
             }}
             disabled={isUnavailable}
           >
-            {isUnavailable ? "Tidak Tersedia" : "Cek Ketersediaan"}
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={isUnavailable ? "unavailable" : hasDateRange ? "select" : "check"}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {isUnavailable 
+                  ? "Tidak Tersedia" 
+                  : hasDateRange 
+                    ? "Pilih Kamar" 
+                    : "Cek Ketersediaan"}
+              </motion.span>
+            </AnimatePresence>
           </Button>
         </CardContent>
       </Card>
