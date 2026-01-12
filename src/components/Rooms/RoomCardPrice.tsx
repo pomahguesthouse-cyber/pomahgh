@@ -15,12 +15,12 @@ export const RoomCardPrice = ({ room, hasPromo, displayPrice, isBestPrice }: Roo
         </Badge>
       )}
       
-      {hasPromo && activePromo && (
+      {hasPromo && (
         <Badge 
-          className="mb-1 text-white text-[10px]" 
-          style={{ backgroundColor: promoBadgeColor }}
+          className="mb-1 text-white text-[10px] animate-pulse" 
+          style={{ backgroundColor: activePromo?.badge_color || "#EF4444" }}
         >
-          {promoBadgeText}
+          {activePromo?.badge_text || "PROMO"}
         </Badge>
       )}
       
