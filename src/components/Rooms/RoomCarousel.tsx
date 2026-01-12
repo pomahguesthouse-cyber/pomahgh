@@ -4,7 +4,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import Autoplay from "embla-carousel-autoplay";
 import { RoomCard } from "./RoomCard";
 import { getRoomImages } from "./utils/getRoomImages";
-import { checkPromo, getDisplayPrice } from "./utils/checkPromo";
+import { checkPromo, getDynamicDisplayPrice } from "./utils/checkPromo";
 import type { RoomCarouselProps } from "./types";
 
 export const RoomCarousel = ({
@@ -43,7 +43,7 @@ export const RoomCarousel = ({
           {rooms?.map((room) => {
             const images = getRoomImages(room);
             const hasPromo = checkPromo(room);
-            const displayPrice = getDisplayPrice(room);
+            const { price: displayPrice, hasDateRange } = getDynamicDisplayPrice(room, checkIn, checkOut);
 
             const isAvailabilityLoaded = checkIn && checkOut && !isCheckingAvailability && !!availability;
             
@@ -72,6 +72,7 @@ export const RoomCarousel = ({
                   isAvailabilityLoaded={!!isAvailabilityLoaded}
                   roomFeatures={roomFeatures}
                   isBestPrice={!!isBestPrice}
+                  hasDateRange={hasDateRange}
                   onBookRoom={onBookRoom}
                   onViewTour={onViewTour}
                 />
