@@ -78,11 +78,14 @@ const RoomDetail = () => {
     ? room.image_urls 
     : [room.image_url];
 
-  const hasPromo = room.promo_price &&
+  // Check for active promotion (from room_promotions table or legacy promo fields)
+  const activePromo = (room as any).active_promotion;
+  const hasLegacyPromo = room.promo_price &&
     room.promo_start_date &&
     room.promo_end_date &&
     new Date() >= new Date(room.promo_start_date) &&
     new Date() <= new Date(room.promo_end_date);
+  const hasPromo = !!activePromo || hasLegacyPromo;
 
   const displayPrice = room.final_price || room.price_per_night;
   const relatedRooms = allRooms?.filter(r => r.id !== room.id).slice(0, 3) || [];
