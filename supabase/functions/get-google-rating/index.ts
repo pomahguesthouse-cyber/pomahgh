@@ -44,8 +44,8 @@ Deno.serve(async (req) => {
     const placeId = settings.google_place_id;
     console.log('Fetching rating for Place ID:', placeId);
 
-    // Fetch from Google Places API v1 (New)
-    const url = `https://places.googleapis.com/v1/places/${placeId}?fields=rating,userRatingCount,googleMapsUri`;
+    // Fetch from Google Places API v1 (New) - include reviews
+    const url = `https://places.googleapis.com/v1/places/${placeId}?fields=rating,userRatingCount,googleMapsUri,reviews`;
     
     const response = await fetch(url, {
       method: 'GET',
@@ -67,10 +67,24 @@ Deno.serve(async (req) => {
     const placeData = await response.json();
     console.log('Google Places API response:', placeData);
 
+    // Filter reviews with rating >= 4 and map to simplified structure
+    const reviews = (placeData.reviews || [])
+      .filter((review: any) => review.rating >= 4)
+      .slice(0, 5)
+      .map((review: any) => ({
+        authorName: review.authorAttribution?.displayName || 'Anonim',
+        authorPhoto: review.authorAttribution?.photoUri || null,
+        rating: review.rating,
+        text: review.text?.text || '',
+        relativeTime: review.relativePublishTimeDescription || '',
+        publishTime: review.publishTime || null,
+      }));
+
     const result = {
       rating: placeData.rating || null,
       reviewCount: placeData.userRatingCount || 0,
       googleMapsUrl: placeData.googleMapsUri || `https://www.google.com/maps/place/?q=place_id:${placeId}`,
+      reviews: reviews,
     };
 
     return new Response(

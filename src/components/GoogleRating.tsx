@@ -1,6 +1,7 @@
 import { useGoogleRating } from "@/hooks/useGoogleRating";
 import { Star, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ReviewSlider } from "./ReviewSlider";
 
 export function GoogleRating() {
   const { data, isLoading, isError } = useGoogleRating();
@@ -23,7 +24,7 @@ export function GoogleRating() {
     return null; // Silently hide if there's an error or no rating
   }
 
-  const { rating, reviewCount, googleMapsUrl } = data;
+  const { rating, reviewCount, googleMapsUrl, reviews } = data;
 
   // Generate star display
   const fullStars = Math.floor(rating);
@@ -81,6 +82,11 @@ export function GoogleRating() {
             Lihat di Google Maps
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
+
+          {/* Review Slider */}
+          {reviews && reviews.length > 0 && (
+            <ReviewSlider reviews={reviews} />
+          )}
         </div>
       </div>
     </section>

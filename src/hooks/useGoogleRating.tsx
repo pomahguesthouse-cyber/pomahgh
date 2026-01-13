@@ -1,10 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface GoogleReview {
+  authorName: string;
+  authorPhoto: string | null;
+  rating: number;
+  text: string;
+  relativeTime: string;
+  publishTime: string | null;
+}
+
 interface GoogleRating {
   rating: number | null;
   reviewCount: number;
   googleMapsUrl: string;
+  reviews: GoogleReview[];
 }
 
 export function useGoogleRating() {
