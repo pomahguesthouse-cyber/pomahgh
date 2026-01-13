@@ -1530,6 +1530,54 @@ export type Database = {
         }
         Relationships: []
       }
+      price_change_notifications: {
+        Row: {
+          competitor_room_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          new_price: number
+          our_room_id: string | null
+          previous_price: number
+          price_change_percent: number
+        }
+        Insert: {
+          competitor_room_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          new_price: number
+          our_room_id?: string | null
+          previous_price: number
+          price_change_percent: number
+        }
+        Update: {
+          competitor_room_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          new_price?: number
+          our_room_id?: string | null
+          previous_price?: number
+          price_change_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_change_notifications_competitor_room_id_fkey"
+            columns: ["competitor_room_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_notifications_our_room_id_fkey"
+            columns: ["our_room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_adjustment_logs: {
         Row: {
           adjustment_reason: string | null
