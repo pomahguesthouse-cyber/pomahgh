@@ -15,19 +15,94 @@ export interface RoomPriceAnalysis {
   suggested_price: number;
 }
 
+interface RoomPromotion {
+  id: string;
+  room_id: string;
+  promo_price: number | null;
+  discount_percentage: number | null;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  priority: number;
+}
+
+// Helper: Get price for a specific day of the week
+const getDayPrice = (room: any, dayOfWeek: number): number => {
+  const dayPrices = [
+    room.sunday_price,
+    room.monday_price,
+    room.tuesday_price,
+    room.wednesday_price,
+    room.thursday_price,
+    room.friday_price,
+    room.saturday_price,
+  ];
+  return dayPrices[dayOfWeek] || room.price_per_night;
+};
+
+// Helper: Calculate current price with promotions and day-of-week pricing
+const getCurrentPrice = (room: any, activePromo?: RoomPromotion | null): number => {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  // Priority 1: Active promotion from room_promotions table
+  if (activePromo) {
+    if (activePromo.promo_price) return activePromo.promo_price;
+    if (activePromo.discount_percentage) {
+      const basePrice = getDayPrice(room, today.getDay());
+      return Math.round(basePrice * (1 - activePromo.discount_percentage / 100));
+    }
+  }
+
+  // Priority 2: Legacy promo fields on rooms table
+  if (room.promo_price && room.promo_start_date && room.promo_end_date) {
+    if (todayStr >= room.promo_start_date && todayStr <= room.promo_end_date) {
+      return room.promo_price;
+    }
+  }
+
+  // Priority 3: Day-of-week pricing
+  return getDayPrice(room, today.getDay());
+};
+
 export const usePriceAnalysis = () => {
   const { data: analysis = [], isLoading, error, refetch } = useQuery({
     queryKey: ['price-analysis'],
     queryFn: async () => {
-      // 1. Fetch our rooms
+      const today = new Date().toISOString().split('T')[0];
+
+      // 1. Fetch our rooms with all pricing fields
       const { data: rooms, error: roomsError } = await supabase
         .from('rooms')
-        .select('id, name, base_price, price_per_night, min_auto_price, max_auto_price, auto_pricing_enabled')
+        .select(`
+          id, name, base_price, price_per_night, 
+          min_auto_price, max_auto_price, auto_pricing_enabled,
+          promo_price, promo_start_date, promo_end_date,
+          monday_price, tuesday_price, wednesday_price, 
+          thursday_price, friday_price, saturday_price, sunday_price
+        `)
         .eq('available', true);
 
       if (roomsError) throw roomsError;
 
-      // 2. Fetch competitor rooms with mapping
+      // 2. Fetch active promotions
+      const { data: promotions } = await supabase
+        .from('room_promotions')
+        .select('*')
+        .eq('is_active', true)
+        .lte('start_date', today)
+        .gte('end_date', today)
+        .order('priority', { ascending: false });
+
+      // Map promotions to rooms (first one wins due to priority ordering)
+      const promosByRoom = new Map<string, RoomPromotion>();
+      promotions?.forEach((promo) => {
+        if (!promosByRoom.has(promo.room_id)) {
+          promosByRoom.set(promo.room_id, promo as RoomPromotion);
+        }
+      });
+
+      // 3. Fetch competitor rooms with mapping
       const { data: competitorRooms, error: compError } = await supabase
         .from('competitor_rooms')
         .select('id, comparable_room_id')
@@ -36,7 +111,7 @@ export const usePriceAnalysis = () => {
 
       if (compError) throw compError;
 
-      // 3. Get surveys from last 7 days
+      // 4. Get surveys from last 7 days
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const fromDate = sevenDaysAgo.toISOString().split('T')[0];
@@ -48,7 +123,7 @@ export const usePriceAnalysis = () => {
 
       if (surveyError) throw surveyError;
 
-      // 4. Build analysis per room
+      // 5. Build analysis per room
       const results: RoomPriceAnalysis[] = [];
 
       for (const room of rooms || []) {
@@ -62,7 +137,9 @@ export const usePriceAnalysis = () => {
           .filter(s => mappedCompRoomIds.includes(s.competitor_room_id))
           .map(s => Number(s.price));
 
-        const ourPrice = room.base_price || room.price_per_night;
+        // Calculate final price with promotions and day-of-week pricing
+        const activePromo = promosByRoom.get(room.id);
+        const ourPrice = getCurrentPrice(room, activePromo);
 
         if (relevantSurveys.length === 0) {
           results.push({
