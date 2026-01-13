@@ -5,6 +5,7 @@ import * as Icons from "lucide-react";
 import { CityAttraction } from "@/hooks/useCityAttractions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 interface AttractionCardProps {
   attraction: CityAttraction;
@@ -50,10 +51,13 @@ export const AttractionCard = ({ attraction, index = 0, featured = false }: Attr
       <Link to={`/explore-semarang/${attraction.slug}`}>
         <Card className={`group overflow-hidden hover:shadow-xl transition-all duration-300 ${featured ? 'h-full' : ''}`}>
           <div className={`relative overflow-hidden ${featured ? 'h-64' : 'h-48'}`}>
-            <img
+            <OptimizedImage
               src={imageUrl}
               alt={attraction.name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              width={featured ? 600 : 400}
+              height={featured ? 256 : 192}
+              placeholder="blur"
+              className={`w-full ${featured ? 'h-64' : 'h-48'} group-hover:scale-110 transition-transform duration-500`}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             

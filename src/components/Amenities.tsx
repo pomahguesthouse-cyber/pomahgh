@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import React, { useState, useMemo } from "react";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 
 // ---------- FacilityCard (modular) ----------
@@ -71,10 +72,14 @@ const FacilitiesHero = () => {
           {slides.map((slide) => (
             <CarouselItem key={slide.id}>
               <div className="relative w-full overflow-hidden">
-                <img
+                <OptimizedImage
                   src={slide.image_url}
                   alt={slide.title || "Facility"}
-                  className="w-full h-auto object-cover"
+                  width={1200}
+                  height={600}
+                  priority={slides.indexOf(slide) === 0}
+                  placeholder="blur"
+                  className="w-full aspect-[2/1]"
                 />
                 
                 {/* Title & Subtitle */}
