@@ -54,7 +54,7 @@ const FacilitiesHero = () => {
   if (isLoading || !slides || slides.length === 0) return null;
 
   return (
-    <div className="relative mb-12 rounded-2xl overflow-hidden">
+    <div className="relative mb-12 w-full overflow-hidden">
       <Carousel
         opts={{ loop: true }}
         plugins={[Autoplay({ delay: slides[0]?.duration || 4000, stopOnInteraction: false })]}
@@ -72,17 +72,6 @@ const FacilitiesHero = () => {
                   className="w-full h-auto object-cover"
                 />
                 
-                {/* Overlay */}
-                {slide.show_overlay && (
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background: `linear-gradient(135deg, ${slide.overlay_gradient_from}, ${slide.overlay_gradient_to})`,
-                      opacity: slide.overlay_opacity,
-                    }}
-                  />
-                )}
-                
                 {/* Title & Subtitle */}
                 {(slide.title || slide.subtitle) && (
                   <div className="absolute inset-0 flex flex-col justify-center items-center text-center px-4">
@@ -91,7 +80,7 @@ const FacilitiesHero = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="text-3xl md:text-5xl font-bold text-white mb-4"
+                        className="text-3xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg"
                       >
                         {slide.title}
                       </motion.h3>
@@ -101,7 +90,7 @@ const FacilitiesHero = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-lg md:text-xl text-white/90"
+                        className="text-lg md:text-xl text-white/90 drop-shadow-lg"
                       >
                         {slide.subtitle}
                       </motion.p>
@@ -164,9 +153,9 @@ export const Amenities = () => {
   if (!facilities || facilities.length === 0) return null;
 
   return (
-    <section id="amenities" className="py-20 px-4 bg-background">
-      <div className="container mx-auto">
-        <FacilitiesHero />
+    <section id="amenities" className="py-20 bg-background">
+      <FacilitiesHero />
+      <div className="container mx-auto px-4">
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
