@@ -64,11 +64,12 @@ const FacilitiesHero = () => {
         <CarouselContent>
           {slides.map((slide) => (
             <CarouselItem key={slide.id}>
-              <div className="relative h-[40vh] md:h-[50vh] w-full">
-                {/* Background Image */}
-                <div
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${slide.image_url})` }}
+              <div className="relative w-full">
+                {/* Responsive Image */}
+                <img
+                  src={slide.image_url}
+                  alt={slide.title || "Facility"}
+                  className="w-full h-auto object-cover"
                 />
                 
                 {/* Overlay */}
