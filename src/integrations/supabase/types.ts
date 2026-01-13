@@ -1277,6 +1277,7 @@ export type Database = {
           facebook_url: string | null
           favicon_url: string | null
           full_refund_days_before: number | null
+          google_place_id: string | null
           header_bg_color: string | null
           header_bg_opacity: number | null
           header_blur: number | null
@@ -1340,6 +1341,7 @@ export type Database = {
           facebook_url?: string | null
           favicon_url?: string | null
           full_refund_days_before?: number | null
+          google_place_id?: string | null
           header_bg_color?: string | null
           header_bg_opacity?: number | null
           header_blur?: number | null
@@ -1403,6 +1405,7 @@ export type Database = {
           facebook_url?: string | null
           favicon_url?: string | null
           full_refund_days_before?: number | null
+          google_place_id?: string | null
           header_bg_color?: string | null
           header_bg_opacity?: number | null
           header_blur?: number | null
