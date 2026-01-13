@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { usePriceAnalysis } from "@/hooks/usePriceAnalysis";
 import { usePricingAdjustmentLogs } from "@/hooks/usePricingAdjustmentLogs";
+import { usePriceChangeNotifications } from "@/hooks/usePriceChangeNotifications";
 import { useRooms } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -11,8 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
-import { TrendingUp, TrendingDown, Minus, Play, RefreshCw, Settings2, History } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Play, RefreshCw, Settings2, History, Bell, BellRing, CheckCheck, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { formatRupiahID } from "@/utils/indonesianFormat";
@@ -30,6 +32,13 @@ interface RoomWithAutoPricing {
 export const AnalysisDashboardTab = () => {
   const { analysis, isLoading, refetch } = usePriceAnalysis();
   const { logs, isLoading: logsLoading } = usePricingAdjustmentLogs(30);
+  const { 
+    notifications, 
+    unreadCount, 
+    checkPriceChanges, 
+    markAsRead, 
+    markAllAsRead 
+  } = usePriceChangeNotifications();
   const { data: rooms } = useRooms();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -145,6 +154,14 @@ export const AnalysisDashboardTab = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => checkPriceChanges.mutate()}
+            disabled={checkPriceChanges.isPending}
+          >
+            <Bell className="h-4 w-4 mr-2" />
+            {checkPriceChanges.isPending ? "Mengecek..." : "Cek Perubahan Harga"}
+          </Button>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
@@ -155,6 +172,86 @@ export const AnalysisDashboardTab = () => {
           </Button>
         </div>
       </div>
+
+      {/* Price Change Notifications */}
+      {notifications.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-orange-700">
+                {unreadCount > 0 ? (
+                  <BellRing className="h-5 w-5 animate-pulse" />
+                ) : (
+                  <Bell className="h-5 w-5" />
+                )}
+                Notifikasi Perubahan Harga
+                {unreadCount > 0 && (
+                  <Badge variant="destructive" className="ml-2">
+                    {unreadCount} baru
+                  </Badge>
+                )}
+              </CardTitle>
+              {unreadCount > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => markAllAsRead.mutate()}
+                  disabled={markAllAsRead.isPending}
+                >
+                  <CheckCheck className="h-4 w-4 mr-1" />
+                  Tandai semua dibaca
+                </Button>
+              )}
+            </div>
+            <CardDescription>
+              Perubahan harga kompetitor lebih dari 10% dibanding survey sebelumnya
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[200px]">
+              <div className="space-y-2">
+                {notifications.map((notif) => (
+                  <div 
+                    key={notif.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                      notif.is_read ? 'bg-background' : 'bg-orange-100/50 border-orange-200'
+                    }`}
+                    onClick={() => !notif.is_read && markAsRead.mutate(notif.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className={`h-5 w-5 ${
+                        notif.price_change_percent > 0 ? 'text-red-500' : 'text-green-500'
+                      }`} />
+                      <div>
+                        <div className="font-medium text-sm">
+                          {notif.competitor_room?.competitor_hotel?.name} - {notif.competitor_room?.room_name}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {notif.our_room && (
+                            <span className="mr-2">vs {notif.our_room.name}</span>
+                          )}
+                          {format(new Date(notif.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-mono">
+                        {formatRupiahID(notif.previous_price)} → {formatRupiahID(notif.new_price)}
+                      </div>
+                      <Badge 
+                        variant={notif.price_change_percent > 0 ? "destructive" : "default"}
+                        className="mt-1"
+                      >
+                        {notif.price_change_percent > 0 ? "+" : ""}{notif.price_change_percent}%
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Price Comparison Chart */}
       <Card>
