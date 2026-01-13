@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useExploreHeroSlides } from "@/hooks/useExploreHeroSlides";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 const defaultSlide = {
   id: "default",
@@ -58,12 +59,17 @@ export const ExploreHeroSlider = () => {
             <CarouselItem key={slide.id} className="h-full pl-0">
               <div className="relative w-full h-[60vh] min-h-[400px] flex items-center justify-center">
                 {/* Background Image */}
-                <div
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={{
-                    backgroundImage: `url('${slide.image_url}')`,
-                  }}
-                />
+                <div className="absolute inset-0">
+                  <OptimizedImage
+                    src={slide.image_url}
+                    alt={slide.title || "Explore Semarang"}
+                    width={1920}
+                    height={800}
+                    priority={index === 0}
+                    placeholder="blur"
+                    className="w-full h-full"
+                  />
+                </div>
 
                 {/* Gradient Overlay */}
                 {slide.show_overlay && (

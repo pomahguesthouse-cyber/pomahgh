@@ -3,6 +3,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Maximize2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 interface ImageGalleryProps {
   images: string[];
@@ -18,13 +19,17 @@ export const ImageGallery = ({ images, roomName, has360Tour }: ImageGalleryProps
     <div className="space-y-4">
       {/* Main Image */}
       <div className="relative aspect-video rounded-lg overflow-hidden group">
-        <img
+        <OptimizedImage
           src={images[selectedImage]}
           alt={`${roomName} - Photo ${selectedImage + 1}`}
-          className="w-full h-full object-cover"
+          width={1200}
+          height={675}
+          priority
+          placeholder="blur"
+          className="w-full h-full"
         />
         {has360Tour && (
-          <Badge className="absolute top-4 left-4 bg-primary/90 text-primary-foreground backdrop-blur">
+          <Badge className="absolute top-4 left-4 bg-primary/90 text-primary-foreground backdrop-blur z-10">
             <RotateCw className="w-3 h-3 mr-1" />
             360° Available
           </Badge>
@@ -33,7 +38,7 @@ export const ImageGallery = ({ images, roomName, has360Tour }: ImageGalleryProps
           onClick={() => setLightboxOpen(true)}
           variant="secondary"
           size="icon"
-          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-10"
         >
           <Maximize2 className="w-5 h-5" />
         </Button>
@@ -50,10 +55,13 @@ export const ImageGallery = ({ images, roomName, has360Tour }: ImageGalleryProps
                 selectedImage === index ? "border-primary" : "border-transparent"
               }`}
             >
-              <img
+              <OptimizedImage
                 src={image}
                 alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover hover:scale-110 transition-transform"
+                width={150}
+                height={100}
+                placeholder="skeleton"
+                className="w-full h-full hover:scale-110 transition-transform"
               />
             </button>
           ))}
@@ -63,9 +71,13 @@ export const ImageGallery = ({ images, roomName, has360Tour }: ImageGalleryProps
       {/* Lightbox Dialog */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent className="max-w-screen-xl p-0">
-          <img
+          <OptimizedImage
             src={images[selectedImage]}
             alt={roomName}
+            width={1920}
+            height={1080}
+            priority
+            placeholder="blur"
             className="w-full h-auto"
           />
         </DialogContent>

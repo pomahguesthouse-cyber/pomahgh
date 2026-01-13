@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Eye, Tag } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 import type { RoomCardImageProps } from "./types";
 
 const getTransitionClass = (effect?: string) => {
@@ -52,24 +53,30 @@ export const RoomCardImage = ({ room, images, hasPromo, onViewTour }: RoomCardIm
           <CarouselContent>
             {images.map((image, index) => (
               <CarouselItem key={index} onClick={(e) => e.stopPropagation()}>
-                <img
+                <OptimizedImage
                   src={image}
                   alt={`${room.name} - Photo ${index + 1}`}
+                  width={400}
+                  height={256}
+                  priority={index === 0}
+                  placeholder="blur"
                   className={`
-                    w-full h-full object-cover 
+                    w-full h-64
                     ${isSlide ? "group-hover:scale-105 transition-transform duration-500" : transitionClass}
                   `}
-                  draggable={false}
                 />
               </CarouselItem>
             ))}
           </CarouselContent>
         </Carousel>
       ) : (
-        <img
-          src={images?.[0]}
+        <OptimizedImage
+          src={images?.[0] || ""}
           alt={room.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          width={400}
+          height={256}
+          placeholder="blur"
+          className="w-full h-64 group-hover:scale-105 transition-transform duration-500"
         />
       )}
 
