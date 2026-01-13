@@ -101,3 +101,6 @@ verify_jwt = false
 
 [functions.scrape-competitor-prices]
 verify_jwt = false
+
+[functions.get-google-rating]
+verify_jwt = false

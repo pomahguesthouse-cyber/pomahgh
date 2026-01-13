@@ -211,6 +211,27 @@ export default function AdminSettings() {
                 </p>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Google Rating</CardTitle>
+                <CardDescription>Konfigurasi untuk menampilkan rating Google di halaman depan</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="google_place_id">Google Place ID</Label>
+                  <Input 
+                    id="google_place_id" 
+                    name="google_place_id" 
+                    defaultValue={(settings as any).google_place_id || ""} 
+                    placeholder="e.g. ChIJaUZXtrSLcC4RwmPfjuHaiO8"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Dapatkan Place ID dari <a href="https://developers.google.com/maps/documentation/places/web-service/place-id" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Place ID Finder</a>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="branding" className="space-y-4">
