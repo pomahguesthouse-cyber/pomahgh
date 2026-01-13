@@ -2,10 +2,10 @@ import * as Icons from "lucide-react";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useFacilities } from "@/hooks/useFacilities";
 import { useFacilityHeroSlides } from "@/hooks/useFacilityHeroSlides";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 
 
 // ---------- FacilityCard (modular) ----------
@@ -37,6 +37,16 @@ const FacilitiesHero = () => {
   const { data: slides, isLoading } = useFacilityHeroSlides();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [api, setApi] = useState<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Parallax effect
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"]
+  });
+
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
 
   React.useEffect(() => {
     if (!api) return;
@@ -54,7 +64,7 @@ const FacilitiesHero = () => {
   if (isLoading || !slides || slides.length === 0) return null;
 
   return (
-    <div className="relative mb-12 w-full overflow-hidden">
+    <div ref={containerRef} className="relative mb-12 w-full overflow-hidden">
       <Carousel
         opts={{ loop: true }}
         plugins={[Autoplay({ delay: slides[0]?.duration || 4000, stopOnInteraction: false })]}
@@ -64,13 +74,15 @@ const FacilitiesHero = () => {
         <CarouselContent>
           {slides.map((slide) => (
             <CarouselItem key={slide.id}>
-              <div className="relative w-full">
-                {/* Responsive Image */}
-                <img
-                  src={slide.image_url}
-                  alt={slide.title || "Facility"}
-                  className="w-full h-auto object-cover"
-                />
+              <div className="relative w-full overflow-hidden">
+                {/* Parallax Image Container */}
+                <motion.div style={{ y, scale }} className="w-full">
+                  <img
+                    src={slide.image_url}
+                    alt={slide.title || "Facility"}
+                    className="w-full h-auto object-cover"
+                  />
+                </motion.div>
                 
                 {/* Title & Subtitle */}
                 {(slide.title || slide.subtitle) && (
