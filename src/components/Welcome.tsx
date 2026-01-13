@@ -2,8 +2,8 @@ export const Welcome = () => {
   return <section className="py-20 px-4 bg-background">
       <div className="container mx-auto max-w-4xl text-center">
         <div className="animate-slide-up">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2">
-            Your Perfect Stay               
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-cinzel font-semibold text-foreground mb-4 sm:mb-6 px-2">
+            Your Perfect Stay               
           </h2>
           <div className="w-16 sm:w-24 h-1 bg-primary mx-auto mb-6 sm:mb-8"></div>
           <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed mb-4 sm:mb-6 px-4">

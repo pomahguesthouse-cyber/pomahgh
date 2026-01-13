@@ -5,7 +5,7 @@ import type { RoomsHeaderProps } from "./types";
 export const RoomsHeader = ({ checkIn, checkOut, totalNights }: RoomsHeaderProps) => {
   return (
     <div className="text-center mb-12 sm:mb-16 animate-slide-up">
-      <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2">
+      <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-cinzel font-semibold text-foreground mb-4 sm:mb-6 px-2">
         Our Accommodations
       </h2>
       <div className="w-16 sm:w-24 h-1 bg-primary mx-auto mb-4 sm:mb-6"></div>
