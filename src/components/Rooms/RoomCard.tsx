@@ -6,6 +6,7 @@ import { RoomCardInfo } from "./RoomCardInfo";
 import { RoomCardPrice } from "./RoomCardPrice";
 import { RoomFeatures } from "./RoomFeatures";
 import type { RoomCardProps } from "./types";
+import familyChoiceIcon from "@/assets/family-choice-icon.png";
 
 export const RoomCard = ({
   room,
@@ -41,7 +42,7 @@ export const RoomCard = ({
         "
       >
         {/* IMAGE */}
-        <div className="overflow-hidden h-60 sm:h-64 rounded-t-2xl">
+        <div className="overflow-hidden h-60 sm:h-64 rounded-t-2xl relative">
           <img
             src={images?.[0] || "/placeholder.png"}
             alt={room.name}
@@ -51,6 +52,22 @@ export const RoomCard = ({
               group-hover:scale-110
             "
           />
+          
+          {/* Family Choice Badge - untuk kamar >= 4 tamu */}
+          {room.max_guests >= 4 && (
+            <div className="absolute bottom-2 left-2 z-10">
+              <div className="bg-rose-500 rounded-md px-2 py-1 flex items-center gap-1.5 shadow-md">
+                <img 
+                  src={familyChoiceIcon} 
+                  alt="Family" 
+                  className="w-8 h-8 rounded-sm object-cover"
+                />
+                <span className="text-white text-xs font-semibold">
+                  Family Choice
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <CardContent className="p-4 sm:p-6 flex flex-col gap-4">
