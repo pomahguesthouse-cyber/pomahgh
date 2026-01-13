@@ -165,7 +165,7 @@ export const Amenities = () => {
   if (!facilities || facilities.length === 0) return null;
 
   return (
-    <section id="amenities" className="py-20 bg-background">
+    <section id="amenities" className="pt-0 pb-20 bg-background">
       <FacilitiesHero />
       <div className="container mx-auto px-4">
         
