@@ -31,8 +31,7 @@ export const ExploreHero = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6"
-          style={{ fontFamily: "Playfair Display, serif" }}
+          className="text-4xl md:text-6xl lg:text-7xl font-cinzel font-semibold text-white mb-6"
         >
           Explore Semarang
         </motion.h1>
