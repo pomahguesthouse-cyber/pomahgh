@@ -56,16 +56,11 @@ export const RoomCard = ({
           {/* Family Choice Badge - untuk kamar >= 4 tamu */}
           {room.max_guests >= 4 && (
             <div className="absolute bottom-2 left-2 z-10">
-              <div className="bg-rose-500 rounded-md px-2 py-1 flex items-center gap-1.5 shadow-md">
-                <img 
-                  src={familyChoiceIcon} 
-                  alt="Family" 
-                  className="w-8 h-8 rounded-sm object-cover"
-                />
-                <span className="text-white text-xs font-semibold">
-                  Family Choice
-                </span>
-              </div>
+              <img 
+                src={familyChoiceIcon} 
+                alt="Family Choice" 
+                className="w-20 h-auto drop-shadow-lg"
+              />
             </div>
           )}
         </div>
