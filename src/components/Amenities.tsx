@@ -5,7 +5,7 @@ import { useFacilityHeroSlides } from "@/hooks/useFacilityHeroSlides";
 import { motion } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 
 
 // ---------- FacilityCard (modular) ----------
@@ -37,6 +37,7 @@ const FacilitiesHero = () => {
   const { data: slides, isLoading } = useFacilityHeroSlides();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [api, setApi] = useState<any>(null);
+  const autoplayRef = useRef(Autoplay({ delay: 4000, stopOnInteraction: false }));
 
   React.useEffect(() => {
     if (!api) return;
@@ -57,7 +58,7 @@ const FacilitiesHero = () => {
     <div className="relative mb-12 w-full overflow-hidden">
       <Carousel
         opts={{ loop: true }}
-        plugins={[Autoplay({ delay: slides[0]?.duration || 4000, stopOnInteraction: false })]}
+        plugins={[autoplayRef.current]}
         className="w-full"
         setApi={setApi}
       >
