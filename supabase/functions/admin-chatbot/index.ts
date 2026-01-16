@@ -486,13 +486,78 @@ async function getRoomInventory(supabase: any) {
   };
 }
 
+// Helper function to get price for a specific day of week
+function getDayPrice(room: any, dayOfWeek: number): number {
+  const dayPrices: Record<number, string> = {
+    0: 'sunday_price',
+    1: 'monday_price',
+    2: 'tuesday_price',
+    3: 'wednesday_price',
+    4: 'thursday_price',
+    5: 'friday_price',
+    6: 'saturday_price'
+  };
+  const priceField = dayPrices[dayOfWeek];
+  return room[priceField] || room.price_per_night;
+}
+
+// Calculate final price with promo and day-of-week pricing
+function calculateFinalPrice(
+  room: any, 
+  checkIn: Date, 
+  checkOut: Date, 
+  activePromo: any
+): { totalPrice: number; promoApplied: any; promoNights: number; originalPrice: number } {
+  let totalPrice = 0;
+  let originalPrice = 0;
+  let promoNights = 0;
+  
+  // Iterate each night
+  const currentDate = new Date(checkIn);
+  while (currentDate < checkOut) {
+    const dayOfWeek = currentDate.getDay();
+    const dateStr = currentDate.toISOString().split('T')[0];
+    
+    // Get base price for this day
+    const baseDayPrice = getDayPrice(room, dayOfWeek);
+    originalPrice += baseDayPrice;
+    let nightPrice = baseDayPrice;
+    
+    // Check promo from room_promotions
+    if (activePromo && dateStr >= activePromo.start_date && dateStr <= activePromo.end_date) {
+      if (activePromo.promo_price) {
+        nightPrice = activePromo.promo_price;
+        promoNights++;
+      } else if (activePromo.discount_percentage) {
+        nightPrice = Math.round(baseDayPrice * (1 - activePromo.discount_percentage / 100));
+        promoNights++;
+      }
+    } 
+    // Check legacy promo from rooms table
+    else if (room.promo_price && room.promo_start_date && room.promo_end_date) {
+      if (dateStr >= room.promo_start_date && dateStr <= room.promo_end_date) {
+        nightPrice = room.promo_price;
+        promoNights++;
+      }
+    }
+    
+    totalPrice += nightPrice;
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return { totalPrice, promoApplied: activePromo, promoNights, originalPrice };
+}
+
 async function createAdminBooking(supabase: any, args: any) {
   console.log(`📝 createAdminBooking called with args:`, JSON.stringify(args));
   
-  // Fetch all rooms for smart matching
+  // Fetch all rooms for smart matching with day prices and promo fields
   const { data: allRooms, error: roomsError } = await supabase
     .from('rooms')
-    .select('id, name, price_per_night, room_numbers, max_guests')
+    .select('id, name, price_per_night, room_numbers, max_guests, ' +
+      'sunday_price, monday_price, tuesday_price, wednesday_price, ' +
+      'thursday_price, friday_price, saturday_price, ' +
+      'promo_price, promo_start_date, promo_end_date')
     .eq('available', true);
 
   if (roomsError) throw roomsError;
@@ -516,6 +581,19 @@ async function createAdminBooking(supabase: any, args: any) {
   if (nights <= 0) {
     throw new Error('Tanggal check-out harus setelah check-in');
   }
+
+  // Fetch active promotions for this room
+  const { data: activePromos } = await supabase
+    .from('room_promotions')
+    .select('*')
+    .eq('room_id', room.id)
+    .eq('is_active', true)
+    .lte('start_date', args.check_out)
+    .gte('end_date', args.check_in)
+    .order('priority', { ascending: false });
+
+  const activePromo = activePromos?.[0] || null;
+  console.log(`Active promo for ${room.name}:`, activePromo?.name || 'None');
 
   // Get existing bookings for this room in the date range
   const { data: conflictingBookings, error: conflictError } = await supabase
@@ -577,7 +655,13 @@ async function createAdminBooking(supabase: any, args: any) {
     }
   }
 
-  const totalPrice = room.price_per_night * nights;
+  // Calculate final price with promo and day-of-week pricing
+  const { totalPrice, promoApplied, promoNights, originalPrice } = calculateFinalPrice(
+    room, checkIn, checkOut, activePromo
+  );
+  const savings = originalPrice - totalPrice;
+
+  console.log(`💰 Price calculation: original=${originalPrice}, final=${totalPrice}, savings=${savings}, promoNights=${promoNights}`);
 
   // Create booking
   const { data: booking, error: bookingError } = await supabase
@@ -616,7 +700,14 @@ async function createAdminBooking(supabase: any, args: any) {
         total_nights: nights,
         num_guests: args.num_guests,
         total_price: totalPrice,
-        booking_source: 'admin'
+        original_price: originalPrice,
+        booking_source: 'admin',
+        // Promo info
+        promo_applied: promoApplied?.name || null,
+        promo_discount: promoApplied?.discount_percentage || null,
+        promo_price: promoApplied?.promo_price || null,
+        promo_nights: promoNights,
+        savings: savings
       }
     });
     console.log('✅ Manager notification sent for booking:', booking.booking_code);
@@ -635,7 +726,14 @@ async function createAdminBooking(supabase: any, args: any) {
     check_in: args.check_in,
     check_out: args.check_out,
     nights: nights,
-    total_price: totalPrice
+    total_price: totalPrice,
+    base_price_per_night: room.price_per_night,
+    original_price: originalPrice,
+    promo_applied: promoApplied?.name || null,
+    promo_discount: promoApplied?.discount_percentage || null,
+    promo_price: promoApplied?.promo_price || null,
+    promo_nights: promoNights,
+    savings: savings
   };
 }
 
