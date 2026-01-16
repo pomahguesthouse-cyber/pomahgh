@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.daily-checkin-reminder]
 verify_jwt = false
+
+[functions.notify-new-booking]
+verify_jwt = false
