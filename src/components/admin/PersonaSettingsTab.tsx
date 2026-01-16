@@ -147,7 +147,7 @@ export default function PersonaSettingsTab() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
               <Bot className="w-5 h-5" />
               Identitas Bot
             </CardTitle>
@@ -188,7 +188,7 @@ export default function PersonaSettingsTab() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
               <Sparkles className="w-5 h-5" />
               Karakteristik
             </CardTitle>
@@ -215,7 +215,7 @@ export default function PersonaSettingsTab() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
               <MessageCircle className="w-5 h-5" />
               Gaya Komunikasi
             </CardTitle>
@@ -290,7 +290,7 @@ export default function PersonaSettingsTab() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Instruksi Khusus</CardTitle>
+            <CardTitle className="font-['Arial',Helvetica,sans-serif]">Instruksi Khusus</CardTitle>
             <CardDescription>Tambahkan aturan atau panduan khusus untuk bot</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -328,7 +328,7 @@ export default function PersonaSettingsTab() {
       <div className="space-y-6">
         <Card className="sticky top-4">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
               <Eye className="w-5 h-5" />
               Preview Respons Bot
             </CardTitle>

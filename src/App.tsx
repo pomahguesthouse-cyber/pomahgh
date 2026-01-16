@@ -19,6 +19,8 @@ import AdminFacilities from "./pages/admin/AdminFacilities";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminNearbyLocations from "./pages/admin/AdminNearbyLocations";
 import AdminChatbot from "./pages/admin/AdminChatbot";
+import AdminGuestChatbot from "./pages/admin/AdminGuestChatbot";
+import AdminAdminChatbot from "./pages/admin/AdminAdminChatbot";
 import AdminChannelManagers from "./pages/admin/AdminChannelManagers";
 import AdminBankAccounts from "./pages/admin/AdminBankAccounts";
 import AdminRoomFeatures from "./pages/admin/AdminRoomFeatures";
@@ -67,7 +69,9 @@ const App = () => (
           <Route path="/admin/promotions" element={<AdminLayout><AdminPromotions /></AdminLayout>} />
             <Route path="/admin/nearby-locations" element={<AdminLayout><AdminNearbyLocations /></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
-          <Route path="/admin/chatbot" element={<AdminLayout><AdminChatbot /></AdminLayout>} />
+          <Route path="/admin/chatbot" element={<AdminLayout><AdminGuestChatbot /></AdminLayout>} />
+          <Route path="/admin/chatbot/guest" element={<AdminLayout><AdminGuestChatbot /></AdminLayout>} />
+          <Route path="/admin/chatbot/admin" element={<AdminLayout><AdminAdminChatbot /></AdminLayout>} />
           <Route path="/admin/chat" element={<AdminLayout><AdminChat /></AdminLayout>} />
           <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
