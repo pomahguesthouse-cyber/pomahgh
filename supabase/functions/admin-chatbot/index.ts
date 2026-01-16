@@ -629,43 +629,79 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Verify admin authentication
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify user is admin
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Check if request is from WhatsApp (internal service call)
+    const isWhatsAppSource = req.headers.get("X-WhatsApp-Source") === "true";
+    const whatsappPhone = req.headers.get("X-WhatsApp-Phone");
+    const managerName = req.headers.get("X-Manager-Name") || "Manager";
 
-    const { data: adminRole } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
+    let isAuthorized = false;
+    let adminId: string | null = null;
+    let adminEmail: string | null = null;
 
-    if (!adminRole) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (isWhatsAppSource && whatsappPhone) {
+      // WhatsApp source - validate phone is in manager list
+      console.log(`WhatsApp source request from phone: ${whatsappPhone}, manager: ${managerName}`);
+      
+      const { data: hotelSettings } = await supabase
+        .from('hotel_settings')
+        .select('whatsapp_manager_numbers')
+        .single();
+      
+      const managerNumbers: Array<{phone: string; name: string}> = hotelSettings?.whatsapp_manager_numbers || [];
+      isAuthorized = managerNumbers.some(m => m.phone === whatsappPhone);
+      
+      if (!isAuthorized) {
+        console.log(`Phone ${whatsappPhone} not in manager list`);
+        return new Response(JSON.stringify({ error: "Not a registered manager" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // For WhatsApp managers, use phone as ID and manager name as email
+      adminId = `whatsapp_${whatsappPhone}`;
+      adminEmail = `${managerName} (WhatsApp: ${whatsappPhone})`;
+      console.log(`✅ WhatsApp manager authorized: ${managerName} (${whatsappPhone})`);
+    } else {
+      // Web source - verify admin authentication via JWT
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Invalid token" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: adminRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (!adminRole) {
+        return new Response(JSON.stringify({ error: "Admin access required" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      adminId = user.id;
+      adminEmail = user.email || null;
+      isAuthorized = true;
     }
 
     const { messages } = await req.json();
@@ -776,8 +812,8 @@ Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan bar
         await supabase
           .from('admin_chatbot_audit_logs')
           .insert({
-            admin_id: user!.id,
-            admin_email: user!.email,
+            admin_id: adminId!,
+            admin_email: adminEmail,
             session_id: sessionId,
             user_message: userMessage,
             tool_calls: executedTools,
@@ -786,7 +822,7 @@ Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan bar
             ip_address: ipAddress,
             user_agent: userAgent,
           });
-        console.log(`Audit log saved: admin=${user!.email}, message="${userMessage.substring(0, 50)}..."`);
+        console.log(`Audit log saved: admin=${adminEmail}, message="${userMessage.substring(0, 50)}..."`);
       } catch (error) {
         console.error('Failed to log audit entry:', error);
         // Don't throw - audit logging failure shouldn't break the chatbot
