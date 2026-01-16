@@ -106,9 +106,9 @@ export function BookingAccordionItem({
     <AccordionItem value={booking.id} className="border-0">
       <AccordionTrigger className={`px-4 py-3 hover:no-underline hover:bg-gray-100 border-b border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
         {/* Desktop: Table-like row */}
-        <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_80px_100px_100px_70px_120px_120px_100px_130px] gap-1 w-full text-[13px] text-gray-700 items-center">
+        <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_80px_100px_100px_70px_120px_120px_100px_130px] gap-1 w-full text-[13px] text-gray-700 font-roboto items-center">
           <div className="text-center font-medium">{index}</div>
-          <div className="font-mono text-xs">{booking.booking_code}</div>
+          <div className="text-xs">{booking.booking_code}</div>
           <div className="truncate">{booking.guest_name}</div>
           <div className="truncate">{getRoomName(booking.room_id)}</div>
           <div className="text-center">{allocatedRooms}</div>
@@ -124,9 +124,9 @@ export function BookingAccordionItem({
         </div>
 
         {/* Mobile: Card-like layout */}
-        <div className="lg:hidden flex flex-col w-full gap-2 text-left">
+        <div className="lg:hidden flex flex-col w-full gap-2 text-left font-roboto">
           <div className="flex items-center justify-between">
-            <span className="font-mono font-semibold text-sm">{booking.booking_code}</span>
+            <span className="font-semibold text-sm">{booking.booking_code}</span>
             <span className={`text-xs font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
               {paymentStatusLabels[booking.payment_status || 'unpaid']}
             </span>
@@ -143,7 +143,7 @@ export function BookingAccordionItem({
         </div>
       </AccordionTrigger>
 
-      <AccordionContent className="px-4 pb-4 bg-gray-50 border-b border-gray-200">
+      <AccordionContent className="px-4 pb-4 bg-gray-50 border-b border-gray-200 font-roboto">
         <div className="space-y-4 pt-4">
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
