@@ -450,6 +450,8 @@ async function getRoomInventory(supabase: any) {
 }
 
 async function createAdminBooking(supabase: any, args: any) {
+  console.log(`📝 createAdminBooking called with args:`, JSON.stringify(args));
+  
   // Get room data
   const { data: room, error: roomError } = await supabase
     .from('rooms')
@@ -458,12 +460,17 @@ async function createAdminBooking(supabase: any, args: any) {
     .single();
 
   if (roomError || !room) {
+    console.error(`❌ Room not found: ${args.room_id}`);
     throw new Error('Kamar tidak ditemukan');
   }
 
-  // Validate room number
+  console.log(`Found room: ${room.name}, available numbers: ${room.room_numbers?.join(', ')}`);
+
+  // Validate room number - IMPROVED ERROR MESSAGE
   if (!room.room_numbers?.includes(args.room_number)) {
-    throw new Error(`Nomor kamar ${args.room_number} tidak valid untuk ${room.name}`);
+    const availableNumbers = room.room_numbers?.join(', ') || 'tidak ada';
+    console.error(`❌ Invalid room number ${args.room_number} for ${room.name}. Available: ${availableNumbers}`);
+    throw new Error(`Nomor kamar ${args.room_number} tidak tersedia untuk ${room.name}. Nomor yang tersedia: ${availableNumbers}`);
   }
 
   // Calculate nights

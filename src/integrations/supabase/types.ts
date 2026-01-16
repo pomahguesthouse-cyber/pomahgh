@@ -2326,6 +2326,7 @@ export type Database = {
           is_takeover: boolean | null
           last_message_at: string | null
           phone_number: string
+          session_type: string | null
           takeover_at: string | null
           takeover_by: string | null
           updated_at: string | null
@@ -2340,6 +2341,7 @@ export type Database = {
           is_takeover?: boolean | null
           last_message_at?: string | null
           phone_number: string
+          session_type?: string | null
           takeover_at?: string | null
           takeover_by?: string | null
           updated_at?: string | null
@@ -2354,6 +2356,7 @@ export type Database = {
           is_takeover?: boolean | null
           last_message_at?: string | null
           phone_number?: string
+          session_type?: string | null
           takeover_at?: string | null
           takeover_by?: string | null
           updated_at?: string | null
