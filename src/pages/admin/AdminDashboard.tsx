@@ -164,7 +164,7 @@ const AdminDashboard = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs md:text-sm text-muted-foreground">Tingkat Pembatalan</span>
-              <span className="text-sm md:text-base font-semibold">
+              <span className="text-sm font-mono font-extrabold md:text-lg">
                 {analytics.cancellationRate.toFixed(1)}%
               </span>
             </div>
