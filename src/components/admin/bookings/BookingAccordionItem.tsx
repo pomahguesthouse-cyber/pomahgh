@@ -28,7 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Booking, BankAccount } from "./types";
 import { formatRupiahID, formatTimeID } from "@/utils/indonesianFormat";
-import { ChevronDown, Edit, Trash2, FileText, Phone, Mail, Bed, Clock, CreditCard } from "lucide-react";
+import { ChevronDown, Edit, Trash2, BookOpen, Phone, Mail, Bed, Clock, CreditCard } from "lucide-react";
 
 interface BookingAccordionItemProps {
   booking: Booking;
@@ -271,7 +271,7 @@ export function BookingAccordionItem({
 
             {/* Invoice Button */}
             <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50" onClick={() => onInvoiceClick(booking)}>
-              <FileText className="mr-1 h-4 w-4" />
+              <BookOpen className="mr-1 h-4 w-4" />
               Invoice
             </Button>
 
