@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.check-price-changes]
 verify_jwt = false
+
+[functions.daily-checkin-reminder]
+verify_jwt = false
