@@ -234,45 +234,69 @@ const tools = [
 
 // Helper function for smart room matching (prioritized)
 function findBestRoomMatch(searchName: string, rooms: any[]): any | null {
+  // Normalize: only remove 'room' and 'kamar', keep 'suite' intact
   const normalizeRoomName = (name: string) => {
     return name
       .toLowerCase()
-      .replace(/\b(room|kamar|suite)\b/gi, '')
+      .replace(/\b(room|kamar)\b/gi, '')
+      .replace(/\s+/g, ' ')
       .trim();
   };
   
   const normalizedSearch = normalizeRoomName(searchName);
-  console.log(`Room matching: searching for "${searchName}" -> normalized: "${normalizedSearch}"`);
+  console.log(`🔍 Room matching: "${searchName}" -> "${normalizedSearch}"`);
+  console.log(`📋 Available rooms: ${rooms.map((r: any) => `"${r.name}" -> "${normalizeRoomName(r.name)}"`).join(', ')}`);
+  
+  // Room aliases for common variations
+  const aliases: Record<string, string[]> = {
+    'family suite': ['family', 'fs', 'familysuite', 'family room', 'suite keluarga'],
+    'grand deluxe': ['gd', 'granddeluxe', 'grand'],
+    'deluxe': ['dlx', 'dx', 'delux'],
+    'single': ['sgl', 'single room'],
+    'superior': ['sup', 'super'],
+    'villa': ['vl', 'vila']
+  };
   
   // Priority 1: Exact match (highest priority)
-  const exactMatch = rooms.find(r => 
+  const exactMatch = rooms.find((r: any) => 
     normalizeRoomName(r.name) === normalizedSearch
   );
   if (exactMatch) {
-    console.log(`Room matching: EXACT match found -> "${exactMatch.name}"`);
+    console.log(`✅ EXACT match: "${exactMatch.name}"`);
     return exactMatch;
   }
   
-  // Priority 2: Starts with (e.g., "deluxe" matches "deluxe room" but NOT "grand deluxe")
-  const startsWithMatch = rooms.find(r => 
-    normalizeRoomName(r.name).startsWith(normalizedSearch)
+  // Priority 2: Check aliases
+  for (const room of rooms) {
+    const roomNormalized = normalizeRoomName(room.name);
+    const roomAliases = aliases[roomNormalized] || [];
+    if (roomAliases.includes(normalizedSearch) || roomAliases.includes(normalizedSearch.replace(/\s+/g, ''))) {
+      console.log(`✅ ALIAS match: "${searchName}" -> "${room.name}"`);
+      return room;
+    }
+  }
+  
+  // Priority 3: Starts with (e.g., "deluxe" matches "deluxe room" but NOT "grand deluxe")
+  const startsWithMatch = rooms.find((r: any) => 
+    normalizeRoomName(r.name).startsWith(normalizedSearch) ||
+    normalizedSearch.startsWith(normalizeRoomName(r.name))
   );
   if (startsWithMatch) {
-    console.log(`Room matching: STARTS WITH match found -> "${startsWithMatch.name}"`);
+    console.log(`✅ STARTS WITH match: "${startsWithMatch.name}"`);
     return startsWithMatch;
   }
   
-  // Priority 3: Contains (fallback for partial matches)
-  const containsMatch = rooms.find(r => {
+  // Priority 4: Contains (fallback for partial matches)
+  const containsMatch = rooms.find((r: any) => {
     const normalized = normalizeRoomName(r.name);
     return normalized.includes(normalizedSearch) || normalizedSearch.includes(normalized);
   });
   if (containsMatch) {
-    console.log(`Room matching: CONTAINS match found -> "${containsMatch.name}"`);
+    console.log(`✅ CONTAINS match: "${containsMatch.name}"`);
     return containsMatch;
   }
   
-  console.log(`Room matching: NO match found for "${searchName}"`);
+  console.log(`❌ NO match for "${searchName}"`);
   return null;
 }
 
