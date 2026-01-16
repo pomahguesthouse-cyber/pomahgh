@@ -1,5 +1,6 @@
 export { BookingFilters } from "./BookingFilters";
 export { BookingAccordionItem } from "./BookingAccordionItem";
+export { BookingListHeader } from "./BookingListHeader";
 export { BookingSourceSelector } from "./BookingSourceSelector";
 export { RoomMultiSelector } from "./RoomMultiSelector";
 export { CustomPricingEditor } from "./CustomPricingEditor";

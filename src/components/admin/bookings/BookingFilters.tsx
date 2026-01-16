@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Search, FileText, FileSpreadsheet, CalendarIcon, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -14,10 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+interface Room {
+  id: string;
+  name: string;
+}
 
 interface BookingFiltersProps {
   searchQuery: string;
@@ -32,6 +36,11 @@ interface BookingFiltersProps {
   onStartDateChange: (date: Date | undefined) => void;
   endDate: Date | undefined;
   onEndDateChange: (date: Date | undefined) => void;
+  rooms?: Room[];
+  roomTypeFilter?: string;
+  onRoomTypeFilterChange?: (roomId: string) => void;
+  onExportPDF?: () => void;
+  onExportExcel?: () => void;
 }
 
 export function BookingFilters({
@@ -47,25 +56,21 @@ export function BookingFilters({
   onStartDateChange,
   endDate,
   onEndDateChange,
+  rooms,
+  roomTypeFilter = "all",
+  onRoomTypeFilterChange,
+  onExportPDF,
+  onExportExcel,
 }: BookingFiltersProps) {
-  return (
-    <div className="space-y-4">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-        <Input
-          placeholder="Cari kode booking, nama tamu, email, atau nomor telepon..."
-          value={searchQuery}
-          onChange={(e) => onSearchQueryChange(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+  const hasDateFilter = startDate || endDate;
 
-      {/* Filter Row */}
-      <div className="flex flex-wrap gap-2 md:gap-4">
-        {/* Date Type Filter */}
+  return (
+    <div className="space-y-3">
+      {/* Top Row: Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* All Booking / Date Type */}
         <Select value={filterDateType} onValueChange={(v) => onFilterDateTypeChange(v as "check_in" | "check_out")}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[130px] h-9 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -74,18 +79,65 @@ export function BookingFilters({
           </SelectContent>
         </Select>
 
-        {/* Start Date */}
+        {/* Type & Room Filter */}
+        {rooms && rooms.length > 0 && onRoomTypeFilterChange && (
+          <Select value={roomTypeFilter} onValueChange={onRoomTypeFilterChange}>
+            <SelectTrigger className="w-[150px] h-9 text-sm">
+              <SelectValue placeholder="Type & Room" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Rooms</SelectItem>
+              {rooms.map((room) => (
+                <SelectItem key={room.id} value={room.id}>
+                  {room.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {/* Status Filter */}
+        <Select value={filterStatus} onValueChange={onFilterStatusChange}>
+          <SelectTrigger className="w-[130px] h-9 text-sm">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="confirmed">Confirmed</SelectItem>
+            <SelectItem value="checked_in">Checked In</SelectItem>
+            <SelectItem value="checked_out">Checked Out</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Source Filter */}
+        <Select value={sourceFilter} onValueChange={onSourceFilterChange}>
+          <SelectTrigger className="w-[130px] h-9 text-sm">
+            <SelectValue placeholder="Source" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Sources</SelectItem>
+            <SelectItem value="direct">Direct</SelectItem>
+            <SelectItem value="ota">OTA</SelectItem>
+            <SelectItem value="walk_in">Walk-in</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Date Range Filters */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
+              size="sm"
               className={cn(
-                "w-[140px] justify-start text-left font-normal",
+                "h-9 w-[120px] justify-start text-left font-normal text-sm",
                 !startDate && "text-muted-foreground"
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, "dd MMM yyyy", { locale: localeId }) : "Dari"}
+              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+              {startDate ? format(startDate, "dd MMM", { locale: localeId }) : "From"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -98,18 +150,18 @@ export function BookingFilters({
           </PopoverContent>
         </Popover>
 
-        {/* End Date */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
+              size="sm"
               className={cn(
-                "w-[140px] justify-start text-left font-normal",
+                "h-9 w-[120px] justify-start text-left font-normal text-sm",
                 !endDate && "text-muted-foreground"
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, "dd MMM yyyy", { locale: localeId }) : "Sampai"}
+              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+              {endDate ? format(endDate, "dd MMM", { locale: localeId }) : "To"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -122,48 +174,55 @@ export function BookingFilters({
           </PopoverContent>
         </Popover>
 
-        {/* Clear Date Filter */}
-        {(startDate || endDate) && (
+        {hasDateFilter && (
           <Button
             variant="ghost"
             size="sm"
+            className="h-9 px-2"
             onClick={() => {
               onStartDateChange(undefined);
               onEndDateChange(undefined);
             }}
           >
-            Reset Tanggal
+            <X className="h-4 w-4" />
           </Button>
         )}
 
-        {/* Status Filter */}
-        <Select value={filterStatus} onValueChange={onFilterStatusChange}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="checked_in">Checked In</SelectItem>
-            <SelectItem value="checked_out">Checked Out</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search booking..."
+            value={searchQuery}
+            onChange={(e) => onSearchQueryChange(e.target.value)}
+            className="pl-9 h-9 text-sm"
+          />
+        </div>
 
-        {/* Source Filter */}
-        <Select value={sourceFilter} onValueChange={onSourceFilterChange}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Sumber" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Sumber</SelectItem>
-            <SelectItem value="direct">Direct</SelectItem>
-            <SelectItem value="ota">OTA</SelectItem>
-            <SelectItem value="walk_in">Walk-in</SelectItem>
-            <SelectItem value="other">Lainnya</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Export Buttons */}
+        {onExportPDF && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 text-sm gap-1.5"
+            onClick={onExportPDF}
+          >
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Export PDF</span>
+          </Button>
+        )}
+
+        {onExportExcel && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 text-sm gap-1.5"
+            onClick={onExportExcel}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            <span className="hidden sm:inline">Export Excel</span>
+          </Button>
+        )}
       </div>
     </div>
   );
