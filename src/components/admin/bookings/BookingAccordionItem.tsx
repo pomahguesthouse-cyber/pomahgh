@@ -108,9 +108,13 @@ export function BookingAccordionItem({
   const roomName = getRoomName(booking.room_id);
   const typeAndRoom = `${roomName} ${allocatedRooms}`;
 
-  // Calculate amounts
-  const paidAmount = booking.payment_amount || 0;
-  const dueAmount = booking.total_price - paidAmount;
+  // Calculate amounts - FIX: check payment_status first
+  const paidAmount = booking.payment_status === "paid" 
+    ? booking.total_price 
+    : (booking.payment_amount || 0);
+  const dueAmount = booking.payment_status === "paid" 
+    ? 0 
+    : Math.max(0, booking.total_price - paidAmount);
 
   // Guest initial for avatar
   const guestInitial = booking.guest_name?.charAt(0)?.toUpperCase() || "?";
