@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PlaneIcon, PlaneLanding, Search, X } from "lucide-react";
 import { isToday, isTomorrow, isYesterday, parseISO } from "date-fns";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { cn } from "@/lib/utils";
 import { formatDateShortID, formatTimeID } from "@/utils/indonesianFormat";
@@ -26,59 +29,55 @@ interface Booking {
 
 export const ArrivingDepartingWidgets = () => {
   const { bookings } = useAdminBookings();
-  
+
   const [arrivingFilter, setArrivingFilter] = useState<FilterType>("today");
   const [arrivingSearch, setArrivingSearch] = useState("");
-  
+
   const [departingFilter, setDepartingFilter] = useState<FilterType>("today");
   const [departingSearch, setDepartingSearch] = useState("");
 
   const arrivingBookings = useMemo(() => {
     if (!bookings) return [];
-    
-    return bookings.filter(booking => {
+
+    return bookings.filter((booking) => {
       const checkInDate = parseISO(booking.check_in);
       const matchesFilter =
         (arrivingFilter === "today" && isToday(checkInDate)) ||
         (arrivingFilter === "tomorrow" && isTomorrow(checkInDate)) ||
         (arrivingFilter === "yesterday" && isYesterday(checkInDate));
-      
-      const matchesSearch = booking.guest_name
-        .toLowerCase()
-        .includes(arrivingSearch.toLowerCase());
-      
+
+      const matchesSearch = booking.guest_name.toLowerCase().includes(arrivingSearch.toLowerCase());
+
       return matchesFilter && matchesSearch && booking.status === "confirmed";
     });
   }, [bookings, arrivingFilter, arrivingSearch]);
 
   const departingBookings = useMemo(() => {
     if (!bookings) return [];
-    
-    return bookings.filter(booking => {
+
+    return bookings.filter((booking) => {
       const checkOutDate = parseISO(booking.check_out);
       const matchesFilter =
         (departingFilter === "today" && isToday(checkOutDate)) ||
         (departingFilter === "tomorrow" && isTomorrow(checkOutDate)) ||
         (departingFilter === "yesterday" && isYesterday(checkOutDate));
-      
-      const matchesSearch = booking.guest_name
-        .toLowerCase()
-        .includes(departingSearch.toLowerCase());
-      
+
+      const matchesSearch = booking.guest_name.toLowerCase().includes(departingSearch.toLowerCase());
+
       return matchesFilter && matchesSearch && booking.status === "confirmed";
     });
   }, [bookings, departingFilter, departingSearch]);
 
-  const renderBookingTable = (
-    bookings: Booking[],
-    type: "arriving" | "departing"
-  ) => {
+  const renderBookingTable = (bookings: Booking[], type: "arriving" | "departing") => {
     if (bookings.length === 0) {
       return (
         <div className="flex items-center justify-center py-6 text-muted-foreground">
           <div className="text-center">
             <div className="text-xl mb-2">⚠️</div>
-            <p className="text-sm">No {type === "arriving" ? "arrivals" : "departures"} for {type === "arriving" ? arrivingFilter : departingFilter}.</p>
+            <p className="text-sm">
+              No {type === "arriving" ? "arrivals" : "departures"} for{" "}
+              {type === "arriving" ? arrivingFilter : departingFilter}.
+            </p>
           </div>
         </div>
       );
@@ -100,10 +99,10 @@ export const ArrivingDepartingWidgets = () => {
             </tr>
           </thead>
           <tbody>
-            {bookings.map(booking => {
+            {bookings.map((booking) => {
               const displayDate = type === "arriving" ? booking.check_out : booking.check_in;
               const displayTime = type === "arriving" ? booking.check_out_time : booking.check_in_time;
-              
+
               return (
                 <tr key={booking.id} className="border-b hover:bg-muted/20 transition-colors">
                   <td className="py-2 px-2">
@@ -113,13 +112,9 @@ export const ArrivingDepartingWidgets = () => {
                   </td>
                   <td className="py-2 px-2 text-sm font-medium">{booking.guest_name}</td>
                   <td className="py-2 px-2 text-sm">{booking.num_guests} Tamu</td>
-                  <td className="py-2 px-2 text-sm">
-                    {booking.allocated_room_number || booking.rooms?.name || "N/A"}
-                  </td>
+                  <td className="py-2 px-2 text-sm">{booking.allocated_room_number || booking.rooms?.name || "N/A"}</td>
                   <td className="py-2 px-2">
-                    <div className="text-sm">
-                      {formatDateShortID(displayDate)}
-                    </div>
+                    <div className="text-sm">{formatDateShortID(displayDate)}</div>
                     <div className="text-xs text-muted-foreground">
                       {displayTime ? formatTimeID(displayTime.slice(0, 5)) : "N/A"}
                     </div>
@@ -150,9 +145,7 @@ export const ArrivingDepartingWidgets = () => {
         variant={activeFilter === "today" ? "default" : "outline"}
         size="sm"
         onClick={() => onFilterChange("today")}
-        className={cn(
-          activeFilter === "today" && "bg-blue-500 hover:bg-blue-600 text-white"
-        )}
+        className={cn(activeFilter === "today" && "bg-blue-500 hover:bg-blue-600 text-white")}
       >
         Today
       </Button>
@@ -160,9 +153,7 @@ export const ArrivingDepartingWidgets = () => {
         variant={activeFilter === "tomorrow" ? "default" : "outline"}
         size="sm"
         onClick={() => onFilterChange("tomorrow")}
-        className={cn(
-          activeFilter === "tomorrow" && "bg-blue-500 hover:bg-blue-600 text-white"
-        )}
+        className={cn(activeFilter === "tomorrow" && "bg-blue-500 hover:bg-blue-600 text-white")}
       >
         Tomorrow
       </Button>
@@ -170,9 +161,7 @@ export const ArrivingDepartingWidgets = () => {
         variant={activeFilter === "yesterday" ? "default" : "outline"}
         size="sm"
         onClick={() => onFilterChange("yesterday")}
-        className={cn(
-          activeFilter === "yesterday" && "bg-blue-500 hover:bg-blue-600 text-white"
-        )}
+        className={cn(activeFilter === "yesterday" && "bg-blue-500 hover:bg-blue-600 text-white")}
       >
         Yesterday
       </Button>
@@ -187,13 +176,13 @@ export const ArrivingDepartingWidgets = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <PlaneLanding className="h-6 w-6 text-blue-500" />
-              <CardTitle className="text-xl">Arriving</CardTitle>
+              <CardTitle className="text-xl font-roboto">Arriving</CardTitle>
               <Badge variant="secondary" className="text-lg px-3 py-1">
                 {arrivingBookings.length}
               </Badge>
             </div>
           </div>
-          
+
           <div className="flex gap-3 items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -204,23 +193,15 @@ export const ArrivingDepartingWidgets = () => {
                 className="pl-9 pr-9"
               />
               {arrivingSearch && (
-                <button
-                  onClick={() => setArrivingSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                >
+                <button onClick={() => setArrivingSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
                   <X className="h-4 w-4 text-muted-foreground" />
                 </button>
               )}
             </div>
-            <FilterButtons
-              activeFilter={arrivingFilter}
-              onFilterChange={setArrivingFilter}
-            />
+            <FilterButtons activeFilter={arrivingFilter} onFilterChange={setArrivingFilter} />
           </div>
         </CardHeader>
-        <CardContent>
-          {renderBookingTable(arrivingBookings, "arriving")}
-        </CardContent>
+        <CardContent>{renderBookingTable(arrivingBookings, "arriving")}</CardContent>
       </Card>
 
       {/* Departing Widget */}
@@ -229,13 +210,13 @@ export const ArrivingDepartingWidgets = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <PlaneIcon className="h-6 w-6 text-blue-500 rotate-45" />
-              <CardTitle className="text-xl">Departing</CardTitle>
+              <CardTitle className="text-xl font-roboto">Departing</CardTitle>
               <Badge variant="secondary" className="text-lg px-3 py-1">
                 {departingBookings.length}
               </Badge>
             </div>
           </div>
-          
+
           <div className="flex gap-3 items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -246,23 +227,15 @@ export const ArrivingDepartingWidgets = () => {
                 className="pl-9 pr-9"
               />
               {departingSearch && (
-                <button
-                  onClick={() => setDepartingSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                >
+                <button onClick={() => setDepartingSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
                   <X className="h-4 w-4 text-muted-foreground" />
                 </button>
               )}
             </div>
-            <FilterButtons
-              activeFilter={departingFilter}
-              onFilterChange={setDepartingFilter}
-            />
+            <FilterButtons activeFilter={departingFilter} onFilterChange={setDepartingFilter} />
           </div>
         </CardHeader>
-        <CardContent>
-          {renderBookingTable(departingBookings, "departing")}
-        </CardContent>
+        <CardContent>{renderBookingTable(departingBookings, "departing")}</CardContent>
       </Card>
     </div>
   );
