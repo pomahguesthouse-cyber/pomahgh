@@ -1,15 +1,38 @@
 import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import { Booking, BankAccount } from "./types";
 import { formatRupiahID, formatTimeID } from "@/utils/indonesianFormat";
-import { ChevronDown, Edit, FileText, Phone, Mail, User, CreditCard, Bed, Calendar, Clock } from "lucide-react";
+import { ChevronDown, Edit, Trash2, BookOpen, Phone, Mail, Bed, Clock, CreditCard } from "lucide-react";
+
 interface BookingAccordionItemProps {
   booking: Booking;
+  index: number;
   getRoomName: (roomId: string) => string;
   bankAccounts: BankAccount[];
   onStatusChange: (id: string, status: string) => void;
@@ -19,20 +42,36 @@ interface BookingAccordionItemProps {
   isUpdating?: boolean;
   isDeleting?: boolean;
 }
-const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  confirmed: "bg-blue-100 text-blue-800",
-  checked_in: "bg-green-100 text-green-800",
-  checked_out: "bg-gray-100 text-gray-800",
-  cancelled: "bg-red-100 text-red-800"
-};
+
 const statusLabels: Record<string, string> = {
   pending: "Pending",
   confirmed: "Confirmed",
   checked_in: "Checked In",
   checked_out: "Checked Out",
-  cancelled: "Cancelled"
+  cancelled: "Cancelled",
 };
+
+const paymentStatusLabels: Record<string, string> = {
+  paid: "Lunas",
+  unpaid: "Belum Bayar",
+  pay_at_hotel: "Bayar di Hotel",
+  partial: "DP/Sebagian",
+};
+
+const paymentStatusColors: Record<string, string> = {
+  paid: "text-green-600",
+  unpaid: "text-red-500",
+  pay_at_hotel: "text-blue-600",
+  partial: "text-orange-500",
+};
+
+const paymentBadgeColors: Record<string, string> = {
+  paid: "bg-teal-500 text-white hover:bg-teal-500",
+  unpaid: "bg-red-500 text-white hover:bg-red-500",
+  pay_at_hotel: "bg-blue-500 text-white hover:bg-blue-500",
+  partial: "bg-orange-500 text-white hover:bg-orange-500",
+};
+
 function getSourceLabel(booking: Booking): string {
   if (booking.booking_source === "ota" && booking.ota_name) {
     return `OTA - ${booking.ota_name}`;
@@ -44,12 +83,14 @@ function getSourceLabel(booking: Booking): string {
     direct: "Direct",
     walk_in: "Walk-in",
     ota: "OTA",
-    other: "Lainnya"
+    other: "Lainnya",
   };
   return sourceLabels[booking.booking_source || "direct"] || "Direct";
 }
+
 export function BookingAccordionItem({
   booking,
+  index,
   getRoomName,
   bankAccounts,
   onStatusChange,
@@ -57,133 +98,117 @@ export function BookingAccordionItem({
   onDeleteClick,
   onInvoiceClick,
   isUpdating,
-  isDeleting
+  isDeleting,
 }: BookingAccordionItemProps) {
   const checkInDate = parseISO(booking.check_in);
   const checkOutDate = parseISO(booking.check_out);
 
   // Get room numbers from booking_rooms
-  const allocatedRooms = booking.booking_rooms?.map(br => br.room_number).join(", ") || booking.allocated_room_number || "-";
-  return <AccordionItem value={booking.id} className="border rounded-lg mb-2">
-      <AccordionTrigger className="px-4 py-3 hover:no-underline">
-        <div className="flex flex-col md:flex-row md:items-center justify-between w-full gap-2 text-left">
-          {/* Left: Code and Status */}
-          <div className="flex items-center gap-3">
-            <span className="font-mono font-semibold text-sm">
-              {booking.booking_code}
-            </span>
-            <Badge className={statusColors[booking.status]}>
-              {statusLabels[booking.status]}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              {getSourceLabel(booking)}
-            </Badge>
+  const allocatedRooms =
+    booking.booking_rooms?.map((br) => br.room_number).join(", ") || booking.allocated_room_number || "-";
+
+  // Calculate price per night
+  const pricePerNight = booking.total_nights > 0 
+    ? Math.round(booking.total_price / booking.total_nights)
+    : booking.total_price;
+
+  // Format number Indonesia style (e.g., 700.000)
+  const formatNumber = (num: number) => num.toLocaleString('id-ID');
+
+  return (
+    <AccordionItem value={booking.id} className="border-0">
+      <AccordionTrigger className={`px-4 py-3 hover:no-underline hover:bg-gray-100 border-b border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+        {/* Desktop: Table-like row */}
+        <TooltipProvider>
+          <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_80px_100px_100px_70px_120px_100px_130px_120px] gap-1 w-full text-[13px] text-gray-700 font-roboto items-center">
+            <div className="text-center font-medium">{index}</div>
+            <div className="text-xs">{booking.booking_code}</div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="truncate cursor-default">{booking.guest_name}</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{booking.guest_name}</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="truncate cursor-default">{getRoomName(booking.room_id)}</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{getRoomName(booking.room_id)}</p>
+              </TooltipContent>
+            </Tooltip>
+            <div className="text-center">{allocatedRooms}</div>
+            <div className="text-center">{format(checkInDate, "dd/MM/yyyy")}</div>
+            <div className="text-center">{format(checkOutDate, "dd/MM/yyyy")}</div>
+            <div className="text-center">{booking.total_nights}</div>
+            <div className="text-right">{formatNumber(pricePerNight)}</div>
+            <div className="text-center text-xs">{statusLabels[booking.status]}</div>
+            <div className={`text-center text-xs font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
+              {paymentStatusLabels[booking.payment_status || 'unpaid']}
+            </div>
+            <div className="text-right font-semibold bg-green-50 px-2 py-1 rounded">{formatNumber(booking.total_price)}</div>
           </div>
-          
-          {/* Right: Guest, Date, Price */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <User className="h-3.5 w-3.5" />
-              {booking.guest_name}
+        </TooltipProvider>
+
+        {/* Mobile: Card-like layout */}
+        <div className="lg:hidden flex flex-col w-full gap-2 text-left font-roboto">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-sm">{booking.booking_code}</span>
+            <span className={`text-xs font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
+              {paymentStatusLabels[booking.payment_status || 'unpaid']}
             </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5" />
-              {format(checkInDate, "dd MMM", {
-              locale: localeId
-            })} - {format(checkOutDate, "dd MMM", {
-              locale: localeId
-            })}
-            </span>
-            <span className="font-medium text-foreground">
-              {formatRupiahID(booking.total_price)}
-            </span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span>{booking.guest_name}</span>
+            <span className="font-medium">{formatRupiahID(booking.total_price)}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{format(checkInDate, "dd/MM/yyyy")} - {format(checkOutDate, "dd/MM/yyyy")}</span>
+            <span>•</span>
+            <span>{booking.total_nights} malam</span>
           </div>
         </div>
       </AccordionTrigger>
-      
-      <AccordionContent className="px-4 pb-4">
-        <div className="space-y-4">
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2">
-            {/* Status Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={isUpdating}>
-                  Ubah Status <ChevronDown className="ml-1 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "pending")}>
-                  Pending
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "confirmed")}>
-                  Confirmed
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_in")}>
-                  Checked In
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_out")}>
-                  Checked Out
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "cancelled")}>
-                  Cancelled
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {/* Invoice Button */}
-            <Button variant="outline" size="sm" onClick={() => onInvoiceClick(booking)}>
-              <FileText className="mr-1 h-4 w-4" />
-              Invoice
-            </Button>
-            
-            {/* Edit Button */}
-            <Button variant="outline" size="sm" onClick={() => onEditClick(booking)}>
-              <Edit className="mr-1 h-4 w-4" />
-              Edit
-            </Button>
-            
-            {/* Delete Button */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={isDeleting}>
-                  <User className="mr-1 h-4 w-4" />
-                  Hapus
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Hapus Booking?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Booking {booking.booking_code} akan dihapus permanen.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Batal</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onDeleteClick(booking.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Hapus
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-          
-          {/* Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+
+      <AccordionContent className="px-4 pb-4 bg-gray-50 border-b border-gray-200 font-roboto">
+        <div className="space-y-4 pt-4">
+          {/* Info Grid - 4 Columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
             {/* Room Info */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Bed className="h-4 w-4" />
                 <span>Kamar</span>
               </div>
-              <p className="font-medium">
-                {getRoomName(booking.room_id)}
-              </p>
-              <p className="text-muted-foreground">
-                Nomor: {allocatedRooms}
+              <p className="font-medium">{getRoomName(booking.room_id)}</p>
+              <p className="text-muted-foreground">Nomor: {allocatedRooms}</p>
+              <p className="text-muted-foreground text-xs">Sumber: {getSourceLabel(booking)}</p>
+            </div>
+
+            {/* Contact Info */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Phone className="h-4 w-4" />
+                <span>Kontak</span>
+              </div>
+              {booking.guest_phone && (
+                <p className="flex items-center gap-2">
+                  <Phone className="h-3 w-3 text-muted-foreground" />
+                  <a href={`tel:${booking.guest_phone}`} className="hover:underline font-medium">
+                    {booking.guest_phone}
+                  </a>
+                </p>
+              )}
+              <p className="flex items-center gap-2">
+                <Mail className="h-3 w-3 text-muted-foreground" />
+                <a href={`mailto:${booking.guest_email}`} className="hover:underline text-xs truncate">
+                  {booking.guest_email}
+                </a>
               </p>
             </div>
-            
+
             {/* Date & Time Info */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -191,68 +216,98 @@ export function BookingAccordionItem({
                 <span>Check-in / Check-out</span>
               </div>
               <p className="font-medium">
-                {format(checkInDate, "EEEE, dd MMM yyyy", {
-                locale: localeId
-              })}
+                {format(checkInDate, "EEEE, dd MMM yyyy", { locale: localeId })}
                 {booking.check_in_time && ` - ${formatTimeID(booking.check_in_time)}`}
               </p>
               <p className="font-medium">
-                {format(checkOutDate, "EEEE, dd MMM yyyy", {
-                locale: localeId
-              })}
+                {format(checkOutDate, "EEEE, dd MMM yyyy", { locale: localeId })}
                 {booking.check_out_time && ` - ${formatTimeID(booking.check_out_time)}`}
               </p>
               <p className="text-muted-foreground">{booking.total_nights} malam</p>
             </div>
-            
+
             {/* Payment Info */}
-            <div className="space-y-1">
+            <div className="space-y-2">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <CreditCard className="h-4 w-4" />
                 <span>Pembayaran</span>
               </div>
-              <p className="font-medium">{formatRupiahID(booking.total_price)}</p>
-              <Badge variant={booking.payment_status === "paid" ? "default" : "secondary"}>
-                {booking.payment_status === "paid" ? "Lunas" : "Belum Lunas"}
-              </Badge>
-              {booking.payment_amount && booking.payment_amount > 0 && <p className="text-muted-foreground">
-                  Dibayar: {formatRupiahID(booking.payment_amount)}
-                </p>}
-            </div>
-          </div>
-          
-          {/* Contact Info */}
-          <div className="flex flex-wrap gap-4 text-sm border-t pt-4">
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <a href={`mailto:${booking.guest_email}`} className="hover:underline">
-                {booking.guest_email}
-              </a>
-            </div>
-            {booking.guest_phone && <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <a href={`tel:${booking.guest_phone}`} className="hover:underline">
-                  {booking.guest_phone}
-                </a>
-              </div>}
-          </div>
-          
-          {/* Special Requests */}
-          {booking.special_requests && <div className="border-t pt-4">
-              <p className="text-sm text-muted-foreground mb-1">Permintaan Khusus:</p>
-              <p className="text-sm">{booking.special_requests}</p>
-            </div>}
-          
-          {/* Bank Accounts */}
-          {bankAccounts.length > 0 && booking.payment_status !== "paid" && <div className="border-t pt-4">
-              <p className="text-sm text-muted-foreground mb-2">Rekening Pembayaran:</p>
-              <div className="flex flex-wrap gap-2">
-                {bankAccounts.map(bank => <Badge key={bank.id} variant="outline" className="py-1">
-                    {bank.bank_name} - {bank.account_number} ({bank.account_holder_name})
-                  </Badge>)}
+              <p className="font-semibold text-base">{formatRupiahID(booking.total_price)}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className={paymentBadgeColors[booking.payment_status || 'unpaid']}>
+                  {paymentStatusLabels[booking.payment_status || 'unpaid']}
+                </Badge>
               </div>
-            </div>}
+              {booking.payment_amount && booking.payment_amount > 0 && booking.payment_status !== "paid" && (
+                <p className="text-muted-foreground text-xs">Dibayar: {formatRupiahID(booking.payment_amount)}</p>
+              )}
+              {/* Special Requests in Payment column */}
+              {booking.special_requests && (
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <p className="text-muted-foreground text-xs italic">Permintaan Khusus/ Keterangan:</p>
+                  <p className="text-sm font-medium">{booking.special_requests}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+            {/* Status Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50" disabled={isUpdating}>
+                  Ubah Status <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "pending")}>Pending</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "confirmed")}>Confirmed</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_in")}>Checked In</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_out")}>Checked Out</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "cancelled")}>Cancelled</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Invoice Button */}
+            <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50" onClick={() => onInvoiceClick(booking)}>
+              <BookOpen className="mr-1 h-4 w-4" />
+              Invoice
+            </Button>
+
+            {/* Edit Button */}
+            <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50" onClick={() => onEditClick(booking)}>
+              <Edit className="mr-1 h-4 w-4" />
+              Edit
+            </Button>
+
+            {/* Delete Button */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={isDeleting}>
+                  <Trash2 className="mr-1 h-4 w-4" />
+                  Hapus
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Hapus Booking?</AlertDialogTitle>
+                  <AlertDialogDescription>Booking {booking.booking_code} akan dihapus permanen.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onDeleteClick(booking.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Hapus
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </AccordionContent>
-    </AccordionItem>;
+    </AccordionItem>
+  );
 }
