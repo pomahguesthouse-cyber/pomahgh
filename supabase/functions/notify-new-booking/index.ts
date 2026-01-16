@@ -64,6 +64,27 @@ serve(async (req) => {
       ? `*${bookingData.room_name}* - ${bookingData.room_number}`
       : `*${bookingData.room_name}*`;
 
+    // Build promo info section
+    let promoInfo = '';
+    if (bookingData.promo_applied) {
+      promoInfo = `\n🎁 *Promo: ${bookingData.promo_applied}*\n`;
+      if (bookingData.promo_discount) {
+        promoInfo += `   Diskon ${bookingData.promo_discount}%`;
+        if (bookingData.promo_nights) {
+          promoInfo += ` (${bookingData.promo_nights} malam)`;
+        }
+      } else if (bookingData.promo_price) {
+        promoInfo += `   Harga promo: Rp ${Number(bookingData.promo_price).toLocaleString('id-ID')}/malam`;
+      }
+      if (bookingData.savings && bookingData.savings > 0) {
+        promoInfo += `\n   💵 Hemat: Rp ${Number(bookingData.savings).toLocaleString('id-ID')}`;
+      }
+      if (bookingData.original_price) {
+        promoInfo += `\n   ~~Rp ${Number(bookingData.original_price).toLocaleString('id-ID')}~~`;
+      }
+      promoInfo += '\n';
+    }
+
     const message = 
       `🆕 *BOOKING BARU!*\n\n` +
       `👤 *${bookingData.guest_name}*\n` +
@@ -71,7 +92,8 @@ serve(async (req) => {
       `🛏️ ${roomDisplay}\n` +
       `📅 ${formatDate(bookingData.check_in)} → ${formatDate(bookingData.check_out)}\n` +
       `🌙 ${bookingData.total_nights} malam\n` +
-      `👥 ${bookingData.num_guests} tamu\n\n` +
+      `👥 ${bookingData.num_guests} tamu\n` +
+      `${promoInfo}\n` +
       `💰 *Rp ${Number(bookingData.total_price).toLocaleString('id-ID')}*\n\n` +
       `📍 ${sourceLabel}\n` +
       `🎫 Kode: *${bookingData.booking_code}*\n\n` +
