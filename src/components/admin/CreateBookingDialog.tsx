@@ -325,6 +325,31 @@ export const CreateBookingDialog = ({
 
       const roomsText =
         selectedRooms.length > 1 ? `${selectedRooms.length} kamar` : `kamar ${selectedRooms[0].roomNumber}`;
+      
+      // Notify managers via WhatsApp
+      try {
+        await supabase.functions.invoke('notify-new-booking', {
+          body: {
+            booking_code: bookingData.booking_code,
+            guest_name: formData.guest_name,
+            guest_phone: formData.guest_phone,
+            room_name: selectedRooms.map(r => r.roomName).join(', '),
+            room_number: selectedRooms.map(r => r.roomNumber).join(', '),
+            check_in: format(checkIn, 'yyyy-MM-dd'),
+            check_out: format(checkOut, 'yyyy-MM-dd'),
+            total_nights: totalNights,
+            num_guests: formData.num_guests,
+            total_price: effectiveTotalPrice,
+            booking_source: bookingSource,
+            ota_name: otaName,
+            other_source: otherSource
+          }
+        });
+        console.log('✅ Manager notification sent');
+      } catch (e) {
+        console.error("Failed to notify managers:", e);
+      }
+      
       toast.success(`Booking berhasil dibuat untuk ${roomsText}`);
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       setShowConfirmation(false);

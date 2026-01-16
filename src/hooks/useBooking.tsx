@@ -120,8 +120,38 @@ export const useBooking = () => {
 
       return data;
     },
-    onSuccess: async (bookingData) => {
+    onSuccess: async (bookingData, variables) => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      
+      // Notify managers via WhatsApp
+      try {
+        // Fetch room name for notification
+        const { data: roomData } = await supabase
+          .from("rooms")
+          .select("name")
+          .eq("id", variables.room_id)
+          .single();
+
+        await supabase.functions.invoke('notify-new-booking', {
+          body: {
+            booking_code: bookingData.booking_code,
+            guest_name: bookingData.guest_name,
+            guest_phone: bookingData.guest_phone,
+            room_name: roomData?.name || 'Unknown Room',
+            room_number: bookingData.allocated_room_number,
+            check_in: bookingData.check_in,
+            check_out: bookingData.check_out,
+            total_nights: bookingData.total_nights,
+            num_guests: bookingData.num_guests,
+            total_price: bookingData.total_price,
+            booking_source: bookingData.booking_source || 'other',
+            other_source: bookingData.other_source || 'Website'
+          }
+        });
+        console.log('✅ Manager notification sent');
+      } catch (e) {
+        console.error("Failed to notify managers:", e);
+      }
       
       toast.success("Booking berhasil!", {
         description: "Terima kasih! Kami akan mengirimkan konfirmasi ke email Anda."

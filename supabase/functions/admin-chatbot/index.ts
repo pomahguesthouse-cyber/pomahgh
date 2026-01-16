@@ -601,6 +601,30 @@ async function createAdminBooking(supabase: any, args: any) {
 
   if (bookingError) throw bookingError;
 
+  // Notify managers about new booking via WhatsApp
+  try {
+    console.log('📤 Sending manager notification for booking:', booking.booking_code);
+    await supabase.functions.invoke('notify-new-booking', {
+      body: {
+        booking_code: booking.booking_code,
+        guest_name: args.guest_name,
+        guest_phone: args.guest_phone,
+        room_name: room.name,
+        room_number: allocatedRoomNumber,
+        check_in: args.check_in,
+        check_out: args.check_out,
+        total_nights: nights,
+        num_guests: args.num_guests,
+        total_price: totalPrice,
+        booking_source: 'admin'
+      }
+    });
+    console.log('✅ Manager notification sent for booking:', booking.booking_code);
+  } catch (notifyError) {
+    console.error('Failed to notify managers:', notifyError);
+    // Don't throw - booking was successful, notification is optional
+  }
+
   return {
     success: true,
     booking_code: booking.booking_code,
