@@ -7,9 +7,12 @@ export interface WhatsAppContact {
   label: string;
 }
 
+export type ManagerRole = 'super_admin' | 'booking_manager' | 'viewer';
+
 export interface WhatsAppManager {
   phone: string;
   name: string;
+  role: ManagerRole;
   added_at?: string;
 }
 

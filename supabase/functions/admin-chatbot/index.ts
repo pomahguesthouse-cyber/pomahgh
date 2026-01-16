@@ -1439,6 +1439,7 @@ Deno.serve(async (req: Request) => {
     const isWhatsAppSource = req.headers.get("X-WhatsApp-Source") === "true";
     const whatsappPhone = req.headers.get("X-WhatsApp-Phone");
     const managerName = req.headers.get("X-Manager-Name") || "Manager";
+    const managerRole = req.headers.get("X-Manager-Role") || "super_admin"; // Default to super_admin for web users
 
     let isAuthorized = false;
     let adminId: string | null = null;
@@ -1453,8 +1454,9 @@ Deno.serve(async (req: Request) => {
         .select('whatsapp_manager_numbers')
         .single();
       
-      const managerNumbers: Array<{phone: string; name: string}> = hotelSettings?.whatsapp_manager_numbers || [];
-      isAuthorized = managerNumbers.some(m => m.phone === whatsappPhone);
+      const managerNumbers: Array<{phone: string; name: string; role?: string}> = hotelSettings?.whatsapp_manager_numbers || [];
+      const managerInfo = managerNumbers.find(m => m.phone === whatsappPhone);
+      isAuthorized = !!managerInfo;
       
       if (!isAuthorized) {
         console.log(`Phone ${whatsappPhone} not in manager list`);
@@ -1547,6 +1549,48 @@ Deno.serve(async (req: Request) => {
     const adminEmojiUsage = chatbotSettings?.admin_emoji_usage || 'minimal';
     const adminCustomInstructions = chatbotSettings?.admin_custom_instructions || '';
     const adminGreetingTemplate = chatbotSettings?.admin_greeting_template || 'Halo {manager_name}! Ada yang bisa saya bantu hari ini?';
+
+    // Role-based tool access control
+    type ManagerRole = 'super_admin' | 'booking_manager' | 'viewer';
+    
+    const roleToolAccess: Record<ManagerRole, string[] | 'all'> = {
+      super_admin: 'all',
+      booking_manager: [
+        'get_availability_summary',
+        'get_recent_bookings',
+        'search_bookings',
+        'get_room_inventory',
+        'create_admin_booking',
+        'get_booking_detail',
+        'update_booking_status',
+        'update_guest_info',
+        'reschedule_booking',
+        'change_booking_room',
+        'get_room_prices',
+        'send_checkin_reminder',
+        // EXCLUDED: get_booking_stats, update_room_price (no revenue/price control)
+      ],
+      viewer: [
+        'get_availability_summary',
+        'get_room_inventory',
+        'get_room_prices',
+      ]
+    };
+
+    // Filter tools based on manager role
+    const allowedToolNames = roleToolAccess[managerRole as ManagerRole] || roleToolAccess.viewer;
+    const filteredTools = allowedToolNames === 'all' 
+      ? tools 
+      : tools.filter(t => (allowedToolNames as string[]).includes(t.function.name));
+
+    console.log(`Manager role: ${managerRole}, allowed tools: ${allowedToolNames === 'all' ? 'ALL' : (allowedToolNames as string[]).length}`);
+
+    // Role restriction message for system prompt
+    const roleRestrictionMessage = managerRole === 'viewer' 
+      ? `\n\n🚫 PEMBATASAN AKSES (ROLE: VIEWER):\nAnda hanya bisa melihat ketersediaan kamar dan daftar harga. Untuk fitur lain seperti membuat booking atau mengubah status, silakan hubungi Super Admin.`
+      : managerRole === 'booking_manager'
+      ? `\n\n⚠️ PEMBATASAN AKSES (ROLE: BOOKING MANAGER):\nAnda tidak dapat mengakses statistik pendapatan (get_booking_stats) atau mengubah harga kamar (update_room_price). Untuk fitur tersebut, silakan hubungi Super Admin.`
+      : '';
 
     // Build knowledge base context
     const knowledgeContext = adminKnowledge && adminKnowledge.length > 0
@@ -1798,7 +1842,8 @@ Sebelum buat booking, selalu cek ketersediaan dulu dan konfirmasi detailnya.
 Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan baru.
 Setelah update booking, konfirmasi perubahan dengan menampilkan data lama vs baru.
 ${knowledgeContext}
-${trainingContext}`;
+${trainingContext}
+${roleRestrictionMessage}`;
 
     // Prepare messages for AI
     const aiMessages = [
@@ -1865,7 +1910,7 @@ ${trainingContext}`;
               body: JSON.stringify({
                 messages: currentMessages,
                 model: "google/gemini-3-flash-preview",
-                tools: tools,
+                tools: filteredTools,
                 tool_choice: "auto"
               })
             });
