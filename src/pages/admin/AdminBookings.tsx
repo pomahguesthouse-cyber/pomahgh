@@ -4,12 +4,14 @@ import { useRooms } from "@/hooks/useRooms";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useBookingValidation } from "@/hooks/useBookingValidation";
 import { useRoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
+import { useBookingExport } from "@/hooks/useBookingExport";
 import { Accordion } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 import { BookingFilters } from "@/components/admin/bookings/BookingFilters";
 import { BookingAccordionItem } from "@/components/admin/bookings/BookingAccordionItem";
+import { BookingListHeader } from "@/components/admin/bookings/BookingListHeader";
 import { EditBookingDialog } from "@/components/admin/bookings/EditBookingDialog";
 import { Booking, BankAccount } from "@/components/admin/bookings/types";
 import {
@@ -35,6 +37,7 @@ const AdminBookings = () => {
   const { data: rooms } = useRooms();
   const { bankAccounts } = useBankAccounts();
   const { checkBookingConflict } = useBookingValidation();
+  const { exportToExcel, exportToPDF } = useBookingExport();
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,6 +46,7 @@ const AdminBookings = () => {
   // Filter states
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [roomTypeFilter, setRoomTypeFilter] = useState<string>("all");
   const [filterDateType, setFilterDateType] = useState<"check_in" | "check_out">("check_in");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
@@ -112,6 +116,11 @@ const AdminBookings = () => {
         }
       }
 
+      // Filter by room type
+      if (roomTypeFilter !== "all" && booking.room_id !== roomTypeFilter) {
+        return false;
+      }
+
       // Filter by date range
       if (startDate && endDate) {
         const bookingDate = new Date(
@@ -140,12 +149,12 @@ const AdminBookings = () => {
 
       return true;
     });
-  }, [bookings, filterStatus, sourceFilter, startDate, endDate, filterDateType, searchQuery]);
+  }, [bookings, filterStatus, sourceFilter, roomTypeFilter, startDate, endDate, filterDateType, searchQuery]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterStatus, sourceFilter, startDate, endDate, searchQuery]);
+  }, [filterStatus, sourceFilter, roomTypeFilter, startDate, endDate, searchQuery]);
 
   // Pagination calculations
   const totalItems = filteredBookings?.length || 0;
@@ -196,6 +205,19 @@ const AdminBookings = () => {
     setSelectedBooking(null);
   };
 
+  // Export handlers
+  const handleExportPDF = () => {
+    if (filteredBookings && filteredBookings.length > 0) {
+      exportToPDF(filteredBookings as any, undefined, 'booking-list');
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (filteredBookings && filteredBookings.length > 0) {
+      exportToExcel(filteredBookings as any, undefined, 'booking-list');
+    }
+  };
+
   // Transform rooms data for components
   const roomsForComponents = useMemo(() => {
     return rooms?.map((room) => ({
@@ -205,6 +227,14 @@ const AdminBookings = () => {
       allotment: room.allotment || 1,
       room_numbers: room.room_numbers || [],
     }));
+  }, [rooms]);
+
+  // Rooms for filter dropdown
+  const roomsForFilter = useMemo(() => {
+    return rooms?.map((room) => ({
+      id: room.id,
+      name: room.name,
+    })) || [];
   }, [rooms]);
 
   // Transform bank accounts for components
@@ -252,12 +282,20 @@ const AdminBookings = () => {
         onStartDateChange={setStartDate}
         endDate={endDate}
         onEndDateChange={setEndDate}
+        rooms={roomsForFilter}
+        roomTypeFilter={roomTypeFilter}
+        onRoomTypeFilterChange={setRoomTypeFilter}
+        onExportPDF={handleExportPDF}
+        onExportExcel={handleExportExcel}
       />
+
+      {/* Table Header */}
+      <BookingListHeader />
 
       {/* Booking List */}
       {paginatedBookings && paginatedBookings.length > 0 ? (
         <>
-          <Accordion type="single" collapsible className="space-y-3">
+          <Accordion type="single" collapsible className="space-y-2">
             {paginatedBookings.map((booking) => (
               <BookingAccordionItem
                 key={booking.id}
@@ -278,7 +316,7 @@ const AdminBookings = () => {
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
               <p className="text-sm text-muted-foreground">
-                Menampilkan {startIndex + 1}-{Math.min(endIndex, totalItems)} dari {totalItems} booking
+                Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} bookings
               </p>
               <Pagination>
                 <PaginationContent>
@@ -318,7 +356,7 @@ const AdminBookings = () => {
         </>
       ) : (
         <div className="text-center py-8 text-muted-foreground">
-          Tidak ada booking ditemukan
+          No bookings found
         </div>
       )}
 
