@@ -336,14 +336,15 @@ serve(async (req) => {
     // Get hotel settings
     const { data: hotelSettings } = await supabase
       .from('hotel_settings')
-      .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_response_mode')
+      .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_response_mode, whatsapp_manager_numbers')
       .single();
     
     const sessionTimeoutMinutes = hotelSettings?.whatsapp_session_timeout_minutes || 15;
     const aiWhitelist: string[] = hotelSettings?.whatsapp_ai_whitelist || [];
     const responseMode = hotelSettings?.whatsapp_response_mode || 'ai';
+    const managerNumbers: Array<{phone: string; name: string}> = hotelSettings?.whatsapp_manager_numbers || [];
     
-    console.log(`Session timeout: ${sessionTimeoutMinutes}min, Response mode: ${responseMode}`);
+    console.log(`Session timeout: ${sessionTimeoutMinutes}min, Response mode: ${responseMode}, Managers: ${managerNumbers.length}`);
 
     // Get existing session
     const { data: session } = await supabase
@@ -380,6 +381,125 @@ serve(async (req) => {
       return new Response(JSON.stringify({ status: "whitelist_takeover", conversation_id: convId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Check if phone is registered as manager - route to admin-chatbot
+    const isManager = managerNumbers.some(m => m.phone === phone);
+    if (isManager) {
+      const managerInfo = managerNumbers.find(m => m.phone === phone);
+      console.log(`📱 MANAGER MODE - routing to admin-chatbot for ${phone} (${managerInfo?.name})`);
+      
+      // Ensure conversation exists
+      const convId = await ensureConversation(supabase, session, phone);
+      await logMessage(supabase, convId, 'user', normalizedMessage);
+      await updateSession(supabase, phone, convId, false);
+      
+      // Get conversation history
+      const { data: history } = await supabase
+        .from('chat_messages')
+        .select('role, content')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      const messages = (history || []).reverse().map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      }));
+      
+      // Add current message if not in history
+      const lastMsg = messages[messages.length - 1];
+      if (!lastMsg || lastMsg.content !== normalizedMessage) {
+        messages.push({ role: 'user' as const, content: normalizedMessage });
+      }
+      
+      try {
+        // Route to admin-chatbot with WhatsApp source
+        const adminResponse = await fetch(`${supabaseUrl}/functions/v1/admin-chatbot`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'X-WhatsApp-Source': 'true',
+            'X-WhatsApp-Phone': phone,
+            'X-Manager-Name': managerInfo?.name || 'Manager',
+          },
+          body: JSON.stringify({ messages }),
+        });
+        
+        if (!adminResponse.ok) {
+          const errorText = await adminResponse.text();
+          console.error("Admin chatbot error:", errorText);
+          throw new Error(`Admin chatbot error: ${adminResponse.status}`);
+        }
+        
+        // Stream response handling
+        const reader = adminResponse.body?.getReader();
+        const decoder = new TextDecoder();
+        let aiResponse = '';
+        
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            // Parse SSE data
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                try {
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content;
+                  if (content) aiResponse += content;
+                } catch { /* Skip unparseable */ }
+              }
+            }
+          }
+        }
+        
+        if (!aiResponse) {
+          aiResponse = "Maaf, terjadi kesalahan. Silakan coba lagi.";
+        }
+        
+        // Format for WhatsApp
+        const formattedResponse = formatForWhatsApp(aiResponse);
+        
+        // Log assistant message
+        await logMessage(supabase, convId, 'assistant', formattedResponse);
+        
+        // Send via Fonnte
+        console.log(`Sending admin response to ${phone}: "${formattedResponse.substring(0, 100)}..."`);
+        const sendResponse = await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': FONNTE_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            target: phone,
+            message: formattedResponse,
+          }),
+        });
+        
+        const sendResult = await sendResponse.json();
+        console.log("Fonnte send result:", JSON.stringify(sendResult));
+        
+        return new Response(JSON.stringify({ 
+          status: "manager_mode", 
+          conversation_id: convId,
+          manager_name: managerInfo?.name 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (error) {
+        console.error("Manager mode error:", error);
+        return new Response(JSON.stringify({ status: "error", error: String(error) }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Handle takeover mode - skip AI

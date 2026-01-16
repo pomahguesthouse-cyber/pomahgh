@@ -1317,6 +1317,7 @@ export type Database = {
           updated_at: string | null
           whatsapp_ai_whitelist: string[] | null
           whatsapp_contact_numbers: Json | null
+          whatsapp_manager_numbers: Json | null
           whatsapp_number: string | null
           whatsapp_response_mode: string | null
           whatsapp_session_timeout_minutes: number | null
@@ -1381,6 +1382,7 @@ export type Database = {
           updated_at?: string | null
           whatsapp_ai_whitelist?: string[] | null
           whatsapp_contact_numbers?: Json | null
+          whatsapp_manager_numbers?: Json | null
           whatsapp_number?: string | null
           whatsapp_response_mode?: string | null
           whatsapp_session_timeout_minutes?: number | null
@@ -1445,6 +1447,7 @@ export type Database = {
           updated_at?: string | null
           whatsapp_ai_whitelist?: string[] | null
           whatsapp_contact_numbers?: Json | null
+          whatsapp_manager_numbers?: Json | null
           whatsapp_number?: string | null
           whatsapp_response_mode?: string | null
           whatsapp_session_timeout_minutes?: number | null

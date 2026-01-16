@@ -7,6 +7,12 @@ export interface WhatsAppContact {
   label: string;
 }
 
+export interface WhatsAppManager {
+  phone: string;
+  name: string;
+  added_at?: string;
+}
+
 export interface HotelSettings {
   id: string;
   created_at?: string;
@@ -66,6 +72,7 @@ export interface HotelSettings {
   whatsapp_ai_whitelist?: string[];
   whatsapp_contact_numbers?: WhatsAppContact[];
   whatsapp_response_mode?: 'ai' | 'manual';
+  whatsapp_manager_numbers?: WhatsAppManager[];
 }
 
 export const useHotelSettings = () => {
@@ -85,6 +92,7 @@ export const useHotelSettings = () => {
       return {
         ...data,
         whatsapp_contact_numbers: (data.whatsapp_contact_numbers as unknown as WhatsAppContact[]) || [],
+        whatsapp_manager_numbers: (data.whatsapp_manager_numbers as unknown as WhatsAppManager[]) || [],
       } as HotelSettings;
     },
   });
@@ -93,10 +101,13 @@ export const useHotelSettings = () => {
     mutationFn: async (updates: Partial<HotelSettings>) => {
       if (!settings?.id) throw new Error("No settings found");
 
-      // Convert WhatsAppContact[] back to Json for database
+      // Convert JSONB arrays back to Json for database
       const dbUpdates: Record<string, unknown> = { ...updates };
       if (updates.whatsapp_contact_numbers) {
         dbUpdates.whatsapp_contact_numbers = updates.whatsapp_contact_numbers as unknown;
+      }
+      if (updates.whatsapp_manager_numbers) {
+        dbUpdates.whatsapp_manager_numbers = updates.whatsapp_manager_numbers as unknown;
       }
 
       const { data, error } = await supabase

@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
-import { useHotelSettings, WhatsAppContact } from '@/hooks/useHotelSettings';
-import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban } from 'lucide-react';
+import { useHotelSettings, WhatsAppContact, WhatsAppManager } from '@/hooks/useHotelSettings';
+import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban, UserCog } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
@@ -27,6 +27,8 @@ const AdminChatbot = () => {
   const [newContactNumber, setNewContactNumber] = useState("");
   const [newContactLabel, setNewContactLabel] = useState("");
   const [newWhitelistNumber, setNewWhitelistNumber] = useState("");
+  const [newManagerPhone, setNewManagerPhone] = useState("");
+  const [newManagerName, setNewManagerName] = useState("");
   
   const [formData, setFormData] = useState({
     persona: '',
@@ -457,6 +459,107 @@ const AdminChatbot = () => {
 
               <p className="text-sm text-muted-foreground">
                 Nomor di whitelist akan otomatis masuk mode takeover (admin harus merespon manual)
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Manager Numbers - Admin AI via WhatsApp */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserCog className="w-5 h-5" />
+                Daftar Nomor Pengelola
+              </CardTitle>
+              <CardDescription>
+                Nomor pengelola akan dilayani oleh AI Admin (dengan akses booking, harga, statistik) via WhatsApp
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nomor HP (e.g. 628123456789)"
+                  value={newManagerPhone}
+                  onChange={(e) => setNewManagerPhone(e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="Nama Pengelola"
+                  value={newManagerName}
+                  onChange={(e) => setNewManagerName(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!newManagerPhone || !newManagerName) {
+                      toast({ title: "Error", description: "Isi nomor dan nama pengelola", variant: "destructive" });
+                      return;
+                    }
+                    const managers = [...(hotelSettings?.whatsapp_manager_numbers || [])];
+                    let normalized = newManagerPhone.replace(/\D/g, '');
+                    if (normalized.startsWith('0')) normalized = '62' + normalized.slice(1);
+                    if (!normalized.startsWith('62')) normalized = '62' + normalized;
+                    
+                    if (managers.some(m => m.phone === normalized)) {
+                      toast({ title: "Error", description: "Nomor sudah terdaftar", variant: "destructive" });
+                      return;
+                    }
+                    managers.push({ 
+                      phone: normalized, 
+                      name: newManagerName,
+                      added_at: new Date().toISOString()
+                    });
+                    updateHotelSettings({ whatsapp_manager_numbers: managers });
+                    setNewManagerPhone("");
+                    setNewManagerName("");
+                    toast({ title: "Berhasil", description: `${newManagerName} ditambahkan sebagai pengelola` });
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {(hotelSettings?.whatsapp_manager_numbers || []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Belum ada nomor pengelola</p>
+                ) : (
+                  (hotelSettings?.whatsapp_manager_numbers || []).map((manager: WhatsAppManager, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="default" className="bg-blue-600">
+                          <UserCog className="w-3 h-3 mr-1" />
+                          Manager
+                        </Badge>
+                        <div>
+                          <p className="font-medium">{manager.name}</p>
+                          <p className="text-sm text-muted-foreground">{manager.phone}</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const managers = [...(hotelSettings?.whatsapp_manager_numbers || [])];
+                          managers.splice(index, 1);
+                          updateHotelSettings({ whatsapp_manager_numbers: managers });
+                          toast({ title: "Berhasil", description: "Pengelola dihapus" });
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <p className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
+                💡 Pengelola yang terdaftar bisa menggunakan WhatsApp untuk:
+                <br />• Cek ketersediaan kamar: "cek kamar tanggal 20-22 Januari"
+                <br />• Lihat statistik: "berapa booking minggu ini?"
+                <br />• Cari booking: "cari booking atas nama Budi"
+                <br />• Update harga: "ubah harga Deluxe jadi 350000"
+                <br />• Buat booking: "booking Deluxe untuk Ahmad 08123456789"
               </p>
             </CardContent>
           </Card>
