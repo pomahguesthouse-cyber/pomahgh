@@ -131,6 +131,91 @@ const tools = [
         }
       }
     }
+  },
+  // ===== BOOKING UPDATE TOOLS =====
+  {
+    type: "function",
+    function: {
+      name: "get_booking_detail",
+      description: "Lihat detail lengkap satu booking berdasarkan kode booking. Gunakan untuk 'detail booking', 'info booking ABC', 'cek booking XYZ'",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_code: { type: "string", description: "Kode booking untuk dicari (contoh: BK-XXXX)" }
+        },
+        required: ["booking_code"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_booking_status",
+      description: "Ubah status booking (confirm, cancel, pending). Gunakan untuk 'batalkan booking', 'konfirmasi booking', atau 'ubah status booking'",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_code: { type: "string", description: "Kode booking (contoh: BK-XXXX)" },
+          new_status: { 
+            type: "string", 
+            enum: ["confirmed", "pending", "cancelled"],
+            description: "Status baru: confirmed, pending, atau cancelled"
+          },
+          cancellation_reason: { type: "string", description: "Alasan pembatalan (opsional, hanya untuk cancelled)" }
+        },
+        required: ["booking_code", "new_status"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_guest_info",
+      description: "Edit informasi tamu seperti nama, nomor HP, atau email. Gunakan untuk 'ubah nama tamu', 'ganti nomor HP booking', 'edit email tamu'",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_code: { type: "string", description: "Kode booking" },
+          guest_name: { type: "string", description: "Nama tamu baru (opsional)" },
+          guest_phone: { type: "string", description: "Nomor HP baru (opsional)" },
+          guest_email: { type: "string", description: "Email baru (opsional)" },
+          num_guests: { type: "number", description: "Jumlah tamu baru (opsional)" }
+        },
+        required: ["booking_code"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "reschedule_booking",
+      description: "Ubah tanggal check-in dan/atau check-out booking. Gunakan untuk 'reschedule', 'ubah tanggal', 'pindah jadwal booking'",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_code: { type: "string", description: "Kode booking" },
+          new_check_in: { type: "string", description: "Tanggal check-in baru (YYYY-MM-DD)" },
+          new_check_out: { type: "string", description: "Tanggal check-out baru (YYYY-MM-DD)" }
+        },
+        required: ["booking_code"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "change_booking_room",
+      description: "Pindahkan booking ke kamar lain. Gunakan untuk 'ganti kamar', 'pindah ke kamar X', 'upgrade kamar'",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_code: { type: "string", description: "Kode booking" },
+          new_room_name: { type: "string", description: "Nama tipe kamar baru (contoh: Deluxe, Superior, Villa)" },
+          new_room_number: { type: "string", description: "Nomor kamar spesifik (contoh: A1, B2)" }
+        },
+        required: ["booking_code", "new_room_name", "new_room_number"]
+      }
+    }
   }
 ];
 
@@ -598,6 +683,305 @@ async function getRoomPrices(supabase: any, roomName?: string) {
   };
 }
 
+// ===== BOOKING UPDATE IMPLEMENTATIONS =====
+
+async function getBookingDetail(supabase: any, bookingCode: string) {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*, rooms(name, price_per_night, max_guests)')
+    .eq('booking_code', bookingCode)
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Booking ${bookingCode} tidak ditemukan`);
+  }
+
+  return {
+    booking_code: data.booking_code,
+    status: data.status,
+    guest: {
+      name: data.guest_name,
+      phone: data.guest_phone,
+      email: data.guest_email,
+      count: data.num_guests
+    },
+    room: {
+      name: data.rooms?.name,
+      number: data.allocated_room_number,
+      price_per_night: data.rooms?.price_per_night,
+      max_guests: data.rooms?.max_guests
+    },
+    dates: {
+      check_in: data.check_in,
+      check_out: data.check_out,
+      nights: data.total_nights
+    },
+    payment: {
+      total_price: data.total_price,
+      payment_status: data.payment_status,
+      payment_amount: data.payment_amount
+    },
+    booking_source: data.booking_source,
+    special_requests: data.special_requests,
+    created_at: data.created_at
+  };
+}
+
+async function updateBookingStatus(supabase: any, bookingCode: string, newStatus: string, reason?: string) {
+  // Find booking
+  const { data: booking, error: findError } = await supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, status, special_requests, rooms(name)')
+    .eq('booking_code', bookingCode)
+    .single();
+
+  if (findError || !booking) {
+    throw new Error(`Booking ${bookingCode} tidak ditemukan`);
+  }
+
+  const oldStatus = booking.status;
+
+  // Prepare update data
+  const updateData: any = { 
+    status: newStatus,
+    updated_at: new Date().toISOString()
+  };
+
+  // If cancelling, append reason to special_requests
+  if (newStatus === 'cancelled' && reason) {
+    const existingRequests = booking.special_requests || '';
+    updateData.special_requests = `[DIBATALKAN: ${reason}] ${existingRequests}`.trim();
+  }
+
+  // Update status
+  const { error: updateError } = await supabase
+    .from('bookings')
+    .update(updateData)
+    .eq('id', booking.id);
+
+  if (updateError) throw updateError;
+
+  return {
+    success: true,
+    booking_code: bookingCode,
+    guest_name: booking.guest_name,
+    room_name: booking.rooms?.name,
+    old_status: oldStatus,
+    new_status: newStatus,
+    cancellation_reason: reason || null
+  };
+}
+
+async function updateGuestInfo(supabase: any, args: any) {
+  const { booking_code, guest_name, guest_phone, guest_email, num_guests } = args;
+
+  // Find booking
+  const { data: booking, error: findError } = await supabase
+    .from('bookings')
+    .select('id, guest_name, guest_phone, guest_email, num_guests')
+    .eq('booking_code', booking_code)
+    .single();
+
+  if (findError || !booking) {
+    throw new Error(`Booking ${booking_code} tidak ditemukan`);
+  }
+
+  const updateData: any = { updated_at: new Date().toISOString() };
+  const changes: string[] = [];
+
+  if (guest_name && guest_name !== booking.guest_name) {
+    updateData.guest_name = guest_name;
+    changes.push(`Nama: ${booking.guest_name} → ${guest_name}`);
+  }
+  if (guest_phone && guest_phone !== booking.guest_phone) {
+    updateData.guest_phone = guest_phone;
+    changes.push(`HP: ${booking.guest_phone || '-'} → ${guest_phone}`);
+  }
+  if (guest_email && guest_email !== booking.guest_email) {
+    updateData.guest_email = guest_email;
+    changes.push(`Email: ${booking.guest_email || '-'} → ${guest_email}`);
+  }
+  if (num_guests && num_guests !== booking.num_guests) {
+    updateData.num_guests = num_guests;
+    changes.push(`Jumlah tamu: ${booking.num_guests} → ${num_guests}`);
+  }
+
+  if (changes.length === 0) {
+    return { success: true, booking_code, message: 'Tidak ada perubahan data' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('bookings')
+    .update(updateData)
+    .eq('id', booking.id);
+
+  if (updateError) throw updateError;
+
+  return { success: true, booking_code, changes };
+}
+
+async function rescheduleBooking(supabase: any, args: any) {
+  const { booking_code, new_check_in, new_check_out } = args;
+
+  if (!new_check_in && !new_check_out) {
+    throw new Error('Harus menyertakan new_check_in atau new_check_out');
+  }
+
+  // Find booking with room info
+  const { data: booking, error: findError } = await supabase
+    .from('bookings')
+    .select('id, check_in, check_out, room_id, allocated_room_number, rooms(price_per_night)')
+    .eq('booking_code', booking_code)
+    .single();
+
+  if (findError || !booking) {
+    throw new Error(`Booking ${booking_code} tidak ditemukan`);
+  }
+
+  const checkIn = new_check_in || booking.check_in;
+  const checkOut = new_check_out || booking.check_out;
+
+  // Validate dates
+  if (new Date(checkOut) <= new Date(checkIn)) {
+    throw new Error('Tanggal check-out harus setelah check-in');
+  }
+
+  // Check for conflicts (other bookings in the same room during new dates)
+  const { data: conflicts } = await supabase
+    .from('bookings')
+    .select('id, booking_code')
+    .eq('room_id', booking.room_id)
+    .eq('allocated_room_number', booking.allocated_room_number)
+    .neq('id', booking.id)
+    .neq('status', 'cancelled')
+    .lt('check_in', checkOut)
+    .gt('check_out', checkIn);
+
+  if (conflicts && conflicts.length > 0) {
+    throw new Error(`Tanggal baru bentrok dengan booking lain (${conflicts[0].booking_code}) di kamar yang sama`);
+  }
+
+  // Check blocked dates
+  const { data: blockedDates } = await supabase
+    .from('room_unavailable_dates')
+    .select('unavailable_date')
+    .eq('room_id', booking.room_id)
+    .eq('room_number', booking.allocated_room_number)
+    .gte('unavailable_date', checkIn)
+    .lte('unavailable_date', checkOut);
+
+  if (blockedDates && blockedDates.length > 0) {
+    throw new Error(`Kamar diblokir pada tanggal: ${blockedDates.map((d: any) => d.unavailable_date).join(', ')}`);
+  }
+
+  // Calculate new nights and price
+  const nights = Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24));
+  const totalPrice = booking.rooms?.price_per_night * nights;
+
+  const { error: updateError } = await supabase
+    .from('bookings')
+    .update({
+      check_in: checkIn,
+      check_out: checkOut,
+      total_nights: nights,
+      total_price: totalPrice,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', booking.id);
+
+  if (updateError) throw updateError;
+
+  return {
+    success: true,
+    booking_code,
+    old_dates: { check_in: booking.check_in, check_out: booking.check_out },
+    new_dates: { check_in: checkIn, check_out: checkOut },
+    new_nights: nights,
+    new_total_price: totalPrice
+  };
+}
+
+async function changeBookingRoom(supabase: any, args: any) {
+  const { booking_code, new_room_name, new_room_number } = args;
+
+  // Find booking
+  const { data: booking, error: findError } = await supabase
+    .from('bookings')
+    .select('id, room_id, allocated_room_number, check_in, check_out, total_nights, rooms(name)')
+    .eq('booking_code', booking_code)
+    .single();
+
+  if (findError || !booking) {
+    throw new Error(`Booking ${booking_code} tidak ditemukan`);
+  }
+
+  // Find new room using smart matching
+  const { data: allRooms } = await supabase.from('rooms').select('*');
+  const newRoom = findBestRoomMatch(new_room_name, allRooms || []);
+
+  if (!newRoom) {
+    const roomList = allRooms?.map((r: any) => r.name).join(', ') || 'tidak ada';
+    throw new Error(`Kamar "${new_room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
+  }
+
+  if (!newRoom.room_numbers?.includes(new_room_number)) {
+    throw new Error(`Nomor kamar ${new_room_number} tidak ada di ${newRoom.name}. Tersedia: ${newRoom.room_numbers?.join(', ') || 'tidak ada'}`);
+  }
+
+  // Check availability for new room
+  const { data: conflicts } = await supabase
+    .from('bookings')
+    .select('id, booking_code')
+    .eq('room_id', newRoom.id)
+    .eq('allocated_room_number', new_room_number)
+    .neq('id', booking.id)
+    .neq('status', 'cancelled')
+    .lt('check_in', booking.check_out)
+    .gt('check_out', booking.check_in);
+
+  if (conflicts && conflicts.length > 0) {
+    throw new Error(`Kamar ${newRoom.name} ${new_room_number} tidak tersedia (bentrok dengan ${conflicts[0].booking_code})`);
+  }
+
+  // Check blocked dates for new room
+  const { data: blockedDates } = await supabase
+    .from('room_unavailable_dates')
+    .select('unavailable_date')
+    .eq('room_id', newRoom.id)
+    .eq('room_number', new_room_number)
+    .gte('unavailable_date', booking.check_in)
+    .lte('unavailable_date', booking.check_out);
+
+  if (blockedDates && blockedDates.length > 0) {
+    throw new Error(`Kamar ${newRoom.name} ${new_room_number} diblokir pada tanggal: ${blockedDates.map((d: any) => d.unavailable_date).join(', ')}`);
+  }
+
+  // Calculate new price
+  const newTotalPrice = newRoom.price_per_night * booking.total_nights;
+
+  const { error: updateError } = await supabase
+    .from('bookings')
+    .update({
+      room_id: newRoom.id,
+      allocated_room_number: new_room_number,
+      total_price: newTotalPrice,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', booking.id);
+
+  if (updateError) throw updateError;
+
+  return {
+    success: true,
+    booking_code,
+    old_room: { name: booking.rooms?.name, number: booking.allocated_room_number },
+    new_room: { name: newRoom.name, number: new_room_number },
+    old_total_price: booking.rooms?.price_per_night * booking.total_nights,
+    new_total_price: newTotalPrice,
+    price_difference: newTotalPrice - (booking.rooms?.price_per_night || 0) * booking.total_nights
+  };
+}
+
 async function executeTool(supabase: any, toolName: string, args: any) {
   console.log(`Executing tool: ${toolName}`, args);
   
@@ -618,6 +1002,17 @@ async function executeTool(supabase: any, toolName: string, args: any) {
       return await updateRoomPrice(supabase, args);
     case 'get_room_prices':
       return await getRoomPrices(supabase, args.room_name);
+    // Booking update tools
+    case 'get_booking_detail':
+      return await getBookingDetail(supabase, args.booking_code);
+    case 'update_booking_status':
+      return await updateBookingStatus(supabase, args.booking_code, args.new_status, args.cancellation_reason);
+    case 'update_guest_info':
+      return await updateGuestInfo(supabase, args);
+    case 'reschedule_booking':
+      return await rescheduleBooking(supabase, args);
+    case 'change_booking_room':
+      return await changeBookingRoom(supabase, args);
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
@@ -839,6 +1234,11 @@ Kamu bisa:
 6. Membuat booking baru langsung (gunakan create_admin_booking)
 7. **Mengubah harga kamar** (gunakan update_room_price)
 8. **Melihat daftar harga kamar** (gunakan get_room_prices)
+9. **Lihat detail booking** (gunakan get_booking_detail)
+10. **Batalkan/Konfirmasi booking** (gunakan update_booking_status)
+11. **Edit info tamu** (gunakan update_guest_info)
+12. **Reschedule booking** (gunakan reschedule_booking)
+13. **Ganti/Pindah kamar** (gunakan change_booking_room)
 
 💰 PANDUAN UPDATE HARGA:
 - "ubah harga Deluxe jadi 350000" → update_room_price dengan room_name: "Deluxe", price_type: "main", new_price: 350000
@@ -848,11 +1248,25 @@ Kamu bisa:
 - "lihat harga kamar" / "daftar harga" → gunakan get_room_prices
 - "harga Deluxe berapa?" → gunakan get_room_prices dengan room_name: "Deluxe"
 
+📝 PANDUAN UPDATE BOOKING:
+- "detail booking BK-1234" / "info booking BK-1234" → get_booking_detail
+- "batalkan booking BK-1234" / "cancel BK-1234" → update_booking_status dengan new_status: "cancelled"
+- "konfirmasi booking BK-1234" → update_booking_status dengan new_status: "confirmed"
+- "ubah nama tamu di BK-1234 jadi Ahmad" → update_guest_info dengan guest_name
+- "ganti HP booking BK-1234 ke 081234567890" → update_guest_info dengan guest_phone
+- "reschedule BK-1234 ke 25-30 Jan" → reschedule_booking dengan new_check_in dan new_check_out
+- "pindah BK-1234 ke Deluxe A2" / "upgrade kamar" → change_booking_room dengan new_room_name dan new_room_number
+
 📌 PENTING - PILIHAN TOOL YANG BENAR:
 - "Tampilkan 5 booking terakhir" / "booking terbaru" / "lihat 10 booking terakhir" → gunakan get_recent_bookings
 - "Cari booking atas nama Budi" / "booking dari Ahmad" / "cari kode ABC123" → gunakan search_bookings
 - "ubah harga" / "update harga" / "set harga" → gunakan update_room_price
 - "lihat harga" / "daftar harga" / "harga kamar" → gunakan get_room_prices
+- "detail booking" / "info booking" → gunakan get_booking_detail
+- "batalkan" / "cancel" / "konfirmasi booking" → gunakan update_booking_status
+- "ubah nama" / "ganti HP" / "edit email tamu" → gunakan update_guest_info
+- "reschedule" / "ubah tanggal" / "pindah jadwal" → gunakan reschedule_booking
+- "ganti kamar" / "pindah kamar" / "upgrade" → gunakan change_booking_room
 - JANGAN gunakan search_bookings untuk menampilkan booking terakhir tanpa kata kunci pencarian!
 
 Gunakan bahasa Indonesia yang singkat dan jelas.
@@ -861,7 +1275,8 @@ Untuk tanggal, gunakan format DD MMM YYYY (contoh: 8 Jan 2026).
 
 Jika pengelola minta buat booking tapi info belum lengkap, tanyakan yang kurang.
 Sebelum buat booking, selalu cek ketersediaan dulu dan konfirmasi detailnya.
-Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan baru.`;
+Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan baru.
+Setelah update booking, konfirmasi perubahan dengan menampilkan data lama vs baru.`;
 
     // Prepare messages for AI
     const aiMessages = [
