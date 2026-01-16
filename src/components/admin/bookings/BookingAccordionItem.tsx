@@ -1,7 +1,6 @@
 import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,9 +19,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Booking, BankAccount } from "./types";
 import { formatRupiahID, formatTimeID } from "@/utils/indonesianFormat";
-import { ChevronDown, Edit, Trash2, FileText, Phone, Mail, User, CreditCard, Bed, Calendar, Clock } from "lucide-react";
+import { ChevronDown, Edit, Trash2, FileText, Phone, Mail, Bed, Clock, CreditCard } from "lucide-react";
 
 interface BookingAccordionItemProps {
   booking: Booking;
@@ -37,20 +37,26 @@ interface BookingAccordionItemProps {
   isDeleting?: boolean;
 }
 
-const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  confirmed: "bg-blue-100 text-blue-800",
-  checked_in: "bg-green-100 text-green-800",
-  checked_out: "bg-gray-100 text-gray-800",
-  cancelled: "bg-red-100 text-red-800",
-};
-
 const statusLabels: Record<string, string> = {
   pending: "Pending",
   confirmed: "Confirmed",
   checked_in: "Checked In",
   checked_out: "Checked Out",
   cancelled: "Cancelled",
+};
+
+const paymentStatusLabels: Record<string, string> = {
+  paid: "Lunas",
+  unpaid: "Belum Bayar",
+  pay_at_hotel: "Bayar di Hotel",
+  partial: "DP/Sebagian",
+};
+
+const paymentStatusColors: Record<string, string> = {
+  paid: "text-green-600",
+  unpaid: "text-red-500",
+  pay_at_hotel: "text-blue-600",
+  partial: "text-orange-500",
 };
 
 function getSourceLabel(booking: Booking): string {
@@ -71,6 +77,7 @@ function getSourceLabel(booking: Booking): string {
 
 export function BookingAccordionItem({
   booking,
+  index,
   getRoomName,
   bankAccounts,
   onStatusChange,
@@ -87,37 +94,57 @@ export function BookingAccordionItem({
   const allocatedRooms =
     booking.booking_rooms?.map((br) => br.room_number).join(", ") || booking.allocated_room_number || "-";
 
-  return (
-    <AccordionItem value={booking.id} className="border rounded-lg mb-2">
-      <AccordionTrigger className="px-4 py-3 hover:no-underline">
-        <div className="flex flex-col md:flex-row md:items-center justify-between w-full gap-2 text-left">
-          {/* Left: Code and Status */}
-          <div className="flex items-center gap-3">
-            <span className="font-mono font-semibold text-sm">{booking.booking_code}</span>
-            <Badge className={statusColors[booking.status]}>{statusLabels[booking.status]}</Badge>
-            <Badge variant="outline" className="text-xs">
-              {getSourceLabel(booking)}
-            </Badge>
-          </div>
+  // Calculate price per night
+  const pricePerNight = booking.total_nights > 0 
+    ? Math.round(booking.total_price / booking.total_nights)
+    : booking.total_price;
 
-          {/* Right: Guest, Date, Price */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <User className="h-3.5 w-3.5" />
-              {booking.guest_name}
+  // Format number Indonesia style (e.g., 700.000)
+  const formatNumber = (num: number) => num.toLocaleString('id-ID');
+
+  return (
+    <AccordionItem value={booking.id} className="border-0">
+      <AccordionTrigger className={`px-4 py-3 hover:no-underline hover:bg-gray-100 border-b border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+        {/* Desktop: Table-like row */}
+        <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_80px_100px_100px_70px_120px_120px_100px_130px] gap-1 w-full text-[13px] text-gray-700 items-center">
+          <div className="text-center font-medium">{index}</div>
+          <div className="font-mono text-xs">{booking.booking_code}</div>
+          <div className="truncate">{booking.guest_name}</div>
+          <div className="truncate">{getRoomName(booking.room_id)}</div>
+          <div className="text-center">{allocatedRooms}</div>
+          <div className="text-center">{format(checkInDate, "dd/MM/yyyy")}</div>
+          <div className="text-center">{format(checkOutDate, "dd/MM/yyyy")}</div>
+          <div className="text-center">{booking.total_nights}</div>
+          <div className="text-right">{formatNumber(pricePerNight)}</div>
+          <div className="text-right font-medium">{formatNumber(booking.total_price)}</div>
+          <div className="text-center text-xs">{statusLabels[booking.status]}</div>
+          <div className={`text-center text-xs font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
+            {paymentStatusLabels[booking.payment_status || 'unpaid']}
+          </div>
+        </div>
+
+        {/* Mobile: Card-like layout */}
+        <div className="lg:hidden flex flex-col w-full gap-2 text-left">
+          <div className="flex items-center justify-between">
+            <span className="font-mono font-semibold text-sm">{booking.booking_code}</span>
+            <span className={`text-xs font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
+              {paymentStatusLabels[booking.payment_status || 'unpaid']}
             </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5" />
-              {format(checkInDate, "dd MMM", { locale: localeId })} -{" "}
-              {format(checkOutDate, "dd MMM", { locale: localeId })}
-            </span>
-            <span className="font-medium text-foreground">{formatRupiahID(booking.total_price)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span>{booking.guest_name}</span>
+            <span className="font-medium">{formatRupiahID(booking.total_price)}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{format(checkInDate, "dd/MM/yyyy")} - {format(checkOutDate, "dd/MM/yyyy")}</span>
+            <span>•</span>
+            <span>{booking.total_nights} malam</span>
           </div>
         </div>
       </AccordionTrigger>
 
-      <AccordionContent className="px-4 pb-4">
-        <div className="space-y-4">
+      <AccordionContent className="px-4 pb-4 bg-gray-50 border-b border-gray-200">
+        <div className="space-y-4 pt-4">
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
             {/* Status Dropdown */}
@@ -131,9 +158,7 @@ export function BookingAccordionItem({
                 <DropdownMenuItem onClick={() => onStatusChange(booking.id, "pending")}>Pending</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onStatusChange(booking.id, "confirmed")}>Confirmed</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_in")}>Checked In</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_out")}>
-                  Checked Out
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_out")}>Checked Out</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onStatusChange(booking.id, "cancelled")}>Cancelled</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -186,6 +211,7 @@ export function BookingAccordionItem({
               </div>
               <p className="font-medium">{getRoomName(booking.room_id)}</p>
               <p className="text-muted-foreground">Nomor: {allocatedRooms}</p>
+              <p className="text-muted-foreground text-xs">Sumber: {getSourceLabel(booking)}</p>
             </div>
 
             {/* Date & Time Info */}
@@ -213,7 +239,7 @@ export function BookingAccordionItem({
               </div>
               <p className="font-medium">{formatRupiahID(booking.total_price)}</p>
               <Badge variant={booking.payment_status === "paid" ? "default" : "secondary"}>
-                {booking.payment_status === "paid" ? "Lunas" : "Belum Lunas"}
+                {paymentStatusLabels[booking.payment_status || 'unpaid']}
               </Badge>
               {booking.payment_amount && booking.payment_amount > 0 && (
                 <p className="text-muted-foreground">Dibayar: {formatRupiahID(booking.payment_amount)}</p>

@@ -289,13 +289,13 @@ const AdminBookings = () => {
         onExportExcel={handleExportExcel}
       />
 
-      {/* Table Header */}
-      <BookingListHeader />
+      {/* Table Header + Booking List */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <BookingListHeader />
 
-      {/* Booking List */}
-      {paginatedBookings && paginatedBookings.length > 0 ? (
-        <>
-      <Accordion type="single" collapsible className="border border-gray-200 rounded-b-lg overflow-hidden">
+        {/* Booking List */}
+        {paginatedBookings && paginatedBookings.length > 0 ? (
+          <Accordion type="single" collapsible>
             {paginatedBookings.map((booking, idx) => (
               <BookingAccordionItem
                 key={booking.id}
@@ -312,52 +312,52 @@ const AdminBookings = () => {
               />
             ))}
           </Accordion>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            No bookings found
+          </div>
+        )}
+      </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-              <p className="text-sm text-muted-foreground">
-                Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} bookings
-              </p>
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+          <p className="text-sm text-muted-foreground">
+            Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} bookings
+          </p>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              {getPageNumbers().map((page, idx) =>
+                page === 'ellipsis' ? (
+                  <PaginationItem key={`ellipsis-${idx}`}>
+                    <PaginationEllipsis />
                   </PaginationItem>
-                  {getPageNumbers().map((page, idx) =>
-                    page === 'ellipsis' ? (
-                      <PaginationItem key={`ellipsis-${idx}`}>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    ) : (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => setCurrentPage(page)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    )
-                  )}
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
+                ) : (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(page)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
                   </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          No bookings found
+                )
+              )}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
 
