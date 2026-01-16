@@ -162,9 +162,8 @@ const AdminDashboard = () => {
       <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2">
         <Card>
           <CardHeader className="p-3 md:p-6">
-            <CardTitle className="text-sm font-medium">Booking Patterns</CardTitle>
+            <CardTitle className="text-sm md:text-base">Booking Patterns</CardTitle>
           </CardHeader>
-
           <CardContent className="space-y-3 p-3 pt-0 md:p-6 md:pt-0">
             <div className="flex justify-between items-center">
               <span className="text-xs md:text-sm text-muted-foreground">Rata-rata Menginap</span>
@@ -185,7 +184,7 @@ const AdminDashboard = () => {
 
         <Card>
           <CardHeader className="p-3 md:p-6">
-            <CardTitle className="text-sm md:text-base">Revenue by Room</CardTitle>
+            <CardTitle className="text-sm md:text-base font-medium">Revenue by Room</CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
             <div className="space-y-2 md:space-y-3">
