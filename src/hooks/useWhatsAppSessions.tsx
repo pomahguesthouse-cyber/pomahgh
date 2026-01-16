@@ -28,14 +28,14 @@ export interface WhatsAppSessionWithMessages extends WhatsAppSession {
   } | null;
 }
 
-export const useWhatsAppSessions = () => {
+export const useWhatsAppSessions = (sessionType?: 'guest' | 'admin' | 'all') => {
   const queryClient = useQueryClient();
 
   // Set up real-time subscription for sessions and messages
   useEffect(() => {
     // Subscribe to whatsapp_sessions changes
     const sessionsChannel = supabase
-      .channel('whatsapp-sessions-realtime')
+      .channel(`whatsapp-sessions-realtime-${sessionType || 'all'}`)
       .on(
         'postgres_changes',
         {
@@ -45,15 +45,15 @@ export const useWhatsAppSessions = () => {
         },
         () => {
           console.log('🔄 WhatsApp session updated');
-          queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
-          queryClient.invalidateQueries({ queryKey: ['whatsapp-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions', sessionType] });
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-stats', sessionType] });
         }
       )
       .subscribe();
 
     // Subscribe to chat_messages changes for real-time message updates
     const messagesChannel = supabase
-      .channel('whatsapp-messages-realtime')
+      .channel(`whatsapp-messages-realtime-${sessionType || 'all'}`)
       .on(
         'postgres_changes',
         {
@@ -70,8 +70,8 @@ export const useWhatsAppSessions = () => {
             });
           }
           // Also refresh sessions to update message counts
-          queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
-          queryClient.invalidateQueries({ queryKey: ['whatsapp-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions', sessionType] });
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-stats', sessionType] });
         }
       )
       .subscribe();
@@ -80,12 +80,12 @@ export const useWhatsAppSessions = () => {
       supabase.removeChannel(sessionsChannel);
       supabase.removeChannel(messagesChannel);
     };
-  }, [queryClient]);
+  }, [queryClient, sessionType]);
 
   return useQuery({
-    queryKey: ['whatsapp-sessions'],
+    queryKey: ['whatsapp-sessions', sessionType],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('whatsapp_sessions')
         .select(`
           *,
@@ -98,6 +98,13 @@ export const useWhatsAppSessions = () => {
           )
         `)
         .order('last_message_at', { ascending: false });
+
+      // Filter by session_type if specified
+      if (sessionType && sessionType !== 'all') {
+        query = query.eq('session_type', sessionType);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as WhatsAppSessionWithMessages[];
@@ -266,13 +273,20 @@ export const useSendAdminMessage = () => {
   });
 };
 
-export const useWhatsAppStats = () => {
+export const useWhatsAppStats = (sessionType?: 'guest' | 'admin' | 'all') => {
   return useQuery({
-    queryKey: ['whatsapp-stats'],
+    queryKey: ['whatsapp-stats', sessionType],
     queryFn: async () => {
-      const { data: sessions, error: sessionsError } = await supabase
+      let query = supabase
         .from('whatsapp_sessions')
-        .select('id, is_blocked, is_active, is_takeover, conversation_id');
+        .select('id, is_blocked, is_active, is_takeover, conversation_id, session_type');
+
+      // Filter by session_type if specified
+      if (sessionType && sessionType !== 'all') {
+        query = query.eq('session_type', sessionType);
+      }
+
+      const { data: sessions, error: sessionsError } = await query;
 
       if (sessionsError) throw sessionsError;
 

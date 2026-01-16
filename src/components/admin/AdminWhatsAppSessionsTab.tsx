@@ -18,10 +18,7 @@ import {
   WhatsAppSessionWithMessages 
 } from '@/hooks/useWhatsAppSessions';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, MessageSquare, Ban, Unlock, Trash2, Eye, Search, Users, ShieldCheck, ShieldX, MessageCircle, CalendarCheck, Hand, Bot, Send, Settings } from 'lucide-react';
-import { useHotelSettings } from '@/hooks/useHotelSettings';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import { Phone, MessageSquare, Ban, Unlock, Trash2, Eye, Search, Users, ShieldCheck, ShieldX, MessageCircle, CalendarCheck, Hand, Bot, Send, Shield } from 'lucide-react';
 import { formatDateTimeID } from '@/utils/indonesianFormat';
 
 const StatCard = ({ title, value, icon: Icon, variant = 'default' }: { 
@@ -70,6 +67,10 @@ const SessionMessagesDialog = ({ session }: { session: WhatsAppSessionWithMessag
           <DialogTitle className="flex items-center gap-2">
             <Phone className="w-5 h-5" />
             {session.phone_number}
+            <Badge variant="outline" className="ml-2 bg-blue-100 text-blue-800 border-blue-300">
+              <Shield className="w-3 h-3 mr-1" />
+              Admin
+            </Badge>
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="h-[60vh] pr-4">
@@ -85,13 +86,13 @@ const SessionMessagesDialog = ({ session }: { session: WhatsAppSessionWithMessag
                   <div
                     className={`max-w-[80%] px-4 py-2 rounded-2xl ${
                       msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-md'
+                        ? 'bg-blue-600 text-white rounded-br-md'
                         : 'bg-muted rounded-bl-md'
                     }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     <p className={`text-[10px] mt-1 ${
-                      msg.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                      msg.role === 'user' ? 'text-white/70' : 'text-muted-foreground'
                     }`}>
                       {msg.created_at ? formatDateTimeID(msg.created_at) : '-'}
                     </p>
@@ -108,8 +109,8 @@ const SessionMessagesDialog = ({ session }: { session: WhatsAppSessionWithMessag
   );
 };
 
-// Takeover Chat Dialog with realtime updates
-const TakeoverChatDialog = ({ 
+// Admin Chat Dialog with realtime updates
+const AdminChatDialog = ({ 
   session, 
   open, 
   onOpenChange 
@@ -120,7 +121,6 @@ const TakeoverChatDialog = ({
 }) => {
   const { data: messages, refetch } = useWhatsAppSessionMessages(session.conversation_id);
   const sendMessage = useSendAdminMessage();
-  const releaseSession = useReleaseSession();
   const [newMessage, setNewMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -129,7 +129,7 @@ const TakeoverChatDialog = ({
     if (!session.conversation_id || !open) return;
 
     const channel = supabase
-      .channel(`takeover-${session.conversation_id}`)
+      .channel(`admin-chat-${session.conversation_id}`)
       .on(
         'postgres_changes',
         {
@@ -169,22 +169,17 @@ const TakeoverChatDialog = ({
     refetch();
   };
 
-  const handleRelease = async () => {
-    await releaseSession.mutateAsync(session.id);
-    onOpenChange(false);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl h-[85vh] flex flex-col p-0">
-        <DialogHeader className="p-4 border-b bg-yellow-50 dark:bg-yellow-900/20">
+        <DialogHeader className="p-4 border-b bg-blue-50 dark:bg-blue-900/20">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Hand className="w-5 h-5 text-yellow-600" />
-              <span>Takeover: {session.phone_number}</span>
+              <Shield className="w-5 h-5 text-blue-600" />
+              <span>Admin Chat: {session.phone_number}</span>
             </div>
-            <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-              Mode Manual
+            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+              Admin Chatbot
             </Badge>
           </DialogTitle>
         </DialogHeader>
@@ -200,7 +195,7 @@ const TakeoverChatDialog = ({
                 <div
                   className={`max-w-[80%] px-4 py-2 rounded-2xl ${
                     msg.role === 'user'
-                      ? 'bg-green-500 text-white rounded-br-md'
+                      ? 'bg-blue-500 text-white rounded-br-md'
                       : 'bg-muted rounded-bl-md'
                   }`}
                 >
@@ -218,7 +213,7 @@ const TakeoverChatDialog = ({
 
         {/* Input Area */}
         <div className="p-4 border-t bg-muted/30">
-          <div className="flex gap-2 mb-3">
+          <div className="flex gap-2">
             <Input
               placeholder="Ketik pesan manual..."
               value={newMessage}
@@ -234,53 +229,32 @@ const TakeoverChatDialog = ({
               Kirim
             </Button>
           </div>
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={handleRelease}
-            disabled={releaseSession.isPending}
-          >
-            <Bot className="w-4 h-4 mr-2" />
-            Serahkan Kembali ke AI
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-const SessionRow = ({ session }: { session: WhatsAppSessionWithMessages }) => {
+const AdminSessionRow = ({ session }: { session: WhatsAppSessionWithMessages }) => {
   const toggleBlock = useToggleBlockSession();
   const deleteSession = useDeleteWhatsAppSession();
-  const takeoverSession = useTakeoverSession();
-  const [takeoverOpen, setTakeoverOpen] = useState(false);
-
-  const handleTakeover = async () => {
-    await takeoverSession.mutateAsync(session.id);
-    setTakeoverOpen(true);
-  };
+  const [chatOpen, setChatOpen] = useState(false);
 
   return (
     <>
       <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
         <div className="flex items-center gap-4">
-          <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
-            <Phone className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
+            <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <p className="font-medium">{session.phone_number}</p>
-              {session.is_takeover && (
-                <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
-                  <Hand className="w-3 h-3 mr-1" />
-                  Takeover
-                </Badge>
-              )}
+              <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800 border-blue-300">
+                Admin
+              </Badge>
               {session.is_blocked && (
                 <Badge variant="destructive" className="text-xs">Diblokir</Badge>
-              )}
-              {session.chat_conversations?.booking_created && (
-                <Badge variant="default" className="text-xs bg-green-600">Booking</Badge>
               )}
             </div>
             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
@@ -296,27 +270,15 @@ const SessionRow = ({ session }: { session: WhatsAppSessionWithMessages }) => {
         </div>
 
         <div className="flex items-center gap-2">
-          {session.is_takeover ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-yellow-700 border-yellow-300 hover:bg-yellow-50"
-              onClick={() => setTakeoverOpen(true)}
-            >
-              <MessageCircle className="w-4 h-4 mr-1" />
-              Chat
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleTakeover}
-              disabled={takeoverSession.isPending || session.is_blocked}
-            >
-              <Hand className="w-4 h-4 mr-1" />
-              Ambil Alih
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-blue-700 border-blue-300 hover:bg-blue-50"
+            onClick={() => setChatOpen(true)}
+          >
+            <MessageCircle className="w-4 h-4 mr-1" />
+            Chat
+          </Button>
 
           <SessionMessagesDialog session={session} />
           
@@ -349,7 +311,7 @@ const SessionRow = ({ session }: { session: WhatsAppSessionWithMessages }) => {
               <AlertDialogHeader>
                 <AlertDialogTitle>Hapus Session?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Session WhatsApp dari {session.phone_number} akan dihapus permanen beserta riwayat percakapannya.
+                  Session WhatsApp admin dari {session.phone_number} akan dihapus permanen beserta riwayat percakapannya.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -366,86 +328,30 @@ const SessionRow = ({ session }: { session: WhatsAppSessionWithMessages }) => {
         </div>
       </div>
 
-      <TakeoverChatDialog 
+      <AdminChatDialog 
         session={session} 
-        open={takeoverOpen} 
-        onOpenChange={setTakeoverOpen} 
+        open={chatOpen} 
+        onOpenChange={setChatOpen} 
       />
     </>
   );
 };
 
-const WhatsAppSessionsTab = () => {
-  // Filter only guest sessions
-  const { data: sessions, isLoading } = useWhatsAppSessions('guest');
-  const { data: stats } = useWhatsAppStats('guest');
-  const { settings, updateSettings, isUpdating } = useHotelSettings();
+const AdminWhatsAppSessionsTab = () => {
+  const { data: sessions, isLoading } = useWhatsAppSessions('admin');
+  const { data: stats } = useWhatsAppStats('admin');
   const [search, setSearch] = useState('');
 
   const filteredSessions = sessions?.filter(session =>
     session.phone_number.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleModeChange = (mode: 'ai' | 'manual') => {
-    updateSettings({ whatsapp_response_mode: mode });
-  };
-
   return (
     <div className="space-y-6">
-      {/* Response Mode Card */}
-      <Card className={settings?.whatsapp_response_mode === 'manual' ? 'border-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10' : ''}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Settings className="w-5 h-5 text-muted-foreground" />
-              <CardTitle className="text-base">Mode Balasan WhatsApp</CardTitle>
-            </div>
-            {settings?.whatsapp_response_mode === 'manual' && (
-              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                <Hand className="w-3 h-3 mr-1" />
-                Mode Manual Aktif
-              </Badge>
-            )}
-          </div>
-          <CardDescription>
-            Pilih cara membalas pesan WhatsApp masuk
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RadioGroup 
-            value={settings?.whatsapp_response_mode || 'ai'} 
-            onValueChange={(value) => handleModeChange(value as 'ai' | 'manual')}
-            disabled={isUpdating}
-            className="flex flex-col sm:flex-row gap-4"
-          >
-            <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer flex-1">
-              <RadioGroupItem value="ai" id="mode-ai" />
-              <Label htmlFor="mode-ai" className="flex items-center gap-2 cursor-pointer flex-1">
-                <Bot className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="font-medium">AI Chatbot (Otomatis)</p>
-                  <p className="text-xs text-muted-foreground">Semua pesan dijawab otomatis oleh AI</p>
-                </div>
-              </Label>
-            </div>
-            <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer flex-1">
-              <RadioGroupItem value="manual" id="mode-manual" />
-              <Label htmlFor="mode-manual" className="flex items-center gap-2 cursor-pointer flex-1">
-                <Hand className="w-5 h-5 text-yellow-600" />
-                <div>
-                  <p className="font-medium">Manual (Admin Reply)</p>
-                  <p className="text-xs text-muted-foreground">Semua pesan masuk ke admin untuk dijawab manual</p>
-                </div>
-              </Label>
-            </div>
-          </RadioGroup>
-        </CardContent>
-      </Card>
-
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard 
-          title="Total Sessions" 
+          title="Total Admin Sessions" 
           value={stats?.totalSessions || 0} 
           icon={Users} 
         />
@@ -454,12 +360,6 @@ const WhatsAppSessionsTab = () => {
           value={stats?.activeSessions || 0} 
           icon={ShieldCheck}
           variant="success"
-        />
-        <StatCard 
-          title="Takeover" 
-          value={stats?.takeoverSessions || 0} 
-          icon={Hand}
-          variant="warning"
         />
         <StatCard 
           title="Diblokir" 
@@ -472,57 +372,47 @@ const WhatsAppSessionsTab = () => {
           value={stats?.totalMessages || 0} 
           icon={MessageCircle}
         />
-        <StatCard 
-          title="Booking" 
-          value={stats?.bookingsCreated || 0} 
-          icon={CalendarCheck}
-          variant="success"
-        />
-        <StatCard 
-          title="Konversi" 
-          value={`${stats?.conversionRate || 0}%`} 
-          icon={CalendarCheck}
-        />
       </div>
 
       {/* Sessions List */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Phone className="w-5 h-5 text-green-500" />
-                WhatsApp Sessions
-              </CardTitle>
-              <CardDescription>
-                Monitor dan kelola percakapan WhatsApp
-              </CardDescription>
-            </div>
-            <div className="relative w-64">
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-blue-600" />
+            WhatsApp Admin Sessions
+          </CardTitle>
+          <CardDescription>
+            Percakapan WhatsApp dari manager yang terdaftar (menggunakan Admin Chatbot)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Cari nomor telepon..."
+                placeholder="Cari nomor HP..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
               />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Memuat sessions...
-            </div>
+            <p className="text-center text-muted-foreground py-8">Memuat sessions...</p>
           ) : filteredSessions && filteredSessions.length > 0 ? (
             <div className="space-y-3">
               {filteredSessions.map((session) => (
-                <SessionRow key={session.id} session={session} />
+                <AdminSessionRow key={session.id} session={session} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              {search ? 'Tidak ada session yang cocok' : 'Belum ada WhatsApp session'}
+            <div className="text-center py-8">
+              <Shield className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+              <p className="text-muted-foreground">Belum ada session admin WhatsApp</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Manager yang mengirim pesan WhatsApp akan muncul di sini
+              </p>
             </div>
           )}
         </CardContent>
@@ -531,4 +421,4 @@ const WhatsAppSessionsTab = () => {
   );
 };
 
-export default WhatsAppSessionsTab;
+export default AdminWhatsAppSessionsTab;

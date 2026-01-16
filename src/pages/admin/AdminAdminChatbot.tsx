@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHotelSettings, WhatsAppManager } from "@/hooks/useHotelSettings";
-import { Shield, UserCog, MessageSquare, Plus, Trash2 } from "lucide-react";
+import { Shield, UserCog, MessageSquare, Plus, Trash2, Phone } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AdminPersonaSettingsTab from "@/components/admin/AdminPersonaSettingsTab";
+import AdminWhatsAppSessionsTab from "@/components/admin/AdminWhatsAppSessionsTab";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,18 +43,22 @@ const AdminAdminChatbot = () => {
       </div>
 
       <Tabs defaultValue="persona" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="persona" className="text-sm">
             <Shield className="w-4 h-4 mr-2" />
-            Persona Admin
+            Persona
           </TabsTrigger>
           <TabsTrigger value="managers" className="text-sm">
             <UserCog className="w-4 h-4 mr-2" />
-            Daftar Manager
+            Manager
+          </TabsTrigger>
+          <TabsTrigger value="whatsapp" className="text-sm">
+            <Phone className="w-4 h-4 mr-2" />
+            WhatsApp
           </TabsTrigger>
           <TabsTrigger value="logs" className="text-sm">
             <MessageSquare className="w-4 h-4 mr-2" />
-            Log Admin
+            Log
           </TabsTrigger>
         </TabsList>
 
@@ -138,6 +143,11 @@ const AdminAdminChatbot = () => {
               <p>📊 Bisa cek statistik booking & operasional.</p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* WHATSAPP ADMIN SESSIONS */}
+        <TabsContent value="whatsapp" className="space-y-4">
+          <AdminWhatsAppSessionsTab />
         </TabsContent>
 
         {/* LOGS */}

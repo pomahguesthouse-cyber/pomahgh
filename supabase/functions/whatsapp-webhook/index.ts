@@ -392,7 +392,7 @@ serve(async (req) => {
       // Ensure conversation exists
       const convId = await ensureConversation(supabase, session, phone);
       await logMessage(supabase, convId, 'user', normalizedMessage);
-      await updateSession(supabase, phone, convId, false);
+      await updateSession(supabase, phone, convId, false, 'admin'); // Set session_type = 'admin'
       
       // Get conversation history
       const { data: history } = await supabase
@@ -522,7 +522,7 @@ serve(async (req) => {
       console.log(`Created new conversation: ${conversationId}`);
     }
 
-    // Update session
+    // Update session with session_type = 'guest' for regular users
     await supabase
       .from('whatsapp_sessions')
       .upsert({
@@ -530,6 +530,7 @@ serve(async (req) => {
         conversation_id: conversationId,
         last_message_at: new Date().toISOString(),
         is_active: true,
+        session_type: 'guest',
       }, { onConflict: 'phone_number' });
 
     // Log user message (normalized)
@@ -753,8 +754,8 @@ async function logMessage(supabase: any, conversationId: string, role: string, c
     .eq('id', conversationId);
 }
 
-// Helper: Update session
-async function updateSession(supabase: any, phone: string, conversationId: string, isTakeover: boolean) {
+// Helper: Update session with session_type
+async function updateSession(supabase: any, phone: string, conversationId: string, isTakeover: boolean, sessionType: 'guest' | 'admin' = 'guest') {
   await supabase
     .from('whatsapp_sessions')
     .upsert({
@@ -764,5 +765,6 @@ async function updateSession(supabase: any, phone: string, conversationId: strin
       is_active: true,
       is_takeover: isTakeover,
       takeover_at: isTakeover ? new Date().toISOString() : null,
+      session_type: sessionType,
     }, { onConflict: 'phone_number' });
 }
