@@ -65,6 +65,13 @@ const paymentStatusColors: Record<string, string> = {
   partial: "text-orange-500",
 };
 
+const paymentBadgeColors: Record<string, string> = {
+  paid: "bg-teal-500 text-white hover:bg-teal-500",
+  unpaid: "bg-red-500 text-white hover:bg-red-500",
+  pay_at_hotel: "bg-blue-500 text-white hover:bg-blue-500",
+  partial: "bg-orange-500 text-white hover:bg-orange-500",
+};
+
 function getSourceLabel(booking: Booking): string {
   if (booking.booking_source === "ota" && booking.ota_name) {
     return `OTA - ${booking.ota_name}`;
@@ -167,12 +174,89 @@ export function BookingAccordionItem({
 
       <AccordionContent className="px-4 pb-4 bg-gray-50 border-b border-gray-200 font-roboto">
         <div className="space-y-4 pt-4">
+          {/* Info Grid - 4 Columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
+            {/* Room Info */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Bed className="h-4 w-4" />
+                <span>Kamar</span>
+              </div>
+              <p className="font-medium">{getRoomName(booking.room_id)}</p>
+              <p className="text-muted-foreground">Nomor: {allocatedRooms}</p>
+              <p className="text-muted-foreground text-xs">Sumber: {getSourceLabel(booking)}</p>
+            </div>
+
+            {/* Contact Info */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Phone className="h-4 w-4" />
+                <span>Kontak</span>
+              </div>
+              {booking.guest_phone && (
+                <p className="flex items-center gap-2">
+                  <Phone className="h-3 w-3 text-muted-foreground" />
+                  <a href={`tel:${booking.guest_phone}`} className="hover:underline font-medium">
+                    {booking.guest_phone}
+                  </a>
+                </p>
+              )}
+              <p className="flex items-center gap-2">
+                <Mail className="h-3 w-3 text-muted-foreground" />
+                <a href={`mailto:${booking.guest_email}`} className="hover:underline text-xs truncate">
+                  {booking.guest_email}
+                </a>
+              </p>
+            </div>
+
+            {/* Date & Time Info */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>Check-in / Check-out</span>
+              </div>
+              <p className="font-medium">
+                {format(checkInDate, "EEEE, dd MMM yyyy", { locale: localeId })}
+                {booking.check_in_time && ` - ${formatTimeID(booking.check_in_time)}`}
+              </p>
+              <p className="font-medium">
+                {format(checkOutDate, "EEEE, dd MMM yyyy", { locale: localeId })}
+                {booking.check_out_time && ` - ${formatTimeID(booking.check_out_time)}`}
+              </p>
+              <p className="text-muted-foreground">{booking.total_nights} malam</p>
+            </div>
+
+            {/* Payment Info */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <CreditCard className="h-4 w-4" />
+                <span>Pembayaran</span>
+              </div>
+              <p className="font-semibold text-base">{formatRupiahID(booking.total_price)}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className={paymentBadgeColors[booking.payment_status || 'unpaid']}>
+                  {paymentStatusLabels[booking.payment_status || 'unpaid']}
+                </Badge>
+              </div>
+              {booking.payment_amount && booking.payment_amount > 0 && booking.payment_status !== "paid" && (
+                <p className="text-muted-foreground text-xs">Dibayar: {formatRupiahID(booking.payment_amount)}</p>
+              )}
+              {/* Special Requests in Payment column */}
+              {booking.special_requests && (
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <p className="text-muted-foreground text-xs italic">Permintaan Khusus/ Keterangan:</p>
+                  <p className="text-sm font-medium">{booking.special_requests}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
             {/* Status Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={isUpdating}>
+                <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50" disabled={isUpdating}>
                   Ubah Status <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -186,13 +270,13 @@ export function BookingAccordionItem({
             </DropdownMenu>
 
             {/* Invoice Button */}
-            <Button variant="outline" size="sm" onClick={() => onInvoiceClick(booking)}>
+            <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50" onClick={() => onInvoiceClick(booking)}>
               <FileText className="mr-1 h-4 w-4" />
               Invoice
             </Button>
 
             {/* Edit Button */}
-            <Button variant="outline" size="sm" onClick={() => onEditClick(booking)}>
+            <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50" onClick={() => onEditClick(booking)}>
               <Edit className="mr-1 h-4 w-4" />
               Edit
             </Button>
@@ -222,92 +306,6 @@ export function BookingAccordionItem({
               </AlertDialogContent>
             </AlertDialog>
           </div>
-
-          {/* Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            {/* Room Info */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Bed className="h-4 w-4" />
-                <span>Kamar</span>
-              </div>
-              <p className="font-medium">{getRoomName(booking.room_id)}</p>
-              <p className="text-muted-foreground">Nomor: {allocatedRooms}</p>
-              <p className="text-muted-foreground text-xs">Sumber: {getSourceLabel(booking)}</p>
-            </div>
-
-            {/* Date & Time Info */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>Check-in / Check-out</span>
-              </div>
-              <p className="font-medium">
-                {format(checkInDate, "EEEE, dd MMM yyyy", { locale: localeId })}
-                {booking.check_in_time && ` - ${formatTimeID(booking.check_in_time)}`}
-              </p>
-              <p className="font-medium">
-                {format(checkOutDate, "EEEE, dd MMM yyyy", { locale: localeId })}
-                {booking.check_out_time && ` - ${formatTimeID(booking.check_out_time)}`}
-              </p>
-              <p className="text-muted-foreground">{booking.total_nights} malam</p>
-            </div>
-
-            {/* Payment Info */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CreditCard className="h-4 w-4" />
-                <span>Pembayaran</span>
-              </div>
-              <p className="font-medium">{formatRupiahID(booking.total_price)}</p>
-              <Badge variant={booking.payment_status === "paid" ? "default" : "secondary"}>
-                {paymentStatusLabels[booking.payment_status || 'unpaid']}
-              </Badge>
-              {booking.payment_amount && booking.payment_amount > 0 && (
-                <p className="text-muted-foreground">Dibayar: {formatRupiahID(booking.payment_amount)}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Contact Info */}
-          <div className="flex flex-wrap gap-4 text-sm border-t pt-4">
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <a href={`mailto:${booking.guest_email}`} className="hover:underline">
-                {booking.guest_email}
-              </a>
-            </div>
-            {booking.guest_phone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <a href={`tel:${booking.guest_phone}`} className="hover:underline">
-                  {booking.guest_phone}
-                </a>
-              </div>
-            )}
-          </div>
-
-          {/* Special Requests */}
-          {booking.special_requests && (
-            <div className="border-t pt-4">
-              <p className="text-sm text-muted-foreground mb-1">Permintaan Khusus/ Keterangan:</p>
-              <p className="text-sm">{booking.special_requests}</p>
-            </div>
-          )}
-
-          {/* Bank Accounts */}
-          {bankAccounts.length > 0 && booking.payment_status !== "paid" && (
-            <div className="border-t pt-4">
-              <p className="text-sm text-muted-foreground mb-2">Rekening Pembayaran:</p>
-              <div className="flex flex-wrap gap-2">
-                {bankAccounts.map((bank) => (
-                  <Badge key={bank.id} variant="outline" className="py-1">
-                    {bank.bank_name} - {bank.account_number} ({bank.account_holder_name})
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </AccordionContent>
     </AccordionItem>
