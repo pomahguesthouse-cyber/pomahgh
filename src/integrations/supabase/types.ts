@@ -2471,6 +2471,7 @@ export type Database = {
         }[]
       }
       generate_booking_code: { Args: never; Returns: string }
+      get_manager_role: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

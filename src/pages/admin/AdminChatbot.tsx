@@ -516,6 +516,7 @@ const AdminChatbot = () => {
                     managers.push({ 
                       phone: normalized, 
                       name: newManagerName,
+                      role: 'super_admin',
                       added_at: new Date().toISOString()
                     });
                     updateHotelSettings({ whatsapp_manager_numbers: managers });

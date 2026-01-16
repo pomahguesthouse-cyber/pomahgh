@@ -342,7 +342,7 @@ serve(async (req) => {
     const sessionTimeoutMinutes = hotelSettings?.whatsapp_session_timeout_minutes || 15;
     const aiWhitelist: string[] = hotelSettings?.whatsapp_ai_whitelist || [];
     const responseMode = hotelSettings?.whatsapp_response_mode || 'ai';
-    const managerNumbers: Array<{phone: string; name: string}> = hotelSettings?.whatsapp_manager_numbers || [];
+    const managerNumbers: Array<{phone: string; name: string; role?: string}> = hotelSettings?.whatsapp_manager_numbers || [];
     
     console.log(`Session timeout: ${sessionTimeoutMinutes}min, Response mode: ${responseMode}, Managers: ${managerNumbers.length}`);
 
@@ -414,7 +414,7 @@ serve(async (req) => {
       }
       
       try {
-        // Route to admin-chatbot with WhatsApp source
+        // Route to admin-chatbot with WhatsApp source and manager role
         const adminResponse = await fetch(`${supabaseUrl}/functions/v1/admin-chatbot`, {
           method: 'POST',
           headers: {
@@ -423,6 +423,7 @@ serve(async (req) => {
             'X-WhatsApp-Source': 'true',
             'X-WhatsApp-Phone': phone,
             'X-Manager-Name': managerInfo?.name || 'Manager',
+            'X-Manager-Role': managerInfo?.role || 'super_admin',
           },
           body: JSON.stringify({ messages }),
         });
