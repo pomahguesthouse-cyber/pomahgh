@@ -143,7 +143,7 @@ const AdminPersonaSettingsTab = () => {
         {/* Identity */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
               <UserCog className="w-5 h-5" />
               Identitas Bot Admin
             </CardTitle>
@@ -185,7 +185,7 @@ const AdminPersonaSettingsTab = () => {
         {/* Traits */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
               <Sparkles className="w-5 h-5" />
               Karakteristik
             </CardTitle>
@@ -215,7 +215,7 @@ const AdminPersonaSettingsTab = () => {
         {/* Communication Style */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
               <MessageSquare className="w-5 h-5" />
               Gaya Komunikasi
             </CardTitle>
@@ -283,7 +283,7 @@ const AdminPersonaSettingsTab = () => {
         {/* Greeting Template */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
               <Settings2 className="w-5 h-5" />
               Template Sapaan
             </CardTitle>
@@ -321,7 +321,7 @@ const AdminPersonaSettingsTab = () => {
       <div className="space-y-4">
         <Card className="sticky top-4">
           <CardHeader>
-            <CardTitle>Preview Sapaan</CardTitle>
+            <CardTitle className="font-['Arial',Helvetica,sans-serif]">Preview Sapaan</CardTitle>
             <CardDescription>
               Contoh bagaimana bot akan menyapa pengelola
             </CardDescription>
