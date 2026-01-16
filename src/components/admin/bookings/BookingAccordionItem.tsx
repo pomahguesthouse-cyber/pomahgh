@@ -19,6 +19,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Booking, BankAccount } from "./types";
 import { formatRupiahID, formatTimeID } from "@/utils/indonesianFormat";
@@ -106,22 +112,38 @@ export function BookingAccordionItem({
     <AccordionItem value={booking.id} className="border-0">
       <AccordionTrigger className={`px-4 py-3 hover:no-underline hover:bg-gray-100 border-b border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
         {/* Desktop: Table-like row */}
-        <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_80px_100px_100px_70px_120px_120px_100px_130px] gap-1 w-full text-[13px] text-gray-700 font-roboto items-center">
-          <div className="text-center font-medium">{index}</div>
-          <div className="text-xs">{booking.booking_code}</div>
-          <div className="truncate">{booking.guest_name}</div>
-          <div className="truncate">{getRoomName(booking.room_id)}</div>
-          <div className="text-center">{allocatedRooms}</div>
-          <div className="text-center">{format(checkInDate, "dd/MM/yyyy")}</div>
-          <div className="text-center">{format(checkOutDate, "dd/MM/yyyy")}</div>
-          <div className="text-center">{booking.total_nights}</div>
-          <div className="text-right">{formatNumber(pricePerNight)}</div>
-          <div className="text-right font-medium">{formatNumber(booking.total_price)}</div>
-          <div className="text-center text-xs">{statusLabels[booking.status]}</div>
-          <div className={`text-center text-xs font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
-            {paymentStatusLabels[booking.payment_status || 'unpaid']}
+        <TooltipProvider>
+          <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_80px_100px_100px_70px_120px_100px_130px_120px] gap-1 w-full text-[13px] text-gray-700 font-roboto items-center">
+            <div className="text-center font-medium">{index}</div>
+            <div className="text-xs">{booking.booking_code}</div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="truncate cursor-default">{booking.guest_name}</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{booking.guest_name}</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="truncate cursor-default">{getRoomName(booking.room_id)}</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{getRoomName(booking.room_id)}</p>
+              </TooltipContent>
+            </Tooltip>
+            <div className="text-center">{allocatedRooms}</div>
+            <div className="text-center">{format(checkInDate, "dd/MM/yyyy")}</div>
+            <div className="text-center">{format(checkOutDate, "dd/MM/yyyy")}</div>
+            <div className="text-center">{booking.total_nights}</div>
+            <div className="text-right">{formatNumber(pricePerNight)}</div>
+            <div className="text-center text-xs">{statusLabels[booking.status]}</div>
+            <div className={`text-center text-xs font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
+              {paymentStatusLabels[booking.payment_status || 'unpaid']}
+            </div>
+            <div className="text-right font-semibold bg-green-50 px-2 py-1 rounded">{formatNumber(booking.total_price)}</div>
           </div>
-        </div>
+        </TooltipProvider>
 
         {/* Mobile: Card-like layout */}
         <div className="lg:hidden flex flex-col w-full gap-2 text-left font-roboto">
