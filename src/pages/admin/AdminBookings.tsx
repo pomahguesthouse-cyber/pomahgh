@@ -295,11 +295,12 @@ const AdminBookings = () => {
       {/* Booking List */}
       {paginatedBookings && paginatedBookings.length > 0 ? (
         <>
-          <Accordion type="single" collapsible className="space-y-2">
-            {paginatedBookings.map((booking) => (
+      <Accordion type="single" collapsible className="border border-gray-200 rounded-b-lg overflow-hidden">
+            {paginatedBookings.map((booking, idx) => (
               <BookingAccordionItem
                 key={booking.id}
                 booking={booking as Booking}
+                index={startIndex + idx + 1}
                 getRoomName={getRoomName}
                 bankAccounts={bankAccountsForComponents}
                 onStatusChange={handleStatusChange}

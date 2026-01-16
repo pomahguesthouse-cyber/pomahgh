@@ -45,6 +45,7 @@ import {
 
 interface BookingAccordionItemProps {
   booking: Booking;
+  index: number;
   getRoomName: (roomId: string) => string;
   bankAccounts: BankAccount[];
   onStatusChange: (id: string, status: string) => void;
@@ -55,20 +56,26 @@ interface BookingAccordionItemProps {
   isDeleting?: boolean;
 }
 
-const statusStyles: Record<string, string> = {
-  pending: "bg-muted text-muted-foreground border border-border",
-  confirmed: "bg-blue-50 text-blue-700 border border-blue-200",
-  checked_in: "bg-green-50 text-green-700 border border-green-200",
-  checked_out: "bg-muted text-muted-foreground border border-border",
-  cancelled: "bg-red-50 text-red-700 border border-red-200",
-};
-
 const statusLabels: Record<string, string> = {
   pending: "Pending",
   confirmed: "Confirmed",
   checked_in: "Checked In",
   checked_out: "Checked Out",
   cancelled: "Cancelled",
+};
+
+const paymentStatusLabels: Record<string, string> = {
+  paid: "Lunas",
+  unpaid: "Belum Bayar",
+  pay_at_hotel: "Bayar di Hotel",
+  partial: "Sebagian",
+};
+
+const paymentStatusStyles: Record<string, string> = {
+  paid: "text-green-600 font-medium",
+  unpaid: "text-red-500 font-medium",
+  pay_at_hotel: "text-blue-600 font-medium",
+  partial: "text-orange-500 font-medium",
 };
 
 function getSourceLabel(booking: Booking): string {
@@ -89,6 +96,7 @@ function getSourceLabel(booking: Booking): string {
 
 export function BookingAccordionItem({
   booking,
+  index,
   getRoomName,
   bankAccounts,
   onStatusChange,
@@ -102,11 +110,10 @@ export function BookingAccordionItem({
   const checkOutDate = parseISO(booking.check_out);
   
   // Get room numbers from booking_rooms
-  const allocatedRooms = booking.booking_rooms?.map((br) => `#${br.room_number}`).join(", ") || 
-    (booking.allocated_room_number ? `#${booking.allocated_room_number}` : "-");
+  const allocatedRooms = booking.booking_rooms?.map((br) => br.room_number).join(", ") || 
+    (booking.allocated_room_number ? booking.allocated_room_number : "-");
 
   const roomName = getRoomName(booking.room_id);
-  const typeAndRoom = `${roomName} ${allocatedRooms}`;
 
   // Calculate amounts - FIX: check payment_status first
   const paidAmount = booking.payment_status === "paid" 
@@ -116,259 +123,196 @@ export function BookingAccordionItem({
     ? 0 
     : Math.max(0, booking.total_price - paidAmount);
 
-  // Guest initial for avatar
-  const guestInitial = booking.guest_name?.charAt(0)?.toUpperCase() || "?";
+  // Calculate price per night
+  const pricePerNight = booking.total_nights > 0 
+    ? Math.round(booking.total_price / booking.total_nights) 
+    : booking.total_price;
 
-  // Format date for display
+  // Format date for display (DD/MM/YYYY)
   const formatDisplayDate = (date: Date) => {
-    return format(date, "dd MMM yyyy", { locale: localeId });
+    return format(date, "dd/MM/yyyy");
   };
 
+  // Format number without currency symbol
+  const formatNumber = (num: number) => {
+    return num.toLocaleString("id-ID");
+  };
+
+  // Row background based on index
+  const rowBg = index % 2 === 0 ? "bg-white" : "bg-gray-50";
+
   return (
-    <AccordionItem value={booking.id} className="border rounded-lg mb-2 bg-card">
-      <AccordionTrigger className="px-4 py-3 hover:no-underline [&[data-state=open]>div]:border-b [&[data-state=open]>div]:pb-3">
+    <AccordionItem value={booking.id} className={`border-0 border-b border-gray-200 ${rowBg}`}>
+      <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-gray-100/50 [&[data-state=open]]:bg-gray-100">
         {/* Desktop: Grid Layout */}
-        <div className="hidden lg:grid grid-cols-[120px_1fr_1fr_110px_110px_100px_100px_90px_50px] gap-2 w-full items-center text-left text-sm">
+        <div className="hidden lg:grid grid-cols-[40px_100px_minmax(120px,1fr)_100px_80px_85px_85px_55px_90px_100px_80px_100px] gap-1 w-full items-center text-left text-[12px] text-gray-700">
+          {/* No */}
+          <div className="text-center font-medium text-gray-500">
+            {index}
+          </div>
+
           {/* Booking No */}
-          <div className="font-mono font-medium text-xs truncate">
+          <div className="font-mono font-medium text-gray-800 truncate">
             {booking.booking_code}
           </div>
 
-          {/* Type & Room */}
-          <div className="truncate text-muted-foreground">
-            {typeAndRoom}
+          {/* Nama Tamu */}
+          <div className="truncate font-medium">
+            {booking.guest_name}
           </div>
 
-          {/* Guest Name with Avatar */}
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-medium text-primary">
-                {guestInitial}
-              </span>
-            </div>
-            <span className="truncate">{booking.guest_name}</span>
+          {/* Tipe Kamar */}
+          <div className="truncate text-gray-600">
+            {roomName}
           </div>
 
-          {/* Check In */}
-          <div className="text-xs text-muted-foreground">
+          {/* No Kamar */}
+          <div className="truncate text-gray-600">
+            {allocatedRooms}
+          </div>
+
+          {/* Check-in */}
+          <div className="text-gray-600">
             {formatDisplayDate(checkInDate)}
           </div>
 
-          {/* Check Out */}
-          <div className="text-xs text-muted-foreground">
+          {/* Check-out */}
+          <div className="text-gray-600">
             {formatDisplayDate(checkOutDate)}
           </div>
 
-          {/* Paid Amount */}
-          <div className="text-xs font-medium">
-            {formatRupiahID(paidAmount)}
+          {/* Total Malam */}
+          <div className="text-center font-medium">
+            {booking.total_nights}
           </div>
 
-          {/* Due Amount */}
-          <div className={`text-xs font-medium ${dueAmount > 0 ? "text-destructive" : "text-green-600"}`}>
-            {formatRupiahID(dueAmount)}
+          {/* Harga per Malam */}
+          <div className="text-right font-medium">
+            {formatNumber(pricePerNight)}
           </div>
 
-          {/* Status Badge */}
-          <div>
-            <Badge className={`text-[10px] px-1.5 py-0.5 ${statusStyles[booking.status]}`}>
+          {/* Total Harga */}
+          <div className="text-right font-semibold text-gray-800">
+            {formatNumber(booking.total_price)}
+          </div>
+
+          {/* Status */}
+          <div className="text-center">
+            <span className="text-gray-600 text-[11px]">
               {statusLabels[booking.status]}
-            </Badge>
+            </span>
           </div>
 
-          {/* Actions */}
-          <div onClick={(e) => e.stopPropagation()}>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEditClick(booking)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onInvoiceClick(booking)}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Invoice
-                </DropdownMenuItem>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger disabled={isUpdating}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Change Status
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem onClick={() => onStatusChange(booking.id, "pending")}>
-                      Pending
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onStatusChange(booking.id, "confirmed")}>
-                      Confirmed
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_in")}>
-                      Checked In
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_out")}>
-                      Checked Out
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onStatusChange(booking.id, "cancelled")}>
-                      Cancelled
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-                <DropdownMenuSeparator />
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-destructive focus:text-destructive"
-                      disabled={isDeleting}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Booking {booking.booking_code} will be permanently deleted.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => onDeleteClick(booking.id)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {/* Status Pembayaran */}
+          <div className="text-center">
+            <span className={`text-[11px] ${paymentStatusStyles[booking.payment_status || "unpaid"]}`}>
+              {paymentStatusLabels[booking.payment_status || "unpaid"]}
+            </span>
           </div>
         </div>
 
         {/* Mobile: Compact Layout */}
-        <div className="lg:hidden flex flex-col w-full gap-2 text-left">
+        <div className="lg:hidden flex flex-col w-full gap-1.5 text-left">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono font-medium text-sm">
+              <span className="text-xs text-gray-400">#{index}</span>
+              <span className="font-mono font-medium text-sm text-gray-800">
                 {booking.booking_code}
               </span>
-              <Badge className={`text-[10px] px-1.5 py-0.5 ${statusStyles[booking.status]}`}>
-                {statusLabels[booking.status]}
-              </Badge>
             </div>
-            <div onClick={(e) => e.stopPropagation()}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEditClick(booking)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onInvoiceClick(booking)}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Invoice
-                  </DropdownMenuItem>
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger disabled={isUpdating}>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Status
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => onStatusChange(booking.id, "pending")}>
-                        Pending
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onStatusChange(booking.id, "confirmed")}>
-                        Confirmed
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_in")}>
-                        Checked In
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_out")}>
-                        Checked Out
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onStatusChange(booking.id, "cancelled")}>
-                        Cancelled
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                  <DropdownMenuSeparator />
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem
-                        onSelect={(e) => e.preventDefault()}
-                        className="text-destructive focus:text-destructive"
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Booking {booking.booking_code} will be permanently deleted.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => onDeleteClick(booking.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <span className={`text-[11px] ${paymentStatusStyles[booking.payment_status || "unpaid"]}`}>
+              {paymentStatusLabels[booking.payment_status || "unpaid"]}
+            </span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-medium text-primary">
-                {guestInitial}
-              </span>
-            </div>
-            <span className="truncate">{booking.guest_name}</span>
-          </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span>{typeAndRoom}</span>
+          <div className="font-medium text-sm truncate">{booking.guest_name}</div>
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <span>{roomName}</span>
             <span>•</span>
-            <span>{formatDisplayDate(checkInDate)} - {formatDisplayDate(checkOutDate)}</span>
+            <span>{allocatedRooms}</span>
           </div>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="font-medium">{formatRupiahID(booking.total_price)}</span>
-            {dueAmount > 0 && (
-              <span className="text-destructive">Due: {formatRupiahID(dueAmount)}</span>
-            )}
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-500">
+              {formatDisplayDate(checkInDate)} - {formatDisplayDate(checkOutDate)} ({booking.total_nights} malam)
+            </span>
+            <span className="font-semibold">Rp {formatNumber(booking.total_price)}</span>
           </div>
         </div>
       </AccordionTrigger>
       
-      <AccordionContent className="px-4 pb-4">
+      <AccordionContent className="px-3 pb-4 bg-gray-50">
         <div className="space-y-4 pt-3">
+          {/* Actions Bar */}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => onEditClick(booking)}>
+              <Edit className="mr-1.5 h-3.5 w-3.5" />
+              Edit
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => onInvoiceClick(booking)}>
+              <FileText className="mr-1.5 h-3.5 w-3.5" />
+              Invoice
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isUpdating}>
+                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                  Status
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "pending")}>
+                  Pending
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "confirmed")}>
+                  Confirmed
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_in")}>
+                  Checked In
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_out")}>
+                  Checked Out
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "cancelled")}>
+                  Cancelled
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" disabled={isDeleting}>
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  Hapus
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Hapus Booking?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Booking {booking.booking_code} akan dihapus secara permanen.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onDeleteClick(booking.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Hapus
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+
           {/* Info Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
             {/* Room Info */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Bed className="h-4 w-4" />
-                <span>Room</span>
+                <span>Kamar</span>
               </div>
               <p className="font-medium">{roomName}</p>
-              <p className="text-muted-foreground">Numbers: {allocatedRooms}</p>
+              <p className="text-muted-foreground">Nomor: {allocatedRooms}</p>
               <Badge variant="outline" className="text-xs mt-1">
                 {getSourceLabel(booking)}
               </Badge>
@@ -388,27 +332,27 @@ export function BookingAccordionItem({
                 {format(checkOutDate, "EEEE, dd MMM yyyy", { locale: localeId })}
                 {booking.check_out_time && ` - ${formatTimeID(booking.check_out_time)}`}
               </p>
-              <p className="text-muted-foreground">{booking.total_nights} nights</p>
+              <p className="text-muted-foreground">{booking.total_nights} malam</p>
             </div>
             
             {/* Payment Info */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <CreditCard className="h-4 w-4" />
-                <span>Payment</span>
+                <span>Pembayaran</span>
               </div>
               <p className="font-medium">{formatRupiahID(booking.total_price)}</p>
               <Badge variant={booking.payment_status === "paid" ? "default" : "secondary"}>
-                {booking.payment_status === "paid" ? "Paid" : "Unpaid"}
+                {paymentStatusLabels[booking.payment_status || "unpaid"]}
               </Badge>
-              {paidAmount > 0 && (
+              {booking.payment_status !== "paid" && paidAmount > 0 && (
                 <p className="text-muted-foreground">
-                  Paid: {formatRupiahID(paidAmount)}
+                  Dibayar: {formatRupiahID(paidAmount)}
                 </p>
               )}
               {dueAmount > 0 && (
                 <p className="text-destructive">
-                  Due: {formatRupiahID(dueAmount)}
+                  Kurang: {formatRupiahID(dueAmount)}
                 </p>
               )}
             </div>
@@ -435,20 +379,22 @@ export function BookingAccordionItem({
           {/* Special Requests */}
           {booking.special_requests && (
             <div className="border-t pt-4">
-              <p className="text-sm text-muted-foreground mb-1">Special Requests:</p>
+              <p className="text-sm text-muted-foreground mb-1">Permintaan Khusus:</p>
               <p className="text-sm">{booking.special_requests}</p>
             </div>
           )}
           
-          {/* Bank Accounts */}
-          {bankAccounts.length > 0 && booking.payment_status !== "paid" && (
+          {/* Bank Accounts for unpaid bookings */}
+          {booking.payment_status !== "paid" && bankAccounts.length > 0 && (
             <div className="border-t pt-4">
-              <p className="text-sm text-muted-foreground mb-2">Payment Accounts:</p>
-              <div className="flex flex-wrap gap-2">
-                {bankAccounts.map((bank) => (
-                  <Badge key={bank.id} variant="outline" className="py-1">
-                    {bank.bank_name} - {bank.account_number} ({bank.account_holder_name})
-                  </Badge>
+              <p className="text-sm text-muted-foreground mb-2">Rekening Pembayaran:</p>
+              <div className="flex flex-wrap gap-3">
+                {bankAccounts.map((account) => (
+                  <div key={account.id} className="text-xs bg-card border rounded-lg p-2">
+                    <p className="font-medium">{account.bank_name}</p>
+                    <p className="font-mono">{account.account_number}</p>
+                    <p className="text-muted-foreground">{account.account_holder_name}</p>
+                  </div>
                 ))}
               </div>
             </div>
