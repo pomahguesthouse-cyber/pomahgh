@@ -17,6 +17,7 @@ export default {
         'playfair': ['Playfair Display', 'serif'],
         'cormorant': ['Cormorant Garamond', 'serif'],
         'cinzel': ['Cinzel', 'serif'],
+        'roboto': ['Roboto', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
