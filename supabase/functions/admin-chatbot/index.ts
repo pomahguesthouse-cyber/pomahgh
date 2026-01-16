@@ -302,10 +302,13 @@ function findBestRoomMatch(searchName: string, rooms: any[]): any | null {
 
 // Tool implementations
 async function getAvailabilitySummary(supabase: any, checkIn: string, checkOut: string) {
-  // Get all rooms
+  // Get all rooms with promo fields
   const { data: rooms, error: roomsError } = await supabase
     .from('rooms')
-    .select('id, name, room_count, room_numbers, price_per_night')
+    .select('id, name, room_count, room_numbers, price_per_night, ' +
+      'promo_price, promo_start_date, promo_end_date, ' +
+      'sunday_price, monday_price, tuesday_price, wednesday_price, ' +
+      'thursday_price, friday_price, saturday_price')
     .eq('available', true);
 
   if (roomsError) throw roomsError;
@@ -329,6 +332,19 @@ async function getAvailabilitySummary(supabase: any, checkIn: string, checkOut: 
 
   if (blockedError) throw blockedError;
 
+  // Fetch active promotions from room_promotions table
+  const { data: activePromos, error: promosError } = await supabase
+    .from('room_promotions')
+    .select('*')
+    .eq('is_active', true)
+    .lte('start_date', checkOut)
+    .gte('end_date', checkIn)
+    .order('priority', { ascending: false });
+
+  if (promosError) {
+    console.error('Error fetching promos:', promosError);
+  }
+
   const result = rooms.map((room: any) => {
     const roomBookings = bookings?.filter((b: any) => b.room_id === room.id) || [];
     const bookedNumbers = new Set(roomBookings.map((b: any) => b.allocated_room_number));
@@ -341,12 +357,54 @@ async function getAvailabilitySummary(supabase: any, checkIn: string, checkOut: 
       (num: string) => !bookedNumbers.has(num) && !blockedNumbers.has(num)
     );
 
+    // Check for active promo - prioritize room_promotions table
+    const roomPromo = activePromos?.find((p: any) => p.room_id === room.id);
+    
+    let promoInfo = null;
+    let finalPrice = room.price_per_night;
+    let savings = 0;
+
+    if (roomPromo) {
+      // Promo from room_promotions table
+      if (roomPromo.promo_price) {
+        finalPrice = roomPromo.promo_price;
+      } else if (roomPromo.discount_percentage) {
+        finalPrice = Math.round(room.price_per_night * (1 - roomPromo.discount_percentage / 100));
+      }
+      savings = room.price_per_night - finalPrice;
+      promoInfo = {
+        name: roomPromo.name,
+        type: roomPromo.promo_price ? 'fixed' : 'percentage',
+        discount_percentage: roomPromo.discount_percentage || null,
+        promo_price: roomPromo.promo_price || null,
+        badge_text: roomPromo.badge_text || null,
+        start_date: roomPromo.start_date,
+        end_date: roomPromo.end_date
+      };
+    } else if (room.promo_price && room.promo_start_date && room.promo_end_date) {
+      // Check legacy promo from rooms table
+      if (checkIn <= room.promo_end_date && checkOut >= room.promo_start_date) {
+        finalPrice = room.promo_price;
+        savings = room.price_per_night - finalPrice;
+        promoInfo = {
+          name: 'Promo Spesial',
+          type: 'fixed',
+          promo_price: room.promo_price,
+          start_date: room.promo_start_date,
+          end_date: room.promo_end_date
+        };
+      }
+    }
+
     return {
       room_name: room.name,
       total_units: room.room_count,
       available_units: availableNumbers.length,
       available_room_numbers: availableNumbers,
       price_per_night: room.price_per_night,
+      final_price: finalPrice,
+      promo: promoInfo,
+      savings: savings,
       booked_numbers: Array.from(bookedNumbers),
       blocked_numbers: Array.from(blockedNumbers)
     };
@@ -356,7 +414,8 @@ async function getAvailabilitySummary(supabase: any, checkIn: string, checkOut: 
     check_in: checkIn,
     check_out: checkOut,
     rooms: result,
-    total_available: result.reduce((sum: number, r: any) => sum + r.available_units, 0)
+    total_available: result.reduce((sum: number, r: any) => sum + r.available_units, 0),
+    has_promos: result.some((r: any) => r.promo !== null)
   };
 }
 
