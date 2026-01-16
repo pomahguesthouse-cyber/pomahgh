@@ -80,20 +80,33 @@ const tools = [
     type: "function",
     function: {
       name: "create_admin_booking",
-      description: "Buat booking baru langsung (status confirmed)",
+      description: "Buat booking baru langsung (status confirmed). Nomor kamar bisa ditentukan atau otomatis dialokasikan sistem jika tidak disebutkan.",
       parameters: {
         type: "object",
         properties: {
           guest_name: { type: "string", description: "Nama tamu" },
           guest_phone: { type: "string", description: "Nomor HP tamu" },
           guest_email: { type: "string", description: "Email tamu (opsional)" },
-          room_id: { type: "string", description: "ID kamar" },
-          room_number: { type: "string", description: "Nomor kamar spesifik" },
+          room_name: { type: "string", description: "Nama tipe kamar (contoh: Deluxe, Superior, Villa, Single)" },
+          room_number: { type: "string", description: "Nomor kamar spesifik (opsional). Jika tidak disebutkan, sistem akan otomatis pilih kamar yang tersedia" },
           check_in: { type: "string", description: "Tanggal check-in (YYYY-MM-DD)" },
           check_out: { type: "string", description: "Tanggal check-out (YYYY-MM-DD)" },
           num_guests: { type: "number", description: "Jumlah tamu" }
         },
-        required: ["guest_name", "guest_phone", "room_id", "room_number", "check_in", "check_out", "num_guests"]
+        required: ["guest_name", "guest_phone", "room_name", "check_in", "check_out", "num_guests"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_checkin_reminder",
+      description: "Kirim reminder daftar tamu check-in hari ini ke semua manager via WhatsApp. Gunakan untuk 'kirim reminder check-in', 'notify manager', 'remind check-in hari ini'",
+      parameters: {
+        type: "object",
+        properties: {
+          date: { type: "string", description: "Tanggal check-in (YYYY-MM-DD), default hari ini" }
+        }
       }
     }
   },
@@ -452,26 +465,24 @@ async function getRoomInventory(supabase: any) {
 async function createAdminBooking(supabase: any, args: any) {
   console.log(`📝 createAdminBooking called with args:`, JSON.stringify(args));
   
-  // Get room data
-  const { data: room, error: roomError } = await supabase
+  // Fetch all rooms for smart matching
+  const { data: allRooms, error: roomsError } = await supabase
     .from('rooms')
-    .select('id, name, price_per_night, room_numbers')
-    .eq('id', args.room_id)
-    .single();
+    .select('id, name, price_per_night, room_numbers, max_guests')
+    .eq('available', true);
 
-  if (roomError || !room) {
-    console.error(`❌ Room not found: ${args.room_id}`);
-    throw new Error('Kamar tidak ditemukan');
+  if (roomsError) throw roomsError;
+
+  // Find room by name using smart matching
+  const room = findBestRoomMatch(args.room_name, allRooms || []);
+  
+  if (!room) {
+    const roomList = allRooms?.map((r: any) => r.name).join(', ') || 'tidak ada';
+    console.error(`❌ Room not found: ${args.room_name}. Available: ${roomList}`);
+    throw new Error(`Kamar "${args.room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
   }
 
   console.log(`Found room: ${room.name}, available numbers: ${room.room_numbers?.join(', ')}`);
-
-  // Validate room number - IMPROVED ERROR MESSAGE
-  if (!room.room_numbers?.includes(args.room_number)) {
-    const availableNumbers = room.room_numbers?.join(', ') || 'tidak ada';
-    console.error(`❌ Invalid room number ${args.room_number} for ${room.name}. Available: ${availableNumbers}`);
-    throw new Error(`Nomor kamar ${args.room_number} tidak tersedia untuk ${room.name}. Nomor yang tersedia: ${availableNumbers}`);
-  }
 
   // Calculate nights
   const checkIn = new Date(args.check_in);
@@ -482,14 +493,74 @@ async function createAdminBooking(supabase: any, args: any) {
     throw new Error('Tanggal check-out harus setelah check-in');
   }
 
+  // Get existing bookings for this room in the date range
+  const { data: conflictingBookings, error: conflictError } = await supabase
+    .from('bookings')
+    .select('allocated_room_number')
+    .eq('room_id', room.id)
+    .neq('status', 'cancelled')
+    .lte('check_in', args.check_out)
+    .gte('check_out', args.check_in);
+
+  if (conflictError) throw conflictError;
+
+  const bookedNumbers = new Set(conflictingBookings?.map((b: any) => b.allocated_room_number) || []);
+  
+  // Get blocked dates
+  const { data: blockedDates, error: blockedError } = await supabase
+    .from('room_unavailable_dates')
+    .select('room_number')
+    .eq('room_id', room.id)
+    .gte('unavailable_date', args.check_in)
+    .lte('unavailable_date', args.check_out);
+
+  if (blockedError) throw blockedError;
+
+  const blockedNumbers = new Set(blockedDates?.map((d: any) => d.room_number) || []);
+
+  // Determine allocated room number
+  let allocatedRoomNumber = args.room_number;
+  let allocationMode = 'manual';
+
+  if (!allocatedRoomNumber) {
+    // Auto-allocate: find first available room number
+    const availableNumbers = (room.room_numbers || []).filter(
+      (num: string) => !bookedNumbers.has(num) && !blockedNumbers.has(num)
+    );
+
+    if (availableNumbers.length === 0) {
+      throw new Error(`Tidak ada kamar ${room.name} yang tersedia untuk tanggal ${args.check_in} s.d. ${args.check_out}. Semua unit sudah terboking.`);
+    }
+
+    allocatedRoomNumber = availableNumbers[0];
+    allocationMode = 'auto';
+    console.log(`🔄 Auto-allocated room number: ${allocatedRoomNumber}`);
+  } else {
+    // Manual allocation: validate the specified room number
+    if (!room.room_numbers?.includes(allocatedRoomNumber)) {
+      const availableNumbers = room.room_numbers?.join(', ') || 'tidak ada';
+      console.error(`❌ Invalid room number ${allocatedRoomNumber} for ${room.name}. Available: ${availableNumbers}`);
+      throw new Error(`Nomor kamar ${allocatedRoomNumber} tidak tersedia untuk ${room.name}. Nomor yang tersedia: ${availableNumbers}`);
+    }
+
+    // Check if the specified room number is available
+    if (bookedNumbers.has(allocatedRoomNumber) || blockedNumbers.has(allocatedRoomNumber)) {
+      const availableNumbers = (room.room_numbers || []).filter(
+        (num: string) => !bookedNumbers.has(num) && !blockedNumbers.has(num)
+      );
+      const availableList = availableNumbers.length > 0 ? availableNumbers.join(', ') : 'tidak ada yang tersedia';
+      throw new Error(`Kamar ${room.name} nomor ${allocatedRoomNumber} sudah terboking untuk tanggal tersebut. Nomor yang tersedia: ${availableList}`);
+    }
+  }
+
   const totalPrice = room.price_per_night * nights;
 
   // Create booking
   const { data: booking, error: bookingError } = await supabase
     .from('bookings')
     .insert({
-      room_id: args.room_id,
-      allocated_room_number: args.room_number,
+      room_id: room.id,
+      allocated_room_number: allocatedRoomNumber,
       guest_name: args.guest_name,
       guest_phone: args.guest_phone,
       guest_email: args.guest_email || `${args.guest_phone}@guest.local`,
@@ -511,12 +582,133 @@ async function createAdminBooking(supabase: any, args: any) {
     booking_code: booking.booking_code,
     guest_name: args.guest_name,
     room_name: room.name,
-    room_number: args.room_number,
+    room_number: allocatedRoomNumber,
+    allocation_mode: allocationMode,
     check_in: args.check_in,
     check_out: args.check_out,
     nights: nights,
     total_price: totalPrice
   };
+}
+
+// Send check-in reminder to managers
+async function sendCheckinReminder(supabase: any, dateStr?: string) {
+  // Get date in WIB
+  const now = new Date();
+  const wibOffset = 7 * 60 * 60 * 1000;
+  const wibDate = new Date(now.getTime() + wibOffset);
+  const targetDate = dateStr || wibDate.toISOString().split('T')[0];
+
+  console.log(`🔔 Sending check-in reminder for: ${targetDate}`);
+
+  // Get bookings checking in on target date
+  const { data: todayBookings, error: bookingsError } = await supabase
+    .from('bookings')
+    .select(`
+      booking_code,
+      guest_name,
+      guest_phone,
+      num_guests,
+      check_in,
+      check_out,
+      total_nights,
+      allocated_room_number,
+      rooms(name)
+    `)
+    .eq('check_in', targetDate)
+    .eq('status', 'confirmed')
+    .order('guest_name');
+
+  if (bookingsError) throw bookingsError;
+
+  const count = todayBookings?.length || 0;
+  console.log(`Found ${count} check-ins for ${targetDate}`);
+
+  if (count === 0) {
+    return {
+      success: true,
+      message: `Tidak ada tamu check-in pada ${formatDateIndonesian(targetDate)}`,
+      sent_to: 0
+    };
+  }
+
+  // Build reminder message
+  const guestList = todayBookings.map((b: any, i: number) => 
+    `${i + 1}. *${b.guest_name}* (${b.num_guests} tamu)\n` +
+    `   📱 ${b.guest_phone || '-'}\n` +
+    `   🛏️ ${b.rooms?.name} - ${b.allocated_room_number}\n` +
+    `   📅 ${b.total_nights} malam s.d. ${b.check_out}\n` +
+    `   🎫 ${b.booking_code}`
+  ).join('\n\n');
+
+  const reminderMessage = 
+    `🌅 *DAFTAR TAMU CHECK-IN*\n` +
+    `📅 ${formatDateIndonesian(targetDate)}\n\n` +
+    `Total: ${count} tamu\n\n` +
+    `${guestList}\n\n` +
+    `_Pesan otomatis dari sistem Pomah Guesthouse_`;
+
+  // Get manager phone numbers
+  const { data: settings } = await supabase
+    .from('hotel_settings')
+    .select('whatsapp_manager_numbers, hotel_name')
+    .single();
+
+  const managers = settings?.whatsapp_manager_numbers || [];
+  
+  if (managers.length === 0) {
+    return {
+      success: true,
+      message: `Ada ${count} tamu check-in, tapi tidak ada manager yang dikonfigurasi untuk menerima notifikasi`,
+      check_ins: count,
+      sent_to: 0
+    };
+  }
+
+  // Send to each manager
+  let successCount = 0;
+  const sendResults: string[] = [];
+
+  for (const manager of managers) {
+    try {
+      const phone = (manager.phone || '').toString().replace(/\D/g, '');
+      if (!phone) continue;
+
+      const { error } = await supabase.functions.invoke('send-whatsapp', {
+        body: { phone, message: reminderMessage }
+      });
+
+      if (error) {
+        console.error(`Failed to send to ${manager.name}:`, error);
+        sendResults.push(`❌ ${manager.name}: gagal`);
+      } else {
+        successCount++;
+        sendResults.push(`✅ ${manager.name}`);
+        console.log(`✅ Sent to ${manager.name} (${phone})`);
+      }
+    } catch (err) {
+      console.error(`Error sending to ${manager.name}:`, err);
+      sendResults.push(`❌ ${manager.name}: error`);
+    }
+  }
+
+  return {
+    success: true,
+    date: targetDate,
+    check_ins: count,
+    managers_notified: successCount,
+    managers_total: managers.length,
+    details: sendResults
+  };
+}
+
+function formatDateIndonesian(dateStr: string): string {
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  
+  const date = new Date(dateStr);
+  return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 async function updateRoomPrice(supabase: any, args: any) {
@@ -1020,6 +1212,8 @@ async function executeTool(supabase: any, toolName: string, args: any) {
       return await rescheduleBooking(supabase, args);
     case 'change_booking_room':
       return await changeBookingRoom(supabase, args);
+    case 'send_checkin_reminder':
+      return await sendCheckinReminder(supabase, args.date);
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
