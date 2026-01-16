@@ -712,9 +712,59 @@ Deno.serve(async (req: Request) => {
       .select('hotel_name, check_in_time, check_out_time')
       .single();
 
+    // Get admin persona settings
+    const { data: chatbotSettings } = await supabase
+      .from('chatbot_settings')
+      .select('admin_persona_name, admin_persona_role, admin_persona_traits, admin_communication_style, admin_language_formality, admin_emoji_usage, admin_custom_instructions, admin_greeting_template')
+      .single();
+
     const hotelName = hotelSettings?.hotel_name || 'Hotel';
     const checkInTime = hotelSettings?.check_in_time || '14:00';
     const checkOutTime = hotelSettings?.check_out_time || '12:00';
+
+    // Admin persona settings with defaults
+    const adminPersonaName = chatbotSettings?.admin_persona_name || 'Rani Admin';
+    const adminPersonaRole = chatbotSettings?.admin_persona_role || 'Booking Manager Assistant';
+    const adminPersonaTraits: string[] = chatbotSettings?.admin_persona_traits || ['efisien', 'informatif', 'proaktif'];
+    const adminCommStyle = chatbotSettings?.admin_communication_style || 'santai-profesional';
+    const adminFormality = chatbotSettings?.admin_language_formality || 'informal';
+    const adminEmojiUsage = chatbotSettings?.admin_emoji_usage || 'minimal';
+    const adminCustomInstructions = chatbotSettings?.admin_custom_instructions || '';
+    const adminGreetingTemplate = chatbotSettings?.admin_greeting_template || 'Halo {manager_name}! Ada yang bisa saya bantu hari ini?';
+
+    // Build persona description from traits
+    const traitDescriptions: Record<string, string> = {
+      efisien: 'bekerja cepat dan tidak berputar-putar',
+      informatif: 'memberikan informasi lengkap dan akurat',
+      proaktif: 'menawarkan bantuan lebih sebelum diminta',
+      ringkas: 'menyampaikan poin-poin penting saja',
+      sigap: 'merespon dengan cepat dan tepat',
+      cekatan: 'menyelesaikan tugas dengan tangkas',
+      teliti: 'memperhatikan detail dengan cermat',
+      responsif: 'langsung merespon kebutuhan pengelola'
+    };
+    const traitsText = adminPersonaTraits.map(t => traitDescriptions[t] || t).join(', ');
+
+    // Communication style mapping
+    const styleMap: Record<string, string> = {
+      'santai-profesional': 'Gunakan bahasa akrab tapi tetap profesional, tidak kaku',
+      'formal': 'Gunakan bahasa formal dan profesional',
+      'santai': 'Gunakan bahasa santai dan akrab seperti teman'
+    };
+
+    // Formality mapping
+    const formalityMap: Record<string, string> = {
+      'informal': 'kamu/aku (akrab)',
+      'semiformal': 'Anda/Saya',
+      'formal': 'Bapak/Ibu (hormat)'
+    };
+
+    // Emoji usage mapping
+    const emojiMap: Record<string, string> = {
+      'minimal': 'Gunakan emoji hanya sesekali untuk poin penting',
+      'sedang': 'Gunakan emoji secukupnya di poin-poin penting',
+      'tidak': 'Jangan gunakan emoji sama sekali'
+    };
 
     // Calculate dates in WIB
     const now = new Date();
@@ -734,9 +784,31 @@ Deno.serve(async (req: Request) => {
     const daysUntilSaturday = (6 - currentDay + 7) % 7 || 7;
     const weekend = formatDate(addDays(wibTime, daysUntilSaturday));
 
-    const systemPrompt = `Kamu adalah Asisten Booking Admin untuk ${hotelName}.
-Tugasmu membantu admin mengelola booking dan harga dengan cepat dan efisien.
+    // Generate personalized greeting for first message
+    const personalizedGreeting = adminGreetingTemplate.replace('{manager_name}', managerName);
+    
+    // Check if this is likely a greeting/first message
+    const isGreeting = messages.length <= 1;
+    const greetingContext = isGreeting ? `
 
+🎉 INI ADALAH PESAN PERTAMA DARI ${managerName.toUpperCase()}!
+Sapa dengan hangat menggunakan nama mereka: "${personalizedGreeting}"
+` : '';
+
+    const systemPrompt = `Kamu adalah ${adminPersonaName}, ${adminPersonaRole} untuk ${hotelName}.
+
+👤 KAMU SEDANG BERBICARA DENGAN: ${managerName}
+${greetingContext}
+🎭 KEPRIBADIAN:
+Kamu adalah asisten yang ${traitsText}.
+
+💬 GAYA KOMUNIKASI:
+- ${styleMap[adminCommStyle] || styleMap['santai-profesional']}
+- ${emojiMap[adminEmojiUsage] || emojiMap['minimal']}
+- Kata ganti: ${formalityMap[adminFormality] || formalityMap['informal']}
+- Respons singkat dan langsung ke poin
+
+${adminCustomInstructions ? `📌 INSTRUKSI KHUSUS:\n${adminCustomInstructions}\n` : ''}
 Informasi hotel:
 - Check-in: ${checkInTime}
 - Check-out: ${checkOutTime}
@@ -749,7 +821,7 @@ Informasi hotel:
 - Weekend terdekat (Sabtu): ${weekend}
 
 ⚠️ PENTING - KONVERSI TANGGAL OTOMATIS:
-Ketika admin menyebut tanggal relatif, kamu HARUS mengkonversinya ke format YYYY-MM-DD:
+Ketika pengelola menyebut tanggal relatif, kamu HARUS mengkonversinya ke format YYYY-MM-DD:
 - "hari ini" / "malam ini" / "sekarang" → check-in: ${today}
 - "besok" / "bsk" / "besuk" → check-in: ${tomorrow}
 - "lusa" → check-in: ${lusa}
@@ -787,7 +859,7 @@ Gunakan bahasa Indonesia yang singkat dan jelas.
 Format angka dengan Rp dan titik sebagai pemisah ribuan (contoh: Rp 350.000).
 Untuk tanggal, gunakan format DD MMM YYYY (contoh: 8 Jan 2026).
 
-Jika admin minta buat booking tapi info belum lengkap, tanyakan yang kurang.
+Jika pengelola minta buat booking tapi info belum lengkap, tanyakan yang kurang.
 Sebelum buat booking, selalu cek ketersediaan dulu dan konfirmasi detailnya.
 Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan baru.`;
 

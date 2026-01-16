@@ -699,6 +699,14 @@ export type Database = {
       }
       chatbot_settings: {
         Row: {
+          admin_communication_style: string | null
+          admin_custom_instructions: string | null
+          admin_emoji_usage: string | null
+          admin_greeting_template: string | null
+          admin_language_formality: string | null
+          admin_persona_name: string | null
+          admin_persona_role: string | null
+          admin_persona_traits: string[] | null
           bot_avatar_style: string | null
           bot_avatar_url: string | null
           bot_name: string | null
@@ -725,6 +733,14 @@ export type Database = {
           widget_position: string | null
         }
         Insert: {
+          admin_communication_style?: string | null
+          admin_custom_instructions?: string | null
+          admin_emoji_usage?: string | null
+          admin_greeting_template?: string | null
+          admin_language_formality?: string | null
+          admin_persona_name?: string | null
+          admin_persona_role?: string | null
+          admin_persona_traits?: string[] | null
           bot_avatar_style?: string | null
           bot_avatar_url?: string | null
           bot_name?: string | null
@@ -751,6 +767,14 @@ export type Database = {
           widget_position?: string | null
         }
         Update: {
+          admin_communication_style?: string | null
+          admin_custom_instructions?: string | null
+          admin_emoji_usage?: string | null
+          admin_greeting_template?: string | null
+          admin_language_formality?: string | null
+          admin_persona_name?: string | null
+          admin_persona_role?: string | null
+          admin_persona_traits?: string[] | null
           bot_avatar_style?: string | null
           bot_avatar_url?: string | null
           bot_name?: string | null
