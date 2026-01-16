@@ -12,6 +12,15 @@ import { BookingFilters } from "@/components/admin/bookings/BookingFilters";
 import { BookingAccordionItem } from "@/components/admin/bookings/BookingAccordionItem";
 import { EditBookingDialog } from "@/components/admin/bookings/EditBookingDialog";
 import { Booking, BankAccount } from "@/components/admin/bookings/types";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 
 const AdminBookings = () => {
   const {
@@ -26,6 +35,10 @@ const AdminBookings = () => {
   const { data: rooms } = useRooms();
   const { bankAccounts } = useBankAccounts();
   const { checkBookingConflict } = useBookingValidation();
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   // Filter states
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -129,6 +142,35 @@ const AdminBookings = () => {
     });
   }, [bookings, filterStatus, sourceFilter, startDate, endDate, filterDateType, searchQuery]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, sourceFilter, startDate, endDate, searchQuery]);
+
+  // Pagination calculations
+  const totalItems = filteredBookings?.length || 0;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedBookings = filteredBookings?.slice(startIndex, endIndex);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, 'ellipsis', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages);
+      }
+    }
+    return pages;
+  };
+
   // Handlers
   const handleEditClick = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -213,23 +255,67 @@ const AdminBookings = () => {
       />
 
       {/* Booking List */}
-      {filteredBookings && filteredBookings.length > 0 ? (
-        <Accordion type="single" collapsible className="space-y-3">
-          {filteredBookings.map((booking) => (
-            <BookingAccordionItem
-              key={booking.id}
-              booking={booking as Booking}
-              getRoomName={getRoomName}
-              bankAccounts={bankAccountsForComponents}
-              onStatusChange={handleStatusChange}
-              onEditClick={handleEditClick}
-              onDeleteClick={handleDeleteClick}
-              onInvoiceClick={handleInvoiceClick}
-              isUpdating={isUpdating}
-              isDeleting={isDeleting}
-            />
-          ))}
-        </Accordion>
+      {paginatedBookings && paginatedBookings.length > 0 ? (
+        <>
+          <Accordion type="single" collapsible className="space-y-3">
+            {paginatedBookings.map((booking) => (
+              <BookingAccordionItem
+                key={booking.id}
+                booking={booking as Booking}
+                getRoomName={getRoomName}
+                bankAccounts={bankAccountsForComponents}
+                onStatusChange={handleStatusChange}
+                onEditClick={handleEditClick}
+                onDeleteClick={handleDeleteClick}
+                onInvoiceClick={handleInvoiceClick}
+                isUpdating={isUpdating}
+                isDeleting={isDeleting}
+              />
+            ))}
+          </Accordion>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+              <p className="text-sm text-muted-foreground">
+                Menampilkan {startIndex + 1}-{Math.min(endIndex, totalItems)} dari {totalItems} booking
+              </p>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {getPageNumbers().map((page, idx) =>
+                    page === 'ellipsis' ? (
+                      <PaginationItem key={`ellipsis-${idx}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    ) : (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )
+                  )}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-8 text-muted-foreground">
           Tidak ada booking ditemukan
