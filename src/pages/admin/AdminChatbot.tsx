@@ -9,8 +9,9 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
 import { useHotelSettings, WhatsAppContact, WhatsAppManager } from '@/hooks/useHotelSettings';
-import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban, UserCog } from 'lucide-react';
+import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban, UserCog, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import AdminPersonaSettingsTab from '@/components/admin/AdminPersonaSettingsTab';
 import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import ChatLogsTab from '@/components/admin/ChatLogsTab';
@@ -68,10 +69,14 @@ const AdminChatbot = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="personality" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="personality">
             <Bot className="w-4 h-4 mr-2" />
             Kepribadian
+          </TabsTrigger>
+          <TabsTrigger value="admin-persona">
+            <Shield className="w-4 h-4 mr-2" />
+            Persona Admin
           </TabsTrigger>
           <TabsTrigger value="appearance">
             <Palette className="w-4 h-4 mr-2" />
@@ -105,6 +110,10 @@ const AdminChatbot = () => {
 
         <TabsContent value="personality" className="space-y-4">
           <PersonaSettingsTab />
+        </TabsContent>
+
+        <TabsContent value="admin-persona" className="space-y-4">
+          <AdminPersonaSettingsTab />
         </TabsContent>
 
         <TabsContent value="appearance" className="space-y-4">
