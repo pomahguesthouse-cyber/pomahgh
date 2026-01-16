@@ -1498,6 +1498,30 @@ Kamu bisa:
 - "lihat harga kamar" / "daftar harga" → gunakan get_room_prices
 - "harga Deluxe berapa?" → gunakan get_room_prices dengan room_name: "Deluxe"
 
+🏨 PANDUAN BOOKING BARU (create_admin_booking):
+Saat membuat booking baru, nomor kamar bersifat OPSIONAL:
+
+1. **TANPA nomor kamar** (AUTO-ALLOCATE):
+   - Sistem akan otomatis memilih kamar yang tersedia
+   - Contoh: "booking Deluxe untuk Budi, HP 081234567890, tgl 20-22 Jan, 2 orang"
+   - Sistem cek kamar Deluxe yang available dan pilih otomatis (misal: A1)
+
+2. **DENGAN nomor kamar** (MANUAL):
+   - Admin bisa tentukan nomor kamar spesifik
+   - Contoh: "booking Deluxe A2 untuk Ani, HP 081222333, tgl 20-22 Jan, 1 orang"
+   - Sistem akan booking kamar A2 jika tersedia
+
+📋 CONTOH PERINTAH BOOKING:
+- "booking Family Suite untuk Gatot, HP 08123456789, tanggal 25-27 Jan, 3 orang" → auto-allocate
+- "buatkan booking Deluxe B1 untuk Rina, HP 08567890123, check-in besok 2 malam" → manual room B1
+- "reservasi Grand Deluxe 2 kamar untuk Pak Ahmad, HP 0812345, tgl 1-3 Feb, 4 dewasa" → auto-allocate 2 kamar
+
+💡 TIPS AUTO-ALLOCATE:
+- Jika admin tidak menyebut nomor kamar, JANGAN tanyakan! Langsung auto-allocate.
+- Jika admin menyebut nomor kamar (misal "A1", "B2", "101"), gunakan nomor tersebut.
+- Setelah booking berhasil, SELALU informasikan nomor kamar yang dialokasikan.
+- Contoh response: "✅ Booking berhasil! Kamar **Deluxe A1** dialokasikan otomatis untuk Budi."
+
 📝 PANDUAN UPDATE BOOKING:
 - "detail booking BK-1234" / "info booking BK-1234" → get_booking_detail
 - "batalkan booking BK-1234" / "cancel BK-1234" → update_booking_status dengan new_status: "cancelled"
