@@ -4,16 +4,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHotelSettings, WhatsAppManager } from "@/hooks/useHotelSettings";
-import { Shield, UserCog, MessageSquare, Plus, Trash2, Phone } from "lucide-react";
+import { Shield, UserCog, MessageSquare, Plus, Trash2, Phone, BookOpen, GraduationCap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AdminPersonaSettingsTab from "@/components/admin/AdminPersonaSettingsTab";
 import AdminWhatsAppSessionsTab from "@/components/admin/AdminWhatsAppSessionsTab";
+import AdminKnowledgeBaseTab from "@/components/admin/AdminKnowledgeBaseTab";
+import AdminTrainingTab from "@/components/admin/AdminTrainingTab";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-
 const AdminAdminChatbot = () => {
   const { settings: hotelSettings, updateSettings: updateHotelSettings } = useHotelSettings();
 
@@ -43,7 +44,7 @@ const AdminAdminChatbot = () => {
       </div>
 
       <Tabs defaultValue="persona" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="persona" className="text-sm">
             <Shield className="w-4 h-4 mr-2" />
             Persona
@@ -51,6 +52,14 @@ const AdminAdminChatbot = () => {
           <TabsTrigger value="managers" className="text-sm">
             <UserCog className="w-4 h-4 mr-2" />
             Manager
+          </TabsTrigger>
+          <TabsTrigger value="knowledge" className="text-sm">
+            <BookOpen className="w-4 h-4 mr-2" />
+            Knowledge
+          </TabsTrigger>
+          <TabsTrigger value="training" className="text-sm">
+            <GraduationCap className="w-4 h-4 mr-2" />
+            Training
           </TabsTrigger>
           <TabsTrigger value="whatsapp" className="text-sm">
             <Phone className="w-4 h-4 mr-2" />
@@ -143,6 +152,16 @@ const AdminAdminChatbot = () => {
               <p>📊 Bisa cek statistik booking & operasional.</p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* KNOWLEDGE BASE */}
+        <TabsContent value="knowledge" className="space-y-4">
+          <AdminKnowledgeBaseTab />
+        </TabsContent>
+
+        {/* TRAINING */}
+        <TabsContent value="training" className="space-y-4">
+          <AdminTrainingTab />
         </TabsContent>
 
         {/* WHATSAPP ADMIN SESSIONS */}

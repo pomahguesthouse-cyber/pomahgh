@@ -56,6 +56,87 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_chatbot_knowledge_base: {
+        Row: {
+          category: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          original_filename: string | null
+          source_type: string
+          source_url: string | null
+          summary: string | null
+          title: string
+          tokens_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          original_filename?: string | null
+          source_type?: string
+          source_url?: string | null
+          summary?: string | null
+          title: string
+          tokens_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          original_filename?: string | null
+          source_type?: string
+          source_url?: string | null
+          summary?: string | null
+          title?: string
+          tokens_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      admin_chatbot_training_examples: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          ideal_answer: string
+          is_active: boolean | null
+          question: string
+          response_tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          ideal_answer: string
+          is_active?: boolean | null
+          question: string
+          response_tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          ideal_answer?: string
+          is_active?: boolean | null
+          question?: string
+          response_tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       availability_sync_logs: {
         Row: {
           channel_manager_id: string | null

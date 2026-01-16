@@ -1120,6 +1120,21 @@ Deno.serve(async (req: Request) => {
       .select('admin_persona_name, admin_persona_role, admin_persona_traits, admin_communication_style, admin_language_formality, admin_emoji_usage, admin_custom_instructions, admin_greeting_template')
       .single();
 
+    // Fetch admin knowledge base
+    const { data: adminKnowledge } = await supabase
+      .from('admin_chatbot_knowledge_base')
+      .select('title, content, category')
+      .eq('is_active', true)
+      .limit(20);
+
+    // Fetch admin training examples
+    const { data: trainingExamples } = await supabase
+      .from('admin_chatbot_training_examples')
+      .select('question, ideal_answer, category')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+      .limit(30);
+
     const hotelName = hotelSettings?.hotel_name || 'Hotel';
     const checkInTime = hotelSettings?.check_in_time || '14:00';
     const checkOutTime = hotelSettings?.check_out_time || '12:00';
@@ -1133,6 +1148,16 @@ Deno.serve(async (req: Request) => {
     const adminEmojiUsage = chatbotSettings?.admin_emoji_usage || 'minimal';
     const adminCustomInstructions = chatbotSettings?.admin_custom_instructions || '';
     const adminGreetingTemplate = chatbotSettings?.admin_greeting_template || 'Halo {manager_name}! Ada yang bisa saya bantu hari ini?';
+
+    // Build knowledge base context
+    const knowledgeContext = adminKnowledge && adminKnowledge.length > 0
+      ? `\n📚 KNOWLEDGE BASE ADMIN:\n${adminKnowledge.map(k => `[${k.category || 'general'}] ${k.title}:\n${k.content?.substring(0, 500) || ''}`).join('\n\n')}`
+      : '';
+
+    // Build training examples context (few-shot learning)
+    const trainingContext = trainingExamples && trainingExamples.length > 0
+      ? `\n🎓 CONTOH RESPONS (Few-Shot Learning):\n${trainingExamples.map(e => `User: "${e.question}"\nBot: "${e.ideal_answer}"`).join('\n\n')}`
+      : '';
 
     // Build persona description from traits
     const traitDescriptions: Record<string, string> = {
@@ -1283,7 +1308,9 @@ Untuk tanggal, gunakan format DD MMM YYYY (contoh: 8 Jan 2026).
 Jika pengelola minta buat booking tapi info belum lengkap, tanyakan yang kurang.
 Sebelum buat booking, selalu cek ketersediaan dulu dan konfirmasi detailnya.
 Setelah update harga, konfirmasi perubahan dengan menampilkan harga lama dan baru.
-Setelah update booking, konfirmasi perubahan dengan menampilkan data lama vs baru.`;
+Setelah update booking, konfirmasi perubahan dengan menampilkan data lama vs baru.
+${knowledgeContext}
+${trainingContext}`;
 
     // Prepare messages for AI
     const aiMessages = [
