@@ -26,6 +26,7 @@ import { ChevronDown, Edit, Trash2, FileText, Phone, Mail, User, CreditCard, Bed
 
 interface BookingAccordionItemProps {
   booking: Booking;
+  index: number;
   getRoomName: (roomId: string) => string;
   bankAccounts: BankAccount[];
   onStatusChange: (id: string, status: string) => void;
