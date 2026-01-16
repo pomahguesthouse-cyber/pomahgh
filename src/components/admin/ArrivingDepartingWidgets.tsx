@@ -5,9 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PlaneIcon, PlaneLanding, Search, X } from "lucide-react";
 import { isToday, isTomorrow, isYesterday, parseISO } from "date-fns";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { cn } from "@/lib/utils";
 import { formatDateShortID, formatTimeID } from "@/utils/indonesianFormat";
@@ -176,7 +173,7 @@ export const ArrivingDepartingWidgets = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <PlaneLanding className="h-6 w-6 text-blue-500" />
-              <CardTitle className="text-xl font-roboto">Arriving</CardTitle>
+              <CardTitle className="text-xl font-roboto font-medium">Arriving</CardTitle>
               <Badge variant="secondary" className="text-lg px-3 py-1">
                 {arrivingBookings.length}
               </Badge>
@@ -210,7 +207,7 @@ export const ArrivingDepartingWidgets = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <PlaneIcon className="h-6 w-6 text-blue-500 rotate-45" />
-              <CardTitle className="text-xl font-roboto">Departing</CardTitle>
+              <CardTitle className="text-xl font-roboto font-medium">Departing</CardTitle>
               <Badge variant="secondary" className="text-lg px-3 py-1">
                 {departingBookings.length}
               </Badge>

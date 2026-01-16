@@ -27,7 +27,7 @@ export const MonthlyRevenueChart = ({ data }: MonthlyRevenueChartProps) => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between p-3 md:p-6">
         <div>
-          <CardTitle className="text-sm md:text-base flex items-center gap-2">
+          <CardTitle className="text-sm md:text-base font-roboto flex items-center gap-2">
             <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-primary" />
             Statistik Pendapatan Bulanan
           </CardTitle>
