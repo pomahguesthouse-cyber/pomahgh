@@ -10,73 +10,64 @@ import { useMemo } from "react";
 import { differenceInDays, parseISO, startOfMonth, endOfMonth, isWithinInterval, subMonths, format, isSameMonth } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { formatRupiahID } from "@/utils/indonesianFormat";
-
-
 const AdminDashboard = () => {
-  const { bookings } = useAdminBookings();
-  const { rooms } = useAdminRooms();
-
+  const {
+    bookings
+  } = useAdminBookings();
+  const {
+    rooms
+  } = useAdminRooms();
   const analytics = useMemo(() => {
     if (!bookings || !rooms) return null;
-
     const now = new Date();
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
 
     // Revenue analytics
-    const totalRevenue = bookings
-      .filter(b => b.status === "confirmed")
-      .reduce((sum, b) => sum + Number(b.total_price), 0);
-
-    const monthlyRevenue = bookings
-      .filter(b => {
-        const createdAt = parseISO(b.created_at);
-        return b.status === "confirmed" && isWithinInterval(createdAt, { start: monthStart, end: monthEnd });
-      })
-      .reduce((sum, b) => sum + Number(b.total_price), 0);
-
+    const totalRevenue = bookings.filter(b => b.status === "confirmed").reduce((sum, b) => sum + Number(b.total_price), 0);
+    const monthlyRevenue = bookings.filter(b => {
+      const createdAt = parseISO(b.created_at);
+      return b.status === "confirmed" && isWithinInterval(createdAt, {
+        start: monthStart,
+        end: monthEnd
+      });
+    }).reduce((sum, b) => sum + Number(b.total_price), 0);
     const revenueByRoom = rooms.map(room => {
-      const roomRevenue = bookings
-        .filter(b => b.room_id === room.id && b.status === "confirmed")
-        .reduce((sum, b) => sum + Number(b.total_price), 0);
-      return { roomName: room.name, revenue: roomRevenue };
+      const roomRevenue = bookings.filter(b => b.room_id === room.id && b.status === "confirmed").reduce((sum, b) => sum + Number(b.total_price), 0);
+      return {
+        roomName: room.name,
+        revenue: roomRevenue
+      };
     }).sort((a, b) => b.revenue - a.revenue);
 
     // Occupancy analytics
-    const totalNights = bookings
-      .filter(b => b.status === "confirmed")
-      .reduce((sum, b) => sum + b.total_nights, 0);
-
+    const totalNights = bookings.filter(b => b.status === "confirmed").reduce((sum, b) => sum + b.total_nights, 0);
     const daysInMonth = differenceInDays(monthEnd, monthStart);
     const possibleNights = rooms.length * daysInMonth;
-    const occupancyRate = possibleNights > 0 ? (totalNights / possibleNights) * 100 : 0;
+    const occupancyRate = possibleNights > 0 ? totalNights / possibleNights * 100 : 0;
 
     // Booking patterns
-    const avgBookingDuration = bookings.length > 0
-      ? bookings.reduce((sum, b) => sum + b.total_nights, 0) / bookings.length
-      : 0;
-
+    const avgBookingDuration = bookings.length > 0 ? bookings.reduce((sum, b) => sum + b.total_nights, 0) / bookings.length : 0;
     const confirmedBookings = bookings.filter(b => b.status === "confirmed").length;
     const cancelledBookings = bookings.filter(b => b.status === "cancelled").length;
-    const cancellationRate = bookings.length > 0
-      ? (cancelledBookings / bookings.length) * 100
-      : 0;
+    const cancellationRate = bookings.length > 0 ? cancelledBookings / bookings.length * 100 : 0;
 
     // Monthly revenue data for chart (last 12 months)
-    const monthlyRevenueData = Array.from({ length: 12 }, (_, i) => {
+    const monthlyRevenueData = Array.from({
+      length: 12
+    }, (_, i) => {
       const date = subMonths(new Date(), 11 - i);
-      const revenue = bookings
-        .filter(b => {
-          const createdAt = parseISO(b.created_at);
-          return b.status === "confirmed" && isSameMonth(createdAt, date);
-        })
-        .reduce((sum, b) => sum + Number(b.total_price), 0);
+      const revenue = bookings.filter(b => {
+        const createdAt = parseISO(b.created_at);
+        return b.status === "confirmed" && isSameMonth(createdAt, date);
+      }).reduce((sum, b) => sum + Number(b.total_price), 0);
       return {
-        month: format(date, 'MMM yy', { locale: localeId }),
-        revenue,
+        month: format(date, 'MMM yy', {
+          locale: localeId
+        }),
+        revenue
       };
     });
-
     return {
       totalRevenue,
       monthlyRevenue,
@@ -87,17 +78,13 @@ const AdminDashboard = () => {
       avgBookingDuration,
       cancellationRate,
       totalRooms: rooms.length,
-      monthlyRevenueData,
+      monthlyRevenueData
     };
   }, [bookings, rooms]);
-
-
   if (!analytics) {
     return <div>Loading analytics...</div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Monthly Booking Calendar - At the top */}
       <BookingCalendar />
       
@@ -166,7 +153,7 @@ const AdminDashboard = () => {
       <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2">
         <Card>
           <CardHeader className="p-3 md:p-6">
-            <CardTitle className="text-sm md:text-base font-roboto">Booking Patterns</CardTitle>
+            <CardTitle className="text-sm md:text-base text-accent">Booking Patterns</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 p-3 pt-0 md:p-6 md:pt-0">
             <div className="flex justify-between items-center">
@@ -189,19 +176,17 @@ const AdminDashboard = () => {
         </Card>
 
         <Card>
-          <CardHeader className="p-3 md:p-6">
-            <CardTitle className="text-sm md:text-base font-roboto">Revenue by Room</CardTitle>
+          <CardHeader className="p-3 md:p-6 text-accent">
+            <CardTitle className="text-sm md:text-base text-[#339424]">Revenue by Room</CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
             <div className="space-y-2 md:space-y-3">
-              {analytics.revenueByRoom.slice(0, 5).map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center">
+              {analytics.revenueByRoom.slice(0, 5).map((item, idx) => <div key={idx} className="flex justify-between items-center">
                   <span className="text-xs md:text-sm text-muted-foreground truncate mr-2">{item.roomName}</span>
                   <span className="text-sm md:text-base font-semibold whitespace-nowrap">
                     {formatRupiahID(item.revenue)}
                   </span>
-                </div>
-              ))}
+                </div>)}
             </div>
           </CardContent>
         </Card>
@@ -210,7 +195,7 @@ const AdminDashboard = () => {
       {/* Quick Stats */}
       <Card>
         <CardHeader className="p-3 md:p-6">
-          <CardTitle className="text-sm md:text-base font-roboto">Quick Stats</CardTitle>
+          <CardTitle className="text-sm md:text-base">Quick Stats</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
           <div className="flex items-center gap-4 md:gap-6 flex-wrap">
@@ -236,8 +221,6 @@ const AdminDashboard = () => {
       <div className="mt-8">
         <DaysAvailabilityCalendar />
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AdminDashboard;
