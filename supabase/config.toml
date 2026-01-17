@@ -113,3 +113,12 @@ verify_jwt = false
 
 [functions.notify-new-booking]
 verify_jwt = false
+
+[functions.gsc-oauth]
+verify_jwt = false
+
+[functions.fetch-gsc-rankings]
+verify_jwt = true
+
+[functions.generate-alt-text]
+verify_jwt = true

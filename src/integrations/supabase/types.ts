@@ -2294,6 +2294,75 @@ export type Database = {
           },
         ]
       }
+      search_console_credentials: {
+        Row: {
+          access_token: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_connected: boolean | null
+          refresh_token: string | null
+          site_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          refresh_token?: string | null
+          site_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          refresh_token?: string | null
+          site_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      search_console_rankings: {
+        Row: {
+          clicks: number | null
+          created_at: string | null
+          ctr: number | null
+          date: string
+          id: string
+          impressions: number | null
+          page_url: string
+          position: number | null
+          query: string | null
+        }
+        Insert: {
+          clicks?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          date: string
+          id?: string
+          impressions?: number | null
+          page_url: string
+          position?: number | null
+          query?: string | null
+        }
+        Update: {
+          clicks?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          page_url?: string
+          position?: number | null
+          query?: string | null
+        }
+        Relationships: []
+      }
       seo_settings: {
         Row: {
           allow_indexing: boolean | null
