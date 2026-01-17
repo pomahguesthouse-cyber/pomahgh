@@ -39,17 +39,12 @@ export const useSearchConsoleRankings = () => {
 
   const checkConnection = useCallback(async () => {
     try {
-      const response = await supabase.functions.invoke("gsc-oauth", {
-        body: {},
-        headers: {},
-      });
-
-      // Call with action=status via query param workaround
+      // Directly query database for connection status
       const { data, error } = await supabase
         .from("search_console_credentials")
         .select("*")
         .eq("id", "default")
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         setConnectionStatus({ connected: false });
