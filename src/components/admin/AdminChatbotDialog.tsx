@@ -3,7 +3,7 @@ import { Send, Bot, User, Loader2, Smartphone, RefreshCw, XCircle } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useAdminChatbot } from '@/hooks/useAdminChatbot';
 import { cn } from '@/lib/utils';
 
@@ -62,10 +62,10 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
         hideCloseButton={true}
       >
         {/* Header dengan styling baru */}
-        <SheetHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
+        <div className="px-4 py-3 border-b flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <Smartphone className="h-5 w-5 text-foreground" />
-            <SheetTitle className="text-lg font-bold">Booking Management</SheetTitle>
+            <span className="text-lg font-bold">Booking Management</span>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -88,7 +88,7 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
               <XCircle className="h-6 w-6 text-red-500" />
             </Button>
           </div>
-        </SheetHeader>
+        </div>
 
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           {messages.length === 0 ? (
