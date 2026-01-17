@@ -9,6 +9,27 @@ interface Message {
   timestamp: Date;
 }
 
+// Conversation context extracted from chat for continuity
+interface ConversationContext {
+  guest_name: string | null;
+  preferred_room: string | null;
+  check_in_date: string | null;
+  check_out_date: string | null;
+  guest_count: number | null;
+  phone_number: string | null;
+  email: string | null;
+}
+
+const DEFAULT_CONTEXT: ConversationContext = {
+  guest_name: null,
+  preferred_room: null,
+  check_in_date: null,
+  check_out_date: null,
+  guest_count: null,
+  phone_number: null,
+  email: null
+};
+
 export const useChatbotSettings = () => {
   return useQuery({
     queryKey: ["chatbot-settings"],
@@ -59,6 +80,41 @@ export const useChatbot = () => {
   // Session management for logging
   const sessionIdRef = useRef<string>(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const conversationIdRef = useRef<string | null>(null);
+  
+  // Conversation context for continuity (reduces need to re-extract info)
+  const [conversationContext, setConversationContext] = useState<ConversationContext>(DEFAULT_CONTEXT);
+
+  // Extract context from AI responses to maintain continuity
+  const extractContext = (content: string, currentContext: ConversationContext): ConversationContext => {
+    const updated = { ...currentContext };
+    
+    // Extract room preferences
+    const roomMatch = content.match(/(?:kamar|room|tipe)\s*(Single|Deluxe|Grand Deluxe|Family Suite|Villa)/i);
+    if (roomMatch) {
+      updated.preferred_room = roomMatch[1];
+    }
+    
+    // Extract dates (Indonesian format)
+    const dateMatch = content.match(/(\d{1,2})\s*(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s*(\d{4})?/gi);
+    if (dateMatch && dateMatch.length >= 1) {
+      if (!updated.check_in_date) updated.check_in_date = dateMatch[0];
+      if (dateMatch.length >= 2 && !updated.check_out_date) updated.check_out_date = dateMatch[1];
+    }
+    
+    // Extract guest count
+    const guestMatch = content.match(/(\d+)\s*(?:orang|tamu|guest)/i);
+    if (guestMatch) {
+      updated.guest_count = parseInt(guestMatch[1], 10);
+    }
+    
+    // Extract name (from booking confirmations)
+    const nameMatch = content.match(/(?:atas nama|nama tamu|nama:?)\s*([A-Za-z\s]+?)(?:\.|,|untuk|\n)/i);
+    if (nameMatch) {
+      updated.guest_name = nameMatch[1].trim();
+    }
+    
+    return updated;
+  };
 
   // Start a new conversation in database
   const startConversation = async () => {
@@ -144,14 +200,15 @@ export const useChatbot = () => {
     await logMessage('user', userMessage);
 
     try {
-      // First, call the main chatbot function
+      // First, call the main chatbot function with conversation context
       const { data: chatResponse, error: chatError } = await supabase.functions.invoke('chatbot', {
         body: {
           messages: [...messages, newUserMessage].map(m => ({
             role: m.role,
             content: m.content
           })),
-          chatbotSettings: settings
+          chatbotSettings: settings,
+          conversationContext // Pass context for continuity
         }
       });
 
@@ -206,6 +263,9 @@ export const useChatbot = () => {
 
         setMessages(prev => [...prev, finalMessage]);
         
+        // Extract and update context from response
+        setConversationContext(prev => extractContext(finalContent, prev));
+        
         // Log assistant message
         await logMessage('assistant', finalContent);
       } else {
@@ -218,6 +278,9 @@ export const useChatbot = () => {
         };
 
         setMessages(prev => [...prev, assistantMessage]);
+        
+        // Extract and update context from response
+        setConversationContext(prev => extractContext(assistantContent, prev));
         
         // Log assistant message
         await logMessage('assistant', assistantContent);
@@ -256,6 +319,7 @@ export const useChatbot = () => {
 
     // Reset state
     setMessages([]);
+    setConversationContext(DEFAULT_CONTEXT);
     conversationIdRef.current = null;
     sessionIdRef.current = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
@@ -265,6 +329,7 @@ export const useChatbot = () => {
     isLoading,
     sendMessage,
     clearChat,
-    settings
+    settings,
+    conversationContext // Expose for debugging/display if needed
   };
 };

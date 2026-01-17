@@ -1,11 +1,35 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { HotelData } from '../lib/types.ts';
 import { DEFAULT_HOTEL_SETTINGS } from '../lib/types.ts';
+import { cache, CACHE_KEYS, CACHE_TTL, getOrLoad } from '../lib/cache.ts';
 
 /**
- * Load all hotel data in parallel for efficiency
+ * Load all hotel data with caching layer
+ * 
+ * Uses in-memory TTL cache to reduce database queries:
+ * - First request: ~7 DB queries
+ * - Subsequent requests (within TTL): 0 DB queries
+ * 
+ * @param supabase - Supabase client
+ * @param forceRefresh - Force fresh data fetch (bypass cache)
  */
-export async function loadHotelData(supabase: SupabaseClient): Promise<HotelData> {
+export async function loadHotelData(
+  supabase: SupabaseClient, 
+  forceRefresh = false
+): Promise<HotelData> {
+  
+  // Try to get from cache first
+  if (!forceRefresh) {
+    const cached = cache.get<HotelData>(CACHE_KEYS.HOTEL_DATA);
+    if (cached) {
+      console.log('📦 Using cached hotel data');
+      return cached;
+    }
+  }
+
+  console.log('🔄 Fetching fresh hotel data from database');
+
+  // Parallel fetch all data
   const [
     { data: settings },
     { data: rooms },
@@ -42,7 +66,7 @@ export async function loadHotelData(supabase: SupabaseClient): Promise<HotelData
       .order("display_order")
   ]);
 
-  return {
+  const hotelData: HotelData = {
     settings: settings || DEFAULT_HOTEL_SETTINGS,
     rooms: rooms || [],
     addons: addons || [],
@@ -51,4 +75,19 @@ export async function loadHotelData(supabase: SupabaseClient): Promise<HotelData
     knowledgeBase: knowledgeBase || [],
     trainingExamples: trainingExamples || []
   };
+
+  // Cache the result
+  cache.set(CACHE_KEYS.HOTEL_DATA, hotelData, CACHE_TTL.HOTEL_DATA);
+  console.log(`✅ Hotel data cached for ${CACHE_TTL.HOTEL_DATA / 1000}s`);
+
+  return hotelData;
+}
+
+/**
+ * Invalidate hotel data cache
+ * Call this when admin updates hotel settings, rooms, etc.
+ */
+export function invalidateHotelDataCache(): void {
+  cache.invalidate('hotel');
+  console.log('🗑️ Hotel data cache invalidated');
 }
