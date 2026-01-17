@@ -3,40 +3,34 @@
  * Exports all booking-related components, hooks, services, and mappers
  */
 
-// Components (named exports)
-export { BookingDialog } from "@/components/BookingDialog";
-export { BookingConfirmationDialog } from "@/components/BookingConfirmationDialog";
-export { RefundPolicyDisplay } from "@/components/RefundPolicyDisplay";
-export { AddonSelector } from "@/components/booking/AddonSelector";
+// Components
+export * from "./components";
 
 // Hooks
-export { useBooking } from "@/hooks/useBooking";
-export type { BookingData } from "@/hooks/useBooking";
-export { useBookingValidation } from "@/hooks/useBookingValidation";
-export { useBookingExport } from "@/hooks/useBookingExport";
+export { useBooking, useBookingValidation, useBookingExport } from "./hooks";
+export type { BookingData } from "./hooks";
 
 // Services
-export { bookingService } from "./services/booking.service";
-export type { CreateBookingInput, UpdateBookingInput } from "./services/booking.service";
+export { bookingService } from "./services";
+export type { CreateBookingInput, UpdateBookingInput } from "./services";
 
 // Mappers
-export { bookingMapper } from "./mappers/booking.mapper";
+export { bookingMapper } from "./mappers";
 export type {
   BookingDTO,
   BookingRoomDTO,
   BookingListItem,
   BookingCalendarItem,
-} from "./mappers/booking.mapper";
+} from "./mappers";
 
 // Utils
-export { bookingPermissions } from "./utils/booking.permissions";
-export type { UserRole } from "./utils/booking.permissions";
-export { bookingValidation } from "./utils/booking.validation";
-export type {
+export { bookingPermissions, bookingValidation } from "./utils";
+export type { 
+  UserRole,
   BookingValidationResult,
   BookingDates,
   BookingGuestInfo,
-} from "./utils/booking.validation";
+} from "./utils";
 
 // Types
 export type {

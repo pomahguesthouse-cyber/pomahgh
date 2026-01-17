@@ -3,63 +3,45 @@
  * Exports all room-related components, hooks, services, and mappers
  */
 
-// Main components
-export { Rooms } from "@/components/Rooms";
-export { RoomCard } from "@/components/Rooms/RoomCard";
-export { RoomCarousel } from "@/components/Rooms/RoomCarousel";
-export { RoomFeatures } from "@/components/Rooms/RoomFeatures";
-export { RoomCardImage } from "@/components/Rooms/RoomCardImage";
-export { RoomCardInfo } from "@/components/Rooms/RoomCardInfo";
-export { RoomCardPrice } from "@/components/Rooms/RoomCardPrice";
-export { RoomDots } from "@/components/Rooms/RoomDots";
-export { RoomsHeader } from "@/components/Rooms/RoomsHeader";
-
-// Room detail components
-export { RoomGallery } from "@/components/room-detail/RoomGallery";
-export { RoomHeader } from "@/components/room-detail/RoomHeader";
-export { RoomInfo } from "@/components/room-detail/RoomInfo";
-export { RoomBookingCard } from "@/components/room-detail/RoomBookingCard";
-export { RoomFeaturesList } from "@/components/room-detail/RoomFeaturesList";
-export { RoomSpecifications } from "@/components/room-detail/RoomSpecifications";
-export { RoomVirtualTour } from "@/components/room-detail/RoomVirtualTour";
-export { RoomFloorPlan } from "@/components/room-detail/RoomFloorPlan";
-export { RoomRelatedRooms } from "@/components/room-detail/RoomRelatedRooms";
-export { RoomSEO } from "@/components/room-detail/RoomSEO";
+// Components
+export * from "./components";
 
 // Hooks
-export { useRooms } from "@/hooks/useRooms";
-export type { Room as RoomHookType, RoomPromotion } from "@/hooks/useRooms";
-export { useRoomDetail } from "@/hooks/useRoomDetail";
-export { useRoomAvailability } from "@/hooks/useRoomAvailability";
+export { 
+  useRooms, 
+  useRoomDetail, 
+  useRoomAvailability,
+  useRoomPromotions,
+  useRoomAddons,
+  useRoomPanoramas,
+  useRoomHotspots,
+  useFloorPlanUpload,
+  useUpdatePanoramaPosition,
+  useToggleFloorPlan,
+} from "./hooks";
+
+// Additional hooks from shared location
 export { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
 export { useRoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
 export { useRoomFeatures } from "@/hooks/useRoomFeatures";
-export { useRoomAddons } from "@/hooks/useRoomAddons";
-export { useRoomPromotions } from "@/hooks/useRoomPromotions";
-export { useRoomPanoramas } from "@/hooks/useRoomPanoramas";
-export { useRoomHotspots } from "@/hooks/useRoomHotspots";
-export { useFloorPlanUpload, useUpdatePanoramaPosition, useToggleFloorPlan } from "@/hooks/useFloorPlan";
 
 // Services
-export { roomService } from "./services/room.service";
-export type { RoomWithPromotion } from "./services/room.service";
+export { roomService } from "./services";
+export type { RoomWithPromotion } from "./services";
 
 // Mappers
-export { roomMapper } from "./mappers/room.mapper";
+export { roomMapper } from "./mappers";
 export type {
   RoomDTO,
   RoomCardItem,
   RoomSelectOption,
   RoomAddonDTO,
-} from "./mappers/room.mapper";
+} from "./mappers";
 
-// Utilities
-export { calculateDynamicPrice } from "@/components/Rooms/utils/calculateDynamicPrice";
-export { checkPromo, getDisplayPrice, getDynamicDisplayPrice } from "@/components/Rooms/utils/checkPromo";
-export { formatDateRange } from "@/components/Rooms/utils/formatDateRange";
-export { getRoomImages } from "@/components/Rooms/utils/getRoomImages";
+// Types (feature-local)
+export type { RoomPromotion, Room as RoomFeatureType } from "./types";
 
-// Types
+// Types (shared)
 export type {
   Room,
   RoomFeature,
@@ -70,3 +52,9 @@ export type {
   AdminRoom,
   RoomUnavailableDate,
 } from "@/types/room.types";
+
+// Utilities
+export { calculateDynamicPrice } from "@/components/Rooms/utils/calculateDynamicPrice";
+export { checkPromo, getDisplayPrice, getDynamicDisplayPrice } from "@/components/Rooms/utils/checkPromo";
+export { formatDateRange } from "@/components/Rooms/utils/formatDateRange";
+export { getRoomImages } from "@/components/Rooms/utils/getRoomImages";
