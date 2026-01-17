@@ -25,17 +25,17 @@ export const MonthlyRevenueChart = ({ data }: MonthlyRevenueChartProps) => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between p-3 md:p-6">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
-          <CardTitle className="text-sm md:text-base font-roboto flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" />
             Statistik Pendapatan Bulanan
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">12 bulan terakhir</p>
         </div>
       </CardHeader>
-      <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-        <ChartContainer config={chartConfig} className="h-[250px] md:h-[300px] w-full">
+      <CardContent className="pt-4">
+        <ChartContainer config={chartConfig} className="h-[280px] w-full">
           <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <XAxis 
               dataKey="month" 

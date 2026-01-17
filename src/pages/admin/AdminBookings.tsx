@@ -290,7 +290,7 @@ const AdminBookings = () => {
       />
 
       {/* Table Header + Booking List */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className="border rounded-lg overflow-hidden bg-card">
         <BookingListHeader />
 
         {/* Booking List */}

@@ -101,9 +101,9 @@ export const ArrivingDepartingWidgets = () => {
               const displayTime = type === "arriving" ? booking.check_out_time : booking.check_in_time;
 
               return (
-                <tr key={booking.id} className="border-b hover:bg-muted/20 transition-colors">
+                <tr key={booking.id} className="border-b hover:bg-muted/50 transition-colors">
                   <td className="py-2 px-2">
-                    <div className="border border-blue-500 text-blue-500 rounded px-1.5 py-0.5 text-xs font-semibold inline-block">
+                    <div className="border border-primary text-primary rounded px-1.5 py-0.5 text-xs font-semibold inline-block">
                       {booking.id.slice(0, 4).toUpperCase()}
                     </div>
                   </td>
@@ -117,7 +117,7 @@ export const ArrivingDepartingWidgets = () => {
                     </div>
                   </td>
                   <td className="py-2 px-2">
-                    <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs px-2 py-0.5">
+                    <Badge variant="default" className="text-xs px-2 py-0.5">
                       Terkonfirmasi
                     </Badge>
                   </td>
@@ -142,7 +142,6 @@ export const ArrivingDepartingWidgets = () => {
         variant={activeFilter === "today" ? "default" : "outline"}
         size="sm"
         onClick={() => onFilterChange("today")}
-        className={cn(activeFilter === "today" && "bg-blue-500 hover:bg-blue-600 text-white")}
       >
         Today
       </Button>
@@ -150,7 +149,6 @@ export const ArrivingDepartingWidgets = () => {
         variant={activeFilter === "tomorrow" ? "default" : "outline"}
         size="sm"
         onClick={() => onFilterChange("tomorrow")}
-        className={cn(activeFilter === "tomorrow" && "bg-blue-500 hover:bg-blue-600 text-white")}
       >
         Tomorrow
       </Button>
@@ -158,7 +156,6 @@ export const ArrivingDepartingWidgets = () => {
         variant={activeFilter === "yesterday" ? "default" : "outline"}
         size="sm"
         onClick={() => onFilterChange("yesterday")}
-        className={cn(activeFilter === "yesterday" && "bg-blue-500 hover:bg-blue-600 text-white")}
       >
         Yesterday
       </Button>
@@ -166,15 +163,17 @@ export const ArrivingDepartingWidgets = () => {
   );
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2">
       {/* Arriving Widget */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <PlaneLanding className="h-6 w-6 text-blue-500" />
-              <CardTitle className="text-xl font-roboto font-medium">Arriving</CardTitle>
-              <Badge variant="secondary" className="text-lg px-3 py-1">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <PlaneLanding className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle className="text-base font-medium">Arriving</CardTitle>
+              <Badge variant="secondary" className="text-sm">
                 {arrivingBookings.length}
               </Badge>
             </div>
@@ -203,12 +202,14 @@ export const ArrivingDepartingWidgets = () => {
 
       {/* Departing Widget */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <PlaneIcon className="h-6 w-6 text-blue-500 rotate-45" />
-              <CardTitle className="text-xl font-roboto font-medium">Departing</CardTitle>
-              <Badge variant="secondary" className="text-lg px-3 py-1">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <PlaneIcon className="h-5 w-5 text-primary rotate-45" />
+              </div>
+              <CardTitle className="text-base font-medium">Departing</CardTitle>
+              <Badge variant="secondary" className="text-sm">
                 {departingBookings.length}
               </Badge>
             </div>

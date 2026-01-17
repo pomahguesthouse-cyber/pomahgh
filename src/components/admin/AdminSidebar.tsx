@@ -163,16 +163,15 @@ export function AdminSidebar() {
             to={item.url!} 
             end 
             className={cn(
-              "flex items-center gap-3 rounded-lg transition-colors", 
+              "flex items-center gap-3 rounded-md transition-colors text-sm", 
               isActive 
                 ? "bg-primary/10 text-primary font-medium" 
-                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
             )} 
             onClick={handleNavClick}
           >
             <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
             <span className="truncate">{item.title}</span>
-            {isActive && !isCollapsed && <ChevronRight className="ml-auto h-4 w-4 text-primary/60" />}
           </NavLink>
         </SidebarMenuButton>
       </SidebarMenuItem>

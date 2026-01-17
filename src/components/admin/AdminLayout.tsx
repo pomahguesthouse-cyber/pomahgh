@@ -38,16 +38,16 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   return (
     <AdminGuard>
       <SidebarProvider defaultOpen={!isMobile}>
-        <div className="min-h-screen flex w-full">
+        <div className="min-h-screen flex w-full bg-muted/30">
           <AdminSidebar />
 
           <div className="flex-1 flex flex-col transition-all min-w-0">
-            <header className="h-14 border-b flex items-center px-3 md:px-4 bg-background sticky top-0 z-[999998]">
+            <header className="h-14 border-b border-border/60 flex items-center px-4 md:px-6 bg-background sticky top-0 z-[999998]">
               <SidebarTrigger />
-              <h1 className="ml-3 md:ml-4 text-base md:text-lg font-roboto font-semibold truncate">{pageTitle}</h1>
+              <h1 className="ml-4 text-xl font-semibold text-foreground truncate">{pageTitle}</h1>
             </header>
 
-            <main className="flex-1 p-3 md:p-6 max-w-5xl mx-auto w-full">{children}</main>
+            <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full">{children}</main>
           </div>
           
           <AdminChatbotWidget />
