@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 export interface WhatsAppSession {
   id: string;
   phone_number: string;
+  guest_name: string | null;
   conversation_id: string | null;
   last_message_at: string | null;
   context: Record<string, unknown> | null;
