@@ -109,48 +109,48 @@ const AdminDashboard = () => {
       <ArrivingDepartingWidgets />
 
       {/* Revenue Metrics */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-lg md:text-2xl font-bold truncate">{formatRupiahID(analytics.totalRevenue)}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground">Total pendapatan</p>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold truncate">{formatRupiahID(analytics.totalRevenue)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Total pendapatan</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Monthly Revenue</CardTitle>
-            <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Revenue</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-lg md:text-2xl font-bold truncate">{formatRupiahID(analytics.monthlyRevenue)}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground">Bulan ini</p>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold truncate">{formatRupiahID(analytics.monthlyRevenue)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Bulan ini</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Total Bookings</CardTitle>
-            <Calendar className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Bookings</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-lg md:text-2xl font-bold">{analytics.totalBookings}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground">{analytics.confirmedBookings} terkonfirmasi</p>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold">{analytics.totalBookings}</div>
+            <p className="text-xs text-muted-foreground mt-1">{analytics.confirmedBookings} terkonfirmasi</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Occupancy Rate</CardTitle>
-            <PercentIcon className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Occupancy Rate</CardTitle>
+            <PercentIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-lg md:text-2xl font-bold">{analytics.occupancyRate.toFixed(1)}%</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground">Bulan ini</p>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold">{analytics.occupancyRate.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground mt-1">Bulan ini</p>
           </CardContent>
         </Card>
       </div>
@@ -159,41 +159,37 @@ const AdminDashboard = () => {
       <MonthlyRevenueChart data={analytics.monthlyRevenueData} />
 
       {/* Booking Patterns */}
-      <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
         <Card>
-          <CardHeader className="p-3 md:p-6">
-            <CardTitle className="text-sm md:text-base">Booking Patterns</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Booking Patterns</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 p-3 pt-0 md:p-6 md:pt-0">
+          <CardContent className="space-y-4 pt-0">
             <div className="flex justify-between items-center">
-              <span className="text-xs md:text-sm text-muted-foreground">Rata-rata Menginap</span>
-              <span className="text-sm md:text-base font-semibold">
-                {analytics.avgBookingDuration.toFixed(1)} malam
-              </span>
+              <span className="text-sm text-muted-foreground">Rata-rata Menginap</span>
+              <span className="text-sm font-semibold">{analytics.avgBookingDuration.toFixed(1)} malam</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs md:text-sm text-muted-foreground">Tingkat Pembatalan</span>
-              <span className="text-sm md:text-base font-semibold">{analytics.cancellationRate.toFixed(1)}%</span>
+              <span className="text-sm text-muted-foreground">Tingkat Pembatalan</span>
+              <span className="text-sm font-semibold">{analytics.cancellationRate.toFixed(1)}%</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs md:text-sm text-muted-foreground">Booking Terkonfirmasi</span>
-              <span className="text-sm md:text-base font-semibold">{analytics.confirmedBookings}</span>
+              <span className="text-sm text-muted-foreground">Booking Terkonfirmasi</span>
+              <span className="text-sm font-semibold">{analytics.confirmedBookings}</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="p-3 md:p-6">
-            <CardTitle className="text-sm md:text-base font-medium">Revenue by Room</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Revenue by Room</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="space-y-2 md:space-y-3">
+          <CardContent className="pt-0">
+            <div className="space-y-3">
               {analytics.revenueByRoom.slice(0, 5).map((item, idx) => (
                 <div key={idx} className="flex justify-between items-center">
-                  <span className="text-xs md:text-sm text-muted-foreground truncate mr-2">{item.roomName}</span>
-                  <span className="text-sm md:text-base font-semibold whitespace-nowrap">
-                    {formatRupiahID(item.revenue)}
-                  </span>
+                  <span className="text-sm text-muted-foreground truncate mr-2">{item.roomName}</span>
+                  <span className="text-sm font-semibold whitespace-nowrap">{formatRupiahID(item.revenue)}</span>
                 </div>
               ))}
             </div>
@@ -203,23 +199,27 @@ const AdminDashboard = () => {
 
       {/* Quick Stats */}
       <Card>
-        <CardHeader className="p-3 md:p-6">
-          <CardTitle className="text-sm md:text-base">Quick Stats</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">Quick Stats</CardTitle>
         </CardHeader>
-        <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-          <div className="flex items-center gap-4 md:gap-6 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+        <CardContent className="pt-0">
+          <div className="flex items-center gap-6 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <Building2 className="h-5 w-5 text-muted-foreground" />
+              </div>
               <div>
-                <p className="text-xs md:text-sm text-muted-foreground">Total Kamar</p>
-                <p className="text-xl md:text-2xl font-bold">{analytics.totalRooms}</p>
+                <p className="text-sm text-muted-foreground">Total Kamar</p>
+                <p className="text-2xl font-bold">{analytics.totalRooms}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <Users className="h-5 w-5 text-muted-foreground" />
+              </div>
               <div>
-                <p className="text-xs md:text-sm text-muted-foreground">Tamu Terkonfirmasi</p>
-                <p className="text-xl md:text-2xl font-bold">{analytics.confirmedBookings}</p>
+                <p className="text-sm text-muted-foreground">Tamu Terkonfirmasi</p>
+                <p className="text-2xl font-bold">{analytics.confirmedBookings}</p>
               </div>
             </div>
           </div>

@@ -64,8 +64,8 @@ const AdminGuestChatbot = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold font-['Arial',Helvetica,sans-serif]">Guest Chatbot</h1>
-        <p className="text-muted-foreground">Pengaturan chatbot untuk melayani tamu</p>
+        <h1 className="text-xl font-semibold">Guest Chatbot</h1>
+        <p className="text-sm text-muted-foreground">Pengaturan chatbot untuk melayani tamu</p>
       </div>
       
       <Tabs defaultValue="personality" className="space-y-4">
@@ -111,7 +111,7 @@ const AdminGuestChatbot = () => {
         <TabsContent value="appearance" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="font-['Arial',Helvetica,sans-serif]">Tampilan Widget</CardTitle>
+              <CardTitle className="text-base font-medium">Tampilan Widget</CardTitle>
               <CardDescription>
                 Sesuaikan tampilan chatbot widget
               </CardDescription>
@@ -184,7 +184,7 @@ const AdminGuestChatbot = () => {
         <TabsContent value="behavior" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="font-['Arial',Helvetica,sans-serif]">Perilaku Chatbot</CardTitle>
+              <CardTitle className="text-base font-medium">Perilaku Chatbot</CardTitle>
               <CardDescription>
                 Atur bagaimana chatbot merespons
               </CardDescription>
@@ -292,8 +292,8 @@ const AdminGuestChatbot = () => {
           {/* Session Timeout */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
-                <MessageSquare className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base font-medium">
+                <MessageSquare className="w-4 h-4 text-muted-foreground" />
                 Pengaturan Session
               </CardTitle>
               <CardDescription>Atur timeout session chatbot WhatsApp</CardDescription>
@@ -326,8 +326,8 @@ const AdminGuestChatbot = () => {
           {/* Contact Numbers */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
-                <Phone className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base font-medium">
+                <Phone className="w-4 h-4 text-muted-foreground" />
                 Daftar Kontak
               </CardTitle>
               <CardDescription>Nomor-nomor kontak yang bisa dihubungi tamu</CardDescription>
@@ -396,8 +396,8 @@ const AdminGuestChatbot = () => {
           {/* AI Whitelist */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-['Arial',Helvetica,sans-serif]">
-                <Ban className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base font-medium">
+                <Ban className="w-4 h-4 text-muted-foreground" />
                 Whitelist Nomor (Non-AI)
               </CardTitle>
               <CardDescription>Nomor-nomor yang TIDAK akan dilayani oleh AI (hanya admin yang merespon)</CardDescription>
