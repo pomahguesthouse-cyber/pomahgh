@@ -49,8 +49,25 @@ async function executeTool(supabase: any, toolName: string, args: any): Promise<
     case 'get_room_inventory':
       return await getRoomInventory(supabase);
     
-    case 'create_admin_booking':
-      return await createAdminBooking(supabase, args);
+    case 'create_admin_booking': {
+      const result = await createAdminBooking(supabase, args);
+      
+      // SECURITY: Verify booking actually exists in database
+      if (result.success && result.booking_code) {
+        const { data: verifyBooking, error: verifyError } = await supabase
+          .from('bookings')
+          .select('id, booking_code')
+          .eq('booking_code', result.booking_code)
+          .single();
+        
+        if (verifyError || !verifyBooking) {
+          console.error(`❌ CRITICAL: Booking ${result.booking_code} NOT FOUND after insert!`, verifyError);
+          throw new Error(`Booking gagal tersimpan di database. Silakan coba lagi.`);
+        }
+        console.log(`✅ Booking ${result.booking_code} verified in database`);
+      }
+      return result;
+    }
     
     case 'update_room_price':
       return await updateRoomPrice(supabase, args);

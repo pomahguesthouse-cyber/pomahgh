@@ -144,6 +144,8 @@ export async function createAdminBooking(supabase: any, args: any) {
   const { totalPrice, promoNights, originalPrice } = calculateFinalPrice(room, checkIn, checkOut, activePromo);
   const savings = originalPrice - totalPrice;
 
+  console.log(`📋 Inserting booking: guest=${args.guest_name}, room=${room.name}#${allocatedRoomNumber}, dates=${args.check_in} to ${args.check_out}`);
+
   // Create booking
   const { data: booking, error: bookingError } = await supabase
     .from('bookings')
@@ -164,7 +166,12 @@ export async function createAdminBooking(supabase: any, args: any) {
     .select('booking_code, id')
     .single();
 
-  if (bookingError) throw bookingError;
+  if (bookingError) {
+    console.error(`❌ createAdminBooking INSERT failed:`, JSON.stringify(bookingError));
+    throw new Error(`Gagal menyimpan booking: ${bookingError.message}`);
+  }
+
+  console.log(`✅ createAdminBooking SUCCESS: booking_code=${booking.booking_code}, id=${booking.id}`);
 
   // Notify managers (non-blocking)
   try {
