@@ -38,6 +38,8 @@ import AdminExploreHeroSlides from "./pages/admin/AdminExploreHeroSlides";
 import AdminCompetitorAnalysis from "./pages/admin/AdminCompetitorAnalysis";
 import Chat from "./pages/Chat";
 import AdminChat from "./pages/admin/AdminChat";
+import AdminCityEvents from "./pages/admin/AdminCityEvents";
+import EventDetail from "./pages/EventDetail";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -56,6 +58,7 @@ const App = () => (
             <Route path="/rooms/:roomSlug" element={<RoomDetail />} />
             <Route path="/explore-semarang" element={<ExploreSemarang />} />
             <Route path="/explore-semarang/:slug" element={<AttractionDetail />} />
+            <Route path="/events/:slug" element={<EventDetail />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
@@ -79,6 +82,7 @@ const App = () => (
           <Route path="/admin/invoice-template" element={<AdminLayout><AdminInvoiceTemplate /></AdminLayout>} />
           <Route path="/admin/city-attractions" element={<AdminLayout><AdminCityAttractions /></AdminLayout>} />
           <Route path="/admin/explore-hero-slides" element={<AdminLayout><AdminExploreHeroSlides /></AdminLayout>} />
+          <Route path="/admin/city-events" element={<AdminLayout><AdminCityEvents /></AdminLayout>} />
           <Route path="/admin/competitor-analysis" element={<AdminCompetitorAnalysis />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
