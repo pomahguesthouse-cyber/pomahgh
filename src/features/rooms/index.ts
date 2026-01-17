@@ -1,6 +1,6 @@
 /**
  * Rooms Feature Module
- * Exports all room-related components and hooks
+ * Exports all room-related components, hooks, services, and mappers
  */
 
 // Main components
@@ -28,7 +28,7 @@ export { RoomSEO } from "@/components/room-detail/RoomSEO";
 
 // Hooks
 export { useRooms } from "@/hooks/useRooms";
-export type { Room as RoomWithPromotion, RoomPromotion } from "@/hooks/useRooms";
+export type { Room as RoomHookType, RoomPromotion } from "@/hooks/useRooms";
 export { useRoomDetail } from "@/hooks/useRoomDetail";
 export { useRoomAvailability } from "@/hooks/useRoomAvailability";
 export { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
@@ -39,6 +39,19 @@ export { useRoomPromotions } from "@/hooks/useRoomPromotions";
 export { useRoomPanoramas } from "@/hooks/useRoomPanoramas";
 export { useRoomHotspots } from "@/hooks/useRoomHotspots";
 export { useFloorPlanUpload, useUpdatePanoramaPosition, useToggleFloorPlan } from "@/hooks/useFloorPlan";
+
+// Services
+export { roomService } from "./services/room.service";
+export type { RoomWithPromotion } from "./services/room.service";
+
+// Mappers
+export { roomMapper } from "./mappers/room.mapper";
+export type {
+  RoomDTO,
+  RoomCardItem,
+  RoomSelectOption,
+  RoomAddonDTO,
+} from "./mappers/room.mapper";
 
 // Utilities
 export { calculateDynamicPrice } from "@/components/Rooms/utils/calculateDynamicPrice";

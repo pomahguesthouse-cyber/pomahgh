@@ -1,6 +1,6 @@
 /**
  * Booking Feature Module
- * Exports all booking-related components and hooks
+ * Exports all booking-related components, hooks, services, and mappers
  */
 
 // Components (named exports)
@@ -14,6 +14,29 @@ export { useBooking } from "@/hooks/useBooking";
 export type { BookingData } from "@/hooks/useBooking";
 export { useBookingValidation } from "@/hooks/useBookingValidation";
 export { useBookingExport } from "@/hooks/useBookingExport";
+
+// Services
+export { bookingService } from "./services/booking.service";
+export type { CreateBookingInput, UpdateBookingInput } from "./services/booking.service";
+
+// Mappers
+export { bookingMapper } from "./mappers/booking.mapper";
+export type {
+  BookingDTO,
+  BookingRoomDTO,
+  BookingListItem,
+  BookingCalendarItem,
+} from "./mappers/booking.mapper";
+
+// Utils
+export { bookingPermissions } from "./utils/booking.permissions";
+export type { UserRole } from "./utils/booking.permissions";
+export { bookingValidation } from "./utils/booking.validation";
+export type {
+  BookingValidationResult,
+  BookingDates,
+  BookingGuestInfo,
+} from "./utils/booking.validation";
 
 // Types
 export type {
