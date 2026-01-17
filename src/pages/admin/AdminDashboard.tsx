@@ -5,7 +5,17 @@ import { DaysAvailabilityCalendar } from "@/components/admin/DaysAvailabilityCal
 import { BookingCalendar } from "@/components/admin/booking-calendar";
 import { ArrivingDepartingWidgets } from "@/components/admin/ArrivingDepartingWidgets";
 import { MonthlyRevenueChart } from "@/components/admin/MonthlyRevenueChart";
-import { DollarSign, Users, Calendar, TrendingUp, Building2, PercentIcon } from "lucide-react";
+import { 
+  DollarSign, 
+  Calendar, 
+  TrendingUp, 
+  Building2, 
+  Percent,
+  Sun,
+  Sunset,
+  Moon,
+  Users
+} from "lucide-react";
 import { useMemo } from "react";
 import {
   differenceInDays,
@@ -20,6 +30,20 @@ import {
 import { id as localeId } from "date-fns/locale";
 import { formatRupiahID } from "@/utils/indonesianFormat";
 
+// Helper function to get greeting based on time
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 11) {
+    return { text: "Selamat pagi", icon: Sun, emoji: "☀️" };
+  } else if (hour >= 11 && hour < 15) {
+    return { text: "Selamat siang", icon: Sun, emoji: "🌤️" };
+  } else if (hour >= 15 && hour < 18) {
+    return { text: "Selamat sore", icon: Sunset, emoji: "🌅" };
+  } else {
+    return { text: "Selamat malam", icon: Moon, emoji: "🌙" };
+  }
+};
+
 const AdminDashboard = () => {
   const { bookings } = useAdminBookings();
   const { rooms } = useAdminRooms();
@@ -28,8 +52,18 @@ const AdminDashboard = () => {
     if (!bookings || !rooms) return null;
 
     const now = new Date();
+    const todayStr = format(now, 'yyyy-MM-dd');
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
+
+    // Count today's check-ins and check-outs
+    const todayCheckIns = bookings.filter(b => 
+      b.check_in === todayStr && b.status === 'confirmed'
+    ).length;
+
+    const todayCheckOuts = bookings.filter(b => 
+      b.check_out === todayStr && b.status === 'confirmed'
+    ).length;
 
     // Revenue analytics
     const totalRevenue = bookings
@@ -93,49 +127,102 @@ const AdminDashboard = () => {
       cancellationRate,
       totalRooms: rooms.length,
       monthlyRevenueData,
+      todayCheckIns,
+      todayCheckOuts,
     };
   }, [bookings, rooms]);
 
   if (!analytics) {
-    return <div>Loading analytics...</div>;
+    return (
+      <div className="p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse border rounded-xl">
+              <CardHeader className="pb-2">
+                <div className="h-4 bg-muted rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-muted rounded w-3/4"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const greeting = getGreeting();
+  const maxRevenue = Math.max(...analytics.revenueByRoom.map(r => r.revenue), 1);
+
+  // Build greeting message
+  let greetingMessage = "";
+  if (analytics.todayCheckIns > 0 && analytics.todayCheckOuts > 0) {
+    greetingMessage = `Ada ${analytics.todayCheckIns} tamu check-in dan ${analytics.todayCheckOuts} tamu check-out hari ini`;
+  } else if (analytics.todayCheckIns > 0) {
+    greetingMessage = `Ada ${analytics.todayCheckIns} tamu check-in hari ini`;
+  } else if (analytics.todayCheckOuts > 0) {
+    greetingMessage = `Ada ${analytics.todayCheckOuts} tamu check-out hari ini`;
+  } else {
+    greetingMessage = "Semoga hari Anda menyenangkan!";
   }
 
   return (
     <div className="space-y-6">
-      {/* Monthly Booking Calendar - At the top */}
+      {/* Greeting Section */}
+      <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-transparent rounded-2xl p-6 border border-primary/10">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">{greeting.emoji}</span>
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">
+              {greeting.text}!
+            </h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {greetingMessage}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Monthly Booking Calendar */}
       <BookingCalendar />
 
       {/* Arriving & Departing Widgets */}
       <ArrivingDepartingWidgets />
 
-      {/* Revenue Metrics */}
+      {/* KPI Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="border rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Pendapatan</CardTitle>
+            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30">
+              <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold truncate">{formatRupiahID(analytics.totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total pendapatan</p>
+            <p className="text-xs text-muted-foreground mt-1">Dari semua reservasi</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Revenue</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pendapatan Bulan Ini</CardTitle>
+            <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/30">
+              <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </div>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold truncate">{formatRupiahID(analytics.monthlyRevenue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Bulan ini</p>
+            <p className="text-xs text-muted-foreground mt-1">Bulan berjalan</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Bookings</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Reservasi</CardTitle>
+            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30">
+              <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            </div>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold">{analytics.totalBookings}</div>
@@ -143,10 +230,12 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Occupancy Rate</CardTitle>
-            <PercentIcon className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tingkat Hunian</CardTitle>
+            <div className="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/30">
+              <Percent className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+            </div>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold">{analytics.occupancyRate.toFixed(1)}%</div>
@@ -155,58 +244,92 @@ const AdminDashboard = () => {
         </Card>
       </div>
 
-      {/* Monthly Revenue Chart */}
-      <MonthlyRevenueChart data={analytics.monthlyRevenueData} />
+      {/* Charts & Stats Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Monthly Revenue Chart */}
+        <div className="lg:col-span-2">
+          <MonthlyRevenueChart data={analytics.monthlyRevenueData} />
+        </div>
 
-      {/* Booking Patterns */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-        <Card>
+        {/* Booking Patterns */}
+        <Card className="border rounded-xl">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Booking Patterns</CardTitle>
+            <CardTitle className="text-base font-semibold">Pola Reservasi</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 pt-0">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Rata-rata Menginap</span>
-              <span className="text-sm font-semibold">{analytics.avgBookingDuration.toFixed(1)} malam</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Tingkat Pembatalan</span>
-              <span className="text-sm font-semibold">{analytics.cancellationRate.toFixed(1)}%</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Booking Terkonfirmasi</span>
-              <span className="text-sm font-semibold">{analytics.confirmedBookings}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Revenue by Room</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-3">
-              {analytics.revenueByRoom.slice(0, 5).map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground truncate mr-2">{item.roomName}</span>
-                  <span className="text-sm font-semibold whitespace-nowrap">{formatRupiahID(item.revenue)}</span>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                  <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
-              ))}
+                <span className="text-sm text-muted-foreground">Rata-rata Menginap</span>
+              </div>
+              <span className="text-lg font-semibold">{analytics.avgBookingDuration.toFixed(1)} malam</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                  <Percent className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <span className="text-sm text-muted-foreground">Tingkat Pembatalan</span>
+              </div>
+              <span className="text-lg font-semibold">{analytics.cancellationRate.toFixed(1)}%</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <span className="text-sm text-muted-foreground">Reservasi Terkonfirmasi</span>
+              </div>
+              <span className="text-lg font-semibold">{analytics.confirmedBookings}</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Revenue by Room & Availability Calendar */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border rounded-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Pendapatan per Kamar</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {analytics.revenueByRoom.slice(0, 5).map((item, idx) => (
+              <div key={idx} className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium truncate max-w-[150px]">{item.roomName}</span>
+                  <span className="text-muted-foreground">{formatRupiahID(item.revenue)}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-500"
+                    style={{ width: `${(item.revenue / maxRevenue) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            {analytics.revenueByRoom.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Belum ada data pendapatan
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <DaysAvailabilityCalendar />
+      </div>
+
       {/* Quick Stats */}
-      <Card>
+      <Card className="border rounded-xl">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Quick Stats</CardTitle>
+          <CardTitle className="text-base font-semibold">Ringkasan</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="flex items-center gap-6 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-muted">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Building2 className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Kamar</p>
@@ -214,8 +337,8 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-muted">
-                <Users className="h-5 w-5 text-muted-foreground" />
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Tamu Terkonfirmasi</p>
@@ -225,11 +348,6 @@ const AdminDashboard = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Days Availability Calendar */}
-      <div className="mt-8">
-        <DaysAvailabilityCalendar />
-      </div>
     </div>
   );
 };

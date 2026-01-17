@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { formatRupiahID } from "@/utils/indonesianFormat";
 
@@ -21,66 +21,82 @@ const chartConfig = {
 };
 
 export const MonthlyRevenueChart = ({ data }: MonthlyRevenueChartProps) => {
-  const maxRevenue = Math.max(...data.map(d => d.revenue), 0);
+  const hasData = data.some(d => d.revenue > 0);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div>
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
+    <Card className="border rounded-xl">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base font-semibold">
+              Grafik Pendapatan Bulanan
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Performa 12 bulan terakhir
+            </p>
+          </div>
+          <div className="p-2 rounded-xl bg-primary/10">
             <TrendingUp className="h-4 w-4 text-primary" />
-            Statistik Pendapatan Bulanan
-          </CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">12 bulan terakhir</p>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-4">
-        <ChartContainer config={chartConfig} className="h-[280px] w-full">
-          <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-            <XAxis 
-              dataKey="month" 
-              tick={{ fontSize: 10 }}
-              tickLine={false}
-              axisLine={false}
-              interval={0}
-              angle={-45}
-              textAnchor="end"
-              height={50}
-            />
-            <YAxis 
-              tick={{ fontSize: 10 }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) => {
-                if (value >= 1000000) return `${(value / 1000000).toFixed(0)}jt`;
-                if (value >= 1000) return `${(value / 1000).toFixed(0)}rb`;
-                return value.toString();
-              }}
-              width={45}
-            />
-            <ChartTooltip 
-              content={
-                <ChartTooltipContent 
-                  formatter={(value) => formatRupiahID(Number(value))}
-                />
-              }
-            />
-            <Bar 
-              dataKey="revenue" 
-              fill="hsl(var(--primary))"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={50}
-            />
-          </BarChart>
-        </ChartContainer>
-        
-        {maxRevenue === 0 && (
-          <div className="text-center text-muted-foreground text-sm py-4">
-            Belum ada data pendapatan
+        {!hasData ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="p-3 rounded-full bg-muted mb-3">
+              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Belum ada data pendapatan
+            </p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              Data akan muncul setelah ada reservasi
+            </p>
           </div>
+        ) : (
+          <ChartContainer config={chartConfig} className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                <XAxis 
+                  dataKey="month" 
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={50}
+                />
+                <YAxis 
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tickFormatter={(value) => {
+                    if (value >= 1000000) return `${(value / 1000000).toFixed(0)}jt`;
+                    if (value >= 1000) return `${(value / 1000).toFixed(0)}rb`;
+                    return value.toString();
+                  }}
+                  width={45}
+                />
+                <ChartTooltip 
+                  content={
+                    <ChartTooltipContent 
+                      formatter={(value) => formatRupiahID(Number(value))}
+                    />
+                  }
+                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+                />
+                <Bar 
+                  dataKey="revenue" 
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={40}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
         )}
       </CardContent>
     </Card>
   );
 };
-
