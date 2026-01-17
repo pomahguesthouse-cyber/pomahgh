@@ -3,7 +3,9 @@ import { MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminChatbotDialog } from "./AdminChatbotDialog";
 
-const DRAG_THRESHOLD = 5; // px
+const BUTTON_SIZE = 56; // h-14
+const PADDING = 16;
+const DRAG_THRESHOLD = 6;
 
 export const AdminChatbotWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,13 +16,33 @@ export const AdminChatbotWidget = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
 
-  // initial position (bottom-right)
+  /** Clamp position supaya TIDAK PERNAH keluar layar */
+  const clampPosition = (x: number, y: number) => {
+    const maxX = window.innerWidth - BUTTON_SIZE - PADDING;
+    const maxY = window.innerHeight - BUTTON_SIZE - PADDING;
+
+    return {
+      x: Math.min(Math.max(x, PADDING), maxX),
+      y: Math.min(Math.max(y, PADDING), maxY),
+    };
+  };
+
+  /** Initial position (bottom-right) */
   useEffect(() => {
-    const size = 56;
-    setPosition({
-      x: window.innerWidth - size - 24,
-      y: window.innerHeight - size - 24,
-    });
+    const initial = clampPosition(
+      window.innerWidth - BUTTON_SIZE - PADDING,
+      window.innerHeight - BUTTON_SIZE - PADDING,
+    );
+    setPosition(initial);
+  }, []);
+
+  /** Re-clamp saat resize (biar gak ilang) */
+  useEffect(() => {
+    const onResize = () => {
+      setPosition((p) => clampPosition(p.x, p.y));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -37,29 +59,23 @@ export const AdminChatbotWidget = () => {
     }
 
     if (dragging) {
-      setPosition({
-        x: position.x + dx,
-        y: position.y + dy,
-      });
+      setPosition((prev) => clampPosition(prev.x + dx, prev.y + dy));
       startRef.current = { x: e.clientX, y: e.clientY };
     }
   };
 
   const onPointerUp = () => {
     if (!dragging) {
-      // 👉 INI CLICK (BUKAN DRAG)
+      // CLICK
       setIsOpen(true);
     } else {
-      // snap ke sisi
-      const size = 56;
-      const padding = 16;
+      // SNAP kiri / kanan
+      setPosition((prev) => {
+        const snapX =
+          prev.x + BUTTON_SIZE / 2 > window.innerWidth / 2 ? window.innerWidth - BUTTON_SIZE - PADDING : PADDING;
 
-      const snapX = position.x + size / 2 > window.innerWidth / 2 ? window.innerWidth - size - padding : padding;
-
-      setPosition((prev) => ({
-        x: snapX,
-        y: Math.min(Math.max(prev.y, padding), window.innerHeight - size - padding),
-      }));
+        return clampPosition(snapX, prev.y);
+      });
     }
 
     setDragging(false);
