@@ -59,29 +59,32 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
       <SheetContent 
         side="right" 
         className="w-full sm:max-w-md p-0 flex flex-col"
+        hideCloseButton={true}
       >
         <SheetHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
             <SheetTitle className="text-base">Asisten Booking</SheetTitle>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-9 w-9"
               onClick={clearChat}
               disabled={messages.length === 0}
+              title="Hapus Chat"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-9 w-9 bg-muted hover:bg-destructive hover:text-white"
               onClick={() => onOpenChange(false)}
+              title="Tutup"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </div>
         </SheetHeader>
