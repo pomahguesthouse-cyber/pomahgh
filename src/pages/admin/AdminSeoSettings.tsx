@@ -9,9 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { useState, useRef, useEffect } from "react";
-import { Loader2, Upload, RefreshCw, Search } from "lucide-react";
+import { Loader2, Upload, RefreshCw, Search, TrendingUp } from "lucide-react";
 import { SeoPreview } from "@/components/admin/SeoPreview";
-import { SeoChecker } from "@/components/admin/seo-checker";
+import { SeoChecker, RankingsTab } from "@/components/admin/seo-checker";
 import { toast } from "@/hooks/use-toast";
 
 type SeoSettingsType = Record<string, any>; // fallback safe type
@@ -36,6 +36,7 @@ const AdminSeoSettings = () => {
   const analyticsRef = useRef<HTMLDivElement>(null);
   const advancedRef = useRef<HTMLDivElement>(null);
   const checkerRef = useRef<HTMLDivElement>(null);
+  const rankingsRef = useRef<HTMLDivElement>(null);
 
   const refMap: Record<string, React.RefObject<HTMLDivElement>> = {
     general: generalRef,
@@ -45,6 +46,7 @@ const AdminSeoSettings = () => {
     analytics: analyticsRef,
     advanced: advancedRef,
     checker: checkerRef,
+    rankings: rankingsRef,
   };
 
   const handleUpdate = (field: string, value: any) => {
@@ -123,6 +125,10 @@ const AdminSeoSettings = () => {
               <TabsTrigger value="checker" className="flex items-center gap-1">
                 <Search className="w-4 h-4" />
                 Checker
+              </TabsTrigger>
+              <TabsTrigger value="rankings" className="flex items-center gap-1">
+                <TrendingUp className="w-4 h-4" />
+                Rankings
               </TabsTrigger>
             </TabsList>
 
@@ -540,6 +546,13 @@ const AdminSeoSettings = () => {
             <TabsContent value="checker">
               <div ref={checkerRef} className="scroll-mt-20">
                 <SeoChecker />
+              </div>
+            </TabsContent>
+
+            {/* RANKINGS */}
+            <TabsContent value="rankings">
+              <div ref={rankingsRef} className="scroll-mt-20">
+                <RankingsTab />
               </div>
             </TabsContent>
           </Tabs>
