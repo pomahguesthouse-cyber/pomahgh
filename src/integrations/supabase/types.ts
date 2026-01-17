@@ -928,9 +928,11 @@ export type Database = {
           description: string | null
           display_order: number | null
           distance_km: number | null
+          gallery_alts: Json | null
           gallery_images: string[] | null
           icon_name: string | null
           id: string
+          image_alt: string | null
           image_url: string | null
           is_active: boolean | null
           is_featured: boolean | null
@@ -952,9 +954,11 @@ export type Database = {
           description?: string | null
           display_order?: number | null
           distance_km?: number | null
+          gallery_alts?: Json | null
           gallery_images?: string[] | null
           icon_name?: string | null
           id?: string
+          image_alt?: string | null
           image_url?: string | null
           is_active?: boolean | null
           is_featured?: boolean | null
@@ -976,9 +980,11 @@ export type Database = {
           description?: string | null
           display_order?: number | null
           distance_km?: number | null
+          gallery_alts?: Json | null
           gallery_images?: string[] | null
           icon_name?: string | null
           id?: string
+          image_alt?: string | null
           image_url?: string | null
           is_active?: boolean | null
           is_featured?: boolean | null
@@ -1139,6 +1145,7 @@ export type Database = {
       }
       explore_hero_slides: {
         Row: {
+          alt_text: string | null
           created_at: string | null
           display_order: number | null
           duration: number | null
@@ -1154,6 +1161,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          alt_text?: string | null
           created_at?: string | null
           display_order?: number | null
           duration?: number | null
@@ -1169,6 +1177,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          alt_text?: string | null
           created_at?: string | null
           display_order?: number | null
           duration?: number | null
@@ -1220,6 +1229,7 @@ export type Database = {
       }
       facility_hero_slides: {
         Row: {
+          alt_text: string | null
           created_at: string | null
           display_order: number | null
           duration: number | null
@@ -1235,6 +1245,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          alt_text?: string | null
           created_at?: string | null
           display_order?: number | null
           duration?: number | null
@@ -1250,6 +1261,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          alt_text?: string | null
           created_at?: string | null
           display_order?: number | null
           duration?: number | null
@@ -1268,6 +1280,7 @@ export type Database = {
       }
       hero_slides: {
         Row: {
+          alt_text: string | null
           created_at: string | null
           display_order: number | null
           duration: number | null
@@ -1299,6 +1312,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          alt_text?: string | null
           created_at?: string | null
           display_order?: number | null
           duration?: number | null
@@ -1330,6 +1344,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          alt_text?: string | null
           created_at?: string | null
           display_order?: number | null
           duration?: number | null
@@ -1931,6 +1946,7 @@ export type Database = {
       }
       room_panoramas: {
         Row: {
+          alt_text: string | null
           created_at: string | null
           description: string | null
           display_order: number | null
@@ -1946,6 +1962,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          alt_text?: string | null
           created_at?: string | null
           description?: string | null
           display_order?: number | null
@@ -1961,6 +1978,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          alt_text?: string | null
           created_at?: string | null
           description?: string | null
           display_order?: number | null
@@ -2106,6 +2124,8 @@ export type Database = {
           friday_non_refundable: boolean | null
           friday_price: number | null
           id: string
+          image_alt: string | null
+          image_alts: Json | null
           image_url: string
           image_urls: string[] | null
           is_non_refundable: boolean | null
@@ -2151,6 +2171,8 @@ export type Database = {
           friday_non_refundable?: boolean | null
           friday_price?: number | null
           id?: string
+          image_alt?: string | null
+          image_alts?: Json | null
           image_url: string
           image_urls?: string[] | null
           is_non_refundable?: boolean | null
@@ -2196,6 +2218,8 @@ export type Database = {
           friday_non_refundable?: boolean | null
           friday_price?: number | null
           id?: string
+          image_alt?: string | null
+          image_alts?: Json | null
           image_url?: string
           image_urls?: string[] | null
           is_non_refundable?: boolean | null
