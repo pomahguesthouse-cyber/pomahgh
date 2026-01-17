@@ -2401,6 +2401,7 @@ export type Database = {
           context: Json | null
           conversation_id: string | null
           created_at: string | null
+          guest_name: string | null
           id: string
           is_active: boolean | null
           is_blocked: boolean | null
@@ -2416,6 +2417,7 @@ export type Database = {
           context?: Json | null
           conversation_id?: string | null
           created_at?: string | null
+          guest_name?: string | null
           id?: string
           is_active?: boolean | null
           is_blocked?: boolean | null
@@ -2431,6 +2433,7 @@ export type Database = {
           context?: Json | null
           conversation_id?: string | null
           created_at?: string | null
+          guest_name?: string | null
           id?: string
           is_active?: boolean | null
           is_blocked?: boolean | null

@@ -283,6 +283,9 @@ const SessionRow = ({ session }: { session: WhatsAppSessionWithMessages }) => {
                 <Badge variant="default" className="text-xs bg-green-600">Booking</Badge>
               )}
             </div>
+            {session.guest_name && (
+              <p className="text-sm text-muted-foreground">{session.guest_name}</p>
+            )}
             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
               <span className="flex items-center gap-1">
                 <MessageSquare className="w-3 h-3" />
