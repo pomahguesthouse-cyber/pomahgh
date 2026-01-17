@@ -61,33 +61,33 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
         className="w-full sm:max-w-md p-0 flex flex-col"
         hideCloseButton={true}
       >
-        {/* Header dengan styling baru */}
-        <div className="px-4 py-3 border-b flex flex-row items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Smartphone className="h-5 w-5 text-foreground" />
-            <span className="text-lg font-bold">Booking Management</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-teal-50"
-              onClick={clearChat}
-              disabled={messages.length === 0}
-              title="Refresh Chat"
-            >
-              <RefreshCw className="h-5 w-5 text-teal-500" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-red-50"
-              onClick={() => onOpenChange(false)}
-              title="Tutup"
-            >
-              <XCircle className="h-6 w-6 text-red-500" />
-            </Button>
-          </div>
+        {/* Baris 1: Header judul */}
+        <div className="px-4 py-3 flex items-center gap-2">
+          <Smartphone className="h-5 w-5 text-foreground" />
+          <span className="text-lg font-bold">Booking Management</span>
+        </div>
+
+        {/* Baris 2: Tombol di pojok kanan */}
+        <div className="px-4 py-2 flex items-center justify-end gap-1 border-b">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-teal-50"
+            onClick={clearChat}
+            disabled={messages.length === 0}
+            title="Refresh Chat"
+          >
+            <RefreshCw className="h-5 w-5 text-teal-500" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hover:bg-red-50"
+            onClick={() => onOpenChange(false)}
+            title="Tutup"
+          >
+            <XCircle className="h-6 w-6 text-red-500" />
+          </Button>
         </div>
 
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
