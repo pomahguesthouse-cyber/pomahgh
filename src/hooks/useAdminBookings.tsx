@@ -95,18 +95,25 @@ export const useAdminBookings = () => {
 
   const updateBooking = useMutation({
     mutationFn: async (booking: Partial<Booking> & { id: string; editedRooms?: Array<{ id?: string; roomId: string; roomNumber: string; pricePerNight: number }> }) => {
-      // Check for conflicts if dates/room changed
-      if (booking.check_in || booking.check_out || booking.allocated_room_number) {
-        const { data: currentBooking } = await supabase
-          .from("bookings")
-          .select("*")
-          .eq("id", booking.id)
-          .single();
+      const { editedRooms, booking_rooms, rooms, ...bookingData } = booking as any;
 
-        if (currentBooking) {
+      // Get current booking data for comparison
+      const { data: currentBooking } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("id", booking.id)
+        .single();
+
+      if (!currentBooking) {
+        throw new Error("Booking tidak ditemukan");
+      }
+
+      // Check for conflicts for ALL rooms in editedRooms
+      if (editedRooms && editedRooms.length > 0) {
+        for (const room of editedRooms) {
           const conflict = await checkBookingConflict({
-            roomId: currentBooking.room_id,
-            roomNumber: booking.allocated_room_number || currentBooking.allocated_room_number,
+            roomId: room.roomId,
+            roomNumber: room.roomNumber,
             checkIn: booking.check_in ? parseISO(booking.check_in) : parseISO(currentBooking.check_in),
             checkOut: booking.check_out ? parseISO(booking.check_out) : parseISO(currentBooking.check_out),
             checkInTime: booking.check_in_time || currentBooking.check_in_time,
@@ -115,13 +122,25 @@ export const useAdminBookings = () => {
           });
 
           if (conflict.hasConflict) {
-            throw new Error(conflict.reason || "Double booking terdeteksi!");
+            throw new Error(`Konflik pada kamar ${room.roomNumber}: ${conflict.reason}`);
           }
         }
-      }
+      } else if (booking.check_in || booking.check_out || booking.allocated_room_number) {
+        // Fallback: check single room conflict if no editedRooms
+        const conflict = await checkBookingConflict({
+          roomId: currentBooking.room_id,
+          roomNumber: booking.allocated_room_number || currentBooking.allocated_room_number,
+          checkIn: booking.check_in ? parseISO(booking.check_in) : parseISO(currentBooking.check_in),
+          checkOut: booking.check_out ? parseISO(booking.check_out) : parseISO(currentBooking.check_out),
+          checkInTime: booking.check_in_time || currentBooking.check_in_time,
+          checkOutTime: booking.check_out_time || currentBooking.check_out_time,
+          excludeBookingId: booking.id
+        });
 
-      // Extract editedRooms, booking_rooms, and rooms from the booking object before updating main table
-      const { editedRooms, booking_rooms, rooms, ...bookingData } = booking as any;
+        if (conflict.hasConflict) {
+          throw new Error(conflict.reason || "Double booking terdeteksi!");
+        }
+      }
 
       const { data, error } = await supabase
         .from("bookings")
@@ -183,9 +202,10 @@ export const useAdminBookings = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      toast.success("Booking berhasil diperbarui");
     },
     onError: (error: Error) => {
-      toast.error("Failed to update booking", {
+      toast.error("Gagal memperbarui booking", {
         description: error.message,
       });
     },
