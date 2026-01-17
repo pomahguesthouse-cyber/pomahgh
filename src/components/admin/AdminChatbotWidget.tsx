@@ -3,60 +3,66 @@ import { MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminChatbotDialog } from "./AdminChatbotDialog";
 
+const DRAG_THRESHOLD = 5; // px
+
 export const AdminChatbotWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const buttonRef = useRef<HTMLDivElement>(null);
+  const startRef = useRef({ x: 0, y: 0 });
+
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
-  const offsetRef = useRef({ x: 0, y: 0 });
 
-  // Initial position: bottom-right
+  // initial position (bottom-right)
   useEffect(() => {
-    const size = 56; // h-14 w-14
+    const size = 56;
     setPosition({
       x: window.innerWidth - size - 24,
       y: window.innerHeight - size - 24,
     });
   }, []);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (!buttonRef.current) return;
-
-    const rect = buttonRef.current.getBoundingClientRect();
-    setDragging(true);
-
-    offsetRef.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-
-    buttonRef.current.setPointerCapture(e.pointerId);
+  const onPointerDown = (e: React.PointerEvent) => {
+    startRef.current = { x: e.clientX, y: e.clientY };
+    buttonRef.current?.setPointerCapture(e.pointerId);
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragging) return;
+  const onPointerMove = (e: React.PointerEvent) => {
+    const dx = e.clientX - startRef.current.x;
+    const dy = e.clientY - startRef.current.y;
 
-    setPosition({
-      x: e.clientX - offsetRef.current.x,
-      y: e.clientY - offsetRef.current.y,
-    });
+    if (!dragging && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+      setDragging(true);
+    }
+
+    if (dragging) {
+      setPosition({
+        x: position.x + dx,
+        y: position.y + dy,
+      });
+      startRef.current = { x: e.clientX, y: e.clientY };
+    }
   };
 
-  const handlePointerUp = () => {
+  const onPointerUp = () => {
+    if (!dragging) {
+      // 👉 INI CLICK (BUKAN DRAG)
+      setIsOpen(true);
+    } else {
+      // snap ke sisi
+      const size = 56;
+      const padding = 16;
+
+      const snapX = position.x + size / 2 > window.innerWidth / 2 ? window.innerWidth - size - padding : padding;
+
+      setPosition((prev) => ({
+        x: snapX,
+        y: Math.min(Math.max(prev.y, padding), window.innerHeight - size - padding),
+      }));
+    }
+
     setDragging(false);
-
-    // Snap ke sisi terdekat (kiri / kanan)
-    const buttonSize = 56;
-    const padding = 16;
-
-    const snapX =
-      position.x + buttonSize / 2 > window.innerWidth / 2 ? window.innerWidth - buttonSize - padding : padding;
-
-    setPosition((prev) => ({
-      x: snapX,
-      y: Math.min(Math.max(prev.y, padding), window.innerHeight - buttonSize - padding),
-    }));
   };
 
   return (
@@ -64,18 +70,17 @@ export const AdminChatbotWidget = () => {
       {!isOpen && (
         <div
           ref={buttonRef}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          className={`fixed z-[999997] touch-none select-none ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          className={`fixed z-[999997] touch-none select-none ${dragging ? "cursor-grabbing" : "cursor-pointer"}`}
           style={{
             left: position.x,
             top: position.y,
           }}
         >
           <Button
-            onClick={() => !dragging && setIsOpen(true)}
             size="icon"
             className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
             aria-label="Open Admin Chat"
