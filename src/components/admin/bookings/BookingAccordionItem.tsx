@@ -1,6 +1,11 @@
 import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useMemo } from "react";
+import {
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,16 +30,35 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import { Booking, BankAccount } from "./types";
+import {
+  ChevronDown,
+  Edit,
+  Trash2,
+  BookOpen,
+  Phone,
+  Mail,
+  Bed,
+  Clock,
+  User,
+  Calendar,
+} from "lucide-react";
+
+import { Booking, BankAccount, Room } from "./types";
+import {
+  STATUS_LABELS,
+  PAYMENT_STATUS_COLORS,
+  PAYMENT_STATUS_LABELS,
+  BookingStatus,
+  PaymentStatus,
+} from "./booking.constants";
+import { getSourceLabel, formatNumberID } from "./booking.utils";
 import { formatRupiahID, formatTimeID } from "@/utils/indonesianFormat";
-import { ChevronDown, Edit, Trash2, BookOpen, Phone, Mail, Bed, Clock, CreditCard, User, Calendar } from "lucide-react";
-import { useMemo } from "react";
-import { useRooms } from "@/hooks/useRooms";
+import { PaymentInfo } from "./PaymentInfo";
 
 interface BookingAccordionItemProps {
   booking: Booking;
   index: number;
+  rooms?: Room[];
   getRoomName: (roomId: string) => string;
   bankAccounts: BankAccount[];
   onStatusChange: (id: string, status: string) => void;
@@ -45,54 +69,10 @@ interface BookingAccordionItemProps {
   isDeleting?: boolean;
 }
 
-const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  confirmed: "Confirmed",
-  checked_in: "Checked In",
-  checked_out: "Checked Out",
-  cancelled: "Cancelled",
-};
-
-const paymentStatusLabels: Record<string, string> = {
-  paid: "Lunas",
-  unpaid: "Belum Bayar",
-  pay_at_hotel: "Bayar di Hotel",
-  partial: "DP/Sebagian",
-};
-
-const paymentStatusColors: Record<string, string> = {
-  paid: "text-green-600",
-  unpaid: "text-red-500",
-  pay_at_hotel: "text-blue-600",
-  partial: "text-orange-500",
-};
-
-const paymentBadgeColors: Record<string, string> = {
-  paid: "bg-teal-500 text-white hover:bg-teal-500",
-  unpaid: "bg-red-500 text-white hover:bg-red-500",
-  pay_at_hotel: "bg-blue-500 text-white hover:bg-blue-500",
-  partial: "bg-orange-500 text-white hover:bg-orange-500",
-};
-
-function getSourceLabel(booking: Booking): string {
-  if (booking.booking_source === "ota" && booking.ota_name) {
-    return `OTA - ${booking.ota_name}`;
-  }
-  if (booking.booking_source === "other" && booking.other_source) {
-    return booking.other_source;
-  }
-  const sourceLabels: Record<string, string> = {
-    direct: "Direct",
-    walk_in: "Walk-in",
-    ota: "OTA",
-    other: "Lainnya",
-  };
-  return sourceLabels[booking.booking_source || "direct"] || "Direct";
-}
-
 export function BookingAccordionItem({
   booking,
   index,
+  rooms,
   getRoomName,
   bankAccounts,
   onStatusChange,
@@ -102,24 +82,25 @@ export function BookingAccordionItem({
   isUpdating,
   isDeleting,
 }: BookingAccordionItemProps) {
-  const { data: rooms } = useRooms();
   const checkInDate = parseISO(booking.check_in);
   const checkOutDate = parseISO(booking.check_out);
 
   // Get room numbers from booking_rooms
   const allocatedRooms =
-    booking.booking_rooms?.map((br) => br.room_number).join(", ") || booking.allocated_room_number || "-";
+    booking.booking_rooms?.map((br) => br.room_number).join(", ") ||
+    booking.allocated_room_number ||
+    "-";
 
   // Get all room types from booking_rooms (for multi-room bookings with different types)
   const roomTypes = useMemo(() => {
     if (booking.booking_rooms && booking.booking_rooms.length > 0) {
       const types = new Set(
-        booking.booking_rooms.map(br => {
-          const room = rooms?.find(r => r.id === br.room_id);
-          return room?.name || 'Unknown';
+        booking.booking_rooms.map((br) => {
+          const room = rooms?.find((r) => r.id === br.room_id);
+          return room?.name || "Unknown";
         })
       );
-      return Array.from(types).join(', ');
+      return Array.from(types).join(", ");
     }
     return getRoomName(booking.room_id);
   }, [booking.booking_rooms, booking.room_id, rooms, getRoomName]);
@@ -127,19 +108,25 @@ export function BookingAccordionItem({
   // Calculate price per night from booking_rooms (sum of all room prices)
   const pricePerNight = useMemo(() => {
     if (booking.booking_rooms && booking.booking_rooms.length > 0) {
-      return booking.booking_rooms.reduce((sum, br) => sum + br.price_per_night, 0);
+      return booking.booking_rooms.reduce(
+        (sum, br) => sum + br.price_per_night,
+        0
+      );
     }
-    return booking.total_nights > 0 
+    return booking.total_nights > 0
       ? Math.round(booking.total_price / booking.total_nights)
       : booking.total_price;
   }, [booking.booking_rooms, booking.total_price, booking.total_nights]);
 
-  // Format number Indonesia style (e.g., 700.000)
-  const formatNumber = (num: number) => num.toLocaleString('id-ID');
+  const paymentStatus = (booking.payment_status || "unpaid") as PaymentStatus;
 
   return (
     <AccordionItem value={booking.id} className="border-0">
-      <AccordionTrigger className={`px-4 py-3 hover:no-underline hover:bg-gray-100 border-b border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+      <AccordionTrigger
+        className={`px-4 py-3 hover:no-underline hover:bg-gray-100 border-b border-gray-200 ${
+          index % 2 === 0 ? "bg-gray-50" : "bg-white"
+        }`}
+      >
         {/* Desktop: Table-like row */}
         <TooltipProvider>
           <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_80px_100px_100px_70px_120px_100px_130px_120px] gap-1 w-full text-[13px] text-gray-700 font-roboto items-center">
@@ -147,7 +134,9 @@ export function BookingAccordionItem({
             <div className="text-xs">{booking.booking_code}</div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="truncate cursor-default">{booking.guest_name}</div>
+                <div className="truncate cursor-default">
+                  {booking.guest_name}
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{booking.guest_name}</p>
@@ -162,21 +151,31 @@ export function BookingAccordionItem({
               </TooltipContent>
             </Tooltip>
             <div className="text-center">{allocatedRooms}</div>
-            <div className="text-center">{format(checkInDate, "dd/MM/yyyy")}</div>
-            <div className="text-center">{format(checkOutDate, "dd/MM/yyyy")}</div>
-            <div className="text-center">{booking.total_nights}</div>
-            <div className="text-right">{formatNumber(pricePerNight)}</div>
-            <div className="text-center text-xs">{statusLabels[booking.status]}</div>
-            <div className={`text-center text-xs font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
-              {paymentStatusLabels[booking.payment_status || 'unpaid']}
+            <div className="text-center">
+              {format(checkInDate, "dd/MM/yyyy")}
             </div>
-            <div className="text-right font-semibold bg-green-50 px-2 py-1 rounded">{formatNumber(booking.total_price)}</div>
+            <div className="text-center">
+              {format(checkOutDate, "dd/MM/yyyy")}
+            </div>
+            <div className="text-center">{booking.total_nights}</div>
+            <div className="text-right">{formatNumberID(pricePerNight)}</div>
+            <div className="text-center text-xs">
+              {STATUS_LABELS[booking.status]}
+            </div>
+            <div
+              className={`text-center text-xs font-medium ${PAYMENT_STATUS_COLORS[paymentStatus]}`}
+            >
+              {PAYMENT_STATUS_LABELS[paymentStatus]}
+            </div>
+            <div className="text-right font-semibold bg-green-50 px-2 py-1 rounded">
+              {formatNumberID(booking.total_price)}
+            </div>
           </div>
         </TooltipProvider>
 
-        {/* Mobile: Card-like layout sesuai desain baru */}
+        {/* Mobile: Card-like layout */}
         <div className="lg:hidden flex flex-col w-full gap-1 text-left font-roboto">
-          {/* Row 1: Guest Name dengan icon (kiri) & Booking Code (kanan) */}
+          {/* Row 1: Guest Name with icon (left) & Booking Code (right) */}
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-base font-bold text-blue-600">
               <User className="h-5 w-5 text-gray-500" />
@@ -186,8 +185,8 @@ export function BookingAccordionItem({
               {booking.booking_code}
             </span>
           </div>
-          
-          {/* Row 2: Room Type + Number dengan icon (kiri) & Price (kanan) */}
+
+          {/* Row 2: Room Type + Number with icon (left) & Price (right) */}
           <div className="flex items-center justify-between mt-1">
             <span className="flex items-center gap-2 font-semibold text-sm text-foreground">
               <Bed className="h-4 w-4 text-gray-500" />
@@ -197,18 +196,21 @@ export function BookingAccordionItem({
               {formatRupiahID(booking.total_price)}
             </span>
           </div>
-          
-          {/* Row 3: Dates dengan icon (kiri) & Payment Status (kanan) */}
+
+          {/* Row 3: Dates with icon (left) & Payment Status (right) */}
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-sm text-foreground">
               <Calendar className="h-4 w-4 text-gray-500" />
-              {format(checkInDate, "dd MMM", { locale: localeId })} - {format(checkOutDate, "dd MMM yyyy", { locale: localeId })}
+              {format(checkInDate, "dd MMM", { locale: localeId })} -{" "}
+              {format(checkOutDate, "dd MMM yyyy", { locale: localeId })}
             </span>
-            <span className={`text-sm font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
-              {paymentStatusLabels[booking.payment_status || 'unpaid']}
+            <span
+              className={`text-sm font-medium ${PAYMENT_STATUS_COLORS[paymentStatus]}`}
+            >
+              {PAYMENT_STATUS_LABELS[paymentStatus]}
             </span>
           </div>
-          
+
           {/* Row 4: Duration (center) */}
           <div className="flex items-center justify-center mt-1">
             <span className="text-sm text-gray-500 font-medium">
@@ -231,9 +233,13 @@ export function BookingAccordionItem({
               <p className="font-medium">{roomTypes}</p>
               <p className="text-muted-foreground">Nomor: {allocatedRooms}</p>
               {booking.booking_rooms && booking.booking_rooms.length > 1 && (
-                <p className="text-muted-foreground text-xs">{booking.booking_rooms.length} kamar</p>
+                <p className="text-muted-foreground text-xs">
+                  {booking.booking_rooms.length} kamar
+                </p>
               )}
-              <p className="text-muted-foreground text-xs">Sumber: {getSourceLabel(booking)}</p>
+              <p className="text-muted-foreground text-xs">
+                Sumber: {getSourceLabel(booking)}
+              </p>
             </div>
 
             {/* Contact Info */}
@@ -245,14 +251,20 @@ export function BookingAccordionItem({
               {booking.guest_phone && (
                 <p className="flex items-center gap-2">
                   <Phone className="h-3 w-3 text-muted-foreground" />
-                  <a href={`tel:${booking.guest_phone}`} className="hover:underline font-medium">
+                  <a
+                    href={`tel:${booking.guest_phone}`}
+                    className="hover:underline font-medium"
+                  >
                     {booking.guest_phone}
                   </a>
                 </p>
               )}
               <p className="flex items-center gap-2">
                 <Mail className="h-3 w-3 text-muted-foreground" />
-                <a href={`mailto:${booking.guest_email}`} className="hover:underline text-xs truncate">
+                <a
+                  href={`mailto:${booking.guest_email}`}
+                  className="hover:underline text-xs truncate"
+                >
                   {booking.guest_email}
                 </a>
               </p>
@@ -266,38 +278,23 @@ export function BookingAccordionItem({
               </div>
               <p className="font-medium">
                 {format(checkInDate, "EEEE, dd MMM yyyy", { locale: localeId })}
-                {booking.check_in_time && ` - ${formatTimeID(booking.check_in_time)}`}
+                {booking.check_in_time &&
+                  ` - ${formatTimeID(booking.check_in_time)}`}
               </p>
               <p className="font-medium">
-                {format(checkOutDate, "EEEE, dd MMM yyyy", { locale: localeId })}
-                {booking.check_out_time && ` - ${formatTimeID(booking.check_out_time)}`}
+                {format(checkOutDate, "EEEE, dd MMM yyyy", {
+                  locale: localeId,
+                })}
+                {booking.check_out_time &&
+                  ` - ${formatTimeID(booking.check_out_time)}`}
               </p>
-              <p className="text-muted-foreground">{booking.total_nights} malam</p>
+              <p className="text-muted-foreground">
+                {booking.total_nights} malam
+              </p>
             </div>
 
             {/* Payment Info */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CreditCard className="h-4 w-4" />
-                <span>Pembayaran</span>
-              </div>
-              <p className="font-semibold text-base">{formatRupiahID(booking.total_price)}</p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge className={paymentBadgeColors[booking.payment_status || 'unpaid']}>
-                  {paymentStatusLabels[booking.payment_status || 'unpaid']}
-                </Badge>
-              </div>
-              {booking.payment_amount && booking.payment_amount > 0 && booking.payment_status !== "paid" && (
-                <p className="text-muted-foreground text-xs">Dibayar: {formatRupiahID(booking.payment_amount)}</p>
-              )}
-              {/* Special Requests in Payment column */}
-              {booking.special_requests && (
-                <div className="mt-2 pt-2 border-t border-gray-200">
-                  <p className="text-muted-foreground text-xs italic">Permintaan Khusus/ Keterangan:</p>
-                  <p className="text-sm font-medium">{booking.special_requests}</p>
-                </div>
-              )}
-            </div>
+            <PaymentInfo booking={booking} />
           </div>
 
           {/* Action Buttons */}
@@ -305,27 +302,47 @@ export function BookingAccordionItem({
             {/* Status Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50" disabled={isUpdating}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-teal-600 border-teal-600 hover:bg-teal-50"
+                  disabled={isUpdating}
+                >
                   Ubah Status <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "pending")}>Pending</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "confirmed")}>Confirmed</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_in")}>Checked In</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "checked_out")}>Checked Out</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange(booking.id, "cancelled")}>Cancelled</DropdownMenuItem>
+                {(Object.keys(STATUS_LABELS) as BookingStatus[]).map(
+                  (status) => (
+                    <DropdownMenuItem
+                      key={status}
+                      onClick={() => onStatusChange(booking.id, status)}
+                    >
+                      {STATUS_LABELS[status]}
+                    </DropdownMenuItem>
+                  )
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 
             {/* Invoice Button */}
-            <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50" onClick={() => onInvoiceClick(booking)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-teal-600 border-teal-600 hover:bg-teal-50"
+              onClick={() => onInvoiceClick(booking)}
+            >
               <BookOpen className="mr-1 h-4 w-4" />
               Invoice
             </Button>
 
             {/* Edit Button */}
-            <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50" onClick={() => onEditClick(booking)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-teal-600 border-teal-600 hover:bg-teal-50"
+              onClick={() => onEditClick(booking)}
+            >
               <Edit className="mr-1 h-4 w-4" />
               Edit
             </Button>
@@ -341,7 +358,9 @@ export function BookingAccordionItem({
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Hapus Booking?</AlertDialogTitle>
-                  <AlertDialogDescription>Booking {booking.booking_code} akan dihapus permanen.</AlertDialogDescription>
+                  <AlertDialogDescription>
+                    Booking {booking.booking_code} akan dihapus permanen.
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Batal</AlertDialogCancel>
