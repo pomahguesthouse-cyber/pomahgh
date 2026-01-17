@@ -10,69 +10,101 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { 
-  BookOpen, 
-  Star, 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  GraduationCap,
-  MessageSquare,
-  TrendingUp,
-  Loader2,
-  ChevronUp,
-  ChevronDown
-} from "lucide-react";
-import { 
-  useTrainingExamples, 
-  useAddTrainingExample, 
-  useUpdateTrainingExample, 
-  useDeleteTrainingExample,
-  useTrainingStats,
-  TrainingExample
-} from "@/hooks/useTrainingExamples";
-
-const CATEGORIES = [
-  { value: "general", label: "Umum", emoji: "💬" },
-  { value: "greeting", label: "Sapaan", emoji: "👋" },
-  { value: "booking", label: "Booking", emoji: "📅" },
-  { value: "availability", label: "Ketersediaan", emoji: "🔍" },
-  { value: "facilities", label: "Fasilitas", emoji: "✨" },
-  { value: "promo", label: "Promo", emoji: "🎉" },
-  { value: "payment", label: "Pembayaran", emoji: "💳" },
-  { value: "location", label: "Lokasi", emoji: "📍" },
-  { value: "complaint", label: "Keluhan", emoji: "😔" },
-  { value: "reschedule", label: "Reschedule", emoji: "🔄" },
-  { value: "cancel", label: "Pembatalan", emoji: "❌" },
-  { value: "special_request", label: "Permintaan Khusus", emoji: "🌟" },
-];
-
-const RESPONSE_TAGS = [
-  { value: "empati", label: "Empati", color: "bg-pink-100 text-pink-800" },
-  { value: "upsell", label: "Upsell", color: "bg-green-100 text-green-800" },
-  { value: "confirm", label: "Konfirmasi", color: "bg-blue-100 text-blue-800" },
-  { value: "guide", label: "Panduan", color: "bg-yellow-100 text-yellow-800" },
-  { value: "apologize", label: "Maaf", color: "bg-red-100 text-red-800" },
-  { value: "thanks", label: "Terima Kasih", color: "bg-purple-100 text-purple-800" },
-];
-
+import { BookOpen, Star, Plus, Pencil, Trash2, GraduationCap, MessageSquare, TrendingUp, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+import { useTrainingExamples, useAddTrainingExample, useUpdateTrainingExample, useDeleteTrainingExample, useTrainingStats, TrainingExample } from "@/hooks/useTrainingExamples";
+const CATEGORIES = [{
+  value: "general",
+  label: "Umum",
+  emoji: "💬"
+}, {
+  value: "greeting",
+  label: "Sapaan",
+  emoji: "👋"
+}, {
+  value: "booking",
+  label: "Booking",
+  emoji: "📅"
+}, {
+  value: "availability",
+  label: "Ketersediaan",
+  emoji: "🔍"
+}, {
+  value: "facilities",
+  label: "Fasilitas",
+  emoji: "✨"
+}, {
+  value: "promo",
+  label: "Promo",
+  emoji: "🎉"
+}, {
+  value: "payment",
+  label: "Pembayaran",
+  emoji: "💳"
+}, {
+  value: "location",
+  label: "Lokasi",
+  emoji: "📍"
+}, {
+  value: "complaint",
+  label: "Keluhan",
+  emoji: "😔"
+}, {
+  value: "reschedule",
+  label: "Reschedule",
+  emoji: "🔄"
+}, {
+  value: "cancel",
+  label: "Pembatalan",
+  emoji: "❌"
+}, {
+  value: "special_request",
+  label: "Permintaan Khusus",
+  emoji: "🌟"
+}];
+const RESPONSE_TAGS = [{
+  value: "empati",
+  label: "Empati",
+  color: "bg-pink-100 text-pink-800"
+}, {
+  value: "upsell",
+  label: "Upsell",
+  color: "bg-green-100 text-green-800"
+}, {
+  value: "confirm",
+  label: "Konfirmasi",
+  color: "bg-blue-100 text-blue-800"
+}, {
+  value: "guide",
+  label: "Panduan",
+  color: "bg-yellow-100 text-yellow-800"
+}, {
+  value: "apologize",
+  label: "Maaf",
+  color: "bg-red-100 text-red-800"
+}, {
+  value: "thanks",
+  label: "Terima Kasih",
+  color: "bg-purple-100 text-purple-800"
+}];
 export default function TrainingTab() {
-  const { data: examples, isLoading } = useTrainingExamples();
-  const { data: stats } = useTrainingStats();
+  const {
+    data: examples,
+    isLoading
+  } = useTrainingExamples();
+  const {
+    data: stats
+  } = useTrainingStats();
   const addExample = useAddTrainingExample();
   const updateExample = useUpdateTrainingExample();
   const deleteExample = useDeleteTrainingExample();
-  
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingExample, setEditingExample] = useState<TrainingExample | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  
   const [formData, setFormData] = useState({
     question: "",
     ideal_answer: "",
-    category: "general",
+    category: "general"
   });
-
   const handleAdd = () => {
     if (!formData.question.trim() || !formData.ideal_answer.trim()) {
       return;
@@ -80,15 +112,18 @@ export default function TrainingTab() {
     addExample.mutate({
       question: formData.question,
       ideal_answer: formData.ideal_answer,
-      category: formData.category,
+      category: formData.category
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
-        setFormData({ question: "", ideal_answer: "", category: "general" });
+        setFormData({
+          question: "",
+          ideal_answer: "",
+          category: "general"
+        });
       }
     });
   };
-
   const handleUpdate = () => {
     if (!editingExample || !formData.question.trim() || !formData.ideal_answer.trim()) {
       return;
@@ -97,40 +132,40 @@ export default function TrainingTab() {
       id: editingExample.id,
       question: formData.question,
       ideal_answer: formData.ideal_answer,
-      category: formData.category,
+      category: formData.category
     }, {
       onSuccess: () => {
         setEditingExample(null);
-        setFormData({ question: "", ideal_answer: "", category: "general" });
+        setFormData({
+          question: "",
+          ideal_answer: "",
+          category: "general"
+        });
       }
     });
   };
-
   const handleEdit = (example: TrainingExample) => {
     setEditingExample(example);
     setFormData({
       question: example.question,
       ideal_answer: example.ideal_answer,
-      category: example.category || "general",
+      category: example.category || "general"
     });
   };
-
   const handleToggleActive = (example: TrainingExample) => {
     updateExample.mutate({
       id: example.id,
-      is_active: !example.is_active,
+      is_active: !example.is_active
     });
   };
-
   const handleMoveOrder = (example: TrainingExample, direction: "up" | "down") => {
     const currentOrder = example.display_order || 0;
     const newOrder = direction === "up" ? currentOrder - 1 : currentOrder + 1;
     updateExample.mutate({
       id: example.id,
-      display_order: newOrder,
+      display_order: newOrder
     });
   };
-
   const handleDelete = () => {
     if (deleteId) {
       deleteExample.mutate(deleteId, {
@@ -138,17 +173,12 @@ export default function TrainingTab() {
       });
     }
   };
-
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
+    return <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
@@ -203,7 +233,7 @@ export default function TrainingTab() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 font-mono">
                 <GraduationCap className="w-5 h-5" />
                 Training Examples (Few-Shot Learning)
               </CardTitle>
@@ -218,13 +248,8 @@ export default function TrainingTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {examples && examples.length > 0 ? (
-            <div className="space-y-4">
-              {examples.map((example, index) => (
-                <div
-                  key={example.id}
-                  className={`border rounded-lg p-4 ${!example.is_active ? "opacity-50 bg-muted" : ""}`}
-                >
+          {examples && examples.length > 0 ? <div className="space-y-4">
+              {examples.map((example, index) => <div key={example.id} className={`border rounded-lg p-4 ${!example.is_active ? "opacity-50 bg-muted" : ""}`}>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -232,9 +257,7 @@ export default function TrainingTab() {
                           {CATEGORIES.find(c => c.value === example.category)?.emoji}{' '}
                           {CATEGORIES.find(c => c.value === example.category)?.label || example.category}
                         </Badge>
-                        {!example.is_active && (
-                          <Badge variant="secondary">Nonaktif</Badge>
-                        )}
+                        {!example.is_active && <Badge variant="secondary">Nonaktif</Badge>}
                         <span className="text-xs text-muted-foreground">
                           #{(example.display_order || 0) + 1}
                         </span>
@@ -251,55 +274,29 @@ export default function TrainingTab() {
                       </div>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleMoveOrder(example, "up")}
-                        disabled={index === 0}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => handleMoveOrder(example, "up")} disabled={index === 0}>
                         <ChevronUp className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleMoveOrder(example, "down")}
-                        disabled={index === examples.length - 1}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => handleMoveOrder(example, "down")} disabled={index === examples.length - 1}>
                         <ChevronDown className="w-4 h-4" />
                       </Button>
                       <div className="flex items-center gap-1 mt-2">
-                        <Switch
-                          checked={example.is_active ?? true}
-                          onCheckedChange={() => handleToggleActive(example)}
-                        />
+                        <Switch checked={example.is_active ?? true} onCheckedChange={() => handleToggleActive(example)} />
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(example)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(example)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => setDeleteId(example.id)}
-                      >
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(example.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
+                </div>)}
+            </div> : <div className="text-center py-12 text-muted-foreground">
               <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>Belum ada contoh training</p>
               <p className="text-sm">Tambahkan contoh Q&A untuk melatih chatbot AI</p>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
@@ -312,39 +309,33 @@ export default function TrainingTab() {
           <div className="space-y-4">
             <div>
               <Label>Kategori</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-              >
+              <Select value={formData.category} onValueChange={value => setFormData({
+              ...formData,
+              category: value
+            })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
+                  {CATEGORIES.map(cat => <SelectItem key={cat.value} value={cat.value}>
                       {cat.emoji} {cat.label}
-                    </SelectItem>
-                  ))}
+                    </SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Contoh Pertanyaan User</Label>
-              <Textarea
-                placeholder="Contoh: Berapa harga kamar per malam?"
-                value={formData.question}
-                onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                rows={3}
-              />
+              <Textarea placeholder="Contoh: Berapa harga kamar per malam?" value={formData.question} onChange={e => setFormData({
+              ...formData,
+              question: e.target.value
+            })} rows={3} />
             </div>
             <div>
               <Label>Jawaban Ideal Bot</Label>
-              <Textarea
-                placeholder="Contoh: Kami punya beberapa tipe kamar dengan harga berbeda..."
-                value={formData.ideal_answer}
-                onChange={(e) => setFormData({ ...formData, ideal_answer: e.target.value })}
-                rows={5}
-              />
+              <Textarea placeholder="Contoh: Kami punya beberapa tipe kamar dengan harga berbeda..." value={formData.ideal_answer} onChange={e => setFormData({
+              ...formData,
+              ideal_answer: e.target.value
+            })} rows={5} />
             </div>
           </div>
           <DialogFooter>
@@ -368,37 +359,33 @@ export default function TrainingTab() {
           <div className="space-y-4">
             <div>
               <Label>Kategori</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-              >
+              <Select value={formData.category} onValueChange={value => setFormData({
+              ...formData,
+              category: value
+            })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
+                  {CATEGORIES.map(cat => <SelectItem key={cat.value} value={cat.value}>
                       {cat.emoji} {cat.label}
-                    </SelectItem>
-                  ))}
+                    </SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Contoh Pertanyaan User</Label>
-              <Textarea
-                value={formData.question}
-                onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                rows={3}
-              />
+              <Textarea value={formData.question} onChange={e => setFormData({
+              ...formData,
+              question: e.target.value
+            })} rows={3} />
             </div>
             <div>
               <Label>Jawaban Ideal Bot</Label>
-              <Textarea
-                value={formData.ideal_answer}
-                onChange={(e) => setFormData({ ...formData, ideal_answer: e.target.value })}
-                rows={5}
-              />
+              <Textarea value={formData.ideal_answer} onChange={e => setFormData({
+              ...formData,
+              ideal_answer: e.target.value
+            })} rows={5} />
             </div>
           </div>
           <DialogFooter>
@@ -430,6 +417,5 @@ export default function TrainingTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
+    </div>;
 }
