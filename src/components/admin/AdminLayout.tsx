@@ -27,7 +27,7 @@ const getPageTitle = (pathname: string): string => {
     "/admin/city-attractions": "City Attractions",
     "/admin/facility-hero-slides": "Facility Hero",
   };
-  return titles[pathname] || "Admin Panel";
+  return titles[pathname] || "Virtual Assistant";
 };
 
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
