@@ -301,6 +301,7 @@ const AdminBookings = () => {
                 key={booking.id}
                 booking={booking as Booking}
                 index={startIndex + idx + 1}
+                rooms={roomsForComponents}
                 getRoomName={getRoomName}
                 bankAccounts={bankAccountsForComponents}
                 onStatusChange={handleStatusChange}

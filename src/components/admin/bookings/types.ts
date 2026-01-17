@@ -1,3 +1,5 @@
+import { BookingStatus, PaymentStatus } from "./booking.constants";
+
 // Booking type - matches the interface in useAdminBookings
 export interface Booking {
   id: string;
@@ -13,11 +15,11 @@ export interface Booking {
   total_nights: number;
   total_price: number;
   num_guests: number;
-  status: string;
+  status: BookingStatus;
   special_requests?: string;
   created_at: string;
   allocated_room_number?: string | null;
-  payment_status?: string;
+  payment_status?: PaymentStatus;
   payment_amount?: number;
   booking_source?: "direct" | "ota" | "walk_in" | "other";
   ota_name?: string | null;
@@ -34,8 +36,6 @@ export interface Booking {
     price_per_night: number;
   }>;
 }
-
-
 
 export interface SelectedRoom {
   roomId: string;
