@@ -145,6 +145,28 @@ const tools = [
       }
     }
   },
+  // ===== TODAY GUESTS TOOL =====
+  {
+    type: "function",
+    function: {
+      name: "get_today_guests",
+      description: "Dapatkan daftar tamu hari ini (check-in/checkout/menginap). Gunakan untuk 'daftar tamu hari ini', 'siapa check-in hari ini', 'siapa checkout hari ini', 'tamu yang menginap sekarang', 'ada booking hari ini?'",
+      parameters: {
+        type: "object",
+        properties: {
+          type: { 
+            type: "string", 
+            enum: ["checkin", "checkout", "staying", "all"],
+            description: "Jenis data: checkin (tamu check-in), checkout (tamu checkout), staying (sedang menginap), all (semua)"
+          },
+          date: { 
+            type: "string", 
+            description: "Tanggal target (YYYY-MM-DD), default hari ini" 
+          }
+        }
+      }
+    }
+  },
   // ===== BOOKING UPDATE TOOLS =====
   {
     type: "function",
@@ -796,6 +818,116 @@ async function createAdminBooking(supabase: any, args: any) {
   };
 }
 
+// Get today's guests (check-in, checkout, staying)
+async function getTodayGuests(supabase: any, type: string = 'all', dateStr?: string) {
+  // Get date in WIB
+  const now = new Date();
+  const wibOffset = 7 * 60 * 60 * 1000;
+  const wibDate = new Date(now.getTime() + wibOffset);
+  const targetDate = dateStr || wibDate.toISOString().split('T')[0];
+
+  console.log(`📅 getTodayGuests: type=${type}, date=${targetDate}`);
+
+  const results: any = {
+    date: targetDate,
+    checkin_guests: [],
+    checkout_guests: [],
+    staying_guests: []
+  };
+
+  // Query for check-in today
+  if (type === 'checkin' || type === 'all') {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
+      .eq('check_in', targetDate)
+      .eq('status', 'confirmed')
+      .order('guest_name');
+    
+    if (error) {
+      console.error('Error fetching check-in guests:', error);
+    } else {
+      results.checkin_guests = (data || []).map((b: any) => ({
+        booking_code: b.booking_code,
+        guest_name: b.guest_name,
+        guest_phone: b.guest_phone,
+        room_name: b.rooms?.name,
+        room_number: b.allocated_room_number,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        num_guests: b.num_guests,
+        total_price: b.total_price
+      }));
+    }
+  }
+
+  // Query for check-out today
+  if (type === 'checkout' || type === 'all') {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
+      .eq('check_out', targetDate)
+      .eq('status', 'confirmed')
+      .order('guest_name');
+    
+    if (error) {
+      console.error('Error fetching check-out guests:', error);
+    } else {
+      results.checkout_guests = (data || []).map((b: any) => ({
+        booking_code: b.booking_code,
+        guest_name: b.guest_name,
+        guest_phone: b.guest_phone,
+        room_name: b.rooms?.name,
+        room_number: b.allocated_room_number,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        num_guests: b.num_guests,
+        total_price: b.total_price
+      }));
+    }
+  }
+
+  // Query for staying (overlap: check_in <= targetDate AND check_out > targetDate)
+  if (type === 'staying' || type === 'all') {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
+      .lte('check_in', targetDate)
+      .gt('check_out', targetDate)
+      .eq('status', 'confirmed')
+      .order('guest_name');
+    
+    if (error) {
+      console.error('Error fetching staying guests:', error);
+    } else {
+      results.staying_guests = (data || []).map((b: any) => ({
+        booking_code: b.booking_code,
+        guest_name: b.guest_name,
+        guest_phone: b.guest_phone,
+        room_name: b.rooms?.name,
+        room_number: b.allocated_room_number,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        num_guests: b.num_guests,
+        total_price: b.total_price
+      }));
+    }
+  }
+
+  console.log(`📊 Results: checkin=${results.checkin_guests.length}, checkout=${results.checkout_guests.length}, staying=${results.staying_guests.length}`);
+
+  return {
+    date: targetDate,
+    checkin_count: results.checkin_guests.length,
+    checkout_count: results.checkout_guests.length,
+    staying_count: results.staying_guests.length,
+    total_guests_today: results.staying_guests.length,
+    checkin_guests: results.checkin_guests,
+    checkout_guests: results.checkout_guests,
+    staying_guests: results.staying_guests
+  };
+}
+
 // Send check-in reminder to managers
 async function sendCheckinReminder(supabase: any, dateStr?: string) {
   // Get date in WIB
@@ -1419,6 +1551,8 @@ async function executeTool(supabase: any, toolName: string, args: any) {
       return await changeBookingRoom(supabase, args);
     case 'send_checkin_reminder':
       return await sendCheckinReminder(supabase, args.date);
+    case 'get_today_guests':
+      return await getTodayGuests(supabase, args.type, args.date);
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
@@ -1568,12 +1702,14 @@ Deno.serve(async (req: Request) => {
         'change_booking_room',
         'get_room_prices',
         'send_checkin_reminder',
+        'get_today_guests',
         // EXCLUDED: get_booking_stats, update_room_price (no revenue/price control)
       ],
       viewer: [
         'get_availability_summary',
         'get_room_inventory',
         'get_room_prices',
+        'get_today_guests',
       ]
     };
 
@@ -1821,7 +1957,14 @@ ya, iya, ok, oke, okay, konfirmasi, lanjut, lanjutkan, proses, setuju, ayo, yup,
 ❌ KATA-KATA PENOLAKAN (batalkan aksi):
 tidak, batal, cancel, gajadi, jangan, stop, nggak, enggak, ga jadi, tidak jadi, no
 
+14. **Daftar tamu hari ini** (gunakan get_today_guests)
+   - "daftar tamu hari ini" / "booking hari ini" / "ada booking hari ini?" → type: "all"
+   - "siapa yang check-in hari ini" / "tamu check-in" → type: "checkin"
+   - "siapa checkout hari ini" / "tamu checkout" → type: "checkout"
+   - "tamu yang menginap sekarang" / "tamu sedang menginap" → type: "staying"
+
 📌 PENTING - PILIHAN TOOL YANG BENAR:
+- "daftar tamu hari ini" / "booking hari ini" / "ada tamu hari ini" / "siapa check-in" / "siapa checkout" → gunakan get_today_guests
 - "Tampilkan 5 booking terakhir" / "booking terbaru" / "lihat 10 booking terakhir" → gunakan get_recent_bookings
 - "Cari booking atas nama Budi" / "booking dari Ahmad" / "cari kode ABC123" → gunakan search_bookings
 - "ubah harga" / "update harga" / "set harga" → gunakan update_room_price
