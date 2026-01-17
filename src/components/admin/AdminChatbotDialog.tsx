@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, X, Trash2, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Smartphone, RefreshCw, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -61,55 +61,58 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
         className="w-full sm:max-w-md p-0 flex flex-col"
         hideCloseButton={true}
       >
-        <SheetHeader className="px-4 py-3 border-b space-y-2">
-          {/* Baris 1: Icon dan Judul */}
+        {/* Header dengan styling baru */}
+        <SheetHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-primary" />
-            <SheetTitle className="text-base">Asisten Booking</SheetTitle>
+            <Smartphone className="h-5 w-5 text-foreground" />
+            <SheetTitle className="text-lg font-bold">Booking Management</SheetTitle>
           </div>
-          
-          {/* Baris 2: Tombol di pojok kanan */}
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9"
+              className="h-8 w-8 hover:bg-teal-50"
               onClick={clearChat}
               disabled={messages.length === 0}
-              title="Hapus Chat"
+              title="Refresh Chat"
             >
-              <Trash2 className="h-4 w-4" />
+              <RefreshCw className="h-5 w-5 text-teal-500" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 bg-muted hover:bg-destructive hover:text-white"
+              className="h-8 w-8 hover:bg-red-50"
               onClick={() => onOpenChange(false)}
               title="Tutup"
             >
-              <X className="h-5 w-5" />
+              <XCircle className="h-6 w-6 text-red-500" />
             </Button>
           </div>
         </SheetHeader>
 
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           {messages.length === 0 ? (
-            <div className="space-y-4">
-              <div className="text-center text-muted-foreground text-sm py-8">
-                <Bot className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                <p className="font-medium">Halo! Saya Asisten Booking.</p>
-                <p className="mt-1">Saya bisa bantu cek ketersediaan, statistik booking, dan buat booking baru.</p>
+            <div className="space-y-6">
+              {/* Welcome Area dengan styling baru */}
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <Bot className="h-10 w-10 text-gray-500" />
+                </div>
+                <p className="font-semibold text-gray-800">Halo! Saya Asisten Booking.</p>
+                <p className="mt-2 text-sm text-gray-600 px-4">
+                  Saya bisa bantu cek ketersediaan, statistik booking, dan buat booking baru.
+                </p>
               </div>
               
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground font-medium">Quick Actions:</p>
-                <div className="grid grid-cols-2 gap-2">
+              {/* Quick Actions dengan styling baru */}
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 font-medium">Quick Actions:</p>
+                <div className="grid grid-cols-2 gap-3">
                   {quickActions.map((action, i) => (
                     <Button
                       key={i}
                       variant="outline"
-                      size="sm"
-                      className="h-auto py-2 px-3 text-xs text-left justify-start"
+                      className="h-auto py-3 px-4 text-sm text-left justify-start border-teal-400 text-teal-600 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-500"
                       onClick={() => handleQuickAction(action.message)}
                     >
                       {action.label}
@@ -129,16 +132,16 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
                   )}
                 >
                   {msg.role === 'assistant' && (
-                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Bot className="h-4 w-4 text-primary" />
+                    <div className="h-7 w-7 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
+                      <Bot className="h-4 w-4 text-teal-600" />
                     </div>
                   )}
                   <div
                     className={cn(
                       'rounded-lg px-3 py-2 max-w-[85%] text-sm whitespace-pre-wrap',
                       msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
+                        ? 'bg-teal-500 text-white'
+                        : 'bg-gray-100 text-gray-800'
                     )}
                   >
                     {msg.content || (msg.role === 'assistant' && isLoading ? (
@@ -146,8 +149,8 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
                     ) : null)}
                   </div>
                   {msg.role === 'user' && (
-                    <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4" />
+                    <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                      <User className="h-4 w-4 text-gray-600" />
                     </div>
                   )}
                 </div>
@@ -156,8 +159,9 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
           )}
         </ScrollArea>
 
-        <div className="p-4 border-t">
-          <div className="flex gap-2">
+        {/* Input Area dengan styling baru */}
+        <div className="p-4 border-t bg-gray-50">
+          <div className="flex gap-3">
             <Input
               ref={inputRef}
               value={input}
@@ -165,12 +169,13 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
               onKeyDown={handleKeyDown}
               placeholder="Ketik pesan..."
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 bg-white border-gray-200"
             />
             <Button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
               size="icon"
+              className="rounded-lg bg-teal-400 hover:bg-teal-500 text-white"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
