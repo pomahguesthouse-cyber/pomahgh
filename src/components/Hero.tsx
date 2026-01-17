@@ -73,8 +73,8 @@ export default function Hero() {
   const { checkIn, checkOut, setCheckIn, setCheckOut } = useSearchDates();
   const [showDatePickers, setShowDatePickers] = useState(false);
 
-  // Keep a ref to autoplay plugin so we can re-create when duration changes
-  const autoplayRef = useRef<any>(null);
+  // Keep a ref to autoplay plugin - initialize with default value to prevent null
+  const autoplayRef = useRef(Autoplay({ delay: 5000, stopOnInteraction: false }));
   const carouselRootOpts = useMemo(() => ({ align: "start" as const, loop: true }), []);
 
   // fallback slides
@@ -150,7 +150,7 @@ export default function Hero() {
       className="relative h-screen flex items-center justify-center overflow-hidden"
       aria-label="Hero banner"
     >
-      <Carousel opts={carouselRootOpts} plugins={[autoplayRef.current]} className="w-full h-full">
+      <Carousel opts={carouselRootOpts} plugins={autoplayRef.current ? [autoplayRef.current] : undefined} className="w-full h-full">
         <CarouselContent className="h-screen">
           {heroSlides.map((slide) => {
             const titleAnim = getTextAnimation(slide.title_animation, slide.title_animation_loop || false);
