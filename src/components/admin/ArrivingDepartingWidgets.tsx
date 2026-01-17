@@ -12,10 +12,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DoorOpen, DoorClosed, Search, X, User, Clock, Home } from "lucide-react";
-import { isToday, isTomorrow, isYesterday, parseISO } from "date-fns";
+import { isToday, isTomorrow, isYesterday, parseISO, format } from "date-fns";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { cn } from "@/lib/utils";
 import { formatDateShortID, formatTimeID } from "@/utils/indonesianFormat";
+import { getWIBNow, formatWIBDate } from "@/utils/wibTimezone";
 
 type FilterType = "today" | "tomorrow" | "yesterday";
 
@@ -32,6 +33,55 @@ interface Booking {
   status: string;
   rooms?: { name: string };
 }
+
+// Helper untuk mendapatkan status dinamis berdasarkan waktu
+const getGuestStatus = (booking: Booking, type: "arriving" | "departing") => {
+  const now = getWIBNow();
+  const currentTime = format(now, "HH:mm:ss");
+  const todayStr = formatWIBDate(now);
+  
+  const checkInTime = booking.check_in_time || "14:00:00";
+  const checkOutTime = booking.check_out_time || "12:00:00";
+  
+  if (type === "arriving") {
+    // Untuk tamu check-in
+    if (booking.check_in === todayStr) {
+      if (currentTime >= checkInTime) {
+        return { label: "Sudah Check-In", variant: "checked-in" as const };
+      } else {
+        return { label: "Menunggu Check-In", variant: "waiting" as const };
+      }
+    }
+    return { label: "Terkonfirmasi", variant: "confirmed" as const };
+  } else {
+    // Untuk tamu check-out
+    if (booking.check_out === todayStr) {
+      if (currentTime >= checkOutTime) {
+        return { label: "Sudah Check-Out", variant: "checked-out" as const };
+      } else {
+        return { label: "Sedang Menginap", variant: "staying" as const };
+      }
+    }
+    return { label: "Terkonfirmasi", variant: "confirmed" as const };
+  }
+};
+
+// Helper untuk badge status dinamis
+const getDynamicStatusBadge = (status: { label: string; variant: string }) => {
+  const variants: Record<string, string> = {
+    "checked-in": "bg-green-100 text-green-700 border-0 dark:bg-green-900/30 dark:text-green-400",
+    "checked-out": "bg-slate-100 text-slate-600 border-0 dark:bg-slate-800 dark:text-slate-400",
+    "waiting": "bg-amber-100 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400",
+    "staying": "bg-blue-100 text-blue-700 border-0 dark:bg-blue-900/30 dark:text-blue-400",
+    "confirmed": "bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/30 dark:text-emerald-400"
+  };
+  
+  return (
+    <Badge className={variants[status.variant] || variants.confirmed}>
+      {status.label}
+    </Badge>
+  );
+};
 
 export const ArrivingDepartingWidgets = () => {
   const { bookings } = useAdminBookings();
@@ -60,6 +110,10 @@ export const ArrivingDepartingWidgets = () => {
 
   const departingBookings = useMemo(() => {
     if (!bookings) return [];
+    
+    const now = getWIBNow();
+    const currentTime = format(now, "HH:mm:ss");
+    const todayStr = formatWIBDate(now);
 
     return bookings.filter((booking) => {
       const checkOutDate = parseISO(booking.check_out);
@@ -69,6 +123,14 @@ export const ArrivingDepartingWidgets = () => {
         (departingFilter === "yesterday" && isYesterday(checkOutDate));
 
       const matchesSearch = booking.guest_name.toLowerCase().includes(departingSearch.toLowerCase());
+      
+      // Untuk filter "hari ini": sembunyikan jika sudah lewat jam check-out
+      if (departingFilter === "today" && booking.check_out === todayStr) {
+        const checkOutTime = booking.check_out_time || "12:00:00";
+        if (currentTime > checkOutTime) {
+          return false; // Sudah check-out, tidak ditampilkan
+        }
+      }
 
       return matchesFilter && matchesSearch && booking.status === "confirmed";
     });
@@ -154,6 +216,7 @@ export const ArrivingDepartingWidgets = () => {
         <TableBody>
           {bookings.map((booking) => {
             const displayTime = type === "arriving" ? booking.check_in_time : booking.check_out_time;
+            const dynamicStatus = getGuestStatus(booking, type);
 
             return (
               <TableRow key={booking.id} className="hover:bg-muted/50">
@@ -170,7 +233,7 @@ export const ArrivingDepartingWidgets = () => {
                   {displayTime ? formatTimeID(displayTime.slice(0, 5)) : (type === "arriving" ? "14:00" : "12:00")}
                 </TableCell>
                 <TableCell className="text-right">
-                  {getStatusBadge(booking.status)}
+                  {getDynamicStatusBadge(dynamicStatus)}
                 </TableCell>
               </TableRow>
             );

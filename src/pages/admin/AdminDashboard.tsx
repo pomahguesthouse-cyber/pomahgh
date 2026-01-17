@@ -29,6 +29,7 @@ import {
 } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { formatRupiahID } from "@/utils/indonesianFormat";
+import { getWIBNow, formatWIBDate } from "@/utils/wibTimezone";
 
 // Helper function to get greeting based on time
 const getGreeting = () => {
@@ -51,8 +52,9 @@ const AdminDashboard = () => {
   const analytics = useMemo(() => {
     if (!bookings || !rooms) return null;
 
-    const now = new Date();
-    const todayStr = format(now, 'yyyy-MM-dd');
+    const now = getWIBNow();
+    const todayStr = formatWIBDate(now);
+    const currentTime = format(now, "HH:mm:ss");
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
 
@@ -61,9 +63,19 @@ const AdminDashboard = () => {
       b.check_in === todayStr && b.status === 'confirmed'
     ).length;
 
-    const todayCheckOuts = bookings.filter(b => 
-      b.check_out === todayStr && b.status === 'confirmed'
-    ).length;
+    // Hitung check-out yang BELUM lewat waktunya
+    const todayCheckOuts = bookings.filter(b => {
+      if (b.check_out !== todayStr || b.status !== 'confirmed') return false;
+      const checkOutTime = b.check_out_time || "12:00:00";
+      return currentTime < checkOutTime; // Hanya tampilkan yang belum lewat jam check-out
+    }).length;
+    
+    // Hitung tamu yang sedang menginap
+    const guestsStaying = bookings.filter(b => {
+      return b.check_in <= todayStr && 
+             b.check_out >= todayStr && 
+             b.status === 'confirmed';
+    }).length;
 
     // Revenue analytics
     const totalRevenue = bookings
@@ -129,6 +141,7 @@ const AdminDashboard = () => {
       monthlyRevenueData,
       todayCheckIns,
       todayCheckOuts,
+      guestsStaying,
     };
   }, [bookings, rooms]);
 
@@ -153,17 +166,30 @@ const AdminDashboard = () => {
 
   const greeting = getGreeting();
   const maxRevenue = Math.max(...analytics.revenueByRoom.map(r => r.revenue), 1);
+  const hour = new Date().getHours();
 
-  // Build greeting message
+  // Build greeting message berdasarkan waktu
   let greetingMessage = "";
-  if (analytics.todayCheckIns > 0 && analytics.todayCheckOuts > 0) {
-    greetingMessage = `Ada ${analytics.todayCheckIns} tamu check-in dan ${analytics.todayCheckOuts} tamu check-out hari ini`;
-  } else if (analytics.todayCheckIns > 0) {
-    greetingMessage = `Ada ${analytics.todayCheckIns} tamu check-in hari ini`;
-  } else if (analytics.todayCheckOuts > 0) {
-    greetingMessage = `Ada ${analytics.todayCheckOuts} tamu check-out hari ini`;
+  if (hour >= 18 || hour < 5) {
+    // Malam hari - prioritaskan tamu menginap
+    if (analytics.guestsStaying > 0) {
+      greetingMessage = `${analytics.guestsStaying} tamu sedang menginap malam ini`;
+    } else if (analytics.todayCheckOuts > 0) {
+      greetingMessage = `Masih ada ${analytics.todayCheckOuts} tamu belum check-out`;
+    } else {
+      greetingMessage = "Semua tamu sudah check-out. Selamat beristirahat!";
+    }
   } else {
-    greetingMessage = "Semoga hari Anda menyenangkan!";
+    // Pagi/siang/sore
+    if (analytics.todayCheckIns > 0 && analytics.todayCheckOuts > 0) {
+      greetingMessage = `Ada ${analytics.todayCheckIns} tamu check-in dan ${analytics.todayCheckOuts} tamu check-out hari ini`;
+    } else if (analytics.todayCheckIns > 0) {
+      greetingMessage = `Ada ${analytics.todayCheckIns} tamu check-in hari ini`;
+    } else if (analytics.todayCheckOuts > 0) {
+      greetingMessage = `Ada ${analytics.todayCheckOuts} tamu check-out hari ini`;
+    } else {
+      greetingMessage = "Semoga hari Anda menyenangkan!";
+    }
   }
 
   return (
