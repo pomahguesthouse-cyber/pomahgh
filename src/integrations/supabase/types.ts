@@ -1000,6 +1000,96 @@ export type Database = {
         }
         Relationships: []
       }
+      city_events: {
+        Row: {
+          address: string | null
+          category: string
+          contact_info: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          event_date: string
+          event_end_date: string | null
+          event_time: string | null
+          gallery_alts: Json | null
+          gallery_images: string[] | null
+          icon_name: string | null
+          id: string
+          image_alt: string | null
+          image_url: string | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          latitude: number | null
+          long_description: string | null
+          longitude: number | null
+          name: string
+          organizer: string | null
+          price_range: string | null
+          slug: string
+          updated_at: string | null
+          venue: string | null
+          website_url: string | null
+        }
+        Insert: {
+          address?: string | null
+          category?: string
+          contact_info?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          event_date: string
+          event_end_date?: string | null
+          event_time?: string | null
+          gallery_alts?: Json | null
+          gallery_images?: string[] | null
+          icon_name?: string | null
+          id?: string
+          image_alt?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          latitude?: number | null
+          long_description?: string | null
+          longitude?: number | null
+          name: string
+          organizer?: string | null
+          price_range?: string | null
+          slug: string
+          updated_at?: string | null
+          venue?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string
+          contact_info?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          event_date?: string
+          event_end_date?: string | null
+          event_time?: string | null
+          gallery_alts?: Json | null
+          gallery_images?: string[] | null
+          icon_name?: string | null
+          id?: string
+          image_alt?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          latitude?: number | null
+          long_description?: string | null
+          longitude?: number | null
+          name?: string
+          organizer?: string | null
+          price_range?: string | null
+          slug?: string
+          updated_at?: string | null
+          venue?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       competitor_hotels: {
         Row: {
           address: string | null

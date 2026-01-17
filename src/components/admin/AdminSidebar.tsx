@@ -44,7 +44,8 @@ const menuGroups: MenuGroup[] = [
       { title: "Facility Hero", url: "/admin/facility-hero-slides", icon: ImageIcon },
       { title: "Explore Hero", url: "/admin/explore-hero-slides", icon: ImageIcon },
       { title: "Nearby Locations", url: "/admin/nearby-locations", icon: MapPin },
-      { title: "City Attractions", url: "/admin/city-attractions", icon: Compass }
+      { title: "City Attractions", url: "/admin/city-attractions", icon: Compass },
+      { title: "City Events", url: "/admin/city-events", icon: Calendar }
     ]
   },
   {
