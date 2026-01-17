@@ -28,7 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Booking, BankAccount } from "./types";
 import { formatRupiahID, formatTimeID } from "@/utils/indonesianFormat";
-import { ChevronDown, Edit, Trash2, BookOpen, Phone, Mail, Bed, Clock, CreditCard } from "lucide-react";
+import { ChevronDown, Edit, Trash2, BookOpen, Phone, Mail, Bed, Clock, CreditCard, User } from "lucide-react";
 import { useMemo } from "react";
 import { useRooms } from "@/hooks/useRooms";
 
@@ -174,22 +174,39 @@ export function BookingAccordionItem({
           </div>
         </TooltipProvider>
 
-        {/* Mobile: Card-like layout */}
-        <div className="lg:hidden flex flex-col w-full gap-2 text-left font-roboto">
+        {/* Mobile: Card-like layout sesuai desain baru */}
+        <div className="lg:hidden flex flex-col w-full gap-1 text-left font-roboto">
+          {/* Header: Booking Code (kiri) & Guest Name dengan icon (kanan) */}
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-sm">{booking.booking_code}</span>
-            <span className={`text-xs font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
+            <span className="text-xs text-muted-foreground font-medium">{booking.booking_code}</span>
+            <span className="flex items-center gap-1 text-sm font-medium text-foreground">
+              <User className="h-4 w-4 text-muted-foreground" />
+              {booking.guest_name}
+            </span>
+          </div>
+          
+          {/* Row 1: Room Type + Number (kiri) & Price dengan chevron (kanan) */}
+          <div className="flex items-center justify-between mt-2">
+            <span className="font-semibold text-sm text-foreground">{roomTypes} : {allocatedRooms}</span>
+            <span className="flex items-center gap-1 text-sm font-medium">
+              {formatRupiahID(booking.total_price)}
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </span>
+          </div>
+          
+          {/* Row 2: Dates (kiri) & Payment Status (kanan) */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              {format(checkInDate, "dd MMM", { locale: localeId })} - {format(checkOutDate, "dd MMM yyyy", { locale: localeId })}
+            </span>
+            <span className={`text-sm font-medium ${paymentStatusColors[booking.payment_status || 'unpaid']}`}>
               {paymentStatusLabels[booking.payment_status || 'unpaid']}
             </span>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span>{booking.guest_name}</span>
-            <span className="font-medium">{formatRupiahID(booking.total_price)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{format(checkInDate, "dd/MM/yyyy")} - {format(checkOutDate, "dd/MM/yyyy")}</span>
-            <span>•</span>
-            <span>{booking.total_nights} malam</span>
+          
+          {/* Row 3: Duration */}
+          <div className="flex items-center">
+            <span className="text-sm text-teal-600 font-medium">{booking.total_nights} Malam</span>
           </div>
         </div>
       </AccordionTrigger>
