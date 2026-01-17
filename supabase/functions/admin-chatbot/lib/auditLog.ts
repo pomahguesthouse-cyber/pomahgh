@@ -23,11 +23,20 @@ export async function logAuditEntry(
   entry: AuditEntry
 ): Promise<void> {
   try {
-    await supabase
+    // Handle WhatsApp sources - they use format "whatsapp_XXXXX"
+    const isWhatsAppAdmin = entry.adminId.startsWith('whatsapp_');
+    
+    // For WhatsApp, use a placeholder UUID since admin_id requires UUID format
+    // The actual phone number is stored in admin_email field
+    const adminIdForDb = isWhatsAppAdmin 
+      ? '00000000-0000-0000-0000-000000000000' // Placeholder UUID for WhatsApp
+      : entry.adminId;
+    
+    const { error } = await supabase
       .from('admin_chatbot_audit_logs')
       .insert({
-        admin_id: entry.adminId,
-        admin_email: entry.adminEmail,
+        admin_id: adminIdForDb,
+        admin_email: entry.adminEmail, // Contains "Name (WhatsApp: phone)" for WhatsApp
         session_id: entry.sessionId,
         user_message: entry.userMessage,
         tool_calls: entry.executedTools,
@@ -37,7 +46,11 @@ export async function logAuditEntry(
         user_agent: entry.userAgent,
       });
     
-    console.log(`Audit log saved: admin=${entry.adminEmail}, message="${entry.userMessage.substring(0, 50)}..."`);
+    if (error) {
+      console.error('Audit log insert error:', error);
+    } else {
+      console.log(`✅ Audit log saved: admin=${entry.adminEmail}, message="${entry.userMessage.substring(0, 50)}..."`);
+    }
   } catch (error) {
     console.error('Failed to log audit entry:', error);
     // Don't throw - audit logging failure shouldn't break the chatbot
