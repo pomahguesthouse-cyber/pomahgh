@@ -29,6 +29,8 @@ import { Badge } from "@/components/ui/badge";
 import { Booking, BankAccount } from "./types";
 import { formatRupiahID, formatTimeID } from "@/utils/indonesianFormat";
 import { ChevronDown, Edit, Trash2, BookOpen, Phone, Mail, Bed, Clock, CreditCard } from "lucide-react";
+import { useMemo } from "react";
+import { useRooms } from "@/hooks/useRooms";
 
 interface BookingAccordionItemProps {
   booking: Booking;
@@ -100,6 +102,7 @@ export function BookingAccordionItem({
   isUpdating,
   isDeleting,
 }: BookingAccordionItemProps) {
+  const { data: rooms } = useRooms();
   const checkInDate = parseISO(booking.check_in);
   const checkOutDate = parseISO(booking.check_out);
 
@@ -107,10 +110,29 @@ export function BookingAccordionItem({
   const allocatedRooms =
     booking.booking_rooms?.map((br) => br.room_number).join(", ") || booking.allocated_room_number || "-";
 
-  // Calculate price per night
-  const pricePerNight = booking.total_nights > 0 
-    ? Math.round(booking.total_price / booking.total_nights)
-    : booking.total_price;
+  // Get all room types from booking_rooms (for multi-room bookings with different types)
+  const roomTypes = useMemo(() => {
+    if (booking.booking_rooms && booking.booking_rooms.length > 0) {
+      const types = new Set(
+        booking.booking_rooms.map(br => {
+          const room = rooms?.find(r => r.id === br.room_id);
+          return room?.name || 'Unknown';
+        })
+      );
+      return Array.from(types).join(', ');
+    }
+    return getRoomName(booking.room_id);
+  }, [booking.booking_rooms, booking.room_id, rooms, getRoomName]);
+
+  // Calculate price per night from booking_rooms (sum of all room prices)
+  const pricePerNight = useMemo(() => {
+    if (booking.booking_rooms && booking.booking_rooms.length > 0) {
+      return booking.booking_rooms.reduce((sum, br) => sum + br.price_per_night, 0);
+    }
+    return booking.total_nights > 0 
+      ? Math.round(booking.total_price / booking.total_nights)
+      : booking.total_price;
+  }, [booking.booking_rooms, booking.total_price, booking.total_nights]);
 
   // Format number Indonesia style (e.g., 700.000)
   const formatNumber = (num: number) => num.toLocaleString('id-ID');
@@ -133,10 +155,10 @@ export function BookingAccordionItem({
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="truncate cursor-default">{getRoomName(booking.room_id)}</div>
+                <div className="truncate cursor-default">{roomTypes}</div>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{getRoomName(booking.room_id)}</p>
+                <p>{roomTypes}</p>
               </TooltipContent>
             </Tooltip>
             <div className="text-center">{allocatedRooms}</div>
@@ -182,8 +204,11 @@ export function BookingAccordionItem({
                 <Bed className="h-4 w-4" />
                 <span>Kamar</span>
               </div>
-              <p className="font-medium">{getRoomName(booking.room_id)}</p>
+              <p className="font-medium">{roomTypes}</p>
               <p className="text-muted-foreground">Nomor: {allocatedRooms}</p>
+              {booking.booking_rooms && booking.booking_rooms.length > 1 && (
+                <p className="text-muted-foreground text-xs">{booking.booking_rooms.length} kamar</p>
+              )}
               <p className="text-muted-foreground text-xs">Sumber: {getSourceLabel(booking)}</p>
             </div>
 
