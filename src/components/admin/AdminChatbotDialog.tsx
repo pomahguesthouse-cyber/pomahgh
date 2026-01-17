@@ -165,13 +165,14 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
               <Trash2 className="h-4 w-4" />
             </Button>
 
-            {/* Close */}
+            {/* Close (red soft) */}
             <Button
-              variant="outline"
+              variant="destructive"
               size="icon"
               onClick={() => onOpenChange(false)}
               aria-label="Tutup chat"
               title="Tutup chat"
+              className="opacity-70 hover:opacity-100"
             >
               <X className="h-4 w-4" />
             </Button>
