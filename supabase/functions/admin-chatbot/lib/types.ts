@@ -33,12 +33,15 @@ export interface KnowledgeItem {
   title: string;
   content: string | null;
   category: string | null;
+  summary?: string | null;
+  is_active?: boolean;
 }
 
 export interface TrainingExample {
   question: string;
   ideal_answer: string;
   category: string | null;
+  is_active?: boolean;
 }
 
 export interface ChatContext {
