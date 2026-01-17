@@ -13,6 +13,7 @@ import { createSSEStream, createSSEResponse, createErrorResponse, sendTextChunk,
 import { logAuditEntry } from "./lib/auditLog.ts";
 import { TOOLS } from "./tools/definitions.ts";
 import type { HotelSettings, PersonaSettings, ToolExecution } from "./lib/types.ts";
+import { adminCache, ADMIN_CACHE_KEYS, ADMIN_CACHE_TTL, getOrLoadAdmin } from "./lib/cache.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -31,23 +32,60 @@ Deno.serve(async (req: Request) => {
       return createErrorResponse(auth.error || "Unauthorized", auth.status || 401);
     }
 
-    const { messages } = await req.json();
+    const { messages, forceRefresh = false } = await req.json();
 
-    // 2. Fetch context data in parallel
-    const [hotelSettingsResult, chatbotSettingsResult, knowledgeResult, trainingResult] = await Promise.all([
-      supabase.from('hotel_settings').select('hotel_name, check_in_time, check_out_time').single(),
-      supabase.from('chatbot_settings').select('admin_persona_name, admin_persona_role, admin_persona_traits, admin_communication_style, admin_language_formality, admin_emoji_usage, admin_custom_instructions, admin_greeting_template').single(),
-      supabase.from('admin_chatbot_knowledge_base').select('title, content, category').eq('is_active', true).limit(15),
-      supabase.from('admin_chatbot_training_examples').select('question, ideal_answer, category').eq('is_active', true).order('display_order', { ascending: true }).limit(20)
+    // 2. Fetch context data with caching
+    const [hotelSettingsData, chatbotSettingsData, knowledgeData, trainingData] = await Promise.all([
+      getOrLoadAdmin(
+        ADMIN_CACHE_KEYS.HOTEL_SETTINGS,
+        async () => {
+          const { data } = await supabase.from('hotel_settings')
+            .select('hotel_name, check_in_time, check_out_time').single();
+          return data;
+        },
+        ADMIN_CACHE_TTL.HOTEL_SETTINGS,
+        forceRefresh
+      ),
+      getOrLoadAdmin(
+        ADMIN_CACHE_KEYS.CHATBOT_SETTINGS,
+        async () => {
+          const { data } = await supabase.from('chatbot_settings')
+            .select('admin_persona_name, admin_persona_role, admin_persona_traits, admin_communication_style, admin_language_formality, admin_emoji_usage, admin_custom_instructions, admin_greeting_template').single();
+          return data;
+        },
+        ADMIN_CACHE_TTL.CHATBOT_SETTINGS,
+        forceRefresh
+      ),
+      getOrLoadAdmin(
+        ADMIN_CACHE_KEYS.KNOWLEDGE_BASE,
+        async () => {
+          const { data } = await supabase.from('admin_chatbot_knowledge_base')
+            .select('title, content, category').eq('is_active', true).limit(15);
+          return data || [];
+        },
+        ADMIN_CACHE_TTL.KNOWLEDGE_BASE,
+        forceRefresh
+      ),
+      getOrLoadAdmin(
+        ADMIN_CACHE_KEYS.TRAINING_EXAMPLES,
+        async () => {
+          const { data } = await supabase.from('admin_chatbot_training_examples')
+            .select('question, ideal_answer, category').eq('is_active', true)
+            .order('display_order', { ascending: true }).limit(20);
+          return data || [];
+        },
+        ADMIN_CACHE_TTL.TRAINING_EXAMPLES,
+        forceRefresh
+      )
     ]);
 
     const hotelSettings: HotelSettings = {
-      hotel_name: hotelSettingsResult.data?.hotel_name || 'Hotel',
-      check_in_time: hotelSettingsResult.data?.check_in_time || '14:00',
-      check_out_time: hotelSettingsResult.data?.check_out_time || '12:00'
+      hotel_name: hotelSettingsData?.hotel_name || 'Hotel',
+      check_in_time: hotelSettingsData?.check_in_time || '14:00',
+      check_out_time: hotelSettingsData?.check_out_time || '12:00'
     };
 
-    const cs = chatbotSettingsResult.data;
+    const cs = chatbotSettingsData;
     const personaSettings: PersonaSettings = {
       name: cs?.admin_persona_name || 'Rani Admin',
       role: cs?.admin_persona_role || 'Booking Manager Assistant',
@@ -60,8 +98,8 @@ Deno.serve(async (req: Request) => {
     };
 
     // 3. Build system prompt (condensed)
-    const knowledgeContext = buildKnowledgeContext(knowledgeResult.data || []);
-    const trainingContext = buildTrainingContext(trainingResult.data || []);
+    const knowledgeContext = buildKnowledgeContext(knowledgeData || []);
+    const trainingContext = buildTrainingContext(trainingData || []);
 
     const systemPrompt = buildSystemPrompt({
       managerName: auth.managerName,
