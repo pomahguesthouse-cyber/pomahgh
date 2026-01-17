@@ -76,7 +76,7 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
-        <SheetHeader className="px-4 py-3 border-b flex flex-row items-center justify-between">
+        <SheetHeader className="relative z-10 px-4 py-3 border-b flex flex-row items-center justify-between bg-background">
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
             <SheetTitle className="text-base">Asisten Booking</SheetTitle>
@@ -89,7 +89,6 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
               className="h-8 w-8"
               onClick={clearChat}
               disabled={messages.length === 0}
-              aria-label="Reset chat"
               title="Reset chat"
             >
               <Trash2 className="h-4 w-4" />
@@ -100,7 +99,6 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
               size="icon"
               className="h-8 w-8"
               onClick={() => onOpenChange(false)}
-              aria-label="Tutup chat"
               title="Tutup chat"
             >
               <X className="h-4 w-4" />
