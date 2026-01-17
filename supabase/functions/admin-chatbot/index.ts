@@ -820,16 +820,34 @@ async function createAdminBooking(supabase: any, args: any) {
 
 // Get today's guests (check-in, checkout, staying)
 async function getTodayGuests(supabase: any, type: string = 'all', dateStr?: string) {
-  // Get date in WIB
+  // Get date and time in WIB
   const now = new Date();
   const wibOffset = 7 * 60 * 60 * 1000;
   const wibDate = new Date(now.getTime() + wibOffset);
   const targetDate = dateStr || wibDate.toISOString().split('T')[0];
+  const currentHour = wibDate.getUTCHours();
+  const currentMinute = wibDate.getUTCMinutes();
+  const currentTimeStr = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
 
-  console.log(`📅 getTodayGuests: type=${type}, date=${targetDate}`);
+  console.log(`📅 getTodayGuests: type=${type}, date=${targetDate}, time=${currentTimeStr}`);
+
+  // Fetch checkout time from hotel settings
+  const { data: hotelSettings } = await supabase
+    .from('hotel_settings')
+    .select('check_out_time')
+    .single();
+  
+  const checkoutTime = hotelSettings?.check_out_time || '12:00';
+  const [checkoutHour, checkoutMinute] = checkoutTime.split(':').map(Number);
+  const isBeforeCheckoutTime = currentHour < checkoutHour || (currentHour === checkoutHour && currentMinute < checkoutMinute);
+
+  console.log(`⏰ Checkout time: ${checkoutTime}, current: ${currentTimeStr}, isBeforeCheckout: ${isBeforeCheckoutTime}`);
 
   const results: any = {
     date: targetDate,
+    current_time: currentTimeStr,
+    checkout_time: checkoutTime,
+    is_before_checkout_time: isBeforeCheckoutTime,
     checkin_guests: [],
     checkout_guests: [],
     staying_guests: []
@@ -887,15 +905,27 @@ async function getTodayGuests(supabase: any, type: string = 'all', dateStr?: str
     }
   }
 
-  // Query for staying (overlap: check_in <= targetDate AND check_out > targetDate)
+  // Query for staying guests
+  // Logic: check_in <= targetDate AND check_out >= targetDate (includes checkout day if before checkout time)
+  // If before checkout time: include guests checking out today (they're still staying)
+  // If after checkout time: exclude guests checking out today
   if (type === 'staying' || type === 'all') {
-    const { data, error } = await supabase
+    let stayingQuery = supabase
       .from('bookings')
       .select('booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
       .lte('check_in', targetDate)
-      .gt('check_out', targetDate)
       .eq('status', 'confirmed')
       .order('guest_name');
+    
+    if (isBeforeCheckoutTime) {
+      // Before checkout time: include guests checking out today (check_out >= targetDate)
+      stayingQuery = stayingQuery.gte('check_out', targetDate);
+    } else {
+      // After checkout time: exclude guests checking out today (check_out > targetDate)
+      stayingQuery = stayingQuery.gt('check_out', targetDate);
+    }
+    
+    const { data, error } = await stayingQuery;
     
     if (error) {
       console.error('Error fetching staying guests:', error);
@@ -909,7 +939,8 @@ async function getTodayGuests(supabase: any, type: string = 'all', dateStr?: str
         check_in: b.check_in,
         check_out: b.check_out,
         num_guests: b.num_guests,
-        total_price: b.total_price
+        total_price: b.total_price,
+        is_checkout_today: b.check_out === targetDate
       }));
     }
   }
@@ -918,6 +949,9 @@ async function getTodayGuests(supabase: any, type: string = 'all', dateStr?: str
 
   return {
     date: targetDate,
+    current_time: currentTimeStr,
+    checkout_time: checkoutTime,
+    is_before_checkout_time: isBeforeCheckoutTime,
     checkin_count: results.checkin_guests.length,
     checkout_count: results.checkout_guests.length,
     staying_count: results.staying_guests.length,
