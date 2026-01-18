@@ -113,8 +113,5 @@ export const DaysAvailabilityCalendar = () => {
         return `${baseClasses} hover:bg-red-200`;
     }
   };
-  return <Card>
-      
-      
-    </Card>;
+  return;
 };
