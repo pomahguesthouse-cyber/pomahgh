@@ -297,6 +297,22 @@ export function BookingAccordionItem({
             <PaymentInfo booking={booking} />
           </div>
 
+          {/* Remark & Special Requests */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            {booking.remark && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <span className="text-amber-700 dark:text-amber-400 text-xs font-semibold">📝 Keterangan:</span>
+                <p className="text-sm text-amber-800 dark:text-amber-300 mt-1">{booking.remark}</p>
+              </div>
+            )}
+            {booking.special_requests && (
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <span className="text-blue-700 dark:text-blue-400 text-xs font-semibold">💬 Permintaan Khusus:</span>
+                <p className="text-sm text-blue-800 dark:text-blue-300 mt-1">{booking.special_requests}</p>
+              </div>
+            )}
+          </div>
+
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
             {/* Status Dropdown */}

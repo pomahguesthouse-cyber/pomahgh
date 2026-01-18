@@ -17,6 +17,7 @@ export interface Booking {
   num_guests: number;
   status: BookingStatus;
   special_requests?: string;
+  remark?: string;
   created_at: string;
   allocated_room_number?: string | null;
   payment_status?: PaymentStatus;

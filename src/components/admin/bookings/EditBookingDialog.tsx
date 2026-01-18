@@ -64,6 +64,7 @@ export function EditBookingDialog({
   const [guestPhone, setGuestPhone] = useState("");
   const [numGuests, setNumGuests] = useState(1);
   const [specialRequests, setSpecialRequests] = useState("");
+  const [remark, setRemark] = useState("");
   
   // Booking source state
   const [bookingSource, setBookingSource] = useState<"direct" | "ota" | "walk_in" | "other">("direct");
@@ -98,6 +99,7 @@ export function EditBookingDialog({
       setGuestPhone(booking.guest_phone || "");
       setNumGuests(booking.num_guests || 1);
       setSpecialRequests(booking.special_requests || "");
+      setRemark(booking.remark || "");
       
       setBookingSource(booking.booking_source || "direct");
       setOtaName(booking.ota_name || "");
@@ -286,6 +288,7 @@ export function EditBookingDialog({
       total_price: calculatedTotalPrice,
       allocated_room_number: editedRooms[0].roomNumber,
       special_requests: specialRequests,
+      remark,
       status,
       payment_status: paymentStatus,
       payment_amount: paymentStatus === "down_payment" ? parseFloat(paymentAmount) || 0 : null,
@@ -573,6 +576,17 @@ export function EditBookingDialog({
                 <SelectItem value="no_show">No Show</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          
+          {/* Remark */}
+          <div>
+            <Label>Keterangan / Remark</Label>
+            <Textarea
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+              placeholder="Contoh: Acara Wisuda, Anniversary, dll."
+              rows={2}
+            />
           </div>
           
           {/* Special Requests */}
