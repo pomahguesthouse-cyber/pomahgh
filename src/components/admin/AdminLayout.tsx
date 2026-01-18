@@ -8,7 +8,6 @@ import { AdminChatbotWidget } from "./AdminChatbotWidget";
 interface AdminLayoutProps {
   children: ReactNode;
 }
-
 const getPageTitle = (pathname: string): string => {
   const titles: Record<string, string> = {
     "/admin/dashboard": "Dashboard",
@@ -25,18 +24,17 @@ const getPageTitle = (pathname: string): string => {
     "/admin/seo-settings": "SEO Settings",
     "/admin/invoice-template": "Invoice Template",
     "/admin/city-attractions": "City Attractions",
-    "/admin/facility-hero-slides": "Facility Hero",
+    "/admin/facility-hero-slides": "Facility Hero"
   };
   return titles[pathname] || "Virtual Assistant";
 };
-
-export const AdminLayout = ({ children }: AdminLayoutProps) => {
+export const AdminLayout = ({
+  children
+}: AdminLayoutProps) => {
   const location = useLocation();
   const pageTitle = getPageTitle(location.pathname);
   const isMobile = useIsMobile();
-
-  return (
-    <AdminGuard>
+  return <AdminGuard>
       <SidebarProvider defaultOpen={!isMobile}>
         <div className="min-h-screen flex w-full bg-muted/30">
           <AdminSidebar />
@@ -44,7 +42,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
           <div className="flex-1 flex flex-col transition-all min-w-0">
             <header className="h-14 border-b border-border/60 flex items-center px-4 md:px-6 bg-background sticky top-0 z-[999998]">
               <SidebarTrigger />
-              <h1 className="ml-4 text-xl font-semibold text-foreground truncate">{pageTitle}</h1>
+              <h1 className="ml-4 text-xl text-foreground truncate font-serif font-thin">{pageTitle}</h1>
             </header>
 
             <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full">{children}</main>
@@ -53,6 +51,5 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
           <AdminChatbotWidget />
         </div>
       </SidebarProvider>
-    </AdminGuard>
-  );
+    </AdminGuard>;
 };
