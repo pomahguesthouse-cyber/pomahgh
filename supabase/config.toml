@@ -122,3 +122,6 @@ verify_jwt = true
 
 [functions.generate-alt-text]
 verify_jwt = true
+
+[functions.prompt-consultant]
+verify_jwt = false
