@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, FileText, Code2, Zap } from "lucide-react";
+import { Plus, Search, FileText, Code2, Zap, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,7 +34,7 @@ import { CodeSnippetCard, CodeSnippetDialog } from "@/components/admin/code-snip
 
 // Token Saver Tips
 import { useAdminKnowledgeBase } from "@/hooks/useAdminKnowledgeBase";
-import { TokenSaverTipCard } from "@/components/admin/developer-tools";
+import { TokenSaverTipCard, PromptConsultantChat } from "@/components/admin/developer-tools";
 
 // Developer Tools Stats
 import { DeveloperToolsStats } from "@/components/admin/developer-tools";
@@ -135,7 +135,7 @@ export default function AdminDeveloperTools() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full max-w-lg grid-cols-3">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="prompts" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Prompt Templates</span>
@@ -150,6 +150,11 @@ export default function AdminDeveloperTools() {
             <Zap className="h-4 w-4" />
             <span className="hidden sm:inline">Token Saver Tips</span>
             <span className="sm:hidden">Tips</span>
+          </TabsTrigger>
+          <TabsTrigger value="consultant" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">Prompt Consultant</span>
+            <span className="sm:hidden">Chat</span>
           </TabsTrigger>
         </TabsList>
 
@@ -380,6 +385,11 @@ export default function AdminDeveloperTools() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Prompt Consultant Tab */}
+        <TabsContent value="consultant" className="space-y-4">
+          <PromptConsultantChat />
         </TabsContent>
       </Tabs>
 
