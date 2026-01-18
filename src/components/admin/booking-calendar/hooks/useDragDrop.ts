@@ -81,10 +81,18 @@ export const useDragDrop = (
     const newCheckOut = format(addDays(dropData.date, dragData.booking.total_nights), "yyyy-MM-dd");
 
     // Check for booking conflicts (excluding current booking)
+    // SINGLE SOURCE OF TRUTH: Check from booking_rooms first, fallback to allocated_room_number
     const hasConflict = (bookings || []).some((b) => {
       if (b.id === dragData.booking.id) return false;
-      if (b.allocated_room_number !== dropData.roomNumber) return false;
       if (b.status === "cancelled" || b.status === "no_show") return false;
+
+      // Check if booking is on target room using single source of truth
+      const hasBookingRooms = b.booking_rooms && b.booking_rooms.length > 0;
+      const isOnTargetRoom = hasBookingRooms
+        ? b.booking_rooms.some((br) => br.room_number === dropData.roomNumber)
+        : b.allocated_room_number === dropData.roomNumber;
+      
+      if (!isOnTargetRoom) return false;
 
       // Check date overlap
       return newCheckIn < b.check_out && newCheckOut > b.check_in;

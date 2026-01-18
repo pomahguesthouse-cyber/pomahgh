@@ -13,6 +13,7 @@ export const useCalendarHelpers = (
   unavailableDates: UnavailableDate[]
 ) => {
   // Get booking for specific room and date
+  // SINGLE SOURCE OF TRUTH: Prioritize booking_rooms, fallback to allocated_room_number
   const getBookingForCell = (roomNumber: string, date: Date): Booking | null => {
     if (!bookings) return null;
     const dateStr = format(date, "yyyy-MM-dd");
@@ -23,9 +24,16 @@ export const useCalendarHelpers = (
       const checkOut = booking.check_out;
       const isInRange = dateStr >= checkIn && dateStr < checkOut;
       if (!isInRange) return false;
-      const isPrimaryRoom = booking.allocated_room_number === roomNumber;
-      const isInBookingRooms = booking.booking_rooms?.some((br) => br.room_number === roomNumber);
-      return isPrimaryRoom || isInBookingRooms;
+
+      // Single source of truth: use booking_rooms if available, else allocated_room_number
+      const hasBookingRooms = booking.booking_rooms && booking.booking_rooms.length > 0;
+      if (hasBookingRooms) {
+        // Use booking_rooms as primary source
+        return booking.booking_rooms.some((br) => br.room_number === roomNumber);
+      } else {
+        // Fallback for legacy bookings without booking_rooms
+        return booking.allocated_room_number === roomNumber;
+      }
     });
 
     return matchingBookings[0] || null;

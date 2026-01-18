@@ -90,7 +90,11 @@ export const BookingCalendar = () => {
     const newTotalNights = differenceInDays(checkOut, checkIn);
 
     try {
-      // Auto-save to database
+      // Get price from existing booking_rooms or use default
+      const currentRoom = booking.booking_rooms?.[0];
+      const pricePerNight = currentRoom?.price_per_night || 0;
+
+      // Auto-save to database - include editedRooms to sync booking_rooms
       await updateBooking({
         id: booking.id,
         room_id: newRoomId,
@@ -98,6 +102,12 @@ export const BookingCalendar = () => {
         check_in: newCheckIn,
         check_out: newCheckOut,
         total_nights: newTotalNights,
+        // Sync booking_rooms with new room to prevent duplication
+        editedRooms: [{
+          roomId: newRoomId,
+          roomNumber: newRoomNumber,
+          pricePerNight: pricePerNight,
+        }],
       });
 
       await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
