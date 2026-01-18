@@ -73,7 +73,7 @@ export const BookingCalendar = () => {
         delay: 200,
         tolerance: 5,
       },
-    })
+    }),
   );
 
   // Handle booking move via drag & drop - AUTO SAVE
@@ -82,7 +82,7 @@ export const BookingCalendar = () => {
     newRoomId: string,
     newRoomNumber: string,
     newCheckIn: string,
-    newCheckOut: string
+    newCheckOut: string,
   ) => {
     // Calculate new total nights
     const checkIn = parseISO(newCheckIn);
@@ -126,15 +126,11 @@ export const BookingCalendar = () => {
     rooms || [],
     bookings,
     unavailableDates,
-    handleBookingMove
+    handleBookingMove,
   );
 
   // Handle booking resize - AUTO SAVE
-  const handleResizeComplete = async (
-    booking: Booking,
-    newCheckIn: string,
-    newCheckOut: string
-  ) => {
+  const handleResizeComplete = async (booking: Booking, newCheckIn: string, newCheckOut: string) => {
     // Calculate new total nights
     const checkIn = parseISO(newCheckIn);
     const checkOut = parseISO(newCheckOut);
@@ -162,7 +158,7 @@ export const BookingCalendar = () => {
     bookings,
     unavailableDates,
     cellWidth,
-    handleResizeComplete
+    handleResizeComplete,
   );
 
   // Event handlers - Manual click opens dialog
@@ -273,14 +269,18 @@ export const BookingCalendar = () => {
   // Realtime subscription for booking changes (including cancellations)
   useEffect(() => {
     const channel = supabase
-      .channel('booking-calendar-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'bookings'
-      }, () => {
-        queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-      })
+      .channel("booking-calendar-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "bookings",
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+        },
+      )
       .subscribe();
 
     return () => {
@@ -295,7 +295,7 @@ export const BookingCalendar = () => {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <h2 className="text-xl font-roboto font-bold mb-3 px-4">Booking Calendar</h2>
+      <h2 className="text-xl font-roboto font-semibold mb-3 px-4">Booking Calendar</h2>
       <Card className="w-full shadow-lg rounded-xl border-border/50">
         <CalendarHeader
           viewRange={viewRange}
@@ -328,9 +328,7 @@ export const BookingCalendar = () => {
       </Card>
 
       {/* Empty DragOverlay - preview handled in RoomCell */}
-      <DragOverlay>
-        {activeBooking && <div className="opacity-0 w-0 h-0" />}
-      </DragOverlay>
+      <DragOverlay>{activeBooking && <div className="opacity-0 w-0 h-0" />}</DragOverlay>
 
       {/* Context Menu */}
       {contextMenu && (
@@ -370,7 +368,14 @@ export const BookingCalendar = () => {
         roomId={createBookingDialog.roomId}
         roomNumber={createBookingDialog.roomNumber}
         initialDate={createBookingDialog.date}
-        rooms={rooms?.map(r => ({ id: r.id, name: r.name, price_per_night: r.price_per_night, room_numbers: r.room_numbers })) || []}
+        rooms={
+          rooms?.map((r) => ({
+            id: r.id,
+            name: r.name,
+            price_per_night: r.price_per_night,
+            room_numbers: r.room_numbers,
+          })) || []
+        }
       />
 
       {/* Export Dialog */}
