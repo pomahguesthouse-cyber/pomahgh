@@ -36,14 +36,6 @@ export function PaymentInfo({ booking }: PaymentInfoProps) {
             Dibayar: {formatRupiahID(booking.payment_amount)}
           </p>
         )}
-      {booking.special_requests && (
-        <div className="mt-2 pt-2 border-t border-gray-200">
-          <p className="text-muted-foreground text-xs italic">
-            Permintaan Khusus/ Keterangan:
-          </p>
-          <p className="text-sm font-medium">{booking.special_requests}</p>
-        </div>
-      )}
     </div>
   );
 }
