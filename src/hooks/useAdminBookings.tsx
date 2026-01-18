@@ -142,6 +142,11 @@ export const useAdminBookings = () => {
         }
       }
 
+      // Auto-sync allocated_room_number with first room in editedRooms
+      if (editedRooms && editedRooms.length > 0) {
+        bookingData.allocated_room_number = editedRooms[0].roomNumber;
+      }
+
       const { data, error } = await supabase
         .from("bookings")
         .update(bookingData)
