@@ -199,21 +199,17 @@ export const BookingBar = ({
       )}
 
       {/* Status watermark - hidden on mobile */}
-      {!isPending && (
-        <div className="absolute right-0.5 md:right-1 bottom-0.5 opacity-40 pointer-events-none hidden md:block">
-          <span className="text-white/70 font-bold text-[7px] md:text-[8px] tracking-wider whitespace-nowrap">
-            {booking.status === "confirmed" ? "CONFIRMED" : booking.status.toUpperCase()}
-          </span>
-        </div>
-      )}
-
-      {isPending && (
-        <div className="absolute right-0.5 md:right-1 bottom-0.5 opacity-50 pointer-events-none hidden md:block">
-          <span className="text-white/80 font-black text-[7px] md:text-[8px] tracking-wider whitespace-nowrap">
-            PENDING
-          </span>
-        </div>
-      )}
+      <div className="absolute right-0.5 md:right-1 bottom-0.5 opacity-40 pointer-events-none hidden md:block">
+        <span className={cn(
+          "font-bold text-[7px] md:text-[8px] tracking-wider whitespace-nowrap",
+          isPending ? "text-white/80 opacity-50" : "text-white/70"
+        )}>
+          {booking.status === "checked_in" ? "CHECKED-IN" :
+           booking.status === "checked_out" ? "CHECKED-OUT" :
+           booking.status === "no_show" ? "NO SHOW" :
+           booking.status.toUpperCase()}
+        </span>
+      </div>
     </div>
   );
 };
