@@ -263,3 +263,9 @@ All colors MUST be HSL.
 .booking-calendar-scroll thead {
   box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
 }
+
+/* Code snippet syntax highlighting */
+.code-preview {
+  font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+  tab-size: 2;
+}

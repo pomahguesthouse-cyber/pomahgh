@@ -1090,6 +1090,51 @@ export type Database = {
         }
         Relationships: []
       }
+      code_snippets: {
+        Row: {
+          category: string | null
+          code_content: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_favorite: boolean | null
+          language: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          use_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          code_content: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          language?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          use_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          code_content?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          language?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          use_count?: number | null
+        }
+        Relationships: []
+      }
       competitor_hotels: {
         Row: {
           address: string | null
