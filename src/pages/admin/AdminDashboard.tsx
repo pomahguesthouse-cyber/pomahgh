@@ -262,9 +262,7 @@ const AdminDashboard = () => {
         {/* Booking Patterns */}
         <Card className="border rounded-xl">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold" font-poppins>
-              Pola Reservasi
-            </CardTitle>
+            <CardTitle className="text-base font-semibold font-poppins">Pola Reservasi</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
