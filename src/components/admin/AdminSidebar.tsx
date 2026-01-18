@@ -214,7 +214,7 @@ export function AdminSidebar() {
 
       {/* Menu Groups */}
       <SidebarContent className="px-2 overflow-y-auto flex-1">
-        {menuGroups.map(group => <SidebarGroup key={group.label} className="py-2">
+        {menuGroups.map(group => <SidebarGroup key={group.label} className="py-[2px]">
             <SidebarGroupLabel className="text-[12px] uppercase tracking-wider text-muted-foreground/60 font-semibold mb-1">
               {group.label}
             </SidebarGroupLabel>
