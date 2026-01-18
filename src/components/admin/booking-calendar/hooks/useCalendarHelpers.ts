@@ -18,7 +18,7 @@ export const useCalendarHelpers = (
     const dateStr = format(date, "yyyy-MM-dd");
     
     const matchingBookings = bookings.filter((booking) => {
-      if (booking.status === "cancelled") return false;
+      if (booking.status === "cancelled" || booking.status === "no_show") return false;
       const checkIn = booking.check_in;
       const checkOut = booking.check_out;
       const isInRange = dateStr >= checkIn && dateStr < checkOut;
