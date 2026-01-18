@@ -295,7 +295,7 @@ export const BookingCalendar = () => {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <h2 className="text-xl font-roboto font-semibold mb-3 px-4">Booking Calendar</h2>
+      <h2 className="text-xl font-poppins font-semibold mb-3 px-4">Booking Calendar</h2>
       <Card className="w-full shadow-lg rounded-xl border-border/50">
         <CalendarHeader
           viewRange={viewRange}
