@@ -191,7 +191,7 @@ export function AdminSidebar() {
         <SidebarMenuButton asChild tooltip={item.title} isActive={isActive}>
           <NavLink to={item.url!} end className={cn("flex items-center gap-3 rounded-md transition-colors text-sm", isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted")} onClick={handleNavClick}>
             <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
-            <span className="truncate">{item.title}</span>
+            <span className="truncate text-xs">{item.title}</span>
           </NavLink>
         </SidebarMenuButton>
       </SidebarMenuItem>;
