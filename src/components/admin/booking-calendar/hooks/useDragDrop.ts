@@ -84,7 +84,7 @@ export const useDragDrop = (
     const hasConflict = (bookings || []).some((b) => {
       if (b.id === dragData.booking.id) return false;
       if (b.allocated_room_number !== dropData.roomNumber) return false;
-      if (b.status === "cancelled") return false;
+      if (b.status === "cancelled" || b.status === "no_show") return false;
 
       // Check date overlap
       return newCheckIn < b.check_out && newCheckOut > b.check_in;

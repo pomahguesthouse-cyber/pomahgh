@@ -31,6 +31,7 @@ export const useBookingValidation = () => {
       .eq("room_id", roomId)
       .eq("allocated_room_number", roomNumber)
       .neq("status", "cancelled")
+      .neq("status", "no_show")
       .or(`and(check_in.lte.${checkOutStr},check_out.gte.${checkInStr})`);
 
     if (directError) {
@@ -53,10 +54,10 @@ export const useBookingValidation = () => {
       console.error("Error checking booking_rooms conflict:", bookingRoomsError);
     }
 
-    // Filter booking_rooms for overlapping dates and non-cancelled status
+    // Filter booking_rooms for overlapping dates and non-cancelled/no_show status
     const overlappingBookingRooms = (bookingRoomsData || []).filter((br: any) => {
       const booking = br.bookings;
-      if (!booking || booking.status === "cancelled") return false;
+      if (!booking || booking.status === "cancelled" || booking.status === "no_show") return false;
       return booking.check_in <= checkOutStr && booking.check_out >= checkInStr;
     });
 
@@ -183,6 +184,7 @@ export const useBookingValidation = () => {
       .select("id, allocated_room_number")
       .eq("room_id", roomId)
       .neq("status", "cancelled")
+      .neq("status", "no_show")
       .or(`and(check_in.lte.${checkOutStr},check_out.gte.${checkInStr})`);
 
     if (directError) {
@@ -212,7 +214,7 @@ export const useBookingValidation = () => {
       // Filter booking_rooms for overlapping dates
       (bookingRoomsData || []).forEach((br: any) => {
         const booking = br.bookings;
-        if (!booking || booking.status === "cancelled") return;
+        if (!booking || booking.status === "cancelled" || booking.status === "no_show") return;
         if (excludeBookingId && booking.id === excludeBookingId) return;
         if (booking.check_in <= checkOutStr && booking.check_out >= checkInStr) {
           if (br.room_number) {
