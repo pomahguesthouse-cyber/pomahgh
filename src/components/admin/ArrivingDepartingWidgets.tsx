@@ -302,7 +302,7 @@ export const ArrivingDepartingWidgets = () => {
                 <DoorClosed className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <CardTitle className="text-base font-semibold">Tamu Check-Out</CardTitle>
+                <CardTitle className="text-base font-semibold font-poppins tracking-tight">Tamu Check-Out</CardTitle>
                 <p className="text-xs text-muted-foreground mt-0.5">{departingBookings.length} tamu</p>
               </div>
             </div>
