@@ -256,7 +256,7 @@ const AdminDashboard = () => {
         {/* Booking Patterns */}
         <Card className="border rounded-xl">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold font-poppins">Pola Reservasi</CardTitle>
+            <CardTitle className="text-base font-semibold">Pola Reservasi</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -294,7 +294,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border rounded-xl">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold font-poppins">Pendapatan Per Kamar</CardTitle>
+            <CardTitle className="text-base font-semibold">Pendapatan Per Kamar</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {analytics.revenueByRoom.slice(0, 5).map((item, idx) => <div key={idx} className="space-y-1.5">
