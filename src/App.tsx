@@ -40,6 +40,7 @@ import Chat from "./pages/Chat";
 import AdminChat from "./pages/admin/AdminChat";
 import AdminCityEvents from "./pages/admin/AdminCityEvents";
 import EventDetail from "./pages/EventDetail";
+import AdminPromptTemplates from "./pages/admin/AdminPromptTemplates";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -84,6 +85,7 @@ const App = () => (
           <Route path="/admin/explore-hero-slides" element={<AdminLayout><AdminExploreHeroSlides /></AdminLayout>} />
           <Route path="/admin/city-events" element={<AdminLayout><AdminCityEvents /></AdminLayout>} />
           <Route path="/admin/competitor-analysis" element={<AdminCompetitorAnalysis />} />
+          <Route path="/admin/prompt-templates" element={<AdminLayout><AdminPromptTemplates /></AdminLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
