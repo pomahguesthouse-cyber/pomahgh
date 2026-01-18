@@ -145,6 +145,24 @@ export const ArrivingDepartingWidgets = () => {
             Sudah Check-in
           </Badge>
         );
+      case "checked_out":
+        return (
+          <Badge className="bg-slate-100 text-slate-600 border-0 dark:bg-slate-800 dark:text-slate-400">
+            Sudah Check-out
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge className="bg-red-100 text-red-700 border-0 dark:bg-red-900/30 dark:text-red-400">
+            Dibatalkan
+          </Badge>
+        );
+      case "no_show":
+        return (
+          <Badge className="bg-purple-100 text-purple-700 border-0 dark:bg-purple-900/30 dark:text-purple-400">
+            No Show
+          </Badge>
+        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
