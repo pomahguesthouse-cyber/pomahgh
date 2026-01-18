@@ -3,20 +3,31 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, AlertTriangle, Info, Image, FileText, Layout, Zap, Wand2, Loader2, Check } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, Image, FileText, Layout, Zap, Wand2, Loader2, Check, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SeoIssue } from "@/hooks/useSeoChecker";
 import { useAltTextGenerator } from "@/hooks/useAltTextGenerator";
+import { formatFileSize } from "@/utils/imageConverter";
 
 interface SeoIssueCardProps {
   issue: SeoIssue;
   onUpdateAltText?: (tableName: string, recordId: string, field: string, altText: string) => Promise<void>;
+  onConvertToWebP?: (
+    tableName: string,
+    recordId: string,
+    field: string,
+    imageUrl: string,
+    onProgress?: (status: string) => void
+  ) => Promise<{ success: boolean; newUrl?: string; savedBytes?: number }>;
   onIssueFixed?: (issueId: string) => void;
 }
 
-export const SeoIssueCard = ({ issue, onUpdateAltText, onIssueFixed }: SeoIssueCardProps) => {
+export const SeoIssueCard = ({ issue, onUpdateAltText, onConvertToWebP, onIssueFixed }: SeoIssueCardProps) => {
   const [altTextValue, setAltTextValue] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState("");
+  const [conversionResult, setConversionResult] = useState<{ savedBytes?: number } | null>(null);
   const [isFixed, setIsFixed] = useState(false);
   const { generateAltText, isGenerating } = useAltTextGenerator();
 
@@ -65,18 +76,52 @@ export const SeoIssueCard = ({ issue, onUpdateAltText, onIssueFixed }: SeoIssueC
     }
   };
 
+  const handleConvertToWebP = async () => {
+    if (!onConvertToWebP || !issue.tableName || !issue.recordId || !issue.field || !issue.imageUrl) return;
+
+    setIsConverting(true);
+    setConversionProgress("Starting...");
+
+    try {
+      const result = await onConvertToWebP(
+        issue.tableName,
+        issue.recordId,
+        issue.field,
+        issue.imageUrl,
+        setConversionProgress
+      );
+
+      if (result.success) {
+        setConversionResult({ savedBytes: result.savedBytes });
+        setIsFixed(true);
+        onIssueFixed?.(issue.id);
+      }
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
   if (isFixed) {
     return (
       <Card className="border-green-200 bg-green-50/50">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <Check className="w-5 h-5 text-green-600" />
-            <span className="text-green-700 font-medium">Fixed: {issue.title}</span>
+            <div className="flex-1">
+              <span className="text-green-700 font-medium">Fixed: {issue.title}</span>
+              {conversionResult?.savedBytes && (
+                <p className="text-sm text-green-600">
+                  Saved: {formatFileSize(conversionResult.savedBytes)}
+                </p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
     );
   }
+
+  const isPerformanceWebPIssue = issue.category === "performance" && issue.title === "Format Bukan WebP";
 
   return (
     <Card className={cn(
@@ -152,8 +197,41 @@ export const SeoIssueCard = ({ issue, onUpdateAltText, onIssueFixed }: SeoIssueC
           </div>
         )}
 
-        {/* Suggestion for non-image issues */}
-        {issue.category !== "image" && (
+        {/* Performance issue - WebP conversion */}
+        {isPerformanceWebPIssue && issue.imageUrl && (
+          <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+            <img
+              src={issue.imageUrl}
+              alt="Preview"
+              className="w-20 h-20 object-cover rounded-md"
+            />
+            <div className="flex-1 space-y-2">
+              <p className="text-sm text-muted-foreground">{issue.suggestion}</p>
+              
+              <div className="space-y-2">
+                <Button
+                  size="sm"
+                  onClick={handleConvertToWebP}
+                  disabled={isConverting || !onConvertToWebP}
+                >
+                  {isConverting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                  )}
+                  Convert to WebP
+                </Button>
+                
+                {isConverting && conversionProgress && (
+                  <p className="text-xs text-muted-foreground">{conversionProgress}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Suggestion for non-image, non-performance-webp issues */}
+        {issue.category !== "image" && !isPerformanceWebPIssue && (
           <div className="p-3 bg-muted/30 rounded-lg">
             <p className="text-sm text-muted-foreground">
               <strong>Suggestion:</strong> {issue.suggestion}

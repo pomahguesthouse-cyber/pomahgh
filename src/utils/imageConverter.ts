@@ -82,3 +82,30 @@ export const compressImage = async (
   
   return convertToWebP(file, Math.max(0.3, targetQuality));
 };
+
+/**
+ * Convert image from URL to WebP Blob
+ */
+export const convertUrlToWebP = async (
+  imageUrl: string,
+  quality = 0.85
+): Promise<{ blob: Blob; originalSize: number; newSize: number }> => {
+  // Fetch image as blob
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.statusText}`);
+  }
+  
+  const originalBlob = await response.blob();
+  const originalSize = originalBlob.size;
+
+  // Convert blob to file then to WebP
+  const file = new File([originalBlob], 'image.jpg', { type: originalBlob.type });
+  const webpBlob = await convertToWebP(file, quality);
+
+  return {
+    blob: webpBlob,
+    originalSize,
+    newSize: webpBlob.size,
+  };
+};

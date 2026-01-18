@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isWebPFormat, getImageFormat } from "@/utils/imageConverter";
+import { isWebPFormat, getImageFormat, convertUrlToWebP, formatFileSize } from "@/utils/imageConverter";
 import { useSeoSettings } from "./useSeoSettings";
+import { toast } from "sonner";
 
 export interface SeoIssue {
   id: string;
@@ -178,9 +179,10 @@ export const useSeoChecker = () => {
             location: `Rooms > ${room.name} > Image ${index + 1}`,
             tableName: "rooms",
             recordId: room.id,
+            field: `image_urls[${index}]`,
             imageUrl: img,
             suggestion: "Konversi ke WebP untuk ukuran file lebih kecil dan loading lebih cepat",
-            autoFixable: false,
+            autoFixable: true,
           });
         }
       });
@@ -202,9 +204,10 @@ export const useSeoChecker = () => {
           location: `Hero Slides > ${slide.overlay_text || 'Untitled'}`,
           tableName: "hero_slides",
           recordId: slide.id,
+          field: "image_url",
           imageUrl: slide.image_url,
           suggestion: "Konversi ke WebP untuk performa lebih baik",
-          autoFixable: false,
+          autoFixable: true,
         });
       }
     });
@@ -421,11 +424,112 @@ export const useSeoChecker = () => {
     []
   );
 
+  const getBucketForTable = (tableName: string): string => {
+    const bucketMap: Record<string, string> = {
+      rooms: "room-images",
+      hero_slides: "hero-images",
+      city_attractions: "attraction-images",
+      explore_hero_slides: "explore-hero-images",
+      facility_hero_slides: "facility-hero-images",
+    };
+    return bucketMap[tableName] || "images";
+  };
+
+  const convertImageToWebP = useCallback(
+    async (
+      tableName: string,
+      recordId: string,
+      field: string,
+      imageUrl: string,
+      onProgress?: (status: string) => void
+    ): Promise<{ success: boolean; newUrl?: string; savedBytes?: number }> => {
+      try {
+        onProgress?.("Downloading...");
+
+        // Convert URL to WebP
+        const { blob, originalSize, newSize } = await convertUrlToWebP(imageUrl, 0.85);
+
+        onProgress?.("Uploading WebP...");
+
+        // Upload to appropriate storage bucket
+        const bucket = getBucketForTable(tableName);
+        const fileName = `converted/${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(fileName, blob, { contentType: "image/webp" });
+
+        if (uploadError) {
+          throw new Error(`Upload failed: ${uploadError.message}`);
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(fileName);
+
+        onProgress?.("Updating database...");
+
+        // Update database with new URL
+        if (field.includes("[")) {
+          // Handle array field like image_urls[0]
+          const match = field.match(/^([a-z_]+)\[(\d+)\]$/);
+          if (!match) throw new Error("Invalid field format");
+          
+          const [, arrayField, indexStr] = match;
+          const index = parseInt(indexStr);
+
+          const { data } = await supabase
+            .from(tableName as "rooms")
+            .select(arrayField)
+            .eq("id", recordId)
+            .single();
+
+          if (data) {
+            const dataRecord = data as unknown as Record<string, string[]>;
+            const currentArray = [...(dataRecord[arrayField] || [])];
+            currentArray[index] = publicUrl;
+
+            await supabase
+              .from(tableName as "rooms")
+              .update({ [arrayField]: currentArray })
+              .eq("id", recordId);
+          }
+        } else {
+          await supabase
+            .from(tableName as "rooms")
+            .update({ [field]: publicUrl })
+            .eq("id", recordId);
+        }
+
+        const savedBytes = originalSize - newSize;
+        const savedPercent = Math.round((savedBytes / originalSize) * 100);
+
+        onProgress?.(`Done! Saved ${formatFileSize(savedBytes)} (${savedPercent}%)`);
+        toast.success("Image converted to WebP", {
+          description: `Saved ${formatFileSize(savedBytes)} (${savedPercent}% smaller)`,
+        });
+
+        return {
+          success: true,
+          newUrl: publicUrl,
+          savedBytes,
+        };
+      } catch (error: any) {
+        console.error("WebP conversion failed:", error);
+        toast.error("Conversion failed", { description: error.message });
+        return { success: false };
+      }
+    },
+    []
+  );
+
   return {
     isAuditing,
     auditResult,
     runFullAudit,
     updateAltText,
+    convertImageToWebP,
     checkImageAltTexts,
     checkImageFormats,
     checkMetaTags,
