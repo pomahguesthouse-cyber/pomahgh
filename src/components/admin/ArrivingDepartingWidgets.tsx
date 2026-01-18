@@ -3,14 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DoorOpen, DoorClosed, Search, X, User, Clock, Home } from "lucide-react";
 import { isToday, isTomorrow, isYesterday, parseISO, format } from "date-fns";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
@@ -39,10 +32,10 @@ const getGuestStatus = (booking: Booking, type: "arriving" | "departing") => {
   const now = getWIBNow();
   const currentTime = format(now, "HH:mm:ss");
   const todayStr = formatWIBDate(now);
-  
+
   const checkInTime = booking.check_in_time || "14:00:00";
   const checkOutTime = booking.check_out_time || "12:00:00";
-  
+
   if (type === "arriving") {
     // Untuk tamu check-in
     if (booking.check_in === todayStr) {
@@ -71,16 +64,12 @@ const getDynamicStatusBadge = (status: { label: string; variant: string }) => {
   const variants: Record<string, string> = {
     "checked-in": "bg-green-100 text-green-700 border-0 dark:bg-green-900/30 dark:text-green-400",
     "checked-out": "bg-slate-100 text-slate-600 border-0 dark:bg-slate-800 dark:text-slate-400",
-    "waiting": "bg-amber-100 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400",
-    "staying": "bg-blue-100 text-blue-700 border-0 dark:bg-blue-900/30 dark:text-blue-400",
-    "confirmed": "bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/30 dark:text-emerald-400"
+    waiting: "bg-amber-100 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400",
+    staying: "bg-blue-100 text-blue-700 border-0 dark:bg-blue-900/30 dark:text-blue-400",
+    confirmed: "bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/30 dark:text-emerald-400",
   };
-  
-  return (
-    <Badge className={variants[status.variant] || variants.confirmed}>
-      {status.label}
-    </Badge>
-  );
+
+  return <Badge className={variants[status.variant] || variants.confirmed}>{status.label}</Badge>;
 };
 
 export const ArrivingDepartingWidgets = () => {
@@ -110,7 +99,7 @@ export const ArrivingDepartingWidgets = () => {
 
   const departingBookings = useMemo(() => {
     if (!bookings) return [];
-    
+
     const now = getWIBNow();
     const currentTime = format(now, "HH:mm:ss");
     const todayStr = formatWIBDate(now);
@@ -123,7 +112,7 @@ export const ArrivingDepartingWidgets = () => {
         (departingFilter === "yesterday" && isYesterday(checkOutDate));
 
       const matchesSearch = booking.guest_name.toLowerCase().includes(departingSearch.toLowerCase());
-      
+
       // Untuk filter "hari ini": sembunyikan jika sudah lewat jam check-out
       if (departingFilter === "today" && booking.check_out === todayStr) {
         const checkOutTime = booking.check_out_time || "12:00:00";
@@ -138,28 +127,26 @@ export const ArrivingDepartingWidgets = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'confirmed':
+      case "confirmed":
         return (
           <Badge className="bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/30 dark:text-emerald-400">
             Terkonfirmasi
           </Badge>
         );
-      case 'pending':
+      case "pending":
         return (
           <Badge className="bg-amber-100 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400">
             Menunggu
           </Badge>
         );
-      case 'checked_in':
+      case "checked_in":
         return (
           <Badge className="bg-blue-100 text-blue-700 border-0 dark:bg-blue-900/30 dark:text-blue-400">
             Sudah Check-in
           </Badge>
         );
       default:
-        return (
-          <Badge variant="secondary">{status}</Badge>
-        );
+        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
@@ -175,13 +162,11 @@ export const ArrivingDepartingWidgets = () => {
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            {type === "arriving" 
-              ? "Belum ada tamu check-in untuk tanggal ini" 
+            {type === "arriving"
+              ? "Belum ada tamu check-in untuk tanggal ini"
               : "Belum ada tamu check-out untuk tanggal ini"}
           </p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            Semoga hari Anda menyenangkan! 🌟
-          </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">Semoga hari Anda menyenangkan! 🌟</p>
         </div>
       );
     }
@@ -226,15 +211,11 @@ export const ArrivingDepartingWidgets = () => {
                     <div className="text-xs text-muted-foreground">{booking.num_guests} Tamu</div>
                   </div>
                 </TableCell>
-                <TableCell className="text-sm">
-                  {booking.allocated_room_number || booking.rooms?.name || '-'}
-                </TableCell>
+                <TableCell className="text-sm">{booking.allocated_room_number || booking.rooms?.name || "-"}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {displayTime ? formatTimeID(displayTime.slice(0, 5)) : (type === "arriving" ? "14:00" : "12:00")}
+                  {displayTime ? formatTimeID(displayTime.slice(0, 5)) : type === "arriving" ? "14:00" : "12:00"}
                 </TableCell>
-                <TableCell className="text-right">
-                  {getDynamicStatusBadge(dynamicStatus)}
-                </TableCell>
+                <TableCell className="text-right">{getDynamicStatusBadge(dynamicStatus)}</TableCell>
               </TableRow>
             );
           })}
@@ -252,9 +233,9 @@ export const ArrivingDepartingWidgets = () => {
   }) => (
     <div className="flex gap-1">
       {[
-        { key: 'today' as FilterType, label: 'Hari Ini' },
-        { key: 'tomorrow' as FilterType, label: 'Besok' },
-        { key: 'yesterday' as FilterType, label: 'Kemarin' }
+        { key: "today" as FilterType, label: "Hari Ini" },
+        { key: "tomorrow" as FilterType, label: "Besok" },
+        { key: "yesterday" as FilterType, label: "Kemarin" },
       ].map(({ key, label }) => (
         <Button
           key={key}
@@ -263,9 +244,7 @@ export const ArrivingDepartingWidgets = () => {
           onClick={() => onFilterChange(key)}
           className={cn(
             "h-7 text-xs",
-            activeFilter === key 
-              ? "bg-primary text-primary-foreground" 
-              : "text-muted-foreground hover:text-foreground"
+            activeFilter === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
           )}
         >
           {label}
@@ -285,10 +264,8 @@ export const ArrivingDepartingWidgets = () => {
                 <DoorOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <CardTitle className="text-base font-semibold">Tamu Check-In</CardTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {arrivingBookings.length} tamu
-                </p>
+                <CardTitle className="text-base font-semibold font-poppins tracking-tight">Tamu Check-In</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">{arrivingBookings.length} tamu</p>
               </div>
             </div>
             <FilterButtons activeFilter={arrivingFilter} onFilterChange={setArrivingFilter} />
@@ -306,16 +283,14 @@ export const ArrivingDepartingWidgets = () => {
                 variant="ghost"
                 size="sm"
                 className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                onClick={() => setArrivingSearch('')}
+                onClick={() => setArrivingSearch("")}
               >
                 <X className="h-4 w-4" />
               </Button>
             )}
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
-          {renderBookingTable(arrivingBookings, "arriving")}
-        </CardContent>
+        <CardContent className="pt-0">{renderBookingTable(arrivingBookings, "arriving")}</CardContent>
       </Card>
 
       {/* Departing Widget */}
@@ -328,9 +303,7 @@ export const ArrivingDepartingWidgets = () => {
               </div>
               <div>
                 <CardTitle className="text-base font-semibold">Tamu Check-Out</CardTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {departingBookings.length} tamu
-                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">{departingBookings.length} tamu</p>
               </div>
             </div>
             <FilterButtons activeFilter={departingFilter} onFilterChange={setDepartingFilter} />
@@ -348,16 +321,14 @@ export const ArrivingDepartingWidgets = () => {
                 variant="ghost"
                 size="sm"
                 className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                onClick={() => setDepartingSearch('')}
+                onClick={() => setDepartingSearch("")}
               >
                 <X className="h-4 w-4" />
               </Button>
             )}
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
-          {renderBookingTable(departingBookings, "departing")}
-        </CardContent>
+        <CardContent className="pt-0">{renderBookingTable(departingBookings, "departing")}</CardContent>
       </Card>
     </div>
   );
