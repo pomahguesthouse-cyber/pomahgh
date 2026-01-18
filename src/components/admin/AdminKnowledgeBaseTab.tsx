@@ -19,7 +19,8 @@ import {
   BookOpen,
   FileUp,
   Search,
-  Filter
+  Filter,
+  Zap
 } from 'lucide-react';
 import { 
   useAdminKnowledgeBase, 
@@ -36,6 +37,7 @@ const CATEGORIES = [
   { value: 'troubleshooting', label: 'Troubleshooting' },
   { value: 'reports', label: 'Laporan' },
   { value: 'policies', label: 'Kebijakan' },
+  { value: 'token_saver', label: 'Token Saver Tips' },
 ];
 
 const AdminKnowledgeBaseTab = () => {
@@ -276,9 +278,16 @@ const AdminKnowledgeBaseTab = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium truncate">{entry.title}</h4>
-                        <Badge variant="secondary" className="shrink-0">
-                          {getCategoryLabel(entry.category)}
-                        </Badge>
+                        {entry.category === 'token_saver' ? (
+                          <Badge variant="outline" className="shrink-0 bg-yellow-50 text-yellow-700 border-yellow-200">
+                            <Zap className="h-3 w-3 mr-1" />
+                            Token Saver
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="shrink-0">
+                            {getCategoryLabel(entry.category)}
+                          </Badge>
+                        )}
                         {entry.source_type === 'url' && (
                           <Badge variant="outline" className="shrink-0">
                             <LinkIcon className="h-3 w-3 mr-1" />
