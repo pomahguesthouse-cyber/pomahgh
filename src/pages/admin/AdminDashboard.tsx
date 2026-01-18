@@ -5,17 +5,7 @@ import { DaysAvailabilityCalendar } from "@/components/admin/DaysAvailabilityCal
 import { BookingCalendar } from "@/components/admin/booking-calendar";
 import { ArrivingDepartingWidgets } from "@/components/admin/ArrivingDepartingWidgets";
 import { MonthlyRevenueChart } from "@/components/admin/MonthlyRevenueChart";
-import { 
-  DollarSign, 
-  Calendar, 
-  TrendingUp, 
-  Building2, 
-  Percent,
-  Sun,
-  Sunset,
-  Moon,
-  Users
-} from "lucide-react";
+import { DollarSign, Calendar, TrendingUp, Building2, Percent, Sun, Sunset, Moon, Users } from "lucide-react";
 import { useMemo } from "react";
 import {
   differenceInDays,
@@ -59,22 +49,18 @@ const AdminDashboard = () => {
     const monthEnd = endOfMonth(now);
 
     // Count today's check-ins and check-outs
-    const todayCheckIns = bookings.filter(b => 
-      b.check_in === todayStr && b.status === 'confirmed'
-    ).length;
+    const todayCheckIns = bookings.filter((b) => b.check_in === todayStr && b.status === "confirmed").length;
 
     // Hitung check-out yang BELUM lewat waktunya
-    const todayCheckOuts = bookings.filter(b => {
-      if (b.check_out !== todayStr || b.status !== 'confirmed') return false;
+    const todayCheckOuts = bookings.filter((b) => {
+      if (b.check_out !== todayStr || b.status !== "confirmed") return false;
       const checkOutTime = b.check_out_time || "12:00:00";
       return currentTime < checkOutTime; // Hanya tampilkan yang belum lewat jam check-out
     }).length;
-    
+
     // Hitung tamu yang sedang menginap
-    const guestsStaying = bookings.filter(b => {
-      return b.check_in <= todayStr && 
-             b.check_out >= todayStr && 
-             b.status === 'confirmed';
+    const guestsStaying = bookings.filter((b) => {
+      return b.check_in <= todayStr && b.check_out >= todayStr && b.status === "confirmed";
     }).length;
 
     // Revenue analytics
@@ -165,7 +151,7 @@ const AdminDashboard = () => {
   }
 
   const greeting = getGreeting();
-  const maxRevenue = Math.max(...analytics.revenueByRoom.map(r => r.revenue), 1);
+  const maxRevenue = Math.max(...analytics.revenueByRoom.map((r) => r.revenue), 1);
   const hour = new Date().getHours();
 
   // Build greeting message berdasarkan waktu
@@ -199,12 +185,8 @@ const AdminDashboard = () => {
         <div className="flex items-center gap-3">
           <span className="text-2xl">{greeting.emoji}</span>
           <div>
-            <h2 className="text-xl font-semibold text-foreground">
-              {greeting.text}!
-            </h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {greetingMessage}
-            </p>
+            <h2 className="text-xl font-semibold text-foreground">{greeting.text}!</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">{greetingMessage}</p>
           </div>
         </div>
       </div>
@@ -280,7 +262,9 @@ const AdminDashboard = () => {
         {/* Booking Patterns */}
         <Card className="border rounded-xl">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Pola Reservasi</CardTitle>
+            <CardTitle className="text-base font-semibold" font-poppins>
+              Pola Reservasi
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -328,7 +312,7 @@ const AdminDashboard = () => {
                   <span className="text-muted-foreground">{formatRupiahID(item.revenue)}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-500"
                     style={{ width: `${(item.revenue / maxRevenue) * 100}%` }}
                   />
@@ -336,9 +320,7 @@ const AdminDashboard = () => {
               </div>
             ))}
             {analytics.revenueByRoom.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Belum ada data pendapatan
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-4">Belum ada data pendapatan</p>
             )}
           </CardContent>
         </Card>
