@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, FileText, Code2 } from "lucide-react";
+import { Plus, Search, FileText, Code2, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,6 +32,10 @@ import {
 } from "@/hooks/useCodeSnippets";
 import { CodeSnippetCard, CodeSnippetDialog } from "@/components/admin/code-snippets";
 
+// Token Saver Tips
+import { useAdminKnowledgeBase } from "@/hooks/useAdminKnowledgeBase";
+import { TokenSaverTipCard } from "@/components/admin/developer-tools";
+
 // Developer Tools Stats
 import { DeveloperToolsStats } from "@/components/admin/developer-tools";
 
@@ -51,6 +55,9 @@ export default function AdminDeveloperTools() {
   const [snippetDialogOpen, setSnippetDialogOpen] = useState(false);
   const [editingSnippet, setEditingSnippet] = useState<CodeSnippet | null>(null);
 
+  // Token Saver Tips State
+  const [tipsSearch, setTipsSearch] = useState("");
+
   // Data fetching
   const { data: prompts, isLoading: promptsLoading } = usePromptTemplates(
     promptCategory !== "all" ? promptCategory : undefined,
@@ -64,6 +71,16 @@ export default function AdminDeveloperTools() {
     snippetSearch || undefined
   );
   const { data: snippetStats } = useCodeSnippetStats();
+
+  // Token Saver Tips
+  const { data: allKnowledge, isLoading: tipsLoading } = useAdminKnowledgeBase();
+  const tokenSaverTips = allKnowledge?.filter(k => k.category === 'token_saver') || [];
+  const filteredTips = tipsSearch 
+    ? tokenSaverTips.filter(tip => 
+        tip.title.toLowerCase().includes(tipsSearch.toLowerCase()) ||
+        tip.content?.toLowerCase().includes(tipsSearch.toLowerCase())
+      )
+    : tokenSaverTips;
 
   // Prompt handlers
   const handleEditPrompt = (template: PromptTemplate) => {
@@ -104,7 +121,7 @@ export default function AdminDeveloperTools() {
         <div>
           <h1 className="text-2xl font-bold">Developer Tools</h1>
           <p className="text-muted-foreground text-sm">
-            Kelola prompt templates dan code snippets untuk development
+            Kelola prompt templates, code snippets, dan token saver tips
           </p>
         </div>
       </div>
@@ -112,19 +129,27 @@ export default function AdminDeveloperTools() {
       {/* Stats */}
       <DeveloperToolsStats 
         promptStats={promptStats} 
-        snippetStats={snippetStats} 
+        snippetStats={snippetStats}
+        tipsCount={tokenSaverTips.length}
       />
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="prompts" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Prompt Templates
+            <span className="hidden sm:inline">Prompt Templates</span>
+            <span className="sm:hidden">Prompts</span>
           </TabsTrigger>
           <TabsTrigger value="snippets" className="flex items-center gap-2">
             <Code2 className="h-4 w-4" />
-            Code Snippets
+            <span className="hidden sm:inline">Code Snippets</span>
+            <span className="sm:hidden">Snippets</span>
+          </TabsTrigger>
+          <TabsTrigger value="tips" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            <span className="hidden sm:inline">Token Saver Tips</span>
+            <span className="sm:hidden">Tips</span>
           </TabsTrigger>
         </TabsList>
 
@@ -299,6 +324,59 @@ export default function AdminDeveloperTools() {
                     Tambah Snippet
                   </Button>
                 )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Token Saver Tips Tab */}
+        <TabsContent value="tips" className="space-y-4">
+          {/* Search */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Cari tips..."
+                value={tipsSearch}
+                onChange={(e) => setTipsSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Tips Grid */}
+          {tipsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4 space-y-3">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-20 w-full" />
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-7 w-20" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filteredTips.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredTips.map((tip) => (
+                <TokenSaverTipCard key={tip.id} tip={tip} />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Zap className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <h3 className="font-semibold mb-2">Belum ada tips</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {tipsSearch
+                    ? "Tidak ada tips yang cocok dengan pencarian"
+                    : "Token saver tips akan membantu menulis prompt yang efisien"}
+                </p>
               </CardContent>
             </Card>
           )}
