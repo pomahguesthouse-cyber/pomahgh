@@ -7,9 +7,10 @@ import { RefreshCw, AlertCircle, AlertTriangle, CheckCircle2, Image, FileText, L
 import { useSeoChecker, type SeoIssue } from "@/hooks/useSeoChecker";
 import { SeoScoreRing } from "./SeoScoreRing";
 import { SeoIssueCard } from "./SeoIssueCard";
+import { SpeedMetrics } from "./SpeedMetrics";
 
 export const SeoChecker = () => {
-  const { isAuditing, auditResult, runFullAudit, updateAltText } = useSeoChecker();
+  const { isAuditing, auditResult, runFullAudit, updateAltText, convertImageToWebP } = useSeoChecker();
   const [fixedIssues, setFixedIssues] = useState<Set<string>>(new Set());
 
   const handleRunAudit = async () => {
@@ -49,6 +50,9 @@ export const SeoChecker = () => {
           {isAuditing ? "Scanning..." : "Run Audit"}
         </Button>
       </div>
+
+      {/* Website Speed Metrics */}
+      <SpeedMetrics />
 
       {!auditResult && !isAuditing && (
         <Card className="py-12">
@@ -153,6 +157,7 @@ export const SeoChecker = () => {
                           <IssuesList
                             issues={activeIssues}
                             onUpdateAltText={updateAltText}
+                            onConvertToWebP={convertImageToWebP}
                             onIssueFixed={handleIssueFixed}
                           />
                         </TabsContent>
@@ -160,6 +165,7 @@ export const SeoChecker = () => {
                           <IssuesList
                             issues={getFilteredIssues(auditResult.issues, "image")}
                             onUpdateAltText={updateAltText}
+                            onConvertToWebP={convertImageToWebP}
                             onIssueFixed={handleIssueFixed}
                           />
                         </TabsContent>
@@ -167,6 +173,7 @@ export const SeoChecker = () => {
                           <IssuesList
                             issues={getFilteredIssues(auditResult.issues, "content")}
                             onUpdateAltText={updateAltText}
+                            onConvertToWebP={convertImageToWebP}
                             onIssueFixed={handleIssueFixed}
                           />
                         </TabsContent>
@@ -174,6 +181,7 @@ export const SeoChecker = () => {
                           <IssuesList
                             issues={getFilteredIssues(auditResult.issues, "structure")}
                             onUpdateAltText={updateAltText}
+                            onConvertToWebP={convertImageToWebP}
                             onIssueFixed={handleIssueFixed}
                           />
                         </TabsContent>
@@ -181,6 +189,7 @@ export const SeoChecker = () => {
                           <IssuesList
                             issues={getFilteredIssues(auditResult.issues, "performance")}
                             onUpdateAltText={updateAltText}
+                            onConvertToWebP={convertImageToWebP}
                             onIssueFixed={handleIssueFixed}
                           />
                         </TabsContent>
@@ -196,6 +205,7 @@ export const SeoChecker = () => {
                       <IssuesList
                         issues={getFilteredIssues(auditResult.issues, undefined, "error")}
                         onUpdateAltText={updateAltText}
+                        onConvertToWebP={convertImageToWebP}
                         onIssueFixed={handleIssueFixed}
                       />
                     </div>
@@ -208,6 +218,7 @@ export const SeoChecker = () => {
                       <IssuesList
                         issues={getFilteredIssues(auditResult.issues, undefined, "warning")}
                         onUpdateAltText={updateAltText}
+                        onConvertToWebP={convertImageToWebP}
                         onIssueFixed={handleIssueFixed}
                       />
                     </div>
@@ -225,10 +236,17 @@ export const SeoChecker = () => {
 interface IssuesListProps {
   issues: SeoIssue[];
   onUpdateAltText?: (tableName: string, recordId: string, field: string, altText: string) => Promise<void>;
+  onConvertToWebP?: (
+    tableName: string,
+    recordId: string,
+    field: string,
+    imageUrl: string,
+    onProgress?: (status: string) => void
+  ) => Promise<{ success: boolean; newUrl?: string; savedBytes?: number }>;
   onIssueFixed?: (issueId: string) => void;
 }
 
-const IssuesList = ({ issues, onUpdateAltText, onIssueFixed }: IssuesListProps) => {
+const IssuesList = ({ issues, onUpdateAltText, onConvertToWebP, onIssueFixed }: IssuesListProps) => {
   if (issues.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -245,6 +263,7 @@ const IssuesList = ({ issues, onUpdateAltText, onIssueFixed }: IssuesListProps) 
           key={issue.id}
           issue={issue}
           onUpdateAltText={onUpdateAltText}
+          onConvertToWebP={onConvertToWebP}
           onIssueFixed={onIssueFixed}
         />
       ))}

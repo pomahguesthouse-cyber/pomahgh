@@ -113,5 +113,83 @@ export const DaysAvailabilityCalendar = () => {
         return `${baseClasses} hover:bg-red-200`;
     }
   };
-  return;
+  const hasPendingChanges = pendingChanges.toAdd.size > 0 || pendingChanges.toRemove.size > 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Days Availability Calendar</CardTitle>
+        <CardDescription>
+          Click dates to toggle availability. Gray = Available, Red = Unavailable, Green = Pending Available
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Select a room" />
+            </SelectTrigger>
+            <SelectContent>
+              {rooms?.map((room) => (
+                <SelectItem key={room.id} value={room.id}>
+                  {room.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="font-medium w-32 text-center">
+              {format(currentMonth, "MMMM yyyy")}
+            </span>
+            <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {hasPendingChanges && (
+            <Button onClick={handleApply} disabled={isUpdating}>
+              {isUpdating ? "Applying..." : "Apply Changes"}
+            </Button>
+          )}
+        </div>
+
+        {selectedRoomId ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {months.map((month, idx) => (
+              <div key={idx} className="border rounded-lg p-3">
+                <h3 className="font-medium text-center mb-2">{format(month, "MMMM yyyy")}</h3>
+                <div className="grid grid-cols-7 gap-1 text-xs">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                    <div key={day} className="text-center font-medium text-muted-foreground py-1">
+                      {day}
+                    </div>
+                  ))}
+                  {getMonthDays(month).map((date, i) => {
+                    const status = getDateStatus(date);
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => handleDateClick(date)}
+                        className={getDateColor(date, status)}
+                      >
+                        {format(date, "d")}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            Please select a room to view and edit availability
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 };
