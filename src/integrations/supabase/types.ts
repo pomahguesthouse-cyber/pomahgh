@@ -420,6 +420,7 @@ export type Database = {
           other_source: string | null
           payment_amount: number | null
           payment_status: string | null
+          remark: string | null
           room_id: string
           special_requests: string | null
           status: string
@@ -446,6 +447,7 @@ export type Database = {
           other_source?: string | null
           payment_amount?: number | null
           payment_status?: string | null
+          remark?: string | null
           room_id: string
           special_requests?: string | null
           status?: string
@@ -472,6 +474,7 @@ export type Database = {
           other_source?: string | null
           payment_amount?: number | null
           payment_status?: string | null
+          remark?: string | null
           room_id?: string
           special_requests?: string | null
           status?: string

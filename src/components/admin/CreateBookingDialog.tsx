@@ -78,6 +78,7 @@ export const CreateBookingDialog = ({
     guest_phone: "",
     num_guests: 1,
     special_requests: "",
+    remark: "",
     check_in_time: "14:00",
     check_out_time: "12:00",
   });
@@ -116,6 +117,7 @@ export const CreateBookingDialog = ({
         guest_phone: "",
         num_guests: 1,
         special_requests: "",
+        remark: "",
         check_in_time: "14:00",
         check_out_time: "12:00",
       });
@@ -300,6 +302,7 @@ export const CreateBookingDialog = ({
           total_price: totalPrice,
           num_guests: formData.num_guests,
           special_requests: formData.special_requests || null,
+          remark: formData.remark || null,
           status: "confirmed",
           payment_status: "unpaid",
           booking_source: bookingSource,
@@ -608,6 +611,18 @@ export const CreateBookingDialog = ({
                   value={formData.num_guests}
                   onChange={(e) => setFormData({ ...formData, num_guests: parseInt(e.target.value) || 1 })}
                   required
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="remark">Keterangan / Remark</Label>
+                <Textarea
+                  id="remark"
+                  value={formData.remark}
+                  onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
+                  placeholder="Contoh: Acara Wisuda, Anniversary, dll."
+                  rows={2}
                   className="mt-1"
                 />
               </div>
