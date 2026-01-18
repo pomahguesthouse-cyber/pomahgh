@@ -225,7 +225,7 @@ export const BookingCalendar = () => {
     }
   };
 
-  const handleSaveBooking = async (editedBooking: Booking) => {
+  const handleSaveBooking = async (editedBooking: Booking & { editedRooms?: Array<{ roomId: string; roomNumber: string; pricePerNight: number }> }) => {
     try {
       await updateBooking({
         id: editedBooking.id,
@@ -245,6 +245,7 @@ export const BookingCalendar = () => {
         special_requests: editedBooking.special_requests,
         total_nights: editedBooking.total_nights,
         total_price: editedBooking.total_price,
+        editedRooms: editedBooking.editedRooms,
       });
 
       // Force immediate refetch for cancelled bookings to disappear
