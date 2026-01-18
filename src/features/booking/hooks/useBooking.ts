@@ -136,13 +136,28 @@ export const useBooking = () => {
           .eq("id", variables.room_id)
           .single();
 
+        // Fetch booking_rooms to get all room numbers for multi-room bookings
+        const { data: bookingRooms } = await supabase
+          .from("booking_rooms")
+          .select("room_number, rooms(name)")
+          .eq("booking_id", bookingData.id);
+
+        // Format room names and numbers for multi-room support
+        let roomNames = roomData?.name || 'Unknown Room';
+        let roomNumbersStr = bookingData.allocated_room_number || '';
+
+        if (bookingRooms && bookingRooms.length > 0) {
+          roomNames = bookingRooms.map(br => (br.rooms as any)?.name || roomData?.name || 'Unknown').join(', ');
+          roomNumbersStr = bookingRooms.map(br => br.room_number).join(', ');
+        }
+
         await supabase.functions.invoke('notify-new-booking', {
           body: {
             booking_code: bookingData.booking_code,
             guest_name: bookingData.guest_name,
             guest_phone: bookingData.guest_phone,
-            room_name: roomData?.name || 'Unknown Room',
-            room_number: bookingData.allocated_room_number,
+            room_name: roomNames,
+            room_number: roomNumbersStr,
             check_in: bookingData.check_in,
             check_out: bookingData.check_out,
             total_nights: bookingData.total_nights,

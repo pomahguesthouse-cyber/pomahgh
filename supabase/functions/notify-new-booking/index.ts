@@ -59,10 +59,27 @@ serve(async (req) => {
     };
     const sourceLabel = sourceLabels[bookingData.booking_source] || '📝 Website';
 
-    // Build notification message
-    const roomDisplay = bookingData.room_number 
-      ? `*${bookingData.room_name}* - ${bookingData.room_number}`
-      : `*${bookingData.room_name}*`;
+    // Build notification message - Support multi-room display
+    let roomDisplay = '';
+    const roomNames = (bookingData.room_name || '').split(', ').filter(Boolean);
+    const roomNumbers = (bookingData.room_number || '').split(', ').filter(Boolean);
+
+    if (roomNames.length > 1 || roomNumbers.length > 1) {
+      // Multi-room: format as list
+      const count = Math.max(roomNames.length, roomNumbers.length);
+      roomDisplay = `*Kamar* (${count} unit):\n`;
+      for (let i = 0; i < count; i++) {
+        const name = roomNames[i] || roomNames[0] || '';
+        const number = roomNumbers[i] || '';
+        roomDisplay += `   • ${name}${number ? ' - ' + number : ''}\n`;
+      }
+      roomDisplay = roomDisplay.trim();
+    } else {
+      // Single room: normal format
+      roomDisplay = bookingData.room_number 
+        ? `*${bookingData.room_name}* - ${bookingData.room_number}`
+        : `*${bookingData.room_name}*`;
+    }
 
     // Build promo info section
     let promoInfo = '';
