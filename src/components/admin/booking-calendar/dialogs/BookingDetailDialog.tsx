@@ -12,6 +12,7 @@ import {
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { useRoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
+import { Room } from "@/hooks/useRooms";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,7 @@ interface BookingDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (booking: Booking) => Promise<void>;
-  rooms: any[] | undefined;
+  rooms: Room[] | undefined;
   isUpdating: boolean;
   defaultEditMode?: boolean;
 }
