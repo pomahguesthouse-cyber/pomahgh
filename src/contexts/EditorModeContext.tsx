@@ -346,10 +346,11 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
     await createTemplate({
       name,
       description: description || null,
+      thumbnail_url: null,
       theme_config: localTheme,
       widget_config: localWidgets,
       is_system: false,
-    } as { name: string; description: string | null; theme_config: ThemeConfig; widget_config: WidgetConfig[]; is_system: boolean });
+    });
     
     toast.success(`Template "${name}" saved`);
   }, [localTheme, localWidgets, createTemplate]);
