@@ -54,7 +54,7 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
           {isEditorMode ? (
             <EditableText
               widgetId="contact"
-              field="heading"
+              field="title"
               value={heading}
               as="h2"
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2"
@@ -62,7 +62,7 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
           ) : (
             <h2 
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2"
-              style={getElementStyles('contact-heading')}
+              style={getElementStyles('contact-title')}
             >
               {heading}
             </h2>
@@ -81,7 +81,7 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
           {isEditorMode ? (
             <EditableText
               widgetId="contact"
-              field="subtext"
+              field="subtitle"
               value={subtext}
               as="p"
               className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
@@ -89,7 +89,7 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
           ) : (
             <p 
               className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
-              style={getElementStyles('contact-subtext')}
+              style={getElementStyles('contact-subtitle')}
             >
               {subtext}
             </p>
