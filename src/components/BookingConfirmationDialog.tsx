@@ -37,7 +37,7 @@ interface BookingConfirmationDialogProps {
   numGuests: number;
   roomQuantity?: number;
 
-  nightlyPrices: NightlyPrice[];
+  nightlyPrices?: NightlyPrice[];
 }
 
 export const BookingConfirmationDialog = ({
@@ -52,7 +52,7 @@ export const BookingConfirmationDialog = ({
   totalPrice,
   numGuests,
   roomQuantity = 1,
-  nightlyPrices,
+  nightlyPrices = [],
 }: BookingConfirmationDialogProps) => {
   const [loading, setLoading] = useState(false);
 
