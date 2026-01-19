@@ -3,6 +3,7 @@ import { EditorModeProvider, useEditorMode } from '@/contexts/EditorModeContext'
 import { EditorTopBar, DeviceType } from '@/components/admin/editor-mode/EditorTopBar';
 import { EditableCanvas } from '@/components/admin/editor-mode/EditableCanvas';
 import { CollapsiblePanel } from '@/components/admin/editor-mode/CollapsiblePanel';
+import { FloatingPropertyEditor } from '@/components/admin/editor-mode/FloatingPropertyEditor';
 import { useKeyboardShortcuts } from '@/components/admin/editor-mode/hooks/useKeyboardShortcuts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,9 @@ function EditorModeContent() {
       {/* Main Content */}
       <div className="flex-1 overflow-hidden relative flex">
         <EditableCanvas device={device} />
+        
+        {/* Floating Property Editor for text elements */}
+        <FloatingPropertyEditor />
 
         {/* Floating settings button */}
         {!panelOpen && (

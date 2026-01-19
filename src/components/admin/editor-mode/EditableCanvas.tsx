@@ -15,7 +15,7 @@ const DEVICE_SIZES: Record<DeviceType, { width: string; maxWidth: string }> = {
 };
 
 export function EditableCanvas({ device }: EditableCanvasProps) {
-  const { setSelectedWidget, setHoveredWidget } = useEditorMode();
+  const { setSelectedWidget, setHoveredWidget, setSelectedElement } = useEditorMode();
   const deviceStyle = DEVICE_SIZES[device];
 
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -23,6 +23,7 @@ export function EditableCanvas({ device }: EditableCanvasProps) {
     if (e.target === e.currentTarget) {
       setSelectedWidget(null);
       setHoveredWidget(null);
+      setSelectedElement(null);
     }
   };
 

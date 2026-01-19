@@ -35,13 +35,23 @@ import { cn } from '@/lib/utils';
 const FONT_FAMILIES = [
   { value: 'inherit', label: 'Default' },
   { value: 'Playfair Display', label: 'Playfair Display' },
+  { value: 'Cinzel', label: 'Cinzel' },
   { value: 'Poppins', label: 'Poppins' },
   { value: 'Inter', label: 'Inter' },
   { value: 'Roboto', label: 'Roboto' },
   { value: 'Open Sans', label: 'Open Sans' },
+  { value: 'Lato', label: 'Lato' },
+  { value: 'Montserrat', label: 'Montserrat' },
+  { value: 'Oswald', label: 'Oswald' },
+  { value: 'Raleway', label: 'Raleway' },
+  { value: 'Merriweather', label: 'Merriweather' },
+  { value: 'Georgia', label: 'Georgia' },
+  { value: 'Times New Roman', label: 'Times New Roman' },
+  { value: 'Arial', label: 'Arial' },
 ];
 
 const FONT_SIZES = [
+  { value: '10px', label: '10' },
   { value: '12px', label: '12' },
   { value: '14px', label: '14' },
   { value: '16px', label: '16' },
@@ -51,8 +61,20 @@ const FONT_SIZES = [
   { value: '28px', label: '28' },
   { value: '32px', label: '32' },
   { value: '36px', label: '36' },
+  { value: '40px', label: '40' },
   { value: '48px', label: '48' },
+  { value: '56px', label: '56' },
   { value: '64px', label: '64' },
+  { value: '72px', label: '72' },
+];
+
+const FONT_WEIGHTS = [
+  { value: 'normal', label: 'Normal' },
+  { value: '300', label: 'Light' },
+  { value: '500', label: 'Medium' },
+  { value: '600', label: 'Semibold' },
+  { value: 'bold', label: 'Bold' },
+  { value: '800', label: 'Extra Bold' },
 ];
 
 const PRESET_COLORS = [
@@ -65,13 +87,39 @@ interface FloatingPropertyEditorProps {
   position?: { top: number; left: number };
 }
 
-export function FloatingPropertyEditor({ position }: FloatingPropertyEditorProps) {
+export function FloatingPropertyEditor({ position: fixedPosition }: FloatingPropertyEditorProps) {
   const { 
     selectedElement, 
     elementOverrides = {},
     updateElementOverride,
     setSelectedElement,
   } = useEditorMode();
+  
+  const [position, setPosition] = React.useState({ top: 100, left: 0 });
+  
+  // Update position when selected element changes
+  React.useEffect(() => {
+    if (selectedElement) {
+      const element = document.querySelector(`[data-element-id="${selectedElement}"]`);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const toolbarWidth = 500; // Approximate toolbar width
+        
+        // Position toolbar above element, centered
+        let left = rect.left + rect.width / 2 - toolbarWidth / 2;
+        let top = rect.top - 50;
+        
+        // Keep within viewport bounds
+        if (left < 10) left = 10;
+        if (left + toolbarWidth > window.innerWidth - 10) {
+          left = window.innerWidth - toolbarWidth - 10;
+        }
+        if (top < 60) top = rect.bottom + 10; // Show below if no space above
+        
+        setPosition({ top, left });
+      }
+    }
+  }, [selectedElement]);
 
   if (!selectedElement) return null;
 
@@ -97,11 +145,10 @@ export function FloatingPropertyEditor({ position }: FloatingPropertyEditorProps
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 8, scale: 0.96 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        className="fixed z-[200] bg-background border border-border rounded-lg shadow-lg p-2"
+        className="fixed z-[200] bg-background border border-border rounded-lg shadow-xl p-2"
         style={{
-          top: position?.top ?? 100,
-          left: position?.left ?? '50%',
-          transform: position ? undefined : 'translateX(-50%)',
+          top: fixedPosition?.top ?? position.top,
+          left: fixedPosition?.left ?? position.left,
         }}
       >
         <div className="flex items-center gap-1">
