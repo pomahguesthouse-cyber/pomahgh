@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { ThemeProvider } from "next-themes";
 import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
 import { GlobalSEO } from "@/components/GlobalSEO";
 import Index from "./pages/Index";
@@ -46,12 +47,13 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
-      <TooltipProvider>
-        <GlobalSEO />
-        <Toaster />
-        <Sonner />
-        <SearchDatesProvider>
-          <BrowserRouter>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="hotel-theme">
+        <TooltipProvider>
+          <GlobalSEO />
+          <Toaster />
+          <Sonner />
+          <SearchDatesProvider>
+            <BrowserRouter>
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -89,10 +91,11 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </SearchDatesProvider>
-    </TooltipProvider>
-  </HelmetProvider>
+          </BrowserRouter>
+        </SearchDatesProvider>
+      </TooltipProvider>
+    </ThemeProvider>
+    </HelmetProvider>
   </QueryClientProvider>
 );
 
