@@ -6,12 +6,14 @@ import { useContext } from "react";
 import { EditorModeContext } from "@/contexts/EditorModeContext";
 import { EditableText } from "@/components/admin/editor-mode/EditableText";
 import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
+import { useWidgetStyles } from "@/hooks/useWidgetStyles";
 
 export function GoogleRating() {
   const { data, isLoading, isError } = useGoogleRating();
   const editorContext = useContext(EditorModeContext);
   const isEditorMode = editorContext?.isEditorMode ?? false;
   const { getElementStyles } = usePublicOverrides();
+  const { settings, contentStyle } = useWidgetStyles('google_rating');
 
   if (isLoading) {
     return (
@@ -32,14 +34,23 @@ export function GoogleRating() {
   }
 
   const { rating, reviewCount, googleMapsUrl, reviews } = data;
+  const label = settings.title_override || "Google Rating";
 
   // Generate star display
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
+  // Apply section background from widget settings
+  const sectionStyle: React.CSSProperties = settings.content_bg_color && settings.content_bg_color !== 'transparent'
+    ? { backgroundColor: settings.content_bg_color }
+    : {};
+
   return (
-    <section className="py-12 bg-gradient-to-b from-background to-muted/30">
+    <section 
+      className="py-12 bg-gradient-to-b from-background to-muted/30"
+      style={sectionStyle}
+    >
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center justify-center space-y-4">
           {/* Google Logo */}
@@ -52,9 +63,9 @@ export function GoogleRating() {
             </svg>
             {isEditorMode ? (
               <EditableText
-                widgetId="google-rating"
+                widgetId="google_rating"
                 field="label"
-                value="Google Rating"
+                value={label}
                 as="span"
                 className="text-lg font-medium text-muted-foreground"
               />
@@ -63,7 +74,7 @@ export function GoogleRating() {
                 className="text-lg font-medium text-muted-foreground"
                 style={getElementStyles('google-rating-label')}
               >
-                Google Rating
+                {label}
               </span>
             )}
           </div>
