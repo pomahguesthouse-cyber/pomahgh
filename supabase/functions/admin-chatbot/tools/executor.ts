@@ -1,8 +1,7 @@
 // ============= EXECUTOR =============
-// - Validasi role
-// - Validasi argumen
-// - Dispatch ke tool
-// ❌ Tidak menyimpulkan kondisi hotel
+// - Role-aware (string-based)
+// - Argument-safe
+// - Tidak menyimpulkan kondisi hotel
 
 import { getBookingStats, getRecentBookings, searchBookings, getBookingDetail } from "./bookingStats.ts";
 
@@ -30,14 +29,18 @@ export interface ExecutorResult {
 
 /* ================= ROLE GUARD ================= */
 
-/**
- * Tool yang BUTUH role manager
- */
-const MANAGER_ONLY_TOOLS = new Set(["booking_stats", "availability"]);
+// Role yang dianggap punya hak manager
+const MANAGER_ROLES = new Set(["manager", "admin", "owner"]);
 
-function assertRoleAllowed(toolName: string, isManager: boolean) {
-  if (MANAGER_ONLY_TOOLS.has(toolName) && !isManager) {
-    throw new Error("Anda tidak memiliki izin untuk mengakses data ini.");
+function isManagerRole(role: string): boolean {
+  return MANAGER_ROLES.has(role);
+}
+
+function assertRoleAllowed(toolName: string, role: string) {
+  const managerOnlyTools = new Set(["booking_stats", "availability"]);
+
+  if (managerOnlyTools.has(toolName) && !isManagerRole(role)) {
+    throw new Error("Anda tidak memiliki izin untuk mengakses tool ini.");
   }
 }
 
@@ -116,18 +119,18 @@ async function executeTool(supabase: unknown, toolName: string, args: ExecutorAr
 
 /**
  * DIPANGGIL OLEH index.ts
- * Signature SUDAH MATCH:
- * (supabase, toolName, args, isManager)
+ * Signature MATCH:
+ * (supabase, toolName, args, role: string)
  */
 export async function executeToolWithValidation(
   supabase: unknown,
   toolName: string,
   args: ExecutorArgs,
-  isManager: boolean,
+  role: string,
 ): Promise<ExecutorResult> {
   try {
-    // 🔐 Role validation
-    assertRoleAllowed(toolName, isManager);
+    // 🔐 Role validation (string-based)
+    assertRoleAllowed(toolName, role);
 
     return await executeTool(supabase, toolName, args);
   } catch (err) {
@@ -137,6 +140,7 @@ export async function executeToolWithValidation(
         message: err instanceof Error ? err.message : "Unknown executor error",
         tool: toolName,
         args,
+        role,
       },
       note: "Gagal menjalankan tool.",
     };
