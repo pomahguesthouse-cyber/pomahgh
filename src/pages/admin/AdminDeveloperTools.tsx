@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, FileText, Code2, Zap, MessageSquare } from "lucide-react";
+import { Plus, Search, FileText, Code2, Zap, MessageSquare, GraduationCap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,7 +34,7 @@ import { CodeSnippetCard, CodeSnippetDialog } from "@/components/admin/code-snip
 
 // Token Saver Tips
 import { useAdminKnowledgeBase } from "@/hooks/useAdminKnowledgeBase";
-import { TokenSaverTipCard, PromptConsultantChat } from "@/components/admin/developer-tools";
+import { TokenSaverTipCard, PromptConsultantChat, PromptTutorial } from "@/components/admin/developer-tools";
 
 // Developer Tools Stats
 import { DeveloperToolsStats } from "@/components/admin/developer-tools";
@@ -135,26 +135,26 @@ export default function AdminDeveloperTools() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full max-w-2xl grid-cols-4">
+        <TabsList className="grid w-full max-w-3xl grid-cols-5">
           <TabsTrigger value="prompts" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Prompt Templates</span>
-            <span className="sm:hidden">Prompts</span>
+            <span className="hidden sm:inline">Prompts</span>
           </TabsTrigger>
           <TabsTrigger value="snippets" className="flex items-center gap-2">
             <Code2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Code Snippets</span>
-            <span className="sm:hidden">Snippets</span>
+            <span className="hidden sm:inline">Snippets</span>
           </TabsTrigger>
           <TabsTrigger value="tips" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
-            <span className="hidden sm:inline">Token Saver Tips</span>
-            <span className="sm:hidden">Tips</span>
+            <span className="hidden sm:inline">Tips</span>
+          </TabsTrigger>
+          <TabsTrigger value="tutorial" className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" />
+            <span className="hidden sm:inline">Tutorial</span>
           </TabsTrigger>
           <TabsTrigger value="consultant" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
-            <span className="hidden sm:inline">Prompt Consultant</span>
-            <span className="sm:hidden">Chat</span>
+            <span className="hidden sm:inline">Consultant</span>
           </TabsTrigger>
         </TabsList>
 
@@ -385,6 +385,11 @@ export default function AdminDeveloperTools() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Tutorial Tab */}
+        <TabsContent value="tutorial" className="space-y-4">
+          <PromptTutorial />
         </TabsContent>
 
         {/* Prompt Consultant Tab */}
