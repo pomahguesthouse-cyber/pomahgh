@@ -114,13 +114,13 @@ const menuGroups: MenuGroup[] = [{
 }, {
   label: "System",
   items: [{
-    title: "Asisten Booking",
-    url: "/admin/chat",
-    icon: Bot
-  }, {
     title: "Virtual Assistant",
     icon: MessageCircle,
     submenu: [{
+      title: "Web Chatbot",
+      url: "/admin/chat",
+      icon: Bot
+    }, {
       title: "Guest Chatbot",
       url: "/admin/chatbot/guest",
       icon: Users
@@ -152,7 +152,7 @@ export function AdminSidebar() {
   const isCollapsed = state === "collapsed";
 
   // Check if any submenu item is active to auto-expand
-  const isVirtualAssistantActive = location.pathname.startsWith("/admin/chatbot");
+  const isVirtualAssistantActive = location.pathname.startsWith("/admin/chatbot") || location.pathname === "/admin/chat";
   const [isVAOpen, setIsVAOpen] = useState(isVirtualAssistantActive);
   const handleNavClick = () => {
     if (isMobile) {
