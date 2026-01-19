@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MapPin, Phone, Mail } from "lucide-react";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { EditableText } from '@/components/admin/editor-mode/EditableText';
+import { usePublicOverrides } from '@/contexts/PublicOverridesContext';
 
 interface ContactProps {
   editorMode?: boolean;
@@ -11,6 +12,7 @@ interface ContactProps {
 
 export const Contact = ({ editorMode = false }: ContactProps) => {
   const { settings } = useHotelSettings();
+  const { getElementStyles } = usePublicOverrides();
   
   const heading = "Get in Touch";
   const subtext = "Ready to experience paradise? Contact us to book your stay or ask any questions.";
@@ -38,7 +40,10 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2"
             />
           ) : (
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2">
+            <h2 
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2"
+              style={getElementStyles('contact-heading')}
+            >
               {heading}
             </h2>
           )}
@@ -52,7 +57,10 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
               className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
             />
           ) : (
-            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+            <p 
+              className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
+              style={getElementStyles('contact-subtext')}
+            >
               {subtext}
             </p>
           )}
