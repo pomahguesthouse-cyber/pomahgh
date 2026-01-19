@@ -1,24 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { EditorModeProvider, useEditorMode } from '@/contexts/EditorModeContext';
-import { EditorPanel, LivePreview } from '@/components/admin/editor-mode';
-import { Button } from '@/components/ui/button';
-import { Save, RotateCcw, AlertCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { EditorTopBar, DeviceType } from '@/components/admin/editor-mode/EditorTopBar';
+import { EditableCanvas } from '@/components/admin/editor-mode/EditableCanvas';
+import { CollapsiblePanel } from '@/components/admin/editor-mode/CollapsiblePanel';
+import { useKeyboardShortcuts } from '@/components/admin/editor-mode/hooks/useKeyboardShortcuts';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Settings } from 'lucide-react';
 
 function EditorModeContent() {
-  const { isDirty, saveChanges, resetChanges, isLoading } = useEditorMode();
+  const { isLoading, panelOpen, setPanelOpen } = useEditorMode();
+  const [device, setDevice] = useState<DeviceType>('desktop');
+  
+  // Enable keyboard shortcuts
+  useKeyboardShortcuts();
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex">
-        <div className="w-80 border-r p-4 space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
+      <div className="h-screen flex flex-col">
+        <div className="h-14 border-b flex items-center justify-between px-4">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-8 w-40" />
         </div>
         <div className="flex-1 p-4">
           <Skeleton className="h-full w-full" />
@@ -28,50 +32,31 @@ function EditorModeContent() {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="h-screen flex flex-col bg-muted/30">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-background border-b">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold">Editor Mode</h1>
-          {isDirty && (
-            <Badge variant="outline" className="gap-1 text-orange-600 border-orange-300 bg-orange-50">
-              <AlertCircle className="h-3 w-3" />
-              Unsaved changes
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={resetChanges}
-            disabled={!isDirty}
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Reset
-          </Button>
-          <Button
-            size="sm"
-            onClick={saveChanges}
-            disabled={!isDirty}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save Changes
-          </Button>
-        </div>
-      </div>
+      <EditorTopBar device={device} onDeviceChange={setDevice} />
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
-            <EditorPanel />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={70}>
-            <LivePreview />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+      <div className="flex-1 overflow-hidden relative">
+        <EditableCanvas device={device} />
+
+        {/* Floating settings button */}
+        {!panelOpen && (
+          <Button
+            className="fixed right-4 top-20 z-40 shadow-lg"
+            size="sm"
+            onClick={() => setPanelOpen(true)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
+        )}
+
+        {/* Collapsible Panel */}
+        <CollapsiblePanel 
+          isOpen={panelOpen} 
+          onClose={() => setPanelOpen(false)} 
+        />
       </div>
     </div>
   );
@@ -79,10 +64,8 @@ function EditorModeContent() {
 
 export default function AdminEditorMode() {
   return (
-    <AdminLayout>
-      <EditorModeProvider>
-        <EditorModeContent />
-      </EditorModeProvider>
-    </AdminLayout>
+    <EditorModeProvider>
+      <EditorModeContent />
+    </EditorModeProvider>
   );
 }
