@@ -25,12 +25,13 @@ export function useTemplatePresets() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (preset: { name: string; description: string | null; theme_config: ThemeConfig; widget_config: WidgetConfig[]; is_system: boolean }) => {
+    mutationFn: async (preset: { name: string; description: string | null; thumbnail_url?: string | null; theme_config: ThemeConfig; widget_config: WidgetConfig[]; is_system: boolean }) => {
       const { data, error } = await supabase
         .from('template_presets')
         .insert({
           name: preset.name,
           description: preset.description,
+          thumbnail_url: preset.thumbnail_url || null,
           theme_config: preset.theme_config as unknown as Json,
           widget_config: preset.widget_config as unknown as Json,
           is_system: preset.is_system,
