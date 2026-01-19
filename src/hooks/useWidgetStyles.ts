@@ -1,7 +1,7 @@
-import { useContext, useMemo } from 'react';
+import { useContext, useMemo, useState, useEffect } from 'react';
 import { EditorModeContext } from '@/contexts/EditorModeContext';
-import { useWidgetConfig } from '@/hooks/useWidgetConfig';
-import { WidgetSettings } from '@/types/editor.types';
+import { supabase } from '@/integrations/supabase/client';
+import { WidgetSettings, WidgetConfig } from '@/types/editor.types';
 
 interface WidgetStyles {
   settings: WidgetSettings;
@@ -14,12 +14,29 @@ interface WidgetStyles {
 
 export function useWidgetStyles(widgetId: string): WidgetStyles {
   const editorContext = useContext(EditorModeContext);
+  const [dbWidgetConfigs, setDbWidgetConfigs] = useState<WidgetConfig[]>([]);
   
-  // Fallback: fetch from database directly for public pages
-  const { widgetConfigs: dbWidgetConfigs } = useWidgetConfig();
+  // Only fetch from DB if not in editor mode
+  useEffect(() => {
+    if (!editorContext) {
+      const fetchConfigs = async () => {
+        const { data } = await supabase
+          .from('widget_config')
+          .select('*');
+        
+        if (data) {
+          setDbWidgetConfigs(data.map(item => ({
+            ...item,
+            settings: (item.settings || {}) as unknown as WidgetSettings,
+          })) as WidgetConfig[]);
+        }
+      };
+      fetchConfigs();
+    }
+  }, [editorContext]);
   
-  // Use editor context if available, otherwise use database query
-  const widgetConfigs = editorContext?.widgetConfigs || dbWidgetConfigs || [];
+  // Use editor context if available, otherwise use database fetch
+  const widgetConfigs = editorContext?.widgetConfigs || dbWidgetConfigs;
   
   const settings = useMemo(() => {
     const widget = widgetConfigs.find(w => w.widget_id === widgetId);
