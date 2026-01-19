@@ -1,101 +1,99 @@
-// ============= TOOL EXECUTOR WITH ROLE VALIDATION =============
+// ============= EXECUTOR =============
+// Bertugas:
+// - Memanggil tool
+// - Mengembalikan DATA
+// ❌ Tidak menyimpulkan kondisi hotel
 
-import { isToolAllowed } from "../lib/toolFilter.ts";
-import type { ManagerRole } from "../lib/constants.ts";
-
-import { getAvailabilitySummary, getTodayGuests } from "./availability.ts";
 import { getBookingStats, getRecentBookings, searchBookings, getBookingDetail } from "./bookingStats.ts";
-import { createAdminBooking, updateBookingStatus, updateGuestInfo, rescheduleBooking, changeBookingRoom } from "./bookingMutations.ts";
-import { getRoomInventory, updateRoomPrice, getRoomPrices } from "./roomManagement.ts";
-import { sendCheckinReminder } from "./notifications.ts";
 
-/**
- * Execute a tool with role re-validation
- * This provides an extra security layer beyond initial filtering
- */
-export async function executeToolWithValidation(
-  supabase: any,
-  toolName: string,
-  toolArgs: Record<string, any>,
-  managerRole: ManagerRole
-): Promise<any> {
-  // SECURITY: Re-validate role has access to this tool
-  if (!isToolAllowed(toolName, managerRole)) {
-    throw new Error(`Akses ditolak: Role "${managerRole}" tidak dapat menggunakan "${toolName}"`);
-  }
-  
-  return await executeTool(supabase, toolName, toolArgs);
+import { getAvailabilitySummary } from "./availability.ts";
+
+/* ================= TYPES ================= */
+
+interface ExecutorArgs {
+  period?: "today" | "week" | "month";
+  limit?: number;
+  status?: "confirmed" | "cancelled" | "checked_in" | "checked_out";
+  query?: string;
+  date_from?: string;
+  date_to?: string;
+  check_in?: string;
+  check_out?: string;
+  booking_code?: string;
 }
 
-/**
- * Execute tool by name
- */
-async function executeTool(supabase: any, toolName: string, args: any): Promise<any> {
-  console.log(`Executing tool: ${toolName}`, args);
-  
+/* ================= MAIN EXECUTOR ================= */
+
+export async function executeTool(supabase: unknown, toolName: string, args: ExecutorArgs) {
   switch (toolName) {
-    case 'get_availability_summary':
-      return await getAvailabilitySummary(supabase, args.check_in, args.check_out);
-    
-    case 'get_booking_stats':
-      return await getBookingStats(supabase, args.period);
-    
-    case 'get_recent_bookings':
-      return await getRecentBookings(supabase, args.limit, args.status);
-    
-    case 'search_bookings':
-      return await searchBookings(supabase, args.query, args.date_from, args.date_to, args.limit);
-    
-    case 'get_room_inventory':
-      return await getRoomInventory(supabase);
-    
-    case 'create_admin_booking': {
-      const result = await createAdminBooking(supabase, args);
-      
-      // SECURITY: Verify booking actually exists in database
-      if (result.success && result.booking_code) {
-        const { data: verifyBooking, error: verifyError } = await supabase
-          .from('bookings')
-          .select('id, booking_code')
-          .eq('booking_code', result.booking_code)
-          .single();
-        
-        if (verifyError || !verifyBooking) {
-          console.error(`❌ CRITICAL: Booking ${result.booking_code} NOT FOUND after insert!`, verifyError);
-          throw new Error(`Booking gagal tersimpan di database. Silakan coba lagi.`);
-        }
-        console.log(`✅ Booking ${result.booking_code} verified in database`);
+    /* ========= BOOKING STATS ========= */
+    case "booking_stats": {
+      if (!args.period) {
+        throw new Error("period is required for booking_stats");
       }
-      return result;
+
+      const stats = await getBookingStats(supabase, args.period);
+
+      return {
+        type: "stats",
+        data: stats,
+        note: "Statistik berdasarkan waktu pembuatan booking (created_at), bukan kondisi tamu menginap.",
+      };
     }
-    
-    case 'update_room_price':
-      return await updateRoomPrice(supabase, args);
-    
-    case 'get_room_prices':
-      return await getRoomPrices(supabase, args.room_name);
-    
-    case 'get_booking_detail':
-      return await getBookingDetail(supabase, args.booking_code);
-    
-    case 'update_booking_status':
-      return await updateBookingStatus(supabase, args.booking_code, args.new_status, args.cancellation_reason);
-    
-    case 'update_guest_info':
-      return await updateGuestInfo(supabase, args);
-    
-    case 'reschedule_booking':
-      return await rescheduleBooking(supabase, args);
-    
-    case 'change_booking_room':
-      return await changeBookingRoom(supabase, args);
-    
-    case 'send_checkin_reminder':
-      return await sendCheckinReminder(supabase, args.date);
-    
-    case 'get_today_guests':
-      return await getTodayGuests(supabase, args.type, args.date);
-    
+
+    /* ========= RECENT BOOKINGS ========= */
+    case "recent_bookings": {
+      const data = await getRecentBookings(supabase, args.limit ?? 5, args.status);
+
+      return {
+        type: "list",
+        data,
+      };
+    }
+
+    /* ========= SEARCH BOOKINGS ========= */
+    case "search_bookings": {
+      if (!args.query) {
+        throw new Error("query is required for search_bookings");
+      }
+
+      const data = await searchBookings(supabase, args.query, args.date_from, args.date_to, args.limit ?? 10);
+
+      return {
+        type: "list",
+        data,
+      };
+    }
+
+    /* ========= BOOKING DETAIL ========= */
+    case "booking_detail": {
+      if (!args.booking_code) {
+        throw new Error("booking_code is required");
+      }
+
+      const data = await getBookingDetail(supabase, args.booking_code);
+
+      return {
+        type: "detail",
+        data,
+      };
+    }
+
+    /* ========= AVAILABILITY ========= */
+    case "availability": {
+      if (!args.check_in || !args.check_out) {
+        throw new Error("check_in and check_out are required for availability");
+      }
+
+      const data = await getAvailabilitySummary(supabase, args.check_in, args.check_out);
+
+      return {
+        type: "availability",
+        data,
+      };
+    }
+
+    /* ========= UNKNOWN ========= */
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
