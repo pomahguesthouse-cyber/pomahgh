@@ -1,5 +1,6 @@
 import { useContext, useMemo } from 'react';
 import { EditorModeContext } from '@/contexts/EditorModeContext';
+import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { WidgetSettings } from '@/types/editor.types';
 
 interface WidgetStyles {
@@ -12,8 +13,13 @@ interface WidgetStyles {
 }
 
 export function useWidgetStyles(widgetId: string): WidgetStyles {
-  const context = useContext(EditorModeContext);
-  const widgetConfigs = context?.widgetConfigs || [];
+  const editorContext = useContext(EditorModeContext);
+  
+  // Fallback: fetch from database directly for public pages
+  const { widgetConfigs: dbWidgetConfigs } = useWidgetConfig();
+  
+  // Use editor context if available, otherwise use database query
+  const widgetConfigs = editorContext?.widgetConfigs || dbWidgetConfigs || [];
   
   const settings = useMemo(() => {
     const widget = widgetConfigs.find(w => w.widget_id === widgetId);
