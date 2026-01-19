@@ -1,80 +1,87 @@
-// ============= DATE HELPERS (WIB TIMEZONE) =============
+// lib/dateHelpers.ts
+// ==================================================
+// Semua helper tanggal WIB (Asia/Jakarta)
+// Satu pintu. Satu kebenaran. No UTC drama.
+// ==================================================
 
-import { INDONESIAN_DAYS, INDONESIAN_MONTHS } from "./constants.ts";
-import type { DateReferences } from "./types.ts";
+const WIB_TIMEZONE = "Asia/Jakarta";
 
 /**
- * Get current WIB (Western Indonesia Time) date
+ * Convert Date ke Date object WIB
  */
-export function getWibDate(): Date {
-  const now = new Date();
-  const wibOffset = 7 * 60; // UTC+7
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  return new Date(utc + (wibOffset * 60000));
+export function toWibDate(date: Date = new Date()): Date {
+  return new Date(date.toLocaleString("en-US", { timeZone: WIB_TIMEZONE }));
 }
 
 /**
- * Add days to a date
+ * Ambil tanggal WIB dalam format YYYY-MM-DD
+ * WAJIB dipakai untuk logic booking
  */
-export function addDays(date: Date, days: number): Date {
-  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+export function getWibDate(date: Date = new Date()): string {
+  const wib = toWibDate(date);
+  return wib.toISOString().slice(0, 10);
 }
 
 /**
- * Format date to YYYY-MM-DD
+ * Ambil DateTime WIB (Date object)
  */
-export function formatDateISO(date: Date): string {
-  return date.toISOString().split('T')[0];
+export function getWibDateTime(): Date {
+  return toWibDate(new Date());
 }
 
 /**
- * Format date in Indonesian format
+ * Cek apakah sebuah tanggal (YYYY-MM-DD) adalah hari ini (WIB)
  */
-export function formatDateIndonesian(dateStr: string): string {
-  const date = new Date(dateStr);
-  const day = INDONESIAN_DAYS[date.getDay()];
-  const month = INDONESIAN_MONTHS[date.getMonth()];
-  return `${day}, ${date.getDate()} ${month} ${date.getFullYear()}`;
+export function isWibToday(dateString: string): boolean {
+  return dateString === getWibDate();
 }
 
 /**
- * Get date references for system prompt
+ * Bandingkan dua tanggal (YYYY-MM-DD)
+ * return:
+ * -1 = a < b
+ *  0 = sama
+ *  1 = a > b
  */
-export function getDateReferences(): DateReferences {
-  const wibTime = getWibDate();
-  
-  const today = formatDateISO(wibTime);
-  const tomorrow = formatDateISO(addDays(wibTime, 1));
-  const lusa = formatDateISO(addDays(wibTime, 2));
-  const nextWeek = formatDateISO(addDays(wibTime, 7));
-  
-  // Calculate next weekend (Saturday)
-  const currentDay = wibTime.getDay();
-  const daysUntilSaturday = (6 - currentDay + 7) % 7 || 7;
-  const weekend = formatDateISO(addDays(wibTime, daysUntilSaturday));
-
-  return { today, tomorrow, lusa, nextWeek, weekend };
+export function compareDates(a: string, b: string): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
 }
 
 /**
- * Get current WIB time string (HH:MM)
+ * Cek apakah tanggal target berada di dalam range
+ * Range bersifat:
+ * checkIn <= target < checkOut
  */
-export function getCurrentTimeWIB(): string {
-  const wibDate = getWibDate();
-  const hour = wibDate.getUTCHours();
-  const minute = wibDate.getUTCMinutes();
-  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+export function isDateInStayRange(target: string, checkIn: string, checkOut: string): boolean {
+  return target >= checkIn && target < checkOut;
 }
 
 /**
- * Check if current time is before a given time
+ * Hitung jumlah malam menginap
  */
-export function isBeforeTime(targetTime: string): boolean {
-  const wibDate = getWibDate();
-  const currentHour = wibDate.getUTCHours();
-  const currentMinute = wibDate.getUTCMinutes();
-  
-  const [targetHour, targetMinute] = targetTime.split(':').map(Number);
-  
-  return currentHour < targetHour || (currentHour === targetHour && currentMinute < targetMinute);
+export function countNights(checkIn: string, checkOut: string): number {
+  const start = new Date(checkIn);
+  const end = new Date(checkOut);
+  const diff = end.getTime() - start.getTime();
+  return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
+
+/**
+ * Generate array tanggal (YYYY-MM-DD) antara dua tanggal
+ * Digunakan untuk availability / calendar
+ */
+export function getDateRange(startDate: string, endDate: string): string[] {
+  const dates: string[] = [];
+  let current = new Date(startDate);
+
+  const end = new Date(endDate);
+
+  while (current < end) {
+    dates.push(current.toISOString().slice(0, 10));
+    current.setDate(current.getDate() + 1);
+  }
+
+  return dates;
 }
