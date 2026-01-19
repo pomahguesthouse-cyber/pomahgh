@@ -32,6 +32,7 @@ interface BookingRow {
   allocated_room_number: string | null;
   num_guests: number;
   total_price: number;
+  status?: string;
   rooms?: {
     name: string;
   } | null;
@@ -54,6 +55,13 @@ interface RoomPromotionRow {
   priority: number;
 }
 
+/* ================= HELPERS ================= */
+
+function isDateInRange(checkIn: string, checkOut: string, date: string) {
+  // check_out EXCLUSIVE
+  return checkIn <= date && date < checkOut;
+}
+
 /* ================= AVAILABILITY ================= */
 
 export async function getAvailabilitySummary(supabase: unknown, checkIn: string, checkOut: string) {
@@ -68,10 +76,10 @@ export async function getAvailabilitySummary(supabase: unknown, checkIn: string,
 
   const { data: bookings, error: bookingsError } = await (supabase as any)
     .from("bookings")
-    .select("room_id, allocated_room_number, check_in, check_out")
-    .neq("status", "cancelled")
-    .lte("check_in", checkOut)
-    .gte("check_out", checkIn);
+    .select("room_id, allocated_room_number, check_in, check_out, status")
+    .in("status", ["confirmed", "checked_in"])
+    .lt("check_in", checkOut)
+    .gt("check_out", checkIn); // IMPORTANT: exclusive logic
 
   if (bookingsError) throw bookingsError;
 
@@ -79,7 +87,7 @@ export async function getAvailabilitySummary(supabase: unknown, checkIn: string,
     .from("room_unavailable_dates")
     .select("room_id, room_number, unavailable_date")
     .gte("unavailable_date", checkIn)
-    .lte("unavailable_date", checkOut);
+    .lt("unavailable_date", checkOut);
 
   if (blockedError) throw blockedError;
 
@@ -87,8 +95,8 @@ export async function getAvailabilitySummary(supabase: unknown, checkIn: string,
     .from("room_promotions")
     .select("*")
     .eq("is_active", true)
-    .lte("start_date", checkOut)
-    .gte("end_date", checkIn)
+    .lt("start_date", checkOut)
+    .gt("end_date", checkIn)
     .order("priority", { ascending: false });
 
   const result = (rooms as RoomRow[]).map((room) => {
@@ -215,27 +223,26 @@ export async function getTodayGuests(
         "booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)",
       )
       .eq("check_out", targetDate)
-      .eq("status", "confirmed");
+      .in("status", ["confirmed", "checked_in"]);
 
     results.checkout_guests = (data as BookingRow[]).map((b) => mapGuest(b));
   }
 
   if (type === "staying" || type === "all") {
-    let query = (supabase as any)
+    const { data } = await (supabase as any)
       .from("bookings")
       .select(
         "booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)",
       )
-      .lte("check_in", targetDate)
-      .eq("status", "confirmed");
+      .in("status", ["confirmed", "checked_in"]);
 
-    query = isBeforeCheckoutTime ? query.gte("check_out", targetDate) : query.gt("check_out", targetDate);
-
-    const { data } = await query;
-
-    results.staying_guests = (data as BookingRow[]).map((b) =>
-      mapGuest(b, { is_checkout_today: b.check_out === targetDate }),
-    );
+    results.staying_guests = (data as BookingRow[])
+      .filter((b) =>
+        isBeforeCheckoutTime
+          ? isDateInRange(b.check_in, b.check_out, targetDate)
+          : isDateInRange(b.check_in, b.check_out, targetDate),
+      )
+      .map((b) => mapGuest(b, { is_checkout_today: b.check_out === targetDate }));
   }
 
   results.summary = {
