@@ -44,7 +44,7 @@ export function FloatingToolbar({ widgetId, isEnabled, onOpenSettings }: Floatin
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.15 }}
           className={cn(
-            'absolute -bottom-12 left-1/2 -translate-x-1/2 z-50',
+            'absolute -bottom-12 left-1/2 -translate-x-1/2 z-[60]',
             'flex items-center gap-1 p-1.5 rounded-lg',
             'bg-background border shadow-lg'
           )}

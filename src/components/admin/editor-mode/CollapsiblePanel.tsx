@@ -28,7 +28,7 @@ export function CollapsiblePanel({ isOpen, onClose }: CollapsiblePanelProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 z-40"
+            className="fixed inset-0 bg-black/20 z-[80]"
             onClick={onClose}
           />
           
@@ -39,7 +39,7 @@ export function CollapsiblePanel({ isOpen, onClose }: CollapsiblePanelProps) {
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className={cn(
-              'fixed right-0 top-0 bottom-0 w-80 z-50',
+              'fixed right-0 top-14 bottom-0 w-80 z-[90]',
               'bg-background border-l shadow-2xl',
               'flex flex-col'
             )}
