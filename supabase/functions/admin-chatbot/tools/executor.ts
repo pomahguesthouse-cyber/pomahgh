@@ -1,9 +1,8 @@
 // ============= EXECUTOR =============
-// Tugas:
 // - Validasi role
-// - Validasi argumen
-// - Dispatch tool
-// - TIDAK menyimpulkan kondisi hotel
+// - Normalisasi input dari LLM
+// - Dispatch ke tool
+// - ADMIN-GRADE (no asumsi)
 
 import { getBookingStats, getRecentBookings, searchBookings, getBookingDetail } from "./bookingStats.ts";
 
@@ -13,10 +12,12 @@ import { getTodayWIB, getCurrentTimeWIB } from "../lib/dateHelpers.ts";
 
 /* ================= TYPES ================= */
 
+export type BookingStatus = "confirmed" | "cancelled" | "checked_in" | "checked_out";
+
 export interface ExecutorArgs {
   period?: "today" | "week" | "month";
   limit?: number;
-  status?: "confirmed" | "cancelled" | "checked_in" | "checked_out" | string;
+  status?: string;
   query?: string;
   date_from?: string;
   date_to?: string;
@@ -33,7 +34,6 @@ export interface ExecutorResult {
 
 /* ================= ROLE GUARD ================= */
 
-// Role yang dianggap setara manager
 const MANAGER_ROLES = new Set(["manager", "admin", "owner"]);
 
 function isManagerRole(role: string): boolean {
@@ -46,6 +46,15 @@ function assertRoleAllowed(toolName: string, role: string) {
   if (MANAGER_ONLY_TOOLS.has(toolName) && !isManagerRole(role)) {
     throw new Error("Anda tidak memiliki izin untuk mengakses tool ini.");
   }
+}
+
+/* ================= NORMALIZERS ================= */
+
+function normalizeBookingStatus(status?: string): BookingStatus | undefined {
+  if (status === "confirmed" || status === "cancelled" || status === "checked_in" || status === "checked_out") {
+    return status;
+  }
+  return undefined;
 }
 
 /* ================= INTERNAL EXECUTOR ================= */
@@ -71,7 +80,9 @@ async function executeTool(supabase: unknown, toolName: string, args: ExecutorAr
 
     /* ========= RECENT BOOKINGS ========= */
     case "recent_bookings": {
-      const data = await getRecentBookings(client, args.limit ?? 5, args.status);
+      const normalizedStatus = normalizeBookingStatus(args.status);
+
+      const data = await getRecentBookings(client, args.limit ?? 5, normalizedStatus);
 
       return {
         type: "list",
@@ -156,7 +167,7 @@ async function executeTool(supabase: unknown, toolName: string, args: ExecutorAr
         // belum check-in
         if (b.check_in > today) return false;
 
-        // checkout masih setelah hari ini
+        // checkout setelah hari ini
         if (b.check_out > today) return true;
 
         // checkout hari ini → cek jam
@@ -184,8 +195,8 @@ async function executeTool(supabase: unknown, toolName: string, args: ExecutorAr
 
 /**
  * DIPANGGIL OLEH index.ts
- * Signature HARUS:
- * (supabase, toolName, args, role: string)
+ * Signature:
+ * (supabase, toolName, args, role)
  */
 export async function executeToolWithValidation(
   supabase: unknown,
