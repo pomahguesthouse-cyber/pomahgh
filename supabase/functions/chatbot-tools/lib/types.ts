@@ -1,4 +1,16 @@
+// ===============================
+// Shared JSON-safe utility types
+// ===============================
+export type JSONValue = string | number | boolean | null | JSONValue[] | { [key: string]: JSONValue };
+
+// Generic extensible object (pengganti any)
+export interface ExtensibleObject {
+  [key: string]: unknown;
+}
+
+// ===============================
 // Room information
+// ===============================
 export interface RoomInfo {
   id: string;
   name: string;
@@ -11,13 +23,17 @@ export interface RoomInfo {
   features?: string[];
 }
 
+// ===============================
 // Room selection for booking
+// ===============================
 export interface RoomSelection {
   room_name: string;
   quantity: number;
 }
 
-// Matched room with availability info
+// ===============================
+// Matched room with availability
+// ===============================
 export interface MatchedRoom {
   roomId: string;
   roomName: string;
@@ -26,7 +42,9 @@ export interface MatchedRoom {
   availableNumbers: string[];
 }
 
+// ===============================
 // Booking result returned to client
+// ===============================
 export interface BookingResult {
   message: string;
   booking_code: string;
@@ -37,7 +55,9 @@ export interface BookingResult {
   is_update: boolean;
 }
 
+// ===============================
 // Availability query parameters
+// ===============================
 export interface AvailabilityQuery {
   roomId: string;
   roomNumbers: string[];
@@ -46,27 +66,35 @@ export interface AvailabilityQuery {
   excludeBookingId?: string;
 }
 
+// ===============================
 // Availability result
+// ===============================
 export interface AvailabilityResult {
   available: string[];
   unavailable: Set<string>;
 }
 
+// ===============================
 // Booking code parse result
+// ===============================
 export interface BookingCodeParseResult {
   valid: boolean;
   normalized: string | null;
   error?: string;
 }
 
-// Date validation result with warning flag
+// ===============================
+// Date validation result
+// ===============================
 export interface DateValidationResult {
   date: string;
   wasFixed: boolean;
   warning?: string;
 }
 
+// ===============================
 // WhatsApp message payload
+// ===============================
 export interface WhatsAppMessagePayload {
   guestName: string;
   guestEmail: string;
@@ -83,7 +111,9 @@ export interface WhatsAppMessagePayload {
   status?: string;
 }
 
+// ===============================
 // Create booking parameters
+// ===============================
 export interface CreateBookingParams {
   guest_name: string;
   guest_email: string;
@@ -96,7 +126,9 @@ export interface CreateBookingParams {
   special_requests?: string;
 }
 
+// ===============================
 // Update booking parameters
+// ===============================
 export interface UpdateBookingParams {
   booking_id: string;
   guest_phone: string;
@@ -107,21 +139,33 @@ export interface UpdateBookingParams {
   new_special_requests?: string;
 }
 
+// ===============================
 // Get booking details parameters
+// ===============================
 export interface GetBookingParams {
   booking_id: string;
   guest_phone: string;
   guest_email: string;
 }
 
+// ===============================
 // Check availability parameters
+// ===============================
 export interface CheckAvailabilityParams {
   check_in: string;
   check_out: string;
   num_guests?: number;
 }
 
+// ===============================
 // Get room details parameters
+// ===============================
 export interface GetRoomDetailsParams {
   room_name: string;
 }
+
+// ===============================
+// Optional: Metadata / extra payload
+// (pengganti interface dengan [key: string]: any)
+// ===============================
+export interface Metadata extends ExtensibleObject {}
