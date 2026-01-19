@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, Terminal } from "lucide-react";
+import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, Terminal, Palette } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
@@ -103,6 +103,13 @@ const menuGroups: MenuGroup[] = [{
     title: "Invoice Template",
     url: "/admin/invoice-template",
     icon: FileText
+  }]
+}, {
+  label: "Design",
+  items: [{
+    title: "Editor Mode",
+    url: "/admin/editor",
+    icon: Palette
   }]
 }, {
   label: "Developer Tools",

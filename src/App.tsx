@@ -41,6 +41,7 @@ import AdminChat from "./pages/admin/AdminChat";
 import AdminCityEvents from "./pages/admin/AdminCityEvents";
 import EventDetail from "./pages/EventDetail";
 import AdminDeveloperTools from "./pages/admin/AdminDeveloperTools";
+import AdminEditorMode from "./pages/admin/AdminEditorMode";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -86,6 +87,7 @@ const App = () => (
           <Route path="/admin/city-events" element={<AdminLayout><AdminCityEvents /></AdminLayout>} />
           <Route path="/admin/competitor-analysis" element={<AdminCompetitorAnalysis />} />
           <Route path="/admin/developer-tools" element={<AdminLayout><AdminDeveloperTools /></AdminLayout>} />
+          <Route path="/admin/editor" element={<AdminEditorMode />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
