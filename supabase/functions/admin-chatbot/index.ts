@@ -14,6 +14,7 @@ import { logAuditEntry } from "./lib/auditLog.ts";
 import { TOOLS } from "./tools/definitions.ts";
 import type { HotelSettings, PersonaSettings, ToolExecution } from "./lib/types.ts";
 import { adminCache, ADMIN_CACHE_KEYS, ADMIN_CACHE_TTL, getOrLoadAdmin } from "./lib/cache.ts";
+import { detectForcedToolIntent, formatToolResultForContext } from "./lib/intentDetector.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -123,11 +124,40 @@ Deno.serve(async (req: Request) => {
     const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
+    // 5.5 PRE-FETCH: Detect intent that requires forced tool call to prevent hallucination
+    let prefetchedData = '';
+    const forcedIntent = detectForcedToolIntent(userMessage);
+    if (forcedIntent) {
+      console.log(`🔧 Pre-fetching data for intent: ${forcedIntent.tool}`);
+      try {
+        const prefetchResult = await executeToolWithValidation(
+          supabase, forcedIntent.tool, forcedIntent.args, auth.managerRole
+        );
+        prefetchedData = formatToolResultForContext(forcedIntent.tool, prefetchResult);
+        executedTools.push({
+          tool_name: forcedIntent.tool,
+          arguments: forcedIntent.args,
+          result: prefetchResult,
+          success: true,
+          executed_at: new Date().toISOString()
+        });
+        console.log(`✅ Pre-fetch successful for ${forcedIntent.tool}`);
+      } catch (prefetchError: any) {
+        console.error(`❌ Pre-fetch failed for ${forcedIntent.tool}:`, prefetchError);
+      }
+    }
+
     // 6. Stream response
     const stream = createSSEStream(async (ctx: StreamContext) => {
       let finalResponse = '';
+      
+      // Inject prefetched data into system prompt if available
+      const enhancedSystemPrompt = prefetchedData 
+        ? systemPrompt + prefetchedData
+        : systemPrompt;
+      
       let currentMessages = [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: enhancedSystemPrompt },
         ...messages.map((m: any) => ({ role: m.role, content: m.content }))
       ];
       

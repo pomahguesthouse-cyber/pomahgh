@@ -394,13 +394,15 @@ serve(async (req) => {
       await logMessage(supabase, convId, 'user', normalizedMessage);
       await updateSession(supabase, phone, convId, false, 'admin'); // Set session_type = 'admin'
       
-      // Get conversation history
+      // Get conversation history - REDUCED for admin mode to prevent hallucination
+      // Admin mode uses 5 messages max (vs 20 for guest) to minimize context pollution
+      const adminHistoryLimit = 5;
       const { data: history } = await supabase
         .from('chat_messages')
         .select('role, content')
         .eq('conversation_id', convId)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(adminHistoryLimit);
       
       const messages = (history || []).reverse().map(m => ({
         role: m.role as 'user' | 'assistant',
