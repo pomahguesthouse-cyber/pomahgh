@@ -1,7 +1,15 @@
 import { motion } from "framer-motion";
 import { MapPin, Compass } from "lucide-react";
+import { useContext } from "react";
+import { EditorModeContext } from "@/contexts/EditorModeContext";
+import { EditableText } from "@/components/admin/editor-mode/EditableText";
+import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
 
 export const ExploreHero = () => {
+  const editorContext = useContext(EditorModeContext);
+  const isEditorMode = editorContext?.isEditorMode ?? false;
+  const { getElementStyles } = usePublicOverrides();
+
   return (
     <section className="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
       {/* Background with gradient overlay */}
@@ -27,23 +35,51 @@ export const ExploreHero = () => {
           </span>
         </motion.div>
         
-        <motion.h1
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl md:text-6xl lg:text-7xl font-cinzel font-semibold text-white mb-6"
         >
-          Explore Semarang
-        </motion.h1>
+          {isEditorMode ? (
+            <EditableText
+              widgetId="explore-hero"
+              field="title"
+              value="Explore Semarang"
+              as="h1"
+              className="text-4xl md:text-6xl lg:text-7xl font-cinzel font-semibold text-white mb-6"
+            />
+          ) : (
+            <h1 
+              className="text-4xl md:text-6xl lg:text-7xl font-cinzel font-semibold text-white mb-6"
+              style={getElementStyles('explore-hero-title')}
+            >
+              Explore Semarang
+            </h1>
+          )}
+        </motion.div>
         
-        <motion.p
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto"
         >
-          Temukan keindahan ibukota Jawa Tengah — dari bangunan bersejarah hingga kuliner legendaris
-        </motion.p>
+          {isEditorMode ? (
+            <EditableText
+              widgetId="explore-hero"
+              field="description"
+              value="Temukan keindahan ibukota Jawa Tengah — dari bangunan bersejarah hingga kuliner legendaris"
+              as="p"
+              className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto"
+            />
+          ) : (
+            <p 
+              className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto"
+              style={getElementStyles('explore-hero-description')}
+            >
+              Temukan keindahan ibukota Jawa Tengah — dari bangunan bersejarah hingga kuliner legendaris
+            </p>
+          )}
+        </motion.div>
         
         <motion.div
           initial={{ opacity: 0, y: 30 }}

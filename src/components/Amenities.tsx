@@ -5,8 +5,11 @@ import { useFacilityHeroSlides } from "@/hooks/useFacilityHeroSlides";
 import { motion } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useContext } from "react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { EditorModeContext } from "@/contexts/EditorModeContext";
+import { EditableText } from "@/components/admin/editor-mode/EditableText";
+import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
 
 
 // ---------- FacilityCard (modular) ----------
@@ -135,6 +138,9 @@ const FacilitiesHero = () => {
 // ---------- Main Amenities Component ----------
 export const Amenities = () => {
   const { data: facilities, isLoading, error } = useFacilities();
+  const editorContext = useContext(EditorModeContext);
+  const isEditorMode = editorContext?.isEditorMode ?? false;
+  const { getElementStyles } = usePublicOverrides();
 
   const renderSkeletons = () => (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -174,11 +180,39 @@ export const Amenities = () => {
           viewport={{ once: true }}
           className="text-center mb-12 sm:mb-16"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-cinzel font-semibold text-foreground mb-4">Facilities</h2>
+          {isEditorMode ? (
+            <EditableText
+              widgetId="amenities"
+              field="title"
+              value="Facilities"
+              as="h2"
+              className="text-2xl sm:text-3xl md:text-4xl font-cinzel font-semibold text-foreground mb-4"
+            />
+          ) : (
+            <h2 
+              className="text-2xl sm:text-3xl md:text-4xl font-cinzel font-semibold text-foreground mb-4"
+              style={getElementStyles('amenities-title')}
+            >
+              Facilities
+            </h2>
+          )}
           <div className="w-20 sm:w-24 h-1 bg-primary mx-auto mb-4 sm:mb-6" />
-          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
-            Indulge in world-class facilities designed to elevate your stay and create unforgettable memories.
-          </p>
+          {isEditorMode ? (
+            <EditableText
+              widgetId="amenities"
+              field="description"
+              value="Indulge in world-class facilities designed to elevate your stay and create unforgettable memories."
+              as="p"
+              className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4"
+            />
+          ) : (
+            <p 
+              className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4"
+              style={getElementStyles('amenities-description')}
+            >
+              Indulge in world-class facilities designed to elevate your stay and create unforgettable memories.
+            </p>
+          )}
         </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">

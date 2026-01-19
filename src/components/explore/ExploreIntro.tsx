@@ -1,6 +1,14 @@
 import { motion } from "framer-motion";
+import { useContext } from "react";
+import { EditorModeContext } from "@/contexts/EditorModeContext";
+import { EditableText } from "@/components/admin/editor-mode/EditableText";
+import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
 
 export const ExploreIntro = () => {
+  const editorContext = useContext(EditorModeContext);
+  const isEditorMode = editorContext?.isEditorMode ?? false;
+  const { getElementStyles } = usePublicOverrides();
+
   return (
     <section className="py-16 px-4 bg-background">
       <div className="max-w-4xl mx-auto">
@@ -10,9 +18,22 @@ export const ExploreIntro = () => {
           viewport={{ once: true }}
           className="text-center"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-            Selamat Datang di Semarang
-          </h2>
+          {isEditorMode ? (
+            <EditableText
+              widgetId="explore-intro"
+              field="title"
+              value="Selamat Datang di Semarang"
+              as="h2"
+              className="text-3xl md:text-4xl font-bold text-foreground mb-6"
+            />
+          ) : (
+            <h2 
+              className="text-3xl md:text-4xl font-bold text-foreground mb-6"
+              style={getElementStyles('explore-intro-title')}
+            >
+              Selamat Datang di Semarang
+            </h2>
+          )}
           <div className="prose prose-lg mx-auto text-muted-foreground">
             <p>
               Semarang, ibukota Jawa Tengah, adalah kota yang memadukan pesona masa lalu dengan dinamika modern. 
