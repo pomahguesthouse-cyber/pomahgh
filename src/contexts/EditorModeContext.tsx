@@ -9,15 +9,45 @@ interface HistoryState {
   themeConfig: ThemeConfig | null;
   widgetConfigs: WidgetConfig[];
   widgetTextOverrides: Record<string, Record<string, string>>;
+  elementOverrides: Record<string, ElementOverride>;
+}
+
+export interface ElementOverride {
+  text?: string;
+  fontSize?: string;
+  fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textDecoration?: string;
+  textAlign?: string;
+  color?: string;
+  backgroundColor?: string;
+  hidden?: boolean;
+  deleted?: boolean;
 }
 
 interface EditorModeContextType {
   isEditorMode: boolean;
   setIsEditorMode: (value: boolean) => void;
+  
+  // Widget-level selection (legacy)
   selectedWidget: string | null;
   setSelectedWidget: (id: string | null) => void;
   hoveredWidget: string | null;
   setHoveredWidget: (id: string | null) => void;
+  
+  // Element-level selection (Visual Edits style)
+  selectedElement: string | null;
+  setSelectedElement: (id: string | null) => void;
+  hoveredElement: string | null;
+  setHoveredElement: (id: string | null) => void;
+  editingElement: string | null;
+  setEditingElement: (id: string | null) => void;
+  
+  // Element overrides
+  elementOverrides: Record<string, ElementOverride>;
+  updateElementOverride: (elementId: string, updates: Partial<ElementOverride>) => void;
+  
   previewMode: 'desktop' | 'tablet' | 'mobile';
   setPreviewMode: (mode: 'desktop' | 'tablet' | 'mobile') => void;
   isDirty: boolean;
@@ -57,6 +87,7 @@ interface EditorModeContextType {
   // Actions
   saveChanges: () => Promise<void>;
   resetChanges: () => void;
+  exitEditorMode: () => void;
   isLoading: boolean;
 }
 
@@ -66,8 +97,17 @@ const MAX_HISTORY = 50;
 
 export function EditorModeProvider({ children }: { children: React.ReactNode }) {
   const [isEditorMode, setIsEditorMode] = useState(true);
+  
+  // Widget-level selection (legacy)
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
   const [hoveredWidget, setHoveredWidget] = useState<string | null>(null);
+  
+  // Element-level selection (Visual Edits style)
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [hoveredElement, setHoveredElement] = useState<string | null>(null);
+  const [editingElement, setEditingElement] = useState<string | null>(null);
+  const [elementOverrides, setElementOverrides] = useState<Record<string, ElementOverride>>({});
+  
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -149,6 +189,7 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
       themeConfig: localTheme,
       widgetConfigs: localWidgets,
       widgetTextOverrides,
+      elementOverrides,
     };
     
     setHistory(prev => {
@@ -172,6 +213,7 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
     setLocalTheme(prevState.themeConfig);
     setLocalWidgets(prevState.widgetConfigs);
     setWidgetTextOverrides(prevState.widgetTextOverrides);
+    setElementOverrides(prevState.elementOverrides);
     setHistoryIndex(prev => prev - 1);
     setIsDirty(true);
   }, [history, historyIndex]);
@@ -184,9 +226,29 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
     setLocalTheme(nextState.themeConfig);
     setLocalWidgets(nextState.widgetConfigs);
     setWidgetTextOverrides(nextState.widgetTextOverrides);
+    setElementOverrides(nextState.elementOverrides);
     setHistoryIndex(prev => prev + 1);
     setIsDirty(true);
   }, [history, historyIndex]);
+
+  const updateElementOverride = useCallback((elementId: string, updates: Partial<ElementOverride>) => {
+    pushHistory();
+    setElementOverrides(prev => ({
+      ...prev,
+      [elementId]: {
+        ...prev[elementId],
+        ...updates,
+      },
+    }));
+    setIsDirty(true);
+  }, [pushHistory]);
+
+  const exitEditorMode = useCallback(() => {
+    setIsEditorMode(false);
+    setSelectedElement(null);
+    setEditingElement(null);
+    setSelectedWidget(null);
+  }, []);
 
   const updateTheme = useCallback((updates: Partial<ThemeConfig>) => {
     pushHistory();
@@ -330,6 +392,9 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
     setLocalTheme(themeConfig);
     setLocalWidgets(widgetConfigs);
     setWidgetTextOverrides({});
+    setElementOverrides({});
+    setSelectedElement(null);
+    setEditingElement(null);
     setIsDirty(false);
     setHistory([]);
     setHistoryIndex(-1);
@@ -343,6 +408,14 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
     setSelectedWidget,
     hoveredWidget,
     setHoveredWidget,
+    selectedElement,
+    setSelectedElement,
+    hoveredElement,
+    setHoveredElement,
+    editingElement,
+    setEditingElement,
+    elementOverrides,
+    updateElementOverride,
     previewMode,
     setPreviewMode,
     isDirty,
@@ -368,6 +441,7 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
     redo,
     saveChanges,
     resetChanges,
+    exitEditorMode,
     isLoading: themeLoading || widgetsLoading || templatesLoading,
   };
 
