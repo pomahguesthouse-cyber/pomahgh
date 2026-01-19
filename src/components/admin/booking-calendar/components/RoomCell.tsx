@@ -1,4 +1,3 @@
-import { memo } from "react";
 import { format, differenceInDays, parseISO, getDay } from "date-fns";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
@@ -27,7 +26,7 @@ interface RoomCellProps {
   activeBooking?: Booking | null;
 }
 
-export const RoomCell = memo(function RoomCell({
+export const RoomCell = ({
   roomId,
   roomNumber,
   date,
@@ -43,7 +42,7 @@ export const RoomCell = memo(function RoomCell({
   getResizePreview,
   isResizing,
   activeBooking,
-}: RoomCellProps) {
+}: RoomCellProps) => {
   const isWeekend = getDay(date) === 0 || getDay(date) === 6;
   const holiday = isIndonesianHoliday(date);
   const isHolidayOrWeekend = isWeekend || holiday !== null;
@@ -179,4 +178,4 @@ export const RoomCell = memo(function RoomCell({
   }
 
   return cell;
-});
+};

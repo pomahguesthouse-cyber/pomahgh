@@ -1,21 +1,22 @@
-import React, { useMemo, useRef, useEffect } from "react";
-import { useVirtualizer, Virtualizer } from "@tanstack/react-virtual";
+import React, { useMemo } from "react";
 import { Booking, RoomInfo } from "../types";
 import { CalendarHeaderRow } from "./CalendarHeaderRow";
 import { RoomRow } from "./RoomRow";
-import { isWIBToday } from "@/utils/wibTimezone";
 
 interface CalendarTableProps {
   dates: Date[];
   cellWidth: number;
-  roomsByType: Record<string, RoomInfo[]>;
+
+  roomsByType: Record<string, RoomInfo[]>; // Sudah langsung berupa RoomInfo[] per tipe
   allRoomNumbers: RoomInfo[];
+
   getBookingForCell: (roomNumber: string, date: Date) => Booking | null;
   isDateBlocked: (roomId: string, roomNumber: string, date: Date) => boolean;
   getBlockReason: (roomId: string, roomNumber: string, date: Date) => string | undefined;
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
+
   onResizeStart?: (e: React.MouseEvent, booking: Booking, edge: "left" | "right") => void;
   getResizePreview?: (bookingId: string) => { previewDays: number; edge: "left" | "right" | null };
   isResizing?: boolean;
@@ -38,39 +39,11 @@ export const CalendarTable = ({
   isResizing,
   activeBooking,
 }: CalendarTableProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const stickyColumnWidth = 80;
+  // Width perhitungan lebih clean - use 80px for mobile sticky column
+  const stickyColumnWidth = 80; // matches RoomRow and CalendarHeaderRow mobile width
+  const tableWidth = useMemo(() => dates.length * cellWidth + stickyColumnWidth + 30, [dates, cellWidth]);
 
-  // Horizontal virtualizer for columns (dates)
-  const columnVirtualizer = useVirtualizer({
-    horizontal: true,
-    count: dates.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => cellWidth,
-    overscan: 5,
-  });
-
-  // Auto-scroll to TODAY on mount
-  useEffect(() => {
-    const todayIndex = dates.findIndex(isWIBToday);
-    if (todayIndex === -1 || !scrollRef.current) return;
-
-    const container = scrollRef.current;
-    const left = todayIndex * cellWidth - container.clientWidth / 2 + cellWidth / 2;
-
-    // Small delay to ensure layout is ready
-    const timer = setTimeout(() => {
-      container.scrollTo({
-        left: Math.max(left, 0),
-        behavior: "smooth",
-      });
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [dates, cellWidth]);
-
-  const totalWidth = columnVirtualizer.getTotalSize() + stickyColumnWidth + 30;
-
+  // Grouping helper biar props ke RoomRow nggak ribet
   const bookingActions = {
     getBookingForCell,
     handleBookingClick,
@@ -88,17 +61,11 @@ export const CalendarTable = ({
   };
 
   return (
-    <div 
-      ref={scrollRef}
-      className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[55vh] md:max-h-[70vh] scroll-smooth"
-    >
-      <table className="border-collapse table-fixed" style={{ width: totalWidth }}>
+    <div className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[55vh] md:max-h-[70vh] scroll-smooth">
+      <table className="border-collapse table-fixed" style={{ width: tableWidth }}>
+        {/* Sticky Header */}
         <thead className="sticky top-0 z-50">
-          <CalendarHeaderRow 
-            dates={dates} 
-            cellWidth={cellWidth} 
-            virtualizer={columnVirtualizer}
-          />
+          <CalendarHeaderRow dates={dates} cellWidth={cellWidth} />
         </thead>
 
         <tbody>
@@ -110,15 +77,13 @@ export const CalendarTable = ({
                   className="sticky left-0 z-30 p-1 md:p-2 px-2 md:px-3 font-bold text-[10px] md:text-xs uppercase tracking-wider 
                                text-muted-foreground bg-stone-200 dark:bg-stone-800 
                                shadow-sm border-r border-border"
-                  style={{ width: stickyColumnWidth, minWidth: stickyColumnWidth }}
                 >
                   {roomType}
                 </td>
-                <td 
-                  className="bg-stone-200 dark:bg-stone-800 border border-border p-0" 
-                  style={{ width: columnVirtualizer.getTotalSize() }}
-                  colSpan={dates.length}
-                />
+
+                {dates.map((date) => (
+                  <td key={date.toISOString()} className="bg-stone-200 dark:bg-stone-800 border border-border" />
+                ))}
               </tr>
 
               {/* Rooms */}
@@ -128,7 +93,6 @@ export const CalendarTable = ({
                   room={room}
                   dates={dates}
                   cellWidth={cellWidth}
-                  virtualizer={columnVirtualizer}
                   {...bookingActions}
                   {...cellCheckers}
                 />
