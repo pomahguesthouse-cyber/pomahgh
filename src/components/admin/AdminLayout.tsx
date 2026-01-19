@@ -24,9 +24,10 @@ const getPageTitle = (pathname: string): string => {
     "/admin/seo-settings": "SEO Settings",
     "/admin/invoice-template": "Invoice Template",
     "/admin/city-attractions": "City Attractions",
-    "/admin/facility-hero-slides": "Facility Hero"
+    "/admin/facility-hero-slides": "Facility Hero",
+    "/admin/developer-tools": "Developer Tools"
   };
-  return titles[pathname] || "Virtual Assistant";
+  return titles[pathname] || "Admin Panel";
 };
 export const AdminLayout = ({
   children
