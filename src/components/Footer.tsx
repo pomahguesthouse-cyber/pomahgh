@@ -38,7 +38,7 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
             {isEditorMode ? (
               <EditableText
                 widgetId="footer"
-                field="hotelName"
+                field="title"
                 value={hotelName}
                 as="h3"
                 className="text-2xl font-bold mb-4"
@@ -46,7 +46,7 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
             ) : (
               <h3 
                 className="text-2xl font-bold mb-4"
-                style={getElementStyles('footer-hotelName')}
+                style={getElementStyles('footer-title')}
               >
                 {hotelName}
               </h3>
@@ -54,7 +54,7 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
             {isEditorMode ? (
               <EditableText
                 widgetId="footer"
-                field="description"
+                field="subtitle"
                 value={description}
                 as="p"
                 multiline
@@ -63,7 +63,7 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
             ) : (
               <p 
                 className="text-primary-foreground/80"
-                style={getElementStyles('footer-description')}
+                style={getElementStyles('footer-subtitle')}
               >
                 {description}
               </p>

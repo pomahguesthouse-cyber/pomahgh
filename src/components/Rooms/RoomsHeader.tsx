@@ -50,7 +50,7 @@ export const RoomsHeader = ({ checkIn, checkOut, totalNights }: RoomsHeaderProps
         isEditorMode ? (
           <EditableText
             widgetId="rooms"
-            field="subtitle-dates"
+            field="subtitle_dates"
             value={`Mencari kamar untuk: ${format(checkIn, "dd MMM yyyy", { locale: localeId })} - ${format(checkOut, "dd MMM yyyy", { locale: localeId })} (${totalNights} malam)`}
             as="p"
             className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"

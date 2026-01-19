@@ -400,15 +400,25 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
       for (const widget of localWidgets) {
         const textOverrides = widgetTextOverrides[widget.widget_id] || {};
         
-        // Merge text overrides into settings
-        // Map field names to settings keys:
+        // Merge text overrides into settings using standardized field names:
         // - "title" → "title_override"
-        // - "description" / "subtitle" → "subtitle_override"
+        // - "subtitle" → "subtitle_override"
+        // - "subtitle_dates" → "subtitle_dates_override"
+        // - "description" → "description_override"
+        // - "description2" → "description2_override"
+        // - "label" → "label_override"
         const mergedSettings = {
           ...widget.settings,
+          // Title
           ...(textOverrides.title && { title_override: textOverrides.title }),
-          ...(textOverrides.description && { subtitle_override: textOverrides.description }),
+          // Subtitle
           ...(textOverrides.subtitle && { subtitle_override: textOverrides.subtitle }),
+          ...(textOverrides.subtitle_dates && { subtitle_dates_override: textOverrides.subtitle_dates }),
+          // Description
+          ...(textOverrides.description && { description_override: textOverrides.description }),
+          ...(textOverrides.description2 && { description2_override: textOverrides.description2 }),
+          // Label (for google_rating etc.)
+          ...(textOverrides.label && { label_override: textOverrides.label }),
         };
         
         await updateWidgetConfig(widget.widget_id, {

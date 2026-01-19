@@ -53,7 +53,7 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
             <>
               <EditableText
                 widgetId="welcome"
-                field="paragraph1"
+                field="description"
                 value={paragraph1}
                 as="p"
                 multiline
@@ -61,7 +61,7 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
               />
               <EditableText
                 widgetId="welcome"
-                field="paragraph2"
+                field="description2"
                 value={paragraph2}
                 as="p"
                 multiline
@@ -72,13 +72,13 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
             <>
               <p 
                 className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed mb-4 sm:mb-6 px-4"
-                style={getElementStyles('welcome-paragraph1')}
+                style={getElementStyles('welcome-description')}
               >
                 {paragraph1}
               </p>
               <p 
                 className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed px-4"
-                style={getElementStyles('welcome-paragraph2')}
+                style={getElementStyles('welcome-description2')}
               >
                 {paragraph2}
               </p>
