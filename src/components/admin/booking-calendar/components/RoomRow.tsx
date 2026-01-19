@@ -1,12 +1,11 @@
-import { memo } from "react";
+import React, { memo } from "react";
 import { Virtualizer } from "@tanstack/react-virtual";
-import { RoomCell } from "./RoomCell";
 import { Booking, RoomInfo } from "../types";
+import { RoomCell } from "./RoomCell";
 
 interface RoomRowProps {
   room: RoomInfo;
   dates: Date[];
-  cellWidth: number;
   virtualizer: Virtualizer<HTMLDivElement, Element>;
   getBookingForCell: (roomNumber: string, date: Date) => Booking | null;
   isDateBlocked: (roomId: string, roomNumber: string, date: Date) => boolean;
@@ -14,6 +13,7 @@ interface RoomRowProps {
   handleBookingClick: (booking: Booking) => void;
   handleRightClick: (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => void;
   handleCellClick: (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => void;
+  cellWidth: number;
   onResizeStart?: (e: React.MouseEvent, booking: Booking, edge: "left" | "right") => void;
   getResizePreview?: (bookingId: string) => { previewDays: number; edge: "left" | "right" | null };
   isResizing?: boolean;
@@ -23,7 +23,6 @@ interface RoomRowProps {
 export const RoomRow = memo(function RoomRow({
   room,
   dates,
-  cellWidth,
   virtualizer,
   getBookingForCell,
   isDateBlocked,
@@ -31,6 +30,7 @@ export const RoomRow = memo(function RoomRow({
   handleBookingClick,
   handleRightClick,
   handleCellClick,
+  cellWidth,
   onResizeStart,
   getResizePreview,
   isResizing,
@@ -40,19 +40,15 @@ export const RoomRow = memo(function RoomRow({
 
   return (
     <tr className="border-b border-border">
-      {/* Sticky room number */}
-      <td
-        className="sticky left-0 z-20 w-[80px] md:w-[110px] min-w-[80px] md:min-w-[110px] 
-                   border-2 border-border p-1 md:p-2 shadow-md 
-                   bg-white/80 dark:bg-gray-800/80 backdrop-blur-md"
-      >
-        <span className="text-[10px] md:text-xs font-semibold">{room.roomNumber}</span>
+      {/* Room number cell - sticky */}
+      <td className="sticky left-0 z-20 p-1 md:p-2 px-2 md:px-3 text-[10px] md:text-xs font-medium bg-card border-r border-border shadow-sm whitespace-nowrap w-[80px] md:w-[110px] min-w-[80px] md:min-w-[110px]">
+        {room.roomNumber}
       </td>
 
-      {/* Virtual cells container */}
-      <td
+      {/* Virtualized date cells container */}
+      <td 
         className="p-0 relative border-0"
-        style={{ width: virtualizer.getTotalSize(), height: "auto" }}
+        style={{ width: virtualizer.getTotalSize(), height: "2.5rem" }}
         colSpan={dates.length}
       >
         {virtualizer.getVirtualItems().map((virtualColumn) => {
@@ -64,12 +60,10 @@ export const RoomRow = memo(function RoomRow({
           return (
             <div
               key={virtualColumn.key}
+              className="absolute top-0 bottom-0"
               style={{
-                position: "absolute",
                 left: virtualColumn.start,
                 width: cellWidth,
-                top: 0,
-                height: "100%",
               }}
             >
               <RoomCell
