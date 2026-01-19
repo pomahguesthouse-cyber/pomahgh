@@ -51,7 +51,7 @@ export function EditorPreviewPage() {
         id={widgetId} 
         label={widgetDef.label}
       >
-        <WidgetComponent />
+        <WidgetComponent editorMode={true} />
       </EditableWidget>
     );
   };

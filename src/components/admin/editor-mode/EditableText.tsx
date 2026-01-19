@@ -1,6 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useContext } from 'react';
 import { cn } from '@/lib/utils';
-import { useEditorMode } from '@/contexts/EditorModeContext';
+import { EditorModeContext } from '@/contexts/EditorModeContext';
 
 interface EditableTextProps {
   widgetId: string;
@@ -19,9 +19,18 @@ export function EditableText({
   as: Component = 'span',
   multiline = false,
 }: EditableTextProps) {
-  const { isEditorMode, updateWidgetText, widgetTextOverrides } = useEditorMode();
+  // Try to get editor context - gracefully handle when not in provider
+  const context = useContext(EditorModeContext);
+  
   const ref = useRef<HTMLElement>(null);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // If not in editor mode context, just render normally
+  if (!context) {
+    return <Component className={className}>{value}</Component>;
+  }
+  
+  const { isEditorMode, updateWidgetText, widgetTextOverrides } = context;
   
   // Get overridden value or use original
   const displayValue = widgetTextOverrides[widgetId]?.[field] ?? value;

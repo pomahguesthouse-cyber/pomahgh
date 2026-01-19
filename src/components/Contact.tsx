@@ -3,9 +3,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPin, Phone, Mail } from "lucide-react";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { EditableText } from '@/components/admin/editor-mode/EditableText';
 
-export const Contact = () => {
+interface ContactProps {
+  editorMode?: boolean;
+}
+
+export const Contact = ({ editorMode = false }: ContactProps) => {
   const { settings } = useHotelSettings();
+  
+  const heading = "Get in Touch";
+  const subtext = "Ready to experience paradise? Contact us to book your stay or ask any questions.";
 
   const fullAddress = [
     settings?.address,
@@ -21,13 +29,33 @@ export const Contact = () => {
     <section id="contact" className="py-20 px-4 bg-secondary/30">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12 sm:mb-16 animate-slide-up">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2">
-            Get in Touch
-          </h2>
+          {editorMode ? (
+            <EditableText
+              widgetId="contact"
+              field="heading"
+              value={heading}
+              as="h2"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2"
+            />
+          ) : (
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2">
+              {heading}
+            </h2>
+          )}
           <div className="w-16 sm:w-24 h-1 bg-primary mx-auto mb-4 sm:mb-6"></div>
-          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-            Ready to experience paradise? Contact us to book your stay or ask any questions.
-          </p>
+          {editorMode ? (
+            <EditableText
+              widgetId="contact"
+              field="subtext"
+              value={subtext}
+              as="p"
+              className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
+            />
+          ) : (
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+              {subtext}
+            </p>
+          )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-12">

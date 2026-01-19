@@ -1,9 +1,17 @@
 import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { EditableText } from '@/components/admin/editor-mode/EditableText';
 
-export const Footer = () => {
+interface FooterProps {
+  editorMode?: boolean;
+}
+
+export const Footer = ({ editorMode = false }: FooterProps) => {
   const { settings } = useHotelSettings();
+  
+  const hotelName = settings?.hotel_name?.toUpperCase() || "POMAH GUESTHOUSE";
+  const description = settings?.description || "Your tropical paradise awaits in the heart of Bali's most beautiful landscapes.";
 
   return (
     <footer className="bg-primary text-primary-foreground py-12 px-4">
@@ -11,12 +19,29 @@ export const Footer = () => {
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           {/* Brand */}
           <div>
-            <h3 className="text-2xl font-bold mb-4">
-              {settings?.hotel_name?.toUpperCase() || "POMAH GUESTHOUSE"}
-            </h3>
-            <p className="text-primary-foreground/80">
-              {settings?.description || "Your tropical paradise awaits in the heart of Bali's most beautiful landscapes."}
-            </p>
+            {editorMode ? (
+              <EditableText
+                widgetId="footer"
+                field="hotelName"
+                value={hotelName}
+                as="h3"
+                className="text-2xl font-bold mb-4"
+              />
+            ) : (
+              <h3 className="text-2xl font-bold mb-4">{hotelName}</h3>
+            )}
+            {editorMode ? (
+              <EditableText
+                widgetId="footer"
+                field="description"
+                value={description}
+                as="p"
+                multiline
+                className="text-primary-foreground/80"
+              />
+            ) : (
+              <p className="text-primary-foreground/80">{description}</p>
+            )}
           </div>
 
           {/* Quick Links */}

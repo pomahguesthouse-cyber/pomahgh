@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { EditorModeProvider, useEditorMode } from '@/contexts/EditorModeContext';
 import { EditorTopBar, DeviceType } from '@/components/admin/editor-mode/EditorTopBar';
 import { EditableCanvas } from '@/components/admin/editor-mode/EditableCanvas';
@@ -64,12 +64,6 @@ function EditorModeContent() {
 }
 
 export default function AdminEditorMode() {
-  // Add debug log
-  useEffect(() => {
-    console.log('AdminEditorMode mounted');
-    return () => console.log('AdminEditorMode unmounted');
-  }, []);
-
   return (
     <EditorModeProvider>
       <EditorModeContent />
