@@ -9,23 +9,28 @@ import { getDateReferences } from "./dateHelpers.ts";
 
 interface SystemPromptOptions {
   role?: string;
+  managerName?: string;
 }
 
 /**
  * System prompt utama untuk chatbot admin.
  * - Backward-compatible
- * - Bisa dipanggil dengan atau tanpa argumen
+ * - Menerima context tambahan (role, managerName)
+ * - Tidak mempengaruhi logic
  */
 export function buildSystemPrompt(options: SystemPromptOptions = {}): string {
-  const { role } = options;
+  const { role, managerName } = options;
   const dates = getDateReferences();
 
   const roleContext = role ? `PERAN PENGGUNA SAAT INI: ${role.toUpperCase()}` : "PERAN PENGGUNA SAAT INI: ADMIN";
+
+  const nameContext = managerName ? `Nama pengguna: ${managerName}` : "";
 
   return `
 Kamu adalah **Chatbot Admin Hotel**.
 
 ${roleContext}
+${nameContext}
 
 PERANMU:
 - Memberikan informasi operasional hotel berdasarkan DATA.
