@@ -2648,6 +2648,108 @@ export type Database = {
         }
         Relationships: []
       }
+      template_presets: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_system: boolean | null
+          name: string
+          theme_config: Json
+          thumbnail_url: string | null
+          widget_config: Json
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name: string
+          theme_config: Json
+          thumbnail_url?: string | null
+          widget_config: Json
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name?: string
+          theme_config?: Json
+          thumbnail_url?: string | null
+          widget_config?: Json
+        }
+        Relationships: []
+      }
+      theme_config: {
+        Row: {
+          border_radius: string | null
+          color_accent: string | null
+          color_background: string | null
+          color_card: string | null
+          color_foreground: string | null
+          color_muted: string | null
+          color_primary: string | null
+          color_secondary: string | null
+          container_width: string | null
+          created_at: string | null
+          font_body: string | null
+          font_heading: string | null
+          font_size_base: number | null
+          header_sticky: boolean | null
+          header_style: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          section_padding: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          border_radius?: string | null
+          color_accent?: string | null
+          color_background?: string | null
+          color_card?: string | null
+          color_foreground?: string | null
+          color_muted?: string | null
+          color_primary?: string | null
+          color_secondary?: string | null
+          container_width?: string | null
+          created_at?: string | null
+          font_body?: string | null
+          font_heading?: string | null
+          font_size_base?: number | null
+          header_sticky?: boolean | null
+          header_style?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          section_padding?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          border_radius?: string | null
+          color_accent?: string | null
+          color_background?: string | null
+          color_card?: string | null
+          color_foreground?: string | null
+          color_muted?: string | null
+          color_primary?: string | null
+          color_secondary?: string | null
+          container_width?: string | null
+          created_at?: string | null
+          font_body?: string | null
+          font_heading?: string | null
+          font_size_base?: number | null
+          header_sticky?: boolean | null
+          header_style?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          section_padding?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -2727,6 +2829,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      widget_config: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          settings: Json | null
+          sort_order: number
+          updated_at: string | null
+          widget_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          settings?: Json | null
+          sort_order: number
+          updated_at?: string | null
+          widget_id: string
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          settings?: Json | null
+          sort_order?: number
+          updated_at?: string | null
+          widget_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
