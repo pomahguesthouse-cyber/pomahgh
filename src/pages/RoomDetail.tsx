@@ -11,7 +11,6 @@ import { VirtualTourViewer } from "@/components/VirtualTourViewer";
 import {
   RoomSEO,
   RoomHeader,
-  RoomGallery,
   RoomInfo,
   RoomFeaturesList,
   RoomSpecifications,
@@ -20,6 +19,8 @@ import {
   RoomBookingCard,
   RoomRelatedRooms,
 } from "@/components/room-detail";
+
+import { RoomGallery } from "@/components/room-detail/RoomGallery";
 
 import { useRoomDetail } from "@/hooks/useRoomDetail";
 import { useRooms } from "@/hooks/useRooms";
@@ -65,10 +66,11 @@ const RoomDetail = () => {
     }
   }, [panoramas, currentPanoramaId]);
 
+  /* ================= LOADING / ERROR ================= */
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFAF9]">
+        <Loader2 className="h-8 w-8 animate-spin text-stone-700" />
       </div>
     );
   }
@@ -77,7 +79,7 @@ const RoomDetail = () => {
     return <NotFound />;
   }
 
-  /* ================= MEMO DATA ================= */
+  /* ================= DATA PREP ================= */
   const images = useMemo(
     () => (room.image_urls && room.image_urls.length > 0 ? room.image_urls : [room.image_url]),
     [room.image_urls, room.image_url],
@@ -104,35 +106,25 @@ const RoomDetail = () => {
 
       <Header variant="solid" />
 
+      {/* pb-24 = reserve space for mobile sticky bar */}
       <main className="bg-[#FAFAF9] pt-24 pb-24 lg:pb-0">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 space-y-16">
           <Breadcrumb items={[{ label: "Rooms", href: "/#rooms" }, { label: room.name }]} />
 
-          <div className="grid lg:grid-cols-3 gap-10">
-            {/* ================= LEFT ================= */}
+          {/* ================= HERO (MOBILE SAFE) ================= */}
+          <section>
+            <RoomGallery images={images} roomName={room.name} hasVirtualTour={!!room.virtual_tour_url} />
+          </section>
+
+          <div className="grid lg:grid-cols-3 gap-12">
+            {/* ================= LEFT CONTENT ================= */}
             <div className="lg:col-span-2 space-y-14">
-              {/* HERO (mobile optimized) */}
-              <div
-                className="
-                relative
-                h-[60vh] min-h-[320px] max-h-[420px]
-                rounded-2xl overflow-hidden
-              "
-              >
-                <RoomGallery images={images} roomName={room.name} hasVirtualTour={!!room.virtual_tour_url} />
-
-                {/* gradient overlay */}
-                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/50 to-transparent" />
-              </div>
-
-              {/* HEADER */}
+              {/* HEADER + DESCRIPTION */}
               <section className="space-y-4">
                 <RoomHeader name={room.name} hasVirtualTour={!!room.virtual_tour_url} hasPromo={hasPromo} />
 
-                {/* description clamp on mobile */}
-                <div className="text-stone-700 text-base leading-relaxed line-clamp-4 md:line-clamp-none">
-                  <RoomInfo description={room.description} />
-                </div>
+                {/* text only, no wrapper component clamp */}
+                <p className="text-stone-700 leading-relaxed text-base md:text-lg">{room.description}</p>
               </section>
 
               {/* FEATURES */}
@@ -173,7 +165,7 @@ const RoomDetail = () => {
             </div>
 
             {/* ================= DESKTOP BOOKING ================= */}
-            <div className="lg:col-span-1 hidden lg:block">
+            <div className="hidden lg:block">
               <div className="sticky top-32">
                 <RoomBookingCard
                   room={room}
@@ -191,9 +183,7 @@ const RoomDetail = () => {
             </div>
           </div>
 
-          <section className="mt-24">
-            <RoomRelatedRooms rooms={relatedRooms} />
-          </section>
+          <RoomRelatedRooms rooms={relatedRooms} />
         </div>
       </main>
 
