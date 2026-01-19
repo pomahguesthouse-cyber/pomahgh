@@ -58,6 +58,14 @@ const RoomDetail = () => {
 
   const { handleHotspotClick } = useRoomNavigation(panoramas, allRooms, setCurrentPanoramaId);
 
+  /* ================= DATA PREP (hooks must be before early returns) ================= */
+  const images = useMemo(
+    () => (room?.image_urls && room.image_urls.length > 0 ? room.image_urls : room ? [room.image_url] : []),
+    [room?.image_urls, room?.image_url],
+  );
+
+  const relatedRooms = useMemo(() => allRooms?.filter((r) => r.id !== room?.id).slice(0, 3) || [], [allRooms, room?.id]);
+
   /* ================= DEFAULT PANORAMA ================= */
   useEffect(() => {
     if (panoramas.length > 0 && !currentPanoramaId) {
@@ -79,12 +87,7 @@ const RoomDetail = () => {
     return <NotFound />;
   }
 
-  /* ================= DATA PREP ================= */
-  const images = useMemo(
-    () => (room.image_urls && room.image_urls.length > 0 ? room.image_urls : [room.image_url]),
-    [room.image_urls, room.image_url],
-  );
-
+  /* ================= DERIVED DATA ================= */
   const activePromo = (room as any).active_promotion;
   const hasLegacyPromo =
     room.promo_price &&
@@ -95,8 +98,6 @@ const RoomDetail = () => {
 
   const hasPromo = !!activePromo || hasLegacyPromo;
   const displayPrice = room.final_price || room.price_per_night;
-
-  const relatedRooms = useMemo(() => allRooms?.filter((r) => r.id !== room.id).slice(0, 3) || [], [allRooms, room.id]);
 
   const currentPanorama = panoramas.find((p) => p.id === currentPanoramaId);
 
