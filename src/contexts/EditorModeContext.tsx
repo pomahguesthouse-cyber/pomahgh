@@ -13,6 +13,7 @@ interface HistoryState {
 }
 
 export interface ElementOverride {
+  // Text properties
   text?: string;
   fontSize?: string;
   fontFamily?: string;
@@ -22,6 +23,23 @@ export interface ElementOverride {
   textAlign?: string;
   color?: string;
   backgroundColor?: string;
+  
+  // Image properties
+  imageUrl?: string;
+  imageWidth?: string;
+  imageHeight?: string;
+  objectFit?: 'cover' | 'contain' | 'fill' | 'none';
+  objectPosition?: string;
+  cropData?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  borderRadius?: string;
+  aspectRatio?: string;
+  
+  // Visibility
   hidden?: boolean;
   deleted?: boolean;
 }

@@ -96,13 +96,19 @@ export function FloatingPropertyEditor({ position: fixedPosition }: FloatingProp
   } = useEditorMode();
   
   const [position, setPosition] = React.useState({ top: 100, left: 0 });
+
+  // Check if selected element is an image
+  const element = selectedElement
+    ? document.querySelector(`[data-element-id="${selectedElement}"]`)
+    : null;
+  const elementType = element?.getAttribute('data-element-type');
   
   // Update position when selected element changes
   React.useEffect(() => {
-    if (selectedElement) {
-      const element = document.querySelector(`[data-element-id="${selectedElement}"]`);
-      if (element) {
-        const rect = element.getBoundingClientRect();
+    if (selectedElement && elementType !== 'image') {
+      const el = document.querySelector(`[data-element-id="${selectedElement}"]`);
+      if (el) {
+        const rect = el.getBoundingClientRect();
         const toolbarWidth = 500; // Approximate toolbar width
         
         // Position toolbar above element, centered
@@ -119,9 +125,10 @@ export function FloatingPropertyEditor({ position: fixedPosition }: FloatingProp
         setPosition({ top, left });
       }
     }
-  }, [selectedElement]);
+  }, [selectedElement, elementType]);
 
-  if (!selectedElement) return null;
+  // Don't show this toolbar for images - ImagePropertyEditor handles that
+  if (!selectedElement || elementType === 'image') return null;
 
   const currentOverrides = elementOverrides[selectedElement] || {};
 

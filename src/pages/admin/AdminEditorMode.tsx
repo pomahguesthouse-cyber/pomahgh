@@ -4,6 +4,7 @@ import { EditorTopBar, DeviceType } from '@/components/admin/editor-mode/EditorT
 import { EditableCanvas } from '@/components/admin/editor-mode/EditableCanvas';
 import { CollapsiblePanel } from '@/components/admin/editor-mode/CollapsiblePanel';
 import { FloatingPropertyEditor } from '@/components/admin/editor-mode/FloatingPropertyEditor';
+import { ImagePropertyEditor } from '@/components/admin/editor-mode/ImagePropertyEditor';
 import { useKeyboardShortcuts } from '@/components/admin/editor-mode/hooks/useKeyboardShortcuts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -44,8 +45,9 @@ function EditorModeContent() {
         
         {/* Floating Property Editor for text elements */}
         <FloatingPropertyEditor />
-
-        {/* Floating settings button */}
+        
+        {/* Floating Property Editor for image elements */}
+        <ImagePropertyEditor />
         {!panelOpen && (
           <Button
             className="fixed right-4 top-20 z-[70] shadow-lg"
