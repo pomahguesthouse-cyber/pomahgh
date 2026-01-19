@@ -1,10 +1,13 @@
 import { EditableText } from '@/components/admin/editor-mode/EditableText';
+import { usePublicOverrides } from '@/contexts/PublicOverridesContext';
 
 interface WelcomeProps {
   editorMode?: boolean;
 }
 
 export const Welcome = ({ editorMode = false }: WelcomeProps) => {
+  const { getElementStyles } = usePublicOverrides();
+  
   const title = "Your Perfect Stay";
   const paragraph1 = "Kata Pomah dalam bahasa Jawa yang berarti Rumah. Terletak sedikit di pinggir kota Semarang yang dijuluki Venice of Java, Pomah Guesthouse memiliki filosofi yang mencerminkan kehangatan, kenyamanan dan standar pelayanan terbaik yang kami sajikan kepada tamu.";
   const paragraph2 = "Kami di Pomah Yakin bahwa setiap perjalanan seharusnya memberikan cerita- cerita baru dimulai, kenangan indah tercipta dan momen kebersamaan terjalin";
@@ -22,7 +25,10 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-cinzel font-semibold text-foreground mb-4 sm:mb-6 px-2"
             />
           ) : (
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-cinzel font-semibold text-foreground mb-4 sm:mb-6 px-2">
+            <h2 
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-cinzel font-semibold text-foreground mb-4 sm:mb-6 px-2"
+              style={getElementStyles('welcome-title')}
+            >
               {title}
             </h2>
           )}
@@ -48,10 +54,16 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
             </>
           ) : (
             <>
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed mb-4 sm:mb-6 px-4">
+              <p 
+                className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed mb-4 sm:mb-6 px-4"
+                style={getElementStyles('welcome-paragraph1')}
+              >
                 {paragraph1}
               </p>
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed px-4">
+              <p 
+                className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed px-4"
+                style={getElementStyles('welcome-paragraph2')}
+              >
                 {paragraph2}
               </p>
             </>

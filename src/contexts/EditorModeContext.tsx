@@ -3,6 +3,7 @@ import { ThemeConfig, WidgetConfig, WidgetSettings, TemplatePreset } from '@/typ
 import { useThemeConfig } from '@/hooks/useThemeConfig';
 import { useWidgetConfig } from '@/hooks/useWidgetConfig';
 import { useTemplatePresets } from '@/hooks/useTemplatePresets';
+import { useElementOverrides } from '@/hooks/useElementOverrides';
 import { toast } from 'sonner';
 
 interface HistoryState {
@@ -163,6 +164,12 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
     createTemplate,
     isLoading: templatesLoading 
   } = useTemplatePresets();
+  
+  const {
+    overrides: savedElementOverrides,
+    saveOverrides,
+    isLoading: overridesLoading,
+  } = useElementOverrides();
 
   // Initialize local state from server data
   useEffect(() => {
@@ -176,6 +183,13 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
       setLocalWidgets(widgetConfigs);
     }
   }, [widgetConfigs, localWidgets.length]);
+
+  // Initialize element overrides from database
+  useEffect(() => {
+    if (savedElementOverrides && Object.keys(savedElementOverrides).length > 0 && Object.keys(elementOverrides).length === 0) {
+      setElementOverrides(savedElementOverrides);
+    }
+  }, [savedElementOverrides]);
 
   // Apply theme to DOM in real-time
   useEffect(() => {
@@ -397,6 +411,11 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
         .map(w => w.widget_id);
       await reorderWidgetConfigs(orderedIds);
       
+      // Save element overrides (font, color, image changes)
+      if (Object.keys(elementOverrides).length > 0) {
+        await saveOverrides(elementOverrides);
+      }
+      
       setIsDirty(false);
       toast.success('Changes saved successfully');
     } catch (error) {
@@ -405,20 +424,20 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
     } finally {
       setIsSaving(false);
     }
-  }, [localTheme, localWidgets, updateThemeConfig, updateWidgetConfig, reorderWidgetConfigs]);
+  }, [localTheme, localWidgets, elementOverrides, updateThemeConfig, updateWidgetConfig, reorderWidgetConfigs, saveOverrides]);
 
   const resetChanges = useCallback(() => {
     setLocalTheme(themeConfig);
     setLocalWidgets(widgetConfigs);
     setWidgetTextOverrides({});
-    setElementOverrides({});
+    setElementOverrides(savedElementOverrides || {});
     setSelectedElement(null);
     setEditingElement(null);
     setIsDirty(false);
     setHistory([]);
     setHistoryIndex(-1);
     toast.info('Changes reset');
-  }, [themeConfig, widgetConfigs]);
+  }, [themeConfig, widgetConfigs, savedElementOverrides]);
 
   const value: EditorModeContextType = {
     isEditorMode,
@@ -461,7 +480,7 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
     saveChanges,
     resetChanges,
     exitEditorMode,
-    isLoading: themeLoading || widgetsLoading || templatesLoading,
+    isLoading: themeLoading || widgetsLoading || templatesLoading || overridesLoading,
   };
 
   return (

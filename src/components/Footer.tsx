@@ -2,6 +2,7 @@ import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { EditableText } from '@/components/admin/editor-mode/EditableText';
+import { usePublicOverrides } from '@/contexts/PublicOverridesContext';
 
 interface FooterProps {
   editorMode?: boolean;
@@ -9,6 +10,7 @@ interface FooterProps {
 
 export const Footer = ({ editorMode = false }: FooterProps) => {
   const { settings } = useHotelSettings();
+  const { getElementStyles } = usePublicOverrides();
   
   const hotelName = settings?.hotel_name?.toUpperCase() || "POMAH GUESTHOUSE";
   const description = settings?.description || "Your tropical paradise awaits in the heart of Bali's most beautiful landscapes.";
@@ -28,7 +30,12 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
                 className="text-2xl font-bold mb-4"
               />
             ) : (
-              <h3 className="text-2xl font-bold mb-4">{hotelName}</h3>
+              <h3 
+                className="text-2xl font-bold mb-4"
+                style={getElementStyles('footer-hotelName')}
+              >
+                {hotelName}
+              </h3>
             )}
             {editorMode ? (
               <EditableText
@@ -40,7 +47,12 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
                 className="text-primary-foreground/80"
               />
             ) : (
-              <p className="text-primary-foreground/80">{description}</p>
+              <p 
+                className="text-primary-foreground/80"
+                style={getElementStyles('footer-description')}
+              >
+                {description}
+              </p>
             )}
           </div>
 

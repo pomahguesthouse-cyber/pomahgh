@@ -1281,6 +1281,30 @@ export type Database = {
           },
         ]
       }
+      element_overrides: {
+        Row: {
+          created_at: string | null
+          element_id: string
+          id: string
+          overrides: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          element_id: string
+          id?: string
+          overrides?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          element_id?: string
+          id?: string
+          overrides?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       explore_hero_slides: {
         Row: {
           alt_text: string | null

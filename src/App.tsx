@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
+import { PublicOverridesProvider } from "@/contexts/PublicOverridesContext";
 import { GlobalSEO } from "@/components/GlobalSEO";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -52,6 +53,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <SearchDatesProvider>
+          <PublicOverridesProvider>
           <BrowserRouter>
             <Routes>
             <Route path="/" element={<Index />} />
@@ -92,6 +94,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+          </PublicOverridesProvider>
       </SearchDatesProvider>
     </TooltipProvider>
   </HelmetProvider>
