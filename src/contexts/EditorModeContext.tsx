@@ -396,12 +396,25 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
         await updateThemeConfig(localTheme);
       }
       
-      // Save widgets
+      // Save widgets with text overrides merged into settings
       for (const widget of localWidgets) {
+        const textOverrides = widgetTextOverrides[widget.widget_id] || {};
+        
+        // Merge text overrides into settings
+        // Map field names to settings keys:
+        // - "title" → "title_override"
+        // - "description" / "subtitle" → "subtitle_override"
+        const mergedSettings = {
+          ...widget.settings,
+          ...(textOverrides.title && { title_override: textOverrides.title }),
+          ...(textOverrides.description && { subtitle_override: textOverrides.description }),
+          ...(textOverrides.subtitle && { subtitle_override: textOverrides.subtitle }),
+        };
+        
         await updateWidgetConfig(widget.widget_id, {
           enabled: widget.enabled,
           sort_order: widget.sort_order,
-          settings: widget.settings,
+          settings: mergedSettings,
         });
       }
       
@@ -416,6 +429,9 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
         await saveOverrides(elementOverrides);
       }
       
+      // Clear text overrides after saving (since they're now in settings)
+      setWidgetTextOverrides({});
+      
       setIsDirty(false);
       
       // Clear selection after save to hide toolbar
@@ -429,7 +445,7 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
     } finally {
       setIsSaving(false);
     }
-  }, [localTheme, localWidgets, elementOverrides, updateThemeConfig, updateWidgetConfig, reorderWidgetConfigs, saveOverrides]);
+  }, [localTheme, localWidgets, widgetTextOverrides, elementOverrides, updateThemeConfig, updateWidgetConfig, reorderWidgetConfigs, saveOverrides]);
 
   const resetChanges = useCallback(() => {
     setLocalTheme(themeConfig);
