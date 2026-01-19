@@ -19,16 +19,21 @@ export async function executeTool(supabase: any, toolName: string, args: any) {
 }
 
 /**
- * Executor with basic validation layer
- * (expected by index.ts)
+ * Executor with validation & role awareness
+ * (signature MUST match index.ts)
  */
-export async function executeToolWithValidation(supabase: any, toolName: string, args: any) {
+export async function executeToolWithValidation(supabase: any, toolName: string, args: any, role?: string) {
   if (!toolName) {
     throw new Error("Tool name is required");
   }
 
   if (typeof args !== "object") {
     throw new Error("Tool arguments must be an object");
+  }
+
+  // Optional role-based guard (future-proof)
+  if (role && role !== "manager" && role !== "admin") {
+    throw new Error("Unauthorized tool access");
   }
 
   return await executeTool(supabase, toolName, args);

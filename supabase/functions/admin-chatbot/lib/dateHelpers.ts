@@ -34,8 +34,8 @@ export function isBeforeTime(compareTime: string): boolean {
 }
 
 /**
- * Format date to Indonesian human-readable format
- * Example: 2026-01-19 -> 19 Januari 2026
+ * Format date to Indonesian format
+ * 2026-01-19 -> 19 Januari 2026
  */
 export function formatDateIndonesian(dateStr: string): string {
   const date = new Date(dateStr);
@@ -48,11 +48,10 @@ export function formatDateIndonesian(dateStr: string): string {
 }
 
 /**
- * Common date references for systemPrompt
+ * Date references for chatbot/system prompt
  */
 export function getDateReferences() {
   const today = getWibDate();
-  const todayISO = formatDateISO(today);
 
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
@@ -60,10 +59,21 @@ export function getDateReferences() {
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
 
+  const lusa = new Date(today);
+  lusa.setDate(today.getDate() + 2);
+
+  // Nearest weekend (Saturday)
+  const weekend = new Date(today);
+  const day = weekend.getDay(); // 0 = Minggu
+  const daysUntilSaturday = (6 - day + 7) % 7;
+  weekend.setDate(today.getDate() + daysUntilSaturday);
+
   return {
-    today: todayISO,
+    today: formatDateISO(today),
     yesterday: formatDateISO(yesterday),
     tomorrow: formatDateISO(tomorrow),
-    today_human: formatDateIndonesian(todayISO),
+    lusa: formatDateISO(lusa),
+    weekend: formatDateISO(weekend),
+    today_human: formatDateIndonesian(formatDateISO(today)),
   };
 }
