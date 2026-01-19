@@ -7,9 +7,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Clock, MapPin, ArrowRight, Star } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { useContext } from "react";
+import { EditorModeContext } from "@/contexts/EditorModeContext";
+import { EditableText } from "@/components/admin/editor-mode/EditableText";
+import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
 
 const UpcomingEvents = () => {
   const { upcomingEvents, isLoadingUpcoming } = useCityEvents();
+  const editorContext = useContext(EditorModeContext);
+  const isEditorMode = editorContext?.isEditorMode ?? false;
+  const { getElementStyles } = usePublicOverrides();
 
   const formatEventDate = (date: string, endDate?: string | null) => {
     const start = new Date(date);
@@ -51,12 +58,38 @@ const UpcomingEvents = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-              Event Mendatang
-            </h2>
-            <p className="text-muted-foreground">
-              Jangan lewatkan berbagai acara menarik di Semarang
-            </p>
+            {isEditorMode ? (
+              <EditableText
+                widgetId="upcoming-events"
+                field="title"
+                value="Event Mendatang"
+                as="h2"
+                className="text-2xl md:text-3xl font-bold text-foreground mb-2"
+              />
+            ) : (
+              <h2 
+                className="text-2xl md:text-3xl font-bold text-foreground mb-2"
+                style={getElementStyles('upcoming-events-title')}
+              >
+                Event Mendatang
+              </h2>
+            )}
+            {isEditorMode ? (
+              <EditableText
+                widgetId="upcoming-events"
+                field="description"
+                value="Jangan lewatkan berbagai acara menarik di Semarang"
+                as="p"
+                className="text-muted-foreground"
+              />
+            ) : (
+              <p 
+                className="text-muted-foreground"
+                style={getElementStyles('upcoming-events-description')}
+              >
+                Jangan lewatkan berbagai acara menarik di Semarang
+              </p>
+            )}
           </div>
           {upcomingEvents.length > 6 && (
             <Button variant="ghost" className="hidden md:flex items-center gap-2">

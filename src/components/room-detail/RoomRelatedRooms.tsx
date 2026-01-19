@@ -1,13 +1,36 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useContext } from "react";
+import { EditorModeContext } from "@/contexts/EditorModeContext";
+import { EditableText } from "@/components/admin/editor-mode/EditableText";
+import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
 import type { RoomRelatedRoomsProps } from "./types";
 
 export const RoomRelatedRooms = ({ rooms }: RoomRelatedRoomsProps) => {
+  const editorContext = useContext(EditorModeContext);
+  const isEditorMode = editorContext?.isEditorMode ?? false;
+  const { getElementStyles } = usePublicOverrides();
+
   if (rooms.length === 0) return null;
 
   return (
     <div className="mt-16">
-      <h2 className="text-3xl font-bold mb-8 text-center">Other Rooms You May Like</h2>
+      {isEditorMode ? (
+        <EditableText
+          widgetId="related-rooms"
+          field="title"
+          value="Other Rooms You May Like"
+          as="h2"
+          className="text-3xl font-bold mb-8 text-center"
+        />
+      ) : (
+        <h2 
+          className="text-3xl font-bold mb-8 text-center"
+          style={getElementStyles('related-rooms-title')}
+        >
+          Other Rooms You May Like
+        </h2>
+      )}
       <div className="grid md:grid-cols-3 gap-6">
         {rooms.map((relatedRoom) => (
           <Card key={relatedRoom.id} className="overflow-hidden hover:shadow-xl transition-shadow">

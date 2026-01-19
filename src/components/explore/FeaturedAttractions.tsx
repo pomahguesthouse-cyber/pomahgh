@@ -2,6 +2,10 @@ import { motion } from "framer-motion";
 import { CityAttraction } from "@/hooks/useCityAttractions";
 import { AttractionCard } from "./AttractionCard";
 import { Star } from "lucide-react";
+import { useContext } from "react";
+import { EditorModeContext } from "@/contexts/EditorModeContext";
+import { EditableText } from "@/components/admin/editor-mode/EditableText";
+import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
 
 interface FeaturedAttractionsProps {
   attractions: CityAttraction[];
@@ -9,6 +13,9 @@ interface FeaturedAttractionsProps {
 
 export const FeaturedAttractions = ({ attractions }: FeaturedAttractionsProps) => {
   const featuredAttractions = attractions.filter((a) => a.is_featured).slice(0, 4);
+  const editorContext = useContext(EditorModeContext);
+  const isEditorMode = editorContext?.isEditorMode ?? false;
+  const { getElementStyles } = usePublicOverrides();
   
   if (featuredAttractions.length === 0) return null;
 
@@ -27,12 +34,38 @@ export const FeaturedAttractions = ({ attractions }: FeaturedAttractionsProps) =
               Must Visit
             </span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Destinasi Unggulan
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Jangan lewatkan tempat-tempat ikonik yang wajib dikunjungi saat di Semarang
-          </p>
+          {isEditorMode ? (
+            <EditableText
+              widgetId="featured-attractions"
+              field="title"
+              value="Destinasi Unggulan"
+              as="h2"
+              className="text-3xl md:text-4xl font-bold text-foreground mb-4"
+            />
+          ) : (
+            <h2 
+              className="text-3xl md:text-4xl font-bold text-foreground mb-4"
+              style={getElementStyles('featured-attractions-title')}
+            >
+              Destinasi Unggulan
+            </h2>
+          )}
+          {isEditorMode ? (
+            <EditableText
+              widgetId="featured-attractions"
+              field="description"
+              value="Jangan lewatkan tempat-tempat ikonik yang wajib dikunjungi saat di Semarang"
+              as="p"
+              className="text-muted-foreground max-w-2xl mx-auto"
+            />
+          ) : (
+            <p 
+              className="text-muted-foreground max-w-2xl mx-auto"
+              style={getElementStyles('featured-attractions-description')}
+            >
+              Jangan lewatkan tempat-tempat ikonik yang wajib dikunjungi saat di Semarang
+            </p>
+          )}
         </motion.div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

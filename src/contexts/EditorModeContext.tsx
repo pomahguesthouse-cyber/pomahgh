@@ -417,6 +417,11 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
       }
       
       setIsDirty(false);
+      
+      // Clear selection after save to hide toolbar
+      setSelectedElement(null);
+      setEditingElement(null);
+      
       toast.success('Changes saved successfully');
     } catch (error) {
       toast.error('Failed to save changes');
