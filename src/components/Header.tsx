@@ -12,7 +12,6 @@ import {
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser } from "@supabase/supabase-js";
-import { ThemeToggle } from "@/components/ThemeToggle";
 interface HeaderProps {
   scrollToRooms?: () => void;
   variant?: "transparent" | "solid";
@@ -151,8 +150,6 @@ export default function Header({ scrollToRooms, variant = "transparent" }: Heade
               Contact
             </button>
 
-            <ThemeToggle variant="header" />
-
             {user ? (
               <>
                 <Link to="/bookings" className="hover:text-white/70 transition">
@@ -239,11 +236,6 @@ export default function Header({ scrollToRooms, variant = "transparent" }: Heade
             <button onClick={() => handleNavClick('contact')} className="py-2 text-left">
               Contact
             </button>
-
-            <div className="flex items-center justify-between py-2">
-              <span>Theme</span>
-              <ThemeToggle variant="mobile" />
-            </div>
 
             {user ? (
               <>
