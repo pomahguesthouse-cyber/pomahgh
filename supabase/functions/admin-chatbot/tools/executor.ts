@@ -2,6 +2,9 @@
 
 import { getAvailabilitySummary, getTodayGuests } from "./availability.ts";
 
+/**
+ * Core tool executor
+ */
 export async function executeTool(supabase: any, toolName: string, args: any) {
   switch (toolName) {
     case "getAvailabilitySummary":
@@ -13,4 +16,20 @@ export async function executeTool(supabase: any, toolName: string, args: any) {
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
+}
+
+/**
+ * Executor with basic validation layer
+ * (expected by index.ts)
+ */
+export async function executeToolWithValidation(supabase: any, toolName: string, args: any) {
+  if (!toolName) {
+    throw new Error("Tool name is required");
+  }
+
+  if (typeof args !== "object") {
+    throw new Error("Tool arguments must be an object");
+  }
+
+  return await executeTool(supabase, toolName, args);
 }

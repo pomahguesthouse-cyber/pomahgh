@@ -27,9 +27,43 @@ export function getCurrentTimeWIB(): string {
 
 /**
  * Compare current WIB time with given HH:mm
- * return true if now < compareTime
  */
 export function isBeforeTime(compareTime: string): boolean {
   const now = getCurrentTimeWIB();
   return now < compareTime;
+}
+
+/**
+ * Format date to Indonesian human-readable format
+ * Example: 2026-01-19 -> 19 Januari 2026
+ */
+export function formatDateIndonesian(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: WIB_TIMEZONE,
+  });
+}
+
+/**
+ * Common date references for systemPrompt
+ */
+export function getDateReferences() {
+  const today = getWibDate();
+  const todayISO = formatDateISO(today);
+
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  return {
+    today: todayISO,
+    yesterday: formatDateISO(yesterday),
+    tomorrow: formatDateISO(tomorrow),
+    today_human: formatDateIndonesian(todayISO),
+  };
 }
