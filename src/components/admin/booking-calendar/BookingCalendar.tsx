@@ -366,8 +366,6 @@ export const BookingCalendar = () => {
         onOpenChange={(open) => !open && setSelectedBooking(null)}
         onSave={handleSaveBooking}
         rooms={rooms}
-        availableRoomNumbers={availableRoomNumbers}
-        onRoomTypeChange={handleRoomTypeChange}
         isUpdating={isUpdating}
         defaultEditMode={true}
       />

@@ -38,8 +38,6 @@ interface BookingDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (booking: Booking) => Promise<void>;
   rooms: any[] | undefined;
-  availableRoomNumbers: string[];
-  onRoomTypeChange: (roomId: string) => void;
   isUpdating: boolean;
   defaultEditMode?: boolean;
 }
@@ -50,8 +48,6 @@ export const BookingDetailDialog = ({
   onOpenChange,
   onSave,
   rooms,
-  availableRoomNumbers,
-  onRoomTypeChange,
   isUpdating,
   defaultEditMode = false,
 }: BookingDetailDialogProps) => {
