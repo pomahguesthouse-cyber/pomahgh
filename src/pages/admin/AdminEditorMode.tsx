@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { AdminLayout } from '@/components/admin/AdminLayout';
+import React, { useState, useEffect } from 'react';
 import { EditorModeProvider, useEditorMode } from '@/contexts/EditorModeContext';
 import { EditorTopBar, DeviceType } from '@/components/admin/editor-mode/EditorTopBar';
 import { EditableCanvas } from '@/components/admin/editor-mode/EditableCanvas';
@@ -10,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 
 function EditorModeContent() {
-  const { isLoading, panelOpen, setPanelOpen } = useEditorMode();
   const [device, setDevice] = useState<DeviceType>('desktop');
   
-  // Enable keyboard shortcuts
+  // Get context - this will throw if not in provider
+  const { isLoading, panelOpen, setPanelOpen } = useEditorMode();
+  
+  // Enable keyboard shortcuts (also uses useEditorMode internally)
   useKeyboardShortcuts();
 
   if (isLoading) {
@@ -63,6 +64,12 @@ function EditorModeContent() {
 }
 
 export default function AdminEditorMode() {
+  // Add debug log
+  useEffect(() => {
+    console.log('AdminEditorMode mounted');
+    return () => console.log('AdminEditorMode unmounted');
+  }, []);
+
   return (
     <EditorModeProvider>
       <EditorModeContent />
