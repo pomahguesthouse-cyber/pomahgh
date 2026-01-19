@@ -3,10 +3,6 @@ import { format, addDays, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { Booking } from "../types";
 
-/* =======================
-   TYPES
-======================= */
-
 interface ResizeState {
   isResizing: boolean;
   bookingId: string | null;
@@ -22,16 +18,6 @@ interface UnavailableDate {
   room_number?: string | null;
   unavailable_date: string;
 }
-
-interface ResizePreview {
-  previewDays: number;
-  edge: "left" | "right" | null;
-  isConflict: boolean;
-}
-
-/* =======================
-   HOOK
-======================= */
 
 export const useBookingResize = (
   bookings: Booking[] | undefined,
@@ -50,13 +36,8 @@ export const useBookingResize = (
   });
 
   const [previewDays, setPreviewDays] = useState(0);
-  const [isPreviewConflict, setIsPreviewConflict] = useState(false);
 
-  /* =======================
-     RESET
-  ======================= */
-
-  const resetState = useCallback(() => {
+  const resetState = () => {
     setResizeState({
       isResizing: false,
       bookingId: null,
@@ -67,40 +48,7 @@ export const useBookingResize = (
       originalNights: 0,
     });
     setPreviewDays(0);
-    setIsPreviewConflict(false);
-  }, []);
-
-  /* =======================
-     CONFLICT CHECK (REALTIME)
-  ======================= */
-
-  const checkConflict = useCallback(
-    (booking: Booking, newCheckIn: string, newCheckOut: string): boolean => {
-      // booking overlap
-      const bookingConflict = (bookings ?? []).some((b) => {
-        if (b.id === booking.id) return false;
-        if (b.status === "cancelled") return false;
-        if (b.allocated_room_number !== booking.allocated_room_number) return false;
-
-        return newCheckIn < b.check_out && newCheckOut > b.check_in;
-      });
-
-      if (bookingConflict) return true;
-
-      // blocked dates
-      const blockedConflict = (unavailableDates ?? []).some((ud) => {
-        if (ud.room_number !== booking.allocated_room_number) return false;
-        return ud.unavailable_date >= newCheckIn && ud.unavailable_date < newCheckOut;
-      });
-
-      return blockedConflict;
-    },
-    [bookings, unavailableDates],
-  );
-
-  /* =======================
-     START RESIZE
-  ======================= */
+  };
 
   const startResize = useCallback((e: React.MouseEvent, booking: Booking, edge: "left" | "right") => {
     e.preventDefault();
@@ -117,42 +65,19 @@ export const useBookingResize = (
     });
 
     setPreviewDays(0);
-    setIsPreviewConflict(false);
   }, []);
-
-  /* =======================
-     MOUSE MOVE (LIVE PREVIEW)
-  ======================= */
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!resizeState.isResizing || !resizeState.bookingId) return;
-
-      const booking = bookings?.find((b) => b.id === resizeState.bookingId);
-      if (!booking) return;
+      if (!resizeState.isResizing) return;
 
       const deltaX = e.clientX - resizeState.startX;
       const daysDelta = Math.round(deltaX / cellWidth);
+
       setPreviewDays(daysDelta);
-
-      let newCheckIn = resizeState.originalCheckIn;
-      let newCheckOut = resizeState.originalCheckOut;
-
-      if (resizeState.edge === "left") {
-        newCheckIn = format(addDays(parseISO(resizeState.originalCheckIn), daysDelta), "yyyy-MM-dd");
-      } else {
-        newCheckOut = format(addDays(parseISO(resizeState.originalCheckOut), daysDelta), "yyyy-MM-dd");
-      }
-
-      const conflict = checkConflict(booking, newCheckIn, newCheckOut);
-      setIsPreviewConflict(conflict);
     },
-    [resizeState, bookings, cellWidth, checkConflict],
+    [resizeState.isResizing, resizeState.startX, cellWidth],
   );
-
-  /* =======================
-     MOUSE UP (FINALIZE)
-  ======================= */
 
   const handleMouseUp = useCallback(() => {
     if (!resizeState.isResizing || !resizeState.bookingId) {
@@ -161,6 +86,7 @@ export const useBookingResize = (
     }
 
     const booking = bookings?.find((b) => b.id === resizeState.bookingId);
+
     if (!booking || previewDays === 0) {
       resetState();
       return;
@@ -170,9 +96,11 @@ export const useBookingResize = (
     let newCheckOut = resizeState.originalCheckOut;
 
     if (resizeState.edge === "left") {
-      newCheckIn = format(addDays(parseISO(resizeState.originalCheckIn), previewDays), "yyyy-MM-dd");
+      const baseDate = parseISO(resizeState.originalCheckIn);
+      newCheckIn = format(addDays(baseDate, previewDays), "yyyy-MM-dd");
     } else {
-      newCheckOut = format(addDays(parseISO(resizeState.originalCheckOut), previewDays), "yyyy-MM-dd");
+      const baseDate = parseISO(resizeState.originalCheckOut);
+      newCheckOut = format(addDays(baseDate, previewDays), "yyyy-MM-dd");
     }
 
     const checkIn = parseISO(newCheckIn);
@@ -184,45 +112,58 @@ export const useBookingResize = (
       return;
     }
 
-    if (checkConflict(booking, newCheckIn, newCheckOut)) {
-      toast.error("Tidak bisa resize: tanggal bentrok / diblokir");
+    const hasConflict = (bookings || []).some((b) => {
+      if (b.id === booking.id) return false;
+      if (b.allocated_room_number !== booking.allocated_room_number) return false;
+      if (b.status === "cancelled") return false;
+
+      return newCheckIn < b.check_out && newCheckOut > b.check_in;
+    });
+
+    if (hasConflict) {
+      toast.error("Tidak bisa resize: ada booking lain di tanggal tersebut");
+      resetState();
+      return;
+    }
+
+    const isBlocked = (unavailableDates || []).some((ud) => {
+      if (ud.room_number !== booking.allocated_room_number) return false;
+      return ud.unavailable_date >= newCheckIn && ud.unavailable_date < newCheckOut;
+    });
+
+    if (isBlocked) {
+      toast.error("Tidak bisa resize: ada tanggal yang diblokir");
       resetState();
       return;
     }
 
     onResizeComplete(booking, newCheckIn, newCheckOut);
     resetState();
-  }, [resizeState, previewDays, bookings, resetState, checkConflict, onResizeComplete]);
+  }, [resizeState, previewDays, bookings, unavailableDates, onResizeComplete]);
 
-  /* =======================
-     GLOBAL LISTENERS
-  ======================= */
-
+  // 🌍 GLOBAL EVENT LISTENER (Deno-safe)
   useEffect(() => {
     if (!resizeState.isResizing) return;
 
-    globalThis.addEventListener("mousemove", handleMouseMove);
-    globalThis.addEventListener("mouseup", handleMouseUp);
+    const target = globalThis;
+
+    target.addEventListener("mousemove", handleMouseMove);
+    target.addEventListener("mouseup", handleMouseUp);
 
     return () => {
-      globalThis.removeEventListener("mousemove", handleMouseMove);
-      globalThis.removeEventListener("mouseup", handleMouseUp);
+      target.removeEventListener("mousemove", handleMouseMove);
+      target.removeEventListener("mouseup", handleMouseUp);
     };
   }, [resizeState.isResizing, handleMouseMove, handleMouseUp]);
 
-  /* =======================
-     PREVIEW API
-  ======================= */
-
-  const getResizePreview = (bookingId: string): ResizePreview => {
+  const getResizePreview = (bookingId: string) => {
     if (!resizeState.isResizing || resizeState.bookingId !== bookingId) {
-      return { previewDays: 0, edge: null, isConflict: false };
+      return { previewDays: 0, edge: null };
     }
 
     return {
       previewDays,
       edge: resizeState.edge,
-      isConflict: isPreviewConflict,
     };
   };
 
