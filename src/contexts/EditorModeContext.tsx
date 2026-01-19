@@ -96,7 +96,6 @@ const EditorModeContext = createContext<EditorModeContextType | undefined>(undef
 const MAX_HISTORY = 50;
 
 export function EditorModeProvider({ children }: { children: React.ReactNode }) {
-  console.log('EditorModeProvider rendering');
   const [isEditorMode, setIsEditorMode] = useState(true);
   
   // Widget-level selection (legacy)
@@ -457,12 +456,9 @@ export function EditorModeProvider({ children }: { children: React.ReactNode }) 
 export function useEditorMode() {
   const context = useContext(EditorModeContext);
   if (context === undefined) {
-    // Add more debugging info
-    console.error('useEditorMode called outside of EditorModeProvider');
     throw new Error('useEditorMode must be used within an EditorModeProvider');
   }
   return context;
 }
 
-// Also export context for debugging
 export { EditorModeContext };
