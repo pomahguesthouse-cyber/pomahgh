@@ -1,8 +1,8 @@
 // ============= EXECUTOR =============
 // Bertugas:
-// - Memanggil tool
-// - Mengembalikan DATA
-// ❌ Tidak menyimpulkan kondisi hotel
+// - Validasi argumen tool
+// - Memanggil tool yang tepat
+// - TIDAK menyimpulkan kondisi hotel
 
 import { getBookingStats, getRecentBookings, searchBookings, getBookingDetail } from "./bookingStats.ts";
 
@@ -10,7 +10,7 @@ import { getAvailabilitySummary } from "./availability.ts";
 
 /* ================= TYPES ================= */
 
-interface ExecutorArgs {
+export interface ExecutorArgs {
   period?: "today" | "week" | "month";
   limit?: number;
   status?: "confirmed" | "cancelled" | "checked_in" | "checked_out";
@@ -22,9 +22,15 @@ interface ExecutorArgs {
   booking_code?: string;
 }
 
-/* ================= MAIN EXECUTOR ================= */
+export interface ExecutorResult {
+  type: "stats" | "list" | "detail" | "availability";
+  data: unknown;
+  note?: string;
+}
 
-export async function executeTool(supabase: unknown, toolName: string, args: ExecutorArgs) {
+/* ================= INTERNAL EXECUTOR ================= */
+
+async function executeTool(supabase: unknown, toolName: string, args: ExecutorArgs): Promise<ExecutorResult> {
   switch (toolName) {
     /* ========= BOOKING STATS ========= */
     case "booking_stats": {
@@ -96,5 +102,33 @@ export async function executeTool(supabase: unknown, toolName: string, args: Exe
     /* ========= UNKNOWN ========= */
     default:
       throw new Error(`Unknown tool: ${toolName}`);
+  }
+}
+
+/* ================= PUBLIC API ================= */
+
+/**
+ * Ini fungsi yang DIPAKAI oleh index.ts
+ * Bertugas:
+ * - Validasi tool name
+ * - Guard error supaya chatbot tidak crash
+ */
+export async function executeToolWithValidation(
+  supabase: unknown,
+  toolName: string,
+  args: ExecutorArgs,
+): Promise<ExecutorResult> {
+  try {
+    return await executeTool(supabase, toolName, args);
+  } catch (err) {
+    return {
+      type: "detail",
+      data: {
+        error: err instanceof Error ? err.message : "Unknown error",
+        tool: toolName,
+        args,
+      },
+      note: "Terjadi kesalahan saat menjalankan tool.",
+    };
   }
 }
