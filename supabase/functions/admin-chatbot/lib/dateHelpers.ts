@@ -1,5 +1,9 @@
 // lib/dateHelpers.ts
-// ================= DATE HELPERS (WIB SAFE) =================
+// =======================================================
+// DATE HELPERS (WIB SAFE, BACKWARD COMPATIBLE, STABLE)
+// =======================================================
+
+/* ================= BASIC WIB HELPERS ================= */
 
 /**
  * Get current Date object in WIB
@@ -33,12 +37,14 @@ export function getCurrentTimeWIB(): string {
 }
 
 /**
- * Compare current time (WIB) with target time (HH:mm)
+ * Compare current WIB time with target time (HH:mm)
  */
 export function isBeforeTime(targetTime: string): boolean {
   const now = getCurrentTimeWIB();
   return now < targetTime;
 }
+
+/* ================= NORMALIZATION ================= */
 
 /**
  * Normalize date to WIB date-only (YYYY-MM-DD)
@@ -59,6 +65,8 @@ export function isDateInStay(checkIn: string, checkOut: string, targetDate: stri
   return inDate <= target && target < outDate;
 }
 
+/* ================= FORMATTING ================= */
+
 /**
  * Indonesian human-readable date
  * contoh: 19 Januari 2026
@@ -73,18 +81,36 @@ export function formatDateIndonesian(date: string | Date): string {
   });
 }
 
+/* ================= CHATBOT DATE REFERENCES ================= */
+
 /**
- * Date references for chatbot/system prompt
+ * Date references for chatbot & system prompt
  */
 export function getDateReferences() {
   const today = getTodayWIB();
-  const tomorrow = formatDateISO(new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000));
-  const yesterday = formatDateISO(new Date(new Date(today).getTime() - 24 * 60 * 60 * 1000));
+  const base = new Date(today);
+
+  const yesterday = new Date(base);
+  yesterday.setDate(base.getDate() - 1);
+
+  const tomorrow = new Date(base);
+  tomorrow.setDate(base.getDate() + 1);
+
+  const lusa = new Date(base);
+  lusa.setDate(base.getDate() + 2);
+
+  // Cari Sabtu terdekat (weekend)
+  const weekend = new Date(base);
+  const day = weekend.getDay(); // 0=Sun, 6=Sat
+  const daysToSaturday = (6 - day + 7) % 7 || 7;
+  weekend.setDate(base.getDate() + daysToSaturday);
 
   return {
     today,
-    tomorrow,
-    yesterday,
+    yesterday: formatDateISO(yesterday),
+    tomorrow: formatDateISO(tomorrow),
+    lusa: formatDateISO(lusa),
+    weekend: formatDateISO(weekend),
     today_indonesian: formatDateIndonesian(today),
   };
 }
