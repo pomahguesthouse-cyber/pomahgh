@@ -60,6 +60,7 @@ export const useDragDrop = (
 
   const today = startOfDay(new Date());
 
+  // 📳 Haptic helper (mobile only)
   const haptic = (pattern: number | number[]) => {
     if ("vibrate" in navigator) {
       navigator.vibrate(pattern);
@@ -96,26 +97,35 @@ export const useDragDrop = (
     const dropDate = startOfDay(dropData.date);
     const dropDateStr = format(dropDate, "yyyy-MM-dd");
 
-    // 🚫 Past date guard
-    if (dropDate < today) {
-      haptic([30, 30, 30]);
-      toast.error("Tidak bisa memindahkan booking ke tanggal lampau");
+    const isSameRoom = dragData.sourceRoomNumber === dropData.roomNumber;
+    const isSameDate = dropDateStr === dragData.booking.check_in;
+
+    // 🧘 NO-OP: tidak ada perubahan → silent exit
+    if (isSameRoom && isSameDate) {
       return;
     }
 
+    // 🚫 Prevent drag ke tanggal lampau
+    if (dropDate < today) {
+      haptic([30, 30, 30]);
+      toast.error("Tidak bisa memindahkan booking ke tanggal yang sudah lewat");
+      return;
+    }
+
+    // 🔒 Room type validation
     const sourceRoom = rooms.find((r) => r.id === dragData.sourceRoomId);
     const targetRoom = rooms.find((r) => r.id === dropData.roomId);
 
     if (sourceRoom?.name !== targetRoom?.name) {
       haptic([30, 30]);
-      toast.error("Hanya bisa pindah ke tipe kamar yang sama");
+      toast.error("Hanya bisa pindah ke kamar dengan tipe yang sama");
       return;
     }
 
     const newCheckIn = dropDateStr;
     const newCheckOut = format(addDays(dropDate, dragData.booking.total_nights), "yyyy-MM-dd");
 
-    // ❌ Conflict check
+    // ❌ Booking conflict check
     const hasConflict = (bookings || []).some((b) => {
       if (b.id === dragData.booking.id) return false;
       if (b.status === "cancelled" || b.status === "no_show") return false;
@@ -131,16 +141,15 @@ export const useDragDrop = (
 
     if (hasConflict) {
       haptic([40, 20, 40]);
-      toast.error("Kamar sudah terbooking di tanggal tersebut");
+      toast.error("Kamar sudah ada booking di tanggal tersebut");
       return;
     }
 
-    const isBlocked = (unavailableDates || []).some(
-      (ud) =>
-        ud.room_number === dropData.roomNumber &&
-        ud.unavailable_date >= newCheckIn &&
-        ud.unavailable_date < newCheckOut,
-    );
+    // 🚫 Blocked date check
+    const isBlocked = (unavailableDates || []).some((ud) => {
+      if (ud.room_number !== dropData.roomNumber) return false;
+      return ud.unavailable_date >= newCheckIn && ud.unavailable_date < newCheckOut;
+    });
 
     if (isBlocked) {
       haptic([40, 20, 40]);
@@ -149,7 +158,7 @@ export const useDragDrop = (
     }
 
     // =====================
-    // SNAPSHOT FOR UNDO
+    // SNAPSHOT (UNDO)
     // =====================
     const snapshot: UndoSnapshot = {
       booking: dragData.booking,
@@ -160,7 +169,6 @@ export const useDragDrop = (
     };
 
     setUndoSnapshot(snapshot);
-
     haptic(20);
 
     // =====================
@@ -172,15 +180,15 @@ export const useDragDrop = (
       action: {
         label: "Undo",
         onClick: async () => {
-          if (!undoSnapshot) return;
+          if (!snapshot) return;
 
           haptic(15);
           await onBookingMove(
-            undoSnapshot.booking,
-            undoSnapshot.prevRoomId,
-            undoSnapshot.prevRoomNumber,
-            undoSnapshot.prevCheckIn,
-            undoSnapshot.prevCheckOut,
+            snapshot.booking,
+            snapshot.prevRoomId,
+            snapshot.prevRoomNumber,
+            snapshot.prevCheckIn,
+            snapshot.prevCheckOut,
           );
         },
       },
@@ -188,7 +196,7 @@ export const useDragDrop = (
   };
 
   // =====================
-  // GHOST PREVIEW (dipakai UI)
+  // GHOST PREVIEW (dipanggil saat drag-over cell)
   // =====================
   const updateGhostPreview = (bookingId: string, roomNumber: string, date: Date, nights: number) => {
     const checkIn = format(date, "yyyy-MM-dd");
