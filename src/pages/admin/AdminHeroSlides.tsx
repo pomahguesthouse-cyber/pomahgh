@@ -710,29 +710,72 @@ const AdminHeroSlides = () => {
             </div>
 
             {/* Live Preview */}
-            {formData.overlay_text && (
-              <div className="mt-6 p-6 rounded-lg bg-muted/50 border">
-                <Label className="mb-3 block">👁️ Live Preview</Label>
+            <div className="mt-6 p-6 rounded-lg bg-muted/50 border">
+              <Label className="mb-3 block">👁️ Live Preview</Label>
+              <div 
+                className="relative rounded-lg overflow-hidden bg-muted"
+                style={{ aspectRatio: '16/9' }}
+              >
+                {/* Background Image */}
+                {formData.media_type === 'image' && formData.image_url && (
+                  <img 
+                    src={formData.image_url}
+                    alt="Hero Preview"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
+                
+                {/* Background Video */}
+                {formData.media_type === 'video' && formData.video_url && (
+                  <video
+                    src={formData.video_url}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                  />
+                )}
+                
+                {/* Placeholder if no media */}
+                {!formData.image_url && !formData.video_url && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
+                )}
+                
+                {/* Overlay */}
+                {formData.show_overlay && (
+                  <div 
+                    className="absolute inset-0"
+                    style={{ 
+                      background: `linear-gradient(to top, ${formData.overlay_gradient_from || 'rgba(0,0,0,0.7)'}, ${formData.overlay_gradient_to || 'transparent'})`,
+                      opacity: (formData.overlay_opacity || 40) / 100
+                    }}
+                  />
+                )}
+                
+                {/* Text Content */}
                 <div 
-                  className="relative min-h-[200px] rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20"
+                  className="absolute inset-0 flex items-center justify-center p-4"
                   style={{ textAlign: formData.text_align as any }}
                 >
-                  <div className="space-y-2 p-4">
-                    <div
-                      className={`${formData.font_size} ${formData.font_weight}`}
-                      style={{ 
-                        fontFamily: formData.font_family,
-                        color: formData.text_color
-                      }}
-                    >
-                      {formData.overlay_text}
-                    </div>
+                  <div className="space-y-2 text-center">
+                    {formData.overlay_text && (
+                      <div
+                        className={`${formData.font_size} ${formData.font_weight}`}
+                        style={{ 
+                          fontFamily: formData.font_family,
+                          color: formData.text_color || '#ffffff'
+                        }}
+                      >
+                        {formData.overlay_text}
+                      </div>
+                    )}
                     {formData.overlay_subtext && (
                       <div
                         className={`${formData.subtitle_font_size} ${formData.subtitle_font_weight}`}
                         style={{ 
                           fontFamily: formData.subtitle_font_family,
-                          color: formData.subtitle_text_color
+                          color: formData.subtitle_text_color || '#ffffff'
                         }}
                       >
                         {formData.overlay_subtext}
@@ -741,7 +784,7 @@ const AdminHeroSlides = () => {
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
             <div className="flex items-center space-x-2">
               <Switch
