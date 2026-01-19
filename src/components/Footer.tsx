@@ -3,25 +3,39 @@ import { Link } from "react-router-dom";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { EditableText } from '@/components/admin/editor-mode/EditableText';
 import { usePublicOverrides } from '@/contexts/PublicOverridesContext';
+import { useWidgetStyles } from '@/hooks/useWidgetStyles';
+import { useContext } from 'react';
+import { EditorModeContext } from '@/contexts/EditorModeContext';
 
 interface FooterProps {
   editorMode?: boolean;
 }
 
 export const Footer = ({ editorMode = false }: FooterProps) => {
-  const { settings } = useHotelSettings();
+  const { settings: hotelSettings } = useHotelSettings();
   const { getElementStyles } = usePublicOverrides();
+  const editorContext = useContext(EditorModeContext);
+  const isEditorMode = editorContext?.isEditorMode ?? editorMode;
+  const { settings, contentStyle } = useWidgetStyles('footer');
   
-  const hotelName = settings?.hotel_name?.toUpperCase() || "POMAH GUESTHOUSE";
-  const description = settings?.description || "Your tropical paradise awaits in the heart of Bali's most beautiful landscapes.";
+  const hotelName = settings.title_override || hotelSettings?.hotel_name?.toUpperCase() || "POMAH GUESTHOUSE";
+  const description = settings.subtitle_override || hotelSettings?.description || "Your tropical paradise awaits in the heart of Bali's most beautiful landscapes.";
+
+  // Apply footer background from widget settings if specified
+  const footerBgStyle: React.CSSProperties = settings.content_bg_color && settings.content_bg_color !== 'transparent'
+    ? { backgroundColor: settings.content_bg_color }
+    : {};
 
   return (
-    <footer className="bg-primary text-primary-foreground py-12 px-4">
+    <footer 
+      className="bg-primary text-primary-foreground py-12 px-4"
+      style={footerBgStyle}
+    >
       <div className="container mx-auto">
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           {/* Brand */}
           <div>
-            {editorMode ? (
+            {isEditorMode ? (
               <EditableText
                 widgetId="footer"
                 field="hotelName"
@@ -37,7 +51,7 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
                 {hotelName}
               </h3>
             )}
-            {editorMode ? (
+            {isEditorMode ? (
               <EditableText
                 widgetId="footer"
                 field="description"
@@ -92,9 +106,9 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
           <div>
             <h4 className="text-lg font-bold mb-4">Follow Us</h4>
             <div className="flex gap-4">
-              {settings?.facebook_url && (
+              {hotelSettings?.facebook_url && (
                 <a
-                  href={settings.facebook_url}
+                  href={hotelSettings.facebook_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors"
@@ -102,9 +116,9 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
                   <Facebook className="w-5 h-5" />
                 </a>
               )}
-              {settings?.instagram_url && (
+              {hotelSettings?.instagram_url && (
                 <a
-                  href={settings.instagram_url}
+                  href={hotelSettings.instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors"
@@ -112,9 +126,9 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
                   <Instagram className="w-5 h-5" />
                 </a>
               )}
-              {settings?.twitter_url && (
+              {hotelSettings?.twitter_url && (
                 <a
-                  href={settings.twitter_url}
+                  href={hotelSettings.twitter_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors"
@@ -122,9 +136,9 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
                   <Twitter className="w-5 h-5" />
                 </a>
               )}
-              {settings?.youtube_url && (
+              {hotelSettings?.youtube_url && (
                 <a
-                  href={settings.youtube_url}
+                  href={hotelSettings.youtube_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors"
@@ -137,7 +151,7 @@ export const Footer = ({ editorMode = false }: FooterProps) => {
         </div>
 
         <div className="border-t border-primary-foreground/20 pt-8 text-center text-primary-foreground/60">
-          <p>&copy; {new Date().getFullYear()} {settings?.hotel_name || "Pomah Guesthouse"}. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {hotelSettings?.hotel_name || "Pomah Guesthouse"}. All rights reserved.</p>
         </div>
       </div>
     </footer>

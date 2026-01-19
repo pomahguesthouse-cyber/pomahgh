@@ -5,33 +5,53 @@ import { MapPin, Phone, Mail } from "lucide-react";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { EditableText } from '@/components/admin/editor-mode/EditableText';
 import { usePublicOverrides } from '@/contexts/PublicOverridesContext';
+import { useWidgetStyles } from '@/hooks/useWidgetStyles';
+import { useContext, useState } from 'react';
+import { EditorModeContext } from '@/contexts/EditorModeContext';
 
 interface ContactProps {
   editorMode?: boolean;
 }
 
 export const Contact = ({ editorMode = false }: ContactProps) => {
-  const { settings } = useHotelSettings();
+  const { settings: hotelSettings } = useHotelSettings();
   const { getElementStyles } = usePublicOverrides();
+  const editorContext = useContext(EditorModeContext);
+  const isEditorMode = editorContext?.isEditorMode ?? editorMode;
+  const { settings, lineStyle, buttonStyle } = useWidgetStyles('contact');
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
   
-  const heading = "Get in Touch";
-  const subtext = "Ready to experience paradise? Contact us to book your stay or ask any questions.";
+  const heading = settings.title_override || "Get in Touch";
+  const subtext = settings.subtitle_override || "Ready to experience paradise? Contact us to book your stay or ask any questions.";
 
   const fullAddress = [
-    settings?.address,
-    settings?.city,
-    settings?.state,
-    settings?.postal_code,
-    settings?.country,
+    hotelSettings?.address,
+    hotelSettings?.city,
+    hotelSettings?.state,
+    hotelSettings?.postal_code,
+    hotelSettings?.country,
   ]
     .filter(Boolean)
     .join(", ");
+
+  // Compute button styles from widget settings
+  const computedButtonStyle: React.CSSProperties = settings.button_bg_color
+    ? {
+        background: isButtonHovered && settings.button_hover_color 
+          ? settings.button_hover_color 
+          : settings.button_bg_color,
+        color: settings.button_text_color || undefined,
+        borderRadius: settings.button_border_radius !== 'default' 
+          ? settings.button_border_radius 
+          : undefined,
+      }
+    : {};
 
   return (
     <section id="contact" className="py-20 px-4 bg-secondary/30">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12 sm:mb-16 animate-slide-up">
-          {editorMode ? (
+          {isEditorMode ? (
             <EditableText
               widgetId="contact"
               field="heading"
@@ -47,8 +67,18 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
               {heading}
             </h2>
           )}
-          <div className="w-16 sm:w-24 h-1 bg-primary mx-auto mb-4 sm:mb-6"></div>
-          {editorMode ? (
+          
+          {/* Line with widget styling */}
+          <div 
+            className="h-1 bg-primary mx-auto mb-4 sm:mb-6"
+            style={{
+              width: lineStyle.width || '96px',
+              height: lineStyle.height || '4px',
+              backgroundColor: lineStyle.backgroundColor || undefined,
+            }}
+          />
+          
+          {isEditorMode ? (
             <EditableText
               widgetId="contact"
               field="subtext"
@@ -88,11 +118,11 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">Phone</h3>
                 <p className="text-sm sm:text-base text-muted-foreground">
-                  {settings?.phone_primary || "+62 361 123 4567"}
-                  {settings?.phone_secondary && (
+                  {hotelSettings?.phone_primary || "+62 361 123 4567"}
+                  {hotelSettings?.phone_secondary && (
                     <>
                       <br />
-                      {settings.phone_secondary}
+                      {hotelSettings.phone_secondary}
                     </>
                   )}
                   <br />
@@ -108,11 +138,11 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">Email</h3>
                 <p className="text-muted-foreground">
-                  {settings?.email_primary || "info@pomahguesthouse.com"}
-                  {settings?.email_reservations && (
+                  {hotelSettings?.email_primary || "info@pomahguesthouse.com"}
+                  {hotelSettings?.email_reservations && (
                     <>
                       <br />
-                      {settings.email_reservations}
+                      {hotelSettings.email_reservations}
                     </>
                   )}
                 </p>
@@ -158,7 +188,14 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
                 />
               </div>
 
-              <Button variant="luxury" size="lg" className="w-full">
+              <Button 
+                variant="luxury" 
+                size="lg" 
+                className="w-full"
+                style={computedButtonStyle}
+                onMouseEnter={() => setIsButtonHovered(true)}
+                onMouseLeave={() => setIsButtonHovered(false)}
+              >
                 Send Message
               </Button>
             </form>

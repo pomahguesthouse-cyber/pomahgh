@@ -10,6 +10,7 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 import { EditorModeContext } from "@/contexts/EditorModeContext";
 import { EditableText } from "@/components/admin/editor-mode/EditableText";
 import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
+import { useWidgetStyles } from "@/hooks/useWidgetStyles";
 
 
 // ---------- FacilityCard (modular) ----------
@@ -141,6 +142,11 @@ export const Amenities = () => {
   const editorContext = useContext(EditorModeContext);
   const isEditorMode = editorContext?.isEditorMode ?? false;
   const { getElementStyles } = usePublicOverrides();
+  const { settings, lineStyle } = useWidgetStyles('amenities');
+
+  // Get text from settings or use defaults
+  const title = settings.title_override || "Facilities";
+  const description = settings.subtitle_override || "Indulge in world-class facilities designed to elevate your stay and create unforgettable memories.";
 
   const renderSkeletons = () => (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -184,7 +190,7 @@ export const Amenities = () => {
             <EditableText
               widgetId="amenities"
               field="title"
-              value="Facilities"
+              value={title}
               as="h2"
               className="text-2xl sm:text-3xl md:text-4xl font-cinzel font-semibold text-foreground mb-4"
             />
@@ -193,15 +199,25 @@ export const Amenities = () => {
               className="text-2xl sm:text-3xl md:text-4xl font-cinzel font-semibold text-foreground mb-4"
               style={getElementStyles('amenities-title')}
             >
-              Facilities
+              {title}
             </h2>
           )}
-          <div className="w-20 sm:w-24 h-1 bg-primary mx-auto mb-4 sm:mb-6" />
+          
+          {/* Line with widget styling */}
+          <div 
+            className="h-1 bg-primary mx-auto mb-4 sm:mb-6"
+            style={{
+              width: lineStyle.width || '96px',
+              height: lineStyle.height || '4px',
+              backgroundColor: lineStyle.backgroundColor || undefined,
+            }}
+          />
+          
           {isEditorMode ? (
             <EditableText
               widgetId="amenities"
               field="description"
-              value="Indulge in world-class facilities designed to elevate your stay and create unforgettable memories."
+              value={description}
               as="p"
               className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4"
             />
@@ -210,7 +226,7 @@ export const Amenities = () => {
               className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4"
               style={getElementStyles('amenities-description')}
             >
-              Indulge in world-class facilities designed to elevate your stay and create unforgettable memories.
+              {description}
             </p>
           )}
         </motion.div>

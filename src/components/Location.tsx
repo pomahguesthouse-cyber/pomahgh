@@ -7,20 +7,26 @@ import { useContext } from "react";
 import { EditorModeContext } from "@/contexts/EditorModeContext";
 import { EditableText } from "@/components/admin/editor-mode/EditableText";
 import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
+import { useWidgetStyles } from "@/hooks/useWidgetStyles";
 
 export const Location = () => {
-  const { settings, isLoading } = useHotelSettings();
+  const { settings: hotelSettings, isLoading } = useHotelSettings();
   const { locations, isLoading: locationsLoading } = useNearbyLocations();
   const editorContext = useContext(EditorModeContext);
   const isEditorMode = editorContext?.isEditorMode ?? false;
   const { getElementStyles } = usePublicOverrides();
+  const { settings, lineStyle } = useWidgetStyles('location');
   
   const getIcon = (iconName: string) => {
     const Icon = (LucideIcons as any)[iconName] || MapPin;
     return Icon;
   };
+
+  // Get text from widget settings or use defaults
+  const title = settings.title_override || "Lokasi Kami";
+  const subtitle = settings.subtitle_override || "Temukan kami di lokasi strategis yang mudah diakses";
   
-  if (isLoading || !settings) {
+  if (isLoading || !hotelSettings) {
     return null;
   }
   
@@ -35,7 +41,7 @@ export const Location = () => {
     phone_primary,
     email_primary,
     hotel_name
-  } = settings;
+  } = hotelSettings;
   
   const fullAddress = [address, city, state, postal_code, country].filter(Boolean).join(", ");
   const mapUrl = latitude && longitude ? `https://www.google.com/maps?q=${latitude},${longitude}&output=embed` : `https://www.google.com/maps?q=${encodeURIComponent(fullAddress)}&output=embed`;
@@ -48,7 +54,7 @@ export const Location = () => {
             <EditableText
               widgetId="location"
               field="title"
-              value="Lokasi Kami"
+              value={title}
               as="h2"
               className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4"
             />
@@ -57,14 +63,27 @@ export const Location = () => {
               className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4"
               style={getElementStyles('location-title')}
             >
-              Lokasi Kami
+              {title}
             </h2>
           )}
+          
+          {/* Line with widget styling */}
+          {settings.line_height && settings.line_height > 0 && (
+            <div 
+              className="h-1 bg-primary mx-auto mb-3 sm:mb-4"
+              style={{
+                width: lineStyle.width || '96px',
+                height: lineStyle.height || '4px',
+                backgroundColor: lineStyle.backgroundColor || undefined,
+              }}
+            />
+          )}
+          
           {isEditorMode ? (
             <EditableText
               widgetId="location"
               field="subtitle"
-              value="Temukan kami di lokasi strategis yang mudah diakses"
+              value={subtitle}
               as="p"
               className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto"
             />
@@ -73,7 +92,7 @@ export const Location = () => {
               className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto"
               style={getElementStyles('location-subtitle')}
             >
-              Temukan kami di lokasi strategis yang mudah diakses
+              {subtitle}
             </p>
           )}
         </div>

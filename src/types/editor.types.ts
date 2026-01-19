@@ -22,6 +22,7 @@ export interface ThemeConfig {
 }
 
 export interface WidgetSettings {
+  // Existing fields
   background_color?: string;
   padding_top?: string;
   padding_bottom?: string;
@@ -32,6 +33,30 @@ export interface WidgetSettings {
   columns?: number;
   sticky?: boolean;
   transparent?: boolean;
+  
+  // Header/Title Area Styling
+  header_bg_color?: string;
+  header_bg_opacity?: number;
+  
+  // Content Area Styling
+  content_bg_color?: string;
+  content_bg_opacity?: number;
+  
+  // Line/Divider Styling
+  line_color?: string;
+  line_height?: number;
+  line_width?: number;
+  
+  // Button Styling
+  button_bg_color?: string;
+  button_text_color?: string;
+  button_hover_color?: string;
+  button_border_radius?: string;
+  
+  // Hero-specific
+  overlay_color?: string;
+  overlay_opacity?: number;
+  
   [key: string]: unknown;
 }
 
