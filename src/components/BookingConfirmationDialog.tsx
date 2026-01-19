@@ -1,3 +1,4 @@
+// BookingConfirmationDialog.tsx
 import { useState } from "react";
 import {
   AlertDialog,
@@ -14,6 +15,9 @@ import { id as localeId } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { User, BedDouble, Calendar, Users, Moon, Receipt } from "lucide-react";
 
+/* =======================
+   TYPES
+======================= */
 interface NightlyPrice {
   date: Date;
   price: number;
@@ -37,9 +41,12 @@ interface BookingConfirmationDialogProps {
   numGuests: number;
   roomQuantity?: number;
 
-  nightlyPrices?: NightlyPrice[];
+  nightlyPrices: NightlyPrice[];
 }
 
+/* =======================
+   COMPONENT
+======================= */
 export const BookingConfirmationDialog = ({
   open,
   onOpenChange,
@@ -52,7 +59,7 @@ export const BookingConfirmationDialog = ({
   totalPrice,
   numGuests,
   roomQuantity = 1,
-  nightlyPrices = [],
+  nightlyPrices,
 }: BookingConfirmationDialogProps) => {
   const [loading, setLoading] = useState(false);
 
@@ -79,7 +86,7 @@ export const BookingConfirmationDialog = ({
           transition={{ duration: 0.2, ease: "easeOut" }}
           className="rounded-xl"
         >
-          {/* HEADER */}
+          {/* ================= HEADER ================= */}
           <AlertDialogHeader>
             <div className="flex items-center gap-2">
               <AlertDialogTitle className="text-xl">Konfirmasi Booking</AlertDialogTitle>
@@ -91,12 +98,10 @@ export const BookingConfirmationDialog = ({
               )}
             </div>
 
-            <AlertDialogDescription>
-              Cek detailnya dulu. Biar booking tenang, tidur pun senang 😌
-            </AlertDialogDescription>
+            <AlertDialogDescription>Cek detailnya dulu. Biar booking aman, tidur nyenyak 😌</AlertDialogDescription>
           </AlertDialogHeader>
 
-          {/* CONTENT */}
+          {/* ================= CONTENT ================= */}
           <motion.div
             className="space-y-5 py-5"
             initial="hidden"
@@ -154,7 +159,7 @@ export const BookingConfirmationDialog = ({
                 </motion.div>
               ))}
 
-            {/* BREAKDOWN */}
+            {/* BREAKDOWN HARGA */}
             <motion.div
               variants={{
                 hidden: { opacity: 0, y: 6 },
@@ -200,7 +205,7 @@ export const BookingConfirmationDialog = ({
             </motion.div>
           </motion.div>
 
-          {/* FOOTER */}
+          {/* ================= FOOTER ================= */}
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel className="w-full sm:w-auto h-12">Batal</AlertDialogCancel>
 
