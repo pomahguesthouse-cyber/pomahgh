@@ -19,7 +19,6 @@ export function EditableText({
   as: Component = 'span',
   multiline = false,
 }: EditableTextProps) {
-  // Try to get editor context - gracefully handle when not in provider
   const context = useContext(EditorModeContext);
   
   const ref = useRef<HTMLElement>(null);
@@ -30,16 +29,43 @@ export function EditableText({
     return <Component className={className}>{value}</Component>;
   }
   
-  const { isEditorMode, updateWidgetText, widgetTextOverrides } = context;
+  const { 
+    isEditorMode, 
+    updateWidgetText, 
+    widgetTextOverrides,
+    selectedElement,
+    setSelectedElement,
+    elementOverrides,
+  } = context;
   
-  // Get overridden value or use original
+  const elementId = `${widgetId}-${field}`;
   const displayValue = widgetTextOverrides[widgetId]?.[field] ?? value;
+  const overrides = elementOverrides[elementId] || {};
+  
+  // Build font styles from overrides
+  const fontStyles: React.CSSProperties = {
+    fontFamily: overrides.fontFamily && overrides.fontFamily !== 'inherit' ? overrides.fontFamily : undefined,
+    fontSize: overrides.fontSize || undefined,
+    fontWeight: overrides.fontWeight || undefined,
+    fontStyle: overrides.fontStyle || undefined,
+    textDecoration: overrides.textDecoration || undefined,
+    textAlign: overrides.textAlign as React.CSSProperties['textAlign'] || undefined,
+    color: overrides.color || undefined,
+    opacity: overrides.hidden ? 0.3 : undefined,
+  };
 
   useEffect(() => {
     if (ref.current && !isEditing) {
       ref.current.innerText = displayValue;
     }
   }, [displayValue, isEditing]);
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isEditorMode) {
+      e.stopPropagation();
+      setSelectedElement(elementId);
+    }
+  };
 
   const handleFocus = () => {
     setIsEditing(true);
@@ -61,14 +87,18 @@ export function EditableText({
   };
 
   if (!isEditorMode) {
-    return <Component className={className}>{displayValue}</Component>;
+    return <Component className={className} style={fontStyles}>{displayValue}</Component>;
   }
+
+  const isSelected = selectedElement === elementId;
 
   return (
     <Component
       ref={ref as any}
+      data-element-id={elementId}
       contentEditable
       suppressContentEditableWarning
+      onClick={handleClick}
       onFocus={handleFocus}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
@@ -76,9 +106,14 @@ export function EditableText({
         className,
         'outline-none transition-all duration-200',
         'hover:outline-dashed hover:outline-2 hover:outline-primary/50 hover:outline-offset-2',
-        isEditing && 'outline-dashed outline-2 outline-primary outline-offset-2 bg-primary/5'
+        isSelected && 'outline-solid outline-2 outline-primary outline-offset-2',
+        isEditing && 'bg-primary/5'
       )}
-      style={{ minWidth: '20px', cursor: 'text' }}
+      style={{ 
+        ...fontStyles,
+        minWidth: '20px', 
+        cursor: 'text' 
+      }}
     >
       {displayValue}
     </Component>
