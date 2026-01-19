@@ -1,8 +1,8 @@
 // ============= EXECUTOR =============
-// Bertugas:
-// - Validasi argumen tool
-// - Memanggil tool yang tepat
-// - TIDAK menyimpulkan kondisi hotel
+// - Validasi role
+// - Validasi argumen
+// - Dispatch ke tool
+// ❌ Tidak menyimpulkan kondisi hotel
 
 import { getBookingStats, getRecentBookings, searchBookings, getBookingDetail } from "./bookingStats.ts";
 
@@ -23,16 +23,28 @@ export interface ExecutorArgs {
 }
 
 export interface ExecutorResult {
-  type: "stats" | "list" | "detail" | "availability";
+  type: "stats" | "list" | "detail" | "availability" | "error";
   data: unknown;
   note?: string;
+}
+
+/* ================= ROLE GUARD ================= */
+
+/**
+ * Tool yang BUTUH role manager
+ */
+const MANAGER_ONLY_TOOLS = new Set(["booking_stats", "availability"]);
+
+function assertRoleAllowed(toolName: string, isManager: boolean) {
+  if (MANAGER_ONLY_TOOLS.has(toolName) && !isManager) {
+    throw new Error("Anda tidak memiliki izin untuk mengakses data ini.");
+  }
 }
 
 /* ================= INTERNAL EXECUTOR ================= */
 
 async function executeTool(supabase: unknown, toolName: string, args: ExecutorArgs): Promise<ExecutorResult> {
   switch (toolName) {
-    /* ========= BOOKING STATS ========= */
     case "booking_stats": {
       if (!args.period) {
         throw new Error("period is required for booking_stats");
@@ -47,7 +59,6 @@ async function executeTool(supabase: unknown, toolName: string, args: ExecutorAr
       };
     }
 
-    /* ========= RECENT BOOKINGS ========= */
     case "recent_bookings": {
       const data = await getRecentBookings(supabase, args.limit ?? 5, args.status);
 
@@ -57,7 +68,6 @@ async function executeTool(supabase: unknown, toolName: string, args: ExecutorAr
       };
     }
 
-    /* ========= SEARCH BOOKINGS ========= */
     case "search_bookings": {
       if (!args.query) {
         throw new Error("query is required for search_bookings");
@@ -71,7 +81,6 @@ async function executeTool(supabase: unknown, toolName: string, args: ExecutorAr
       };
     }
 
-    /* ========= BOOKING DETAIL ========= */
     case "booking_detail": {
       if (!args.booking_code) {
         throw new Error("booking_code is required");
@@ -85,7 +94,6 @@ async function executeTool(supabase: unknown, toolName: string, args: ExecutorAr
       };
     }
 
-    /* ========= AVAILABILITY ========= */
     case "availability": {
       if (!args.check_in || !args.check_out) {
         throw new Error("check_in and check_out are required for availability");
@@ -99,7 +107,6 @@ async function executeTool(supabase: unknown, toolName: string, args: ExecutorAr
       };
     }
 
-    /* ========= UNKNOWN ========= */
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
@@ -108,27 +115,30 @@ async function executeTool(supabase: unknown, toolName: string, args: ExecutorAr
 /* ================= PUBLIC API ================= */
 
 /**
- * Ini fungsi yang DIPAKAI oleh index.ts
- * Bertugas:
- * - Validasi tool name
- * - Guard error supaya chatbot tidak crash
+ * DIPANGGIL OLEH index.ts
+ * Signature SUDAH MATCH:
+ * (supabase, toolName, args, isManager)
  */
 export async function executeToolWithValidation(
   supabase: unknown,
   toolName: string,
   args: ExecutorArgs,
+  isManager: boolean,
 ): Promise<ExecutorResult> {
   try {
+    // 🔐 Role validation
+    assertRoleAllowed(toolName, isManager);
+
     return await executeTool(supabase, toolName, args);
   } catch (err) {
     return {
-      type: "detail",
+      type: "error",
       data: {
-        error: err instanceof Error ? err.message : "Unknown error",
+        message: err instanceof Error ? err.message : "Unknown executor error",
         tool: toolName,
         args,
       },
-      note: "Terjadi kesalahan saat menjalankan tool.",
+      note: "Gagal menjalankan tool.",
     };
   }
 }
