@@ -2,7 +2,7 @@ import { format, differenceInDays, parseISO, getDay } from "date-fns";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { isWIBToday } from "@/utils/wibTimezone";
-import { isIndonesianHoliday, type IndonesianHoliday } from "@/utils/indonesianHolidays";
+import { isIndonesianHoliday } from "@/utils/indonesianHolidays";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Booking } from "../types";
 import { BookingBar } from "./BookingBar";
