@@ -32,18 +32,18 @@ function EditorModeContent() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-muted/30">
+    <div className="h-screen flex flex-col overflow-hidden bg-muted/30">
       {/* Top Bar */}
       <EditorTopBar device={device} onDeviceChange={setDevice} />
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-hidden relative flex">
         <EditableCanvas device={device} />
 
         {/* Floating settings button */}
         {!panelOpen && (
           <Button
-            className="fixed right-4 top-20 z-40 shadow-lg"
+            className="fixed right-4 top-20 z-[70] shadow-lg"
             size="sm"
             onClick={() => setPanelOpen(true)}
           >

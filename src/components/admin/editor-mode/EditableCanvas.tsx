@@ -29,15 +29,29 @@ export function EditableCanvas({ device }: EditableCanvasProps) {
   return (
     <div 
       className={cn(
-        'flex-1 overflow-auto bg-muted/50',
-        device !== 'desktop' && 'flex justify-center py-4'
+        'flex-1 overflow-auto bg-muted/30',
+        device !== 'desktop' && 'flex justify-center p-6'
       )}
       onClick={handleCanvasClick}
     >
+      {/* CSS override to convert fixed positioning to absolute within editor */}
+      <style>
+        {`
+          .editor-preview-container .fixed,
+          .editor-preview-container [class*="fixed"] {
+            position: absolute !important;
+          }
+          .editor-preview-container {
+            contain: layout paint;
+          }
+        `}
+      </style>
+      
       <div
         className={cn(
-          'bg-background transition-all duration-300 min-h-full',
-          device !== 'desktop' && 'shadow-2xl rounded-lg overflow-hidden border'
+          'bg-background transition-all duration-300',
+          device === 'desktop' && 'min-h-full',
+          device !== 'desktop' && 'shadow-2xl rounded-xl overflow-hidden border-8 border-gray-800'
         )}
         style={{
           width: deviceStyle.width,
@@ -45,7 +59,26 @@ export function EditableCanvas({ device }: EditableCanvasProps) {
           margin: device !== 'desktop' ? '0 auto' : undefined,
         }}
       >
-        <EditorPreviewPage />
+        {/* Mobile notch */}
+        {device === 'mobile' && (
+          <div className="h-7 bg-gray-800 flex justify-center items-end pb-1.5">
+            <div className="w-20 h-1.5 bg-gray-600 rounded-full" />
+          </div>
+        )}
+        
+        {/* Isolated preview container */}
+        <div 
+          className="editor-preview-container relative"
+          style={{ 
+            transform: 'translateZ(0)',
+            isolation: 'isolate',
+            minHeight: device === 'desktop' ? '100%' : 'calc(100vh - 180px)',
+            maxHeight: device !== 'desktop' ? 'calc(100vh - 180px)' : undefined,
+            overflowY: device !== 'desktop' ? 'auto' : undefined,
+          }}
+        >
+          <EditorPreviewPage />
+        </div>
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ export function WidgetOverlay({ isHovered, isSelected, label, children }: Widget
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             className={cn(
-              'absolute inset-0 pointer-events-none z-40',
+              'absolute inset-0 pointer-events-none z-[50]',
               'border-2 rounded-sm',
               isSelected 
                 ? 'border-primary shadow-lg shadow-primary/20' 
