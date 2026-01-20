@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { format, eachDayOfInterval, differenceInDays, parseISO } from "date-fns";
+import { useState, useEffect, useCallback } from "react";
+import { format, eachDayOfInterval, differenceInDays, parseISO, areIntervalsOverlapping } from "date-fns";
 import { DndContext, DragOverlay, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -76,61 +76,83 @@ export const BookingCalendar = () => {
     }),
   );
 
+  // --- HANDLERS (Optimized with useCallback) ---
+
   // Handle booking move via drag & drop - AUTO SAVE
-  const handleBookingMove = async (
-    booking: Booking,
-    newRoomId: string,
-    newRoomNumber: string,
-    newCheckIn: string,
-    newCheckOut: string,
-  ) => {
-    // Calculate new total nights
-    const checkIn = parseISO(newCheckIn);
-    const checkOut = parseISO(newCheckOut);
-    const newTotalNights = differenceInDays(checkOut, checkIn);
+  const handleBookingMove = useCallback(
+    async (booking: Booking, newRoomId: string, newRoomNumber: string, newCheckIn: string, newCheckOut: string) => {
+      const checkIn = parseISO(newCheckIn);
+      const checkOut = parseISO(newCheckOut);
+      const newTotalNights = differenceInDays(checkOut, checkIn);
 
-    try {
-      // Get price from existing booking_rooms or use default
-      const currentRoom = booking.booking_rooms?.[0];
-      const pricePerNight = currentRoom?.price_per_night || 0;
+      // 1. Validasi Konflik dengan Blocked Dates
+      const hasBlockConflict = unavailableDates.some(
+        (blocked) =>
+          blocked.room_id === newRoomId &&
+          blocked.room_number === newRoomNumber &&
+          areIntervalsOverlapping(
+            { start: parseISO(blocked.unavailable_date), end: parseISO(blocked.unavailable_date) },
+            { start: checkIn, end: checkOut },
+          ),
+      );
 
-      // Auto-save to database - include editedRooms to sync booking_rooms
-      await updateBooking({
-        id: booking.id,
-        room_id: newRoomId,
-        allocated_room_number: newRoomNumber,
-        check_in: newCheckIn,
-        check_out: newCheckOut,
-        total_nights: newTotalNights,
-        // Sync booking_rooms with new room to prevent duplication
-        editedRooms: [{
-          roomId: newRoomId,
-          roomNumber: newRoomNumber,
-          pricePerNight: pricePerNight,
-        }],
-      });
-
-      await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-
-      // Determine message based on what changed
-      const isDateChanged = booking.check_in !== newCheckIn;
-      const isRoomChanged = booking.allocated_room_number !== newRoomNumber;
-
-      let message = "";
-      if (isDateChanged && isRoomChanged) {
-        message = `Booking dipindahkan ke ${newRoomNumber}, tanggal ${format(checkIn, "dd MMM")}`;
-      } else if (isDateChanged) {
-        message = `Booking dijadwalkan ulang ke ${format(checkIn, "dd MMM")}`;
-      } else {
-        message = `Booking dipindahkan ke kamar ${newRoomNumber}`;
+      if (hasBlockConflict) {
+        toast.error("Tidak dapat memindahkan: Tanggal tersebut sedang diblokir.");
+        return;
       }
 
-      toast.success(message);
-    } catch (error) {
-      console.error("Error moving booking:", error);
-      toast.error("Gagal memindahkan booking");
-    }
-  };
+      try {
+        // 2. Logic Harga Baru (Fix: Ambil harga dari kamar tujuan, bukan harga lama)
+        const targetRoom = rooms?.find((r) => r.id === newRoomId);
+        const newPricePerNight = targetRoom?.price_per_night || 0;
+
+        // Opsional: Hitung ulang total price jika kebijakan bisnis mengharuskan
+        // const newTotalPrice = newTotalNights * newPricePerNight;
+
+        // Auto-save to database
+        await updateBooking({
+          id: booking.id,
+          room_id: newRoomId,
+          allocated_room_number: newRoomNumber,
+          check_in: newCheckIn,
+          check_out: newCheckOut,
+          total_nights: newTotalNights,
+          // Jika ingin update total_price otomatis, uncomment baris bawah:
+          // total_price: newTotalPrice,
+
+          // Sync booking_rooms dengan kamar & harga BARU
+          editedRooms: [
+            {
+              roomId: newRoomId,
+              roomNumber: newRoomNumber,
+              pricePerNight: newPricePerNight,
+            },
+          ],
+        });
+
+        await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+
+        // Determine message based on what changed
+        const isDateChanged = booking.check_in !== newCheckIn;
+        const isRoomChanged = booking.allocated_room_number !== newRoomNumber;
+
+        let message = "";
+        if (isDateChanged && isRoomChanged) {
+          message = `Booking dipindahkan ke ${newRoomNumber}, tanggal ${format(checkIn, "dd MMM")}`;
+        } else if (isDateChanged) {
+          message = `Booking dijadwalkan ulang ke ${format(checkIn, "dd MMM")}`;
+        } else {
+          message = `Booking dipindahkan ke kamar ${newRoomNumber}`;
+        }
+
+        toast.success(message);
+      } catch (error) {
+        console.error("Error moving booking:", error);
+        toast.error("Gagal memindahkan booking");
+      }
+    },
+    [rooms, unavailableDates, updateBooking, queryClient],
+  );
 
   const { activeBooking, handleDragStart, handleDragEnd } = useDragDrop(
     rooms || [],
@@ -140,29 +162,31 @@ export const BookingCalendar = () => {
   );
 
   // Handle booking resize - AUTO SAVE
-  const handleResizeComplete = async (booking: Booking, newCheckIn: string, newCheckOut: string) => {
-    // Calculate new total nights
-    const checkIn = parseISO(newCheckIn);
-    const checkOut = parseISO(newCheckOut);
-    const newTotalNights = differenceInDays(checkOut, checkIn);
+  const handleResizeComplete = useCallback(
+    async (booking: Booking, newCheckIn: string, newCheckOut: string) => {
+      const checkIn = parseISO(newCheckIn);
+      const checkOut = parseISO(newCheckOut);
+      const newTotalNights = differenceInDays(checkOut, checkIn);
 
-    try {
-      // Auto-save to database
-      await updateBooking({
-        id: booking.id,
-        check_in: newCheckIn,
-        check_out: newCheckOut,
-        total_nights: newTotalNights,
-      });
+      try {
+        // Auto-save to database
+        await updateBooking({
+          id: booking.id,
+          check_in: newCheckIn,
+          check_out: newCheckOut,
+          total_nights: newTotalNights,
+        });
 
-      await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+        await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
 
-      toast.success(`Durasi diubah: ${newTotalNights} malam`);
-    } catch (error) {
-      console.error("Error resizing booking:", error);
-      toast.error("Gagal mengubah durasi booking");
-    }
-  };
+        toast.success(`Durasi diubah: ${newTotalNights} malam`);
+      } catch (error) {
+        console.error("Error resizing booking:", error);
+        toast.error("Gagal mengubah durasi booking");
+      }
+    },
+    [updateBooking, queryClient],
+  );
 
   const { isResizing, startResize, getResizePreview } = useBookingResize(
     bookings,
@@ -171,22 +195,28 @@ export const BookingCalendar = () => {
     handleResizeComplete,
   );
 
-  // Event handlers - Manual click opens dialog
-  const handleBookingClick = (booking: Booking) => {
-    setSelectedBooking(booking);
-    const room = rooms?.find((r) => r.id === booking.room_id);
-    setAvailableRoomNumbers(room?.room_numbers || []);
-  };
+  // Event handlers
+  const handleBookingClick = useCallback(
+    (booking: Booking) => {
+      setSelectedBooking(booking);
+      const room = rooms?.find((r) => r.id === booking.room_id);
+      setAvailableRoomNumbers(room?.room_numbers || []);
+    },
+    [rooms],
+  );
 
-  const handleCellClick = (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => {
-    if (isBlocked || hasBooking) return;
-    setCreateBookingDialog({ open: true, roomId, roomNumber, date });
-  };
+  const handleCellClick = useCallback(
+    (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => {
+      if (isBlocked || hasBooking) return;
+      setCreateBookingDialog({ open: true, roomId, roomNumber, date });
+    },
+    [],
+  );
 
-  const handleRightClick = (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => {
+  const handleRightClick = useCallback((e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => {
     e.preventDefault();
     setContextMenu({ roomId, roomNumber, date, x: e.clientX, y: e.clientY });
-  };
+  }, []);
 
   const handleBlockDate = () => {
     if (!contextMenu) return;
@@ -228,14 +258,9 @@ export const BookingCalendar = () => {
     toast.success(`${datesToBlock.length} tanggal berhasil diblokir`);
   };
 
-  const handleRoomTypeChange = async (newRoomId: string) => {
-    const newRoom = rooms?.find((r) => r.id === newRoomId);
-    if (newRoom) {
-      setAvailableRoomNumbers(newRoom.room_numbers || []);
-    }
-  };
-
-  const handleSaveBooking = async (editedBooking: Booking & { editedRooms?: Array<{ roomId: string; roomNumber: string; pricePerNight: number }> }) => {
+  const handleSaveBooking = async (
+    editedBooking: Booking & { editedRooms?: Array<{ roomId: string; roomNumber: string; pricePerNight: number }> },
+  ) => {
     try {
       await updateBooking({
         id: editedBooking.id,
@@ -258,7 +283,6 @@ export const BookingCalendar = () => {
         editedRooms: editedBooking.editedRooms,
       });
 
-      // Force immediate refetch for cancelled bookings to disappear
       await queryClient.refetchQueries({ queryKey: ["admin-bookings"] });
       setSelectedBooking(null);
       toast.success("Booking berhasil diupdate");
@@ -277,7 +301,7 @@ export const BookingCalendar = () => {
     }
   }, [contextMenu]);
 
-  // Realtime subscription for booking changes (including cancellations)
+  // Realtime subscription for booking changes
   useEffect(() => {
     const channel = supabase
       .channel("booking-calendar-changes")
@@ -359,7 +383,7 @@ export const BookingCalendar = () => {
         onSave={handleSaveBlock}
       />
 
-      {/* Booking Detail Dialog - opens in edit mode by default */}
+      {/* Booking Detail Dialog */}
       <BookingDetailDialog
         booking={selectedBooking}
         open={!!selectedBooking}
