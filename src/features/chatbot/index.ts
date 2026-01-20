@@ -4,14 +4,14 @@
  */
 
 // Components (re-export from chat index)
-export { default as ChatbotWidget } from "@/components/ChatbotWidget";
+export { ChatbotWidget } from "@/components/ChatbotWidget";
 export { ChatHeader, ChatInput, ChatMessages } from "@/components/chat";
 
 // Hooks
-export { useChatbot } from "@/hooks/useChatbot";
-export { useVoiceInput } from "@/hooks/useVoiceInput";
-export { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
-export { useTrainingExamples } from "@/hooks/useTrainingExamples";
+export { useChatbot } from "@/hooks/chatbot/useChatbot";
+export { useVoiceInput } from "@/hooks/chatbot/useVoiceInput";
+export { useKnowledgeBase } from "@/hooks/chatbot/useKnowledgeBase";
+export { useTrainingExamples } from "@/hooks/chatbot/useTrainingExamples";
 
 // Types
 export type {
@@ -25,3 +25,15 @@ export type {
   MessageRating,
   WhatsAppSession,
 } from "@/types/chatbot.types";
+
+
+
+
+
+
+
+
+
+
+
+

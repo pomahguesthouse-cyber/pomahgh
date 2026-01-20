@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useAdminChatbot } from "@/hooks/useAdminChatbot";
+import { useAdminChatbot } from "@/hooks/admin/useAdminChatbot";
 import { cn } from "@/lib/utils";
 
 interface AdminChatbotDialogProps {
@@ -182,3 +182,15 @@ export const AdminChatbotDialog = ({ open, onOpenChange }: AdminChatbotDialogPro
     </Sheet>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

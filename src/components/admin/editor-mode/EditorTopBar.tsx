@@ -123,3 +123,15 @@ export function EditorTopBar({ device, onDeviceChange }: EditorTopBarProps) {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

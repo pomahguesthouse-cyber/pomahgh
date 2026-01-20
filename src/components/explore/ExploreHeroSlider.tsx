@@ -8,7 +8,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { useExploreHeroSlides } from "@/hooks/useExploreHeroSlides";
+import { useExploreHeroSlides } from "@/hooks/explore/useExploreHeroSlides";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 
 const defaultSlide = {
@@ -147,3 +147,15 @@ export const ExploreHeroSlider = () => {
     </section>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

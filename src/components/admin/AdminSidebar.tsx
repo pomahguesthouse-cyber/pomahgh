@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, Terminal, Palette } from "lucide-react";
-import { NavLink } from "@/components/NavLink";
+import { NavLink } from "@/components/layout/NavLink";
 import { useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { useHotelSettings } from "@/hooks/shared/useHotelSettings";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 interface MenuItem {
@@ -255,3 +255,15 @@ export function AdminSidebar() {
       </SidebarFooter>
     </Sidebar>;
 }
+
+
+
+
+
+
+
+
+
+
+
+

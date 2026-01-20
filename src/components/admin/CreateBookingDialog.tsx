@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { useHotelSettings } from "@/hooks/shared/useHotelSettings";
 import { BookingConfirmationDialog } from "../BookingConfirmationDialog";
 
 interface CreateBookingDialogProps {
@@ -948,3 +948,15 @@ export const CreateBookingDialog = ({
     </>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

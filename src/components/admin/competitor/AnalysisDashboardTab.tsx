@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { usePriceAnalysis } from "@/hooks/usePriceAnalysis";
+import { usePriceAnalysis } from "@/hooks/shared/usePriceAnalysis";
 import { usePricingAdjustmentLogs } from "@/hooks/usePricingAdjustmentLogs";
-import { usePriceChangeNotifications } from "@/hooks/usePriceChangeNotifications";
-import { useRooms } from "@/hooks/useRooms";
+import { usePriceChangeNotifications } from "@/hooks/shared/usePriceChangeNotifications";
+import { useRooms } from "@/hooks/room/useRooms";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/shared/useToast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -451,3 +451,15 @@ export const AnalysisDashboardTab = () => {
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

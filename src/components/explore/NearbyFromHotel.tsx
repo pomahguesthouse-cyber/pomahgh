@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { MapPin, Clock } from "lucide-react";
 import * as Icons from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useNearbyLocations } from "@/hooks/useNearbyLocations";
+import { useNearbyLocations } from "@/hooks/explore/useNearbyLocations";
 
 export const NearbyFromHotel = () => {
   const { locations, isLoading } = useNearbyLocations();
@@ -67,3 +67,15 @@ export const NearbyFromHotel = () => {
     </section>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

@@ -23,8 +23,8 @@ import {
   ArrowDownRight,
 } from "lucide-react";
 
-import { useAdminBookings } from "@/hooks/useAdminBookings";
-import { useAdminRooms } from "@/hooks/useAdminRooms";
+import { useAdminBookings } from "@/hooks/admin/useAdminBookings";
+import { useAdminRooms } from "@/hooks/admin/useAdminRooms";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
@@ -241,3 +241,15 @@ const KPI = ({ title, value, icon }: { title: string; value: string; icon: React
 );
 
 export default AdminDashboard;
+
+
+
+
+
+
+
+
+
+
+
+

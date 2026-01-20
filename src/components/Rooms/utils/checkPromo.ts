@@ -1,4 +1,4 @@
-import type { Room } from "@/hooks/useRooms";
+import type { Room } from "@/hooks/room/useRooms";
 import { calculateDynamicPrice } from "./calculateDynamicPrice";
 
 export const checkPromo = (room: Room): boolean => {
@@ -28,3 +28,15 @@ export const getDynamicDisplayPrice = (
   const result = calculateDynamicPrice(room, checkIn, checkOut, activePromo);
   return { price: result.averagePrice, hasDateRange: result.hasDateRange };
 };
+
+
+
+
+
+
+
+
+
+
+
+

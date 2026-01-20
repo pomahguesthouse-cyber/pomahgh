@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CityAttraction } from "@/hooks/useCityAttractions";
+import { CityAttraction } from "@/hooks/explore/useCityAttractions";
 import { AttractionCard } from "./AttractionCard";
 import { Star } from "lucide-react";
 import { useContext } from "react";
@@ -82,3 +82,15 @@ export const FeaturedAttractions = ({ attractions }: FeaturedAttractionsProps) =
     </section>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

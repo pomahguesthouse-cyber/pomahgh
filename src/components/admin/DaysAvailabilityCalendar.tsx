@@ -2,8 +2,8 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAdminRooms } from "@/hooks/useAdminRooms";
-import { useRoomAvailability } from "@/hooks/useRoomAvailability";
+import { useAdminRooms } from "@/hooks/admin/useAdminRooms";
+import { useRoomAvailability } from "@/hooks/room/useRoomAvailability";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameMonth, isWeekend, startOfWeek, endOfWeek } from "date-fns";
 import { getWIBToday, formatWIBDate } from "@/utils/wibTimezone";
@@ -193,3 +193,15 @@ export const DaysAvailabilityCalendar = () => {
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

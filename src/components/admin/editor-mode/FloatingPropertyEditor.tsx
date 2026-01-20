@@ -317,3 +317,15 @@ export function FloatingPropertyEditor({ position: fixedPosition }: FloatingProp
     </AnimatePresence>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

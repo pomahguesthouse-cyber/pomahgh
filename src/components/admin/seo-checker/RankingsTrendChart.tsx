@@ -106,3 +106,15 @@ export const RankingsTrendChart = ({ data }: Props) => {
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

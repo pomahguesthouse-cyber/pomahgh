@@ -16,10 +16,10 @@ export { GettingHere } from "@/components/explore/GettingHere";
 export { NearbyFromHotel } from "@/components/explore/NearbyFromHotel";
 
 // Hooks
-export { useCityAttractions } from "@/hooks/useCityAttractions";
-export { useNearbyLocations } from "@/hooks/useNearbyLocations";
-export { useExploreHeroSlides } from "@/hooks/useExploreHeroSlides";
-export { useAttractionImageUpload } from "@/hooks/useAttractionImageUpload";
+export { useCityAttractions } from "@/hooks/explore/useCityAttractions";
+export { useNearbyLocations } from "@/hooks/explore/useNearbyLocations";
+export { useExploreHeroSlides } from "@/hooks/explore/useExploreHeroSlides";
+export { useAttractionImageUpload } from "@/hooks/shared/useAttractionImageUpload";
 
 // Types
 export type {
@@ -30,3 +30,15 @@ export type {
   Facility,
   FacilityHeroSlide,
 } from "@/types/explore.types";
+
+
+
+
+
+
+
+
+
+
+
+

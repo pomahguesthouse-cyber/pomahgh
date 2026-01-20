@@ -30,3 +30,15 @@ export const BlockedCellOverlay = ({ reason }: BlockedCellOverlayProps) => {
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

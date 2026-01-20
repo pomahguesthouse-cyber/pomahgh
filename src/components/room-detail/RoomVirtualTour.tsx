@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Panorama360Viewer } from "@/components/Panorama360Viewer";
+import { Panorama360Viewer } from "@/components/gallery/Panorama360Viewer";
 import { RotateCw, Maximize2 } from "lucide-react";
 import type { RoomVirtualTourProps } from "./types";
 
@@ -71,3 +71,15 @@ export const RoomVirtualTour = ({
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

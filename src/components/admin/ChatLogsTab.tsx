@@ -12,8 +12,8 @@ import {
   useChatMessages, 
   useDeleteConversation,
   useChatStats 
-} from '@/hooks/useChatLogs';
-import { useRateMessage, usePromoteToExample, useMessageRatings } from '@/hooks/useTrainingExamples';
+} from '@/hooks/chatbot/useChatLogs';
+import { useRateMessage, usePromoteToExample, useMessageRatings } from '@/hooks/chatbot/useTrainingExamples';
 import { formatDateTimeID } from '@/utils/indonesianFormat';
 import { 
   Search, 
@@ -491,3 +491,15 @@ const ChatLogsTab = () => {
 };
 
 export default ChatLogsTab;
+
+
+
+
+
+
+
+
+
+
+
+

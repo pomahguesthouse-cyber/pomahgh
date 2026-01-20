@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { MapPin, Clock, Star } from "lucide-react";
 import * as Icons from "lucide-react";
-import { CityAttraction } from "@/hooks/useCityAttractions";
+import { CityAttraction } from "@/hooks/explore/useCityAttractions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { OptimizedImage } from "@/components/ui/optimized-image";
@@ -108,3 +108,15 @@ export const AttractionCard = ({ attraction, index = 0, featured = false }: Attr
     </motion.div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

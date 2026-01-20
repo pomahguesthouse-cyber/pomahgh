@@ -9,5 +9,17 @@ export { AdminSidebar } from "@/components/admin/AdminSidebar";
 export { AdminGuard } from "@/components/admin/AdminGuard";
 
 // Admin hooks
-export { useAdminCheck } from "@/hooks/useAdminCheck";
-export { useAdminNotifications } from "@/hooks/useAdminNotifications";
+export { useAdminCheck } from "@/hooks/admin/useAdminCheck";
+export { useAdminNotifications } from "@/hooks/admin/useAdminNotifications";
+
+
+
+
+
+
+
+
+
+
+
+

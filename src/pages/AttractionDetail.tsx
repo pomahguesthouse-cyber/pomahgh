@@ -3,17 +3,17 @@ import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { MapPin, Clock, ArrowLeft, Lightbulb, Calendar, DollarSign, Share2 } from "lucide-react";
 import * as Icons from "lucide-react";
-import Header from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { Breadcrumb } from "@/components/Breadcrumb";
+import Header from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { Breadcrumb } from "@/components/common/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCityAttractions } from "@/hooks/useCityAttractions";
-import { useSeoSettings } from "@/hooks/useSeoSettings";
+import { useCityAttractions } from "@/hooks/explore/useCityAttractions";
+import { useSeoSettings } from "@/hooks/seo/useSeoSettings";
 import { AttractionCard } from "@/components/explore/AttractionCard";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/shared/useToast";
 
 const categoryLabels: Record<string, string> = {
   wisata: "Wisata",
@@ -296,3 +296,15 @@ const AttractionDetail = () => {
 };
 
 export default AttractionDetail;
+
+
+
+
+
+
+
+
+
+
+
+

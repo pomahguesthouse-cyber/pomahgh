@@ -16,7 +16,7 @@ import {
   useDeleteKnowledge, 
   useToggleKnowledge,
   useUpdateKnowledge
-} from '@/hooks/useKnowledgeBase';
+} from '@/hooks/chatbot/useKnowledgeBase';
 import { 
   Upload, 
   Link, 
@@ -412,3 +412,15 @@ const KnowledgeBaseTab = () => {
 };
 
 export default KnowledgeBaseTab;
+
+
+
+
+
+
+
+
+
+
+
+

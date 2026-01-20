@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useBankAccounts, BankAccount } from "@/hooks/useBankAccounts";
+import { useBankAccounts, BankAccount } from "@/hooks/shared/useBankAccounts";
 import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -203,3 +203,15 @@ export default function AdminBankAccounts() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

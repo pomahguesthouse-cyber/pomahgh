@@ -3,15 +3,15 @@ import { useEditorMode } from '@/contexts/EditorModeContext';
 import { EditableWidget } from './EditableWidget';
 
 // Import all widgets with named exports
-import Header from '@/components/Header';
-import Hero from '@/components/Hero';
-import { Welcome } from '@/components/Welcome';
+import Header from '@/components/layout/Header';
+import Hero from '@/components/hero/Hero';
+import { Welcome } from '@/components/hero/Welcome';
 import { Rooms } from '@/components/Rooms';
-import { Amenities } from '@/components/Amenities';
-import { GoogleRating } from '@/components/GoogleRating';
-import { Location } from '@/components/Location';
-import { Contact } from '@/components/Contact';
-import { Footer } from '@/components/Footer';
+import { Amenities } from '@/components/common/Amenities';
+import { GoogleRating } from '@/components/common/GoogleRating';
+import { Location } from '@/components/common/Location';
+import { Contact } from '@/components/common/Contact';
+import { Footer } from '@/components/layout/Footer';
 
 // Widget mapping
 const WIDGET_COMPONENTS: Record<string, { component: React.ComponentType<any>; label: string }> = {
@@ -73,3 +73,15 @@ export function EditorPreviewPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

@@ -72,3 +72,15 @@ export const TopPagesTable = ({ pages }: Props) => {
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

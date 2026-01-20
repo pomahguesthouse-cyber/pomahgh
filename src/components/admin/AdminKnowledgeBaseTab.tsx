@@ -28,7 +28,7 @@ import {
   useDeleteAdminKnowledge, 
   useToggleAdminKnowledge,
   useParseAdminKnowledge 
-} from '@/hooks/useAdminKnowledgeBase';
+} from '@/hooks/admin/useAdminKnowledgeBase';
 
 const CATEGORIES = [
   { value: 'general', label: 'Umum' },
@@ -373,3 +373,15 @@ const AdminKnowledgeBaseTab = () => {
 };
 
 export default AdminKnowledgeBaseTab;
+
+
+
+
+
+
+
+
+
+
+
+

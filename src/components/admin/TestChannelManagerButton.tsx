@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Wifi } from "lucide-react";
-import { useTestChannelManager } from "@/hooks/useTestChannelManager";
+import { useTestChannelManager } from "@/hooks/shared/useTestChannelManager";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
@@ -43,3 +43,15 @@ export const TestChannelManagerButton = ({ channelManager }: TestChannelManagerB
     </Button>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

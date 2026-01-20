@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Palette, Plus, Check, Trash2, Sparkles } from 'lucide-react';
-import { useTemplatePresets } from '@/hooks/useTemplatePresets';
+import { useTemplatePresets } from '@/hooks/shared/useTemplatePresets';
 
 const TEMPLATE_COLORS: Record<string, string> = {
   'Modern': 'bg-teal-500',
@@ -196,3 +196,15 @@ export function TemplatePresets() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

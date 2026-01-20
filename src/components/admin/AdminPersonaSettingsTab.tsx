@@ -6,8 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
-import { useHotelSettings } from '@/hooks/useHotelSettings';
+import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/chatbot/useChatbot';
+import { useHotelSettings } from '@/hooks/shared/useHotelSettings';
 import { UserCog, MessageSquare, Sparkles, Settings2 } from 'lucide-react';
 
 // Admin-specific persona traits
@@ -398,3 +398,15 @@ const AdminPersonaSettingsTab = () => {
 };
 
 export default AdminPersonaSettingsTab;
+
+
+
+
+
+
+
+
+
+
+
+

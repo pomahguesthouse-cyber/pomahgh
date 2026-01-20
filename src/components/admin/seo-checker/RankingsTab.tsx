@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, Link2, Unlink, ExternalLink, Loader2 } from "lucide-react";
-import { useSearchConsoleRankings } from "@/hooks/useSearchConsoleRankings";
+import { useSearchConsoleRankings } from "@/hooks/seo/useSearchConsoleRankings";
 import { RankingsSummary } from "./RankingsSummary";
 import { TopPagesTable } from "./TopPagesTable";
 import { TopQueriesTable } from "./TopQueriesTable";
@@ -147,3 +147,15 @@ export const RankingsTab = () => {
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

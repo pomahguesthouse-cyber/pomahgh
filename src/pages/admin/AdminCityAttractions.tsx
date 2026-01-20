@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useCityAttractions, CityAttraction } from "@/hooks/useCityAttractions";
-import { useAttractionImageUpload } from "@/hooks/useAttractionImageUpload";
+import { useCityAttractions, CityAttraction } from "@/hooks/explore/useCityAttractions";
+import { useAttractionImageUpload } from "@/hooks/shared/useAttractionImageUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -513,3 +513,15 @@ const AdminCityAttractions = () => {
 };
 
 export default AdminCityAttractions;
+
+
+
+
+
+
+
+
+
+
+
+

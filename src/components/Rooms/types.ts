@@ -1,6 +1,6 @@
-import type { Room } from "@/hooks/useRooms";
+import type { Room } from "@/hooks/room/useRooms";
 import type { CarouselApi } from "@/components/ui/carousel";
-import type { RoomPriceAnalysis } from "@/hooks/usePriceAnalysis";
+import type { RoomPriceAnalysis } from "@/hooks/shared/usePriceAnalysis";
 
 export interface RoomFeature {
   id: string;
@@ -81,3 +81,15 @@ export interface RoomDotsProps {
   current: number;
   onDotClick: (index: number) => void;
 }
+
+
+
+
+
+
+
+
+
+
+
+

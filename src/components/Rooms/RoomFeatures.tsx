@@ -29,3 +29,15 @@ export const RoomFeatures = ({ features, roomFeatures, layout = "default" }: Roo
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

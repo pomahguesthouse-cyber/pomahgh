@@ -2,8 +2,8 @@ import { useState } from "react";
 import { format, isAfter, isBefore, isWithinInterval, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Calendar, Percent, Tag, Clock } from "lucide-react";
-import { useRoomPromotions, type RoomPromotion, type CreatePromotionData } from "@/hooks/useRoomPromotions";
-import { useAdminRooms } from "@/hooks/useAdminRooms";
+import { useRoomPromotions, type RoomPromotion, type CreatePromotionData } from "@/hooks/room/useRoomPromotions";
+import { useAdminRooms } from "@/hooks/admin/useAdminRooms";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -570,3 +570,15 @@ export default function AdminPromotions() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

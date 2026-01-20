@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, AlertTriangle, Info, Image, FileText, Layout, Zap, Wand2, Loader2, Check, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { SeoIssue } from "@/hooks/useSeoChecker";
-import { useAltTextGenerator } from "@/hooks/useAltTextGenerator";
+import type { SeoIssue } from "@/hooks/seo/useSeoChecker";
+import { useAltTextGenerator } from "@/hooks/shared/useAltTextGenerator";
 import { formatFileSize } from "@/utils/imageConverter";
 
 interface SeoIssueCardProps {
@@ -242,3 +242,15 @@ export const SeoIssueCard = ({ issue, onUpdateAltText, onConvertToWebP, onIssueF
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

@@ -19,7 +19,7 @@ import {
   useUpdateFacility,
   useDeleteFacility,
   Facility,
-} from "@/hooks/useFacilities";
+} from "@/hooks/shared/useFacilities";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import * as Icons from "lucide-react";
@@ -236,3 +236,15 @@ const AdminFacilities = () => {
 };
 
 export default AdminFacilities;
+
+
+
+
+
+
+
+
+
+
+
+

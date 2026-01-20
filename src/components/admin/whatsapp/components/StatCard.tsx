@@ -25,3 +25,15 @@ export const StatCard = ({ title, value, icon: Icon, variant = 'default' }: Stat
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

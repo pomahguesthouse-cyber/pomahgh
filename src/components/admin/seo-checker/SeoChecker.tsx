@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RefreshCw, AlertCircle, AlertTriangle, CheckCircle2, Image, FileText, Layout, Zap } from "lucide-react";
-import { useSeoChecker, type SeoIssue } from "@/hooks/useSeoChecker";
+import { useSeoChecker, type SeoIssue } from "@/hooks/seo/useSeoChecker";
 import { SeoScoreRing } from "./SeoScoreRing";
 import { SeoIssueCard } from "./SeoIssueCard";
 import { SpeedMetrics } from "./SpeedMetrics";
@@ -270,3 +270,15 @@ const IssuesList = ({ issues, onUpdateAltText, onConvertToWebP, onIssueFixed }: 
     </>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

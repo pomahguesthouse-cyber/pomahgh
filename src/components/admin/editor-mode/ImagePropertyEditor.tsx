@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditorMode } from '@/contexts/EditorModeContext';
-import { useEditorImageUpload } from '@/hooks/useEditorImageUpload';
+import { useEditorImageUpload } from '@/hooks/shared/useEditorImageUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -336,3 +336,15 @@ export function ImagePropertyEditor() {
     </>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

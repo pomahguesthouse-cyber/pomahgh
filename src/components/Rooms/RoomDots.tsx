@@ -15,3 +15,15 @@ export const RoomDots = ({ total, current, onDotClick }: RoomDotsProps) => {
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

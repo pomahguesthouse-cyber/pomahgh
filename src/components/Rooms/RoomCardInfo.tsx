@@ -36,3 +36,15 @@ export const RoomCardInfo = ({ room, availability, isAvailabilityLoaded }: RoomC
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

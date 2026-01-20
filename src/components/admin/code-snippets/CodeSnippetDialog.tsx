@@ -35,7 +35,7 @@ import {
   SNIPPET_CATEGORIES,
   useAddCodeSnippet,
   useUpdateCodeSnippet 
-} from "@/hooks/useCodeSnippets";
+} from "@/hooks/shared/useCodeSnippets";
 
 const formSchema = z.object({
   title: z.string().min(1, "Judul wajib diisi"),
@@ -297,3 +297,15 @@ export function CodeSnippetDialog({
     </Dialog>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

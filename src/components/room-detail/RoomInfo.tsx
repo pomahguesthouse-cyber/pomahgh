@@ -7,3 +7,15 @@ export const RoomInfo = ({ description }: RoomInfoProps) => {
     </p>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

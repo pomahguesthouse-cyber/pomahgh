@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminGuard } from "./AdminGuard";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/shared/useMobile";
 import { AdminChatbotWidget } from "./AdminChatbotWidget";
 interface AdminLayoutProps {
   children: ReactNode;
@@ -54,3 +54,15 @@ export const AdminLayout = ({
       </SidebarProvider>
     </AdminGuard>;
 };
+
+
+
+
+
+
+
+
+
+
+
+

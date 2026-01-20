@@ -3,7 +3,7 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { CreditCard, Clock, Edit2, Save, X, CheckCircle2, AlertCircle, Calendar as CalendarIcon } from "lucide-react";
 
-import { useRoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
+import { useRoomTypeAvailability } from "@/hooks/room/useRoomTypeAvailability";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -213,3 +213,15 @@ export const BookingDetailDialog = ({
     </Dialog>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

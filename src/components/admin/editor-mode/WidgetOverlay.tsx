@@ -52,3 +52,15 @@ export function WidgetOverlay({ isHovered, isSelected, label, children }: Widget
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

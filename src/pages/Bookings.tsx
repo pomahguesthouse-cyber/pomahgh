@@ -5,8 +5,8 @@ import { User } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import Header from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import Header from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { formatDateID, formatRupiahID } from "@/utils/indonesianFormat";
 
 interface Booking {
@@ -197,3 +197,15 @@ const Bookings = () => {
 };
 
 export default Bookings;
+
+
+
+
+
+
+
+
+
+
+
+

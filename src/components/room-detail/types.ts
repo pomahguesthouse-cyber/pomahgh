@@ -1,7 +1,7 @@
-import type { Room } from "@/hooks/useRooms";
-import type { RoomPanorama } from "@/hooks/useRoomPanoramas";
-import type { RoomHotspot } from "@/hooks/useRoomHotspots";
-import type { RoomFeature } from "@/hooks/useRoomFeatures";
+import type { Room } from "@/hooks/room/useRooms";
+import type { RoomPanorama } from "@/hooks/room/useRoomPanoramas";
+import type { RoomHotspot } from "@/hooks/room/useRoomHotspots";
+import type { RoomFeature } from "@/hooks/room/useRoomFeatures";
 
 export interface RoomDetailData {
   room: Room;
@@ -73,3 +73,15 @@ export interface RoomSEOProps {
   displayPrice: number;
   roomSlug: string;
 }
+
+
+
+
+
+
+
+
+
+
+
+

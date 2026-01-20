@@ -22,7 +22,7 @@ import {
   uploadHeroImage,
   uploadHeroVideo,
   HeroSlide,
-} from "@/hooks/useHeroSlides";
+} from "@/hooks/shared/useHeroSlides";
 import { Loader2, Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -870,3 +870,15 @@ const AdminHeroSlides = () => {
 };
 
 export default AdminHeroSlides;
+
+
+
+
+
+
+
+
+
+
+
+

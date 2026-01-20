@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useCompetitorPriceSurveys, CompetitorPriceSurveyInsert } from "@/hooks/useCompetitorPriceSurveys";
-import { useCompetitorRooms } from "@/hooks/useCompetitorRooms";
-import { useCompetitorHotels } from "@/hooks/useCompetitorHotels";
-import { usePriceScraping } from "@/hooks/usePriceScraping";
+import { useCompetitorPriceSurveys, CompetitorPriceSurveyInsert } from "@/hooks/competitor/useCompetitorPriceSurveys";
+import { useCompetitorRooms } from "@/hooks/competitor/useCompetitorRooms";
+import { useCompetitorHotels } from "@/hooks/competitor/useCompetitorHotels";
+import { usePriceScraping } from "@/hooks/shared/usePriceScraping";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -307,3 +307,15 @@ export const PriceSurveyTab = () => {
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

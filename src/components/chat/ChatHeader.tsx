@@ -49,3 +49,15 @@ const ChatHeader = ({ botName, hotelName, logoUrl, onClearChat }: ChatHeaderProp
 };
 
 export default ChatHeader;
+
+
+
+
+
+
+
+
+
+
+
+

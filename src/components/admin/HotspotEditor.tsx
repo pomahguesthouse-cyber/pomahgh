@@ -6,11 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Edit, Trash2, Plus, Save, Navigation } from "lucide-react";
-import { Panorama360Viewer } from "@/components/Panorama360Viewer";
-import { useAdminRoomHotspots, useCreateHotspot, useUpdateHotspot, useDeleteHotspot, RoomHotspot } from "@/hooks/useRoomHotspots";
-import { useRoomFeatures } from "@/hooks/useRoomFeatures";
-import { useAdminRooms } from "@/hooks/useAdminRooms";
-import { useAdminRoomPanoramas } from "@/hooks/useRoomPanoramas";
+import { Panorama360Viewer } from "@/components/gallery/Panorama360Viewer";
+import { useAdminRoomHotspots, useCreateHotspot, useUpdateHotspot, useDeleteHotspot, RoomHotspot } from "@/hooks/room/useRoomHotspots";
+import { useRoomFeatures } from "@/hooks/room/useRoomFeatures";
+import { useAdminRooms } from "@/hooks/admin/useAdminRooms";
+import { useAdminRoomPanoramas } from "@/hooks/room/useRoomPanoramas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -454,3 +454,15 @@ export const HotspotEditor = ({
     </Dialog>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

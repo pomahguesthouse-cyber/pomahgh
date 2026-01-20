@@ -131,3 +131,15 @@ export const bookingPermissions = {
     return actions;
   },
 };
+
+
+
+
+
+
+
+
+
+
+
+

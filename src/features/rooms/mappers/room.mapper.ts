@@ -196,3 +196,15 @@ export const roomMapper = {
   toAddonDTOList: (addons: RoomAddon[]): RoomAddonDTO[] =>
     addons.map(roomMapper.toAddonDTO),
 };
+
+
+
+
+
+
+
+
+
+
+
+

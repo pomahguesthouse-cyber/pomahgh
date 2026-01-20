@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
-import { useHotelSettings, WhatsAppContact, WhatsAppManager } from '@/hooks/useHotelSettings';
+import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/chatbot/useChatbot';
+import { useHotelSettings, WhatsAppContact, WhatsAppManager } from '@/hooks/shared/useHotelSettings';
 import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban, UserCog, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import AdminPersonaSettingsTab from '@/components/admin/AdminPersonaSettingsTab';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/shared/useToast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import ChatLogsTab from '@/components/admin/ChatLogsTab';
 import TrainingTab from '@/components/admin/TrainingTab';
@@ -638,3 +638,15 @@ const AdminChatbot = () => {
 };
 
 export default AdminChatbot;
+
+
+
+
+
+
+
+
+
+
+
+

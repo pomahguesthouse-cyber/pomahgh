@@ -57,3 +57,15 @@ export const PAYMENT_BADGE_COLORS: Record<PaymentStatus, string> = {
   pay_at_hotel: "bg-blue-500 text-white hover:bg-blue-500",
   partial: "bg-orange-500 text-white hover:bg-orange-500",
 };
+
+
+
+
+
+
+
+
+
+
+
+

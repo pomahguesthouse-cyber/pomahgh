@@ -61,3 +61,15 @@ const ChatInput = ({ onSend, disabled, maxLength = 500 }: ChatInputProps) => {
 };
 
 export default ChatInput;
+
+
+
+
+
+
+
+
+
+
+
+

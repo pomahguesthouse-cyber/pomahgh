@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
-import { useSeoSettings } from "@/hooks/useSeoSettings";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
-import { CityAttraction } from "@/hooks/useCityAttractions";
+import { useSeoSettings } from "@/hooks/seo/useSeoSettings";
+import { useHotelSettings } from "@/hooks/shared/useHotelSettings";
+import { CityAttraction } from "@/hooks/explore/useCityAttractions";
 
 interface ExploreSEOProps {
   attractions: CityAttraction[];
@@ -258,3 +258,15 @@ export const ExploreSEO = ({ attractions }: ExploreSEOProps) => {
     </Helmet>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

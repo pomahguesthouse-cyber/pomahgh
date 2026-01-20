@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DoorOpen, DoorClosed, Search, X, User, Clock, Home } from "lucide-react";
 import { isToday, isTomorrow, isYesterday, parseISO, format } from "date-fns";
-import { useAdminBookings } from "@/hooks/useAdminBookings";
+import { useAdminBookings } from "@/hooks/admin/useAdminBookings";
 import { cn } from "@/lib/utils";
 import { formatDateShortID, formatTimeID } from "@/utils/indonesianFormat";
 import { getWIBNow, formatWIBDate } from "@/utils/wibTimezone";
@@ -351,3 +351,15 @@ export const ArrivingDepartingWidgets = () => {
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useInvoiceTemplate } from "@/hooks/useInvoiceTemplate";
+import { useInvoiceTemplate } from "@/hooks/shared/useInvoiceTemplate";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -351,3 +351,15 @@ const AdminInvoiceTemplate = () => {
 };
 
 export default AdminInvoiceTemplate;
+
+
+
+
+
+
+
+
+
+
+
+

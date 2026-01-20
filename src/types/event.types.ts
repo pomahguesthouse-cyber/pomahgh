@@ -55,3 +55,15 @@ export const eventCategories = [
   { value: "keagamaan", label: "Keagamaan" },
   { value: "lainnya", label: "Lainnya" },
 ] as const;
+
+
+
+
+
+
+
+
+
+
+
+

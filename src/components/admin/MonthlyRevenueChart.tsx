@@ -83,3 +83,15 @@ export const MonthlyRevenueChart = ({ data }: MonthlyRevenueChartProps) => {
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

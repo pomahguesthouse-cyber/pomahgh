@@ -21,9 +21,9 @@ export {
 } from "./hooks";
 
 // Additional hooks from shared location
-export { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
-export { useRoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
-export { useRoomFeatures } from "@/hooks/useRoomFeatures";
+export { useRoomAvailabilityCheck } from "@/hooks/room/useRoomAvailabilityCheck";
+export { useRoomTypeAvailability } from "@/hooks/room/useRoomTypeAvailability";
+export { useRoomFeatures } from "@/hooks/room/useRoomFeatures";
 
 // Services
 export { roomService } from "./services";
@@ -58,3 +58,15 @@ export { calculateDynamicPrice } from "@/components/Rooms/utils/calculateDynamic
 export { checkPromo, getDisplayPrice, getDynamicDisplayPrice } from "@/components/Rooms/utils/checkPromo";
 export { formatDateRange } from "@/components/Rooms/utils/formatDateRange";
 export { getRoomImages } from "@/components/Rooms/utils/getRoomImages";
+
+
+
+
+
+
+
+
+
+
+
+

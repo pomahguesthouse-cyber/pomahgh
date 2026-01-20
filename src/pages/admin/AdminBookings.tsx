@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
-import { useAdminBookings } from "@/hooks/useAdminBookings";
-import { useRooms } from "@/hooks/useRooms";
-import { useBankAccounts } from "@/hooks/useBankAccounts";
-import { useBookingValidation } from "@/hooks/useBookingValidation";
-import { useRoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
-import { useBookingExport } from "@/hooks/useBookingExport";
+import { useAdminBookings } from "@/hooks/admin/useAdminBookings";
+import { useRooms } from "@/hooks/room/useRooms";
+import { useBankAccounts } from "@/hooks/shared/useBankAccounts";
+import { useBookingValidation } from "@/hooks/booking/useBookingValidation";
+import { useRoomTypeAvailability } from "@/hooks/room/useRoomTypeAvailability";
+import { useBookingExport } from "@/hooks/booking/useBookingExport";
 import { Accordion } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
+import { InvoicePreviewDialog } from "@/components/booking/InvoicePreviewDialog";
 import { BookingFilters } from "@/components/admin/bookings/BookingFilters";
 import { BookingAccordionItem } from "@/components/admin/bookings/BookingAccordionItem";
 import { BookingListHeader } from "@/components/admin/bookings/BookingListHeader";
@@ -389,3 +389,15 @@ const AdminBookings = () => {
 };
 
 export default AdminBookings;
+
+
+
+
+
+
+
+
+
+
+
+

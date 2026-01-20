@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { ChatHeader, ChatInput, ChatMessages } from "@/components/chat";
-import { useChatbot } from "@/hooks/useChatbot";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { useChatbot } from "@/hooks/chatbot/useChatbot";
+import { useHotelSettings } from "@/hooks/shared/useHotelSettings";
 
 const Chat = () => {
   const { messages, isLoading, sendMessage, clearChat, settings } = useChatbot();
@@ -35,3 +35,15 @@ const Chat = () => {
 };
 
 export default Chat;
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import type { RoomHotspot } from "@/hooks/useRoomHotspots";
-import type { RoomPanorama } from "@/hooks/useRoomPanoramas";
-import type { Room } from "@/hooks/useRooms";
+import type { RoomHotspot } from "@/hooks/room/useRoomHotspots";
+import type { RoomPanorama } from "@/hooks/room/useRoomPanoramas";
+import type { Room } from "@/hooks/room/useRooms";
 
 export const useRoomNavigation = (
   panoramas: RoomPanorama[],
@@ -41,3 +41,15 @@ export const useRoomNavigation = (
 
   return { handleHotspotClick };
 };
+
+
+
+
+
+
+
+
+
+
+
+

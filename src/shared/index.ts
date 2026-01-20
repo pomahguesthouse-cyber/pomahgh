@@ -6,31 +6,43 @@
 // UI components are imported directly from @/components/ui/
 
 // Shared components (named exports)
-export { default as Header } from "@/components/Header";
-export { Footer } from "@/components/Footer";
-export { default as Hero } from "@/components/Hero";
-export { Breadcrumb } from "@/components/Breadcrumb";
-export { ImageGallery } from "@/components/ImageGallery";
-export { GoogleRating } from "@/components/GoogleRating";
-export { ReviewSlider } from "@/components/ReviewSlider";
-export { Contact } from "@/components/Contact";
-export { Location } from "@/components/Location";
-export { Amenities } from "@/components/Amenities";
-export { Welcome } from "@/components/Welcome";
-export { GlobalSEO } from "@/components/GlobalSEO";
-export { NavLink } from "@/components/NavLink";
+export { Header } from "@/components/layout/Header";
+export { Footer } from "@/components/layout/Footer";
+export { Hero } from "@/components/hero/Hero";
+export { Breadcrumb } from "@/components/common/Breadcrumb";
+export { ImageGallery } from "@/components/gallery/ImageGallery";
+export { GoogleRating } from "@/components/common/GoogleRating";
+export { ReviewSlider } from "@/components/hero/ReviewSlider";
+export { Contact } from "@/components/common/Contact";
+export { Location } from "@/components/common/Location";
+export { Amenities } from "@/components/common/Amenities";
+export { Welcome } from "@/components/hero/Welcome";
+export { GlobalSEO } from "@/components/common/GlobalSEO";
+export { NavLink } from "@/components/layout/NavLink";
 
 // Viewers
-export { FloorPlanViewer } from "@/components/FloorPlanViewer";
-export { Panorama360Viewer } from "@/components/Panorama360Viewer";
-export { VirtualTourViewer } from "@/components/VirtualTourViewer";
+export { FloorPlanViewer } from "@/components/gallery/FloorPlanViewer";
+export { Panorama360Viewer } from "@/components/gallery/Panorama360Viewer";
+export { VirtualTourViewer } from "@/components/gallery/VirtualTourViewer";
 
 // Shared hooks
-export { useIsMobile } from "@/hooks/use-mobile";
-export { useToast, toast } from "@/hooks/use-toast";
-export { useOptimizedImageUrl } from "@/hooks/useOptimizedImageUrl";
-export { useGoogleRating } from "@/hooks/useGoogleRating";
-export { useHeroSlides } from "@/hooks/useHeroSlides";
+export { useIsMobile } from "@/hooks/shared/useMobile";
+export { useToast, toast } from "@/hooks/shared/useToast";
+export { useOptimizedImageUrl } from "@/hooks/shared/useOptimizedImageUrl";
+export { useGoogleRating } from "@/hooks/shared/useGoogleRating";
+export { useHeroSlides } from "@/hooks/shared/useHeroSlides";
 
 // Context
 export { SearchDatesProvider, useSearchDates } from "@/contexts/SearchDatesContext";
+
+
+
+
+
+
+
+
+
+
+
+

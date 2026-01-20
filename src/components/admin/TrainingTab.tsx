@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { BookOpen, Star, Plus, Pencil, Trash2, GraduationCap, MessageSquare, TrendingUp, Loader2, ChevronUp, ChevronDown } from "lucide-react";
-import { useTrainingExamples, useAddTrainingExample, useUpdateTrainingExample, useDeleteTrainingExample, useTrainingStats, TrainingExample } from "@/hooks/useTrainingExamples";
+import { useTrainingExamples, useAddTrainingExample, useUpdateTrainingExample, useDeleteTrainingExample, useTrainingStats, TrainingExample } from "@/hooks/chatbot/useTrainingExamples";
 const CATEGORIES = [{
   value: "general",
   label: "Umum",
@@ -419,3 +419,15 @@ export default function TrainingTab() {
       </AlertDialog>
     </div>;
 }
+
+
+
+
+
+
+
+
+
+
+
+

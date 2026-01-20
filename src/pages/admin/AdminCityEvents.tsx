@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useCityEvents } from "@/hooks/useCityEvents";
-import { useAttractionImageUpload } from "@/hooks/useAttractionImageUpload";
+import { useCityEvents } from "@/hooks/explore/useCityEvents";
+import { useAttractionImageUpload } from "@/hooks/shared/useAttractionImageUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -560,3 +560,15 @@ const AdminCityEvents = () => {
 };
 
 export default AdminCityEvents;
+
+
+
+
+
+
+
+
+
+
+
+

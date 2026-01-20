@@ -30,3 +30,15 @@ export function OpacitySlider({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

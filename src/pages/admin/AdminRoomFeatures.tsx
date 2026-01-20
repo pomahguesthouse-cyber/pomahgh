@@ -14,7 +14,7 @@ import {
   useUpdateRoomFeature,
   useDeleteRoomFeature,
   type RoomFeature,
-} from "@/hooks/useRoomFeatures";
+} from "@/hooks/room/useRoomFeatures";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -277,3 +277,15 @@ export default function AdminRoomFeatures() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+

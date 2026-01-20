@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAdminChatbot } from "@/hooks/useAdminChatbot";
+import { useAdminChatbot } from "@/hooks/admin/useAdminChatbot";
 
 const quickActions = [
   {
@@ -202,3 +202,15 @@ const AdminChat = () => {
 };
 
 export default AdminChat;
+
+
+
+
+
+
+
+
+
+
+
+

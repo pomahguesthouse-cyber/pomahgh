@@ -10,14 +10,14 @@ export { TestChannelManagerButton } from "@/components/admin/TestChannelManagerB
 export { SeoPreview } from "@/components/admin/SeoPreview";
 
 // Hooks
-export { useHotelSettings } from "@/hooks/useHotelSettings";
-export { useSeoSettings } from "@/hooks/useSeoSettings";
-export { useBankAccounts } from "@/hooks/useBankAccounts";
+export { useHotelSettings } from "@/hooks/shared/useHotelSettings";
+export { useSeoSettings } from "@/hooks/seo/useSeoSettings";
+export { useBankAccounts } from "@/hooks/shared/useBankAccounts";
 export { useAvailabilitySync } from "@/hooks/useAvailabilitySync";
-export { useTestChannelManager } from "@/hooks/useTestChannelManager";
-export { useFacilities } from "@/hooks/useFacilities";
-export { useHeroSlides } from "@/hooks/useHeroSlides";
-export { useFacilityHeroSlides } from "@/hooks/useFacilityHeroSlides";
+export { useTestChannelManager } from "@/hooks/shared/useTestChannelManager";
+export { useFacilities } from "@/hooks/shared/useFacilities";
+export { useHeroSlides } from "@/hooks/shared/useHeroSlides";
+export { useFacilityHeroSlides } from "@/hooks/shared/useFacilityHeroSlides";
 
 // Types
 export type {
@@ -27,3 +27,15 @@ export type {
   ChannelManager,
   InvoiceTemplate,
 } from "@/types/admin.types";
+
+
+
+
+
+
+
+
+
+
+
+

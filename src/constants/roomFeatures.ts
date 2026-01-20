@@ -34,3 +34,15 @@ export const ROOM_FEATURES: RoomFeature[] = [
   { id: "workspace", label: "Work Space", icon: Users },
   { id: "shower", label: "Rain Shower", icon: ShowerHead },
 ];
+
+
+
+
+
+
+
+
+
+
+
+

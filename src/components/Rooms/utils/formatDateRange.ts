@@ -11,3 +11,15 @@ export const calculateTotalNights = (checkIn: Date | null, checkOut: Date | null
   if (!checkIn || !checkOut) return 0;
   return differenceInDays(checkOut, checkIn);
 };
+
+
+
+
+
+
+
+
+
+
+
+

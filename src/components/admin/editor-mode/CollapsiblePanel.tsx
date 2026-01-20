@@ -104,3 +104,15 @@ export function CollapsiblePanel({ isOpen, onClose }: CollapsiblePanelProps) {
     </AnimatePresence>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
