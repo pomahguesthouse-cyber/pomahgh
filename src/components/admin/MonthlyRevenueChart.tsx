@@ -19,7 +19,7 @@ interface Props {
   onPeriodChange: (v: ChartPeriodFilter) => void;
 }
 
-/* ================= CONST ================= */
+/* ================= CONSTANTS & CONFIG ================= */
 
 const PERIOD_LABEL: Record<ChartPeriodFilter, string> = {
   "6months": "6 Bulan Terakhir",
@@ -27,48 +27,54 @@ const PERIOD_LABEL: Record<ChartPeriodFilter, string> = {
   thisYear: "Tahun Ini",
 };
 
-// Warna disesuaikan agar lebih vibrant seperti di gambar
+// Urutan warna identik dengan gambar referensi
 const COLORS = [
-  ["#00C2FF", "#00A3FF"], // Jan
-  ["#2D7D5D", "#23634B"], // Feb
-  ["#FF7A51", "#FF5C28"], // Mar
-  ["#F5BD02", "#EAB000"], // Apr
-  ["#B83082", "#9C246E"], // Mei
-  ["#82D8D8", "#6EC2C2"], // Jun
-  ["#635BFF", "#4E45E4"], // Jul
-  ["#F26419", "#D6500F"], // Agst
-  ["#88C494", "#74B381"], // Sept
-  ["#00B4D8", "#0096C7"], // Okt
-  ["#E9B400", "#D1A200"], // Nov
-  ["#E00000", "#C00000"], // Des
+  ["#00B4DB", "#0083B0"], // JAN - Cyan Blue
+  ["#43A047", "#2E7D32"], // FEB - Dark Green
+  ["#FF7043", "#E64A19"], // MAR - Orange
+  ["#FDD835", "#Fbc02d"], // APR - Yellow Gold
+  ["#D81B60", "#AD1457"], // MEI - Magenta
+  ["#80DEEA", "#26C6DA"], // JUN - Light Teal
+  ["#5C6BC0", "#3949AB"], // JUL - Indigo
+  ["#FB8C00", "#EF6C00"], // AGST - Dark Orange
+  ["#81C784", "#66BB6A"], // SEPT - Soft Green
+  ["#039BE5", "#0277BD"], // OKT - Blue
+  ["#FFCA28", "#FFB300"], // NOV - Amber
+  ["#E53935", "#C62828"], // DES - Red
 ];
 
-// Helper sederhana jika formatRupiahID belum terpasang
-const formatCurrency = (val: number) => {
+// Formatter angka (misal: 5.100.000)
+const formatNumber = (val: number) => {
   return new Intl.NumberFormat("id-ID").format(val);
 };
 
 /* ================= COMPONENT ================= */
 
 export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: Props) => {
-  // Mencari nilai tertinggi untuk skala bar
+  // Hitung max value untuk skala grafik
   const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
-  const containerHeight = 300; // Tinggi area grafik
+  // Tinggi area bar (tidak termasuk header/footer)
+  const chartAreaHeight = 320;
 
   return (
-    <Card className="rounded-3xl border-none shadow-none bg-white">
-      <CardHeader className="pb-0">
+    <Card className="w-full border-none shadow-none bg-white font-sans">
+      {/* ================= HEADER ================= */}
+      <CardHeader className="pb-6 pl-0">
         <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-green-700 tracking-[0.2em] mb-1">GRAFIK</p>
-            <CardTitle className="text-2xl font-black text-slate-900 leading-none">PENDAPATAN BULANAN</CardTitle>
-            <p className="text-[11px] text-muted-foreground mt-2 font-medium">
-              Performa Pendapatan {PERIOD_LABEL[period]}
-            </p>
+          <div className="space-y-1">
+            {/* Label Hijau Kecil */}
+            <p className="text-sm font-bold text-[#43A047] tracking-wider uppercase">GRAFIK</p>
+            {/* Judul Besar Hitam */}
+            <CardTitle className="text-3xl font-black text-black uppercase tracking-tight">
+              PENDAPATAN BULANAN
+            </CardTitle>
+            {/* Subjudul Abu-abu */}
+            <p className="text-sm text-gray-500 font-medium">Performa Pendapatan {PERIOD_LABEL[period]}</p>
           </div>
 
+          {/* Dropdown Filter (Opsional, disesuaikan agar minimalis) */}
           <Select value={period} onValueChange={(v) => onPeriodChange(v as ChartPeriodFilter)}>
-            <SelectTrigger className="h-9 w-[140px] text-xs rounded-full border-slate-200">
+            <SelectTrigger className="h-9 w-[140px] text-xs font-medium rounded-md border-gray-200">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -80,66 +86,54 @@ export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: Props) => 
         </div>
       </CardHeader>
 
-      <CardContent className="pt-16 pb-10">
-        <div className="relative w-full flex items-end justify-between px-2 h-[350px]">
-          {/* Garis Dasar (Baseline) */}
-          <div className="absolute bottom-[22px] left-0 right-0 border-t border-dashed border-slate-300 z-0" />
+      {/* ================= CHART AREA ================= */}
+      <CardContent className="px-0 pt-4 pb-12 relative">
+        {/* Container Utama Grafik */}
+        <div className="relative flex items-end justify-between w-full" style={{ height: chartAreaHeight }}>
+          {/* GARIS DASAR (Dotted Line) - Posisinya absolute di bawah */}
+          <div className="absolute left-[-20px] right-[-20px] bottom-[18px] border-t-2 border-dotted border-gray-400 z-0" />
 
+          {/* Mapping Data Bars */}
           {data.map((item, i) => {
-            // Kalkulasi tinggi bar (maksimal 80% dari container agar teks di atas tidak terpotong)
-            const barHeight = (item.revenue / maxRevenue) * containerHeight;
+            // Hitung tinggi bar (scale relative to max)
+            const heightPercentage = item.revenue / maxRevenue;
+            const barHeight = heightPercentage * (chartAreaHeight - 60); // minus buffer agar tidak mentok atas
+
+            // Ambil warna berdasarkan index
+            const colorSet = COLORS[i % COLORS.length];
 
             return (
-              <div key={item.month} className="relative flex flex-col items-center flex-1">
-                {/* TEKS NOMINAL (Di atas Bar) */}
+              <div key={item.month} className="relative flex flex-col items-center justify-end h-full flex-1 group">
+                {/* BAR BODY */}
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.1 + 0.5 }}
-                  className="absolute z-10 text-[9px] font-bold text-white mb-2"
-                  style={{ bottom: barHeight + 35 }} // Posisinya mengikuti tinggi bar
+                  initial={{ height: 0 }}
+                  animate={{ height: Math.max(barHeight, 60) }} // Minimal height agar bubble muat
+                  transition={{ duration: 0.8, delay: i * 0.05, ease: "easeOut" }}
+                  className="relative w-12 rounded-t-[20px] rounded-b-[20px] z-10 flex flex-col items-center justify-between pb-10"
+                  style={{
+                    background: `linear-gradient(180deg, ${colorSet[0]}, ${colorSet[1]})`,
+                    boxShadow: `0 10px 20px -5px ${colorSet[1]}66`, // Soft colored shadow
+                  }}
                 >
-                  <div className="bg-black/10 backdrop-blur-[2px] px-1.5 py-0.5 rounded-md">
-                    {formatCurrency(item.revenue)}
-                  </div>
+                  {/* TEXT NOMINAL (Di dalam bar bagian atas) */}
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 + i * 0.05 }}
+                    className="mt-3 text-[9px] font-bold text-white tracking-tight"
+                  >
+                    {formatNumber(item.revenue)}
+                  </motion.span>
                 </motion.div>
 
-                {/* SVG BAR */}
-                <svg width="45" height={containerHeight + 40} className="z-10 overflow-visible">
-                  <defs>
-                    <linearGradient id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={COLORS[i % COLORS.length][0]} />
-                      <stop offset="100%" stopColor={COLORS[i % COLORS.length][1]} />
-                    </linearGradient>
-                  </defs>
-
-                  <motion.rect
-                    x="2.5"
-                    width="40"
-                    rx="20" // Membuat bar rounded sempurna (kapsul)
-                    initial={{ height: 0, y: containerHeight }}
-                    animate={{ height: barHeight, y: containerHeight - barHeight }}
-                    transition={{
-                      duration: 1,
-                      ease: [0.23, 1, 0.32, 1],
-                      delay: i * 0.05,
-                    }}
-                    fill={`url(#grad-${i})`}
-                  />
-                </svg>
-
-                {/* BUBBLE BULAN (Di dalam garis dasar) */}
+                {/* BUBBLE BULAN (Menumpuk di bawah Bar) */}
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{
-                    delay: 0.8 + i * 0.05,
-                    type: "spring",
-                    stiffness: 200,
-                  }}
-                  className="absolute bottom-0 z-20 w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-md border-2 border-white"
+                  transition={{ delay: 0.6 + i * 0.05, type: "spring", stiffness: 200 }}
+                  className="absolute bottom-0 z-20 w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md border-[3px] border-white"
                   style={{
-                    background: `linear-gradient(180deg, ${COLORS[i % COLORS.length][0]}, ${COLORS[i % COLORS.length][1]})`,
+                    background: `linear-gradient(135deg, ${colorSet[0]}, ${colorSet[1]})`,
                   }}
                 >
                   {item.month}
