@@ -2,141 +2,109 @@
 
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-/* ================= TYPES ================= */
-
-export interface MonthlyRevenueData {
-  month: string;
-  revenue: number;
-}
-
-export type ChartPeriodFilter = "6months" | "12months" | "thisYear";
-
-interface Props {
-  data: MonthlyRevenueData[];
-  period: ChartPeriodFilter;
-  onPeriodChange: (v: ChartPeriodFilter) => void;
-}
-
-/* ================= CONSTANTS & CONFIG ================= */
-
-const PERIOD_LABEL: Record<ChartPeriodFilter, string> = {
-  "6months": "6 Bulan Terakhir",
-  "12months": "12 Bulan Terakhir",
-  thisYear: "Tahun Ini",
-};
-
-// Urutan warna identik dengan gambar referensi
-const COLORS = [
-  ["#00B4DB", "#0083B0"], // JAN - Cyan Blue
-  ["#43A047", "#2E7D32"], // FEB - Dark Green
-  ["#FF7043", "#E64A19"], // MAR - Orange
-  ["#FDD835", "#Fbc02d"], // APR - Yellow Gold
-  ["#D81B60", "#AD1457"], // MEI - Magenta
-  ["#80DEEA", "#26C6DA"], // JUN - Light Teal
-  ["#5C6BC0", "#3949AB"], // JUL - Indigo
-  ["#FB8C00", "#EF6C00"], // AGST - Dark Orange
-  ["#81C784", "#66BB6A"], // SEPT - Soft Green
-  ["#039BE5", "#0277BD"], // OKT - Blue
-  ["#FFCA28", "#FFB300"], // NOV - Amber
-  ["#E53935", "#C62828"], // DES - Red
+/* ================= DATA DUMMY ================= */
+const DATA = [
+  { month: "JAN", revenue: 2300000 },
+  { month: "FEB", revenue: 4100000 },
+  { month: "MAR", revenue: 3500000 },
+  { month: "APR", revenue: 5100000 },
+  { month: "MEI", revenue: 4800000 },
+  { month: "JUN", revenue: 2900000 },
 ];
 
-// Formatter angka (misal: 5.100.000)
+/* ================= CONFIG WARNA ================= */
+// Palette warna vibrant untuk setiap bulan
+const COLORS = [
+  ["#00C6FF", "#0072FF"], // JAN - Blue
+  ["#F7971E", "#FFD200"], // FEB - Orange Yellow
+  ["#FC466B", "#3F5EFB"], // MAR - Pink Blue
+  ["#11998e", "#38ef7d"], // APR - Green
+  ["#8E2DE2", "#4A00E0"], // MEI - Purple
+  ["#ED213A", "#93291E"], // JUN - Red
+];
+
 const formatNumber = (val: number) => {
   return new Intl.NumberFormat("id-ID").format(val);
 };
 
 /* ================= COMPONENT ================= */
 
-export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: Props) => {
-  // Hitung max value untuk skala grafik
-  const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
-  // Tinggi area bar (tidak termasuk header/footer)
-  const chartAreaHeight = 320;
+export const CapsuleBarChart = () => {
+  const maxRevenue = Math.max(...DATA.map((d) => d.revenue));
+  const chartHeight = 350;
+  const bubbleSize = 50; // Ukuran lingkaran bulan
 
   return (
-    <Card className="w-full border-none shadow-none bg-white font-sans">
-      {/* ================= HEADER ================= */}
-      <CardHeader className="pb-6 pl-0">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            {/* Label Hijau Kecil */}
-            <p className="text-sm font-bold text-[#43A047] tracking-wider uppercase">GRAFIK</p>
-            {/* Judul Besar Hitam */}
-            <CardTitle className="text-3xl font-black text-black uppercase tracking-tight">
-              PENDAPATAN BULANAN
-            </CardTitle>
-            {/* Subjudul Abu-abu */}
-            <p className="text-sm text-gray-500 font-medium">Performa Pendapatan {PERIOD_LABEL[period]}</p>
-          </div>
-
-          {/* Dropdown Filter (Opsional, disesuaikan agar minimalis) */}
-          <Select value={period} onValueChange={(v) => onPeriodChange(v as ChartPeriodFilter)}>
-            <SelectTrigger className="h-9 w-[140px] text-xs font-medium rounded-md border-gray-200">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="6months">6 Bulan</SelectItem>
-              <SelectItem value="12months">12 Bulan</SelectItem>
-              <SelectItem value="thisYear">Tahun Ini</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+    <Card className="w-full border-none shadow-none bg-white">
+      <CardHeader>
+        <CardTitle className="text-2xl font-black text-gray-800">PENDAPATAN BULANAN</CardTitle>
       </CardHeader>
 
-      {/* ================= CHART AREA ================= */}
-      <CardContent className="px-0 pt-4 pb-12 relative">
-        {/* Container Utama Grafik */}
-        <div className="relative flex items-end justify-between w-full" style={{ height: chartAreaHeight }}>
-          {/* GARIS DASAR (Dotted Line) - Posisinya absolute di bawah */}
-          <div className="absolute left-[-20px] right-[-20px] bottom-[18px] border-t-2 border-dotted border-gray-400 z-0" />
+      <CardContent className="pt-10 pb-10">
+        <div className="relative w-full flex items-end justify-between px-4" style={{ height: chartHeight }}>
+          {/* --- GARIS PUTUS-PUTUS (BASELINE) --- */}
+          {/* Posisinya diatur agar tepat di tengah bubble (bottom + setengah tinggi bubble) */}
+          <div
+            className="absolute left-0 right-0 border-t-[3px] border-dotted border-gray-800 z-0"
+            style={{ bottom: bubbleSize / 2 }}
+          />
 
-          {/* Mapping Data Bars */}
-          {data.map((item, i) => {
-            // Hitung tinggi bar (scale relative to max)
-            const heightPercentage = item.revenue / maxRevenue;
-            const barHeight = heightPercentage * (chartAreaHeight - 60); // minus buffer agar tidak mentok atas
-
-            // Ambil warna berdasarkan index
-            const colorSet = COLORS[i % COLORS.length];
+          {DATA.map((item, i) => {
+            // Skala tinggi bar
+            const height = (item.revenue / maxRevenue) * (chartHeight - 80);
+            const color = COLORS[i % COLORS.length];
 
             return (
-              <div key={item.month} className="relative flex flex-col items-center justify-end h-full flex-1 group">
-                {/* BAR BODY */}
+              <div
+                key={item.month}
+                className="relative flex flex-col items-center justify-end h-full w-full max-w-[90px]"
+              >
+                {/* --- CAPSULE BAR --- */}
                 <motion.div
                   initial={{ height: 0 }}
-                  animate={{ height: Math.max(barHeight, 60) }} // Minimal height agar bubble muat
-                  transition={{ duration: 0.8, delay: i * 0.05, ease: "easeOut" }}
-                  className="relative w-12 rounded-t-[20px] rounded-b-[20px] z-10 flex flex-col items-center justify-between pb-10"
+                  animate={{ height: height < 80 ? 80 : height }} // Minimal tinggi agar angka muat
+                  transition={{
+                    duration: 0.8,
+                    delay: i * 0.1,
+                    type: "spring",
+                    stiffness: 100,
+                  }}
+                  className="relative w-full rounded-[30px] z-10 flex justify-center overflow-hidden"
                   style={{
-                    background: `linear-gradient(180deg, ${colorSet[0]}, ${colorSet[1]})`,
-                    boxShadow: `0 10px 20px -5px ${colorSet[1]}66`, // Soft colored shadow
+                    background: `linear-gradient(180deg, ${color[0]}, ${color[1]})`,
+                    marginBottom: bubbleSize / 2, // Memberi ruang untuk setengah bubble di bawah
+                    boxShadow: `0 10px 25px -5px ${color[1]}80`, // Shadow berwarna glow
                   }}
                 >
-                  {/* TEXT NOMINAL (Di dalam bar bagian atas) */}
+                  {/* --- ANGKA (DI DALAM ATAS) --- */}
                   <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 + i * 0.05 }}
-                    className="mt-3 text-[9px] font-bold text-white tracking-tight"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 + i * 0.1 }}
+                    className="mt-5 text-lg font-bold text-white tracking-wide drop-shadow-sm z-20"
                   >
                     {formatNumber(item.revenue)}
                   </motion.span>
+
+                  {/* Efek Shine/Glossy (Opsional, biar makin 3D) */}
+                  <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-white/20 to-transparent rounded-t-[30px]" />
                 </motion.div>
 
-                {/* BUBBLE BULAN (Menumpuk di bawah Bar) */}
+                {/* --- BUBBLE BULAN (OVERLAP) --- */}
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.6 + i * 0.05, type: "spring", stiffness: 200 }}
-                  className="absolute bottom-0 z-20 w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md border-[3px] border-white"
+                  transition={{ delay: 0.6 + i * 0.1, type: "spring", stiffness: 200 }}
+                  className="absolute bottom-0 z-20 flex items-center justify-center rounded-full shadow-lg"
                   style={{
-                    background: `linear-gradient(135deg, ${colorSet[0]}, ${colorSet[1]})`,
+                    width: bubbleSize,
+                    height: bubbleSize,
+                    background: `linear-gradient(135deg, ${color[0]}, ${color[1]})`,
+                    border: "4px solid white", // Border putih tebal pemisah
                   }}
                 >
-                  {item.month}
+                  <span className="text-sm font-bold text-white tracking-wider">{item.month}</span>
                 </motion.div>
               </div>
             );
