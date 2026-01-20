@@ -1,44 +1,87 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatRupiahID } from "@/utils/indonesianFormat";
+
+/* ================= TYPES ================= */
 
 export interface MonthlyRevenueData {
   month: string;
   revenue: number;
 }
 
+export type ChartPeriodFilter = "6months" | "12months" | "thisYear";
+
+interface Props {
+  data: MonthlyRevenueData[];
+  period: ChartPeriodFilter;
+  onPeriodChange: (v: ChartPeriodFilter) => void;
+}
+
+/* ================= CONST ================= */
+
+const PERIOD_LABEL: Record<ChartPeriodFilter, string> = {
+  "6months": "6 Bulan Terakhir",
+  "12months": "12 Bulan Terakhir",
+  thisYear: "Tahun Ini",
+};
+
 const COLORS = [
   ["#00E5FF", "#00B0FF"],
-  ["#3CB371", "#2E8B57"],
-  ["#FF8A50", "#FF5722"],
+  ["#43A047", "#2E7D32"],
+  ["#FF7043", "#F4511E"],
   ["#FFD54F", "#FFC107"],
-  ["#E040FB", "#C2185B"],
-  ["#80DEEA", "#4DD0E1"],
+  ["#EC407A", "#C2185B"],
+  ["#80DEEA", "#26C6DA"],
   ["#7C83FD", "#5C6BC0"],
   ["#FF9800", "#F57C00"],
   ["#81C784", "#66BB6A"],
-  ["#00C9FF", "#0091EA"],
-  ["#FFD740", "#FFB300"],
-  ["#FF5252", "#D50000"],
+  ["#29B6F6", "#0288D1"],
+  ["#FFCA28", "#FFB300"],
+  ["#EF5350", "#D32F2F"],
 ];
 
-export const MonthlyRevenueChart = ({ data }: { data: MonthlyRevenueData[] }) => {
-  const max = Math.max(...data.map((d) => d.revenue));
+/* ================= COMPONENT ================= */
+
+export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: Props) => {
+  const max = Math.max(...data.map((d) => d.revenue), 1);
   const chartHeight = 260;
 
   return (
-    <Card className="rounded-xl border bg-white">
-      <CardContent className="pt-10 pb-14">
+    <Card className="rounded-2xl border">
+      {/* ================= HEADER ================= */}
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold text-green-600 tracking-wide">GRAFIK</p>
+            <CardTitle className="text-lg font-bold">PENDAPATAN BULANAN</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">Performa pendapatan {PERIOD_LABEL[period]}</p>
+          </div>
+
+          <Select value={period} onValueChange={(v) => onPeriodChange(v as ChartPeriodFilter)}>
+            <SelectTrigger className="h-8 w-[150px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="6months">6 Bulan</SelectItem>
+              <SelectItem value="12months">12 Bulan</SelectItem>
+              <SelectItem value="thisYear">Tahun Ini</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+
+      {/* ================= CHART ================= */}
+      <CardContent className="pt-8 pb-12">
         <div className="relative w-full h-[360px]">
           {/* baseline */}
-          <div className="absolute bottom-[56px] left-0 right-0 border-t border-dashed border-gray-300" />
+          <div className="absolute bottom-[56px] left-6 right-6 border-t border-dashed border-muted" />
 
-          {/* bars */}
-          <div className="absolute inset-0 flex justify-between px-6 items-end">
+          <div className="absolute inset-0 flex justify-between items-end px-6">
             {data.map((item, i) => {
-              const h = (item.revenue / max) * chartHeight;
+              const height = (item.revenue / max) * chartHeight;
 
               return (
                 <div key={item.month} className="relative flex flex-col items-center" style={{ width: 56 }}>
@@ -66,16 +109,16 @@ export const MonthlyRevenueChart = ({ data }: { data: MonthlyRevenueData[] }) =>
                     </defs>
 
                     <motion.rect
-                      initial={{ height: 0, y: chartHeight }}
-                      animate={{ height: h, y: chartHeight - h }}
-                      transition={{
-                        duration: 0.8,
-                        ease: [0.22, 1, 0.36, 1], // Figma-like
-                        delay: i * 0.06,
-                      }}
                       x="8"
                       width="40"
                       rx="20"
+                      initial={{ height: 0, y: chartHeight }}
+                      animate={{ height, y: chartHeight - height }}
+                      transition={{
+                        duration: 0.9,
+                        ease: [0.22, 1, 0.36, 1],
+                        delay: i * 0.06,
+                      }}
                       fill={`url(#grad-${i})`}
                       filter={`url(#shadow-${i})`}
                     />
@@ -88,7 +131,7 @@ export const MonthlyRevenueChart = ({ data }: { data: MonthlyRevenueData[] }) =>
                     transition={{
                       delay: 0.6 + i * 0.05,
                       type: "spring",
-                      stiffness: 300,
+                      stiffness: 280,
                       damping: 18,
                     }}
                     className="absolute bottom-0 translate-y-[50%] w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-semibold text-white shadow-lg"
