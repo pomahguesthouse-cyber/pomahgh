@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, ResponsiveContainer, Cell, LabelList } from "recharts";
-import { TrendingUp } from "lucide-react";
+import { BarChart, Bar, ResponsiveContainer, Cell, XAxis, YAxis } from "recharts";
 import { formatRupiahID } from "@/utils/indonesianFormat";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -13,21 +12,21 @@ export interface MonthlyRevenueData {
 
 export type ChartPeriodFilter = "6months" | "12months" | "thisYear";
 
-interface MonthlyRevenueChartProps {
+interface Props {
   data: MonthlyRevenueData[];
   period: ChartPeriodFilter;
-  onPeriodChange: (period: ChartPeriodFilter) => void;
+  onPeriodChange: (v: ChartPeriodFilter) => void;
 }
 
 /* ================= CONST ================= */
 
-const PERIOD_LABELS: Record<ChartPeriodFilter, string> = {
-  "6months": "6 bulan terakhir",
-  "12months": "12 bulan terakhir",
-  thisYear: "Tahun ini",
+const PERIOD_LABEL: Record<ChartPeriodFilter, string> = {
+  "6months": "6 Bulan Terakhir",
+  "12months": "12 Bulan Terakhir",
+  thisYear: "Tahun Ini",
 };
 
-const BAR_COLORS = [
+const COLORS = [
   "#00C2FF",
   "#2E8B57",
   "#FF6A2B",
@@ -42,71 +41,76 @@ const BAR_COLORS = [
   "#FF0000",
 ];
 
+/* ================= CUSTOM BAR ================= */
+
+const RoundedBar = (props: any) => {
+  const { x, y, width, height, fill } = props;
+
+  return <rect x={x} y={y} width={width} height={height} rx={18} ry={18} fill={fill} />;
+};
+
 /* ================= COMPONENT ================= */
 
-export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: MonthlyRevenueChartProps) => {
-  const hasData = data.some((d) => d.revenue > 0);
-
+export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: Props) => {
   return (
-    <Card className="rounded-2xl border">
+    <Card className="border rounded-xl">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base font-semibold">Grafik Pendapatan Bulanan</CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">Performa {PERIOD_LABELS[period]}</p>
+            <p className="text-xs font-semibold text-green-600 tracking-wide">GRAFIK</p>
+            <CardTitle className="text-xl font-bold">PENDAPATAN BULANAN</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">Performa Pendapatan {PERIOD_LABEL[period]}</p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Select value={period} onValueChange={(v) => onPeriodChange(v as ChartPeriodFilter)}>
-              <SelectTrigger className="h-8 w-[140px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="6months">6 Bulan</SelectItem>
-                <SelectItem value="12months">12 Bulan</SelectItem>
-                <SelectItem value="thisYear">Tahun Ini</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="p-2 rounded-xl bg-primary/10">
-              <TrendingUp className="h-4 w-4 text-primary" />
-            </div>
-          </div>
+          <Select value={period} onValueChange={(v) => onPeriodChange(v as ChartPeriodFilter)}>
+            <SelectTrigger className="h-8 w-[150px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="6months">6 Bulan</SelectItem>
+              <SelectItem value="12months">12 Bulan</SelectItem>
+              <SelectItem value="thisYear">Tahun Ini</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
 
-      <CardContent className="pt-6">
-        {!hasData ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">Belum ada data pendapatan</div>
-        ) : (
-          <div className="h-[320px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 30, right: 10, left: 10, bottom: 20 }}>
-                <Bar dataKey="revenue" radius={[16, 16, 16, 16]} maxBarSize={52}>
-                  {data.map((_, index) => (
-                    <Cell key={index} fill={BAR_COLORS[index % BAR_COLORS.length]} />
-                  ))}
+      <CardContent className="pt-8">
+        <div className="h-[340px] w-full relative">
+          {/* baseline dotted */}
+          <div className="absolute bottom-[42px] left-0 right-0 border-t border-dashed border-muted" />
 
-                  {/* VALUE */}
-                  <LabelList
-                    dataKey="revenue"
-                    position="top"
-                    formatter={(v: number) => formatRupiahID(v)}
-                    className="fill-white text-[11px] font-semibold"
-                  />
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 20, bottom: 60 }} barCategoryGap={28}>
+              <XAxis hide />
+              <YAxis hide />
 
-                  {/* MONTH BADGE */}
-                  <LabelList
-                    dataKey="month"
-                    position="insideBottom"
-                    offset={-10}
-                    className="fill-white text-[10px] font-semibold"
-                  />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+              <Bar dataKey="revenue" shape={<RoundedBar />} maxBarSize={56}>
+                {data.map((item, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+
+          {/* VALUE + MONTH BADGE */}
+          <div className="absolute inset-0 pointer-events-none flex justify-between px-6">
+            {data.map((item, i) => (
+              <div key={i} className="flex flex-col items-center justify-end">
+                {/* value */}
+                <div className="mb-2 text-[11px] font-semibold text-white">{formatRupiahID(item.revenue)}</div>
+
+                {/* bubble */}
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-semibold text-white shadow"
+                  style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                >
+                  {item.month}
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
