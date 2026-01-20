@@ -12,7 +12,7 @@ export interface MonthlyRevenueData {
 
 export type ChartPeriodFilter = "6months" | "12months" | "thisYear";
 
-// --- DATA DUMMY ---
+// --- DATA DUMMY (Fallback jika tidak ada props data) ---
 const DUMMY_DATA: MonthlyRevenueData[] = [
   { month: "FEB 25", revenue: 0 },
   { month: "MAR 25", revenue: 0 },
@@ -28,7 +28,7 @@ const DUMMY_DATA: MonthlyRevenueData[] = [
   { month: "JAN 26", revenue: 2400000 },
 ];
 
-// --- CONFIG ---
+// --- KONFIGURASI LABEL & WARNA ---
 const PERIOD_LABEL: Record<ChartPeriodFilter, string> = {
   "6months": "6 Bulan Terakhir",
   "12months": "12 Bulan Terakhir",
@@ -50,29 +50,36 @@ const COLORS = [
   ["#FCA5A5", "#EF4444"], // Red
 ];
 
+// Helper format angka Rupiah
 const formatNumber = (val: number) => {
   return new Intl.NumberFormat("id-ID").format(val);
 };
 
+// --- PROPS INTERFACE ---
 interface Props {
   data?: MonthlyRevenueData[];
   period?: ChartPeriodFilter;
   onPeriodChange?: (v: ChartPeriodFilter) => void;
 }
 
-export const MonthlyRevenueChart = ({ data = DUMMY_DATA, period = "12months", onPeriodChange = () => {} }: Props) => {
+// --- KOMPONEN UTAMA (Export Default untuk mengatasi Error) ---
+export default function MonthlyRevenueChart({
+  data = DUMMY_DATA,
+  period = "12months",
+  onPeriodChange = () => {},
+}: Props) {
+  // Mencari nilai tertinggi untuk skala grafik
   const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
   const chartHeight = 350;
-  const bottomOffset = 60;
-  const bubbleSize = 56;
+  const bottomOffset = 60; // Tinggi area di bawah garis putus-putus
+  const bubbleSize = 56; // Ukuran lingkaran bulan
 
   return (
-    // --- CONTAINER HALAMAN (Background Krem) ---
-    // Menggunakan bg-[#F9F8F6] untuk warna krem lembut
+    // Background Halaman: Krem Lembut (#F9F8F6)
     <div className="min-h-[600px] w-full bg-[#F9F8F6] flex items-center justify-center p-6 sm:p-10">
-      {/* --- KARTU UTAMA --- */}
+      {/* Container Card */}
       <Card className="w-full max-w-7xl mx-auto border-none shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] bg-white rounded-[32px] overflow-hidden">
-        {/* --- HEADER --- */}
+        {/* Header */}
         <CardHeader className="pt-10 px-8 sm:px-12 pb-2">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
@@ -96,35 +103,39 @@ export const MonthlyRevenueChart = ({ data = DUMMY_DATA, period = "12months", on
           </div>
         </CardHeader>
 
-        {/* --- KONTEN GRAFIK --- */}
+        {/* Content Grafik */}
         <CardContent className="px-8 sm:px-12 pb-12 pt-8">
           <div
             className="relative w-full flex items-end justify-between gap-2 sm:gap-4"
             style={{ height: chartHeight }}
           >
-            {/* GARIS DASAR */}
+            {/* Garis Putus-putus (Baseline) */}
             <div
               className="absolute left-0 right-0 border-t-[2px] border-dotted border-slate-300 z-0"
               style={{ bottom: bottomOffset }}
             />
 
             {data.map((item, i) => {
+              // Kalkulasi tinggi bar
               const visualHeightAboveLine = (item.revenue / maxRevenue) * (chartHeight - 120);
+              // Tinggi total termasuk bagian bawah garis
               const totalBarHeight = Math.max(visualHeightAboveLine + bottomOffset, bottomOffset + 20);
+
+              // Rotasi warna berdasarkan index
               const colorSet = COLORS[i % COLORS.length];
 
               return (
                 <div key={item.month} className="relative flex flex-col items-center justify-end h-full flex-1 group">
-                  {/* BAR CHART & BUBBLE WRAPPER */}
+                  {/* BAR CHART ITEM */}
                   <motion.div
                     initial={{ height: bottomOffset }}
                     animate={{ height: totalBarHeight }}
                     // --- ANIMASI HOVER ---
                     whileHover={{
-                      scale: 1.05, // Membesar sedikit
-                      y: -5, // Naik ke atas
-                      zIndex: 50, // Pindah ke depan
-                      filter: "brightness(1.05)", // Sedikit lebih terang
+                      scale: 1.05, // Membesar 5%
+                      y: -5, // Naik sedikit
+                      zIndex: 50, // Tampil paling depan
+                      filter: "brightness(1.1)", // Warna lebih terang
                     }}
                     transition={{
                       duration: 0.8,
@@ -133,13 +144,14 @@ export const MonthlyRevenueChart = ({ data = DUMMY_DATA, period = "12months", on
                       stiffness: 120,
                       damping: 20,
                     }}
+                    // Rounded-[12px] agar tidak terlalu bulat
                     className="relative w-full rounded-[12px] cursor-pointer flex flex-col items-center"
                     style={{
                       background: `linear-gradient(180deg, ${colorSet[0]} 0%, ${colorSet[1]} 100%)`,
                       boxShadow: `0 10px 30px -10px ${colorSet[1]}66`,
                     }}
                   >
-                    {/* TEXT NOMINAL */}
+                    {/* Teks Nominal (Hanya muncul jika nilai > 0) */}
                     {item.revenue > 0 && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
@@ -151,13 +163,13 @@ export const MonthlyRevenueChart = ({ data = DUMMY_DATA, period = "12months", on
                       </motion.div>
                     )}
 
-                    {/* BUBBLE BULAN */}
+                    {/* Bubble Bulan (Glassmorphism) */}
                     <div
                       className="absolute flex items-center justify-center rounded-full shadow-sm"
                       style={{
                         width: bubbleSize,
                         height: bubbleSize,
-                        bottom: bottomOffset - bubbleSize / 2,
+                        bottom: bottomOffset - bubbleSize / 2, // Posisi overlapping garis
                         backgroundColor: "rgba(255, 255, 255, 0.2)",
                         backdropFilter: "blur(4px)",
                         border: "1px solid rgba(255,255,255,0.3)",
@@ -179,4 +191,4 @@ export const MonthlyRevenueChart = ({ data = DUMMY_DATA, period = "12months", on
       </Card>
     </div>
   );
-};
+}
