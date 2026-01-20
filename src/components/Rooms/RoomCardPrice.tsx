@@ -46,15 +46,3 @@ export const RoomCardPrice = ({ room, hasPromo, displayPrice, isBestPrice, hasDa
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

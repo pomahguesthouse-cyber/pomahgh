@@ -16,15 +16,3 @@ export function BookingListHeader() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

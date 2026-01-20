@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { useChatbot } from "@/hooks/chatbot/useChatbot";
+import { useChatbot } from "@/hooks/useChatbot";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/shared/useToast";
+import { useToast } from "@/hooks/use-toast";
 import { formatTimeID } from "@/utils/indonesianFormat";
 
 const ChatbotWidget = () => {
@@ -162,16 +162,4 @@ const ChatbotWidget = () => {
   );
 };
 
-export { ChatbotWidget };
-
-
-
-
-
-
-
-
-
-
-
-
+export default ChatbotWidget;

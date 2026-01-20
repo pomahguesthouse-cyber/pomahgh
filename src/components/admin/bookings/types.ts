@@ -90,15 +90,3 @@ export interface EditBookingData {
 
 export type BookingSource = "direct" | "ota" | "walk_in" | "other";
 export type CustomPriceMode = "per_night" | "total";
-
-
-
-
-
-
-
-
-
-
-
-

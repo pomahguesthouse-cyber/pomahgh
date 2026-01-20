@@ -395,15 +395,3 @@ export function BookingAccordionItem({
     </AccordionItem>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

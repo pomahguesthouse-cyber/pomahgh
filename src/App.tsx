@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
 import { PublicOverridesProvider } from "@/contexts/PublicOverridesContext";
-import { GlobalSEO } from "@/components/common/GlobalSEO";
+import { GlobalSEO } from "@/components/GlobalSEO";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Bookings from "./pages/Bookings";
@@ -102,15 +102,3 @@ const App = () => (
 );
 
 export default App;
-
-
-
-
-
-
-
-
-
-
-
-

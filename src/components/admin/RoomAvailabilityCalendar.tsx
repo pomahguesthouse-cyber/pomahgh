@@ -241,15 +241,3 @@ export const RoomAvailabilityCalendar = ({
     </Card>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

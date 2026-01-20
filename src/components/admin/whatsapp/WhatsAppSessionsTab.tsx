@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useWhatsAppSessions, useWhatsAppStats } from '@/hooks/useWhatsAppSessions';
-import { useHotelSettings } from '@/hooks/shared/useHotelSettings';
+import { useHotelSettings } from '@/hooks/useHotelSettings';
 import { Phone, Search, Users, ShieldCheck, ShieldX, MessageCircle, CalendarCheck, Hand, TrendingUp } from 'lucide-react';
 import { StatCard, ResponseModeCard, SessionRow } from './components';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
@@ -160,15 +160,3 @@ const WhatsAppSessionsTab = () => {
 };
 
 export default WhatsAppSessionsTab;
-
-
-
-
-
-
-
-
-
-
-
-

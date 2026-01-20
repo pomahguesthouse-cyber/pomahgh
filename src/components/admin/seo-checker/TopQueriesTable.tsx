@@ -63,15 +63,3 @@ export const TopQueriesTable = ({ queries }: Props) => {
     </Card>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

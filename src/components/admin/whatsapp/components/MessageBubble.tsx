@@ -36,15 +36,3 @@ export const MessageBubble = ({
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAvailabilitySync } from "@/hooks/useAvailabilitySync";
-import { useAdminNotifications } from "@/hooks/admin/useAdminNotifications";
+import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { RefreshCw, CheckCircle, XCircle, Clock, Loader2, AlertCircle, Pencil } from "lucide-react";
 import { ChannelManagerForm } from "@/components/admin/ChannelManagerForm";
 import { DeleteChannelManagerDialog } from "@/components/admin/DeleteChannelManagerDialog";
@@ -247,15 +247,3 @@ export default function AdminChannelManagers() {
       </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

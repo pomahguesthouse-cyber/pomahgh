@@ -44,15 +44,3 @@ export const RoomSpecifications = ({ maxGuests, sizeSqm, roomCount }: RoomSpecif
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

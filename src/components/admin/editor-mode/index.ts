@@ -16,15 +16,3 @@ export { FloatingToolbar } from './FloatingToolbar';
 export { FloatingPropertyEditor } from './FloatingPropertyEditor';
 export { ImagePropertyEditor } from './ImagePropertyEditor';
 export { ImageCropModal } from './ImageCropModal';
-
-
-
-
-
-
-
-
-
-
-
-

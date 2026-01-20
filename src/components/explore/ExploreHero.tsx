@@ -110,15 +110,3 @@ export const ExploreHero = () => {
     </section>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

@@ -32,15 +32,3 @@ export const useAuth = () => {
 
   return { user, isLoading, signOut };
 };
-
-
-
-
-
-
-
-
-
-
-
-

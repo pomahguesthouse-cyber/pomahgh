@@ -78,15 +78,3 @@ export const AdminChatDialog = ({ session, open, onOpenChange }: AdminChatDialog
     </Dialog>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

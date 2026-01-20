@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { useEditorImageUpload } from '@/hooks/shared/useEditorImageUpload';
+import { useEditorImageUpload } from '@/hooks/useEditorImageUpload';
 import { Loader2, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
 
 interface ImageCropModalProps {
@@ -330,15 +330,3 @@ export function ImageCropModal({ src, onCrop, onClose }: ImageCropModalProps) {
     </Dialog>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

@@ -127,15 +127,3 @@ export const useRoomAvailability = (roomId?: string) => {
     isUpdating: addUnavailableDates.isPending || removeUnavailableDates.isPending,
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-

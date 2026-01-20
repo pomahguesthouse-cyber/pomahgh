@@ -68,15 +68,3 @@ export interface ContextMenuState {
 }
 
 export const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
-
-
-
-
-
-
-
-
-
-
-
-

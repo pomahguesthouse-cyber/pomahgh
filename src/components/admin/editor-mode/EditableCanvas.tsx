@@ -84,15 +84,3 @@ export function EditableCanvas({ device }: EditableCanvasProps) {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

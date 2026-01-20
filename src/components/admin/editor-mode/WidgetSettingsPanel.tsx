@@ -355,15 +355,3 @@ export function WidgetSettingsPanel() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

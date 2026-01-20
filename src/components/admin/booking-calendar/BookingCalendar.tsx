@@ -397,15 +397,3 @@ export const BookingCalendar = () => {
     </DndContext>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

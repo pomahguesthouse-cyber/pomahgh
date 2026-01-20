@@ -257,15 +257,3 @@ export const RoomBookingCard = ({
     </Card>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

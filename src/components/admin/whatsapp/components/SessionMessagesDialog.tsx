@@ -58,15 +58,3 @@ export const SessionMessagesDialog = ({ session, variant = 'guest' }: SessionMes
     </Dialog>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

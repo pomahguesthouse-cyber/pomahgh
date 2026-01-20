@@ -27,15 +27,3 @@ export const useSearchDates = () => {
   }
   return context;
 };
-
-
-
-
-
-
-
-
-
-
-
-

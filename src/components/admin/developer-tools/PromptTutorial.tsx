@@ -382,15 +382,3 @@ export function PromptTutorial() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

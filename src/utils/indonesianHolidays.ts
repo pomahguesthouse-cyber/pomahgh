@@ -92,15 +92,3 @@ export const isIndonesianHoliday = (date: Date): IndonesianHoliday | null => {
 export const getAllHolidays = (): IndonesianHoliday[] => {
   return allHolidays;
 };
-
-
-
-
-
-
-
-
-
-
-
-

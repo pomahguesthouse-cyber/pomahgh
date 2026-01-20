@@ -218,15 +218,3 @@ export const useDragDrop = (
     updateGhostPreview,
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-

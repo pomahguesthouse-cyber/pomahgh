@@ -308,15 +308,3 @@ export const bookingService = {
     });
   },
 };
-
-
-
-
-
-
-
-
-
-
-
-

@@ -82,15 +82,3 @@ export const getBookingColor = (booking: Booking): string => {
     }
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-

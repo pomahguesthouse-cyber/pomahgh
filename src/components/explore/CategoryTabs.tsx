@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CityAttraction } from "@/hooks/explore/useCityAttractions";
+import { CityAttraction } from "@/hooks/useCityAttractions";
 import { AttractionCard } from "./AttractionCard";
 import { Building2, UtensilsCrossed, TreePine, ShoppingBag, Sparkles } from "lucide-react";
 
@@ -74,15 +74,3 @@ export const CategoryTabs = ({ attractions }: CategoryTabsProps) => {
     </section>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

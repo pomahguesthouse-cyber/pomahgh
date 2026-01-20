@@ -2,11 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { Breadcrumb } from "@/components/common/Breadcrumb";
-import { BookingDialog } from "@/components/booking/BookingDialog";
-import { VirtualTourViewer } from "@/components/gallery/VirtualTourViewer";
+import Header from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { BookingDialog } from "@/components/BookingDialog";
+import { VirtualTourViewer } from "@/components/VirtualTourViewer";
 
 import {
   RoomSEO,
@@ -22,16 +22,16 @@ import {
 
 import { RoomGallery } from "@/components/room-detail/RoomGallery";
 
-import { useRoomDetail } from "@/hooks/room/useRoomDetail";
-import { useRooms } from "@/hooks/room/useRooms";
-import { useRoomFeatures } from "@/hooks/room/useRoomFeatures";
-import { useRoomHotspots } from "@/hooks/room/useRoomHotspots";
-import { useRoomPanoramas } from "@/hooks/room/useRoomPanoramas";
+import { useRoomDetail } from "@/hooks/useRoomDetail";
+import { useRooms } from "@/hooks/useRooms";
+import { useRoomFeatures } from "@/hooks/useRoomFeatures";
+import { useRoomHotspots } from "@/hooks/useRoomHotspots";
+import { useRoomPanoramas } from "@/hooks/useRoomPanoramas";
 import { useSearchDates } from "@/contexts/SearchDatesContext";
-import { useRoomAvailabilityCheck } from "@/hooks/room/useRoomAvailabilityCheck";
+import { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
 import { useRoomNavigation } from "@/components/room-detail/hooks/useRoomNavigation";
 
-import type { Room } from "@/hooks/room/useRooms";
+import type { Room } from "@/hooks/useRooms";
 import NotFound from "./NotFound";
 
 const RoomDetail = () => {
@@ -240,15 +240,3 @@ const RoomDetail = () => {
 };
 
 export default RoomDetail;
-
-
-
-
-
-
-
-
-
-
-
-

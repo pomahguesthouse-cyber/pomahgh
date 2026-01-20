@@ -19,7 +19,7 @@ import {
   usePromptTemplateStats,
   PROMPT_CATEGORIES,
   PromptTemplate 
-} from "@/hooks/shared/usePromptTemplates";
+} from "@/hooks/usePromptTemplates";
 import { PromptTemplateCard, PromptTemplateDialog } from "@/components/admin/prompt-templates";
 
 // Code Snippets
@@ -29,11 +29,11 @@ import {
   CODE_LANGUAGES,
   SNIPPET_CATEGORIES,
   CodeSnippet,
-} from "@/hooks/shared/useCodeSnippets";
+} from "@/hooks/useCodeSnippets";
 import { CodeSnippetCard, CodeSnippetDialog } from "@/components/admin/code-snippets";
 
 // Token Saver Tips
-import { useAdminKnowledgeBase } from "@/hooks/admin/useAdminKnowledgeBase";
+import { useAdminKnowledgeBase } from "@/hooks/useAdminKnowledgeBase";
 import { TokenSaverTipCard, PromptConsultantChat, PromptTutorial } from "@/components/admin/developer-tools";
 
 // Developer Tools Stats
@@ -413,15 +413,3 @@ export default function AdminDeveloperTools() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

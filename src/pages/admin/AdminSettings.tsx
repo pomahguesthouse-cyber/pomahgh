@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { useHotelSettings } from "@/hooks/shared/useHotelSettings";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { Loader2, Upload } from "lucide-react";
-import { toast } from "@/hooks/shared/useToast";
+import { toast } from "@/hooks/use-toast";
 
 export default function AdminSettings() {
   const { settings, isLoading, updateSettings, isUpdating, uploadFile } = useHotelSettings();
@@ -467,15 +467,3 @@ export default function AdminSettings() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

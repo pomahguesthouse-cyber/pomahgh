@@ -122,15 +122,3 @@ export const authService = {
     });
   },
 };
-
-
-
-
-
-
-
-
-
-
-
-

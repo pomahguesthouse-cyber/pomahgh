@@ -93,15 +93,3 @@ export const CalendarHeader = ({
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

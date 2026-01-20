@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { addDays, eachDayOfInterval, format } from "date-fns";
 import { getWIBToday } from "@/utils/wibTimezone";
-import { useIsMobile } from "@/hooks/shared/useMobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ViewRange } from "../types";
 
 export const useCalendarState = () => {
@@ -80,15 +80,3 @@ export const useCalendarState = () => {
     handleViewRangeChange,
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-import type { Room, RoomPromotion } from "@/hooks/room/useRooms";
+import type { Room, RoomPromotion } from "@/hooks/useRooms";
 import { eachDayOfInterval, getDay } from "date-fns";
 
 const getDayPrice = (room: Room, dayOfWeek: number): number => {
@@ -87,15 +87,3 @@ export const calculateDynamicPrice = (
 
   return { averagePrice: totalPrice / nights.length, hasDateRange: true };
 };
-
-
-
-
-
-
-
-
-
-
-
-

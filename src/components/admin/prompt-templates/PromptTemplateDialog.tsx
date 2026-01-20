@@ -34,7 +34,7 @@ import {
   PROMPT_CATEGORIES,
   useAddPromptTemplate,
   useUpdatePromptTemplate 
-} from "@/hooks/shared/usePromptTemplates";
+} from "@/hooks/usePromptTemplates";
 
 const formSchema = z.object({
   title: z.string().min(1, "Judul wajib diisi"),
@@ -266,15 +266,3 @@ export function PromptTemplateDialog({
     </Dialog>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

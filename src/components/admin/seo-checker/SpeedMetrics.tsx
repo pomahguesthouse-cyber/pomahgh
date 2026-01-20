@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { RefreshCw, Gauge, Info, Zap, Clock, Eye, MousePointer, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useWebVitals, getRating, formatMetricValue, type WebVitalsMetrics } from "@/hooks/shared/useWebVitals";
+import { useWebVitals, getRating, formatMetricValue, type WebVitalsMetrics } from "@/hooks/useWebVitals";
 
 interface MetricCardProps {
   name: string;
@@ -203,15 +203,3 @@ export const SpeedMetrics = () => {
     </Card>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

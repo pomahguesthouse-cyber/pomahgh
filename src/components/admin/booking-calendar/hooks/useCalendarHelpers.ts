@@ -77,15 +77,3 @@ export const useCalendarHelpers = (
     isBookingEnd,
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-

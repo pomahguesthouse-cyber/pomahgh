@@ -135,15 +135,3 @@ export interface RoomUnavailableDate {
   reason?: string | null;
   created_at?: string;
 }
-
-
-
-
-
-
-
-
-
-
-
-

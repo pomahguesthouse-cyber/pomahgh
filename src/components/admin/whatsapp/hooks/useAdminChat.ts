@@ -46,15 +46,3 @@ export const useAdminChat = (session: WhatsAppSessionWithMessages, open: boolean
     isSending: sendMessage.isPending,
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useRooms } from "@/hooks/room/useRooms";
-import { useRoomFeatures } from "@/hooks/room/useRoomFeatures";
+import { useRooms } from "@/hooks/useRooms";
+import { useRoomFeatures } from "@/hooks/useRoomFeatures";
 import { useSearchDates } from "@/contexts/SearchDatesContext";
-import { useRoomAvailabilityCheck } from "@/hooks/room/useRoomAvailabilityCheck";
-import { usePriceAnalysis } from "@/hooks/shared/usePriceAnalysis";
+import { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
+import { usePriceAnalysis } from "@/hooks/usePriceAnalysis";
 
 import { BookingDialog } from "../BookingDialog";
 import { VirtualTourViewer } from "../VirtualTourViewer";
@@ -12,7 +12,7 @@ import { RoomCarousel } from "./RoomCarousel";
 import { RoomDots } from "./RoomDots";
 
 import { calculateTotalNights } from "./utils/formatDateRange";
-import type { Room } from "@/hooks/room/useRooms";
+import type { Room } from "@/hooks/useRooms";
 import type { CarouselApi } from "@/components/ui/carousel";
 
 export const Rooms = () => {
@@ -111,15 +111,3 @@ export const Rooms = () => {
     </>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

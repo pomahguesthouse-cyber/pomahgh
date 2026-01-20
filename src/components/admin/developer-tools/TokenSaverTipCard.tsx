@@ -19,12 +19,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/shared/useToast";
+import { useToast } from "@/hooks/use-toast";
 import { 
   useDeleteAdminKnowledge,
   useToggleAdminKnowledge,
   AdminKnowledgeEntry
-} from "@/hooks/admin/useAdminKnowledgeBase";
+} from "@/hooks/useAdminKnowledgeBase";
 import { cn } from "@/lib/utils";
 
 interface TokenSaverTipCardProps {
@@ -236,15 +236,3 @@ export function TokenSaverTipCard({ tip }: TokenSaverTipCardProps) {
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

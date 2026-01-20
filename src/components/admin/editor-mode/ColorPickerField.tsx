@@ -70,15 +70,3 @@ export function ColorPickerField({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

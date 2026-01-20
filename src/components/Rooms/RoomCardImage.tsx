@@ -128,15 +128,3 @@ export const RoomCardImage = ({ room, images, hasPromo, onViewTour }: RoomCardIm
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

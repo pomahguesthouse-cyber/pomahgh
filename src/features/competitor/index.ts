@@ -10,13 +10,13 @@ export { CompetitorRoomsTab } from "@/components/admin/competitor/CompetitorRoom
 export { PriceSurveyTab } from "@/components/admin/competitor/PriceSurveyTab";
 
 // Hooks
-export { useCompetitorHotels } from "@/hooks/competitor/useCompetitorHotels";
-export { useCompetitorRooms } from "@/hooks/competitor/useCompetitorRooms";
-export { useCompetitorPriceSurveys } from "@/hooks/competitor/useCompetitorPriceSurveys";
-export { usePriceAnalysis } from "@/hooks/shared/usePriceAnalysis";
-export { usePriceScraping } from "@/hooks/shared/usePriceScraping";
+export { useCompetitorHotels } from "@/hooks/useCompetitorHotels";
+export { useCompetitorRooms } from "@/hooks/useCompetitorRooms";
+export { useCompetitorPriceSurveys } from "@/hooks/useCompetitorPriceSurveys";
+export { usePriceAnalysis } from "@/hooks/usePriceAnalysis";
+export { usePriceScraping } from "@/hooks/usePriceScraping";
 export { usePricingAdjustmentLogs } from "@/hooks/usePricingAdjustmentLogs";
-export { usePriceChangeNotifications } from "@/hooks/shared/usePriceChangeNotifications";
+export { usePriceChangeNotifications } from "@/hooks/usePriceChangeNotifications";
 
 // Types
 export type {
@@ -24,15 +24,3 @@ export type {
   CompetitorRoom,
   CompetitorPriceSurvey,
 } from "@/types/admin.types";
-
-
-
-
-
-
-
-
-
-
-
-

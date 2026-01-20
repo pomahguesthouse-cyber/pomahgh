@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { useAdminBookings } from "@/hooks/admin/useAdminBookings";
-import { useAdminRooms } from "@/hooks/admin/useAdminRooms";
-import { useRoomAvailability } from "@/hooks/room/useRoomAvailability";
+import { useAdminBookings } from "@/hooks/useAdminBookings";
+import { useAdminRooms } from "@/hooks/useAdminRooms";
+import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 import { RoomInfo } from "../types";
 
 export const useCalendarData = () => {
@@ -61,15 +61,3 @@ export const useCalendarData = () => {
     removeUnavailableDates,
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-

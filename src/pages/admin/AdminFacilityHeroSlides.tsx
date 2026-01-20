@@ -14,7 +14,7 @@ import {
   useDeleteFacilityHeroSlide,
   uploadFacilityHeroImage,
   FacilityHeroSlide,
-} from "@/hooks/shared/useFacilityHeroSlides";
+} from "@/hooks/useFacilityHeroSlides";
 
 const AdminFacilityHeroSlides = () => {
   const { data: slides, isLoading } = useAdminFacilityHeroSlides();
@@ -276,15 +276,3 @@ const AdminFacilityHeroSlides = () => {
 };
 
 export default AdminFacilityHeroSlides;
-
-
-
-
-
-
-
-
-
-
-
-

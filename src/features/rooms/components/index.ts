@@ -27,15 +27,3 @@ export { RoomVirtualTour } from "@/components/room-detail/RoomVirtualTour";
 export { RoomFloorPlan } from "@/components/room-detail/RoomFloorPlan";
 export { RoomRelatedRooms } from "@/components/room-detail/RoomRelatedRooms";
 export { RoomSEO } from "@/components/room-detail/RoomSEO";
-
-
-
-
-
-
-
-
-
-
-
-
