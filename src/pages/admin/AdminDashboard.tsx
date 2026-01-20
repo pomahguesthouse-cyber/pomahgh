@@ -1,194 +1,268 @@
-"use client";
+import { useMemo, useState } from "react";
+import {
+  differenceInDays,
+  parseISO,
+  startOfMonth,
+  endOfMonth,
+  isWithinInterval,
+  subMonths,
+  format,
+  isSameMonth,
+  startOfYear,
+} from "date-fns";
+import { id as localeId } from "date-fns/locale";
+import {
+  DollarSign,
+  Calendar,
+  TrendingUp,
+  Percent,
+  Sun,
+  Sunset,
+  Moon,
+  Users,
+  ArrowUpRight,
+  ArrowDownRight,
+} from "lucide-react";
 
-import { motion } from "framer-motion";
+import { useAdminBookings } from "@/hooks/useAdminBookings";
+import { useAdminRooms } from "@/hooks/useAdminRooms";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BookingCalendar } from "@/components/admin/booking-calendar";
+import { ArrivingDepartingWidgets } from "@/components/admin/ArrivingDepartingWidgets";
+import { MonthlyRevenueChart, ChartPeriodFilter } from "@/components/admin/MonthlyRevenueChart";
+import { DaysAvailabilityCalendar } from "@/components/admin/DaysAvailabilityCalendar";
 
-// --- TIPE DATA ---
-export interface MonthlyRevenueData {
-  month: string;
-  revenue: number;
-}
+import { formatRupiahID } from "@/utils/indonesianFormat";
+import { getWIBNow, formatWIBDate } from "@/utils/wibTimezone";
 
-export type ChartPeriodFilter = "6months" | "12months" | "thisYear";
-
-// --- DATA DUMMY (Fallback jika tidak ada props data) ---
-const DUMMY_DATA: MonthlyRevenueData[] = [
-  { month: "FEB 25", revenue: 0 },
-  { month: "MAR 25", revenue: 0 },
-  { month: "APR 25", revenue: 0 },
-  { month: "MEI 25", revenue: 0 },
-  { month: "JUN 25", revenue: 0 },
-  { month: "JUL 25", revenue: 0 },
-  { month: "AGT 25", revenue: 0 },
-  { month: "SEP 25", revenue: 0 },
-  { month: "OKT 25", revenue: 0 },
-  { month: "NOV 25", revenue: 0 },
-  { month: "DES 25", revenue: 2300000 },
-  { month: "JAN 26", revenue: 2400000 },
-];
-
-// --- KONFIGURASI LABEL & WARNA ---
-const PERIOD_LABEL: Record<ChartPeriodFilter, string> = {
-  "6months": "6 Bulan Terakhir",
-  "12months": "12 Bulan Terakhir",
-  thisYear: "Tahun Ini",
+/* ================= GREETING ================= */
+const getGreeting = () => {
+  const hour = getWIBNow().getHours();
+  if (hour >= 5 && hour < 11) return { text: "Selamat pagi", emoji: "☀️" };
+  if (hour >= 11 && hour < 15) return { text: "Selamat siang", emoji: "🌤️" };
+  if (hour >= 15 && hour < 18) return { text: "Selamat sore", emoji: "🌅" };
+  return { text: "Selamat malam", emoji: "🌙" };
 };
 
-const COLORS = [
-  ["#00D4FF", "#00A3FF"], // Cyan
-  ["#4ADE80", "#22C55E"], // Green
-  ["#FF8F70", "#FF6B4A"], // Orange
-  ["#FACC15", "#EAB308"], // Yellow
-  ["#E879F9", "#D946EF"], // Purple
-  ["#67E8F9", "#06B6D4"], // Teal
-  ["#A5B4FC", "#6366F1"], // Indigo
-  ["#FDA4AF", "#F43F5E"], // Rose
-  ["#86EFAC", "#16A34A"], // Emerald
-  ["#7DD3FC", "#0EA5E9"], // Sky
-  ["#FCD34D", "#F59E0B"], // Amber
-  ["#FCA5A5", "#EF4444"], // Red
-];
+/* ================= DASHBOARD ================= */
+const AdminDashboard = () => {
+  const { bookings } = useAdminBookings();
+  const { rooms } = useAdminRooms();
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriodFilter>("12months");
 
-// Helper format angka Rupiah
-const formatNumber = (val: number) => {
-  return new Intl.NumberFormat("id-ID").format(val);
-};
+  const analytics = useMemo(() => {
+    if (!bookings || !rooms) return null;
 
-// --- PROPS INTERFACE ---
-interface Props {
-  data?: MonthlyRevenueData[];
-  period?: ChartPeriodFilter;
-  onPeriodChange?: (v: ChartPeriodFilter) => void;
-}
+    const now = getWIBNow();
+    const todayStr = formatWIBDate(now);
+    const currentTime = format(now, "HH:mm:ss");
 
-// --- KOMPONEN UTAMA (Export Default untuk mengatasi Error) ---
-export default function MonthlyRevenueChart({
-  data = DUMMY_DATA,
-  period = "12months",
-  onPeriodChange = () => {},
-}: Props) {
-  // Mencari nilai tertinggi untuk skala grafik
-  const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
-  const chartHeight = 350;
-  const bottomOffset = 60; // Tinggi area di bawah garis putus-putus
-  const bubbleSize = 56; // Ukuran lingkaran bulan
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    const daysInMonth = differenceInDays(monthEnd, monthStart) + 1;
 
+    const lastMonthStart = startOfMonth(subMonths(now, 1));
+    const lastMonthEnd = endOfMonth(subMonths(now, 1));
+
+    /* ---------- PRE FILTER ---------- */
+    const confirmedBookings = bookings.filter((b) => b.status === "confirmed");
+
+    /* ---------- TODAY ---------- */
+    const todayCheckIns = confirmedBookings.filter((b) => b.check_in === todayStr).length;
+
+    const todayCheckOuts = confirmedBookings.filter((b) => {
+      if (b.check_out !== todayStr) return false;
+      const time = b.check_out_time || "12:00:00";
+      return currentTime < time;
+    }).length;
+
+    const guestsStaying = confirmedBookings.filter((b) => b.check_in <= todayStr && b.check_out >= todayStr).length;
+
+    /* ---------- REVENUE ---------- */
+    const totalRevenue = confirmedBookings.reduce((s, b) => s + Number(b.total_price), 0);
+
+    const monthlyRevenue = confirmedBookings
+      .filter((b) => {
+        const created = parseISO(b.created_at);
+        return isWithinInterval(created, {
+          start: monthStart,
+          end: monthEnd,
+        });
+      })
+      .reduce((s, b) => s + Number(b.total_price), 0);
+
+    const lastMonthRevenue = confirmedBookings
+      .filter((b) => {
+        const created = parseISO(b.created_at);
+        return isWithinInterval(created, {
+          start: lastMonthStart,
+          end: lastMonthEnd,
+        });
+      })
+      .reduce((s, b) => s + Number(b.total_price), 0);
+
+    const revenueTrend = lastMonthRevenue > 0 ? ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : 0;
+
+    /* ---------- OCCUPANCY ---------- */
+    const totalNightsThisMonth = confirmedBookings.reduce((sum, b) => {
+      const checkIn = parseISO(b.check_in);
+      const checkOut = parseISO(b.check_out);
+
+      const start = checkIn < monthStart ? monthStart : checkIn;
+      const end = checkOut > monthEnd ? monthEnd : checkOut;
+
+      if (start > end) return sum;
+
+      return sum + differenceInDays(end, start);
+    }, 0);
+
+    const possibleNights = rooms.length * daysInMonth;
+
+    const occupancyRate = possibleNights > 0 ? (totalNightsThisMonth / possibleNights) * 100 : 0;
+
+    /* ---------- HOTEL METRICS ---------- */
+    const adr = totalNightsThisMonth > 0 ? monthlyRevenue / totalNightsThisMonth : 0;
+
+    const revPar = possibleNights > 0 ? monthlyRevenue / possibleNights : 0;
+
+    /* ---------- ROOM REVENUE ---------- */
+    const revenueByRoom = rooms
+      .map((room) => ({
+        roomName: room.name,
+        revenue: confirmedBookings.filter((b) => b.room_id === room.id).reduce((s, b) => s + Number(b.total_price), 0),
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+
+    /* ---------- CHART ---------- */
+    const getMonthlyRevenueData = () => {
+      if (chartPeriod === "6months") {
+        return Array.from({ length: 6 }, (_, i) => {
+          const date = subMonths(now, 5 - i);
+          const revenue = confirmedBookings
+            .filter((b) => isSameMonth(parseISO(b.created_at), date))
+            .reduce((s, b) => s + Number(b.total_price), 0);
+          return { month: format(date, "MMM yy", { locale: localeId }), revenue };
+        });
+      } else if (chartPeriod === "thisYear") {
+        const yearStart = startOfYear(now);
+        const currentMonth = now.getMonth();
+        return Array.from({ length: currentMonth + 1 }, (_, i) => {
+          const date = new Date(now.getFullYear(), i, 1);
+          const revenue = confirmedBookings
+            .filter((b) => isSameMonth(parseISO(b.created_at), date))
+            .reduce((s, b) => s + Number(b.total_price), 0);
+          return { month: format(date, "MMM yy", { locale: localeId }), revenue };
+        });
+      } else {
+        return Array.from({ length: 12 }, (_, i) => {
+          const date = subMonths(now, 11 - i);
+          const revenue = confirmedBookings
+            .filter((b) => isSameMonth(parseISO(b.created_at), date))
+            .reduce((s, b) => s + Number(b.total_price), 0);
+          return { month: format(date, "MMM yy", { locale: localeId }), revenue };
+        });
+      }
+    };
+
+    const monthlyRevenueData = getMonthlyRevenueData();
+
+    return {
+      todayCheckIns,
+      todayCheckOuts,
+      guestsStaying,
+      totalRevenue,
+      monthlyRevenue,
+      revenueTrend,
+      occupancyRate,
+      adr,
+      revPar,
+      revenueByRoom,
+      monthlyRevenueData,
+      totalBookings: bookings.length,
+      confirmedBookings: confirmedBookings.length,
+    };
+  }, [bookings, rooms, chartPeriod]);
+
+  if (!analytics) return null;
+
+  const greeting = getGreeting();
+  const maxRevenue = Math.max(...analytics.revenueByRoom.map((r) => r.revenue), 1);
+
+  /* ================= RENDER ================= */
   return (
-    // Background Halaman: Krem Lembut (#F9F8F6)
-    <div className="min-h-[600px] w-full bg-[#F9F8F6] flex items-center justify-center p-6 sm:p-10">
-      {/* Container Card */}
-      <Card className="w-full max-w-7xl mx-auto border-none shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] bg-white rounded-[32px] overflow-hidden">
-        {/* Header */}
-        <CardHeader className="pt-10 px-8 sm:px-12 pb-2">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold text-green-600 tracking-widest uppercase mb-2">GRAFIK</p>
-              <CardTitle className="text-2xl sm:text-3xl font-black text-slate-900 uppercase tracking-tight">
-                PENDAPATAN BULANAN
-              </CardTitle>
-              <p className="text-sm text-slate-500 font-medium mt-1">Performa Pendapatan {PERIOD_LABEL[period]}</p>
-            </div>
+    <div className="space-y-6">
+      {/* Greeting */}
+      <div className="rounded-2xl p-6 border bg-gradient-to-r from-primary/5 via-primary/10 to-transparent">
+        <h2 className="text-xl font-semibold">
+          {greeting.emoji} {greeting.text}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {analytics.guestsStaying > 0
+            ? `${analytics.guestsStaying} tamu sedang menginap`
+            : "Operasional terkendali hari ini"}
+        </p>
+      </div>
 
-            <Select value={period} onValueChange={(v) => onPeriodChange(v as ChartPeriodFilter)}>
-              <SelectTrigger className="h-10 w-[150px] rounded-full border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-sm font-semibold">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="6months">6 Bulan</SelectItem>
-                <SelectItem value="12months">12 Bulan</SelectItem>
-                <SelectItem value="thisYear">Tahun Ini</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <BookingCalendar />
+      <ArrivingDepartingWidgets />
+
+      {/* KPI */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPI title="Pendapatan Bulan Ini" value={formatRupiahID(analytics.monthlyRevenue)} icon={<TrendingUp />} />
+        <KPI title="Occupancy" value={`${analytics.occupancyRate.toFixed(1)}%`} icon={<Percent />} />
+        <KPI title="ADR" value={formatRupiahID(analytics.adr)} icon={<DollarSign />} />
+        <KPI title="RevPAR" value={formatRupiahID(analytics.revPar)} icon={<Calendar />} />
+      </div>
+
+      {/* Chart */}
+      <MonthlyRevenueChart 
+        data={analytics.monthlyRevenueData} 
+        period={chartPeriod}
+        onPeriodChange={setChartPeriod}
+      />
+
+      {/* Revenue by Room */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pendapatan per Kamar</CardTitle>
         </CardHeader>
-
-        {/* Content Grafik */}
-        <CardContent className="px-8 sm:px-12 pb-12 pt-8">
-          <div
-            className="relative w-full flex items-end justify-between gap-2 sm:gap-4"
-            style={{ height: chartHeight }}
-          >
-            {/* Garis Putus-putus (Baseline) */}
-            <div
-              className="absolute left-0 right-0 border-t-[2px] border-dotted border-slate-300 z-0"
-              style={{ bottom: bottomOffset }}
-            />
-
-            {data.map((item, i) => {
-              // Kalkulasi tinggi bar
-              const visualHeightAboveLine = (item.revenue / maxRevenue) * (chartHeight - 120);
-              // Tinggi total termasuk bagian bawah garis
-              const totalBarHeight = Math.max(visualHeightAboveLine + bottomOffset, bottomOffset + 20);
-
-              // Rotasi warna berdasarkan index
-              const colorSet = COLORS[i % COLORS.length];
-
-              return (
-                <div key={item.month} className="relative flex flex-col items-center justify-end h-full flex-1 group">
-                  {/* BAR CHART ITEM */}
-                  <motion.div
-                    initial={{ height: bottomOffset }}
-                    animate={{ height: totalBarHeight }}
-                    // --- ANIMASI HOVER ---
-                    whileHover={{
-                      scale: 1.05, // Membesar 5%
-                      y: -5, // Naik sedikit
-                      zIndex: 50, // Tampil paling depan
-                      filter: "brightness(1.1)", // Warna lebih terang
-                    }}
-                    transition={{
-                      duration: 0.8,
-                      delay: i * 0.05,
-                      type: "spring",
-                      stiffness: 120,
-                      damping: 20,
-                    }}
-                    // Rounded-[12px] agar tidak terlalu bulat
-                    className="relative w-full rounded-[12px] cursor-pointer flex flex-col items-center"
-                    style={{
-                      background: `linear-gradient(180deg, ${colorSet[0]} 0%, ${colorSet[1]} 100%)`,
-                      boxShadow: `0 10px 30px -10px ${colorSet[1]}66`,
-                    }}
-                  >
-                    {/* Teks Nominal (Hanya muncul jika nilai > 0) */}
-                    {item.revenue > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6 + i * 0.05 }}
-                        className="mt-3 sm:mt-4 text-[10px] sm:text-[12px] font-bold text-white tracking-wide"
-                      >
-                        {formatNumber(item.revenue)}
-                      </motion.div>
-                    )}
-
-                    {/* Bubble Bulan (Glassmorphism) */}
-                    <div
-                      className="absolute flex items-center justify-center rounded-full shadow-sm"
-                      style={{
-                        width: bubbleSize,
-                        height: bubbleSize,
-                        bottom: bottomOffset - bubbleSize / 2, // Posisi overlapping garis
-                        backgroundColor: "rgba(255, 255, 255, 0.2)",
-                        backdropFilter: "blur(4px)",
-                        border: "1px solid rgba(255,255,255,0.3)",
-                        boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
-                      }}
-                    >
-                      <div className="text-center leading-none">
-                        <span className="text-[10px] sm:text-[11px] font-bold text-white tracking-wider uppercase drop-shadow-md block">
-                          {item.month}
-                        </span>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              );
-            })}
-          </div>
+        <CardContent className="space-y-3">
+          {analytics.revenueByRoom.map((r, i) => (
+            <div key={i}>
+              <div className="flex justify-between text-sm">
+                <span>{r.roomName}</span>
+                <span>{formatRupiahID(r.revenue)}</span>
+              </div>
+              <div className="h-2 bg-muted rounded">
+                <div
+                  className="h-full bg-primary rounded"
+                  style={{
+                    width: `${(r.revenue / maxRevenue) * 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
+
+      <DaysAvailabilityCalendar />
     </div>
   );
-}
+};
+
+/* ================= KPI COMPONENT ================= */
+const KPI = ({ title, value, icon }: { title: string; value: string; icon: React.ReactNode }) => (
+  <Card>
+    <CardHeader className="flex flex-row justify-between pb-2">
+      <CardTitle className="text-sm text-muted-foreground">{title}</CardTitle>
+      {icon}
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{value}</div>
+    </CardContent>
+  </Card>
+);
+
+export default AdminDashboard;
