@@ -1,423 +1,353 @@
-import { useState, useEffect, useCallback } from "react";
-import { format, eachDayOfInterval, differenceInDays, parseISO, areIntervalsOverlapping } from "date-fns";
-import { DndContext, DragOverlay, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { Card } from "@/components/ui/card";
-import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import React, { useState } from "react";
+import { format, addDays, startOfDay, isSameDay, isWeekend, differenceInDays, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
+import { ChevronLeft, ChevronRight, Ban, Download } from "lucide-react";
+import { cn } from "@/lib/utils"; // Pastikan Anda punya utility ini atau ganti dengan clsx/tailwind-merge manual
 
-import { Booking, BlockDialogState, CreateBookingDialogState, ContextMenuState } from "./types";
-import { useCalendarState } from "./hooks/useCalendarState";
-import { useCalendarData } from "./hooks/useCalendarData";
-import { useCalendarHelpers } from "./hooks/useCalendarHelpers";
-import { useDragDrop } from "./hooks/useDragDrop";
-import { useBookingResize } from "./hooks/useBookingResize";
+// --- MOCK DATA (Berdasarkan Gambar) ---
+const ROOM_GROUPS = [
+  {
+    name: "DELUXE",
+    rooms: [
+      { id: "203", name: "203" },
+      { id: "204", name: "204" },
+      { id: "205", name: "205" },
+      { id: "206", name: "206" },
+    ],
+  },
+  {
+    name: "FAMILY SUITE",
+    rooms: [
+      { id: "FS100", name: "FS100" },
+      { id: "FS222", name: "FS222" },
+    ],
+  },
+  {
+    name: "GRAND DELUXE",
+    rooms: [{ id: "GD001", name: "GD 001" }],
+  },
+  {
+    name: "SINGLE",
+    rooms: [{ id: "207", name: "207" }],
+  },
+];
 
-import { CalendarHeader } from "./components/CalendarHeader";
-import { CalendarTable } from "./components/CalendarTable";
-import { ContextMenu } from "./dialogs/ContextMenu";
-import { BlockDateDialog } from "./dialogs/BlockDateDialog";
-import { BookingDetailDialog } from "./dialogs/BookingDetailDialog";
-import { CreateBookingDialog } from "../CreateBookingDialog";
-import { ExportBookingDialog } from "../ExportBookingDialog";
+const BOOKINGS = [
+  {
+    id: "b1",
+    roomId: "203",
+    guestName: "Rifki...",
+    checkIn: "2026-01-23",
+    nights: 1,
+    status: "confirmed", // Green
+  },
+  {
+    id: "b2",
+    roomId: "204",
+    guestName: "Dzak...",
+    checkIn: "2026-01-23",
+    nights: 1,
+    status: "confirmed",
+  },
+  {
+    id: "b3",
+    roomId: "205",
+    guestName: "Dzak...",
+    checkIn: "2026-01-23",
+    nights: 1,
+    status: "confirmed",
+  },
+  {
+    id: "b4",
+    roomId: "206",
+    guestName: "Bening",
+    checkIn: "2026-01-19",
+    nights: 21, // Long bar
+    status: "in-house", // Blue
+  },
+  {
+    id: "b5",
+    roomId: "FS100",
+    guestName: "Muha...",
+    checkIn: "2026-01-23",
+    nights: 1,
+    status: "confirmed",
+  },
+  {
+    id: "b6",
+    roomId: "FS222",
+    guestName: "Syifa...",
+    checkIn: "2026-01-23",
+    nights: 1,
+    status: "late-checkout", // Red
+    tag: "LCO",
+  },
+  {
+    id: "b7",
+    roomId: "207",
+    guestName: "Hai...",
+    checkIn: "2026-01-19",
+    nights: 1,
+    status: "checked-out", // Grey
+  },
+  {
+    id: "b8",
+    roomId: "207",
+    guestName: "Dede...",
+    checkIn: "2026-01-23",
+    nights: 1,
+    status: "confirmed",
+  },
+];
 
-export const BookingCalendar = () => {
-  const queryClient = useQueryClient();
+const BLOCKED_DATES = [
+  { roomId: "GD001", date: "2026-01-22" },
+  { roomId: "GD001", date: "2026-01-23" },
+];
 
-  // State hooks
-  const {
-    currentDate,
-    viewRange,
-    dates,
-    cellWidth,
-    monthYearOptions,
-    currentMonthYear,
-    goToPrev,
-    goToNext,
-    goToToday,
-    handleMonthYearChange,
-    handleViewRangeChange,
-  } = useCalendarState();
+// --- COMPONENT ---
 
-  const {
-    bookings,
-    rooms,
-    roomsByType,
-    allRoomNumbers,
-    unavailableDates,
-    updateBooking,
-    isUpdating,
-    addUnavailableDates,
-    removeUnavailableDates,
-  } = useCalendarData();
+export const BookingCalendarDesign = () => {
+  const [startDate, setStartDate] = useState(parseISO("2026-01-19")); // Set start date sesuai gambar
+  const [viewRange, setViewRange] = useState(14); // 7D, 14D, 30D
 
-  const { getBookingForCell, isDateBlocked, getBlockReason } = useCalendarHelpers(bookings, unavailableDates);
+  // Generate Array of Dates
+  const dates = Array.from({ length: viewRange }).map((_, i) => addDays(startDate, i));
 
-  // Dialog states
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [availableRoomNumbers, setAvailableRoomNumbers] = useState<string[]>([]);
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-  const [blockDialog, setBlockDialog] = useState<BlockDialogState>({ open: false });
-  const [createBookingDialog, setCreateBookingDialog] = useState<CreateBookingDialogState>({ open: false });
-  const [exportDialog, setExportDialog] = useState(false);
+  const cellWidth = 100; // Pixel width per cell
 
-  // Drag & Drop sensors
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 200,
-        tolerance: 5,
-      },
-    }),
-  );
-
-  // --- HANDLERS (Optimized with useCallback) ---
-
-  // Handle booking move via drag & drop - AUTO SAVE
-  const handleBookingMove = useCallback(
-    async (booking: Booking, newRoomId: string, newRoomNumber: string, newCheckIn: string, newCheckOut: string) => {
-      const checkIn = parseISO(newCheckIn);
-      const checkOut = parseISO(newCheckOut);
-      const newTotalNights = differenceInDays(checkOut, checkIn);
-
-      // 1. Validasi Konflik dengan Blocked Dates
-      const hasBlockConflict = unavailableDates.some(
-        (blocked) =>
-          blocked.room_id === newRoomId &&
-          blocked.room_number === newRoomNumber &&
-          areIntervalsOverlapping(
-            { start: parseISO(blocked.unavailable_date), end: parseISO(blocked.unavailable_date) },
-            { start: checkIn, end: checkOut },
-          ),
-      );
-
-      if (hasBlockConflict) {
-        toast.error("Tidak dapat memindahkan: Tanggal tersebut sedang diblokir.");
-        return;
-      }
-
-      try {
-        // 2. Logic Harga Baru (Fix: Ambil harga dari kamar tujuan, bukan harga lama)
-        const targetRoom = rooms?.find((r) => r.id === newRoomId);
-        const newPricePerNight = targetRoom?.price_per_night || 0;
-
-        // Opsional: Hitung ulang total price jika kebijakan bisnis mengharuskan
-        // const newTotalPrice = newTotalNights * newPricePerNight;
-
-        // Auto-save to database
-        await updateBooking({
-          id: booking.id,
-          room_id: newRoomId,
-          allocated_room_number: newRoomNumber,
-          check_in: newCheckIn,
-          check_out: newCheckOut,
-          total_nights: newTotalNights,
-          // Jika ingin update total_price otomatis, uncomment baris bawah:
-          // total_price: newTotalPrice,
-
-          // Sync booking_rooms dengan kamar & harga BARU
-          editedRooms: [
-            {
-              roomId: newRoomId,
-              roomNumber: newRoomNumber,
-              pricePerNight: newPricePerNight,
-            },
-          ],
-        });
-
-        await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-
-        // Determine message based on what changed
-        const isDateChanged = booking.check_in !== newCheckIn;
-        const isRoomChanged = booking.allocated_room_number !== newRoomNumber;
-
-        let message = "";
-        if (isDateChanged && isRoomChanged) {
-          message = `Booking dipindahkan ke ${newRoomNumber}, tanggal ${format(checkIn, "dd MMM")}`;
-        } else if (isDateChanged) {
-          message = `Booking dijadwalkan ulang ke ${format(checkIn, "dd MMM")}`;
-        } else {
-          message = `Booking dipindahkan ke kamar ${newRoomNumber}`;
-        }
-
-        toast.success(message);
-      } catch (error) {
-        console.error("Error moving booking:", error);
-        toast.error("Gagal memindahkan booking");
-      }
-    },
-    [rooms, unavailableDates, updateBooking, queryClient],
-  );
-
-  const { activeBooking, handleDragStart, handleDragEnd } = useDragDrop(
-    rooms || [],
-    bookings,
-    unavailableDates,
-    handleBookingMove,
-  );
-
-  // Handle booking resize - AUTO SAVE
-  const handleResizeComplete = useCallback(
-    async (booking: Booking, newCheckIn: string, newCheckOut: string) => {
-      const checkIn = parseISO(newCheckIn);
-      const checkOut = parseISO(newCheckOut);
-      const newTotalNights = differenceInDays(checkOut, checkIn);
-
-      try {
-        // Auto-save to database
-        await updateBooking({
-          id: booking.id,
-          check_in: newCheckIn,
-          check_out: newCheckOut,
-          total_nights: newTotalNights,
-        });
-
-        await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-
-        toast.success(`Durasi diubah: ${newTotalNights} malam`);
-      } catch (error) {
-        console.error("Error resizing booking:", error);
-        toast.error("Gagal mengubah durasi booking");
-      }
-    },
-    [updateBooking, queryClient],
-  );
-
-  const { isResizing, startResize, getResizePreview } = useBookingResize(
-    bookings,
-    unavailableDates,
-    cellWidth,
-    handleResizeComplete,
-  );
-
-  // Event handlers
-  const handleBookingClick = useCallback(
-    (booking: Booking) => {
-      setSelectedBooking(booking);
-      const room = rooms?.find((r) => r.id === booking.room_id);
-      setAvailableRoomNumbers(room?.room_numbers || []);
-    },
-    [rooms],
-  );
-
-  const handleCellClick = useCallback(
-    (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => {
-      if (isBlocked || hasBooking) return;
-      setCreateBookingDialog({ open: true, roomId, roomNumber, date });
-    },
-    [],
-  );
-
-  const handleRightClick = useCallback((e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => {
-    e.preventDefault();
-    setContextMenu({ roomId, roomNumber, date, x: e.clientX, y: e.clientY });
-  }, []);
-
-  const handleBlockDate = () => {
-    if (!contextMenu) return;
-    setBlockDialog({
-      open: true,
-      roomId: contextMenu.roomId,
-      roomNumber: contextMenu.roomNumber,
-      date: contextMenu.date,
-      endDate: contextMenu.date,
-      reason: "",
-    });
-    setContextMenu(null);
-  };
-
-  const handleUnblockDate = async () => {
-    if (!contextMenu) return;
-    const dateStr = format(contextMenu.date, "yyyy-MM-dd");
-    await removeUnavailableDates([
-      { room_id: contextMenu.roomId, room_number: contextMenu.roomNumber, unavailable_date: dateStr },
-    ]);
-    setContextMenu(null);
-  };
-
-  const handleSaveBlock = async () => {
-    if (!blockDialog.roomId || !blockDialog.date) return;
-    const startDate = blockDialog.date;
-    const endDate = blockDialog.endDate || blockDialog.date;
-
-    const datesInRange = eachDayOfInterval({ start: startDate, end: endDate });
-    const datesToBlock = datesInRange.map((date) => ({
-      room_id: blockDialog.roomId!,
-      room_number: blockDialog.roomNumber,
-      unavailable_date: format(date, "yyyy-MM-dd"),
-      reason: blockDialog.reason || "Blocked by admin",
-    }));
-
-    await addUnavailableDates(datesToBlock);
-    setBlockDialog({ open: false });
-    toast.success(`${datesToBlock.length} tanggal berhasil diblokir`);
-  };
-
-  const handleSaveBooking = async (
-    editedBooking: Booking & { editedRooms?: Array<{ roomId: string; roomNumber: string; pricePerNight: number }> },
-  ) => {
-    try {
-      await updateBooking({
-        id: editedBooking.id,
-        room_id: editedBooking.room_id,
-        guest_name: editedBooking.guest_name,
-        guest_email: editedBooking.guest_email,
-        guest_phone: editedBooking.guest_phone,
-        num_guests: editedBooking.num_guests,
-        check_in: editedBooking.check_in,
-        check_out: editedBooking.check_out,
-        check_in_time: editedBooking.check_in_time,
-        check_out_time: editedBooking.check_out_time,
-        allocated_room_number: editedBooking.allocated_room_number,
-        status: editedBooking.status,
-        payment_status: editedBooking.payment_status,
-        payment_amount: editedBooking.payment_status === "down_payment" ? editedBooking.payment_amount : 0,
-        special_requests: editedBooking.special_requests,
-        total_nights: editedBooking.total_nights,
-        total_price: editedBooking.total_price,
-        editedRooms: editedBooking.editedRooms,
-      });
-
-      await queryClient.refetchQueries({ queryKey: ["admin-bookings"] });
-      setSelectedBooking(null);
-      toast.success("Booking berhasil diupdate");
-    } catch (error) {
-      console.error("Error updating booking:", error);
-      toast.error("Gagal mengupdate booking");
+  // Helper colors
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-emerald-500 hover:bg-emerald-600 border-emerald-600";
+      case "in-house":
+        return "bg-blue-500 hover:bg-blue-600 border-blue-600";
+      case "late-checkout":
+        return "bg-rose-500 hover:bg-rose-600 border-rose-600";
+      case "checked-out":
+        return "bg-slate-500 hover:bg-slate-600 border-slate-600";
+      default:
+        return "bg-gray-500";
     }
   };
-
-  // Close context menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => setContextMenu(null);
-    if (contextMenu) {
-      document.addEventListener("click", handleClickOutside);
-      return () => document.removeEventListener("click", handleClickOutside);
-    }
-  }, [contextMenu]);
-
-  // Realtime subscription for booking changes
-  useEffect(() => {
-    const channel = supabase
-      .channel("booking-calendar-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "bookings",
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <h2 className="text-xl font-poppins font-semibold mb-3 px-4">Booking Calendar</h2>
-      <Card className="w-full shadow-lg rounded-xl border-border/50">
-        <CalendarHeader
-          viewRange={viewRange}
-          onViewRangeChange={handleViewRangeChange}
-          currentMonthYear={currentMonthYear}
-          monthYearOptions={monthYearOptions}
-          onMonthYearChange={handleMonthYearChange}
-          onPrev={goToPrev}
-          onNext={goToNext}
-          onToday={goToToday}
-          onExport={() => setExportDialog(true)}
-        />
+    <div className="flex flex-col h-screen bg-gray-50 font-sans text-sm text-slate-700">
+      {/* --- HEADER CONTROLS --- */}
+      <div className="p-4 bg-white border-b flex flex-wrap gap-4 items-center justify-between shadow-sm z-20 relative">
+        <div className="flex items-center gap-3">
+          {/* Month Selector */}
+          <div className="relative">
+            <select className="pl-3 pr-8 py-2 border rounded-md bg-white text-slate-700 font-medium focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer hover:bg-gray-50 transition-colors">
+              <option>January 2026</option>
+              <option>February 2026</option>
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
 
-        <CalendarTable
-          dates={dates}
-          cellWidth={cellWidth}
-          roomsByType={roomsByType}
-          allRoomNumbers={allRoomNumbers}
-          getBookingForCell={getBookingForCell}
-          isDateBlocked={isDateBlocked}
-          getBlockReason={getBlockReason}
-          handleBookingClick={handleBookingClick}
-          handleRightClick={handleRightClick}
-          handleCellClick={handleCellClick}
-          onResizeStart={startResize}
-          getResizePreview={getResizePreview}
-          isResizing={isResizing}
-          activeBooking={activeBooking}
-        />
-      </Card>
+          {/* Range Toggle */}
+          <div className="flex bg-gray-100 p-1 rounded-md border">
+            {[7, 14, 30].map((days) => (
+              <button
+                key={days}
+                onClick={() => setViewRange(days)}
+                className={cn(
+                  "px-3 py-1.5 rounded text-xs font-semibold transition-all",
+                  viewRange === days ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-900",
+                )}
+              >
+                {days}D
+              </button>
+            ))}
+          </div>
 
-      {/* Empty DragOverlay - preview handled in RoomCell */}
-      <DragOverlay>{activeBooking && <div className="opacity-0 w-0 h-0" />}</DragOverlay>
+          {/* Navigation */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setStartDate(addDays(startDate, -1))}
+              className="p-2 hover:bg-gray-100 rounded-md border text-gray-600"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setStartDate(new Date())}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-md text-xs transition-colors uppercase tracking-wider"
+            >
+              Today
+            </button>
+            <button
+              onClick={() => setStartDate(addDays(startDate, 1))}
+              className="p-2 hover:bg-gray-100 rounded-md border text-gray-600"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
-      {/* Context Menu */}
-      {contextMenu && (
-        <ContextMenu
-          contextMenu={contextMenu}
-          isBlocked={isDateBlocked(contextMenu.roomId, contextMenu.roomNumber, contextMenu.date)}
-          onBlockDate={handleBlockDate}
-          onUnblockDate={handleUnblockDate}
-        />
-      )}
+        <button className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-md text-sm font-medium transition-colors shadow-sm">
+          <Download className="w-4 h-4" />
+          Export
+        </button>
+      </div>
 
-      {/* Block Date Dialog */}
-      <BlockDateDialog
-        blockDialog={blockDialog}
-        onOpenChange={(open) => setBlockDialog({ open })}
-        onBlockDialogChange={setBlockDialog}
-        onSave={handleSaveBlock}
-      />
+      {/* --- CALENDAR GRID --- */}
+      <div className="flex-1 overflow-auto relative">
+        <div className="inline-block min-w-full relative">
+          {/* 1. DATE HEADER ROW */}
+          <div className="sticky top-0 z-10 flex border-b bg-white shadow-sm">
+            {/* Corner Cell */}
+            <div className="sticky left-0 z-20 w-32 min-w-[128px] bg-blue-500 text-white font-bold p-2 flex flex-col justify-center items-center border-r border-b border-blue-600 shadow-[4px_0_5px_-2px_rgba(0,0,0,0.1)]">
+              <span className="text-xs opacity-90">Hari</span>
+              <span className="text-sm">Tanggal</span>
+            </div>
 
-      {/* Booking Detail Dialog */}
-      <BookingDetailDialog
-        booking={selectedBooking}
-        open={!!selectedBooking}
-        onOpenChange={(open) => !open && setSelectedBooking(null)}
-        onSave={handleSaveBooking}
-        rooms={rooms}
-        isUpdating={isUpdating}
-        defaultEditMode={true}
-      />
+            {/* Dates Loop */}
+            {dates.map((date, index) => {
+              const isToday = isSameDay(date, new Date()); // Mocking today as Jan 20 based on image
+              const isWeekendDay = isWeekend(date);
 
-      {/* Create Booking Dialog */}
-      <CreateBookingDialog
-        open={createBookingDialog.open}
-        onOpenChange={(open) => setCreateBookingDialog({ open })}
-        roomId={createBookingDialog.roomId}
-        roomNumber={createBookingDialog.roomNumber}
-        initialDate={createBookingDialog.date}
-        rooms={
-          rooms?.map((r) => ({
-            id: r.id,
-            name: r.name,
-            price_per_night: r.price_per_night,
-            room_numbers: r.room_numbers,
-          })) || []
-        }
-      />
+              return (
+                <div
+                  key={index}
+                  className="flex-shrink-0 border-r border-gray-100 bg-white flex flex-col items-center justify-center h-14"
+                  style={{ width: cellWidth }}
+                >
+                  {isToday && (
+                    <div className="absolute top-0 w-full bg-blue-500 text-[10px] text-white text-center font-bold py-0.5 z-10">
+                      TODAY
+                    </div>
+                  )}
+                  <span
+                    className={cn(
+                      "text-[10px] uppercase font-semibold mb-0.5",
+                      isWeekendDay ? "text-red-500" : "text-gray-500",
+                    )}
+                  >
+                    {format(date, "EEE", { locale: id })}
+                  </span>
+                  <span
+                    className={cn("text-lg font-bold leading-none", isWeekendDay ? "text-red-500" : "text-slate-800")}
+                  >
+                    {format(date, "d")}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
 
-      {/* Export Dialog */}
-      <ExportBookingDialog
-        open={exportDialog}
-        onOpenChange={setExportDialog}
-        bookings={bookings || []}
-        rooms={rooms || []}
-      />
-    </DndContext>
+          {/* 2. ROOM ROWS */}
+          <div className="relative">
+            {ROOM_GROUPS.map((group) => (
+              <React.Fragment key={group.name}>
+                {/* Group Header */}
+                <div className="sticky left-0 z-10 w-full bg-[#EAEAEA] border-b border-gray-200 px-4 py-2 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  {group.name}
+                </div>
+                {/* Filler for group row to stretch full width */}
+                <div className="absolute left-0 w-full h-8 bg-[#EAEAEA] -z-10" />
+
+                {/* Rooms in Group */}
+                {group.rooms.map((room) => (
+                  <div
+                    key={room.id}
+                    className="flex relative h-16 border-b border-gray-100 group hover:bg-slate-50 transition-colors"
+                  >
+                    {/* Sticky Room Number Column */}
+                    <div className="sticky left-0 z-10 w-32 min-w-[128px] bg-white group-hover:bg-slate-50 border-r border-gray-200 p-3 flex items-center text-sm font-medium text-slate-700 shadow-[4px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                      {room.name}
+                    </div>
+
+                    {/* Grid Cells & Events Container */}
+                    <div className="flex relative">
+                      {/* Empty Grid Cells */}
+                      {dates.map((date, i) => {
+                        // Check if blocked
+                        const isBlocked = BLOCKED_DATES.some(
+                          (b) => b.roomId === room.id && isSameDay(parseISO(b.date), date),
+                        );
+
+                        return (
+                          <div
+                            key={i}
+                            className={cn(
+                              "flex-shrink-0 border-r border-gray-100 h-full relative",
+                              isBlocked &&
+                                "bg-[linear-gradient(45deg,#f3f4f6_25%,#e5e7eb_25%,#e5e7eb_50%,#f3f4f6_50%,#f3f4f6_75%,#e5e7eb_75%,#e5e7eb_100%)] bg-[length:10px_10px]",
+                            )}
+                            style={{ width: cellWidth }}
+                            // onClick handler here
+                          >
+                            {isBlocked && (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-40">
+                                <Ban className="w-4 h-4 text-gray-500 mb-0.5" />
+                                <span className="text-[8px] font-bold text-gray-500">BLOCKED</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Render Bookings (Absolute Positioned) */}
+                      {BOOKINGS.filter((b) => b.roomId === room.id).map((booking) => {
+                        const startDateObj = parseISO(booking.checkIn);
+
+                        // Cek apakah booking ada dalam range view
+                        const viewStart = dates[0];
+                        const viewEnd = dates[dates.length - 1];
+
+                        // Logika simple overlap
+                        // Note: Production app needs robust collision detection
+                        const diffDays = differenceInDays(startDateObj, viewStart);
+
+                        // Jika booking mulai sebelum view range, kita harus potong (clamping logic)
+                        // Untuk simplicity demo ini, kita render berdasarkan start date relatif terhadap view start
+                        if (diffDays + booking.nights < 0) return null; // Booking ends before view starts
+
+                        const leftPos = diffDays * cellWidth;
+                        const width = booking.nights * cellWidth;
+
+                        return (
+                          <div
+                            key={booking.id}
+                            className={cn(
+                              "absolute top-1 bottom-1 m-1 rounded-md shadow-sm border text-white overflow-hidden cursor-pointer hover:brightness-110 transition-all z-0",
+                              getStatusColor(booking.status),
+                            )}
+                            style={{
+                              left: `${leftPos}px`,
+                              width: `${width - 8}px`, // -8 for margin
+                            }}
+                          >
+                            {booking.tag && (
+                              <span className="absolute top-0 right-0 bg-red-600 text-[8px] px-1 font-bold rounded-bl-sm">
+                                {booking.tag}
+                              </span>
+                            )}
+
+                            <div className="px-2 py-1 h-full flex flex-col justify-center">
+                              <div className="font-bold text-xs truncate leading-tight">{booking.guestName}</div>
+                              <div className="text-[9px] opacity-90 truncate font-medium">
+                                {booking.nights}M • {booking.status.toUpperCase()}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
+
+export default BookingCalendarDesign;
