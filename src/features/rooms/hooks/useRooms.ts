@@ -15,15 +15,3 @@ export const useRooms = () => {
     },
   });
 };
-
-
-
-
-
-
-
-
-
-
-
-

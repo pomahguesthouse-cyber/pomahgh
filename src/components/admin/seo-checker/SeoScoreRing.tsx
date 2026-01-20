@@ -65,15 +65,3 @@ export const SeoScoreRing = ({ score, size = 120, strokeWidth = 10 }: SeoScoreRi
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

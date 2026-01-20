@@ -193,15 +193,3 @@ export const bookingValidation = {
     };
   },
 };
-
-
-
-
-
-
-
-
-
-
-
-

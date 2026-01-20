@@ -66,15 +66,3 @@ export const ResponseModeCard = ({ mode, onModeChange, isUpdating }: ResponseMod
     </Card>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

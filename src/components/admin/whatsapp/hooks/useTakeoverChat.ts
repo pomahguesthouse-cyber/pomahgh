@@ -54,15 +54,3 @@ export const useTakeoverChat = (session: WhatsAppSessionWithMessages, open: bool
     isReleasing: releaseSession.isPending,
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-

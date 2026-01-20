@@ -166,15 +166,3 @@ export function SelectableElement({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Coffee, Bed, Car, Clock, UtensilsCrossed, Wifi, Sparkles, Plus, Minus } from "lucide-react";
-import { useRoomAddons, RoomAddon, calculateAddonPrice, getPriceTypeLabel, BookingAddon } from "@/hooks/room/useRoomAddons";
+import { useRoomAddons, RoomAddon, calculateAddonPrice, getPriceTypeLabel, BookingAddon } from "@/hooks/useRoomAddons";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   Coffee,
@@ -175,15 +175,3 @@ export const AddonSelector = ({ roomId, totalNights, numGuests, onAddonsChange, 
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

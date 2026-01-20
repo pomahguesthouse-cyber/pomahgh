@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Bot, Sparkles, MessageCircle, Eye, X, Loader2 } from "lucide-react";
-import { useChatbotSettings, useUpdateChatbotSettings } from "@/hooks/chatbot/useChatbot";
-import { useHotelSettings } from "@/hooks/shared/useHotelSettings";
+import { useChatbotSettings, useUpdateChatbotSettings } from "@/hooks/useChatbot";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
 
 const PERSONA_TRAITS = [
   { value: "ramah", label: "Ramah", emoji: "😊" },
@@ -389,15 +389,3 @@ export default function PersonaSettingsTab() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

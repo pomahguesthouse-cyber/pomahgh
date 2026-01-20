@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowUp, ArrowDown, MousePointerClick, Eye, Target, MapPin } from "lucide-react";
-import type { RankingsSummary as RankingsSummaryType } from "@/hooks/seo/useSearchConsoleRankings";
+import type { RankingsSummary as RankingsSummaryType } from "@/hooks/useSearchConsoleRankings";
 
 interface Props {
   summary: RankingsSummaryType | null;
@@ -82,15 +82,3 @@ export const RankingsSummary = ({ summary }: Props) => {
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

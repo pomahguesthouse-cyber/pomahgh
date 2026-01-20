@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useCompetitorRooms, CompetitorRoomInsert } from "@/hooks/competitor/useCompetitorRooms";
-import { useCompetitorHotels } from "@/hooks/competitor/useCompetitorHotels";
-import { useRooms } from "@/hooks/room/useRooms";
+import { useCompetitorRooms, CompetitorRoomInsert } from "@/hooks/useCompetitorRooms";
+import { useCompetitorHotels } from "@/hooks/useCompetitorHotels";
+import { useRooms } from "@/hooks/useRooms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -251,15 +251,3 @@ export const CompetitorRoomsTab = () => {
     </Card>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

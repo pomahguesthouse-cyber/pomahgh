@@ -1,4 +1,4 @@
-import { ImageGallery } from "@/components/gallery/ImageGallery";
+import { ImageGallery } from "@/components/ImageGallery";
 import type { RoomGalleryProps } from "./types";
 
 export const RoomGallery = ({ images, roomName, hasVirtualTour }: RoomGalleryProps) => {
@@ -17,15 +17,3 @@ export const RoomGallery = ({ images, roomName, hasVirtualTour }: RoomGalleryPro
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

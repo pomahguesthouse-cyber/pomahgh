@@ -50,15 +50,3 @@ export const formatRupiahShort = (amount: number): string => {
   }
   return formatRupiah(amount);
 };
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { useAdminCheck } from "@/hooks/admin/useAdminCheck";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 interface AdminGuardProps {
   children: ReactNode;
@@ -25,15 +25,3 @@ export const AdminGuard = ({ children }: AdminGuardProps) => {
 
   return <>{children}</>;
 };
-
-
-
-
-
-
-
-
-
-
-
-

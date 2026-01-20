@@ -174,15 +174,3 @@ export const useBookingResize = (
     getResizePreview,
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-

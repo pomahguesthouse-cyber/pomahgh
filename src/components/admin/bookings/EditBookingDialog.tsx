@@ -656,15 +656,3 @@ export function EditBookingDialog({
     </Dialog>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

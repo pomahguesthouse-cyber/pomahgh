@@ -207,15 +207,3 @@ export function EditableImage({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

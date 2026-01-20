@@ -1,6 +1,6 @@
 import deluxeRoom from "@/assets/room-deluxe.jpg";
 import villaRoom from "@/assets/room-villa.jpg";
-import type { Room } from "@/hooks/room/useRooms";
+import type { Room } from "@/hooks/useRooms";
 
 const fallbackImages: Record<string, string> = {
   "Deluxe Ocean View": deluxeRoom,
@@ -13,15 +13,3 @@ export const getRoomImages = (room: Room): string[] => {
   }
   return [fallbackImages[room.name] || room.image_url];
 };
-
-
-
-
-
-
-
-
-
-
-
-

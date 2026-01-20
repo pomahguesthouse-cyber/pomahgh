@@ -21,9 +21,9 @@ export { default as AdminTrainingTab } from "@/components/admin/AdminTrainingTab
 export { default as AdminWhatsAppSessionsTab } from "@/components/admin/AdminWhatsAppSessionsTab";
 
 // Hooks
-export { useAdminChatbot } from "@/hooks/admin/useAdminChatbot";
-export { useAdminKnowledgeBase } from "@/hooks/admin/useAdminKnowledgeBase";
-export { useAdminTrainingExamples } from "@/hooks/admin/useAdminTrainingExamples";
+export { useAdminChatbot } from "@/hooks/useAdminChatbot";
+export { useAdminKnowledgeBase } from "@/hooks/useAdminKnowledgeBase";
+export { useAdminTrainingExamples } from "@/hooks/useAdminTrainingExamples";
 export { useWhatsAppSessions } from "@/hooks/useWhatsAppSessions";
 
 // Types
@@ -34,15 +34,3 @@ export type {
   ChatLog,
   WhatsAppSession,
 } from "@/types/chatbot.types";
-
-
-
-
-
-
-
-
-
-
-
-

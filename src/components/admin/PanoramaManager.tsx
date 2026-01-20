@@ -7,9 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Star, Eye, Edit, Trash2, Plus, Upload } from "lucide-react";
-import { useAdminRoomPanoramas, useCreatePanorama, useUpdatePanorama, useDeletePanorama, useSetPrimaryPanorama, RoomPanorama } from "@/hooks/room/useRoomPanoramas";
-import { use360Upload } from "@/hooks/shared/use360Upload";
-import { Panorama360Viewer } from "@/components/gallery/Panorama360Viewer";
+import { useAdminRoomPanoramas, useCreatePanorama, useUpdatePanorama, useDeletePanorama, useSetPrimaryPanorama, RoomPanorama } from "@/hooks/useRoomPanoramas";
+import { use360Upload } from "@/hooks/use360Upload";
+import { Panorama360Viewer } from "@/components/Panorama360Viewer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PanoramaManagerProps {
@@ -341,15 +341,3 @@ export const PanoramaManager = ({ roomId, roomName, onEditHotspots }: PanoramaMa
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

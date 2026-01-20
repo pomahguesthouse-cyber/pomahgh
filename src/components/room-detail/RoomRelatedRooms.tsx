@@ -40,15 +40,3 @@ export const RoomRelatedRooms = ({
       </div>
     </div>;
 };
-
-
-
-
-
-
-
-
-
-
-
-

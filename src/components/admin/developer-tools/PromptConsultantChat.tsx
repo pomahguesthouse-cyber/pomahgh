@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { usePromptConsultant, PromptConsultantMessage } from "@/hooks/shared/usePromptConsultant";
+import { usePromptConsultant, PromptConsultantMessage } from "@/hooks/usePromptConsultant";
 
 const QUICK_ACTIONS = [
   { label: "Review prompt saya", prompt: "Tolong review dan optimasi prompt berikut ini:\n\n[paste prompt di sini]" },
@@ -179,15 +179,3 @@ export function PromptConsultantChat() {
     </Card>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

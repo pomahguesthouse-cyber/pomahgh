@@ -39,15 +39,3 @@ export function PaymentInfo({ booking }: PaymentInfoProps) {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

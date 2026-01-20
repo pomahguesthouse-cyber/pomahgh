@@ -139,15 +139,3 @@ export function RoomMultiSelector({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

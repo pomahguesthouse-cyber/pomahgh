@@ -1,5 +1,5 @@
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import Header from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { ExploreSEO } from "@/components/explore/ExploreSEO";
 import { ExploreHeroSlider } from "@/components/explore/ExploreHeroSlider";
 import { ExploreIntro } from "@/components/explore/ExploreIntro";
@@ -8,8 +8,8 @@ import { CategoryTabs } from "@/components/explore/CategoryTabs";
 import { NearbyFromHotel } from "@/components/explore/NearbyFromHotel";
 import { GettingHere } from "@/components/explore/GettingHere";
 import { ExploreCTA } from "@/components/explore/ExploreCTA";
-import { useCityAttractions } from "@/hooks/explore/useCityAttractions";
-import { Breadcrumb } from "@/components/common/Breadcrumb";
+import { useCityAttractions } from "@/hooks/useCityAttractions";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const ExploreSemarang = () => {
@@ -61,15 +61,3 @@ const ExploreSemarang = () => {
 };
 
 export default ExploreSemarang;
-
-
-
-
-
-
-
-
-
-
-
-

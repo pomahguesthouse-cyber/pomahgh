@@ -123,15 +123,3 @@ export interface EditBookingData {
   special_requests: string;
   editedRooms: SelectedRoom[];
 }
-
-
-
-
-
-
-
-
-
-
-
-

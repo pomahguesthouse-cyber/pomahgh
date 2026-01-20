@@ -44,15 +44,3 @@ export const useChatRealtime = (conversationId: string | null, enabled: boolean)
     };
   }, [conversationId, enabled, queryClient]);
 };
-
-
-
-
-
-
-
-
-
-
-
-

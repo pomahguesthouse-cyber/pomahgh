@@ -120,15 +120,3 @@ export const ANIMATION_OPTIONS = [
   { value: 'slide-left', label: 'Slide Left' },
   { value: 'slide-right', label: 'Slide Right' },
 ];
-
-
-
-
-
-
-
-
-
-
-
-

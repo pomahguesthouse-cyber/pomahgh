@@ -14,7 +14,7 @@ import {
   useDeleteExploreHeroSlide,
   uploadExploreHeroImage,
   ExploreHeroSlide,
-} from "@/hooks/explore/useExploreHeroSlides";
+} from "@/hooks/useExploreHeroSlides";
 
 const AdminExploreHeroSlides = () => {
   const { data: slides, isLoading } = useAdminExploreHeroSlides();
@@ -400,15 +400,3 @@ const AdminExploreHeroSlides = () => {
 };
 
 export default AdminExploreHeroSlides;
-
-
-
-
-
-
-
-
-
-
-
-

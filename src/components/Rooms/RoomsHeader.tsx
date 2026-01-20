@@ -4,7 +4,7 @@ import { useContext } from "react";
 import { EditorModeContext } from "@/contexts/EditorModeContext";
 import { EditableText } from "@/components/admin/editor-mode/EditableText";
 import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
-import { useWidgetStyles } from "@/hooks/shared/useWidgetStyles";
+import { useWidgetStyles } from "@/hooks/useWidgetStyles";
 import type { RoomsHeaderProps } from "./types";
 
 export const RoomsHeader = ({ checkIn, checkOut, totalNights }: RoomsHeaderProps) => {
@@ -84,15 +84,3 @@ export const RoomsHeader = ({ checkIn, checkOut, totalNights }: RoomsHeaderProps
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useAdminRooms } from "@/hooks/admin/useAdminRooms";
-import { useAdminRoomFeatures } from "@/hooks/room/useRoomFeatures";
-import { use360Upload } from "@/hooks/shared/use360Upload";
+import { useAdminRooms } from "@/hooks/useAdminRooms";
+import { useAdminRoomFeatures } from "@/hooks/useRoomFeatures";
+import { use360Upload } from "@/hooks/use360Upload";
 import * as Icons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,16 +13,16 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, Maximize2, MapPin } from "lucide-react";
-import { Room } from "@/hooks/room/useRooms";
+import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RoomAvailabilityCalendar } from "@/components/admin/RoomAvailabilityCalendar";
-import { Panorama360Viewer } from "@/components/gallery/Panorama360Viewer";
+import { Panorama360Viewer } from "@/components/Panorama360Viewer";
 import { HotspotEditor } from "@/components/admin/HotspotEditor";
 import { PanoramaManager } from "@/components/admin/PanoramaManager";
 import { FloorPlanEditor } from "@/components/admin/FloorPlanEditor";
-import { useAdminRoomPanoramas } from "@/hooks/room/useRoomPanoramas";
-import { useAdminRoomHotspots } from "@/hooks/room/useRoomHotspots";
+import { useAdminRoomPanoramas } from "@/hooks/useRoomPanoramas";
+import { useAdminRoomHotspots } from "@/hooks/useRoomHotspots";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -974,15 +974,3 @@ const FloorPlanEditorDialog = ({
 };
 
 export default AdminRooms;
-
-
-
-
-
-
-
-
-
-
-
-

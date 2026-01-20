@@ -25,9 +25,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { useHotelSettings } from "@/hooks/shared/useHotelSettings";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "../BookingConfirmationDialog";
-import { calculateNightlyPrices } from "@/utils/calculateNightlyPrices";
 
 interface CreateBookingDialogProps {
   open: boolean;
@@ -388,12 +387,6 @@ export const CreateBookingDialog = ({
     effectiveTotalPrice = totalNights * totalRoomPrice;
   }
 
-  // Calculate nightly prices for confirmation dialog
-  const nightlyPrices = 
-    checkIn && checkOut && effectivePricePerNight > 0 
-      ? calculateNightlyPrices(checkIn, checkOut, effectivePricePerNight, selectedRooms.length)
-      : [];
-
   const toggleRoomSelection = (roomId: string, roomNumber: string, roomName: string, pricePerNight: number) => {
     const exists = selectedRooms.find((r) => r.roomId === roomId && r.roomNumber === roomNumber);
     if (exists) {
@@ -416,7 +409,6 @@ export const CreateBookingDialog = ({
         totalNights={totalNights}
         totalPrice={effectiveTotalPrice}
         numGuests={formData.num_guests}
-        nightlyPrices={nightlyPrices}
       />
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -956,15 +948,3 @@ export const CreateBookingDialog = ({
     </>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

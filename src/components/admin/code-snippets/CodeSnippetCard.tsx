@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/hooks/shared/useToast";
+import { useToast } from "@/hooks/use-toast";
 import { 
   CodeSnippet, 
   CODE_LANGUAGES,
@@ -28,7 +28,7 @@ import {
   useDeleteCodeSnippet,
   useToggleSnippetFavorite,
   useIncrementSnippetUseCount 
-} from "@/hooks/shared/useCodeSnippets";
+} from "@/hooks/useCodeSnippets";
 import { cn } from "@/lib/utils";
 
 interface CodeSnippetCardProps {
@@ -266,15 +266,3 @@ export function CodeSnippetCard({ snippet, onEdit }: CodeSnippetCardProps) {
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

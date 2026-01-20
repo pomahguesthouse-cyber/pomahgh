@@ -214,15 +214,3 @@ export function useEditBookingState(booking: Booking | null, rooms: Room[] | und
     setHasDateConflict,
   };
 }
-
-
-
-
-
-
-
-
-
-
-
-

@@ -206,15 +206,3 @@ export const bookingMapper = {
   getPaymentStatusLabel: (status: PaymentStatus): string =>
     PAYMENT_STATUS_LABELS[status] || status,
 };
-
-
-
-
-
-
-
-
-
-
-
-

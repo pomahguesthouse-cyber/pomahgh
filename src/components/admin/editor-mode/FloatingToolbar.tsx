@@ -111,15 +111,3 @@ export function FloatingToolbar({ widgetId, isEnabled, onOpenSettings }: Floatin
     </AnimatePresence>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

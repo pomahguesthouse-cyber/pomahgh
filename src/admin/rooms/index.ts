@@ -9,11 +9,11 @@ export { HotspotEditor } from "@/components/admin/HotspotEditor";
 export { PanoramaManager } from "@/components/admin/PanoramaManager";
 
 // Hooks
-export { useAdminRooms } from "@/hooks/admin/useAdminRooms";
-export { useFloorPlanUpload, useUpdatePanoramaPosition, useToggleFloorPlan } from "@/hooks/shared/useFloorPlan";
-export { useRoomPanoramas } from "@/hooks/room/useRoomPanoramas";
-export { useRoomHotspots } from "@/hooks/room/useRoomHotspots";
-export { use360Upload } from "@/hooks/shared/use360Upload";
+export { useAdminRooms } from "@/hooks/useAdminRooms";
+export { useFloorPlanUpload, useUpdatePanoramaPosition, useToggleFloorPlan } from "@/hooks/useFloorPlan";
+export { useRoomPanoramas } from "@/hooks/useRoomPanoramas";
+export { useRoomHotspots } from "@/hooks/useRoomHotspots";
+export { use360Upload } from "@/hooks/use360Upload";
 
 // Types
 export type {
@@ -25,15 +25,3 @@ export type {
   RoomAddon,
   RoomUnavailableDate,
 } from "@/types/room.types";
-
-
-
-
-
-
-
-
-
-
-
-

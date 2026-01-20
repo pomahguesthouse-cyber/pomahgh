@@ -126,15 +126,3 @@ export const AdminChatbotWidget = () => {
     </>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

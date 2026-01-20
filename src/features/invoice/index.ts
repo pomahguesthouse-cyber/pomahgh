@@ -4,23 +4,11 @@
  */
 
 // Components (named export)
-export { InvoicePreviewDialog } from "@/components/booking/InvoicePreviewDialog";
+export { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 
 // Hooks
-export { useInvoice } from "@/hooks/shared/useInvoice";
-export { useInvoiceTemplate } from "@/hooks/shared/useInvoiceTemplate";
+export { useInvoice } from "@/hooks/useInvoice";
+export { useInvoiceTemplate } from "@/hooks/useInvoiceTemplate";
 
 // Types
 export type { InvoiceTemplate } from "@/types/admin.types";
-
-
-
-
-
-
-
-
-
-
-
-

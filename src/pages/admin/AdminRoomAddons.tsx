@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, GripVertical, Coffee, Bed, Car, Clock, UtensilsCrossed, Wifi, Sparkles } from "lucide-react";
-import { useAllRoomAddons, useCreateRoomAddon, useUpdateRoomAddon, useDeleteRoomAddon, RoomAddon, getPriceTypeLabel } from "@/hooks/room/useRoomAddons";
-import { useRooms } from "@/hooks/room/useRooms";
+import { useAllRoomAddons, useCreateRoomAddon, useUpdateRoomAddon, useDeleteRoomAddon, RoomAddon, getPriceTypeLabel } from "@/hooks/useRoomAddons";
+import { useRooms } from "@/hooks/useRooms";
 import { toast } from "sonner";
 
 const ICONS = [
@@ -427,15 +427,3 @@ const AdminRoomAddons = () => {
 };
 
 export default AdminRoomAddons;
-
-
-
-
-
-
-
-
-
-
-
-

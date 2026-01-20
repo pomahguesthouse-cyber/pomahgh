@@ -87,15 +87,3 @@ export interface RoomHotspot {
   target_panorama_id: string | null;
   css_class: string | null;
 }
-
-
-
-
-
-
-
-
-
-
-
-

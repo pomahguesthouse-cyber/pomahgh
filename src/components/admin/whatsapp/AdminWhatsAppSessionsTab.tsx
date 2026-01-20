@@ -143,15 +143,3 @@ const AdminWhatsAppSessionsTab = () => {
 };
 
 export default AdminWhatsAppSessionsTab;
-
-
-
-
-
-
-
-
-
-
-
-

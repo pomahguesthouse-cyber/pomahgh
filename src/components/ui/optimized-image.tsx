@@ -149,15 +149,3 @@ export const OptimizedImage = ({
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

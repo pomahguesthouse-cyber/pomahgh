@@ -31,15 +31,3 @@ export const RoomFeaturesList = ({ features, roomFeatures }: RoomFeaturesListPro
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

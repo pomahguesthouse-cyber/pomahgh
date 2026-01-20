@@ -5,8 +5,8 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Edit2, X, Save } f
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { getWIBToday } from "@/utils/wibTimezone";
-import { useAdminBookings } from "@/hooks/admin/useAdminBookings";
-import { useAdminRooms } from "@/hooks/admin/useAdminRooms";
+import { useAdminBookings } from "@/hooks/useAdminBookings";
+import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { cn } from "@/lib/utils";
 import { DndContext, DragEndEvent, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
@@ -863,15 +863,3 @@ export const BookingCalendarTable = () => {
     </>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

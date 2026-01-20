@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Bed } from "lucide-react";
-import { useHotelSettings } from "@/hooks/shared/useHotelSettings";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
 
 export const ExploreCTA = () => {
   const { settings } = useHotelSettings();
@@ -41,15 +41,3 @@ export const ExploreCTA = () => {
     </section>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

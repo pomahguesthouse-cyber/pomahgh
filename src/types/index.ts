@@ -20,15 +20,3 @@ export * from "./explore.types";
 
 // Re-export database types (auto-generated)
 export type { Database, Json } from "@/integrations/supabase/types";
-
-
-
-
-
-
-
-
-
-
-
-

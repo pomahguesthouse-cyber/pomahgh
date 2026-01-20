@@ -78,15 +78,3 @@ export const ExploreIntro = () => {
     </section>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

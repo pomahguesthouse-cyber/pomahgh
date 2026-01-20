@@ -213,15 +213,3 @@ export const BookingBar = ({
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

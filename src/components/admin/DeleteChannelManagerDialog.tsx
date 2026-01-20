@@ -77,15 +77,3 @@ export const DeleteChannelManagerDialog = ({
     </AlertDialog>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

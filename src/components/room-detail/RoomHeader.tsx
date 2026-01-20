@@ -26,15 +26,3 @@ export const RoomHeader = ({ name, hasVirtualTour, hasPromo }: RoomHeaderProps) 
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

@@ -238,15 +238,3 @@ export const useBookingValidation = () => {
     checkRoomTypeAvailability
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-

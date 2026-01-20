@@ -28,7 +28,7 @@ import {
   useDeleteAdminTrainingExample, 
   useToggleAdminTrainingExample,
   AdminTrainingExample
-} from '@/hooks/admin/useAdminTrainingExamples';
+} from '@/hooks/useAdminTrainingExamples';
 
 const CATEGORIES = [
   { value: 'general', label: 'Umum' },
@@ -355,15 +355,3 @@ const AdminTrainingTab = () => {
 };
 
 export default AdminTrainingTab;
-
-
-
-
-
-
-
-
-
-
-
-

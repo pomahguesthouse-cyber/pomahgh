@@ -173,15 +173,3 @@ export function WidgetManager() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

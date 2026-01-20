@@ -19,14 +19,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/shared/useToast";
+import { useToast } from "@/hooks/use-toast";
 import { 
   PromptTemplate, 
   PROMPT_CATEGORIES,
   useDeletePromptTemplate,
   useToggleFavorite,
   useIncrementUseCount 
-} from "@/hooks/shared/usePromptTemplates";
+} from "@/hooks/usePromptTemplates";
 import { cn } from "@/lib/utils";
 
 interface PromptTemplateCardProps {
@@ -250,15 +250,3 @@ export function PromptTemplateCard({ template, onEdit }: PromptTemplateCardProps
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

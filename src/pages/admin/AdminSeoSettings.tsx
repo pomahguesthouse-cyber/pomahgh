@@ -1,4 +1,4 @@
-import { useSeoSettings } from "@/hooks/seo/useSeoSettings";
+import { useSeoSettings } from "@/hooks/useSeoSettings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { useState, useRef, useEffect } from "react";
 import { Loader2, Upload, RefreshCw, Search, TrendingUp } from "lucide-react";
 import { SeoPreview } from "@/components/admin/SeoPreview";
 import { SeoChecker, RankingsTab } from "@/components/admin/seo-checker";
-import { toast } from "@/hooks/shared/useToast";
+import { toast } from "@/hooks/use-toast";
 
 type SeoSettingsType = Record<string, any>; // fallback safe type
 
@@ -573,15 +573,3 @@ const AdminSeoSettings = () => {
 };
 
 export default AdminSeoSettings;
-
-
-
-
-
-
-
-
-
-
-
-

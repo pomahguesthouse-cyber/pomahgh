@@ -104,15 +104,3 @@ export const RoomCarousel = ({
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

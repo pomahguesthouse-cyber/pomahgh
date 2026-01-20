@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { differenceInDays } from "date-fns";
 import { useBookingValidation } from "./useBookingValidation";
 import { formatWIBDate } from "@/utils/wibTimezone";
-import { BookingAddon } from "@/hooks/room/useRoomAddons";
+import { BookingAddon } from "@/hooks/useRoomAddons";
 
 export interface BookingData {
   room_id: string;
@@ -184,15 +184,3 @@ export const useBooking = () => {
     },
   });
 };
-
-
-
-
-
-
-
-
-
-
-
-

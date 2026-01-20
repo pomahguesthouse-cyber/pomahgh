@@ -72,15 +72,3 @@ export const RoomRow = ({
     </tr>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

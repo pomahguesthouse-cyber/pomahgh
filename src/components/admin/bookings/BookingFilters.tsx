@@ -228,15 +228,3 @@ export function BookingFilters({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

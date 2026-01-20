@@ -123,15 +123,3 @@ export interface WhatsAppSession {
   is_active: boolean;
   context: Record<string, unknown>;
 }
-
-
-
-
-
-
-
-
-
-
-
-

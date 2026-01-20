@@ -3,9 +3,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useHotelSettings, WhatsAppManager, ManagerRole } from "@/hooks/shared/useHotelSettings";
+import { useHotelSettings, WhatsAppManager, ManagerRole } from "@/hooks/useHotelSettings";
 import { Shield, UserCog, MessageSquare, Plus, Trash2, Phone, BookOpen, GraduationCap } from "lucide-react";
-import { toast } from "@/hooks/shared/useToast";
+import { toast } from "@/hooks/use-toast";
 import AdminPersonaSettingsTab from "@/components/admin/AdminPersonaSettingsTab";
 import AdminWhatsAppSessionsTab from "@/components/admin/AdminWhatsAppSessionsTab";
 import AdminKnowledgeBaseTab from "@/components/admin/AdminKnowledgeBaseTab";
@@ -330,15 +330,3 @@ const AdminAdminChatbot = () => {
 };
 
 export default AdminAdminChatbot;
-
-
-
-
-
-
-
-
-
-
-
-

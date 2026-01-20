@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { ThemeConfig, WidgetConfig, WidgetSettings, TemplatePreset } from '@/types/editor.types';
-import { useThemeConfig } from '@/hooks/shared/useThemeConfig';
-import { useWidgetConfig } from '@/hooks/shared/useWidgetConfig';
-import { useTemplatePresets } from '@/hooks/shared/useTemplatePresets';
-import { useElementOverrides } from '@/hooks/shared/useElementOverrides';
+import { useThemeConfig } from '@/hooks/useThemeConfig';
+import { useWidgetConfig } from '@/hooks/useWidgetConfig';
+import { useTemplatePresets } from '@/hooks/useTemplatePresets';
+import { useElementOverrides } from '@/hooks/useElementOverrides';
 import { toast } from 'sonner';
 
 interface HistoryState {
@@ -530,15 +530,3 @@ export function useEditorMode() {
 }
 
 export { EditorModeContext };
-
-
-
-
-
-
-
-
-
-
-
-

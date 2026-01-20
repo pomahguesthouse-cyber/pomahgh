@@ -58,15 +58,3 @@ export function EditorPanel() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

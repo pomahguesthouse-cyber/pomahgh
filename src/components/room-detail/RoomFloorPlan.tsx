@@ -1,4 +1,4 @@
-import { FloorPlanViewer } from "@/components/gallery/FloorPlanViewer";
+import { FloorPlanViewer } from "@/components/FloorPlanViewer";
 import { MapPin } from "lucide-react";
 import type { RoomFloorPlanProps } from "./types";
 
@@ -28,15 +28,3 @@ export const RoomFloorPlan = ({
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

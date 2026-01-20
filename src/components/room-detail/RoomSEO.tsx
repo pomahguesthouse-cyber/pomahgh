@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import type { RoomSEOProps } from "./types";
-import { useSeoSettings } from "@/hooks/seo/useSeoSettings";
+import { useSeoSettings } from "@/hooks/useSeoSettings";
 
 export const RoomSEO = ({ room, images, displayPrice, roomSlug }: RoomSEOProps) => {
   const { settings } = useSeoSettings();
@@ -69,15 +69,3 @@ export const RoomSEO = ({ room, images, displayPrice, roomSlug }: RoomSEOProps) 
     </Helmet>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

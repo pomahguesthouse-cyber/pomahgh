@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { RoomCardInfo } from "./RoomCardInfo";
 import { RoomCardPrice } from "./RoomCardPrice";
 import { RoomFeatures } from "./RoomFeatures";
-import { useWidgetStyles } from "@/hooks/shared/useWidgetStyles";
+import { useWidgetStyles } from "@/hooks/useWidgetStyles";
 import type { RoomCardProps } from "./types";
 import familyChoiceIcon from "@/assets/family-choice-icon.png";
 import { useState } from "react";
@@ -139,15 +139,3 @@ export const RoomCard = ({
     </Link>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-

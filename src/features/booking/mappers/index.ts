@@ -9,15 +9,3 @@ export type {
   BookingListItem,
   BookingCalendarItem,
 } from "./booking.mapper";
-
-
-
-
-
-
-
-
-
-
-
-
