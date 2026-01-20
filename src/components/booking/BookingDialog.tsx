@@ -18,6 +18,7 @@ import { Room } from "@/hooks/room/useRooms";
 import { useBooking, BookingData } from "@/hooks/booking/useBooking";
 import { useHotelSettings } from "@/hooks/shared/useHotelSettings";
 import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
+import { calculateNightlyPrices } from "@/utils/calculateNightlyPrices";
 import { AddonSelector } from "./booking/AddonSelector";
 import { BookingAddon } from "@/hooks/room/useRoomAddons";
 import { z } from "zod";
@@ -246,6 +247,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
   const roomPrice = room ? totalNights * room.price_per_night * roomQuantity : 0;
   const addonsPrice = selectedAddons.reduce((sum, addon) => sum + addon.total_price, 0);
   const totalPrice = roomPrice + addonsPrice;
+  const nightlyPrices = checkIn && checkOut ? calculateNightlyPrices(checkIn, checkOut, room.price_per_night, roomQuantity) : [];
 
   if (!room) return null;
 
@@ -263,6 +265,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
         totalPrice={totalPrice}
         numGuests={formData.num_guests}
         roomQuantity={roomQuantity}
+        nightlyPrices={nightlyPrices}
       />
       <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
