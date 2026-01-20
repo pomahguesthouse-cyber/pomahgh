@@ -12,7 +12,7 @@ export interface MonthlyRevenueData {
 
 export type ChartPeriodFilter = "6months" | "12months" | "thisYear";
 
-// --- DATA DUMMY (Fallback jika tidak ada props data) ---
+// --- DATA DUMMY ---
 const DUMMY_DATA: MonthlyRevenueData[] = [
   { month: "FEB 25", revenue: 0 },
   { month: "MAR 25", revenue: 0 },
@@ -50,7 +50,6 @@ const COLORS = [
   ["#FCA5A5", "#EF4444"], // Red
 ];
 
-// Helper format angka Rupiah
 const formatNumber = (val: number) => {
   return new Intl.NumberFormat("id-ID").format(val);
 };
@@ -62,22 +61,15 @@ interface Props {
   onPeriodChange?: (v: ChartPeriodFilter) => void;
 }
 
-// --- KOMPONEN UTAMA (Export Default untuk mengatasi Error) ---
-export default function MonthlyRevenueChart({
-  data = DUMMY_DATA,
-  period = "12months",
-  onPeriodChange = () => {},
-}: Props) {
-  // Mencari nilai tertinggi untuk skala grafik
+// --- KOMPONEN UTAMA ---
+const MonthlyRevenueChart = ({ data = DUMMY_DATA, period = "12months", onPeriodChange = () => {} }: Props) => {
   const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
   const chartHeight = 350;
-  const bottomOffset = 60; // Tinggi area di bawah garis putus-putus
-  const bubbleSize = 56; // Ukuran lingkaran bulan
+  const bottomOffset = 60;
+  const bubbleSize = 56;
 
   return (
-    // Background Halaman: Krem Lembut (#F9F8F6)
     <div className="min-h-[600px] w-full bg-[#F9F8F6] flex items-center justify-center p-6 sm:p-10">
-      {/* Container Card */}
       <Card className="w-full max-w-7xl mx-auto border-none shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] bg-white rounded-[32px] overflow-hidden">
         {/* Header */}
         <CardHeader className="pt-10 px-8 sm:px-12 pb-2">
@@ -109,33 +101,27 @@ export default function MonthlyRevenueChart({
             className="relative w-full flex items-end justify-between gap-2 sm:gap-4"
             style={{ height: chartHeight }}
           >
-            {/* Garis Putus-putus (Baseline) */}
+            {/* Garis Dasar */}
             <div
               className="absolute left-0 right-0 border-t-[2px] border-dotted border-slate-300 z-0"
               style={{ bottom: bottomOffset }}
             />
 
             {data.map((item, i) => {
-              // Kalkulasi tinggi bar
               const visualHeightAboveLine = (item.revenue / maxRevenue) * (chartHeight - 120);
-              // Tinggi total termasuk bagian bawah garis
               const totalBarHeight = Math.max(visualHeightAboveLine + bottomOffset, bottomOffset + 20);
-
-              // Rotasi warna berdasarkan index
               const colorSet = COLORS[i % COLORS.length];
 
               return (
                 <div key={item.month} className="relative flex flex-col items-center justify-end h-full flex-1 group">
-                  {/* BAR CHART ITEM */}
                   <motion.div
                     initial={{ height: bottomOffset }}
                     animate={{ height: totalBarHeight }}
-                    // --- ANIMASI HOVER ---
                     whileHover={{
-                      scale: 1.05, // Membesar 5%
-                      y: -5, // Naik sedikit
-                      zIndex: 50, // Tampil paling depan
-                      filter: "brightness(1.1)", // Warna lebih terang
+                      scale: 1.05,
+                      y: -5,
+                      zIndex: 50,
+                      filter: "brightness(1.1)",
                     }}
                     transition={{
                       duration: 0.8,
@@ -144,14 +130,12 @@ export default function MonthlyRevenueChart({
                       stiffness: 120,
                       damping: 20,
                     }}
-                    // Rounded-[12px] agar tidak terlalu bulat
                     className="relative w-full rounded-[12px] cursor-pointer flex flex-col items-center"
                     style={{
                       background: `linear-gradient(180deg, ${colorSet[0]} 0%, ${colorSet[1]} 100%)`,
                       boxShadow: `0 10px 30px -10px ${colorSet[1]}66`,
                     }}
                   >
-                    {/* Teks Nominal (Hanya muncul jika nilai > 0) */}
                     {item.revenue > 0 && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
@@ -163,13 +147,12 @@ export default function MonthlyRevenueChart({
                       </motion.div>
                     )}
 
-                    {/* Bubble Bulan (Glassmorphism) */}
                     <div
                       className="absolute flex items-center justify-center rounded-full shadow-sm"
                       style={{
                         width: bubbleSize,
                         height: bubbleSize,
-                        bottom: bottomOffset - bubbleSize / 2, // Posisi overlapping garis
+                        bottom: bottomOffset - bubbleSize / 2,
                         backgroundColor: "rgba(255, 255, 255, 0.2)",
                         backdropFilter: "blur(4px)",
                         border: "1px solid rgba(255,255,255,0.3)",
@@ -191,4 +174,10 @@ export default function MonthlyRevenueChart({
       </Card>
     </div>
   );
-}
+};
+
+// --- DUAL EXPORT (SOLUSI ERROR) ---
+// Ini memungkinkan import { MonthlyRevenueChart } (Named)
+// DAN import MonthlyRevenueChart (Default) bekerja bersamaan.
+export { MonthlyRevenueChart };
+export default MonthlyRevenueChart;
