@@ -25,9 +25,8 @@ const PERIOD_LABEL: Record<ChartPeriodFilter, string> = {
   thisYear: "Tahun Ini",
 };
 
-// Warna disesuaikan dengan palet gambar (Solid & Vibrant)
 const COLORS = [
-  ["#00D4FF", "#00A3FF"], // Cyan (Seperti contoh gambar 1)
+  ["#00D4FF", "#00A3FF"], // Cyan
   ["#4ADE80", "#22C55E"], // Green
   ["#FF8F70", "#FF6B4A"], // Orange
   ["#FACC15", "#EAB308"], // Yellow
@@ -46,13 +45,12 @@ const formatNumber = (val: number) => {
 };
 
 export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: Props) => {
-  // Logic untuk scaling tinggi bar
   const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
   const chartHeight = 320;
 
-  // KONFIGURASI PENTING UNTUK POSISI
-  const bottomOffset = 60; // Tinggi bar yang berada "di bawah" garis putus-putus
-  const bubbleSize = 56; // Ukuran lingkaran bulan
+  // CONFIG VISUAL
+  const bottomOffset = 60;
+  const bubbleSize = 56;
 
   return (
     <Card className="w-full border-none shadow-none bg-white font-sans">
@@ -79,21 +77,15 @@ export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: Props) => 
 
       <CardContent className="px-0 relative">
         <div className="relative w-full flex items-end justify-between px-2" style={{ height: chartHeight }}>
-          {/* --- GARIS DASAR (Dotted Line) --- */}
-          {/* Posisinya fixed di ketinggian `bottomOffset` dari bawah */}
+          {/* GARIS DASAR */}
           <div
             className="absolute left-[-20px] right-[-20px] border-t-[2px] border-dotted border-slate-300 z-0"
             style={{ bottom: bottomOffset }}
           />
 
           {data.map((item, i) => {
-            // Kalkulasi tinggi visual di atas garis
             const visualHeightAboveLine = (item.revenue / maxRevenue) * (chartHeight - 100);
-
-            // Tinggi total bar = Tinggi di atas garis + Tinggi di bawah garis (bottomOffset)
-            // Kita set minimum height supaya bar tetap muncul walau revenue 0 (sebagai "stump")
             const totalBarHeight = Math.max(visualHeightAboveLine + bottomOffset, bottomOffset + 20);
-
             const colorSet = COLORS[i % COLORS.length];
 
             return (
@@ -101,9 +93,8 @@ export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: Props) => 
                 key={item.month}
                 className="relative flex flex-col items-center justify-end h-full flex-1 group px-1"
               >
-                {/* --- CAPSULE BAR --- */}
                 <motion.div
-                  initial={{ height: bottomOffset }} // Mulai dari bawah (stump)
+                  initial={{ height: bottomOffset }}
                   animate={{ height: totalBarHeight }}
                   transition={{
                     duration: 0.8,
@@ -112,16 +103,14 @@ export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: Props) => 
                     stiffness: 120,
                     damping: 20,
                   }}
-                  className="relative w-full max-w-[75px] rounded-[35px] z-10 flex flex-col items-center"
+                  // PERUBAHAN DI SINI: rounded-[12px] (sebelumnya 35px)
+                  className="relative w-full max-w-[75px] rounded-[12px] z-10 flex flex-col items-center"
                   style={{
-                    // Gradient dari atas ke bawah
                     background: `linear-gradient(180deg, ${colorSet[0]} 0%, ${colorSet[1]} 100%)`,
-                    // Shadow halus di belakang bar
                     boxShadow: `0 10px 30px -10px ${colorSet[1]}80`,
                   }}
                 >
-                  {/* TEXT NOMINAL (Selalu di atas) */}
-                  {/* Hanya muncul jika revenue > 0 */}
+                  {/* TEXT NOMINAL */}
                   {item.revenue > 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
@@ -133,14 +122,13 @@ export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: Props) => 
                     </motion.div>
                   )}
 
-                  {/* --- BUBBLE BULAN (Di dalam Bar, Posisi Bawah) --- */}
+                  {/* BUBBLE BULAN */}
                   <div
                     className="absolute flex items-center justify-center rounded-full shadow-sm"
                     style={{
                       width: bubbleSize,
                       height: bubbleSize,
-                      bottom: bottomOffset - bubbleSize / 2, // Posisikan tepat di tengah garis putus-putus
-                      // Membuat efek "Tone-on-Tone" (sedikit lebih terang dari bar)
+                      bottom: bottomOffset - bubbleSize / 2,
                       backgroundColor: "rgba(255, 255, 255, 0.15)",
                       backdropFilter: "blur(2px)",
                       border: "1px solid rgba(255,255,255,0.1)",
