@@ -43,6 +43,7 @@ import AdminCityEvents from "./pages/admin/AdminCityEvents";
 import EventDetail from "./pages/EventDetail";
 import AdminDeveloperTools from "./pages/admin/AdminDeveloperTools";
 import AdminEditorMode from "./pages/admin/AdminEditorMode";
+import ConfirmPayment from "./pages/ConfirmPayment";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -64,6 +65,7 @@ const App = () => (
             <Route path="/explore-semarang/:slug" element={<AttractionDetail />} />
             <Route path="/events/:slug" element={<EventDetail />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/confirm-payment/:bookingId" element={<ConfirmPayment />} />
             <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
           <Route path="/admin/rooms" element={<AdminLayout><AdminRooms /></AdminLayout>} />
