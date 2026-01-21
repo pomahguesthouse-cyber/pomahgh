@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Upload, Loader2, CheckCircle, ImageIcon, AlertCircle, Trash2 } from "lucide-react";
-import { v4 as uuid } from "uuid";
+
+/* ================= TYPES ================= */
 
 interface BookingInfo {
   id: string;
@@ -15,8 +16,21 @@ interface BookingInfo {
   guest_name: string;
   total_price: number;
   status: string;
-  payment_proof_path: string | null;
+  payment_proof_url: string | null; // SIMPAN PATH (PRIVATE)
 }
+
+/* ================= UTILS ================= */
+
+const generateId = () => crypto.randomUUID();
+
+const formatIDR = (value: number) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value);
+
+/* ================= COMPONENT ================= */
 
 const ConfirmPayment = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -34,25 +48,26 @@ const ConfirmPayment = () => {
   const [hotelLogo, setHotelLogo] = useState<string | null>(null);
   const [hotelName, setHotelName] = useState("Hotel");
 
-  // ================= FETCH DATA =================
+  /* ================= FETCH ================= */
+
   useEffect(() => {
     const fetchData = async () => {
       if (!bookingId) return;
 
-      const { data: bookingData, error } = await supabase
+      const { data, error } = await supabase
         .from("bookings")
-        .select("id, booking_code, guest_name, total_price, status, payment_proof_path")
+        .select("id, booking_code, guest_name, total_price, status, payment_proof_url")
         .eq("id", bookingId)
         .single();
 
-      if (error || !bookingData) {
+      if (error || !data) {
         toast.error("Booking tidak ditemukan");
         setLoading(false);
         return;
       }
 
-      setBooking(bookingData);
-      if (bookingData.payment_proof_path) {
+      setBooking(data);
+      if (data.payment_proof_url) {
         setSubmitted(true);
       }
 
@@ -69,7 +84,8 @@ const ConfirmPayment = () => {
     fetchData();
   }, [bookingId]);
 
-  // ================= FILE HANDLER =================
+  /* ================= FILE HANDLER ================= */
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
@@ -95,7 +111,8 @@ const ConfirmPayment = () => {
     setPreview(null);
   };
 
-  // ================= SUBMIT =================
+  /* ================= SUBMIT ================= */
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!booking || uploading) return;
@@ -114,21 +131,21 @@ const ConfirmPayment = () => {
 
     try {
       const ext = file.name.split(".").pop();
-      const filePath = `${booking.id}/${uuid()}.${ext}`;
+      const filePath = `${booking.id}/${generateId()}.${ext}`;
 
-      // Upload PRIVATE
+      // UPLOAD KE PRIVATE BUCKET
       const { error: uploadError } = await supabase.storage.from("payment-proofs").upload(filePath, file, {
-        cacheControl: "3600",
         upsert: false,
+        cacheControl: "3600",
       });
 
       if (uploadError) throw uploadError;
 
-      // Update booking (SIMPAN PATH, BUKAN URL)
+      // UPDATE BOOKING (SIMPAN PATH)
       const { error: updateError } = await supabase
         .from("bookings")
         .update({
-          payment_proof_path: filePath,
+          payment_proof_url: filePath, // PATH, BUKAN URL
           payment_account_holder: accountHolder.trim(),
           status: "waiting_confirmation",
         })
@@ -146,7 +163,8 @@ const ConfirmPayment = () => {
     }
   };
 
-  // ================= UI STATES =================
+  /* ================= UI STATES ================= */
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -182,12 +200,13 @@ const ConfirmPayment = () => {
     );
   }
 
-  // ================= FORM =================
+  /* ================= FORM ================= */
+
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-4">
       <Card className="max-w-md mx-auto">
         <CardHeader className="text-center">
-          {hotelLogo && <img src={hotelLogo} alt={hotelName} className="h-12 mx-auto" />}
+          {hotelLogo && <img src={hotelLogo} alt={hotelName} className="h-12 mx-auto mb-2 object-contain" />}
           <CardTitle>Konfirmasi Pembayaran</CardTitle>
           <CardDescription>
             Booking: <span className="font-mono">{booking.booking_code}</span>
@@ -195,8 +214,17 @@ const ConfirmPayment = () => {
         </CardHeader>
 
         <CardContent>
+          {/* INFO */}
+          <div className="bg-stone-50 rounded-xl p-4 mb-6">
+            <p className="text-xs text-muted-foreground uppercase">Nama Tamu</p>
+            <p className="font-medium">{booking.guest_name}</p>
+
+            <p className="text-xs text-muted-foreground uppercase mt-3">Total Pembayaran</p>
+            <p className="text-xl font-bold text-primary">{formatIDR(booking.total_price)}</p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Upload */}
+            {/* UPLOAD */}
             <div>
               <Label>Bukti Transfer</Label>
               <label className="block mt-2 cursor-pointer">
@@ -212,7 +240,7 @@ const ConfirmPayment = () => {
                   ) : (
                     <>
                       <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-                      <p className="text-sm mt-2">Upload bukti transfer</p>
+                      <p className="text-sm mt-2">Upload bukti transfer (JPG / PNG / WebP)</p>
                     </>
                   )}
                 </div>
@@ -220,7 +248,7 @@ const ConfirmPayment = () => {
               </label>
             </div>
 
-            {/* Account Holder */}
+            {/* ACCOUNT HOLDER */}
             <div>
               <Label>Nama Pemilik Rekening</Label>
               <Input
