@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Upload, Loader2, CheckCircle, ImageIcon, AlertCircle } from "lucide-react";
+import { Upload, Loader2, CheckCircle, ImageIcon, AlertCircle, Trash2 } from "lucide-react";
+import { v4 as uuid } from "uuid";
 
 interface BookingInfo {
   id: string;
@@ -14,51 +15,52 @@ interface BookingInfo {
   guest_name: string;
   total_price: number;
   status: string;
-  payment_proof_url: string | null;
+  payment_proof_path: string | null;
 }
 
 const ConfirmPayment = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
+
   const [booking, setBooking] = useState<BookingInfo | null>(null);
   const [loading, setLoading] = useState(true);
+
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [accountHolder, setAccountHolder] = useState("");
+
   const [uploading, setUploading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
   const [hotelLogo, setHotelLogo] = useState<string | null>(null);
   const [hotelName, setHotelName] = useState("Hotel");
 
+  // ================= FETCH DATA =================
   useEffect(() => {
     const fetchData = async () => {
       if (!bookingId) return;
 
-      // Fetch booking data
-      const { data: bookingData, error: bookingError } = await supabase
+      const { data: bookingData, error } = await supabase
         .from("bookings")
-        .select("id, booking_code, guest_name, total_price, status, payment_proof_url")
+        .select("id, booking_code, guest_name, total_price, status, payment_proof_path")
         .eq("id", bookingId)
         .single();
 
-      if (bookingError) {
-        console.error("Error fetching booking:", bookingError);
+      if (error || !bookingData) {
         toast.error("Booking tidak ditemukan");
-      } else {
-        setBooking(bookingData);
-        if (bookingData.payment_proof_url) {
-          setSubmitted(true);
-        }
+        setLoading(false);
+        return;
       }
 
-      // Fetch hotel settings
-      const { data: settingsData } = await supabase
-        .from("hotel_settings")
-        .select("logo_url, hotel_name")
-        .single();
+      setBooking(bookingData);
+      if (bookingData.payment_proof_path) {
+        setSubmitted(true);
+      }
 
-      if (settingsData) {
-        setHotelLogo(settingsData.logo_url);
-        setHotelName(settingsData.hotel_name);
+      const { data: settings } = await supabase.from("hotel_settings").select("logo_url, hotel_name").single();
+
+      if (settings) {
+        setHotelLogo(settings.logo_url);
+        setHotelName(settings.hotel_name);
       }
 
       setLoading(false);
@@ -67,90 +69,87 @@ const ConfirmPayment = () => {
     fetchData();
   }, [bookingId]);
 
+  // ================= FILE HANDLER =================
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      // Validate file size (max 5MB)
-      if (selectedFile.size > 5 * 1024 * 1024) {
-        toast.error("Ukuran file maksimal 5MB");
-        return;
-      }
+    const selected = e.target.files?.[0];
+    if (!selected) return;
 
-      // Validate file type
-      if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(selectedFile.type)) {
-        toast.error("Format file harus JPG, PNG, atau WebP");
-        return;
-      }
-
-      setFile(selectedFile);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!file) {
-      toast.error("Pilih file bukti transfer");
+    if (selected.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 5MB");
       return;
     }
 
-    if (!accountHolder.trim()) {
-      toast.error("Masukkan nama pemilik rekening");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(selected.type)) {
+      toast.error("Format harus JPG, PNG, atau WebP");
+      return;
+    }
+
+    setFile(selected);
+    const reader = new FileReader();
+    reader.onloadend = () => setPreview(reader.result as string);
+    reader.readAsDataURL(selected);
+  };
+
+  const resetImage = () => {
+    setFile(null);
+    setPreview(null);
+  };
+
+  // ================= SUBMIT =================
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!booking || uploading) return;
+
+    if (booking.status !== "pending_payment") {
+      toast.error("Booking ini tidak menerima pembayaran");
+      return;
+    }
+
+    if (!file || !accountHolder.trim()) {
+      toast.error("Lengkapi data terlebih dahulu");
       return;
     }
 
     setUploading(true);
 
     try {
-      // Upload file to storage
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${bookingId}-${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from("payment-proofs")
-        .upload(fileName, file);
+      const ext = file.name.split(".").pop();
+      const filePath = `${booking.id}/${uuid()}.${ext}`;
 
-      if (uploadError) {
-        throw uploadError;
-      }
+      // Upload PRIVATE
+      const { error: uploadError } = await supabase.storage.from("payment-proofs").upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("payment-proofs")
-        .getPublicUrl(fileName);
+      if (uploadError) throw uploadError;
 
-      // Update booking
+      // Update booking (SIMPAN PATH, BUKAN URL)
       const { error: updateError } = await supabase
         .from("bookings")
         .update({
-          payment_proof_url: urlData.publicUrl,
+          payment_proof_path: filePath,
           payment_account_holder: accountHolder.trim(),
           status: "waiting_confirmation",
         })
-        .eq("id", bookingId);
+        .eq("id", booking.id);
 
-      if (updateError) {
-        throw updateError;
-      }
+      if (updateError) throw updateError;
 
-      toast.success("Bukti pembayaran berhasil dikirim!");
+      toast.success("Bukti pembayaran berhasil dikirim");
       setSubmitted(true);
-    } catch (error) {
-      console.error("Error uploading payment proof:", error);
-      toast.error("Gagal mengirim bukti pembayaran. Silakan coba lagi.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal mengirim bukti pembayaran");
     } finally {
       setUploading(false);
     }
   };
 
+  // ================= UI STATES =================
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -158,15 +157,10 @@ const ConfirmPayment = () => {
 
   if (!booking) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center">
-            <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold">Booking Tidak Ditemukan</h2>
-            <p className="text-muted-foreground mt-2">
-              Link yang Anda gunakan tidak valid atau booking sudah tidak tersedia.
-            </p>
-          </CardContent>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center p-6">
+          <AlertCircle className="h-14 w-14 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold">Booking Tidak Ditemukan</h2>
         </Card>
       </div>
     );
@@ -174,135 +168,78 @@ const ConfirmPayment = () => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-8 pb-8 text-center">
-            <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold">Terima Kasih!</h2>
-            <p className="text-muted-foreground mt-3 leading-relaxed">
-              Bukti pembayaran Anda sudah kami terima dan sedang diproses.
-              <br />
-              Konfirmasi akan dikirim via WhatsApp.
-            </p>
-            <div className="mt-6 bg-stone-100 rounded-lg p-4">
-              <p className="text-sm text-muted-foreground">Kode Booking</p>
-              <p className="font-mono font-bold text-lg">{booking.booking_code}</p>
-            </div>
-          </CardContent>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center p-6">
+          <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold">Terima Kasih!</h2>
+          <p className="text-muted-foreground mt-2">Bukti pembayaran sedang diverifikasi.</p>
+          <div className="mt-4 bg-stone-100 rounded-lg p-3">
+            <p className="text-sm">Kode Booking</p>
+            <p className="font-mono font-bold">{booking.booking_code}</p>
+          </div>
         </Card>
       </div>
     );
   }
 
+  // ================= FORM =================
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-4">
       <Card className="max-w-md mx-auto">
-        <CardHeader className="text-center pb-4">
-          {hotelLogo && (
-            <img
-              src={hotelLogo}
-              alt={hotelName}
-              className="h-14 mx-auto mb-3 object-contain"
-            />
-          )}
-          <CardTitle className="text-xl">Konfirmasi Pembayaran</CardTitle>
+        <CardHeader className="text-center">
+          {hotelLogo && <img src={hotelLogo} alt={hotelName} className="h-12 mx-auto" />}
+          <CardTitle>Konfirmasi Pembayaran</CardTitle>
           <CardDescription>
-            Booking: <span className="font-mono font-semibold">{booking.booking_code}</span>
+            Booking: <span className="font-mono">{booking.booking_code}</span>
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          {/* Booking Info */}
-          <div className="bg-stone-50 rounded-xl p-4 mb-6">
-            <div className="mb-3">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Nama Tamu</p>
-              <p className="font-medium text-base">{booking.guest_name}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Pembayaran</p>
-              <p className="text-2xl font-bold text-primary">
-                Rp {booking.total_price.toLocaleString("id-ID")}
-              </p>
-            </div>
-          </div>
-
-          {/* Upload Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* File Upload */}
+            {/* Upload */}
             <div>
-              <Label className="text-sm font-medium">Bukti Transfer</Label>
-              <div className="mt-2">
-                <label className="block">
-                  <div
-                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-                      preview
-                        ? "border-primary bg-primary/5"
-                        : "border-gray-300 hover:border-primary/50"
-                    }`}
-                  >
-                    {preview ? (
-                      <div className="space-y-3">
-                        <img
-                          src={preview}
-                          alt="Preview"
-                          className="max-h-48 mx-auto rounded-lg object-contain"
-                        />
-                        <p className="text-sm text-muted-foreground">
-                          Tap untuk ganti gambar
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                          <ImageIcon className="h-6 w-6 text-gray-400" />
-                        </div>
-                        <p className="text-sm font-medium">Upload Bukti Transfer</p>
-                        <p className="text-xs text-muted-foreground">
-                          JPG, PNG, atau WebP (Max 5MB)
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                    capture="environment"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
-              </div>
+              <Label>Bukti Transfer</Label>
+              <label className="block mt-2 cursor-pointer">
+                <div className="border-2 border-dashed rounded-xl p-5 text-center">
+                  {preview ? (
+                    <>
+                      <img src={preview} className="max-h-48 mx-auto rounded-lg" />
+                      <Button type="button" variant="ghost" size="sm" onClick={resetImage} className="mt-2">
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Ganti Gambar
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
+                      <p className="text-sm mt-2">Upload bukti transfer</p>
+                    </>
+                  )}
+                </div>
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+              </label>
             </div>
 
-            {/* Account Holder Name */}
+            {/* Account Holder */}
             <div>
-              <Label htmlFor="accountHolder" className="text-sm font-medium">
-                Nama Pemilik Rekening
-              </Label>
+              <Label>Nama Pemilik Rekening</Label>
               <Input
-                id="accountHolder"
-                type="text"
-                placeholder="Masukkan nama sesuai rekening"
                 value={accountHolder}
                 onChange={(e) => setAccountHolder(e.target.value)}
+                placeholder="Sesuai rekening"
                 className="mt-2"
               />
             </div>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-12 text-base"
-              disabled={uploading || !file || !accountHolder.trim()}
-            >
+            <Button type="submit" className="w-full h-12" disabled={uploading || !file || !accountHolder.trim()}>
               {uploading ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   Mengirim...
                 </>
               ) : (
                 <>
-                  <Upload className="mr-2 h-5 w-5" />
+                  <Upload className="h-5 w-5 mr-2" />
                   Kirim Bukti Pembayaran
                 </>
               )}
