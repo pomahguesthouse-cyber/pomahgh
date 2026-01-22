@@ -191,26 +191,33 @@ export const ManagerCalendarView: React.FC<ManagerCalendarViewProps> = ({
                       return null;
                     }
 
+                    // Cell width constant (min-w-14 = 56px)
+                    const cellWidth = 56;
+                    
                     return (
                       <div
                         key={date.toISOString()}
                         className={cn(
-                          "flex-1 min-w-14 h-10 border-r relative",
+                          "flex-1 min-w-14 h-10 border-r relative overflow-visible",
                           isToday && "bg-primary/5",
                           isBlocked && !bookingInfo && "bg-red-100 dark:bg-red-950"
                         )}
-                        style={bookingInfo ? { 
-                          gridColumn: `span ${bookingInfo.span}`,
-                          flex: `${bookingInfo.span} 0 0%`,
-                          minWidth: `${bookingInfo.span * 56}px`
-                        } : undefined}
                       >
+                        {/* Center divider line like admin calendar */}
+                        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/30" />
+                        
                         {bookingInfo && bookingInfo.isStart && (
                           <div
                             className={cn(
-                              "absolute inset-1 rounded text-white text-xs px-1.5 py-0.5 overflow-hidden",
+                              "absolute top-1 bottom-1 rounded text-white text-xs px-1.5 py-0.5 overflow-hidden z-10",
                               STATUS_COLORS[bookingInfo.booking.status] || "bg-gray-500"
                             )}
+                            style={{
+                              // Start at center of check-in cell (like admin calendar)
+                              left: `${cellWidth / 2}px`,
+                              // Width spans from center of check-in to center of check-out
+                              width: `${bookingInfo.span * cellWidth}px`,
+                            }}
                             title={`${bookingInfo.booking.guest_name} (${bookingInfo.booking.booking_code})`}
                           >
                             <div className="font-medium truncate">
