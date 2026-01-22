@@ -43,6 +43,8 @@ import AdminCityEvents from "./pages/admin/AdminCityEvents";
 import EventDetail from "./pages/EventDetail";
 import AdminDeveloperTools from "./pages/admin/AdminDeveloperTools";
 import AdminEditorMode from "./pages/admin/AdminEditorMode";
+import ManagerCalendar from "./pages/public/ManagerCalendar";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -90,6 +92,7 @@ const App = () => (
           <Route path="/admin/competitor-analysis" element={<AdminCompetitorAnalysis />} />
           <Route path="/admin/developer-tools" element={<AdminLayout><AdminDeveloperTools /></AdminLayout>} />
           <Route path="/admin/editor" element={<AdminEditorMode />} />
+          <Route path="/manager/view-calendar/:token" element={<ManagerCalendar />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
