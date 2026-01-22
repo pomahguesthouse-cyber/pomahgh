@@ -3,25 +3,14 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { formatRupiahID } from "@/utils/indonesianFormat";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface MonthlyRevenueData {
   month: string;
   revenue: number;
 }
 
-export type ChartPeriodFilter = "6months" | "12months" | "thisYear";
-
 interface MonthlyRevenueChartProps {
   data: MonthlyRevenueData[];
-  period: ChartPeriodFilter;
-  onPeriodChange: (period: ChartPeriodFilter) => void;
 }
 
 const chartConfig = {
@@ -31,13 +20,7 @@ const chartConfig = {
   },
 };
 
-const periodLabels: Record<ChartPeriodFilter, string> = {
-  "6months": "6 bulan terakhir",
-  "12months": "12 bulan terakhir",
-  thisYear: "tahun ini",
-};
-
-export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: MonthlyRevenueChartProps) => {
+export const MonthlyRevenueChart = ({ data }: MonthlyRevenueChartProps) => {
   const hasData = data.some((d) => d.revenue > 0);
 
   return (
@@ -46,22 +29,10 @@ export const MonthlyRevenueChart = ({ data, period, onPeriodChange }: MonthlyRev
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-base font-semibold font-poppins">Grafik Pendapatan Bulanan</CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">Performa {periodLabels[period]}</p>
+            <p className="text-xs text-muted-foreground mt-1">Performa 12 bulan terakhir</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={period} onValueChange={(value) => onPeriodChange(value as ChartPeriodFilter)}>
-              <SelectTrigger className="w-[150px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="6months">6 Bulan Terakhir</SelectItem>
-                <SelectItem value="12months">12 Bulan Terakhir</SelectItem>
-                <SelectItem value="thisYear">Tahun Ini</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="p-2 rounded-xl bg-primary/10">
-              <TrendingUp className="h-4 w-4 text-primary" />
-            </div>
+          <div className="p-2 rounded-xl bg-primary/10">
+            <TrendingUp className="h-4 w-4 text-primary" />
           </div>
         </div>
       </CardHeader>

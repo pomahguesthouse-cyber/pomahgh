@@ -1,79 +1,116 @@
-// ================= DATE HELPERS (WIB) =================
+// lib/dateHelpers.ts
+// =======================================================
+// DATE HELPERS (WIB SAFE, BACKWARD COMPATIBLE, STABLE)
+// =======================================================
 
-const WIB_TIMEZONE = "Asia/Jakarta";
+/* ================= BASIC WIB HELPERS ================= */
 
 /**
- * Get current Date object in WIB timezone
+ * Get current Date object in WIB
  */
 export function getWibDate(): Date {
   const now = new Date();
-  return new Date(now.toLocaleString("en-US", { timeZone: WIB_TIMEZONE }));
+  return new Date(now.getTime() + 7 * 60 * 60 * 1000);
 }
 
 /**
- * Format Date to YYYY-MM-DD
+ * Format Date or date-string to YYYY-MM-DD
  */
-export function formatDateISO(date: Date): string {
-  return date.toISOString().split("T")[0];
+export function formatDateISO(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toISOString().split("T")[0];
 }
 
 /**
- * Get current time in WIB as HH:mm
+ * Get today date in WIB (YYYY-MM-DD)
+ */
+export function getTodayWIB(): string {
+  return formatDateISO(getWibDate());
+}
+
+/**
+ * Get current time in WIB (HH:mm)
  */
 export function getCurrentTimeWIB(): string {
-  const now = getWibDate();
-  return now.toTimeString().slice(0, 5);
+  const d = getWibDate();
+  return d.toISOString().split("T")[1].slice(0, 5);
 }
 
 /**
- * Compare current WIB time with given HH:mm
+ * Compare current WIB time with target time (HH:mm)
  */
-export function isBeforeTime(compareTime: string): boolean {
+export function isBeforeTime(targetTime: string): boolean {
   const now = getCurrentTimeWIB();
-  return now < compareTime;
+  return now < targetTime;
+}
+
+/* ================= NORMALIZATION ================= */
+
+/**
+ * Normalize date to WIB date-only (YYYY-MM-DD)
+ */
+export function normalizeDateWIB(date: string | Date): string {
+  return formatDateISO(typeof date === "string" ? new Date(date) : date);
 }
 
 /**
- * Format date to Indonesian format
- * 2026-01-19 -> 19 Januari 2026
+ * Check if target date is inside stay period
+ * check_out is EXCLUSIVE
  */
-export function formatDateIndonesian(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("id-ID", {
-    day: "2-digit",
+export function isDateInStay(checkIn: string, checkOut: string, targetDate: string): boolean {
+  const inDate = normalizeDateWIB(checkIn);
+  const outDate = normalizeDateWIB(checkOut);
+  const target = normalizeDateWIB(targetDate);
+
+  return inDate <= target && target < outDate;
+}
+
+/* ================= FORMATTING ================= */
+
+/**
+ * Indonesian human-readable date
+ * contoh: 19 Januari 2026
+ */
+export function formatDateIndonesian(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric",
     month: "long",
     year: "numeric",
-    timeZone: WIB_TIMEZONE,
   });
 }
 
+/* ================= CHATBOT DATE REFERENCES ================= */
+
 /**
- * Date references for chatbot/system prompt
+ * Date references for chatbot & system prompt
  */
 export function getDateReferences() {
-  const today = getWibDate();
+  const today = getTodayWIB();
+  const base = new Date(today);
 
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
+  const yesterday = new Date(base);
+  yesterday.setDate(base.getDate() - 1);
 
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
+  const tomorrow = new Date(base);
+  tomorrow.setDate(base.getDate() + 1);
 
-  const lusa = new Date(today);
-  lusa.setDate(today.getDate() + 2);
+  const lusa = new Date(base);
+  lusa.setDate(base.getDate() + 2);
 
-  // Nearest weekend (Saturday)
-  const weekend = new Date(today);
-  const day = weekend.getDay(); // 0 = Minggu
-  const daysUntilSaturday = (6 - day + 7) % 7;
-  weekend.setDate(today.getDate() + daysUntilSaturday);
+  // Cari Sabtu terdekat (weekend)
+  const weekend = new Date(base);
+  const day = weekend.getDay(); // 0=Sun, 6=Sat
+  const daysToSaturday = (6 - day + 7) % 7 || 7;
+  weekend.setDate(base.getDate() + daysToSaturday);
 
   return {
-    today: formatDateISO(today),
+    today,
     yesterday: formatDateISO(yesterday),
     tomorrow: formatDateISO(tomorrow),
     lusa: formatDateISO(lusa),
     weekend: formatDateISO(weekend),
-    today_human: formatDateIndonesian(formatDateISO(today)),
+    today_indonesian: formatDateIndonesian(today),
   };
 }

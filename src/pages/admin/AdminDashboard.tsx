@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   differenceInDays,
   parseISO,
@@ -8,7 +8,6 @@ import {
   subMonths,
   format,
   isSameMonth,
-  startOfYear,
 } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import {
@@ -30,7 +29,7 @@ import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookingCalendar } from "@/components/admin/booking-calendar";
 import { ArrivingDepartingWidgets } from "@/components/admin/ArrivingDepartingWidgets";
-import { MonthlyRevenueChart, ChartPeriodFilter } from "@/components/admin/MonthlyRevenueChart";
+import { MonthlyRevenueChart } from "@/components/admin/MonthlyRevenueChart";
 import { DaysAvailabilityCalendar } from "@/components/admin/DaysAvailabilityCalendar";
 
 import { formatRupiahID } from "@/utils/indonesianFormat";
@@ -49,7 +48,6 @@ const getGreeting = () => {
 const AdminDashboard = () => {
   const { bookings } = useAdminBookings();
   const { rooms } = useAdminRooms();
-  const [chartPeriod, setChartPeriod] = useState<ChartPeriodFilter>("12months");
 
   const analytics = useMemo(() => {
     if (!bookings || !rooms) return null;
@@ -135,37 +133,18 @@ const AdminDashboard = () => {
       .sort((a, b) => b.revenue - a.revenue);
 
     /* ---------- CHART ---------- */
-    const getMonthlyRevenueData = () => {
-      if (chartPeriod === "6months") {
-        return Array.from({ length: 6 }, (_, i) => {
-          const date = subMonths(now, 5 - i);
-          const revenue = confirmedBookings
-            .filter((b) => isSameMonth(parseISO(b.created_at), date))
-            .reduce((s, b) => s + Number(b.total_price), 0);
-          return { month: format(date, "MMM yy", { locale: localeId }), revenue };
-        });
-      } else if (chartPeriod === "thisYear") {
-        const yearStart = startOfYear(now);
-        const currentMonth = now.getMonth();
-        return Array.from({ length: currentMonth + 1 }, (_, i) => {
-          const date = new Date(now.getFullYear(), i, 1);
-          const revenue = confirmedBookings
-            .filter((b) => isSameMonth(parseISO(b.created_at), date))
-            .reduce((s, b) => s + Number(b.total_price), 0);
-          return { month: format(date, "MMM yy", { locale: localeId }), revenue };
-        });
-      } else {
-        return Array.from({ length: 12 }, (_, i) => {
-          const date = subMonths(now, 11 - i);
-          const revenue = confirmedBookings
-            .filter((b) => isSameMonth(parseISO(b.created_at), date))
-            .reduce((s, b) => s + Number(b.total_price), 0);
-          return { month: format(date, "MMM yy", { locale: localeId }), revenue };
-        });
-      }
-    };
-
-    const monthlyRevenueData = getMonthlyRevenueData();
+    const monthlyRevenueData = Array.from({ length: 12 }, (_, i) => {
+      const date = subMonths(now, 11 - i);
+      const revenue = confirmedBookings
+        .filter((b) => isSameMonth(parseISO(b.created_at), date))
+        .reduce((s, b) => s + Number(b.total_price), 0);
+      return {
+        month: format(date, "MMM yy", {
+          locale: localeId,
+        }),
+        revenue,
+      };
+    });
 
     return {
       todayCheckIns,
@@ -182,7 +161,7 @@ const AdminDashboard = () => {
       totalBookings: bookings.length,
       confirmedBookings: confirmedBookings.length,
     };
-  }, [bookings, rooms, chartPeriod]);
+  }, [bookings, rooms]);
 
   if (!analytics) return null;
 
@@ -216,11 +195,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Chart */}
-      <MonthlyRevenueChart 
-        data={analytics.monthlyRevenueData} 
-        period={chartPeriod}
-        onPeriodChange={setChartPeriod}
-      />
+      <MonthlyRevenueChart data={analytics.monthlyRevenueData} />
 
       {/* Revenue by Room */}
       <Card>
