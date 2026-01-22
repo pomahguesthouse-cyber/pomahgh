@@ -59,6 +59,7 @@ export const ROLE_TOOL_ACCESS: Record<ManagerRole, string[] | 'all'> = {
     'get_room_prices',
     'send_checkin_reminder',
     'get_today_guests',
+    'send_calendar_link',
     // EXCLUDED: get_booking_stats, update_room_price (no revenue/price control)
   ],
   viewer: [
@@ -66,6 +67,7 @@ export const ROLE_TOOL_ACCESS: Record<ManagerRole, string[] | 'all'> = {
     'get_room_inventory',
     'get_room_prices',
     'get_today_guests',
+    'send_calendar_link',
   ]
 };
 
