@@ -418,7 +418,9 @@ export type Database = {
           num_guests: number
           ota_name: string | null
           other_source: string | null
+          payment_account_holder: string | null
           payment_amount: number | null
+          payment_proof_url: string | null
           payment_status: string | null
           remark: string | null
           room_id: string
@@ -445,7 +447,9 @@ export type Database = {
           num_guests?: number
           ota_name?: string | null
           other_source?: string | null
+          payment_account_holder?: string | null
           payment_amount?: number | null
+          payment_proof_url?: string | null
           payment_status?: string | null
           remark?: string | null
           room_id: string
@@ -472,7 +476,9 @@ export type Database = {
           num_guests?: number
           ota_name?: string | null
           other_source?: string | null
+          payment_account_holder?: string | null
           payment_amount?: number | null
+          payment_proof_url?: string | null
           payment_status?: string | null
           remark?: string | null
           room_id?: string
@@ -1776,6 +1782,39 @@ export type Database = {
         }
         Relationships: []
       }
+      manager_access_tokens: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          last_accessed_at: string | null
+          name: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_accessed_at?: string | null
+          name: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_accessed_at?: string | null
+          name?: string
+          token?: string
+        }
+        Relationships: []
+      }
       nearby_locations: {
         Row: {
           category: string
@@ -2903,6 +2942,7 @@ export type Database = {
         }[]
       }
       generate_booking_code: { Args: never; Returns: string }
+      generate_manager_token: { Args: never; Returns: string }
       get_manager_role: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
