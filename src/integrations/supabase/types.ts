@@ -418,9 +418,7 @@ export type Database = {
           num_guests: number
           ota_name: string | null
           other_source: string | null
-          payment_account_holder: string | null
           payment_amount: number | null
-          payment_proof_url: string | null
           payment_status: string | null
           remark: string | null
           room_id: string
@@ -447,9 +445,7 @@ export type Database = {
           num_guests?: number
           ota_name?: string | null
           other_source?: string | null
-          payment_account_holder?: string | null
           payment_amount?: number | null
-          payment_proof_url?: string | null
           payment_status?: string | null
           remark?: string | null
           room_id: string
@@ -476,9 +472,7 @@ export type Database = {
           num_guests?: number
           ota_name?: string | null
           other_source?: string | null
-          payment_account_holder?: string | null
           payment_amount?: number | null
-          payment_proof_url?: string | null
           payment_status?: string | null
           remark?: string | null
           room_id?: string
