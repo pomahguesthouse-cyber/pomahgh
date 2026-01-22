@@ -100,3 +100,37 @@ export async function sendCheckinReminder(supabase: any, dateStr?: string) {
     details: sendResults
   };
 }
+
+export async function sendCalendarLink(supabase: any, message?: string) {
+  // 1. Get active token from manager_access_tokens
+  const { data: token, error: tokenError } = await supabase
+    .from('manager_access_tokens')
+    .select('token, name')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  
+  if (tokenError || !token) {
+    return {
+      success: false,
+      error: "Tidak ada token calendar aktif. Hubungi admin untuk membuat token akses calendar."
+    };
+  }
+  
+  // 2. Generate URL
+  const baseUrl = Deno.env.get("SITE_URL") || "https://pomahgh.lovable.app";
+  const calendarUrl = `${baseUrl}/manager/view-calendar/${token.token}`;
+  
+  // 3. Format response message
+  const responseMessage = message 
+    ? `${message}\n\n📅 *Link Calendar*\n${calendarUrl}`
+    : `📅 *Link Booking Calendar*\n\nKlik link berikut untuk melihat jadwal booking secara real-time:\n\n${calendarUrl}\n\n_Link ini dapat diakses langsung dari browser dan dioptimalkan untuk mobile._`;
+  
+  return {
+    success: true,
+    calendar_url: calendarUrl,
+    token_name: token.name,
+    formatted_message: responseMessage
+  };
+}

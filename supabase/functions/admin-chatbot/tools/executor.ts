@@ -7,7 +7,7 @@ import { getAvailabilitySummary, getTodayGuests } from "./availability.ts";
 import { getBookingStats, getRecentBookings, searchBookings, getBookingDetail } from "./bookingStats.ts";
 import { createAdminBooking, updateBookingStatus, updateGuestInfo, rescheduleBooking, changeBookingRoom } from "./bookingMutations.ts";
 import { getRoomInventory, updateRoomPrice, getRoomPrices } from "./roomManagement.ts";
-import { sendCheckinReminder } from "./notifications.ts";
+import { sendCheckinReminder, sendCalendarLink } from "./notifications.ts";
 
 /**
  * Execute a tool with role re-validation
@@ -95,6 +95,9 @@ async function executeTool(supabase: any, toolName: string, args: any): Promise<
     
     case 'get_today_guests':
       return await getTodayGuests(supabase, args.type, args.date);
+    
+    case 'send_calendar_link':
+      return await sendCalendarLink(supabase, args.message);
     
     default:
       throw new Error(`Unknown tool: ${toolName}`);

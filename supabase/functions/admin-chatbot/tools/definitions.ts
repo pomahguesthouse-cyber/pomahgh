@@ -91,106 +91,38 @@ export const TOOLS: ToolDefinition[] = [
       }
     }
   },
-  {
-    type: "function",
-    function: {
-      name: "send_checkin_reminder",
-      description: "Kirim reminder daftar tamu check-in hari ini ke manager via WhatsApp",
-      parameters: {
-        type: "object",
-        properties: {
-          date: { type: "string", description: "Tanggal check-in (YYYY-MM-DD), default hari ini" }
+    {
+      type: "function",
+      function: {
+        name: "send_checkin_reminder",
+        description: "Kirim reminder check-in WhatsApp ke semua tamu yang check-in pada tanggal tertentu",
+        parameters: {
+          type: "object",
+          properties: {
+            date: {
+              type: "string",
+              description: "Tanggal check-in dalam format YYYY-MM-DD"
+            }
+          }
         }
       }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "update_room_price",
-      description: "Update harga kamar (main/daily/promo)",
-      parameters: {
-        type: "object",
-        properties: {
-          room_name: { type: "string", description: "Nama kamar" },
-          price_type: { 
-            type: "string", 
-            enum: ["main", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "weekday", "weekend", "promo"],
-            description: "Jenis harga"
-          },
-          new_price: { type: "number", description: "Harga baru (Rupiah)" },
-          promo_start_date: { type: "string", description: "Tanggal mulai promo" },
-          promo_end_date: { type: "string", description: "Tanggal akhir promo" }
-        },
-        required: ["room_name", "price_type", "new_price"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_room_prices",
-      description: "Lihat daftar harga kamar termasuk harga harian dan promo",
-      parameters: {
-        type: "object",
-        properties: {
-          room_name: { type: "string", description: "Nama kamar spesifik (opsional)" }
+    },
+    {
+      type: "function",
+      function: {
+        name: "send_calendar_link",
+        description: "Kirim link calendar booking ke pengguna. Gunakan saat manager minta 'lihat jadwal', 'cek kalender', 'schedule booking', 'tampilkan calendar', 'view calendar', atau minta informasi visual tentang jadwal booking.",
+        parameters: {
+          type: "object",
+          properties: {
+            message: {
+              type: "string",
+              description: "Pesan tambahan untuk menyertai link (opsional)"
+            }
+          }
         }
       }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_today_guests",
-      description: "Daftar tamu hari ini (check-in/checkout/menginap)",
-      parameters: {
-        type: "object",
-        properties: {
-          type: { 
-            type: "string", 
-            enum: ["checkin", "checkout", "staying", "all"],
-            description: "Jenis data"
-          },
-          date: { type: "string", description: "Tanggal target (YYYY-MM-DD)" }
-        }
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_booking_detail",
-      description: "Lihat detail lengkap satu booking",
-      parameters: {
-        type: "object",
-        properties: {
-          booking_code: { type: "string", description: "Kode booking (BK-XXXX)" }
-        },
-        required: ["booking_code"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "update_booking_status",
-      description: "Ubah status booking (confirm/cancel/pending)",
-      parameters: {
-        type: "object",
-        properties: {
-          booking_code: { type: "string", description: "Kode booking" },
-          new_status: { 
-            type: "string", 
-            enum: ["confirmed", "pending", "cancelled"],
-            description: "Status baru"
-          },
-          cancellation_reason: { type: "string", description: "Alasan pembatalan (opsional)" }
-        },
-        required: ["booking_code", "new_status"]
-      }
-    }
-  },
+    },
   {
     type: "function",
     function: {
