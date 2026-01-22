@@ -1,159 +1,146 @@
 // ============= BOOKING STATS TOOLS =============
-// File ini aman untuk statistik & pencarian booking
-// ❌ BUKAN sumber kebenaran tamu menginap
 
 import { getWibDate, formatDateISO } from "../lib/dateHelpers.ts";
 
-/* ================= TYPES ================= */
+export async function getBookingStats(supabase: any, period: string) {
+  const wibTime = getWibDate();
+  const today = formatDateISO(wibTime);
 
-export interface BookingRow {
-  booking_code: string;
-  guest_name: string;
-  guest_phone?: string;
-  check_in: string;
-  check_out: string;
-  status: "confirmed" | "cancelled" | "checked_in" | "checked_out";
-  total_price: number;
-  created_at: string;
-  rooms?: {
-    name: string;
-  } | null;
-}
+  let query = supabase.from('bookings').select('id, status, total_price, created_at');
 
-/* ================= BOOKING STATS ================= */
-
-/**
- * Statistik booking BERDASARKAN created_at
- */
-export async function getBookingStats(supabase: unknown, period: "today" | "week" | "month") {
-  const client = supabase as any;
-  const wibDate = getWibDate();
-  const today = formatDateISO(wibDate);
-
-  let query = client.from("bookings").select("status, total_price, created_at");
-
-  if (period === "today") {
-    query = query.eq("created_at::date", today);
+  if (period === 'today') {
+    query = query.eq('created_at::date', today);
+  } else if (period === 'week') {
+    const weekAgo = new Date(wibTime.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    query = query.gte('created_at', weekAgo);
+  } else if (period === 'month') {
+    const monthAgo = new Date(wibTime.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    query = query.gte('created_at', monthAgo);
   }
 
-  if (period === "week") {
-    const d = new Date(wibDate);
-    d.setDate(d.getDate() - 7);
-    query = query.gte("created_at", formatDateISO(d));
-  }
-
-  if (period === "month") {
-    const d = new Date(wibDate);
-    d.setMonth(d.getMonth() - 1);
-    query = query.gte("created_at", formatDateISO(d));
-  }
-
-  const { data, error } = await query;
+  const { data: bookings, error } = await query;
   if (error) throw error;
 
-  const rows: Pick<BookingRow, "status" | "total_price">[] = data ?? [];
+  const stats = {
+    total_bookings: bookings?.length || 0,
+    confirmed: bookings?.filter((b: any) => b.status === 'confirmed').length || 0,
+    pending: bookings?.filter((b: any) => b.status === 'pending').length || 0,
+    cancelled: bookings?.filter((b: any) => b.status === 'cancelled').length || 0,
+    total_revenue: bookings?.filter((b: any) => b.status === 'confirmed')
+      .reduce((sum: number, b: any) => sum + (b.total_price || 0), 0) || 0
+  };
+
+  return { period, ...stats };
+}
+
+export async function getRecentBookings(supabase: any, limit: number = 5, status?: string) {
+  const actualLimit = Math.min(Math.max(limit || 5, 1), 20);
+  
+  let queryBuilder = supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, rooms(name)')
+    .order('created_at', { ascending: false })
+    .limit(actualLimit);
+
+  if (status && status !== 'all') {
+    queryBuilder = queryBuilder.eq('status', status);
+  }
+
+  const { data, error } = await queryBuilder;
+  if (error) throw error;
 
   return {
-    total_bookings: rows.length,
-    confirmed: rows.filter((b) => b.status === "confirmed").length,
-    cancelled: rows.filter((b) => b.status === "cancelled").length,
-    checked_in: rows.filter((b) => b.status === "checked_in").length,
-    checked_out: rows.filter((b) => b.status === "checked_out").length,
-    total_revenue: rows.reduce((sum: number, b) => sum + (b.total_price ?? 0), 0),
-    period,
-    date_reference: today,
+    count: data.length,
+    bookings: data.map((b: any) => ({
+      booking_code: b.booking_code,
+      guest_name: b.guest_name,
+      guest_phone: b.guest_phone,
+      room_name: b.rooms?.name,
+      check_in: b.check_in,
+      check_out: b.check_out,
+      status: b.status,
+      total_price: b.total_price,
+      created_at: b.created_at
+    }))
   };
 }
 
-/* ================= RECENT BOOKINGS ================= */
+export async function searchBookings(supabase: any, query?: string, dateFrom?: string, dateTo?: string, limit: number = 10) {
+  const actualLimit = Math.min(Math.max(limit || 10, 1), 50);
+  
+  let queryBuilder = supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, rooms(name)')
+    .order('created_at', { ascending: false })
+    .limit(actualLimit);
 
-/**
- * Dipakai executor.ts
- * limit & status OPTIONAL
- */
-export async function getRecentBookings(supabase: unknown, limit = 5, status?: BookingRow["status"]) {
-  const client = supabase as any;
-
-  let query = client
-    .from("bookings")
-    .select("booking_code, guest_name, check_in, check_out, status, total_price, rooms(name)")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (status) {
-    query = query.eq("status", status);
+  if (query) {
+    queryBuilder = queryBuilder.or(`guest_name.ilike.%${query}%,booking_code.ilike.%${query}%`);
   }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return data as BookingRow[];
-}
-
-/* ================= SEARCH BOOKINGS ================= */
-
-/**
- * Dipakai executor.ts
- * Support:
- * - keyword
- * - date_from
- * - date_to
- * - limit
- */
-export async function searchBookings(
-  supabase: unknown,
-  keyword: string,
-  dateFrom?: string,
-  dateTo?: string,
-  limit = 10,
-) {
-  const client = supabase as any;
-
-  let query = client
-    .from("bookings")
-    .select("booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, rooms(name)")
-    .or(`booking_code.ilike.%${keyword}%,guest_name.ilike.%${keyword}%`)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
   if (dateFrom) {
-    query = query.gte("check_in", dateFrom);
+    queryBuilder = queryBuilder.gte('check_in', dateFrom);
   }
-
   if (dateTo) {
-    query = query.lte("check_out", dateTo);
+    queryBuilder = queryBuilder.lte('check_out', dateTo);
   }
 
-  const { data, error } = await query;
+  const { data, error } = await queryBuilder;
   if (error) throw error;
 
-  return data as BookingRow[];
+  return {
+    query: query || null,
+    count: data?.length || 0,
+    bookings: data?.map((b: any) => ({
+      booking_code: b.booking_code,
+      guest_name: b.guest_name,
+      guest_phone: b.guest_phone,
+      room_name: b.rooms?.name,
+      check_in: b.check_in,
+      check_out: b.check_out,
+      status: b.status,
+      total_price: b.total_price
+    })) || []
+  };
 }
 
-/* ================= BOOKING DETAIL ================= */
-
-export async function getBookingDetail(supabase: unknown, bookingCode: string) {
-  const client = supabase as any;
-
-  const { data, error } = await client
-    .from("bookings")
-    .select(
-      `
-      booking_code,
-      guest_name,
-      guest_phone,
-      check_in,
-      check_out,
-      status,
-      num_guests,
-      total_price,
-      allocated_room_number,
-      rooms(name)
-    `,
-    )
-    .eq("booking_code", bookingCode)
+export async function getBookingDetail(supabase: any, bookingCode: string) {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*, rooms(name, price_per_night, max_guests)')
+    .eq('booking_code', bookingCode)
     .single();
 
-  if (error) throw error;
-  return data as BookingRow;
+  if (error || !data) {
+    throw new Error(`Booking ${bookingCode} tidak ditemukan`);
+  }
+
+  return {
+    booking_code: data.booking_code,
+    status: data.status,
+    guest: {
+      name: data.guest_name,
+      phone: data.guest_phone,
+      email: data.guest_email,
+      count: data.num_guests
+    },
+    room: {
+      name: data.rooms?.name,
+      number: data.allocated_room_number,
+      price_per_night: data.rooms?.price_per_night,
+      max_guests: data.rooms?.max_guests
+    },
+    dates: {
+      check_in: data.check_in,
+      check_out: data.check_out,
+      nights: data.total_nights
+    },
+    payment: {
+      total_price: data.total_price,
+      payment_status: data.payment_status,
+      payment_amount: data.payment_amount
+    },
+    booking_source: data.booking_source,
+    special_requests: data.special_requests,
+    created_at: data.created_at
+  };
 }

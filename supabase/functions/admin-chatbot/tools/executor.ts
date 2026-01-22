@@ -1,224 +1,102 @@
-// ============= EXECUTOR =============
-// - Validasi role
-// - Normalisasi input dari LLM
-// - Dispatch ke tool
-// - ADMIN-GRADE (no asumsi)
+// ============= TOOL EXECUTOR WITH ROLE VALIDATION =============
 
+import { isToolAllowed } from "../lib/toolFilter.ts";
+import type { ManagerRole } from "../lib/constants.ts";
+
+import { getAvailabilitySummary, getTodayGuests } from "./availability.ts";
 import { getBookingStats, getRecentBookings, searchBookings, getBookingDetail } from "./bookingStats.ts";
-
-import { getAvailabilitySummary } from "./availability.ts";
-
-import { getTodayWIB, getCurrentTimeWIB } from "../lib/dateHelpers.ts";
-
-/* ================= TYPES ================= */
-
-export type BookingStatus = "confirmed" | "cancelled" | "checked_in" | "checked_out";
-
-export interface ExecutorArgs {
-  period?: "today" | "week" | "month";
-  limit?: number;
-  status?: string;
-  query?: string;
-  date_from?: string;
-  date_to?: string;
-  check_in?: string;
-  check_out?: string;
-  booking_code?: string;
-}
-
-export interface ExecutorResult {
-  type: "stats" | "list" | "detail" | "availability" | "error";
-  data: unknown;
-  note?: string;
-}
-
-/* ================= ROLE GUARD ================= */
-
-const MANAGER_ROLES = new Set(["manager", "admin", "owner"]);
-
-function isManagerRole(role: string): boolean {
-  return MANAGER_ROLES.has(role);
-}
-
-function assertRoleAllowed(toolName: string, role: string) {
-  const MANAGER_ONLY_TOOLS = new Set(["booking_stats", "availability"]);
-
-  if (MANAGER_ONLY_TOOLS.has(toolName) && !isManagerRole(role)) {
-    throw new Error("Anda tidak memiliki izin untuk mengakses tool ini.");
-  }
-}
-
-/* ================= NORMALIZERS ================= */
-
-function normalizeBookingStatus(status?: string): BookingStatus | undefined {
-  if (status === "confirmed" || status === "cancelled" || status === "checked_in" || status === "checked_out") {
-    return status;
-  }
-  return undefined;
-}
-
-/* ================= INTERNAL EXECUTOR ================= */
-
-async function executeTool(supabase: unknown, toolName: string, args: ExecutorArgs): Promise<ExecutorResult> {
-  const client = supabase as any;
-
-  switch (toolName) {
-    /* ========= BOOKING STATS ========= */
-    case "booking_stats": {
-      if (!args.period) {
-        throw new Error("period is required for booking_stats");
-      }
-
-      const stats = await getBookingStats(client, args.period);
-
-      return {
-        type: "stats",
-        data: stats,
-        note: "Statistik booking berdasarkan waktu pembuatan booking (created_at).",
-      };
-    }
-
-    /* ========= RECENT BOOKINGS ========= */
-    case "recent_bookings": {
-      const normalizedStatus = normalizeBookingStatus(args.status);
-
-      const data = await getRecentBookings(client, args.limit ?? 5, normalizedStatus);
-
-      return {
-        type: "list",
-        data,
-      };
-    }
-
-    /* ========= SEARCH BOOKINGS ========= */
-    case "search_bookings": {
-      if (!args.query) {
-        throw new Error("query is required for search_bookings");
-      }
-
-      const data = await searchBookings(client, args.query, args.date_from, args.date_to, args.limit ?? 10);
-
-      return {
-        type: "list",
-        data,
-      };
-    }
-
-    /* ========= BOOKING DETAIL ========= */
-    case "booking_detail": {
-      if (!args.booking_code) {
-        throw new Error("booking_code is required");
-      }
-
-      const data = await getBookingDetail(client, args.booking_code);
-
-      return {
-        type: "detail",
-        data,
-      };
-    }
-
-    /* ========= AVAILABILITY ========= */
-    case "availability": {
-      if (!args.check_in || !args.check_out) {
-        throw new Error("check_in and check_out are required for availability");
-      }
-
-      const data = await getAvailabilitySummary(client, args.check_in, args.check_out);
-
-      return {
-        type: "availability",
-        data,
-      };
-    }
-
-    /* ========= STAYING TODAY (FIXED) ========= */
-    case "staying_today": {
-      const today = getTodayWIB(); // YYYY-MM-DD
-      const nowTime = getCurrentTimeWIB(); // HH:mm
-
-      // Ambil jam checkout hotel
-      const { data: hotelSettings } = await client.from("hotel_settings").select("check_out_time").single();
-
-      const checkoutTime = hotelSettings?.check_out_time ?? "12:00";
-
-      // Status yang dianggap masih aktif/menginap
-      const ACTIVE_STATUSES = ["confirmed", "checked_in", "staying", "in_house"];
-
-      const { data, error } = await client
-        .from("bookings")
-        .select(
-          `
-          booking_code,
-          guest_name,
-          guest_phone,
-          check_in,
-          check_out,
-          status,
-          allocated_room_number,
-          rooms(name)
-        `,
-        )
-        .in("status", ACTIVE_STATUSES);
-
-      if (error) throw error;
-
-      const stayingGuests = (data ?? []).filter((b: any) => {
-        // belum check-in
-        if (b.check_in > today) return false;
-
-        // checkout setelah hari ini
-        if (b.check_out > today) return true;
-
-        // checkout hari ini → cek jam
-        if (b.check_out === today) {
-          return nowTime < checkoutTime;
-        }
-
-        return false;
-      });
-
-      return {
-        type: "list",
-        data: stayingGuests,
-        note: "Daftar tamu yang sedang menginap hari ini (berdasarkan tanggal & jam checkout).",
-      };
-    }
-
-    /* ========= UNKNOWN ========= */
-    default:
-      throw new Error(`Unknown tool: ${toolName}`);
-  }
-}
-
-/* ================= PUBLIC API ================= */
+import { createAdminBooking, updateBookingStatus, updateGuestInfo, rescheduleBooking, changeBookingRoom } from "./bookingMutations.ts";
+import { getRoomInventory, updateRoomPrice, getRoomPrices } from "./roomManagement.ts";
+import { sendCheckinReminder } from "./notifications.ts";
 
 /**
- * DIPANGGIL OLEH index.ts
- * Signature:
- * (supabase, toolName, args, role)
+ * Execute a tool with role re-validation
+ * This provides an extra security layer beyond initial filtering
  */
 export async function executeToolWithValidation(
-  supabase: unknown,
+  supabase: any,
   toolName: string,
-  args: ExecutorArgs,
-  role: string,
-): Promise<ExecutorResult> {
-  try {
-    // 🔐 Role validation
-    assertRoleAllowed(toolName, role);
+  toolArgs: Record<string, any>,
+  managerRole: ManagerRole
+): Promise<any> {
+  // SECURITY: Re-validate role has access to this tool
+  if (!isToolAllowed(toolName, managerRole)) {
+    throw new Error(`Akses ditolak: Role "${managerRole}" tidak dapat menggunakan "${toolName}"`);
+  }
+  
+  return await executeTool(supabase, toolName, toolArgs);
+}
 
-    return await executeTool(supabase, toolName, args);
-  } catch (err) {
-    return {
-      type: "error",
-      data: {
-        message: err instanceof Error ? err.message : "Unknown executor error",
-        tool: toolName,
-        args,
-        role,
-      },
-      note: "Gagal menjalankan tool.",
-    };
+/**
+ * Execute tool by name
+ */
+async function executeTool(supabase: any, toolName: string, args: any): Promise<any> {
+  console.log(`Executing tool: ${toolName}`, args);
+  
+  switch (toolName) {
+    case 'get_availability_summary':
+      return await getAvailabilitySummary(supabase, args.check_in, args.check_out);
+    
+    case 'get_booking_stats':
+      return await getBookingStats(supabase, args.period);
+    
+    case 'get_recent_bookings':
+      return await getRecentBookings(supabase, args.limit, args.status);
+    
+    case 'search_bookings':
+      return await searchBookings(supabase, args.query, args.date_from, args.date_to, args.limit);
+    
+    case 'get_room_inventory':
+      return await getRoomInventory(supabase);
+    
+    case 'create_admin_booking': {
+      const result = await createAdminBooking(supabase, args);
+      
+      // SECURITY: Verify booking actually exists in database
+      if (result.success && result.booking_code) {
+        const { data: verifyBooking, error: verifyError } = await supabase
+          .from('bookings')
+          .select('id, booking_code')
+          .eq('booking_code', result.booking_code)
+          .single();
+        
+        if (verifyError || !verifyBooking) {
+          console.error(`❌ CRITICAL: Booking ${result.booking_code} NOT FOUND after insert!`, verifyError);
+          throw new Error(`Booking gagal tersimpan di database. Silakan coba lagi.`);
+        }
+        console.log(`✅ Booking ${result.booking_code} verified in database`);
+      }
+      return result;
+    }
+    
+    case 'update_room_price':
+      return await updateRoomPrice(supabase, args);
+    
+    case 'get_room_prices':
+      return await getRoomPrices(supabase, args.room_name);
+    
+    case 'get_booking_detail':
+      return await getBookingDetail(supabase, args.booking_code);
+    
+    case 'update_booking_status':
+      return await updateBookingStatus(supabase, args.booking_code, args.new_status, args.cancellation_reason);
+    
+    case 'update_guest_info':
+      return await updateGuestInfo(supabase, args);
+    
+    case 'reschedule_booking':
+      return await rescheduleBooking(supabase, args);
+    
+    case 'change_booking_room':
+      return await changeBookingRoom(supabase, args);
+    
+    case 'send_checkin_reminder':
+      return await sendCheckinReminder(supabase, args.date);
+    
+    case 'get_today_guests':
+      return await getTodayGuests(supabase, args.type, args.date);
+    
+    default:
+      throw new Error(`Unknown tool: ${toolName}`);
   }
 }

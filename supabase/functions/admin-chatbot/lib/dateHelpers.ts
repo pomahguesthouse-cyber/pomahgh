@@ -1,116 +1,80 @@
-// lib/dateHelpers.ts
-// =======================================================
-// DATE HELPERS (WIB SAFE, BACKWARD COMPATIBLE, STABLE)
-// =======================================================
+// ============= DATE HELPERS (WIB TIMEZONE) =============
 
-/* ================= BASIC WIB HELPERS ================= */
+import { INDONESIAN_DAYS, INDONESIAN_MONTHS } from "./constants.ts";
+import type { DateReferences } from "./types.ts";
 
 /**
- * Get current Date object in WIB
+ * Get current WIB (Western Indonesia Time) date
  */
 export function getWibDate(): Date {
   const now = new Date();
-  return new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  const wibOffset = 7 * 60; // UTC+7
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utc + (wibOffset * 60000));
 }
 
 /**
- * Format Date or date-string to YYYY-MM-DD
+ * Add days to a date
  */
-export function formatDateISO(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toISOString().split("T")[0];
+export function addDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
 /**
- * Get today date in WIB (YYYY-MM-DD)
+ * Format date to YYYY-MM-DD
  */
-export function getTodayWIB(): string {
-  return formatDateISO(getWibDate());
+export function formatDateISO(date: Date): string {
+  return date.toISOString().split('T')[0];
 }
 
 /**
- * Get current time in WIB (HH:mm)
+ * Format date in Indonesian format
+ */
+export function formatDateIndonesian(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = INDONESIAN_DAYS[date.getDay()];
+  const month = INDONESIAN_MONTHS[date.getMonth()];
+  return `${day}, ${date.getDate()} ${month} ${date.getFullYear()}`;
+}
+
+/**
+ * Get date references for system prompt
+ */
+export function getDateReferences(): DateReferences {
+  const wibTime = getWibDate();
+  
+  const today = formatDateISO(wibTime);
+  const tomorrow = formatDateISO(addDays(wibTime, 1));
+  const lusa = formatDateISO(addDays(wibTime, 2));
+  const nextWeek = formatDateISO(addDays(wibTime, 7));
+  
+  // Calculate next weekend (Saturday)
+  const currentDay = wibTime.getDay();
+  const daysUntilSaturday = (6 - currentDay + 7) % 7 || 7;
+  const weekend = formatDateISO(addDays(wibTime, daysUntilSaturday));
+
+  return { today, tomorrow, lusa, nextWeek, weekend };
+}
+
+/**
+ * Get current WIB time string (HH:MM)
  */
 export function getCurrentTimeWIB(): string {
-  const d = getWibDate();
-  return d.toISOString().split("T")[1].slice(0, 5);
+  const wibDate = getWibDate();
+  const hour = wibDate.getUTCHours();
+  const minute = wibDate.getUTCMinutes();
+  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
 }
 
 /**
- * Compare current WIB time with target time (HH:mm)
+ * Check if current time is before a given time
  */
 export function isBeforeTime(targetTime: string): boolean {
-  const now = getCurrentTimeWIB();
-  return now < targetTime;
-}
-
-/* ================= NORMALIZATION ================= */
-
-/**
- * Normalize date to WIB date-only (YYYY-MM-DD)
- */
-export function normalizeDateWIB(date: string | Date): string {
-  return formatDateISO(typeof date === "string" ? new Date(date) : date);
-}
-
-/**
- * Check if target date is inside stay period
- * check_out is EXCLUSIVE
- */
-export function isDateInStay(checkIn: string, checkOut: string, targetDate: string): boolean {
-  const inDate = normalizeDateWIB(checkIn);
-  const outDate = normalizeDateWIB(checkOut);
-  const target = normalizeDateWIB(targetDate);
-
-  return inDate <= target && target < outDate;
-}
-
-/* ================= FORMATTING ================= */
-
-/**
- * Indonesian human-readable date
- * contoh: 19 Januari 2026
- */
-export function formatDateIndonesian(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-/* ================= CHATBOT DATE REFERENCES ================= */
-
-/**
- * Date references for chatbot & system prompt
- */
-export function getDateReferences() {
-  const today = getTodayWIB();
-  const base = new Date(today);
-
-  const yesterday = new Date(base);
-  yesterday.setDate(base.getDate() - 1);
-
-  const tomorrow = new Date(base);
-  tomorrow.setDate(base.getDate() + 1);
-
-  const lusa = new Date(base);
-  lusa.setDate(base.getDate() + 2);
-
-  // Cari Sabtu terdekat (weekend)
-  const weekend = new Date(base);
-  const day = weekend.getDay(); // 0=Sun, 6=Sat
-  const daysToSaturday = (6 - day + 7) % 7 || 7;
-  weekend.setDate(base.getDate() + daysToSaturday);
-
-  return {
-    today,
-    yesterday: formatDateISO(yesterday),
-    tomorrow: formatDateISO(tomorrow),
-    lusa: formatDateISO(lusa),
-    weekend: formatDateISO(weekend),
-    today_indonesian: formatDateIndonesian(today),
-  };
+  const wibDate = getWibDate();
+  const currentHour = wibDate.getUTCHours();
+  const currentMinute = wibDate.getUTCMinutes();
+  
+  const [targetHour, targetMinute] = targetTime.split(':').map(Number);
+  
+  return currentHour < targetHour || (currentHour === targetHour && currentMinute < targetMinute);
 }

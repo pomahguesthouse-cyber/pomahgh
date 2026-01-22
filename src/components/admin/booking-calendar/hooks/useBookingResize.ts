@@ -23,7 +23,11 @@ export const useBookingResize = (
   bookings: Booking[] | undefined,
   unavailableDates: UnavailableDate[] | undefined,
   cellWidth: number,
-  onResizeComplete: (booking: Booking, newCheckIn: string, newCheckOut: string) => void,
+  onResizeComplete: (
+    booking: Booking,
+    newCheckIn: string,
+    newCheckOut: string
+  ) => void
 ) => {
   const [resizeState, setResizeState] = useState<ResizeState>({
     isResizing: false,
@@ -37,35 +41,28 @@ export const useBookingResize = (
 
   const [previewDays, setPreviewDays] = useState(0);
 
-  const resetState = () => {
-    setResizeState({
-      isResizing: false,
-      bookingId: null,
-      edge: null,
-      startX: 0,
-      originalCheckIn: "",
-      originalCheckOut: "",
-      originalNights: 0,
-    });
-    setPreviewDays(0);
-  };
+  const startResize = useCallback(
+    (
+      e: React.MouseEvent,
+      booking: Booking,
+      edge: "left" | "right"
+    ) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-  const startResize = useCallback((e: React.MouseEvent, booking: Booking, edge: "left" | "right") => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    setResizeState({
-      isResizing: true,
-      bookingId: booking.id,
-      edge,
-      startX: e.clientX,
-      originalCheckIn: booking.check_in,
-      originalCheckOut: booking.check_out,
-      originalNights: booking.total_nights,
-    });
-
-    setPreviewDays(0);
-  }, []);
+      setResizeState({
+        isResizing: true,
+        bookingId: booking.id,
+        edge,
+        startX: e.clientX,
+        originalCheckIn: booking.check_in,
+        originalCheckOut: booking.check_out,
+        originalNights: booking.total_nights,
+      });
+      setPreviewDays(0);
+    },
+    []
+  );
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
@@ -76,19 +73,35 @@ export const useBookingResize = (
 
       setPreviewDays(daysDelta);
     },
-    [resizeState.isResizing, resizeState.startX, cellWidth],
+    [resizeState.isResizing, resizeState.startX, cellWidth]
   );
 
   const handleMouseUp = useCallback(() => {
     if (!resizeState.isResizing || !resizeState.bookingId) {
-      resetState();
+      setResizeState({
+        isResizing: false,
+        bookingId: null,
+        edge: null,
+        startX: 0,
+        originalCheckIn: "",
+        originalCheckOut: "",
+        originalNights: 0,
+      });
       return;
     }
 
     const booking = bookings?.find((b) => b.id === resizeState.bookingId);
-
     if (!booking || previewDays === 0) {
-      resetState();
+      setResizeState({
+        isResizing: false,
+        bookingId: null,
+        edge: null,
+        startX: 0,
+        originalCheckIn: "",
+        originalCheckOut: "",
+        originalNights: 0,
+      });
+      setPreviewDays(0);
       return;
     }
 
@@ -96,22 +109,36 @@ export const useBookingResize = (
     let newCheckOut = resizeState.originalCheckOut;
 
     if (resizeState.edge === "left") {
-      const baseDate = parseISO(resizeState.originalCheckIn);
-      newCheckIn = format(addDays(baseDate, previewDays), "yyyy-MM-dd");
+      // Moving left edge changes check-in date
+      const checkInDate = parseISO(resizeState.originalCheckIn);
+      const newCheckInDate = addDays(checkInDate, previewDays);
+      newCheckIn = format(newCheckInDate, "yyyy-MM-dd");
     } else {
-      const baseDate = parseISO(resizeState.originalCheckOut);
-      newCheckOut = format(addDays(baseDate, previewDays), "yyyy-MM-dd");
+      // Moving right edge changes check-out date
+      const checkOutDate = parseISO(resizeState.originalCheckOut);
+      const newCheckOutDate = addDays(checkOutDate, previewDays);
+      newCheckOut = format(newCheckOutDate, "yyyy-MM-dd");
     }
 
+    // Validate minimum 1 night
     const checkIn = parseISO(newCheckIn);
     const checkOut = parseISO(newCheckOut);
-
     if (checkOut <= checkIn) {
       toast.error("Booking harus minimal 1 malam");
-      resetState();
+      setResizeState({
+        isResizing: false,
+        bookingId: null,
+        edge: null,
+        startX: 0,
+        originalCheckIn: "",
+        originalCheckOut: "",
+        originalNights: 0,
+      });
+      setPreviewDays(0);
       return;
     }
 
+    // Check for conflicts with other bookings
     const hasConflict = (bookings || []).some((b) => {
       if (b.id === booking.id) return false;
       if (b.allocated_room_number !== booking.allocated_room_number) return false;
@@ -122,10 +149,20 @@ export const useBookingResize = (
 
     if (hasConflict) {
       toast.error("Tidak bisa resize: ada booking lain di tanggal tersebut");
-      resetState();
+      setResizeState({
+        isResizing: false,
+        bookingId: null,
+        edge: null,
+        startX: 0,
+        originalCheckIn: "",
+        originalCheckOut: "",
+        originalNights: 0,
+      });
+      setPreviewDays(0);
       return;
     }
 
+    // Check for blocked dates
     const isBlocked = (unavailableDates || []).some((ud) => {
       if (ud.room_number !== booking.allocated_room_number) return false;
       return ud.unavailable_date >= newCheckIn && ud.unavailable_date < newCheckOut;
@@ -133,38 +170,52 @@ export const useBookingResize = (
 
     if (isBlocked) {
       toast.error("Tidak bisa resize: ada tanggal yang diblokir");
-      resetState();
+      setResizeState({
+        isResizing: false,
+        bookingId: null,
+        edge: null,
+        startX: 0,
+        originalCheckIn: "",
+        originalCheckOut: "",
+        originalNights: 0,
+      });
+      setPreviewDays(0);
       return;
     }
 
+    // Call the completion callback
     onResizeComplete(booking, newCheckIn, newCheckOut);
-    resetState();
+
+    setResizeState({
+      isResizing: false,
+      bookingId: null,
+      edge: null,
+      startX: 0,
+      originalCheckIn: "",
+      originalCheckOut: "",
+      originalNights: 0,
+    });
+    setPreviewDays(0);
   }, [resizeState, previewDays, bookings, unavailableDates, onResizeComplete]);
 
-  // 🌍 GLOBAL EVENT LISTENER (Deno-safe)
+  // Global mouse event listeners
   useEffect(() => {
-    if (!resizeState.isResizing) return;
+    if (resizeState.isResizing) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
 
-    const target = globalThis;
-
-    target.addEventListener("mousemove", handleMouseMove);
-    target.addEventListener("mouseup", handleMouseUp);
-
-    return () => {
-      target.removeEventListener("mousemove", handleMouseMove);
-      target.removeEventListener("mouseup", handleMouseUp);
-    };
+      return () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
   }, [resizeState.isResizing, handleMouseMove, handleMouseUp]);
 
   const getResizePreview = (bookingId: string) => {
     if (!resizeState.isResizing || resizeState.bookingId !== bookingId) {
       return { previewDays: 0, edge: null };
     }
-
-    return {
-      previewDays,
-      edge: resizeState.edge,
-    };
+    return { previewDays, edge: resizeState.edge };
   };
 
   return {

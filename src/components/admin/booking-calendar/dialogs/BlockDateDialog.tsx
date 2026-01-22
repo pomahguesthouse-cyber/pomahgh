@@ -1,4 +1,4 @@
-import { format, differenceInDays } from "date-fns";
+import { format, eachDayOfInterval, differenceInDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,20 +24,26 @@ interface BlockDateDialogProps {
   onSave: () => void;
 }
 
-export const BlockDateDialog = ({ blockDialog, onOpenChange, onBlockDialogChange, onSave }: BlockDateDialogProps) => {
-  const totalDays =
-    blockDialog.date && blockDialog.endDate ? differenceInDays(blockDialog.endDate, blockDialog.date) + 1 : 1;
+export const BlockDateDialog = ({
+  blockDialog,
+  onOpenChange,
+  onBlockDialogChange,
+  onSave,
+}: BlockDateDialogProps) => {
+  const totalDays = blockDialog.date && blockDialog.endDate
+    ? differenceInDays(blockDialog.endDate, blockDialog.date) + 1
+    : 1;
 
   return (
     <Dialog open={blockDialog.open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Block Date Range</DialogTitle>
-          <DialogDescription>Block dates to prevent new bookings for {blockDialog.roomNumber}</DialogDescription>
+          <DialogDescription>
+            Block dates to prevent new bookings for {blockDialog.roomNumber}
+          </DialogDescription>
         </DialogHeader>
-
         <div className="space-y-4 py-4">
-          {/* Tanggal Mulai */}
           <div>
             <Label>Tanggal Mulai</Label>
             <Popover>
@@ -46,7 +52,7 @@ export const BlockDateDialog = ({ blockDialog, onOpenChange, onBlockDialogChange
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal mt-1",
-                    !blockDialog.date && "text-muted-foreground",
+                    !blockDialog.date && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -65,7 +71,6 @@ export const BlockDateDialog = ({ blockDialog, onOpenChange, onBlockDialogChange
             </Popover>
           </div>
 
-          {/* Tanggal Akhir */}
           <div>
             <Label>Tanggal Akhir</Label>
             <Popover>
@@ -74,7 +79,7 @@ export const BlockDateDialog = ({ blockDialog, onOpenChange, onBlockDialogChange
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal mt-1",
-                    !blockDialog.endDate && "text-muted-foreground",
+                    !blockDialog.endDate && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -86,7 +91,7 @@ export const BlockDateDialog = ({ blockDialog, onOpenChange, onBlockDialogChange
                   mode="single"
                   selected={blockDialog.endDate}
                   onSelect={(date) => onBlockDialogChange({ ...blockDialog, endDate: date })}
-                  disabled={(date) => (blockDialog.date ? date < blockDialog.date : false)}
+                  disabled={(date) => blockDialog.date ? date < blockDialog.date : false}
                   initialFocus
                   className="pointer-events-auto"
                 />
@@ -94,30 +99,22 @@ export const BlockDateDialog = ({ blockDialog, onOpenChange, onBlockDialogChange
             </Popover>
           </div>
 
-          {/* Total Hari */}
           {blockDialog.date && blockDialog.endDate && (
             <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground">
               Total: <span className="font-bold text-foreground">{totalDays} hari</span> akan diblokir
             </div>
           )}
 
-          {/* Alasan */}
           <div>
             <Label>Alasan (Opsional)</Label>
             <Input
               value={blockDialog.reason || ""}
-              onChange={(e) =>
-                onBlockDialogChange({
-                  ...blockDialog,
-                  reason: e.target.value,
-                })
-              }
+              onChange={(e) => onBlockDialogChange({ ...blockDialog, reason: e.target.value })}
               placeholder="Maintenance, Private event, dll."
               className="mt-1"
             />
           </div>
         </div>
-
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Batal
