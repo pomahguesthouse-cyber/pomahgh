@@ -2,19 +2,20 @@ import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ViewRange } from "../types";
-
 interface CalendarHeaderProps {
   viewRange: ViewRange;
   onViewRangeChange: (range: ViewRange) => void;
   currentMonthYear: string;
-  monthYearOptions: { value: string; label: string }[];
+  monthYearOptions: {
+    value: string;
+    label: string;
+  }[];
   onMonthYearChange: (value: string) => void;
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
   onExport: () => void;
 }
-
 export const CalendarHeader = ({
   viewRange,
   onViewRangeChange,
@@ -24,36 +25,20 @@ export const CalendarHeader = ({
   onPrev,
   onNext,
   onToday,
-  onExport,
+  onExport
 }: CalendarHeaderProps) => {
-  return (
-    <div className="p-2 md:p-4 border-b border-border bg-slate-300">
+  return <div className="p-2 md:p-4 border-b border-border bg-slate-300">
       <div className="flex flex-wrap items-center gap-2 md:gap-4">
         {/* View Range Selector */}
         <div className="flex gap-0.5 md:gap-1 bg-background rounded-lg p-0.5 md:p-1 shadow-sm border border-border">
-          <Button
-            variant={viewRange === 7 ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onViewRangeChange(7)}
-            className="text-[10px] md:text-xs px-2 md:px-4 h-7 md:h-8"
-          >
-            7D
+          <Button variant={viewRange === 7 ? "default" : "ghost"} size="sm" onClick={() => onViewRangeChange(7)} className="text-[10px] md:text-xs px-2 md:px-4 h-7 md:h-8">
+            Week
           </Button>
-          <Button
-            variant={viewRange === 14 ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onViewRangeChange(14)}
-            className="text-[10px] md:text-xs px-2 md:px-4 h-7 md:h-8"
-          >
+          <Button variant={viewRange === 14 ? "default" : "ghost"} size="sm" onClick={() => onViewRangeChange(14)} className="text-[10px] md:text-xs px-2 md:px-4 h-7 md:h-8">
             14D
           </Button>
-          <Button
-            variant={viewRange === 30 ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onViewRangeChange(30)}
-            className="text-[10px] md:text-xs px-2 md:px-4 h-7 md:h-8"
-          >
-            30D
+          <Button variant={viewRange === 30 ? "default" : "ghost"} size="sm" onClick={() => onViewRangeChange(30)} className="text-[10px] md:text-xs px-2 md:px-4 h-7 md:h-8">
+            1 Mo 
           </Button>
         </div>
 
@@ -63,11 +48,9 @@ export const CalendarHeader = ({
             <SelectValue placeholder="Pilih Bulan" />
           </SelectTrigger>
           <SelectContent className="max-h-[300px]">
-            {monthYearOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value} className="text-xs md:text-sm">
+            {monthYearOptions.map(option => <SelectItem key={option.value} value={option.value} className="text-xs md:text-sm">
                 {option.label}
-              </SelectItem>
-            ))}
+              </SelectItem>)}
           </SelectContent>
         </Select>
 
@@ -90,6 +73,5 @@ export const CalendarHeader = ({
           <span className="hidden md:inline">Export</span>
         </Button>
       </div>
-    </div>
-  );
+    </div>;
 };
