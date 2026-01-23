@@ -79,21 +79,30 @@ export const ManagerCalendarView: React.FC<ManagerCalendarViewProps> = ({
     roomId: string,
     roomNumber: string,
     date: Date
-  ): { booking: ManagerCalendarBooking; isStart: boolean; span: number } | null => {
+  ): { booking: ManagerCalendarBooking; isStart: boolean; span: number; isTruncatedLeft: boolean } | null => {
     const roomBookings = getBookingsForRoomNumber(roomId, roomNumber);
+    const firstVisibleDate = startOfDay(startDate);
+    const firstVisibleStr = format(firstVisibleDate, "yyyy-MM-dd");
     
     for (const booking of roomBookings) {
       const checkIn = startOfDay(parseISO(booking.check_in));
       const checkOut = startOfDay(parseISO(booking.check_out));
       const cellDate = startOfDay(date);
+      const dateStr = format(cellDate, "yyyy-MM-dd");
       
       if (cellDate >= checkIn && cellDate < checkOut) {
-        const isStart = cellDate.getTime() === checkIn.getTime();
+        const isCheckInCell = cellDate.getTime() === checkIn.getTime();
+        
+        // Handle truncated left: booking started before view range
+        const isTruncatedLeft = checkIn < firstVisibleDate && dateStr === firstVisibleStr;
+        
+        const isStart = isCheckInCell || isTruncatedLeft;
+        
         const daysRemaining = differenceInDays(checkOut, cellDate);
         const daysUntilEndOfView = DAYS_TO_SHOW - differenceInDays(cellDate, startDate);
         const span = Math.min(daysRemaining, daysUntilEndOfView);
         
-        return { booking, isStart, span };
+        return { booking, isStart, span, isTruncatedLeft };
       }
     }
     
@@ -185,15 +194,11 @@ export const ManagerCalendarView: React.FC<ManagerCalendarViewProps> = ({
                     const isBlocked = isDateBlocked(room.id, roomNumber, date);
                     const bookingInfo = getBookingForCell(room.id, roomNumber, date);
                     const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
-                    
-                    // Skip rendering if this cell is covered by a previous booking span
-                    if (bookingInfo && !bookingInfo.isStart) {
-                      return null;
-                    }
 
                     // Cell width constant (min-w-14 = 56px)
                     const cellWidth = 56;
                     
+                    // Always render cell, but only show bar at start position
                     return (
                       <div
                         key={date.toISOString()}
@@ -206,17 +211,19 @@ export const ManagerCalendarView: React.FC<ManagerCalendarViewProps> = ({
                         {/* Center divider line like admin calendar */}
                         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/30" />
                         
+                        {/* Only render booking bar at start cell */}
                         {bookingInfo && bookingInfo.isStart && (
                           <div
                             className={cn(
-                              "absolute top-1 bottom-1 rounded text-white text-xs px-1.5 py-0.5 overflow-hidden z-10",
+                              "absolute top-1 bottom-1 text-white text-xs px-1.5 py-0.5 overflow-hidden z-10",
+                              bookingInfo.isTruncatedLeft ? "rounded-r" : "rounded",
                               STATUS_COLORS[bookingInfo.booking.status] || "bg-gray-500"
                             )}
                             style={{
-                              // Start at center of check-in cell (like admin calendar)
-                              left: `${cellWidth / 2}px`,
-                              // Width spans from center of check-in to center of check-out
-                              width: `${bookingInfo.span * cellWidth}px`,
+                              // Truncated left: start from 0, otherwise start from center
+                              left: bookingInfo.isTruncatedLeft ? 0 : `${cellWidth / 2}px`,
+                              // Width includes extra half-cell for truncated bookings
+                              width: `${bookingInfo.span * cellWidth + (bookingInfo.isTruncatedLeft ? cellWidth / 2 : 0)}px`,
                             }}
                             title={`${bookingInfo.booking.guest_name} (${bookingInfo.booking.booking_code})`}
                           >
