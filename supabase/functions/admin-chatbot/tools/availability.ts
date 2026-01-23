@@ -3,6 +3,15 @@
 import { getWibDate, formatDateISO, isBeforeTime, getCurrentTimeWIB } from "../lib/dateHelpers.ts";
 
 export async function getAvailabilitySummary(supabase: any, checkIn: string, checkOut: string) {
+  // Get hotel settings for check-in/check-out times
+  const { data: hotelSettings } = await supabase
+    .from('hotel_settings')
+    .select('check_in_time, check_out_time')
+    .single();
+  
+  const standardCheckInTime = hotelSettings?.check_in_time || '14:00';
+  const standardCheckOutTime = hotelSettings?.check_out_time || '12:00';
+
   // Get all rooms with promo fields
   const { data: rooms, error: roomsError } = await supabase
     .from('rooms')
@@ -14,10 +23,13 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
 
   if (roomsError) throw roomsError;
 
-  // Get bookings that overlap with the date range
+  // Get bookings that might overlap - we need to include bookings where:
+  // 1. check_out > checkIn (still in room when new guest wants to check in)
+  // 2. check_in < checkOut (arrives before new guest checks out)
+  // But we also need to consider TIME, not just date
   const { data: bookings, error: bookingsError } = await supabase
     .from('bookings')
-    .select('id, room_id, allocated_room_number, check_in, check_out')
+    .select('id, room_id, allocated_room_number, check_in, check_out, check_out_time, guest_name')
     .neq('status', 'cancelled')
     .lte('check_in', checkOut)
     .gte('check_out', checkIn);
@@ -53,26 +65,93 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
     .gte('end_date', checkIn)
     .order('priority', { ascending: false });
 
+  // Helper function to check if a booking truly blocks availability
+  // considering check-in is AFTER check-out time
+  const isBookingBlocking = (booking: any, requestedCheckIn: string): boolean => {
+    const bookingCheckOut = booking.check_out;
+    const bookingCheckOutTime = booking.check_out_time || standardCheckOutTime;
+    
+    // If booking checks out BEFORE the requested check-in date, no conflict
+    if (bookingCheckOut < requestedCheckIn) return true; // Booking overlaps earlier dates
+    
+    // If booking checks out ON the same date as requested check-in
+    if (bookingCheckOut === requestedCheckIn) {
+      // Room is available if check-out time < standard check-in time
+      // e.g., check-out at 12:00, new check-in at 14:00 -> room available
+      // But if late checkout (e.g., 15:00), conflict with 14:00 check-in
+      const checkOutHour = parseInt(bookingCheckOutTime.split(':')[0]);
+      const checkInHour = parseInt(standardCheckInTime.split(':')[0]);
+      
+      // If checkout time is before or at standard checkout, room is available for new check-in
+      const standardCheckOutHour = parseInt(standardCheckOutTime.split(':')[0]);
+      if (checkOutHour <= standardCheckOutHour) {
+        return false; // Not blocking - checkout is on time
+      }
+      
+      // Late checkout - check if it conflicts with check-in time
+      if (checkOutHour >= checkInHour) {
+        return true; // Late checkout conflicts with new check-in
+      }
+      return false; // Late checkout but still before new check-in time
+    }
+    
+    // Booking checkout is after requested check-in date - definitely blocking
+    return true;
+  };
+
+  // Collect late checkout info
+  const lateCheckouts: any[] = [];
+  bookings?.forEach((b: any) => {
+    if (b.check_out === checkIn && b.check_out_time) {
+      const standardHour = parseInt(standardCheckOutTime.split(':')[0]);
+      const actualHour = parseInt(b.check_out_time.split(':')[0]);
+      if (actualHour > standardHour) {
+        lateCheckouts.push({
+          guest_name: b.guest_name,
+          check_out_time: b.check_out_time,
+          booking_id: b.id
+        });
+      }
+    }
+  });
+
   const result = rooms.map((room: any) => {
     const roomBookings = bookings?.filter((b: any) => b.room_id === room.id) || [];
     
-    // Collect booked room numbers from BOTH sources:
-    // 1. booking_rooms table (for multi-room bookings)
-    // 2. allocated_room_number from bookings table (fallback for legacy/single bookings)
+    // Collect booked room numbers from BOTH sources, but only if truly blocking
     const bookedNumbers = new Set<string>();
+    const lateCheckoutRooms: any[] = [];
     
     roomBookings.forEach((b: any) => {
+      // Check if this booking actually blocks the room
+      const isBlocking = isBookingBlocking(b, checkIn);
+      
       // Get room numbers from booking_rooms table for this booking
       const multiRoomNumbers = bookingRooms
         .filter((br: any) => br.booking_id === b.id && br.room_id === room.id)
         .map((br: any) => br.room_number);
       
-      if (multiRoomNumbers.length > 0) {
-        // Use booking_rooms data for multi-room bookings
-        multiRoomNumbers.forEach((num: string) => bookedNumbers.add(num));
-      } else if (b.allocated_room_number) {
-        // Fallback to allocated_room_number for single-room bookings
-        bookedNumbers.add(b.allocated_room_number);
+      const roomNums = multiRoomNumbers.length > 0 
+        ? multiRoomNumbers 
+        : (b.allocated_room_number ? [b.allocated_room_number] : []);
+      
+      if (isBlocking) {
+        roomNums.forEach((num: string) => bookedNumbers.add(num));
+      }
+      
+      // Track late checkouts for this room
+      if (b.check_out === checkIn && b.check_out_time) {
+        const standardHour = parseInt(standardCheckOutTime.split(':')[0]);
+        const actualHour = parseInt(b.check_out_time.split(':')[0]);
+        if (actualHour > standardHour) {
+          roomNums.forEach((num: string) => {
+            lateCheckoutRooms.push({
+              room_number: num,
+              guest_name: b.guest_name,
+              checkout_time: b.check_out_time
+            });
+          });
+        }
       }
     });
     
@@ -132,16 +211,20 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
       promo: promoInfo,
       savings: savings,
       booked_numbers: Array.from(bookedNumbers),
-      blocked_numbers: Array.from(blockedNumbers)
+      blocked_numbers: Array.from(blockedNumbers),
+      late_checkouts: lateCheckoutRooms
     };
   });
 
   return {
     check_in: checkIn,
     check_out: checkOut,
+    standard_check_in_time: standardCheckInTime,
+    standard_check_out_time: standardCheckOutTime,
     rooms: result,
     total_available: result.reduce((sum: number, r: any) => sum + r.available_units, 0),
-    has_promos: result.some((r: any) => r.promo !== null)
+    has_promos: result.some((r: any) => r.promo !== null),
+    late_checkouts: lateCheckouts
   };
 }
 
