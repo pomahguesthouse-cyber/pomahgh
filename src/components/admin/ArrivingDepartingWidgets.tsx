@@ -241,7 +241,7 @@ export const ArrivingDepartingWidgets = () => {
   return <div className="grid gap-6 lg:grid-cols-2">
       {/* Arriving Widget */}
       <Card className="border rounded-xl bg-[#e0eed8]">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 bg-[#d9e2d0]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
