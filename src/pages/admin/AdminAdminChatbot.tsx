@@ -4,12 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHotelSettings, WhatsAppManager, ManagerRole } from "@/hooks/useHotelSettings";
-import { Shield, UserCog, MessageSquare, Plus, Trash2, Phone, BookOpen, GraduationCap } from "lucide-react";
+import { Shield, UserCog, MessageSquare, Plus, Trash2, Phone, BookOpen, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AdminPersonaSettingsTab from "@/components/admin/AdminPersonaSettingsTab";
 import AdminWhatsAppSessionsTab from "@/components/admin/AdminWhatsAppSessionsTab";
 import AdminKnowledgeBaseTab from "@/components/admin/AdminKnowledgeBaseTab";
-import AdminTrainingTab from "@/components/admin/AdminTrainingTab";
+import MessageTemplatesTab from "@/components/admin/chatbot/MessageTemplatesTab";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -93,9 +93,9 @@ const AdminAdminChatbot = () => {
             <BookOpen className="w-4 h-4 mr-2" />
             Knowledge
           </TabsTrigger>
-          <TabsTrigger value="training" className="text-sm">
-            <GraduationCap className="w-4 h-4 mr-2" />
-            Training
+          <TabsTrigger value="templates" className="text-sm">
+            <FileText className="w-4 h-4 mr-2" />
+            Template
           </TabsTrigger>
           <TabsTrigger value="whatsapp" className="text-sm">
             <Phone className="w-4 h-4 mr-2" />
@@ -264,9 +264,9 @@ const AdminAdminChatbot = () => {
           <AdminKnowledgeBaseTab />
         </TabsContent>
 
-        {/* TRAINING */}
-        <TabsContent value="training" className="space-y-4">
-          <AdminTrainingTab />
+        {/* MESSAGE TEMPLATES */}
+        <TabsContent value="templates" className="space-y-4">
+          <MessageTemplatesTab />
         </TabsContent>
 
         {/* WHATSAPP ADMIN SESSIONS */}
