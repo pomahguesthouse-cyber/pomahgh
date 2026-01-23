@@ -266,7 +266,7 @@ export const ArrivingDepartingWidgets = () => {
       </Card>
 
       {/* Departing Widget */}
-      <Card className="border rounded-xl">
+      <Card className="border rounded-xl bg-[#f7f0e9]">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
