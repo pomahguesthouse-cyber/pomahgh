@@ -17,12 +17,23 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
   // Get bookings that overlap with the date range
   const { data: bookings, error: bookingsError } = await supabase
     .from('bookings')
-    .select('room_id, allocated_room_number, check_in, check_out')
+    .select('id, room_id, allocated_room_number, check_in, check_out')
     .neq('status', 'cancelled')
     .lte('check_in', checkOut)
     .gte('check_out', checkIn);
 
   if (bookingsError) throw bookingsError;
+
+  // Get booking_rooms for multi-room bookings
+  const bookingIds = bookings?.map((b: any) => b.id) || [];
+  let bookingRooms: any[] = [];
+  if (bookingIds.length > 0) {
+    const { data: brData } = await supabase
+      .from('booking_rooms')
+      .select('booking_id, room_id, room_number')
+      .in('booking_id', bookingIds);
+    bookingRooms = brData || [];
+  }
 
   // Get blocked dates
   const { data: blockedDates, error: blockedError } = await supabase
@@ -44,7 +55,27 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
 
   const result = rooms.map((room: any) => {
     const roomBookings = bookings?.filter((b: any) => b.room_id === room.id) || [];
-    const bookedNumbers = new Set(roomBookings.map((b: any) => b.allocated_room_number));
+    
+    // Collect booked room numbers from BOTH sources:
+    // 1. booking_rooms table (for multi-room bookings)
+    // 2. allocated_room_number from bookings table (fallback for legacy/single bookings)
+    const bookedNumbers = new Set<string>();
+    
+    roomBookings.forEach((b: any) => {
+      // Get room numbers from booking_rooms table for this booking
+      const multiRoomNumbers = bookingRooms
+        .filter((br: any) => br.booking_id === b.id && br.room_id === room.id)
+        .map((br: any) => br.room_number);
+      
+      if (multiRoomNumbers.length > 0) {
+        // Use booking_rooms data for multi-room bookings
+        multiRoomNumbers.forEach((num: string) => bookedNumbers.add(num));
+      } else if (b.allocated_room_number) {
+        // Fallback to allocated_room_number for single-room bookings
+        bookedNumbers.add(b.allocated_room_number);
+      }
+    });
+    
     const blockedNumbers = new Set(
       blockedDates?.filter((d: any) => d.room_id === room.id).map((d: any) => d.room_number) || []
     );
