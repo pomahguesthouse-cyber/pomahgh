@@ -142,55 +142,82 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
     staying_guests: []
   };
 
+  // Helper to get all room numbers for a booking (from booking_rooms or fallback to allocated_room_number)
+  const getRoomNumbers = async (bookingId: string, allocatedRoomNumber: string | null): Promise<string[]> => {
+    const { data: bookingRooms } = await supabase
+      .from('booking_rooms')
+      .select('room_number')
+      .eq('booking_id', bookingId);
+    
+    if (bookingRooms && bookingRooms.length > 0) {
+      return bookingRooms.map((br: any) => br.room_number);
+    }
+    return allocatedRoomNumber ? [allocatedRoomNumber] : [];
+  };
+
   // Query for check-in today
   if (type === 'checkin' || type === 'all') {
     const { data } = await supabase
       .from('bookings')
-      .select('booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
+      .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
       .eq('check_in', targetDate)
       .eq('status', 'confirmed')
       .order('guest_name');
     
-    results.checkin_guests = (data || []).map((b: any) => ({
-      booking_code: b.booking_code,
-      guest_name: b.guest_name,
-      guest_phone: b.guest_phone,
-      room_name: b.rooms?.name,
-      room_number: b.allocated_room_number,
-      check_in: b.check_in,
-      check_out: b.check_out,
-      num_guests: b.num_guests,
-      total_price: b.total_price
-    }));
+    const guests = [];
+    for (const b of data || []) {
+      const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
+      guests.push({
+        booking_code: b.booking_code,
+        guest_name: b.guest_name,
+        guest_phone: b.guest_phone,
+        room_name: b.rooms?.name,
+        room_number: roomNumbers.join(', '),
+        room_numbers: roomNumbers,
+        room_count: roomNumbers.length,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        num_guests: b.num_guests,
+        total_price: b.total_price
+      });
+    }
+    results.checkin_guests = guests;
   }
 
   // Query for check-out today
   if (type === 'checkout' || type === 'all') {
     const { data } = await supabase
       .from('bookings')
-      .select('booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
+      .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
       .eq('check_out', targetDate)
       .eq('status', 'confirmed')
       .order('guest_name');
     
-    results.checkout_guests = (data || []).map((b: any) => ({
-      booking_code: b.booking_code,
-      guest_name: b.guest_name,
-      guest_phone: b.guest_phone,
-      room_name: b.rooms?.name,
-      room_number: b.allocated_room_number,
-      check_in: b.check_in,
-      check_out: b.check_out,
-      num_guests: b.num_guests,
-      total_price: b.total_price
-    }));
+    const guests = [];
+    for (const b of data || []) {
+      const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
+      guests.push({
+        booking_code: b.booking_code,
+        guest_name: b.guest_name,
+        guest_phone: b.guest_phone,
+        room_name: b.rooms?.name,
+        room_number: roomNumbers.join(', '),
+        room_numbers: roomNumbers,
+        room_count: roomNumbers.length,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        num_guests: b.num_guests,
+        total_price: b.total_price
+      });
+    }
+    results.checkout_guests = guests;
   }
 
   // Query for staying guests
   if (type === 'staying' || type === 'all') {
     let stayingQuery = supabase
       .from('bookings')
-      .select('booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
+      .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
       .lte('check_in', targetDate)
       .eq('status', 'confirmed')
       .order('guest_name');
@@ -203,18 +230,25 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
     
     const { data } = await stayingQuery;
     
-    results.staying_guests = (data || []).map((b: any) => ({
-      booking_code: b.booking_code,
-      guest_name: b.guest_name,
-      guest_phone: b.guest_phone,
-      room_name: b.rooms?.name,
-      room_number: b.allocated_room_number,
-      check_in: b.check_in,
-      check_out: b.check_out,
-      num_guests: b.num_guests,
-      total_price: b.total_price,
-      is_checkout_today: b.check_out === targetDate
-    }));
+    const guests = [];
+    for (const b of data || []) {
+      const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
+      guests.push({
+        booking_code: b.booking_code,
+        guest_name: b.guest_name,
+        guest_phone: b.guest_phone,
+        room_name: b.rooms?.name,
+        room_number: roomNumbers.join(', '),
+        room_numbers: roomNumbers,
+        room_count: roomNumbers.length,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        num_guests: b.num_guests,
+        total_price: b.total_price,
+        is_checkout_today: b.check_out === targetDate
+      });
+    }
+    results.staying_guests = guests;
   }
 
   // Add summary counts
