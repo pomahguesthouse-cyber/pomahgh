@@ -9,13 +9,12 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
 import { useHotelSettings, WhatsAppContact, WhatsAppManager } from '@/hooks/useHotelSettings';
-import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban, UserCog, Shield, FileText } from 'lucide-react';
+import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, Phone, Plus, Trash2, Ban, UserCog, Shield, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import AdminPersonaSettingsTab from '@/components/admin/AdminPersonaSettingsTab';
 import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import ChatLogsTab from '@/components/admin/ChatLogsTab';
-import TrainingTab from '@/components/admin/TrainingTab';
 import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
 import PersonaSettingsTab from '@/components/admin/PersonaSettingsTab';
 import MessageTemplatesTab from '@/components/admin/chatbot/MessageTemplatesTab';
@@ -70,7 +69,7 @@ const AdminChatbot = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="personality" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="personality">
             <Bot className="w-4 h-4 mr-2" />
             Kepribadian
@@ -94,10 +93,6 @@ const AdminChatbot = () => {
           <TabsTrigger value="knowledge">
             <BookOpen className="w-4 h-4 mr-2" />
             Knowledge Base
-          </TabsTrigger>
-          <TabsTrigger value="training">
-            <GraduationCap className="w-4 h-4 mr-2" />
-            Training
           </TabsTrigger>
           <TabsTrigger value="logs">
             <MessageSquare className="w-4 h-4 mr-2" />
@@ -297,9 +292,6 @@ const AdminChatbot = () => {
           <KnowledgeBaseTab />
         </TabsContent>
 
-        <TabsContent value="training" className="space-y-4">
-          <TrainingTab />
-        </TabsContent>
 
         <TabsContent value="logs" className="space-y-4">
           <ChatLogsTab />
