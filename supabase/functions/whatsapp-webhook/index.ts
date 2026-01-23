@@ -45,7 +45,7 @@ function formatWA(text: string): string {
 
 /* ================= RATE LIMIT ================= */
 
-async function checkRateLimitDB(supabase: any, phone: string): Promise<boolean> {
+async function checkRateLimitDB(supabase: any, phone: string) {
   const now = new Date();
 
   const { data } = await supabase.from("whatsapp_rate_limits").select("*").eq("phone_number", phone).single();
@@ -71,7 +71,7 @@ async function checkRateLimitDB(supabase: any, phone: string): Promise<boolean> 
 
 /* ================= SUMMARY ENGINE ================= */
 
-function updateConversationSummary(summary: any, message: string): any {
+function updateConversationSummary(summary: any, message: string) {
   const s = { ...(summary || {}) };
 
   // intent
@@ -91,21 +91,45 @@ function updateConversationSummary(summary: any, message: string): any {
     s.guests = parseInt(guestMatch[1]);
   }
 
+  // email
+  const emailMatch = message.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,})/);
+  if (emailMatch) s.guest_email = emailMatch[1];
+
+  // nama (heuristik sederhana)
+  if (!s.guest_name && message.split(" ").length <= 4) {
+    s.guest_name = message.trim();
+  }
+
   // state lock
   if (s.room && s.check_in && s.check_out && !s.guests) {
     s.state = "awaiting_guest_data";
   }
 
-  if (s.guests && s.room && s.check_in && s.check_out) {
+  if (s.room && s.check_in && s.check_out && s.guests) {
     s.state = "ready_to_confirm";
   }
 
   return s;
 }
 
+/* ================= BOOKING DRAFT ================= */
+
+function canGenerateDraft(summary: any): boolean {
+  return Boolean(
+    summary?.intent === "booking" && summary?.room && summary?.check_in && summary?.check_out && summary?.guests,
+  );
+}
+
+function calculateNights(checkIn: string, checkOut: string): number {
+  const inDate = new Date(checkIn);
+  const outDate = new Date(checkOut);
+  const diff = outDate.getTime() - inDate.getTime();
+  return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
+
 /* ================= AI SAFETY ================= */
 
-function validateAI(text: string): boolean {
+function validateAI(text: string) {
   const banned = ["sebagai ai", "saya tidak yakin", "tidak dapat membantu"];
   return !banned.some((b) => text.toLowerCase().includes(b));
 }
@@ -153,7 +177,7 @@ serve(async (req) => {
       conversationId = conv.id;
     }
 
-    /* === SUMMARY UPDATE === */
+    /* === UPDATE SUMMARY === */
     const updatedSummary = updateConversationSummary(session?.conversation_summary, message);
 
     await supabase.from("whatsapp_sessions").upsert({
@@ -166,13 +190,46 @@ serve(async (req) => {
       session_type: "guest",
     });
 
+    /* === AUTO BOOKING DRAFT === */
+    if (canGenerateDraft(updatedSummary)) {
+      const nights = calculateNights(updatedSummary.check_in, updatedSummary.check_out);
+
+      const { data: existing } = await supabase
+        .from("booking_drafts")
+        .select("id")
+        .eq("conversation_id", conversationId)
+        .eq("status", "draft")
+        .single();
+
+      const payload = {
+        phone,
+        conversation_id: conversationId,
+        summary: updatedSummary,
+        guest_name: updatedSummary.guest_name,
+        guest_email: updatedSummary.guest_email,
+        guest_phone: phone,
+        room_type: updatedSummary.room,
+        check_in: updatedSummary.check_in,
+        check_out: updatedSummary.check_out,
+        nights,
+        guests: updatedSummary.guests,
+      };
+
+      if (existing) {
+        await supabase.from("booking_drafts").update(payload).eq("id", existing.id);
+      } else {
+        await supabase.from("booking_drafts").insert(payload);
+      }
+    }
+
+    /* === LOG USER MESSAGE === */
     await supabase.from("chat_messages").insert({
       conversation_id: conversationId,
       role: "user",
       content: message,
     });
 
-    /* === AI CALL (SUMMARY BASED) === */
+    /* === AI CALL === */
     const aiRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/chatbot`, {
       method: "POST",
       headers: {
@@ -185,8 +242,8 @@ serve(async (req) => {
             role: "system",
             content: `
 Anda adalah WhatsApp Assistant Pomah Guesthouse.
-Ikuti STATE di bawah dengan KETAT.
-DILARANG mengulang pertanyaan yang sudah dijawab.
+Ikuti STATE ini dengan KETAT.
+DILARANG mengulang pertanyaan.
 
 STATE:
 ${JSON.stringify(updatedSummary, null, 2)}
@@ -207,7 +264,6 @@ RULES:
     const aiData = await aiRes.json();
     let aiText = aiData.choices?.[0]?.message?.content ?? "";
 
-    /* === FAILSAFE === */
     if (!aiText || !validateAI(aiText)) {
       aiText = "Baik, admin kami akan bantu sebentar lagi 🙏";
       await supabase.from("whatsapp_sessions").update({ is_takeover: true }).eq("phone_number", phone);
@@ -221,7 +277,7 @@ RULES:
       content: aiText,
     });
 
-    /* === SEND WA === */
+    /* === SEND WHATSAPP === */
     await fetch("https://api.fonnte.com/send", {
       method: "POST",
       headers: {
@@ -233,12 +289,6 @@ RULES:
         message: aiText,
         countryCode: "62",
       }),
-    });
-
-    await supabase.from("whatsapp_events").insert({
-      phone,
-      event: "AI_SENT",
-      payload: { summary: updatedSummary },
     });
 
     return Response.json({ status: "success" });
