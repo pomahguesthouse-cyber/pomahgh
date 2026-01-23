@@ -10,9 +10,7 @@ import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { cn } from "@/lib/utils";
 import { formatDateShortID, formatTimeID } from "@/utils/indonesianFormat";
 import { getWIBNow, formatWIBDate } from "@/utils/wibTimezone";
-
 type FilterType = "today" | "tomorrow" | "yesterday";
-
 interface Booking {
   id: string;
   booking_code: string;
@@ -24,7 +22,9 @@ interface Booking {
   check_in_time?: string;
   check_out_time?: string;
   status: string;
-  rooms?: { name: string };
+  rooms?: {
+    name: string;
+  };
 }
 
 // Helper untuk mendapatkan status dinamis berdasarkan waktu
@@ -32,85 +32,88 @@ const getGuestStatus = (booking: Booking, type: "arriving" | "departing") => {
   const now = getWIBNow();
   const currentTime = format(now, "HH:mm:ss");
   const todayStr = formatWIBDate(now);
-
   const checkInTime = booking.check_in_time || "14:00:00";
   const checkOutTime = booking.check_out_time || "12:00:00";
-
   if (type === "arriving") {
     // Untuk tamu check-in
     if (booking.check_in === todayStr) {
       if (currentTime >= checkInTime) {
-        return { label: "Sudah Check-In", variant: "checked-in" as const };
+        return {
+          label: "Sudah Check-In",
+          variant: "checked-in" as const
+        };
       } else {
-        return { label: "Menunggu Check-In", variant: "waiting" as const };
+        return {
+          label: "Menunggu Check-In",
+          variant: "waiting" as const
+        };
       }
     }
-    return { label: "Terkonfirmasi", variant: "confirmed" as const };
+    return {
+      label: "Terkonfirmasi",
+      variant: "confirmed" as const
+    };
   } else {
     // Untuk tamu check-out
     if (booking.check_out === todayStr) {
       if (currentTime >= checkOutTime) {
-        return { label: "Sudah Check-Out", variant: "checked-out" as const };
+        return {
+          label: "Sudah Check-Out",
+          variant: "checked-out" as const
+        };
       } else {
-        return { label: "Sedang Menginap", variant: "staying" as const };
+        return {
+          label: "Sedang Menginap",
+          variant: "staying" as const
+        };
       }
     }
-    return { label: "Terkonfirmasi", variant: "confirmed" as const };
+    return {
+      label: "Terkonfirmasi",
+      variant: "confirmed" as const
+    };
   }
 };
 
 // Helper untuk badge status dinamis
-const getDynamicStatusBadge = (status: { label: string; variant: string }) => {
+const getDynamicStatusBadge = (status: {
+  label: string;
+  variant: string;
+}) => {
   const variants: Record<string, string> = {
     "checked-in": "bg-green-100 text-green-700 border-0 dark:bg-green-900/30 dark:text-green-400",
     "checked-out": "bg-slate-100 text-slate-600 border-0 dark:bg-slate-800 dark:text-slate-400",
     waiting: "bg-amber-100 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400",
     staying: "bg-blue-100 text-blue-700 border-0 dark:bg-blue-900/30 dark:text-blue-400",
-    confirmed: "bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/30 dark:text-emerald-400",
+    confirmed: "bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/30 dark:text-emerald-400"
   };
-
   return <Badge className={variants[status.variant] || variants.confirmed}>{status.label}</Badge>;
 };
-
 export const ArrivingDepartingWidgets = () => {
-  const { bookings } = useAdminBookings();
-
+  const {
+    bookings
+  } = useAdminBookings();
   const [arrivingFilter, setArrivingFilter] = useState<FilterType>("today");
   const [arrivingSearch, setArrivingSearch] = useState("");
-
   const [departingFilter, setDepartingFilter] = useState<FilterType>("today");
   const [departingSearch, setDepartingSearch] = useState("");
-
   const arrivingBookings = useMemo(() => {
     if (!bookings) return [];
-
-    return bookings.filter((booking) => {
+    return bookings.filter(booking => {
       const checkInDate = parseISO(booking.check_in);
-      const matchesFilter =
-        (arrivingFilter === "today" && isToday(checkInDate)) ||
-        (arrivingFilter === "tomorrow" && isTomorrow(checkInDate)) ||
-        (arrivingFilter === "yesterday" && isYesterday(checkInDate));
-
+      const matchesFilter = arrivingFilter === "today" && isToday(checkInDate) || arrivingFilter === "tomorrow" && isTomorrow(checkInDate) || arrivingFilter === "yesterday" && isYesterday(checkInDate);
       const matchesSearch = booking.guest_name.toLowerCase().includes(arrivingSearch.toLowerCase());
-
       return matchesFilter && matchesSearch && booking.status === "confirmed";
     });
   }, [bookings, arrivingFilter, arrivingSearch]);
-
   const departingBookings = useMemo(() => {
     if (!bookings) return [];
-
     const now = getWIBNow();
     const currentTime = format(now, "HH:mm:ss");
     const todayStr = formatWIBDate(now);
-
-    return bookings.filter((booking) => {
+    return bookings.filter(booking => {
       const checkOutDate = parseISO(booking.check_out);
-      const matchesFilter =
-        (departingFilter === "today" && isToday(checkOutDate)) ||
-        (departingFilter === "tomorrow" && isTomorrow(checkOutDate)) ||
-        (departingFilter === "yesterday" && isYesterday(checkOutDate));
-
+      const matchesFilter = departingFilter === "today" && isToday(checkOutDate) || departingFilter === "tomorrow" && isTomorrow(checkOutDate) || departingFilter === "yesterday" && isYesterday(checkOutDate);
       const matchesSearch = booking.guest_name.toLowerCase().includes(departingSearch.toLowerCase());
 
       // Untuk filter "hari ini": sembunyikan jika sudah lewat jam check-out
@@ -120,77 +123,52 @@ export const ArrivingDepartingWidgets = () => {
           return false; // Sudah check-out, tidak ditampilkan
         }
       }
-
       return matchesFilter && matchesSearch && booking.status === "confirmed";
     });
   }, [bookings, departingFilter, departingSearch]);
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "confirmed":
-        return (
-          <Badge className="bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/30 dark:text-emerald-400">
+        return <Badge className="bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/30 dark:text-emerald-400">
             Terkonfirmasi
-          </Badge>
-        );
+          </Badge>;
       case "pending":
-        return (
-          <Badge className="bg-amber-100 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400">
+        return <Badge className="bg-amber-100 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400">
             Menunggu
-          </Badge>
-        );
+          </Badge>;
       case "checked_in":
-        return (
-          <Badge className="bg-blue-100 text-blue-700 border-0 dark:bg-blue-900/30 dark:text-blue-400">
+        return <Badge className="bg-blue-100 text-blue-700 border-0 dark:bg-blue-900/30 dark:text-blue-400">
             Sudah Check-in
-          </Badge>
-        );
+          </Badge>;
       case "checked_out":
-        return (
-          <Badge className="bg-slate-100 text-slate-600 border-0 dark:bg-slate-800 dark:text-slate-400">
+        return <Badge className="bg-slate-100 text-slate-600 border-0 dark:bg-slate-800 dark:text-slate-400">
             Sudah Check-out
-          </Badge>
-        );
+          </Badge>;
       case "cancelled":
-        return (
-          <Badge className="bg-red-100 text-red-700 border-0 dark:bg-red-900/30 dark:text-red-400">
+        return <Badge className="bg-red-100 text-red-700 border-0 dark:bg-red-900/30 dark:text-red-400">
             Dibatalkan
-          </Badge>
-        );
+          </Badge>;
       case "no_show":
-        return (
-          <Badge className="bg-purple-100 text-purple-700 border-0 dark:bg-purple-900/30 dark:text-purple-400">
+        return <Badge className="bg-purple-100 text-purple-700 border-0 dark:bg-purple-900/30 dark:text-purple-400">
             No Show
-          </Badge>
-        );
+          </Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
-
   const renderBookingTable = (bookings: Booking[], type: "arriving" | "departing") => {
     if (bookings.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
+      return <div className="flex flex-col items-center justify-center py-8 text-center">
           <div className="p-3 rounded-full bg-muted mb-3">
-            {type === "arriving" ? (
-              <DoorOpen className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <DoorClosed className="h-5 w-5 text-muted-foreground" />
-            )}
+            {type === "arriving" ? <DoorOpen className="h-5 w-5 text-muted-foreground" /> : <DoorClosed className="h-5 w-5 text-muted-foreground" />}
           </div>
           <p className="text-sm text-muted-foreground">
-            {type === "arriving"
-              ? "Belum ada tamu check-in untuk tanggal ini"
-              : "Belum ada tamu check-out untuk tanggal ini"}
+            {type === "arriving" ? "Belum ada tamu check-in untuk tanggal ini" : "Belum ada tamu check-out untuk tanggal ini"}
           </p>
           <p className="text-xs text-muted-foreground/70 mt-1">Semoga hari Anda menyenangkan! 🌟</p>
-        </div>
-      );
+        </div>;
     }
-
-    return (
-      <Table>
+    return <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -217,12 +195,10 @@ export const ArrivingDepartingWidgets = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {bookings.map((booking) => {
-            const displayTime = type === "arriving" ? booking.check_in_time : booking.check_out_time;
-            const dynamicStatus = getGuestStatus(booking, type);
-
-            return (
-              <TableRow key={booking.id} className="hover:bg-muted/50">
+          {bookings.map(booking => {
+          const displayTime = type === "arriving" ? booking.check_in_time : booking.check_out_time;
+          const dynamicStatus = getGuestStatus(booking, type);
+          return <TableRow key={booking.id} className="hover:bg-muted/50">
                 <TableCell>
                   <div>
                     <div className="font-medium text-sm">{booking.guest_name}</div>
@@ -234,47 +210,37 @@ export const ArrivingDepartingWidgets = () => {
                   {displayTime ? formatTimeID(displayTime.slice(0, 5)) : type === "arriving" ? "14:00" : "12:00"}
                 </TableCell>
                 <TableCell className="text-right">{getDynamicStatusBadge(dynamicStatus)}</TableCell>
-              </TableRow>
-            );
-          })}
+              </TableRow>;
+        })}
         </TableBody>
-      </Table>
-    );
+      </Table>;
   };
-
   const FilterButtons = ({
     activeFilter,
-    onFilterChange,
+    onFilterChange
   }: {
     activeFilter: FilterType;
     onFilterChange: (filter: FilterType) => void;
-  }) => (
-    <div className="flex gap-1">
-      {[
-        { key: "today" as FilterType, label: "Hari Ini" },
-        { key: "tomorrow" as FilterType, label: "Besok" },
-        { key: "yesterday" as FilterType, label: "Kemarin" },
-      ].map(({ key, label }) => (
-        <Button
-          key={key}
-          variant={activeFilter === key ? "default" : "ghost"}
-          size="sm"
-          onClick={() => onFilterChange(key)}
-          className={cn(
-            "h-7 text-xs",
-            activeFilter === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-          )}
-        >
+  }) => <div className="flex gap-1">
+      {[{
+      key: "today" as FilterType,
+      label: "Hari Ini"
+    }, {
+      key: "tomorrow" as FilterType,
+      label: "Besok"
+    }, {
+      key: "yesterday" as FilterType,
+      label: "Kemarin"
+    }].map(({
+      key,
+      label
+    }) => <Button key={key} variant={activeFilter === key ? "default" : "ghost"} size="sm" onClick={() => onFilterChange(key)} className={cn("h-7 text-xs", activeFilter === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
           {label}
-        </Button>
-      ))}
-    </div>
-  );
-
-  return (
-    <div className="grid gap-6 lg:grid-cols-2">
+        </Button>)}
+    </div>;
+  return <div className="grid gap-6 lg:grid-cols-2">
       {/* Arriving Widget */}
-      <Card className="border rounded-xl">
+      <Card className="border rounded-xl bg-[#e0eed8]">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -290,22 +256,10 @@ export const ArrivingDepartingWidgets = () => {
           </div>
           <div className="relative mt-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cari nama tamu..."
-              value={arrivingSearch}
-              onChange={(e) => setArrivingSearch(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
-            {arrivingSearch && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                onClick={() => setArrivingSearch("")}
-              >
+            <Input placeholder="Cari nama tamu..." value={arrivingSearch} onChange={e => setArrivingSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+            {arrivingSearch && <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0" onClick={() => setArrivingSearch("")}>
                 <X className="h-4 w-4" />
-              </Button>
-            )}
+              </Button>}
           </div>
         </CardHeader>
         <CardContent className="pt-0">{renderBookingTable(arrivingBookings, "arriving")}</CardContent>
@@ -328,26 +282,13 @@ export const ArrivingDepartingWidgets = () => {
           </div>
           <div className="relative mt-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cari nama tamu..."
-              value={departingSearch}
-              onChange={(e) => setDepartingSearch(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
-            {departingSearch && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                onClick={() => setDepartingSearch("")}
-              >
+            <Input placeholder="Cari nama tamu..." value={departingSearch} onChange={e => setDepartingSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+            {departingSearch && <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0" onClick={() => setDepartingSearch("")}>
                 <X className="h-4 w-4" />
-              </Button>
-            )}
+              </Button>}
           </div>
         </CardHeader>
         <CardContent className="pt-0">{renderBookingTable(departingBookings, "departing")}</CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
