@@ -11,7 +11,7 @@ const corsHeaders = {
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW = 60_000;
 
-/* ================= UTIL ================= */
+/* ================= HELPERS ================= */
 
 function normalizePhone(phone: string): string {
   let p = phone.replace(/\D/g, "");
@@ -40,15 +40,27 @@ function normalizeIndo(msg: string): string {
 function formatWA(text: string): string {
   text = text.replace(/\*\*([^*]+)\*\*/g, "*$1*");
   text = text.replace(/\n{3,}/g, "\n\n");
-  return text.slice(0, 4000).trim();
+  return text.slice(0, 4000);
+}
+
+function validateAI(text: string): boolean {
+  const banned = [
+    "sebagai ai",
+    "model bahasa",
+    "saya tidak yakin",
+    "tidak dapat membantu",
+    "saya hanyalah",
+    "saya tidak memiliki",
+  ];
+  return !banned.some((b) => text.toLowerCase().includes(b));
 }
 
 /* ================= RATE LIMIT ================= */
 
-async function checkRateLimitDB(supabase: any, phone: string) {
+async function checkRateLimitDB(supabase: any, phone: string): Promise<boolean> {
   const now = new Date();
 
-  const { data } = await supabase.from("whatsapp_rate_limits").select("*").eq("phone_number", phone).single();
+  const { data } = await supabase.from("whatsapp_rate_limits").select("*").eq("phone_number", phone).maybeSingle();
 
   if (!data || new Date(data.reset_at) < now) {
     await supabase.from("whatsapp_rate_limits").upsert({
@@ -64,77 +76,13 @@ async function checkRateLimitDB(supabase: any, phone: string) {
   await supabase
     .from("whatsapp_rate_limits")
     .update({ count: data.count + 1 })
-    .eq("phone_number", phone);
+    .eq("phone_number", phone)
+    .eq("count", data.count); // optimistic lock
 
   return true;
 }
 
-/* ================= SUMMARY ENGINE ================= */
-
-function updateConversationSummary(summary: any, message: string) {
-  const s = { ...(summary || {}) };
-
-  // intent
-  if (/pesan|booking|book|nginap/i.test(message)) {
-    s.intent = "booking";
-  }
-
-  // room
-  const roomMatch = message.match(/(single|deluxe|grand\s*deluxe|family\s*suite)/i);
-  if (roomMatch) {
-    s.room = roomMatch[1].replace(/\s+/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-  }
-
-  // guests
-  const guestMatch = message.match(/(\d+)\s*(orang|tamu|pax)/i);
-  if (guestMatch) {
-    s.guests = parseInt(guestMatch[1]);
-  }
-
-  // email
-  const emailMatch = message.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,})/);
-  if (emailMatch) s.guest_email = emailMatch[1];
-
-  // nama (heuristik sederhana)
-  if (!s.guest_name && message.split(" ").length <= 4) {
-    s.guest_name = message.trim();
-  }
-
-  // state lock
-  if (s.room && s.check_in && s.check_out && !s.guests) {
-    s.state = "awaiting_guest_data";
-  }
-
-  if (s.room && s.check_in && s.check_out && s.guests) {
-    s.state = "ready_to_confirm";
-  }
-
-  return s;
-}
-
-/* ================= BOOKING DRAFT ================= */
-
-function canGenerateDraft(summary: any): boolean {
-  return Boolean(
-    summary?.intent === "booking" && summary?.room && summary?.check_in && summary?.check_out && summary?.guests,
-  );
-}
-
-function calculateNights(checkIn: string, checkOut: string): number {
-  const inDate = new Date(checkIn);
-  const outDate = new Date(checkOut);
-  const diff = outDate.getTime() - inDate.getTime();
-  return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
-
-/* ================= AI SAFETY ================= */
-
-function validateAI(text: string) {
-  const banned = ["sebagai ai", "saya tidak yakin", "tidak dapat membantu"];
-  return !banned.some((b) => text.toLowerCase().includes(b));
-}
-
-/* ================= MAIN ================= */
+/* ================= CORE ================= */
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -160,7 +108,11 @@ serve(async (req) => {
     }
 
     /* === SESSION === */
-    const { data: session } = await supabase.from("whatsapp_sessions").select("*").eq("phone_number", phone).single();
+    const { data: session } = await supabase
+      .from("whatsapp_sessions")
+      .select("*")
+      .eq("phone_number", phone)
+      .maybeSingle();
 
     if (session?.is_blocked) {
       return Response.json({ status: "blocked" });
@@ -174,60 +126,33 @@ serve(async (req) => {
         .insert({ session_id: `wa_${phone}_${Date.now()}` })
         .select()
         .single();
+
       conversationId = conv.id;
     }
-
-    /* === UPDATE SUMMARY === */
-    const updatedSummary = updateConversationSummary(session?.conversation_summary, message);
 
     await supabase.from("whatsapp_sessions").upsert({
       phone_number: phone,
       conversation_id: conversationId,
-      conversation_summary: updatedSummary,
-      conversation_state: updatedSummary?.state ?? "idle",
       last_message_at: new Date().toISOString(),
       is_active: true,
       session_type: "guest",
+      conversation_state: session?.conversation_state ?? "idle",
     });
 
-    /* === AUTO BOOKING DRAFT === */
-    if (canGenerateDraft(updatedSummary)) {
-      const nights = calculateNights(updatedSummary.check_in, updatedSummary.check_out);
-
-      const { data: existing } = await supabase
-        .from("booking_drafts")
-        .select("id")
-        .eq("conversation_id", conversationId)
-        .eq("status", "draft")
-        .single();
-
-      const payload = {
-        phone,
-        conversation_id: conversationId,
-        summary: updatedSummary,
-        guest_name: updatedSummary.guest_name,
-        guest_email: updatedSummary.guest_email,
-        guest_phone: phone,
-        room_type: updatedSummary.room,
-        check_in: updatedSummary.check_in,
-        check_out: updatedSummary.check_out,
-        nights,
-        guests: updatedSummary.guests,
-      };
-
-      if (existing) {
-        await supabase.from("booking_drafts").update(payload).eq("id", existing.id);
-      } else {
-        await supabase.from("booking_drafts").insert(payload);
-      }
-    }
-
-    /* === LOG USER MESSAGE === */
+    /* === SAVE USER MESSAGE === */
     await supabase.from("chat_messages").insert({
       conversation_id: conversationId,
       role: "user",
       content: message,
     });
+
+    /* === GET CHAT HISTORY === */
+    const { data: history } = await supabase
+      .from("chat_messages")
+      .select("role, content")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true })
+      .limit(10);
 
     /* === AI CALL === */
     const aiRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/chatbot`, {
@@ -237,33 +162,18 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        messages: [
-          {
-            role: "system",
-            content: `
-Anda adalah WhatsApp Assistant Pomah Guesthouse.
-Ikuti STATE ini dengan KETAT.
-DILARANG mengulang pertanyaan.
-
-STATE:
-${JSON.stringify(updatedSummary, null, 2)}
-
-RULES:
-- awaiting_guest_data → minta nama, email, nomor
-- ready_to_confirm → konfirmasi booking
-              `,
-          },
-          { role: "user", content: message },
-        ],
+        messages: history,
         channel: "whatsapp",
+        system_state: session?.conversation_state ?? "idle",
       }),
     });
 
     if (!aiRes.ok) throw new Error("AI error");
 
     const aiData = await aiRes.json();
-    let aiText = aiData.choices?.[0]?.message?.content ?? "";
+    let aiText = aiData?.choices?.[0]?.message?.content ?? "";
 
+    /* === AI FAILSAFE === */
     if (!aiText || !validateAI(aiText)) {
       aiText = "Baik, admin kami akan bantu sebentar lagi 🙏";
       await supabase.from("whatsapp_sessions").update({ is_takeover: true }).eq("phone_number", phone);
@@ -278,7 +188,7 @@ RULES:
     });
 
     /* === SEND WHATSAPP === */
-    await fetch("https://api.fonnte.com/send", {
+    const waRes = await fetch("https://api.fonnte.com/send", {
       method: "POST",
       headers: {
         Authorization: FONNTE_KEY,
@@ -290,6 +200,20 @@ RULES:
         countryCode: "62",
       }),
     });
+
+    if (!waRes.ok) {
+      await supabase.from("whatsapp_events").insert({
+        phone,
+        event: "WA_FAILED",
+        payload: { status: waRes.status },
+      });
+    } else {
+      await supabase.from("whatsapp_events").insert({
+        phone,
+        event: "AI_SENT",
+        payload: { text: aiText },
+      });
+    }
 
     return Response.json({ status: "success" });
   } catch (e) {
