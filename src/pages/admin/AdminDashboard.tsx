@@ -192,10 +192,10 @@ const AdminDashboard = () => {
       <ArrivingDepartingWidgets />
 
       {/* KPI Cards */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 border-dashed">
         <Card className="border rounded-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-[#b2e0ca]">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Pendapatan</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-muted-foreground">
+            <CardTitle className="font-medium text-[#3c2525] text-sm">Total Pendapatan</CardTitle>
             <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30">
               <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             </div>

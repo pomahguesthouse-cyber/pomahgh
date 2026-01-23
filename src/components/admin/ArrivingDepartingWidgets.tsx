@@ -240,7 +240,7 @@ export const ArrivingDepartingWidgets = () => {
     </div>;
   return <div className="grid gap-6 lg:grid-cols-2">
       {/* Arriving Widget */}
-      <Card className="border rounded-xl bg-[#e0eed8]">
+      <Card className="border rounded-xl bg-[#e0eed8] shadow-xl">
         <CardHeader className="pb-3 bg-[#d9e2d0]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -266,7 +266,7 @@ export const ArrivingDepartingWidgets = () => {
       </Card>
 
       {/* Departing Widget */}
-      <Card className="border rounded-xl bg-[#ecf1f3]">
+      <Card className="border rounded-xl bg-[#ecf1f3] shadow-xl">
         <CardHeader className="pb-3 bg-[#e0e8eb]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
