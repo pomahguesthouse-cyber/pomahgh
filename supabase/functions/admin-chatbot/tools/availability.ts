@@ -155,13 +155,13 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
     return allocatedRoomNumber ? [allocatedRoomNumber] : [];
   };
 
-  // Query for check-in today
+  // Query for check-in today (include confirmed and checked_in status)
   if (type === 'checkin' || type === 'all') {
     const { data } = await supabase
       .from('bookings')
-      .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
+      .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, status, rooms(name)')
       .eq('check_in', targetDate)
-      .eq('status', 'confirmed')
+      .in('status', ['confirmed', 'checked_in'])
       .order('guest_name');
     
     const guests = [];
@@ -184,13 +184,13 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
     results.checkin_guests = guests;
   }
 
-  // Query for check-out today
+  // Query for check-out today (include confirmed and checked_in status)
   if (type === 'checkout' || type === 'all') {
     const { data } = await supabase
       .from('bookings')
-      .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
+      .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, status, rooms(name)')
       .eq('check_out', targetDate)
-      .eq('status', 'confirmed')
+      .in('status', ['confirmed', 'checked_in'])
       .order('guest_name');
     
     const guests = [];
@@ -213,13 +213,13 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
     results.checkout_guests = guests;
   }
 
-  // Query for staying guests
+  // Query for staying guests (include confirmed and checked_in status)
   if (type === 'staying' || type === 'all') {
     let stayingQuery = supabase
       .from('bookings')
-      .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, rooms(name)')
+      .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, status, rooms(name)')
       .lte('check_in', targetDate)
-      .eq('status', 'confirmed')
+      .in('status', ['confirmed', 'checked_in'])
       .order('guest_name');
     
     if (isBeforeCheckoutTime) {
