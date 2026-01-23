@@ -64,6 +64,34 @@ const TOOL_REFERENCE = `TOOLS:
 14. get_today_guests - Tamu hari ini
 15. send_checkin_reminder - Kirim reminder check-in`;
 
+// Format baku untuk daftar tamu
+const GUEST_LIST_FORMAT = `FORMAT BAKU DAFTAR TAMU (gunakan saat: list tamu, daftar tamu, siapa tamu hari ini, tamu check-in, dll):
+
+Berikut adalah daftar tamu untuk hari ini, [DD MMM YYYY]:
+
+**Check-in Hari Ini ([N] Booking):**
+1. **[Nama Tamu]** ([Kode Booking]) | Kamar [Nomor Kamar] ([Tipe Kamar])
+2. ...
+
+**Check-out Hari Ini:**
+1. **[Nama Tamu]** ([Kode Booking]) | Kamar [Nomor Kamar] ([Tipe Kamar])
+2. ...
+
+**Tamu Menginap (Long Stay/In-House):**
+1. **[Nama Tamu]** ([Kode Booking]) | Kamar [Nomor Kamar] ([Tipe Kamar]) - Sampai [Checkout Date]
+2. ...
+
+**Ringkasan Kondisi Hotel:**
+• Total [X] unit kamar terisi hari ini.
+• Total tamu menginap: [Y] orang.
+
+CATATAN PENTING:
+- Selalu tampilkan SEMUA booking dengan status confirmed DAN checked_in
+- Untuk tamu multi-room (multi kamar), tampilkan semua nomor kamar (contoh: "Kamar 204, 205 (Deluxe)")
+- Tamu yang check-in hari ini masuk ke kategori "Check-in Hari Ini"
+- Tamu yang sudah check-in sebelumnya dan masih menginap masuk ke "Tamu Menginap"
+- Hitung total unit kamar dari semua kategori (check-in + menginap)`;
+
 export function buildSystemPrompt(config: PromptConfig): string {
   const { 
     managerName, 
@@ -101,6 +129,8 @@ ${TOOL_RULES}
 ${TOOL_REFERENCE}
 
 ${SECURITY_OVERRIDE}
+
+${GUEST_LIST_FORMAT}
 
 PERSONALITY & STYLE:
 - Traits: ${traitsText}
