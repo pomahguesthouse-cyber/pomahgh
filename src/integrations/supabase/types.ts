@@ -101,6 +101,45 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_chatbot_templates: {
+        Row: {
+          available_variables: Json | null
+          command_description: string | null
+          command_key: string
+          command_name: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          template_content: string
+          updated_at: string | null
+        }
+        Insert: {
+          available_variables?: Json | null
+          command_description?: string | null
+          command_key: string
+          command_name: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          template_content: string
+          updated_at?: string | null
+        }
+        Update: {
+          available_variables?: Json | null
+          command_description?: string | null
+          command_key?: string
+          command_name?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          template_content?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       admin_chatbot_training_examples: {
         Row: {
           category: string | null

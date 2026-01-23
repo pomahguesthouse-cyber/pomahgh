@@ -1,6 +1,17 @@
 // ============= NOTIFICATION TOOLS =============
 
 import { formatDateIndonesian, getWibDate, formatDateISO } from "../lib/dateHelpers.ts";
+import { getTemplate, replaceTemplateVariables } from "../lib/templateHelpers.ts";
+
+// Default template if database template not found
+const DEFAULT_CHECKIN_REMINDER_TEMPLATE = `🌅 *DAFTAR TAMU CHECK-IN*
+📅 {{tanggal}}
+
+Total: {{jumlah_tamu}} tamu
+
+{{list_tamu}}
+
+_Pesan otomatis dari sistem_`;
 
 export async function sendCheckinReminder(supabase: any, dateStr?: string) {
   const wibDate = getWibDate();
@@ -11,9 +22,9 @@ export async function sendCheckinReminder(supabase: any, dateStr?: string) {
   // Get bookings for the date
   const { data: todayBookings, error } = await supabase
     .from('bookings')
-    .select('booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_nights, rooms(name)')
+    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_nights, rooms(name)')
     .eq('check_in', targetDate)
-    .eq('status', 'confirmed')
+    .in('status', ['confirmed', 'checked_in'])
     .order('guest_name');
 
   if (error) {
@@ -31,21 +42,43 @@ export async function sendCheckinReminder(supabase: any, dateStr?: string) {
     };
   }
 
-  // Build reminder message
-  const guestList = todayBookings.map((b: any, i: number) => 
-    `${i + 1}. *${b.guest_name}* (${b.num_guests} tamu)\n` +
-    `   📱 ${b.guest_phone || '-'}\n` +
-    `   🛏️ ${b.rooms?.name} - ${b.allocated_room_number}\n` +
-    `   📅 ${b.total_nights} malam s.d. ${b.check_out}\n` +
-    `   🎫 ${b.booking_code}`
-  ).join('\n\n');
+  // Helper function to get room numbers for a booking
+  async function getRoomNumbers(bookingId: string, fallback: string | null): Promise<string> {
+    const { data: roomData } = await supabase
+      .from('booking_rooms')
+      .select('room_number')
+      .eq('booking_id', bookingId);
+    
+    if (roomData && roomData.length > 0) {
+      return roomData.map((r: any) => r.room_number).join(', ');
+    }
+    return fallback || '-';
+  }
 
-  const reminderMessage = 
-    `🌅 *DAFTAR TAMU CHECK-IN*\n` +
-    `📅 ${formatDateIndonesian(targetDate)}\n\n` +
-    `Total: ${count} tamu\n\n` +
-    `${guestList}\n\n` +
-    `_Pesan otomatis dari sistem_`;
+  // Build guest list
+  const guestListParts: string[] = [];
+  for (let i = 0; i < todayBookings.length; i++) {
+    const b = todayBookings[i];
+    const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
+    guestListParts.push(
+      `${i + 1}. *${b.guest_name}* (${b.num_guests} tamu)\n` +
+      `   📱 ${b.guest_phone || '-'}\n` +
+      `   🛏️ ${b.rooms?.name} - ${roomNumbers}\n` +
+      `   📅 ${b.total_nights} malam s.d. ${formatDateIndonesian(b.check_out)}\n` +
+      `   🎫 ${b.booking_code}`
+    );
+  }
+  const guestList = guestListParts.join('\n\n');
+
+  // Get template from database
+  const template = await getTemplate(supabase, 'checkin_reminder') || DEFAULT_CHECKIN_REMINDER_TEMPLATE;
+  
+  // Replace variables
+  const reminderMessage = replaceTemplateVariables(template, {
+    tanggal: formatDateIndonesian(targetDate),
+    jumlah_tamu: count.toString(),
+    list_tamu: guestList
+  });
 
   // Get manager phone numbers
   const { data: settings } = await supabase
