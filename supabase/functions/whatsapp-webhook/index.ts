@@ -11,7 +11,7 @@ const corsHeaders = {
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW = 60_000;
 
-/* ================= HELPERS ================= */
+/* ================= UTIL ================= */
 
 function normalizePhone(phone: string): string {
   let p = phone.replace(/\D/g, "");
@@ -40,10 +40,10 @@ function normalizeIndo(msg: string): string {
 function formatWA(text: string): string {
   text = text.replace(/\*\*([^*]+)\*\*/g, "*$1*");
   text = text.replace(/\n{3,}/g, "\n\n");
-  return text.slice(0, 4000);
+  return text.slice(0, 4000).trim();
 }
 
-/* ================= RATE LIMIT (DB) ================= */
+/* ================= RATE LIMIT ================= */
 
 async function checkRateLimitDB(supabase: any, phone: string): Promise<boolean> {
   const now = new Date();
@@ -69,6 +69,40 @@ async function checkRateLimitDB(supabase: any, phone: string): Promise<boolean> 
   return true;
 }
 
+/* ================= SUMMARY ENGINE ================= */
+
+function updateConversationSummary(summary: any, message: string): any {
+  const s = { ...(summary || {}) };
+
+  // intent
+  if (/pesan|booking|book|nginap/i.test(message)) {
+    s.intent = "booking";
+  }
+
+  // room
+  const roomMatch = message.match(/(single|deluxe|grand\s*deluxe|family\s*suite)/i);
+  if (roomMatch) {
+    s.room = roomMatch[1].replace(/\s+/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  }
+
+  // guests
+  const guestMatch = message.match(/(\d+)\s*(orang|tamu|pax)/i);
+  if (guestMatch) {
+    s.guests = parseInt(guestMatch[1]);
+  }
+
+  // state lock
+  if (s.room && s.check_in && s.check_out && !s.guests) {
+    s.state = "awaiting_guest_data";
+  }
+
+  if (s.guests && s.room && s.check_in && s.check_out) {
+    s.state = "ready_to_confirm";
+  }
+
+  return s;
+}
+
 /* ================= AI SAFETY ================= */
 
 function validateAI(text: string): boolean {
@@ -76,7 +110,7 @@ function validateAI(text: string): boolean {
   return !banned.some((b) => text.toLowerCase().includes(b));
 }
 
-/* ================= CORE ================= */
+/* ================= MAIN ================= */
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -119,9 +153,14 @@ serve(async (req) => {
       conversationId = conv.id;
     }
 
+    /* === SUMMARY UPDATE === */
+    const updatedSummary = updateConversationSummary(session?.conversation_summary, message);
+
     await supabase.from("whatsapp_sessions").upsert({
       phone_number: phone,
       conversation_id: conversationId,
+      conversation_summary: updatedSummary,
+      conversation_state: updatedSummary?.state ?? "idle",
       last_message_at: new Date().toISOString(),
       is_active: true,
       session_type: "guest",
@@ -133,7 +172,7 @@ serve(async (req) => {
       content: message,
     });
 
-    /* === AI CALL === */
+    /* === AI CALL (SUMMARY BASED) === */
     const aiRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/chatbot`, {
       method: "POST",
       headers: {
@@ -141,9 +180,25 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        messages: [{ role: "user", content: message }],
+        messages: [
+          {
+            role: "system",
+            content: `
+Anda adalah WhatsApp Assistant Pomah Guesthouse.
+Ikuti STATE di bawah dengan KETAT.
+DILARANG mengulang pertanyaan yang sudah dijawab.
+
+STATE:
+${JSON.stringify(updatedSummary, null, 2)}
+
+RULES:
+- awaiting_guest_data → minta nama, email, nomor
+- ready_to_confirm → konfirmasi booking
+              `,
+          },
+          { role: "user", content: message },
+        ],
         channel: "whatsapp",
-        system_state: session?.conversation_state ?? "idle",
       }),
     });
 
@@ -152,7 +207,7 @@ serve(async (req) => {
     const aiData = await aiRes.json();
     let aiText = aiData.choices?.[0]?.message?.content ?? "";
 
-    /* === AI FAILSAFE === */
+    /* === FAILSAFE === */
     if (!aiText || !validateAI(aiText)) {
       aiText = "Baik, admin kami akan bantu sebentar lagi 🙏";
       await supabase.from("whatsapp_sessions").update({ is_takeover: true }).eq("phone_number", phone);
@@ -166,7 +221,7 @@ serve(async (req) => {
       content: aiText,
     });
 
-    /* === SEND WHATSAPP === */
+    /* === SEND WA === */
     await fetch("https://api.fonnte.com/send", {
       method: "POST",
       headers: {
@@ -183,7 +238,7 @@ serve(async (req) => {
     await supabase.from("whatsapp_events").insert({
       phone,
       event: "AI_SENT",
-      payload: { text: aiText },
+      payload: { summary: updatedSummary },
     });
 
     return Response.json({ status: "success" });
