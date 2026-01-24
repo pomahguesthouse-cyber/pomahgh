@@ -14,6 +14,7 @@ import { logAuditEntry } from "./lib/auditLog.ts";
 import { TOOLS } from "./tools/definitions.ts";
 import type { HotelSettings, PersonaSettings, ToolExecution } from "./lib/types.ts";
 import { adminCache, ADMIN_CACHE_KEYS, ADMIN_CACHE_TTL, getOrLoadAdmin } from "./lib/cache.ts";
+import { detectIntent, getToolGuidanceHint } from "./lib/intentDetector.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -97,7 +98,15 @@ Deno.serve(async (req: Request) => {
       greetingTemplate: cs?.admin_greeting_template || 'Halo {manager_name}! Ada yang bisa saya bantu?'
     };
 
-    // 3. Build system prompt (condensed)
+    // 3. Detect intent from last user message
+    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop();
+    const userMessage = lastUserMessage?.content || '';
+    const intentMatch = detectIntent(userMessage);
+    const intentHint = getToolGuidanceHint(intentMatch);
+    
+    console.log(`📝 Intent detected: ${intentMatch.intent} (${intentMatch.confidence}) → ${intentMatch.suggestedTool || 'none'}`);
+
+    // 4. Build system prompt with intent hint
     const knowledgeContext = buildKnowledgeContext(knowledgeData || []);
     const trainingContext = buildTrainingContext(trainingData || []);
 
@@ -108,18 +117,17 @@ Deno.serve(async (req: Request) => {
       personaSettings,
       knowledgeContext,
       trainingContext,
-      isFirstMessage: messages.length <= 1
+      isFirstMessage: messages.length <= 1,
+      intentHint
     });
 
-    // 4. Filter tools by role
+    // 5. Filter tools by role
     const filteredTools = filterToolsByRole(TOOLS, auth.managerRole);
 
-    // 5. Audit data
+    // 6. Audit data
     const startTime = Date.now();
     const sessionId = crypto.randomUUID();
     const executedTools: ToolExecution[] = [];
-    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop();
-    const userMessage = lastUserMessage?.content || '';
     const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
