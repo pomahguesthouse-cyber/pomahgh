@@ -5,8 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const RATE_LIMIT_MAX = 10;
@@ -39,28 +38,12 @@ function normalizeIndo(msg: string): string {
 }
 
 function formatWA(text: string): string {
-  text = text.replace(/\*\*([^*]+)\*\*/g, "*$1*");
-  text = text.replace(/\n{3,}/g, "\n\n");
-  return text.slice(0, 4000);
+  return text.replace(/\n{3,}/g, "\n\n").slice(0, 4000);
 }
-
-function validateAI(text: string): boolean {
-  const banned = [
-    "sebagai ai",
-    "model bahasa",
-    "saya tidak yakin",
-    "tidak dapat membantu",
-    "saya hanyalah",
-    "saya tidak memiliki",
-  ];
-  return !banned.some((b) => text.toLowerCase().includes(b));
-}
-
-/* ================= BOOKING STATE HELPERS ================= */
 
 function extractDate(text: string): string | null {
-  const match = text.match(/\d{4}-\d{2}-\d{2}/);
-  return match ? match[0] : null;
+  const m = text.match(/\d{4}-\d{2}-\d{2}/);
+  return m ? m[0] : null;
 }
 
 function extractRoom(text: string): string | null {
@@ -71,30 +54,19 @@ function extractRoom(text: string): string | null {
 }
 
 function isYes(text: string): boolean {
-  return ["ya", "iya", "ok", "oke", "betul"].some((v) =>
-    text.includes(v)
-  );
+  return ["ya", "iya", "ok", "oke", "betul"].some((v) => text.includes(v));
 }
 
 function isHumanRequest(text: string): boolean {
-  return ["admin", "cs", "operator", "manusia"].some((v) =>
-    text.includes(v)
-  );
+  return ["admin", "cs", "operator"].some((v) => text.includes(v));
 }
 
 /* ================= RATE LIMIT ================= */
 
-async function checkRateLimitDB(
-  supabase: any,
-  phone: string
-): Promise<boolean> {
+async function checkRateLimitDB(supabase: any, phone: string): Promise<boolean> {
   const now = new Date();
 
-  const { data } = await supabase
-    .from("whatsapp_rate_limits")
-    .select("*")
-    .eq("phone_number", phone)
-    .maybeSingle();
+  const { data } = await supabase.from("whatsapp_rate_limits").select("*").eq("phone_number", phone).maybeSingle();
 
   if (!data || new Date(data.reset_at) < now) {
     await supabase.from("whatsapp_rate_limits").upsert({
@@ -116,6 +88,117 @@ async function checkRateLimitDB(
   return true;
 }
 
+/* ================= AVAILABILITY ================= */
+
+async function checkAvailability(supabase: any, room: string, checkin: string, checkout: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("check_room_availability", {
+    p_room_type: room,
+    p_checkin: checkin,
+    p_checkout: checkout,
+  });
+
+  if (error) {
+    console.error("availability error", error);
+    return false;
+  }
+
+  return data === true;
+}
+
+/* ================= STATE MACHINE (SAFE) ================= */
+
+async function handleBookingState(
+  supabase: any,
+  session: any,
+  message: string,
+): Promise<{
+  reply: string | null;
+  nextState: string | null;
+  bookingData: any;
+}> {
+  let state = session?.conversation_state ?? "idle";
+  let bookingData = session?.booking_data ?? {};
+  let reply: string | null = null;
+  let nextState: string | null = null;
+
+  if (isHumanRequest(message)) {
+    return {
+      reply: "Baik, saya hubungkan ke admin ya 🙏",
+      nextState: "human_takeover",
+      bookingData,
+    };
+  }
+
+  switch (state) {
+    case "idle":
+      reply = "Halo 👋 Selamat datang di Pomah Guesthouse.\n" + "Tanggal *check-in* kapan? (YYYY-MM-DD)";
+      nextState = "ask_checkin";
+      break;
+
+    case "ask_checkin": {
+      const d = extractDate(message);
+      if (!d) {
+        reply = "Format salah 🙏 contoh: *2026-02-10*";
+        break;
+      }
+      bookingData.checkin = d;
+      reply = "Siap 👍 tanggal *check-out* kapan?";
+      nextState = "ask_checkout";
+      break;
+    }
+
+    case "ask_checkout": {
+      const d = extractDate(message);
+      if (!d) {
+        reply = "Tanggal check-out belum valid 🙏";
+        break;
+      }
+      bookingData.checkout = d;
+      reply = "Pilih tipe kamar:\n- Standard\n- Deluxe\n- Family";
+      nextState = "ask_room";
+      break;
+    }
+
+    case "ask_room": {
+      const room = extractRoom(message);
+      if (!room) {
+        reply = "Mohon pilih:\n*Standard / Deluxe / Family*";
+        break;
+      }
+
+      const available = await checkAvailability(supabase, room, bookingData.checkin, bookingData.checkout);
+
+      if (!available) {
+        reply = `❌ Kamar *${room}* penuh di tanggal tersebut.\n` + "Silakan pilih kamar lain.";
+        break;
+      }
+
+      bookingData.room = room;
+      reply =
+        `✅ Kamar tersedia!\n\n` +
+        `📅 ${bookingData.checkin} → ${bookingData.checkout}\n` +
+        `🏠 ${room}\n\n` +
+        `Ketik *ya* untuk konfirmasi.`;
+      nextState = "confirm";
+      break;
+    }
+
+    case "confirm":
+      if (!isYes(message)) {
+        reply = "Booking dibatalkan.\n" + "Ketik *booking* untuk mulai ulang.";
+        bookingData = {};
+        nextState = "idle";
+        break;
+      }
+
+      reply = "✅ Booking dicatat!\n" + "Admin akan menghubungi untuk pembayaran 🙏";
+      nextState = "done";
+      break;
+  }
+
+  return { reply, nextState, bookingData };
+}
+
 /* ================= CORE ================= */
 
 serve(async (req) => {
@@ -124,10 +207,7 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const FONNTE_KEY = Deno.env.get("FONNTE_API_KEY")!;
     const body = await req.json();
@@ -139,145 +219,60 @@ serve(async (req) => {
     const phone = normalizePhone(body.sender);
     const message = normalizeIndo(body.message);
 
-    /* === RATE LIMIT === */
     if (!(await checkRateLimitDB(supabase, phone))) {
       return Response.json({ status: "rate_limited" });
     }
 
-    /* === SESSION === */
     const { data: session } = await supabase
       .from("whatsapp_sessions")
       .select("*")
       .eq("phone_number", phone)
       .maybeSingle();
 
-    if (session?.is_blocked) {
-      return Response.json({ status: "blocked" });
-    }
-
     let conversationId = session?.conversation_id;
 
     if (!conversationId) {
-      const { data: conv } = await supabase
+      const { data } = await supabase
         .from("chat_conversations")
         .insert({ session_id: `wa_${phone}_${Date.now()}` })
         .select()
         .single();
-      conversationId = conv.id;
+      conversationId = data.id;
     }
 
     await supabase.from("whatsapp_sessions").upsert({
       phone_number: phone,
       conversation_id: conversationId,
-      last_message_at: new Date().toISOString(),
-      is_active: true,
-      session_type: "guest",
       conversation_state: session?.conversation_state ?? "idle",
       booking_data: session?.booking_data ?? {},
+      last_message_at: new Date().toISOString(),
+      is_active: true,
     });
 
-    /* === SAVE USER MESSAGE === */
     await supabase.from("chat_messages").insert({
       conversation_id: conversationId,
       role: "user",
       content: message,
     });
 
-    /* ================= STATE MACHINE ================= */
+    const { reply, nextState, bookingData } = await handleBookingState(supabase, session, message);
 
-    let state = session?.conversation_state ?? "idle";
-    let bookingData = session?.booking_data ?? {};
-    let reply: string | null = null;
-    let nextState: string | null = null;
-
-    if (isHumanRequest(message)) {
-      reply = "Baik, saya hubungkan ke admin ya 🙏";
-      nextState = "human_takeover";
-    } else {
-      switch (state) {
-        case "idle":
-          reply =
-            "Halo 👋 Selamat datang di Pomah Guesthouse.\n" +
-            "Boleh info tanggal *check-in*? (YYYY-MM-DD)";
-          nextState = "ask_checkin";
-          break;
-
-        case "ask_checkin": {
-          const date = extractDate(message);
-          if (!date) {
-            reply = "Format tanggal belum sesuai 🙏\nContoh: *2026-02-10*";
-            break;
-          }
-          bookingData.checkin = date;
-          reply = "Siap 👍\nTanggal *check-out* kapan?";
-          nextState = "ask_checkout";
-          break;
-        }
-
-        case "ask_checkout": {
-          const date = extractDate(message);
-          if (!date) {
-            reply = "Tanggal check-out belum valid 🙏";
-            break;
-          }
-          bookingData.checkout = date;
-          reply =
-            "Oke ✨\nSilakan pilih tipe kamar:\n" +
-            "- Standard\n- Deluxe\n- Family";
-          nextState = "ask_room";
-          break;
-        }
-
-        case "ask_room": {
-          const room = extractRoom(message);
-          if (!room) {
-            reply =
-              "Mohon pilih tipe kamar:\n*Standard / Deluxe / Family*";
-            break;
-          }
-          bookingData.room = room;
-          reply =
-            `Mohon konfirmasi 👇\n\n` +
-            `📅 Check-in: *${bookingData.checkin}*\n` +
-            `📅 Check-out: *${bookingData.checkout}*\n` +
-            `🏠 Kamar: *${room}*\n\n` +
-            `Ketik *ya* untuk lanjut booking.`;
-          nextState = "confirm";
-          break;
-        }
-
-        case "confirm":
-          if (!isYes(message)) {
-            reply =
-              "Booking dibatalkan 🙏\n" +
-              "Jika ingin ulang, ketik *booking*.";
-            nextState = "idle";
-            bookingData = {};
-            break;
-          }
-
-          reply =
-            "✅ Booking berhasil dicatat!\n" +
-            "Admin kami akan menghubungi untuk pembayaran 🙏";
-          nextState = "done";
-          break;
-      }
-    }
-
-    /* === STATE RESPONSE (NO AI) === */
     if (reply) {
-      await supabase.from("whatsapp_sessions").update({
-        conversation_state: nextState,
-        booking_data: bookingData,
-        is_takeover: nextState === "human_takeover",
-      }).eq("phone_number", phone);
+      await supabase
+        .from("whatsapp_sessions")
+        .update({
+          conversation_state: nextState,
+          booking_data: bookingData,
+          is_takeover: nextState === "human_takeover",
+        })
+        .eq("phone_number", phone);
 
-      reply = formatWA(reply);
+      const formatted = formatWA(reply);
 
       await supabase.from("chat_messages").insert({
         conversation_id: conversationId,
         role: "assistant",
-        content: reply,
+        content: formatted,
       });
 
       await fetch("https://api.fonnte.com/send", {
@@ -288,7 +283,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           target: phone,
-          message: reply,
+          message: formatted,
           countryCode: "62",
         }),
       });
@@ -296,73 +291,9 @@ serve(async (req) => {
       return Response.json({ status: "state_reply" });
     }
 
-    /* ================= AI FALLBACK ================= */
-
-    const { data: history } = await supabase
-      .from("chat_messages")
-      .select("role, content")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true })
-      .limit(10);
-
-    const aiRes = await fetch(
-      `${Deno.env.get("SUPABASE_URL")}/functions/v1/chatbot`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${Deno.env.get(
-            "SUPABASE_SERVICE_ROLE_KEY"
-          )}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: history,
-          channel: "whatsapp",
-          system_state: state,
-        }),
-      }
-    );
-
-    if (!aiRes.ok) throw new Error("AI error");
-
-    const aiData = await aiRes.json();
-    let aiText = aiData?.choices?.[0]?.message?.content ?? "";
-
-    if (!aiText || !validateAI(aiText)) {
-      aiText = "Baik, admin kami akan bantu sebentar lagi 🙏";
-      await supabase
-        .from("whatsapp_sessions")
-        .update({ is_takeover: true })
-        .eq("phone_number", phone);
-    }
-
-    aiText = formatWA(aiText);
-
-    await supabase.from("chat_messages").insert({
-      conversation_id: conversationId,
-      role: "assistant",
-      content: aiText,
-    });
-
-    await fetch("https://api.fonnte.com/send", {
-      method: "POST",
-      headers: {
-        Authorization: FONNTE_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        target: phone,
-        message: aiText,
-        countryCode: "62",
-      }),
-    );
-
-    return Response.json({ status: "success" });
+    return Response.json({ status: "no_action" });
   } catch (e) {
     console.error(e);
-    return new Response(
-      JSON.stringify({ status: "error", message: String(e) }),
-      { status: 500, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify({ status: "error", message: String(e) }), { status: 500, headers: corsHeaders });
   }
 });
