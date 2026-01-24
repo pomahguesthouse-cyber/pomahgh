@@ -5,7 +5,7 @@ import type { ManagerRole } from "../lib/constants.ts";
 
 import { getAvailabilitySummary, getTodayGuests } from "./availability.ts";
 import { getBookingStats, getRecentBookings, searchBookings, getBookingDetail } from "./bookingStats.ts";
-import { createAdminBooking, updateBookingStatus, updateGuestInfo, rescheduleBooking, changeBookingRoom } from "./bookingMutations.ts";
+import { createAdminBooking, updateBookingStatus, updateGuestInfo, rescheduleBooking, changeBookingRoom, updateRoomStatus, extendStay } from "./bookingMutations.ts";
 import { getRoomInventory, updateRoomPrice, getRoomPrices } from "./roomManagement.ts";
 import { sendCheckinReminder, sendCalendarLink } from "./notifications.ts";
 
@@ -89,6 +89,12 @@ async function executeTool(supabase: any, toolName: string, args: any): Promise<
     
     case 'change_booking_room':
       return await changeBookingRoom(supabase, args);
+    
+    case 'update_room_status':
+      return await updateRoomStatus(supabase, args);
+    
+    case 'extend_stay':
+      return await extendStay(supabase, args);
     
     case 'send_checkin_reminder':
       return await sendCheckinReminder(supabase, args.date);
