@@ -394,6 +394,57 @@ export type Database = {
           },
         ]
       }
+      booking_drafts: {
+        Row: {
+          check_in: string
+          check_out: string
+          conversation_id: string
+          created_at: string | null
+          guest_email: string | null
+          guest_name: string | null
+          guest_phone: string | null
+          guests: number
+          id: string
+          nights: number
+          phone: string
+          room_type: string
+          status: string | null
+          summary: Json
+        }
+        Insert: {
+          check_in: string
+          check_out: string
+          conversation_id: string
+          created_at?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
+          guests: number
+          id?: string
+          nights: number
+          phone: string
+          room_type: string
+          status?: string | null
+          summary: Json
+        }
+        Update: {
+          check_in?: string
+          check_out?: string
+          conversation_id?: string
+          created_at?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
+          guests?: number
+          id?: string
+          nights?: number
+          phone?: string
+          room_type?: string
+          status?: string | null
+          summary?: Json
+        }
+        Relationships: []
+      }
       booking_rooms: {
         Row: {
           booking_id: string
@@ -2873,10 +2924,55 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_events: {
+        Row: {
+          created_at: string | null
+          event: string | null
+          id: string
+          payload: Json | null
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event?: string | null
+          id?: string
+          payload?: Json | null
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event?: string | null
+          id?: string
+          payload?: Json | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_rate_limits: {
+        Row: {
+          count: number
+          phone_number: string
+          reset_at: string
+        }
+        Insert: {
+          count: number
+          phone_number: string
+          reset_at: string
+        }
+        Update: {
+          count?: number
+          phone_number?: string
+          reset_at?: string
+        }
+        Relationships: []
+      }
       whatsapp_sessions: {
         Row: {
+          booking_data: Json | null
           context: Json | null
           conversation_id: string | null
+          conversation_state: string | null
+          conversation_summary: Json | null
           created_at: string | null
           guest_name: string | null
           id: string
@@ -2891,8 +2987,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          booking_data?: Json | null
           context?: Json | null
           conversation_id?: string | null
+          conversation_state?: string | null
+          conversation_summary?: Json | null
           created_at?: string | null
           guest_name?: string | null
           id?: string
@@ -2907,8 +3006,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          booking_data?: Json | null
           context?: Json | null
           conversation_id?: string | null
+          conversation_state?: string | null
+          conversation_summary?: Json | null
           created_at?: string | null
           guest_name?: string | null
           id?: string

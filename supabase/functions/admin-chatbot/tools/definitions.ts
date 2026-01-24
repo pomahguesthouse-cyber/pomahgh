@@ -172,5 +172,37 @@ export const TOOLS: ToolDefinition[] = [
         required: ["booking_code", "new_room_name", "new_room_number"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_room_status",
+      description: "Update status booking berdasarkan nomor kamar. Gunakan saat manager melaporkan tamu sudah check-in atau check-out. Contoh: '207 sudah checkout', '205 sudah checkin', 'tamu kamar 204 sudah datang'",
+      parameters: {
+        type: "object",
+        properties: {
+          room_number: { type: "string", description: "Nomor kamar yang dilaporkan (contoh: 207, 204, FS100)" },
+          new_status: { type: "string", enum: ["checked_in", "checked_out"], description: "Status baru: checked_in atau checked_out" },
+          date: { type: "string", description: "Tanggal operasi (YYYY-MM-DD), default hari ini" }
+        },
+        required: ["room_number", "new_status"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "extend_stay",
+      description: "Perpanjang menginap tamu. Gunakan saat manager melaporkan tamu mau extend atau perpanjang. Contoh: '207 extend 1 malam', 'kamar 204 perpanjang sampai tanggal 25'",
+      parameters: {
+        type: "object",
+        properties: {
+          room_number: { type: "string", description: "Nomor kamar yang mau extend" },
+          new_check_out: { type: "string", description: "Tanggal check-out baru (YYYY-MM-DD)" },
+          extra_nights: { type: "number", description: "Jumlah malam tambahan" }
+        },
+        required: ["room_number"]
+      }
+    }
   }
 ];

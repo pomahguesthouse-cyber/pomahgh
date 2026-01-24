@@ -56,6 +56,8 @@ export const ROLE_TOOL_ACCESS: Record<ManagerRole, string[] | 'all'> = {
     'update_guest_info',
     'reschedule_booking',
     'change_booking_room',
+    'update_room_status',
+    'extend_stay',
     'get_room_prices',
     'send_checkin_reminder',
     'get_today_guests',
