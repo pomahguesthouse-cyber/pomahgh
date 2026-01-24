@@ -216,14 +216,76 @@ export async function createAdminBooking(supabase: any, args: any) {
   };
 }
 
-export async function updateBookingStatus(supabase: any, bookingCode: string, newStatus: string, reason?: string) {
-  const { data: booking, error: findError } = await supabase
-    .from('bookings')
-    .select('id, booking_code, guest_name, status, special_requests, rooms(name)')
-    .eq('booking_code', bookingCode)
-    .single();
+export async function updateBookingStatus(
+  supabase: any, 
+  bookingCode: string | null, 
+  newStatus: string, 
+  reason?: string,
+  roomNumber?: string
+) {
+  let booking: any = null;
+  let searchMethod = 'booking_code';
 
-  if (findError || !booking) {
+  // Try to find by booking code first
+  if (bookingCode) {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('id, booking_code, guest_name, status, special_requests, allocated_room_number, rooms(name)')
+      .eq('booking_code', bookingCode)
+      .single();
+    
+    if (!error && data) {
+      booking = data;
+    }
+  }
+
+  // If not found by booking code, try room number for active bookings
+  if (!booking && roomNumber) {
+    searchMethod = 'room_number';
+    const today = new Date().toISOString().split('T')[0];
+    
+    // First check in booking_rooms table for multi-room bookings
+    const { data: bookingRooms } = await supabase
+      .from('booking_rooms')
+      .select(`
+        booking_id,
+        room_number,
+        bookings!inner (
+          id, booking_code, guest_name, status, special_requests, allocated_room_number,
+          check_in, check_out, rooms(name)
+        )
+      `)
+      .eq('room_number', roomNumber)
+      .in('bookings.status', ['confirmed', 'checked_in'])
+      .lte('bookings.check_in', today)
+      .gte('bookings.check_out', today);
+
+    if (bookingRooms && bookingRooms.length > 0) {
+      const br = bookingRooms[0];
+      booking = {
+        ...br.bookings,
+        allocated_room_number: roomNumber
+      };
+    } else {
+      // Fallback to allocated_room_number in bookings table
+      const { data: directBookings } = await supabase
+        .from('bookings')
+        .select('id, booking_code, guest_name, status, special_requests, allocated_room_number, check_in, check_out, rooms(name)')
+        .eq('allocated_room_number', roomNumber)
+        .in('status', ['confirmed', 'checked_in'])
+        .lte('check_in', today)
+        .gte('check_out', today);
+
+      if (directBookings && directBookings.length > 0) {
+        booking = directBookings[0];
+      }
+    }
+  }
+
+  if (!booking) {
+    if (roomNumber) {
+      throw new Error(`Tidak ada booking aktif untuk kamar ${roomNumber} hari ini`);
+    }
     throw new Error(`Booking ${bookingCode} tidak ditemukan`);
   }
 
@@ -232,6 +294,16 @@ export async function updateBookingStatus(supabase: any, bookingCode: string, ne
     status: newStatus,
     updated_at: new Date().toISOString()
   };
+
+  // Set check-in time if checking in
+  if (newStatus === 'checked_in' && oldStatus !== 'checked_in') {
+    updateData.check_in_time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Set check-out time if checking out
+  if (newStatus === 'checked_out' && oldStatus !== 'checked_out') {
+    updateData.check_out_time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
 
   if (newStatus === 'cancelled' && reason) {
     const existingRequests = booking.special_requests || '';
@@ -247,12 +319,14 @@ export async function updateBookingStatus(supabase: any, bookingCode: string, ne
 
   return {
     success: true,
-    booking_code: bookingCode,
+    booking_code: booking.booking_code,
     guest_name: booking.guest_name,
     room_name: booking.rooms?.name,
+    room_number: booking.allocated_room_number || roomNumber,
     old_status: oldStatus,
     new_status: newStatus,
-    cancellation_reason: reason || null
+    cancellation_reason: reason || null,
+    search_method: searchMethod
   };
 }
 
