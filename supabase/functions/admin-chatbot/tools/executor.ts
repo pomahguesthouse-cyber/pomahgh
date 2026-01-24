@@ -79,7 +79,7 @@ async function executeTool(supabase: any, toolName: string, args: any): Promise<
       return await getBookingDetail(supabase, args.booking_code);
     
     case 'update_booking_status':
-      return await updateBookingStatus(supabase, args.booking_code, args.new_status, args.cancellation_reason, args.room_number);
+      return await updateBookingStatus(supabase, args.booking_code, args.new_status, args.cancellation_reason);
     
     case 'update_guest_info':
       return await updateGuestInfo(supabase, args);
