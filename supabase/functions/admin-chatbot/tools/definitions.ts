@@ -204,5 +204,36 @@ export const TOOLS: ToolDefinition[] = [
         required: ["room_number"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "set_late_checkout",
+      description: "Set late checkout untuk tamu yang checkout hari ini. Gunakan saat manager memilih opsi late checkout dengan waktu dan biaya. Contoh: '207 late checkout jam 17.00 biaya 100000', '204 LCO 15:00'",
+      parameters: {
+        type: "object",
+        properties: {
+          room_number: { type: "string", description: "Nomor kamar yang mau late checkout" },
+          checkout_time: { type: "string", description: "Jam checkout baru (format HH:MM atau HH.MM atau hanya HH)" },
+          fee: { type: "number", description: "Biaya late checkout (opsional, default 0)" }
+        },
+        required: ["room_number", "checkout_time"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "check_extend_availability",
+      description: "Cek ketersediaan kamar untuk extend stay sebelum konfirmasi. Gunakan untuk validasi sebelum extend.",
+      parameters: {
+        type: "object",
+        properties: {
+          room_number: { type: "string", description: "Nomor kamar yang mau extend" },
+          extra_nights: { type: "number", description: "Jumlah malam tambahan" }
+        },
+        required: ["room_number", "extra_nights"]
+      }
+    }
   }
 ];
