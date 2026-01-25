@@ -61,11 +61,18 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
 🔄 STATUS UPDATE (CHECKIN/CHECKOUT):
 - "207 sudah checkout" → update_room_status(room_number="207", new_status="checked_out")
 - "205 sudah checkin" → update_room_status(room_number="205", new_status="checked_in")
-- "tamu kamar 204 sudah datang" → update_room_status(room_number="204", new_status="checked_in")
+- "207 1" (setelah reminder checkout) → update_room_status(room_number="207", new_status="checked_out")
+
+⏰ LATE CHECKOUT:
+- "207 2 jam 17.00" → set_late_checkout(room_number="207", checkout_time="17:00")
+- "207 LCO 15:00 biaya 100000" → set_late_checkout(room_number="207", checkout_time="15:00", fee=100000)
+- WAJIB cek ketersediaan dulu sebelum konfirmasi
 
 ⏳ EXTEND STAY:
-- "207 extend 1 malam" → extend_stay(room_number="207", extra_nights=1)
+- "207 3 2 malam" → PERTAMA cek check_extend_availability, LALU konfirmasi ke manager
+- "207 extend 1 malam" → check_extend_availability DULU, baru extend_stay
 - "kamar 204 perpanjang sampai 25" → extend_stay(room_number="204", new_check_out="YYYY-MM-25")
+- JANGAN langsung extend, SELALU konfirmasi harga dan ketersediaan
 
 📝 BOOKING BARU:
 - "booking baru..." → create_admin_booking(semua parameter wajib)
@@ -76,7 +83,23 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
 
 📊 STATISTIK:
 - "statistik hari ini" → get_booking_stats(period="today")
-- "laporan minggu ini" → get_booking_stats(period="week")`;
+- "laporan minggu ini" → get_booking_stats(period="week")
+
+⚠️ CHECKOUT REMINDER FLOW:
+Saat manager merespons reminder checkout dengan angka:
+- "207 1" → langsung update_room_status ke checked_out
+- "207 2 jam 17.00" → set_late_checkout dengan waktu dan biaya (TANYAKAN biaya jika tidak disebutkan)
+- "207 3 2 malam" → WAJIB check_extend_availability DULU, tampilkan harga, TUNGGU konfirmasi
+
+PENTING untuk Late Checkout (opsi 2):
+1. Jika waktu disebutkan tapi biaya tidak, TANYAKAN berapa biaya LCO
+2. Setelah dapat waktu dan biaya, panggil set_late_checkout
+
+PENTING untuk Extend (opsi 3):
+1. WAJIB panggil check_extend_availability terlebih dahulu
+2. Tampilkan: ketersediaan, harga per malam, total biaya tambahan
+3. TUNGGU konfirmasi manager sebelum panggil extend_stay
+4. JANGAN langsung extend tanpa konfirmasi!`;
 
 // Security override - anti-manipulation
 const SECURITY_OVERRIDE = `SECURITY:
@@ -118,6 +141,38 @@ const GUEST_LIST_FORMAT = `FORMAT RESPONS WAJIB:
 📅 Checkout: {{old_check_out}} → {{new_check_out}}
 🌙 {{extra_nights}} malam tambahan
 💰 Tambahan: Rp {{extra_price}}
+\`\`\`
+
+✅ LATE CHECKOUT (setelah set_late_checkout berhasil):
+\`\`\`
+✅ **LATE CHECK-OUT DISET**
+📝 {{booking_code}} | {{guest_name}}
+🛏️ Kamar {{room_numbers}} ({{room_type}})
+⏰ Checkout: 12:00 → {{new_checkout_time}}
+💰 Biaya LCO: Rp {{lco_fee}}
+📊 Total: Rp {{new_total_price}}
+\`\`\`
+
+📋 CEK EXTEND AVAILABILITY (setelah check_extend_availability):
+Jika available=true:
+\`\`\`
+📋 **CEK KETERSEDIAAN EXTEND**
+✅ Kamar {{room_numbers}} tersedia untuk extend!
+
+📝 Booking: {{booking_code}} | {{guest_name}}
+📅 Checkout saat ini: {{current_checkout}}
+📅 Checkout baru: {{new_checkout}}
+🌙 Tambahan: {{extra_nights}} malam
+💰 Harga: Rp {{price_per_night}}/malam
+💰 Biaya tambahan: Rp {{extra_price}}
+
+Konfirmasi extend? (Ya/Tidak)
+\`\`\`
+
+Jika available=false:
+\`\`\`
+⚠️ **TIDAK BISA EXTEND**
+Kamar {{room_number}} sudah dipesan oleh {{conflict_guest}} mulai {{conflict_checkin}}.
 \`\`\`
 
 CATATAN FORMAT:

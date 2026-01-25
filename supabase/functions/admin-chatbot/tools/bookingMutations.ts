@@ -460,6 +460,102 @@ export async function changeBookingRoom(supabase: any, args: any) {
 }
 
 // Update booking status by room number (for check-in/check-out reports from managers)
+// Set late checkout with time and fee
+export async function setLateCheckout(supabase: any, args: any) {
+  const { room_number, checkout_time, fee } = args;
+  
+  // Get today's date in WIB timezone
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).split(' ')[0];
+  
+  // Find active booking for this room with checkout today
+  const { data: bookings, error: findError } = await supabase
+    .from('bookings')
+    .select(`
+      id, booking_code, guest_name, status, check_in, check_out, check_out_time,
+      total_price, allocated_room_number, room_id,
+      rooms(name, price_per_night),
+      booking_rooms(room_number, room_id, rooms(name))
+    `)
+    .in('status', ['checked_in', 'confirmed'])
+    .eq('check_out', today);
+  
+  if (findError) throw findError;
+  
+  // Find matching booking
+  const matchingBooking = bookings?.find((b: any) => {
+    if (b.allocated_room_number === room_number) return true;
+    if (b.booking_rooms?.some((br: any) => br.room_number === room_number)) return true;
+    return false;
+  });
+  
+  if (!matchingBooking) {
+    throw new Error(`Tidak ditemukan booking checkout hari ini untuk kamar ${room_number}`);
+  }
+  
+  // Parse checkout time (format: "17:00" or "17.00" or just "17")
+  let parsedTime = checkout_time;
+  if (!parsedTime.includes(':') && !parsedTime.includes('.')) {
+    parsedTime = `${checkout_time}:00`;
+  }
+  parsedTime = parsedTime.replace('.', ':');
+  
+  // Validate time format
+  const timeMatch = parsedTime.match(/^(\d{1,2}):(\d{2})$/);
+  if (!timeMatch) {
+    throw new Error(`Format waktu tidak valid: ${checkout_time}. Gunakan format HH:MM`);
+  }
+  
+  const hour = parseInt(timeMatch[1]);
+  if (hour < 12 || hour > 23) {
+    throw new Error(`Late checkout harus antara jam 12:00 - 23:00`);
+  }
+  
+  // Calculate new total with fee
+  const lcoFee = fee || 0;
+  const newTotalPrice = matchingBooking.total_price + lcoFee;
+  
+  // Update booking with late checkout time and fee
+  const { error: updateError } = await supabase
+    .from('bookings')
+    .update({
+      check_out_time: parsedTime,
+      total_price: newTotalPrice,
+      status: 'checked_in', // Ensure still checked in
+      remark: `Late Checkout: ${parsedTime}${lcoFee > 0 ? ` (+Rp ${lcoFee.toLocaleString('id-ID')})` : ''}`,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', matchingBooking.id);
+  
+  if (updateError) throw updateError;
+  
+  // Get all room numbers
+  const roomNumbers: string[] = [];
+  if (matchingBooking.allocated_room_number) {
+    roomNumbers.push(matchingBooking.allocated_room_number);
+  }
+  if (matchingBooking.booking_rooms) {
+    matchingBooking.booking_rooms.forEach((br: any) => {
+      if (br.room_number && !roomNumbers.includes(br.room_number)) {
+        roomNumbers.push(br.room_number);
+      }
+    });
+  }
+  
+  return {
+    success: true,
+    booking_code: matchingBooking.booking_code,
+    guest_name: matchingBooking.guest_name,
+    room_numbers: roomNumbers.join(', '),
+    room_type: matchingBooking.rooms?.name || matchingBooking.booking_rooms?.[0]?.rooms?.name,
+    new_checkout_time: parsedTime,
+    lco_fee: lcoFee,
+    old_total_price: matchingBooking.total_price,
+    new_total_price: newTotalPrice,
+    status: 'Late Check-Out (LCO)'
+  };
+}
+
+// Update booking status by room number (for check-in/check-out reports from managers)
 export async function updateRoomStatus(supabase: any, args: any) {
   const { room_number, new_status, date } = args;
   
@@ -653,5 +749,104 @@ export async function extendStay(supabase: any, args: any) {
     extra_price: extraPrice,
     old_total_price: matchingBooking.total_price,
     new_total_price: newTotalPrice
+  };
+}
+
+// Check extend availability before confirming
+export async function checkExtendAvailability(supabase: any, args: any) {
+  const { room_number, extra_nights } = args;
+  
+  // Get today's date in WIB timezone
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).split(' ')[0];
+  
+  // Find active booking for this room
+  const { data: bookings, error: findError } = await supabase
+    .from('bookings')
+    .select(`
+      id, booking_code, guest_name, status, check_in, check_out, total_nights, total_price,
+      allocated_room_number, room_id,
+      rooms(name, price_per_night),
+      booking_rooms(room_number, room_id, price_per_night, rooms(name))
+    `)
+    .in('status', ['checked_in', 'confirmed'])
+    .gte('check_out', today);
+  
+  if (findError) throw findError;
+  
+  const matchingBooking = bookings?.find((b: any) => {
+    if (b.allocated_room_number === room_number) return true;
+    if (b.booking_rooms?.some((br: any) => br.room_number === room_number)) return true;
+    return false;
+  });
+  
+  if (!matchingBooking) {
+    return {
+      available: false,
+      reason: `Tidak ditemukan booking aktif untuk kamar ${room_number}`
+    };
+  }
+  
+  // Calculate new checkout date
+  const currentCheckOut = new Date(matchingBooking.check_out);
+  currentCheckOut.setDate(currentCheckOut.getDate() + extra_nights);
+  const newCheckOut = currentCheckOut.toISOString().split('T')[0];
+  
+  // Check for conflicts
+  const { data: conflicts } = await supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, check_in')
+    .eq('room_id', matchingBooking.room_id)
+    .eq('allocated_room_number', room_number)
+    .neq('id', matchingBooking.id)
+    .neq('status', 'cancelled')
+    .lt('check_in', newCheckOut)
+    .gt('check_out', matchingBooking.check_out);
+  
+  if (conflicts && conflicts.length > 0) {
+    return {
+      available: false,
+      booking_code: matchingBooking.booking_code,
+      guest_name: matchingBooking.guest_name,
+      room_number: room_number,
+      current_checkout: matchingBooking.check_out,
+      requested_checkout: newCheckOut,
+      extra_nights: extra_nights,
+      conflict_guest: conflicts[0].guest_name,
+      conflict_booking: conflicts[0].booking_code,
+      conflict_checkin: conflicts[0].check_in,
+      reason: `Kamar ${room_number} sudah dipesan oleh ${conflicts[0].guest_name} mulai ${conflicts[0].check_in}`
+    };
+  }
+  
+  // Calculate pricing
+  const pricePerNight = matchingBooking.rooms?.price_per_night || matchingBooking.booking_rooms?.[0]?.price_per_night || 0;
+  const extraPrice = extra_nights * pricePerNight;
+  
+  // Get all room numbers
+  const roomNumbers: string[] = [];
+  if (matchingBooking.allocated_room_number) {
+    roomNumbers.push(matchingBooking.allocated_room_number);
+  }
+  if (matchingBooking.booking_rooms) {
+    matchingBooking.booking_rooms.forEach((br: any) => {
+      if (br.room_number && !roomNumbers.includes(br.room_number)) {
+        roomNumbers.push(br.room_number);
+      }
+    });
+  }
+  
+  return {
+    available: true,
+    booking_code: matchingBooking.booking_code,
+    guest_name: matchingBooking.guest_name,
+    room_numbers: roomNumbers.join(', '),
+    room_type: matchingBooking.rooms?.name || matchingBooking.booking_rooms?.[0]?.rooms?.name,
+    current_checkout: matchingBooking.check_out,
+    new_checkout: newCheckOut,
+    extra_nights: extra_nights,
+    price_per_night: pricePerNight,
+    extra_price: extraPrice,
+    current_total: matchingBooking.total_price,
+    new_total: matchingBooking.total_price + extraPrice
   };
 }
