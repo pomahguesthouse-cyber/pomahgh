@@ -51,11 +51,11 @@ export function WidgetSettingsPanel() {
   };
 
   // Widgets that have buttons
-  const widgetsWithButtons = ['hero', 'rooms', 'contact'];
+  const widgetsWithButtons = ['hero', 'rooms', 'news_events'];
   const hasButtons = widgetsWithButtons.includes(selectedWidget);
 
   // Widgets that have header/line styling
-  const widgetsWithHeader = ['rooms', 'amenities', 'welcome', 'location', 'contact', 'google_rating'];
+  const widgetsWithHeader = ['rooms', 'amenities', 'welcome', 'location', 'news_events', 'google_rating'];
   const hasHeaderStyling = widgetsWithHeader.includes(selectedWidget);
 
   return (

@@ -141,9 +141,10 @@ export function WidgetManager() {
   };
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
       <div className="text-sm text-muted-foreground mb-4">
-        Drag to reorder • Click to select • Toggle to show/hide
+        <p className="font-medium text-foreground mb-1">Kelola Widget</p>
+        <p className="text-xs">Seret untuk mengubah urutan • Klik untuk memilih • Toggle untuk tampilkan/sembunyikan</p>
       </div>
       
       <DndContext
