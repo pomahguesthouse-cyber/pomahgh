@@ -25,7 +25,7 @@ import {
   RoomVirtualTour,
   RoomFloorPlan,
   RoomBookingCard,
-  RoomRelatedRooms
+  RoomRelatedRooms,
 } from "@/components/room-detail";
 import { useRoomNavigation } from "@/components/room-detail/hooks/useRoomNavigation";
 
@@ -42,22 +42,17 @@ const RoomDetail = () => {
   const [initialRoomQuantity, setInitialRoomQuantity] = useState(1);
   const [initialNumGuests, setInitialNumGuests] = useState(1);
 
-  // Get search dates and check availability
   const { checkIn, checkOut } = useSearchDates();
   const { data: availability, isLoading: isCheckingAvailability } = useRoomAvailabilityCheck(checkIn, checkOut);
+
   const roomAvailability = room ? availability?.[room.id] : undefined;
   const isAvailabilityLoaded = !!checkIn && !!checkOut && !isCheckingAvailability;
 
-  const { handleHotspotClick } = useRoomNavigation(
-    panoramas,
-    allRooms,
-    setCurrentPanoramaId
-  );
+  const { handleHotspotClick } = useRoomNavigation(panoramas, allRooms, setCurrentPanoramaId);
 
-  // Set primary panorama when data loads
   useEffect(() => {
     if (panoramas.length > 0 && !currentPanoramaId) {
-      const primary = panoramas.find(p => p.is_primary) || panoramas[0];
+      const primary = panoramas.find((p) => p.is_primary) || panoramas[0];
       setCurrentPanoramaId(primary.id);
     }
   }, [panoramas, currentPanoramaId]);
@@ -74,75 +69,49 @@ const RoomDetail = () => {
     return <NotFound />;
   }
 
-  const images = room.image_urls && room.image_urls.length > 0 
-    ? room.image_urls 
-    : [room.image_url];
+  const images = room.image_urls && room.image_urls.length > 0 ? room.image_urls : [room.image_url];
 
-  // Check for active promotion (from room_promotions table or legacy promo fields)
   const activePromo = (room as any).active_promotion;
-  const hasLegacyPromo = room.promo_price &&
+  const hasLegacyPromo =
+    room.promo_price &&
     room.promo_start_date &&
     room.promo_end_date &&
     new Date() >= new Date(room.promo_start_date) &&
     new Date() <= new Date(room.promo_end_date);
-  const hasPromo = !!activePromo || hasLegacyPromo;
 
+  const hasPromo = !!activePromo || hasLegacyPromo;
   const displayPrice = room.final_price || room.price_per_night;
-  const relatedRooms = allRooms?.filter(r => r.id !== room.id).slice(0, 3) || [];
-  const currentPanorama = panoramas.find(p => p.id === currentPanoramaId);
+  const relatedRooms = allRooms?.filter((r) => r.id !== room.id).slice(0, 3) || [];
+
+  const currentPanorama = panoramas.find((p) => p.id === currentPanoramaId);
 
   return (
     <>
-      <RoomSEO 
-        room={room}
-        images={images}
-        displayPrice={displayPrice}
-        roomSlug={roomSlug || ""}
-      />
+      <RoomSEO room={room} images={images} displayPrice={displayPrice} roomSlug={roomSlug || ""} />
 
-      <Header variant="solid" />
+      {/* HEADER — FIXED (NO VARIANT) */}
+      <Header />
 
       <main className="min-h-screen bg-background pt-28">
         <div className="container mx-auto px-4 py-8">
-          <Breadcrumb
-            items={[
-              { label: "Rooms", href: "/#rooms" },
-              { label: room.name }
-            ]}
-          />
+          <Breadcrumb items={[{ label: "Rooms", href: "/#rooms" }, { label: room.name }]} />
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Left Column - Images and Details */}
             <div className="lg:col-span-2 space-y-8">
-              <RoomGallery 
-                images={images}
-                roomName={room.name}
-                hasVirtualTour={!!room.virtual_tour_url}
-              />
+              <RoomGallery images={images} roomName={room.name} hasVirtualTour={!!room.virtual_tour_url} />
 
               <div>
-                <RoomHeader 
-                  name={room.name}
-                  hasVirtualTour={!!room.virtual_tour_url}
-                  hasPromo={hasPromo}
-                />
+                <RoomHeader name={room.name} hasVirtualTour={!!room.virtual_tour_url} hasPromo={hasPromo} />
                 <RoomInfo description={room.description} />
               </div>
 
-              <RoomFeaturesList 
-                features={room.features}
-                roomFeatures={roomFeatures}
-              />
+              <RoomFeaturesList features={room.features} roomFeatures={roomFeatures} />
 
-              <RoomSpecifications 
-                maxGuests={room.max_guests}
-                sizeSqm={room.size_sqm}
-                roomCount={room.room_count}
-              />
+              <RoomSpecifications maxGuests={room.max_guests} sizeSqm={room.size_sqm} roomCount={room.room_count} />
 
               {panoramas.length > 0 && (
                 <div className="space-y-4">
-                  <RoomVirtualTour 
+                  <RoomVirtualTour
                     panoramas={panoramas}
                     currentPanoramaId={currentPanoramaId}
                     currentPanorama={currentPanorama}
@@ -153,7 +122,7 @@ const RoomDetail = () => {
                   />
 
                   {room.floor_plan_enabled && room.floor_plan_url && (
-                    <RoomFloorPlan 
+                    <RoomFloorPlan
                       floorPlanUrl={room.floor_plan_url}
                       panoramas={panoramas}
                       currentPanoramaId={currentPanoramaId}
@@ -164,9 +133,8 @@ const RoomDetail = () => {
               )}
             </div>
 
-            {/* Right Column - Booking Card */}
             <div className="lg:col-span-1">
-              <RoomBookingCard 
+              <RoomBookingCard
                 room={room}
                 hasPromo={hasPromo}
                 displayPrice={displayPrice}
