@@ -133,8 +133,8 @@ export default function Header({
             <button onClick={() => handleNavClick('amenities')} className="hover:text-white/70 transition">
               ​Facilities
             </button>
-            <button onClick={() => handleNavClick('contact')} className="hover:text-white/70 transition">
-              Contact
+            <button onClick={() => handleNavClick('news-events')} className="hover:text-white/70 transition">
+              News & Events
             </button>
 
             {user ? <>
@@ -169,10 +169,6 @@ export default function Header({
                   Sign In
                 </Button>
               </Link>}
-
-            <Button onClick={handleScrollToRooms} className="bg-white text-black hover:bg-white/90">
-              Book Now
-            </Button>
           </nav>
         </div>
 
@@ -202,10 +198,10 @@ export default function Header({
               Explore Semarang
             </Link>
             <button onClick={() => handleNavClick('amenities')} className="py-2 text-left">
-              Amenities
+              Facilities
             </button>
-            <button onClick={() => handleNavClick('contact')} className="py-2 text-left">
-              Contact
+            <button onClick={() => handleNavClick('news-events')} className="py-2 text-left">
+              News & Events
             </button>
 
             {user ? <>
@@ -229,13 +225,6 @@ export default function Header({
                   Sign In
                 </Button>
               </Link>}
-
-            <Button onClick={() => {
-          handleScrollToRooms();
-          setIsMenuOpen(false);
-        }} className="w-full bg-white text-black hover:bg-white/90">
-              Book Now
-            </Button>
           </nav>}
       </div>
     </header>;
