@@ -90,10 +90,7 @@ export function GoogleRating() {
           </p>
 
           {/* Link to Google Maps */}
-          <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors font-medium">
-            Lihat lebih banyak  
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
+          
 
           {/* Review Slider */}
           {reviews && reviews.length > 0 && <ReviewSlider reviews={reviews} />}
