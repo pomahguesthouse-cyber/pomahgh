@@ -12,21 +12,14 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ===============================
-  // Scroll detector
-  // ===============================
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // ===============================
-  // Section navigation
-  // ===============================
   const handleNav = (id: string) => {
     setIsMenuOpen(false);
-
     if (location.pathname === "/") {
       document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     } else {
@@ -34,12 +27,8 @@ export default function Header() {
     }
   };
 
-  // ===============================
-  // HOME button (always top)
-  // ===============================
   const handleHome = () => {
     setIsMenuOpen(false);
-
     if (location.pathname === "/") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
@@ -49,6 +38,14 @@ export default function Header() {
       }, 100);
     }
   };
+
+  const menuItems = [
+    { label: "Home", onClick: handleHome },
+    { label: "Rooms", onClick: () => handleNav("rooms") },
+    { label: "Explore Semarang", onClick: () => navigate("/explore-semarang") },
+    { label: "Fasilitas", onClick: () => handleNav("amenities") },
+    { label: "News & Events", onClick: () => handleNav("news-events") },
+  ];
 
   return (
     <>
@@ -143,20 +140,23 @@ export default function Header() {
           "
         >
           <nav className="flex flex-col items-center text-white text-sm font-medium text-center">
-            {[
-              { label: "Home", onClick: handleHome },
-              { label: "Rooms", onClick: () => handleNav("rooms") },
-              { label: "Explore Semarang", onClick: () => navigate("/explore-semarang") },
-              { label: "Fasilitas", onClick: () => handleNav("amenities") },
-              { label: "News & Events", onClick: () => handleNav("news-events") },
-            ].map((item, index) => (
-              <div key={item.label} className="w-full flex flex-col items-center">
+            {menuItems.map((item, index) => (
+              <div
+                key={item.label}
+                className={`
+                  w-full flex flex-col items-center
+                  transition-all duration-300 ease-out
+                  ${isMenuOpen ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-2 scale-95"}
+                `}
+                style={{
+                  transitionDelay: `${index * 60}ms`,
+                }}
+              >
                 <button onClick={item.onClick} className="py-2">
                   {item.label}
                 </button>
 
-                {/* Gradient Divider (not full width) */}
-                {index < 4 && (
+                {index < menuItems.length - 1 && (
                   <div className="w-2/3 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
                 )}
               </div>
