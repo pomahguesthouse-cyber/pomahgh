@@ -42,7 +42,6 @@ export default function Header() {
           `}
         >
           <div className="h-full flex items-center justify-between">
-            {/* LOGO */}
             <Link to="/" className="flex items-center">
               <img
                 src={settings?.logo_url || "/logo.png"}
@@ -51,7 +50,6 @@ export default function Header() {
               />
             </Link>
 
-            {/* NAV */}
             <nav className="flex items-center gap-8 text-white text-sm font-medium">
               <button onClick={() => handleNav("home")}>Home</button>
               <button onClick={() => handleNav("rooms")}>Rooms</button>
@@ -60,7 +58,6 @@ export default function Header() {
               <button onClick={() => handleNav("news-events")}>News & Events</button>
             </nav>
 
-            {/* SIGN IN */}
             <Button size="icon" onClick={() => navigate("/auth")} className="rounded-full bg-white/20 text-white">
               <User size={18} />
             </Button>
@@ -89,27 +86,58 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ================= MOBILE DROP-UP MENU ================= */}
-      {isMenuOpen && (
-        <div className="md:hidden fixed bottom-[88px] left-0 right-0 z-40 flex justify-center">
-          <div className="w-[85%] max-w-sm bg-primary rounded-3xl shadow-2xl py-6">
-            <nav className="flex flex-col text-white text-lg text-center">
-              <button onClick={() => handleNav("rooms")} className="py-4 border-b border-white/30">
-                Rooms
-              </button>
-              <button onClick={() => handleNav("amenities")} className="py-4 border-b border-white/30">
-                Fasilitas
-              </button>
-              <button onClick={() => handleNav("news-events")} className="py-4 border-b border-white/30">
-                News & Events
-              </button>
-              <button onClick={() => navigate("/explore-semarang")} className="py-4">
-                Explore Semarang
-              </button>
-            </nav>
-          </div>
+      {/* ================= DROP-UP MENU (SMOOTH + AUTO HIDE) ================= */}
+      {/* Backdrop */}
+      <div
+        className={`
+          md:hidden fixed inset-0 z-40
+          transition-opacity duration-300
+          ${isMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
+        `}
+        onClick={() => setIsMenuOpen(false)}
+      />
+
+      {/* Menu Card */}
+      <div
+        className={`
+          md:hidden fixed left-0 right-0 z-50
+          flex justify-center
+          transition-all duration-300 ease-out
+          ${isMenuOpen ? "bottom-[88px] opacity-100 translate-y-0" : "bottom-[72px] opacity-0 translate-y-6"}
+        `}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="
+            w-[85%] max-w-sm
+            bg-primary
+            rounded-3xl
+            shadow-[0_25px_60px_rgba(0,0,0,0.35)]
+            py-6
+          "
+        >
+          <nav className="flex flex-col text-white text-lg font-medium text-center">
+            <button onClick={() => handleNav("rooms")} className="py-4 border-b border-white/30">
+              Rooms
+            </button>
+            <button onClick={() => handleNav("amenities")} className="py-4 border-b border-white/30">
+              Fasilitas
+            </button>
+            <button onClick={() => handleNav("news-events")} className="py-4 border-b border-white/30">
+              News & Events
+            </button>
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                navigate("/explore-semarang");
+              }}
+              className="py-4"
+            >
+              Explore Semarang
+            </button>
+          </nav>
         </div>
-      )}
+      </div>
 
       {/* ================= MOBILE BOTTOM BAR ================= */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
