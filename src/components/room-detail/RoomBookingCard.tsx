@@ -173,11 +173,11 @@ export const RoomBookingCard = ({
         <div className="pt-4 border-t space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Check-in</span>
-            <span className="font-medium">From 14:00</span>
+            <span className="font-medium">Mulai 14:00</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Check-out</span>
-            <span className="font-medium">Until 12:00</span>
+            <span className="font-medium">Sampai 12:00</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Availability</span>
