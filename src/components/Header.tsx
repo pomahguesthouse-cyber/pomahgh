@@ -108,7 +108,7 @@ export default function Header({
         ${isVisible ? "translate-y-0" : "-translate-y-full"}
         ${variant === "solid" ? "bg-black/80 backdrop-blur-md" : isScrolled ? "bg-black/60 backdrop-blur-md" : "bg-transparent"}
       `}>
-      <div className="container mx-auto px-4 bg-[#f25479]/[0.83]">
+      <div className="container mx-auto px-4 bg-primary">
         {/* Desktop Layout - Horizontal */}
         <div className="hidden md:flex items-center justify-between h-20">
           {/* Logo on the left */}
