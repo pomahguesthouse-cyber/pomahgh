@@ -66,14 +66,14 @@ export const RoomBookingCard = ({
   return <Card className="sticky top-4">
       <CardContent className="p-6 space-y-6">
         <div>
-          <p className="text-sm text-muted-foreground mb-1">Starting from</p>
+          <p className="text-sm text-muted-foreground mb-1">Harga Kamar</p>
           {hasPromo && <p className="text-sm line-through text-muted-foreground">
               Rp {room.price_per_night.toLocaleString("id-ID")}
             </p>}
           <p className={`text-3xl font-bold ${hasPromo ? "text-red-500" : "text-primary"}`}>
             Rp {displayPrice.toLocaleString("id-ID")}
           </p>
-          <p className="text-sm text-muted-foreground">per night</p>
+          <p className="text-sm text-muted-foreground">per malam</p>
         </div>
 
         {/* Date Pickers */}
