@@ -12,12 +12,18 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // ===============================
+  // Scroll → collapse header
+  // ===============================
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // ===============================
+  // Navigation helper
+  // ===============================
   const handleNav = (id: string) => {
     setIsMenuOpen(false);
     if (location.pathname === "/") {
@@ -38,11 +44,11 @@ export default function Header() {
       `}
     >
       <div className="container mx-auto px-6 h-full flex items-center justify-between">
-        {/* LOGO */}
+        {/* ================= LOGO ================= */}
         <Link to="/" className="flex items-center">
           <img
             src={settings?.logo_url || "/logo.png"}
-            alt="Pomah Guesthouse"
+            alt={settings?.hotel_name || "Pomah Guesthouse"}
             className={`
               transition-all duration-300 object-contain
               ${isScrolled ? "h-9" : "h-11"}
@@ -53,7 +59,7 @@ export default function Header() {
           />
         </Link>
 
-        {/* DESKTOP MENU */}
+        {/* ================= DESKTOP NAV ================= */}
         <nav className="hidden md:flex items-center gap-8 text-white text-sm font-medium">
           <button onClick={() => handleNav("home")} className="hover:opacity-80">
             Home
@@ -72,7 +78,7 @@ export default function Header() {
           </button>
         </nav>
 
-        {/* RIGHT ICON */}
+        {/* ================= RIGHT ACTION ================= */}
         <div className="flex items-center gap-3">
           <Link to="/auth">
             <Button size="icon" className="rounded-full bg-white/20 hover:bg-white/30 text-white">
@@ -80,14 +86,14 @@ export default function Header() {
             </Button>
           </Link>
 
-          {/* MOBILE TOGGLE */}
+          {/* MOBILE MENU TOGGLE */}
           <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-white">
             {isMenuOpen ? <X /> : <Menu />}
           </button>
         </div>
       </div>
 
-      {/* MOBILE MENU */}
+      {/* ================= MOBILE MENU ================= */}
       {isMenuOpen && (
         <div className="md:hidden px-6 pb-6 space-y-4 text-white text-sm">
           <button onClick={() => handleNav("home")} className="block">
@@ -96,7 +102,9 @@ export default function Header() {
           <button onClick={() => handleNav("rooms")} className="block">
             Rooms
           </button>
-          <Link to="/explore-semarang">Explore Semarang</Link>
+          <Link to="/explore-semarang" onClick={() => setIsMenuOpen(false)}>
+            Explore Semarang
+          </Link>
           <button onClick={() => handleNav("amenities")} className="block">
             Facilities
           </button>
