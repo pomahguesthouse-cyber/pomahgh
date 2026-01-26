@@ -108,7 +108,7 @@ export default function Header({
         ${isVisible ? "translate-y-0" : "-translate-y-full"}
         ${variant === "solid" ? "bg-black/80 backdrop-blur-md" : isScrolled ? "bg-black/60 backdrop-blur-md" : "bg-transparent"}
       `}>
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 bg-[#ef6198]/[0.46]">
         {/* Desktop Layout - Horizontal */}
         <div className="hidden md:flex items-center justify-between h-20">
           {/* Logo on the left */}
@@ -138,11 +138,9 @@ export default function Header({
             </button>
 
             {user ? <>
-                {!isAdmin && (
-                  <Link to="/bookings" className="hover:text-white/70 transition">
+                {!isAdmin && <Link to="/bookings" className="hover:text-white/70 transition">
                     My Bookings
-                  </Link>
-                )}
+                  </Link>}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -199,11 +197,9 @@ export default function Header({
             </button>
 
             {user ? <>
-                {!isAdmin && (
-                  <Link to="/bookings" className="py-2" onClick={() => setIsMenuOpen(false)}>
+                {!isAdmin && <Link to="/bookings" className="py-2" onClick={() => setIsMenuOpen(false)}>
                     My Bookings
-                  </Link>
-                )}
+                  </Link>}
 
                 <Button onClick={() => {
             handleSignOut();
