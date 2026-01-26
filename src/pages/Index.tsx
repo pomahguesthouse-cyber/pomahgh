@@ -7,7 +7,7 @@ import { GoogleRating } from "@/components/GoogleRating";
 import { Rooms } from "@/components/Rooms";
 import { Amenities } from "@/components/Amenities";
 import { Location } from "@/components/Location";
-import { Contact } from "@/components/Contact";
+import { NewsEvents } from "@/components/NewsEvents";
 import { Footer } from "@/components/Footer";
 import ChatbotWidget from "@/components/ChatbotWidget";
 
@@ -36,7 +36,7 @@ const Index = () => {
         <Rooms />
         <Amenities />
         <Location />
-        <Contact />
+        <NewsEvents />
       </main>
       <Footer />
       <ChatbotWidget />
