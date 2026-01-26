@@ -41,7 +41,7 @@ export function ReviewSlider({
         }} transition={{
           duration: 0.4,
           ease: "easeInOut"
-        }} className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        }} className="bg-card border border-border rounded-xl p-6 shadow-lg">
             {/* Quote Icon */}
             <Quote className="h-8 w-8 text-primary/20 mb-4" />
             
