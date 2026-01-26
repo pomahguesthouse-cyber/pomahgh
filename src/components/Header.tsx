@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, User, Shield, LogOut } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
@@ -138,9 +138,11 @@ export default function Header({
             </button>
 
             {user ? <>
-                <Link to="/bookings" className="hover:text-white/70 transition">
-                  My Bookings
-                </Link>
+                {!isAdmin && (
+                  <Link to="/bookings" className="hover:text-white/70 transition">
+                    My Bookings
+                  </Link>
+                )}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -150,14 +152,6 @@ export default function Header({
                   </DropdownMenuTrigger>
 
                   <DropdownMenuContent align="end" className="text-black">
-                    {isAdmin && <>
-                        <DropdownMenuItem onClick={() => navigate("/admin/dashboard")}>
-                          <Shield className="mr-2 h-4 w-4" />
-                          Admin Dashboard
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>}
-
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign Out
@@ -205,13 +199,11 @@ export default function Header({
             </button>
 
             {user ? <>
-                <Link to="/bookings" className="py-2" onClick={() => setIsMenuOpen(false)}>
-                  My Bookings
-                </Link>
-
-                {isAdmin && <Link to="/admin" className="py-2" onClick={() => setIsMenuOpen(false)}>
-                    Admin Dashboard
-                  </Link>}
+                {!isAdmin && (
+                  <Link to="/bookings" className="py-2" onClick={() => setIsMenuOpen(false)}>
+                    My Bookings
+                  </Link>
+                )}
 
                 <Button onClick={() => {
             handleSignOut();
