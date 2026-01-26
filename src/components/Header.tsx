@@ -37,23 +37,17 @@ export default function Header() {
   };
 
   // ===============================
-  // HOME button (FIXED)
+  // HOME button (always top)
   // ===============================
   const handleHome = () => {
     setIsMenuOpen(false);
 
     if (location.pathname === "/") {
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       navigate("/");
       setTimeout(() => {
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth",
-        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }, 100);
     }
   };
@@ -117,18 +111,21 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ================= DROP-UP MENU ================= */}
-      {/* Backdrop */}
+      {/* ================= BLUR BACKDROP (DROP-UP ACTIVE) ================= */}
       <div
         className={`
           md:hidden fixed inset-0 z-40
-          transition-opacity duration-300
-          ${isMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
+          transition-all duration-300
+          ${
+            isMenuOpen
+              ? "opacity-100 backdrop-blur-md bg-black/30 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+          }
         `}
         onClick={() => setIsMenuOpen(false)}
       />
 
-      {/* Menu Card */}
+      {/* ================= DROP-UP MENU ================= */}
       <div
         className={`
           md:hidden fixed left-0 right-0 z-50
@@ -177,7 +174,7 @@ export default function Header() {
               text-white
             "
           >
-            {/* HOME (FIXED) */}
+            {/* HOME */}
             <button onClick={handleHome}>
               <Home size={22} />
             </button>
