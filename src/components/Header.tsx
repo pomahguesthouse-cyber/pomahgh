@@ -29,12 +29,11 @@ export default function Header() {
 
   return (
     <>
-      {/* ================= HEADER ================= */}
+      {/* ================= HEADER (TOP) ================= */}
       <header className="fixed top-0 left-0 right-0 z-50 md:hidden">
         <div
           className={`
-            mx-auto max-w-sm
-            px-4
+            mx-auto max-w-sm px-4
             bg-primary/80 backdrop-blur-md
             rounded-b-3xl
             shadow-[0_12px_30px_rgba(0,0,0,0.2)]
@@ -52,58 +51,46 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ================= MOBILE MENU CARD ================= */}
+      {/* ================= DROP-UP MENU ================= */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-40 flex justify-center items-center md:hidden">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
-
-          <div className="relative z-50 w-[80%] bg-primary rounded-3xl shadow-2xl">
-            <nav className="flex flex-col text-white text-lg text-center py-6">
-              <button onClick={() => handleNav("rooms")} className="py-3 border-b border-white/30">
+        <div className="fixed bottom-[88px] left-0 right-0 z-40 md:hidden flex justify-center">
+          <div
+            className="
+              w-[85%] max-w-sm
+              bg-primary
+              rounded-3xl
+              shadow-[0_25px_60px_rgba(0,0,0,0.35)]
+              py-6
+            "
+          >
+            <nav className="flex flex-col text-white text-lg font-medium text-center">
+              <button onClick={() => handleNav("rooms")} className="py-4 border-b border-white/30">
                 Rooms
               </button>
-              <button onClick={() => handleNav("amenities")} className="py-3 border-b border-white/30">
+
+              <button onClick={() => handleNav("amenities")} className="py-4 border-b border-white/30">
                 Fasilitas
               </button>
-              <button onClick={() => handleNav("news-events")} className="py-3 border-b border-white/30">
+
+              <button onClick={() => handleNav("news-events")} className="py-4 border-b border-white/30">
                 News & Events
               </button>
+
               <button
                 onClick={() => {
                   setIsMenuOpen(false);
                   navigate("/explore-semarang");
                 }}
-                className="py-3"
+                className="py-4"
               >
                 Explore Semarang
               </button>
             </nav>
-
-            {/* Arrow Close */}
-            <button
-              onClick={() => setIsMenuOpen(false)}
-              className="absolute -bottom-6 left-1/2 -translate-x-1/2
-              w-14 h-14 rounded-full bg-primary
-              flex items-center justify-center shadow-xl"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-            </button>
           </div>
         </div>
       )}
 
-      {/* ================= BOTTOM NAV ================= */}
+      {/* ================= BOTTOM BAR (MENTOK BAWAH) ================= */}
       <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
         <div className="mx-auto max-w-sm px-6 pb-4">
           <div
@@ -121,7 +108,7 @@ export default function Header() {
             </button>
 
             {/* MENU */}
-            <button onClick={() => setIsMenuOpen(true)} className="text-white font-semibold tracking-widest">
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white font-semibold tracking-widest">
               MENU
             </button>
 
