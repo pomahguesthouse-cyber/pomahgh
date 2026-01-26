@@ -9,7 +9,7 @@ export const RoomFeaturesList = ({
   roomFeatures
 }: RoomFeaturesListProps) => {
   return <div>
-      <h2 className="text-2xl font-bold mb-4">Fasilitas Kamar </h2>
+      <h2 className="text-2xl font-bold mb-4 font-sans">Fasilitas Kamar </h2>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {features.map(featureId => {
         const feature = roomFeatures?.find(f => f.feature_key === featureId);

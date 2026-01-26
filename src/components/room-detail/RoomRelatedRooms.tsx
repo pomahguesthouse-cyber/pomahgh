@@ -20,7 +20,7 @@ export const RoomRelatedRooms = ({
         {rooms.map(relatedRoom => <Card key={relatedRoom.id} className="overflow-hidden hover:shadow-xl transition-shadow">
             <img src={relatedRoom.image_url} alt={relatedRoom.name} className="w-full h-48 object-cover" />
             <CardContent className="p-4">
-              <h3 className="font-bold text-lg mb-2">{relatedRoom.name}</h3>
+              <h3 className="font-bold text-lg mb-2 font-sans">{relatedRoom.name}</h3>
               <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                 {relatedRoom.description}
               </p>
