@@ -12,18 +12,49 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // ===============================
+  // Scroll detector
+  // ===============================
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // ===============================
+  // Section navigation
+  // ===============================
   const handleNav = (id: string) => {
     setIsMenuOpen(false);
+
     if (location.pathname === "/") {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      document.getElementById(id)?.scrollIntoView({
+        behavior: "smooth",
+      });
     } else {
       navigate(`/#${id}`);
+    }
+  };
+
+  // ===============================
+  // HOME button (FIXED)
+  // ===============================
+  const handleHome = () => {
+    setIsMenuOpen(false);
+
+    if (location.pathname === "/") {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    } else {
+      navigate("/");
+      setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }, 100);
     }
   };
 
@@ -42,7 +73,7 @@ export default function Header() {
           `}
         >
           <div className="h-full flex items-center justify-between">
-            <Link to="/" className="flex items-center">
+            <Link to="/" onClick={handleHome} className="flex items-center">
               <img
                 src={settings?.logo_url || "/logo.png"}
                 alt="Pomah Guesthouse"
@@ -51,7 +82,7 @@ export default function Header() {
             </Link>
 
             <nav className="flex items-center gap-8 text-white text-sm font-medium">
-              <button onClick={() => handleNav("home")}>Home</button>
+              <button onClick={handleHome}>Home</button>
               <button onClick={() => handleNav("rooms")}>Rooms</button>
               <Link to="/explore-semarang">Explore Semarang</Link>
               <button onClick={() => handleNav("amenities")}>Facilities</button>
@@ -117,23 +148,17 @@ export default function Header() {
           "
         >
           <nav className="flex flex-col text-white text-sm font-medium text-center">
+            <button onClick={handleHome} className="py-3 border-b border-white/30">
+              Home
+            </button>
             <button onClick={() => handleNav("rooms")} className="py-3 border-b border-white/30">
               Rooms
             </button>
             <button onClick={() => handleNav("amenities")} className="py-3 border-b border-white/30">
               Fasilitas
             </button>
-            <button onClick={() => handleNav("news-events")} className="py-3 border-b border-white/30">
+            <button onClick={() => handleNav("news-events")} className="py-3">
               News & Events
-            </button>
-            <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                navigate("/explore-semarang");
-              }}
-              className="py-3"
-            >
-              Explore Semarang
             </button>
           </nav>
         </div>
@@ -144,16 +169,16 @@ export default function Header() {
         <div className="mx-auto max-w-sm">
           <div
             className="
-            bg-primary/90 backdrop-blur-md
-            rounded-t-3xl
-            shadow-[0_-10px_30px_rgba(0,0,0,0.25)]
-            flex justify-between items-center
-            px-10 py-4
-            text-white
-          "
+              bg-primary/90 backdrop-blur-md
+              rounded-t-3xl
+              shadow-[0_-10px_30px_rgba(0,0,0,0.25)]
+              flex justify-between items-center
+              px-10 py-4
+              text-white
+            "
           >
-            {/* HOME */}
-            <button onClick={() => navigate("/")}>
+            {/* HOME (FIXED) */}
+            <button onClick={handleHome}>
               <Home size={22} />
             </button>
 
