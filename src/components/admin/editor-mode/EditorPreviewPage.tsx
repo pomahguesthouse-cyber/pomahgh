@@ -10,10 +10,10 @@ import { Rooms } from '@/components/Rooms';
 import { Amenities } from '@/components/Amenities';
 import { GoogleRating } from '@/components/GoogleRating';
 import { Location } from '@/components/Location';
-import { Contact } from '@/components/Contact';
+import { NewsEvents } from '@/components/NewsEvents';
 import { Footer } from '@/components/Footer';
 
-// Widget mapping
+// Widget mapping - all components available in the page editor
 const WIDGET_COMPONENTS: Record<string, { component: React.ComponentType<any>; label: string }> = {
   header: { component: Header, label: 'Header' },
   hero: { component: Hero, label: 'Hero Slider' },
@@ -22,7 +22,7 @@ const WIDGET_COMPONENTS: Record<string, { component: React.ComponentType<any>; l
   amenities: { component: Amenities, label: 'Amenities' },
   google_rating: { component: GoogleRating, label: 'Google Rating' },
   location: { component: Location, label: 'Location' },
-  contact: { component: Contact, label: 'Contact' },
+  news_events: { component: NewsEvents, label: 'News & Events' },
   footer: { component: Footer, label: 'Footer' },
 };
 

@@ -89,7 +89,7 @@ export type WidgetId =
   | 'rooms' 
   | 'amenities' 
   | 'location' 
-  | 'contact' 
+  | 'news_events'
   | 'footer';
 
 export const WIDGET_LABELS: Record<WidgetId, string> = {
@@ -100,7 +100,7 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   rooms: 'Rooms',
   amenities: 'Amenities',
   location: 'Location',
-  contact: 'Contact',
+  news_events: 'News & Events',
   footer: 'Footer',
 };
 
