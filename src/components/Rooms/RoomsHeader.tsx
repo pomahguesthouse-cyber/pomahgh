@@ -25,7 +25,7 @@ export const RoomsHeader = ({
   const title = settings.title_override || "Our Accommodations";
   const subtitle = settings.subtitle_override || "Pilih tanggal check-in dan check-out untuk melihat ketersediaan kamar";
   return <div className="text-center mb-8 sm:mb-12 md:mb-16 animate-slide-up">
-      {isEditorMode ? <EditableText widgetId="rooms" field="title" value={title} as="h2" className="sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 font-sans text-xl px-[6px]" /> : <h2 className="sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 px-2 text-lg" style={getElementStyles('rooms-title')}>
+      {isEditorMode ? <EditableText widgetId="rooms" field="title" value={title} as="h2" className="sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold mb-3 sm:mb-4 md:mb-6 font-sans text-xl px-[6px] text-primary" /> : <h2 className="sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 px-2 text-lg" style={getElementStyles('rooms-title')}>
           {title}
         </h2>}
       
