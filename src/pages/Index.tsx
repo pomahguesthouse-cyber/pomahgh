@@ -10,7 +10,6 @@ import { Location } from "@/components/Location";
 import { NewsEvents } from "@/components/NewsEvents";
 import { Footer } from "@/components/Footer";
 import ChatbotWidget from "@/components/ChatbotWidget";
-
 const Index = () => {
   const location = useLocation();
 
@@ -20,28 +19,26 @@ const Index = () => {
       const element = document.getElementById(location.hash.replace('#', ''));
       if (element) {
         setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth' });
+          element.scrollIntoView({
+            behavior: 'smooth'
+          });
         }, 100);
       }
     }
   }, [location.hash]);
-
-  return (
-    <div className="min-h-screen">
+  return <div className="min-h-screen">
       <Header />
       <main>
         <Hero />
         <Welcome />
         <GoogleRating />
-        <Rooms />
-        <Amenities />
+        <Rooms className="" />
+        <Amenities className="" />
         <Location />
         <NewsEvents />
       </main>
       <Footer />
       <ChatbotWidget />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
