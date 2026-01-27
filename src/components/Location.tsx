@@ -72,7 +72,7 @@ export const Location = () => {
 
         <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
           {/* Map */}
-          <Card className="overflow-hidden h-[300px] sm:h-[400px] md:h-[450px]">
+          <Card className="overflow-hidden h-[300px] sm:h-[400px] md:h-[450px] border border-primary">
             <CardContent className="p-0 h-full">
               <iframe src={mapUrl} width="100%" height="100%" style={{
               border: 0
