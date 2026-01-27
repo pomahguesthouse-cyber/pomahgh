@@ -3,71 +3,78 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, User, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
-
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const { settings } = useHotelSettings();
+  const {
+    settings
+  } = useHotelSettings();
   const navigate = useNavigate();
   const location = useLocation();
-
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, {
+      passive: true
+    });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
   const handleNav = (id: string) => {
     setIsMenuOpen(false);
     if (location.pathname === "/") {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      document.getElementById(id)?.scrollIntoView({
+        behavior: "smooth"
+      });
     } else {
       navigate(`/#${id}`);
     }
   };
-
   const handleHome = () => {
     setIsMenuOpen(false);
     if (location.pathname === "/") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
     } else {
       navigate("/");
       setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
       }, 100);
     }
   };
-
-  const menuItems = [
-    { label: "Home", onClick: handleHome },
-    { label: "Rooms", onClick: () => handleNav("rooms") },
-    { label: "Fasilitas", onClick: () => handleNav("amenities") },
-    { label: "News & Events", onClick: () => handleNav("news-events") },
-    { label: "Explore Semarang", onClick: () => navigate("/explore-semarang") },
-  ];
-
-  return (
-    <>
+  const menuItems = [{
+    label: "Home",
+    onClick: handleHome
+  }, {
+    label: "Rooms",
+    onClick: () => handleNav("rooms")
+  }, {
+    label: "Fasilitas",
+    onClick: () => handleNav("amenities")
+  }, {
+    label: "News & Events",
+    onClick: () => handleNav("news-events")
+  }, {
+    label: "Explore Semarang",
+    onClick: () => navigate("/explore-semarang")
+  }];
+  return <>
       {/* ================= DESKTOP HEADER ================= */}
       <header className="hidden md:block fixed top-0 left-0 right-0 z-50">
-        <div
-          className={`
+        <div className={`
             mx-auto max-w-7xl px-8
             bg-primary/80 backdrop-blur-md
             rounded-b-3xl
             shadow-[0_14px_32px_rgba(0,0,0,0.18)]
             transition-all duration-300
             ${isScrolled ? "h-16" : "h-20"}
-          `}
-        >
-          <div className="h-full flex items-center justify-between">
+          `}>
+          <div className="h-full flex items-center justify-between shadow-md">
             <Link to="/" onClick={handleHome} className="flex items-center">
-              <img
-                src={settings?.logo_url || "/logo.png"}
-                alt="Pomah Guesthouse"
-                className={`${isScrolled ? "h-9" : "h-11"} transition-all`}
-              />
+              <img src={settings?.logo_url || "/logo.png"} alt="Pomah Guesthouse" className={`${isScrolled ? "h-9" : "h-11"} transition-all`} />
             </Link>
 
             <nav className="flex items-center gap-8 text-white text-sm font-medium">
@@ -87,16 +94,14 @@ export default function Header() {
 
       {/* ================= MOBILE HEADER ================= */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-50">
-        <div
-          className={`
+        <div className={`
             mx-auto max-w-sm px-4
             bg-primary/80 backdrop-blur-md
             rounded-b-3xl
             shadow-[0_12px_30px_rgba(0,0,0,0.2)]
             transition-all duration-300
             ${isScrolled ? "h-14" : "h-16"}
-          `}
-        >
+          `}>
           <div className="h-full flex items-center justify-between">
             <img src={settings?.logo_url || "/logo.png"} alt="Pomah Guesthouse" className="h-8" />
             <Button size="icon" onClick={() => navigate("/auth")} className="rounded-full bg-white/20 text-white">
@@ -107,60 +112,40 @@ export default function Header() {
       </header>
 
       {/* ================= BLUR BACKDROP ================= */}
-      <div
-        className={`
+      <div className={`
           md:hidden fixed inset-0 z-40
           transition-all duration-300
-          ${
-            isMenuOpen
-              ? "opacity-100 backdrop-blur-md bg-black/30 pointer-events-auto"
-              : "opacity-0 pointer-events-none"
-          }
-        `}
-        onClick={() => setIsMenuOpen(false)}
-      />
+          ${isMenuOpen ? "opacity-100 backdrop-blur-md bg-black/30 pointer-events-auto" : "opacity-0 pointer-events-none"}
+        `} onClick={() => setIsMenuOpen(false)} />
 
       {/* ================= DROP-UP MENU (FADE + SCALE) ================= */}
-      <div
-        className={`
+      <div className={`
           md:hidden fixed left-0 right-0 z-50
           flex justify-center
           transition-all duration-300 ease-out
           ${isMenuOpen ? "bottom-[72px] opacity-100 scale-100" : "bottom-[72px] opacity-0 scale-95 pointer-events-none"}
-        `}
-      >
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="
+        `}>
+        <div onClick={e => e.stopPropagation()} className="
             w-[75%] max-w-xs
             bg-primary
             rounded-2xl
             shadow-[0_20px_40px_rgba(0,0,0,0.35)]
             py-4
-          "
-        >
+          ">
           <nav className="flex flex-col items-center text-white text-sm font-medium text-center">
-            {menuItems.map((item, index) => (
-              <div
-                key={item.label}
-                className={`
+            {menuItems.map((item, index) => <div key={item.label} className={`
                   w-full flex flex-col items-center
                   transition-all duration-300 ease-out
                   ${isMenuOpen ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-2 scale-95"}
-                `}
-                style={{
-                  transitionDelay: `${index * 60}ms`,
-                }}
-              >
+                `} style={{
+            transitionDelay: `${index * 60}ms`
+          }}>
                 <button onClick={item.onClick} className="py-2">
                   {item.label}
                 </button>
 
-                {index < menuItems.length - 1 && (
-                  <div className="w-2/3 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-                )}
-              </div>
-            ))}
+                {index < menuItems.length - 1 && <div className="w-2/3 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />}
+              </div>)}
           </nav>
         </div>
       </div>
@@ -168,16 +153,14 @@ export default function Header() {
       {/* ================= MOBILE BOTTOM BAR ================= */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         <div className="mx-auto max-w-sm">
-          <div
-            className="
+          <div className="
               bg-primary/90 backdrop-blur-md
               rounded-t-3xl
               shadow-[0_-10px_30px_rgba(0,0,0,0.25)]
               flex justify-between items-center
               px-10 py-4
               text-white
-            "
-          >
+            ">
             <button onClick={handleHome}>
               <Home size={22} />
             </button>
@@ -194,6 +177,5 @@ export default function Header() {
           </div>
         </div>
       </div>
-    </>
-  );
+    </>;
 }
