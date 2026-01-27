@@ -25,12 +25,12 @@ export const RoomsHeader = ({
   const title = settings.title_override || "Our Accommodations";
   const subtitle = settings.subtitle_override || "Pilih tanggal check-in dan check-out untuk melihat ketersediaan kamar";
   return <div className="text-center mb-8 sm:mb-12 md:mb-16 animate-slide-up">
-      {isEditorMode ? <EditableText widgetId="rooms" field="title" value={title} as="h2" className="sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 px-2 text-lg" /> : <h2 className="sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 px-2 text-lg" style={getElementStyles('rooms-title')}>
+      {isEditorMode ? <EditableText widgetId="rooms" field="title" value={title} as="h2" className="sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 font-sans text-xl px-[6px]" /> : <h2 className="sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 px-2 text-lg" style={getElementStyles('rooms-title')}>
           {title}
         </h2>}
       
       {/* Line/Divider with widget styling */}
-      <div className="h-0.5 sm:h-1 bg-primary mx-auto mb-3 sm:mb-4 md:mb-6" style={{
+      <div className="h-0.5 sm:h-1 bg-primary mx-auto mb-3 sm:mb-4 md:mb-6 border-primary" style={{
       width: lineStyle.width || '64px',
       height: lineStyle.height || '4px',
       backgroundColor: lineStyle.backgroundColor || undefined
@@ -46,7 +46,7 @@ export const RoomsHeader = ({
       })} - {format(checkOut, "dd MMM yyyy", {
         locale: localeId
       })} ({totalNights} malam)
-          </p> : isEditorMode ? <EditableText widgetId="rooms" field="subtitle" value={subtitle} as="p" className="sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto px-2 sm:px-4 text-sm" /> : <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto px-2 sm:px-4" style={getElementStyles('rooms-subtitle')}>
+          </p> : isEditorMode ? <EditableText widgetId="rooms" field="subtitle" value={subtitle} as="p" className="sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto px-2 sm:px-4 text-sm font-sans" /> : <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto px-2 sm:px-4" style={getElementStyles('rooms-subtitle')}>
             {subtitle}
           </p>}
     </div>;
