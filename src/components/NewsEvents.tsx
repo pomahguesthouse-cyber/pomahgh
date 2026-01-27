@@ -170,11 +170,11 @@ export const NewsEvents = ({ editorMode = false }: NewsEventsProps) => {
                 field="title"
                 value={title}
                 as="h2"
-                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 font-serif"
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 font-serif"
               />
             ) : (
               <h2
-                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 font-serif"
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 font-serif"
                 style={getElementStyles('news_events-title')}
               >
                 {title}
@@ -227,11 +227,11 @@ export const NewsEvents = ({ editorMode = false }: NewsEventsProps) => {
               field="title"
               value={title}
               as="h2"
-              className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4 sm:mb-6 font-serif lg:text-4xl"
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 font-serif"
             />
           ) : (
             <h2
-              className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4 sm:mb-6 font-serif lg:text-4xl"
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 font-serif"
               style={getElementStyles('news_events-title')}
             >
               {title}

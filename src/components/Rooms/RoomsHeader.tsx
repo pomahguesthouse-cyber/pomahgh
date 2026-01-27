@@ -18,18 +18,18 @@ export const RoomsHeader = ({ checkIn, checkOut, totalNights }: RoomsHeaderProps
   const subtitle = settings.subtitle_override || "Pilih tanggal check-in dan check-out untuk melihat ketersediaan kamar";
 
   return (
-    <div className="text-center mb-12 sm:mb-16 animate-slide-up">
+    <div className="text-center mb-8 sm:mb-12 md:mb-16 animate-slide-up">
       {isEditorMode ? (
         <EditableText
           widgetId="rooms"
           field="title"
           value={title}
           as="h2"
-          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-cinzel font-semibold text-foreground mb-4 sm:mb-6 px-2"
+          className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 px-2"
         />
       ) : (
         <h2 
-          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-cinzel font-semibold text-foreground mb-4 sm:mb-6 px-2"
+          className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 px-2"
           style={getElementStyles('rooms-title')}
         >
           {title}
@@ -38,9 +38,9 @@ export const RoomsHeader = ({ checkIn, checkOut, totalNights }: RoomsHeaderProps
       
       {/* Line/Divider with widget styling */}
       <div 
-        className="h-1 bg-primary mx-auto mb-4 sm:mb-6"
+        className="h-0.5 sm:h-1 bg-primary mx-auto mb-3 sm:mb-4 md:mb-6"
         style={{
-          width: lineStyle.width || '96px',
+          width: lineStyle.width || '64px',
           height: lineStyle.height || '4px',
           backgroundColor: lineStyle.backgroundColor || undefined,
         }}
@@ -53,11 +53,11 @@ export const RoomsHeader = ({ checkIn, checkOut, totalNights }: RoomsHeaderProps
             field="subtitle_dates"
             value={`Mencari kamar untuk: ${format(checkIn, "dd MMM yyyy", { locale: localeId })} - ${format(checkOut, "dd MMM yyyy", { locale: localeId })} (${totalNights} malam)`}
             as="p"
-            className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
+            className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto px-2 sm:px-4"
           />
         ) : (
           <p 
-            className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
+            className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto px-2 sm:px-4"
             style={getElementStyles('rooms-subtitle-dates')}
           >
             Mencari kamar untuk: {format(checkIn, "dd MMM yyyy", { locale: localeId })} - {format(checkOut, "dd MMM yyyy", { locale: localeId })} ({totalNights} malam)
@@ -70,11 +70,11 @@ export const RoomsHeader = ({ checkIn, checkOut, totalNights }: RoomsHeaderProps
             field="subtitle"
             value={subtitle}
             as="p"
-            className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
+            className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto px-2 sm:px-4"
           />
         ) : (
           <p 
-            className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
+            className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto px-2 sm:px-4"
             style={getElementStyles('rooms-subtitle')}
           >
             {subtitle}
