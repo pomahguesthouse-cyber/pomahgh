@@ -42,9 +42,9 @@ export default function Header() {
   const menuItems = [
     { label: "Home", onClick: handleHome },
     { label: "Rooms", onClick: () => handleNav("rooms") },
-    { label: "Explore Semarang", onClick: () => navigate("/explore-semarang") },
     { label: "Fasilitas", onClick: () => handleNav("amenities") },
     { label: "News & Events", onClick: () => handleNav("news-events") },
+    { label: "Explore Semarang", onClick: () => navigate("/explore-semarang") },
   ];
 
   return (
