@@ -19,7 +19,7 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
   const paragraph2 = "Kami di Pomah Yakin bahwa setiap perjalanan seharusnya memberikan cerita- cerita baru dimulai, kenangan indah tercipta dan momen kebersamaan terjalin";
 
   return (
-    <section className="py-20 px-4 bg-background">
+    <section className="py-12 sm:py-16 md:py-20 px-4 bg-background">
       <div className="container mx-auto max-w-4xl text-center">
         <div className="animate-slide-up">
           {isEditorMode ? (
@@ -28,11 +28,11 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
               field="title"
               value={title}
               as="h2"
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-cinzel font-semibold text-foreground mb-4 sm:mb-6 px-2"
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 px-2"
             />
           ) : (
             <h2 
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-cinzel font-semibold text-foreground mb-4 sm:mb-6 px-2"
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4 md:mb-6 px-2"
               style={getElementStyles('welcome-title')}
             >
               {title}
@@ -41,9 +41,9 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
           
           {/* Line with widget styling */}
           <div 
-            className="h-1 bg-primary mx-auto mb-6 sm:mb-8"
+            className="h-0.5 sm:h-1 bg-primary mx-auto mb-4 sm:mb-6 md:mb-8"
             style={{
-              width: lineStyle.width || '96px',
+              width: lineStyle.width || '64px',
               height: lineStyle.height || '4px',
               backgroundColor: lineStyle.backgroundColor || undefined,
             }}
@@ -57,7 +57,7 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
                 value={paragraph1}
                 as="p"
                 multiline
-                className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed mb-4 sm:mb-6 px-4"
+                className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground leading-relaxed mb-3 sm:mb-4 md:mb-6 px-2 sm:px-4"
               />
               <EditableText
                 widgetId="welcome"
@@ -65,19 +65,19 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
                 value={paragraph2}
                 as="p"
                 multiline
-                className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed px-4"
+                className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground leading-relaxed px-2 sm:px-4"
               />
             </>
           ) : (
             <>
               <p 
-                className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed mb-4 sm:mb-6 px-4"
+                className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground leading-relaxed mb-3 sm:mb-4 md:mb-6 px-2 sm:px-4"
                 style={getElementStyles('welcome-description')}
               >
                 {paragraph1}
               </p>
               <p 
-                className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed px-4"
+                className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground leading-relaxed px-2 sm:px-4"
                 style={getElementStyles('welcome-description2')}
               >
                 {paragraph2}

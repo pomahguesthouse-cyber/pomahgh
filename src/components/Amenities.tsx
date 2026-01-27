@@ -18,12 +18,12 @@ export const FacilityCard = ({ icon, title, description }) => {
   const IconComponent = Icons[icon] ?? Icons.Circle;
 
   return (
-    <div className="flex flex-col items-center text-center p-4 sm:p-6 rounded-lg bg-card hover:shadow-lg transition-shadow">
-      <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-primary/10 mb-3 sm:mb-4">
-        <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-primary" />
+    <div className="flex flex-col items-center text-center p-3 sm:p-4 md:p-6 rounded-lg bg-card hover:shadow-lg transition-shadow">
+      <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-full bg-primary/10 mb-2 sm:mb-3 md:mb-4">
+        <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-8 lg:h-8 text-primary" />
       </div>
-      <h3 className="text-base sm:text-lg md:text-xl font-bold text-foreground mb-2">{title}</h3>
-      <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
+      <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-foreground mb-1 sm:mb-2">{title}</h3>
+      <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground leading-relaxed">{description}</p>
     </div>
   );
 };
@@ -192,11 +192,11 @@ export const Amenities = () => {
               field="title"
               value={title}
               as="h2"
-              className="text-2xl sm:text-3xl md:text-4xl font-cinzel font-semibold text-foreground mb-4"
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4"
             />
           ) : (
             <h2 
-              className="text-2xl sm:text-3xl md:text-4xl font-cinzel font-semibold text-foreground mb-4"
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-cinzel font-semibold text-foreground mb-3 sm:mb-4"
               style={getElementStyles('amenities-title')}
             >
               {title}
