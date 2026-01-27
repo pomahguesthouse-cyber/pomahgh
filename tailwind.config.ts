@@ -14,28 +14,14 @@ export default {
     },
     extend: {
       fontFamily: {
-        // Elegant Serif fonts
-        'playfair': ['Playfair Display', 'serif'],
-        'cormorant': ['Cormorant Garamond', 'serif'],
-        'cinzel': ['Cinzel', 'serif'],
-        'merriweather': ['Merriweather', 'serif'],
-        // Modern Sans-serif fonts
-        'roboto': ['Roboto', 'sans-serif'],
+        // Primary fonts (Ayana style)
+        'tenor': ['Tenor Sans', 'Helvetica Neue', 'sans-serif'],
+        'garamond': ['EB Garamond', 'Georgia', 'serif'],
+        // Support fonts
         'inter': ['Inter', 'sans-serif'],
-        'poppins': ['Poppins', 'sans-serif'],
-        'montserrat': ['Montserrat', 'sans-serif'],
-        'lato': ['Lato', 'sans-serif'],
-        'opensans': ['Open Sans', 'sans-serif'],
-        'raleway': ['Raleway', 'sans-serif'],
-        'oswald': ['Oswald', 'sans-serif'],
-        'nunito': ['Nunito', 'sans-serif'],
-        'quicksand': ['Quicksand', 'sans-serif'],
-        'sourcesans': ['Source Sans Pro', 'sans-serif'],
-        'josefin': ['Josefin Sans', 'sans-serif'],
-        // Decorative/Script fonts
-        'dancing': ['Dancing Script', 'cursive'],
-        'pacifico': ['Pacifico', 'cursive'],
-        'lobster': ['Lobster', 'cursive'],
+        // Legacy fonts (for compatibility)
+        'playfair': ['Tenor Sans', 'Helvetica Neue', 'sans-serif'],
+        'cormorant': ['EB Garamond', 'Georgia', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
