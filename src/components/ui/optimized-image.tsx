@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface OptimizedImageProps {
   src: string;
-  alt: string;
+  alt?: string;
   className?: string;
   width?: number;
   height?: number;
@@ -14,7 +14,106 @@ interface OptimizedImageProps {
   fallbackSrc?: string;
   onLoad?: () => void;
   onError?: () => void;
+  /** Context hint for auto alt text (e.g., "room", "facility", "attraction") */
+  context?: string;
 }
+
+/**
+ * Generate SEO-friendly alt text from image URL when alt is empty
+ * Strategy: Extract meaningful words from filename and path
+ */
+const generateSeoAltText = (src: string, context?: string): string => {
+  if (!src) return "Gambar Pomah Guesthouse";
+  
+  try {
+    // Extract filename from URL
+    const url = new URL(src, window.location.origin);
+    const pathname = url.pathname;
+    
+    // Get filename without extension
+    const filename = pathname.split('/').pop()?.replace(/\.[^/.]+$/, '') || '';
+    
+    // Extract bucket/folder context from Supabase URLs
+    let folderContext = '';
+    if (src.includes('supabase.co/storage')) {
+      const pathParts = pathname.split('/');
+      const publicIndex = pathParts.indexOf('public');
+      if (publicIndex !== -1 && pathParts[publicIndex + 1]) {
+        folderContext = pathParts[publicIndex + 1]; // bucket name
+      }
+    }
+    
+    // Clean and format filename for readability
+    const cleanedName = filename
+      .replace(/[-_]/g, ' ')           // Replace dashes/underscores with spaces
+      .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space before capitals
+      .replace(/\d{8,}/g, '')          // Remove long number sequences (timestamps)
+      .replace(/[0-9a-f]{8}-[0-9a-f]{4}/gi, '') // Remove UUIDs
+      .replace(/\s+/g, ' ')            // Normalize spaces
+      .trim();
+    
+    // Build SEO-optimized alt text
+    const parts: string[] = [];
+    
+    // Add context if provided
+    if (context) {
+      const contextMap: Record<string, string> = {
+        'room': 'Kamar',
+        'facility': 'Fasilitas',
+        'attraction': 'Wisata',
+        'event': 'Event',
+        'hero': 'Banner',
+        'gallery': 'Galeri',
+        'amenity': 'Fasilitas',
+        'location': 'Lokasi',
+      };
+      parts.push(contextMap[context.toLowerCase()] || context);
+    }
+    
+    // Add folder context if meaningful
+    if (folderContext && !['images', 'public', 'uploads'].includes(folderContext.toLowerCase())) {
+      const folderMap: Record<string, string> = {
+        'rooms': 'Kamar',
+        'facilities': 'Fasilitas',
+        'attractions': 'Wisata',
+        'events': 'Event',
+        'hero-slides': 'Banner',
+        'gallery': 'Galeri',
+      };
+      if (folderMap[folderContext.toLowerCase()]) {
+        parts.push(folderMap[folderContext.toLowerCase()]);
+      }
+    }
+    
+    // Add cleaned filename if meaningful
+    if (cleanedName && cleanedName.length > 2) {
+      // Capitalize first letter of each word
+      const formatted = cleanedName
+        .toLowerCase()
+        .split(' ')
+        .filter(word => word.length > 1)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      
+      if (formatted) {
+        parts.push(formatted);
+      }
+    }
+    
+    // Add brand suffix for SEO
+    parts.push('Pomah Guesthouse Semarang');
+    
+    // Remove duplicates and join
+    const uniqueParts = [...new Set(parts)];
+    return uniqueParts.join(' - ');
+    
+  } catch {
+    // Fallback for invalid URLs
+    return context 
+      ? `${context} - Pomah Guesthouse Semarang`
+      : 'Gambar Pomah Guesthouse Semarang';
+  }
+};
 
 const generateOptimizedUrl = (
   src: string,
@@ -62,12 +161,19 @@ export const OptimizedImage = ({
   fallbackSrc = "/placeholder.svg",
   onLoad,
   onError,
+  context,
 }: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isInView, setIsInView] = useState(priority);
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-generate SEO alt text if not provided
+  const seoAlt = useMemo(() => {
+    if (alt && alt.trim()) return alt;
+    return generateSeoAltText(src, context);
+  }, [alt, src, context]);
 
   const optimizedSrc = generateOptimizedUrl(src, width, height, quality);
   const blurSrc = generateBlurUrl(src);
@@ -89,7 +195,7 @@ export const OptimizedImage = ({
         });
       },
       {
-        rootMargin: "200px", // Start loading 200px before entering viewport
+        rootMargin: "200px",
         threshold: 0.01,
       }
     );
@@ -135,7 +241,7 @@ export const OptimizedImage = ({
         <img
           ref={imgRef}
           src={imageSrc}
-          alt={alt}
+          alt={seoAlt}
           loading={priority ? "eager" : "lazy"}
           decoding={priority ? "sync" : "async"}
           onLoad={handleLoad}
