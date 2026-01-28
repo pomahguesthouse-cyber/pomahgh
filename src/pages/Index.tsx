@@ -1,18 +1,15 @@
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import OptimizedHero from "@/components/OptimizedHero";
 import { Welcome } from "@/components/Welcome";
+import { GoogleRating } from "@/components/GoogleRating";
+import { Rooms } from "@/components/Rooms";
+import { Amenities } from "@/components/Amenities";
+import { Location } from "@/components/Location";
+import { NewsEvents } from "@/components/NewsEvents";
 import { Footer } from "@/components/Footer";
-import { 
-  LazySection, 
-  LazyGoogleRating, 
-  LazyRooms, 
-  LazyAmenities, 
-  LazyLocation, 
-  LazyNewsEvents,
-  LazyChatbotSection 
-} from "@/components/LazyComponents";
+import ChatbotWidget from "@/components/ChatbotWidget";
 
 const Index = () => {
   const location = useLocation();
@@ -37,24 +34,14 @@ const Index = () => {
       <main>
         <OptimizedHero />
         <Welcome />
-        <LazySection fallbackHeight="h-32">
-          <LazyGoogleRating />
-        </LazySection>
-        <LazySection fallbackHeight="h-[600px]">
-          <LazyRooms />
-        </LazySection>
-        <LazySection fallbackHeight="h-96">
-          <LazyAmenities />
-        </LazySection>
-        <LazySection fallbackHeight="h-96">
-          <LazyLocation />
-        </LazySection>
-        <LazySection fallbackHeight="h-96">
-          <LazyNewsEvents />
-        </LazySection>
+        <GoogleRating />
+        <Rooms />
+        <Amenities />
+        <Location />
+        <NewsEvents />
       </main>
       <Footer />
-      <LazyChatbotSection />
+      <ChatbotWidget />
     </div>
   );
 };
