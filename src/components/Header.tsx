@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, User, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 
-export default function Header() {
+const Header = memo(function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -196,4 +196,6 @@ export default function Header() {
       </div>
     </>
   );
-}
+});
+
+export default Header;
