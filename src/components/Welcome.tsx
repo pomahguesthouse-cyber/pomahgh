@@ -1,14 +1,15 @@
 import { EditableText } from '@/components/admin/editor-mode/EditableText';
 import { usePublicOverrides } from '@/contexts/PublicOverridesContext';
 import { useWidgetStyles } from '@/hooks/useWidgetStyles';
-import { useContext } from 'react';
+import { useContext, memo } from 'react';
 import { EditorModeContext } from '@/contexts/EditorModeContext';
 
 interface WelcomeProps {
   editorMode?: boolean;
 }
 
-export const Welcome = ({ editorMode = false }: WelcomeProps) => {
+// Memoized to prevent unnecessary re-renders
+export const Welcome = memo(({ editorMode = false }: WelcomeProps) => {
   const { getElementStyles } = usePublicOverrides();
   const editorContext = useContext(EditorModeContext);
   const isEditorMode = editorContext?.isEditorMode ?? editorMode;
@@ -21,7 +22,7 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
   return (
     <section className="py-12 sm:py-16 md:py-20 px-4 bg-background">
       <div className="container mx-auto max-w-4xl text-center">
-        <div className="animate-slide-up">
+        <div>
           {isEditorMode ? (
             <EditableText
               widgetId="welcome"
@@ -88,4 +89,6 @@ export const Welcome = ({ editorMode = false }: WelcomeProps) => {
       </div>
     </section>
   );
-};
+});
+
+Welcome.displayName = 'Welcome';

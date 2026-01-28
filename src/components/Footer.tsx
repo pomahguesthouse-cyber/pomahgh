@@ -4,12 +4,14 @@ import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { EditableText } from '@/components/admin/editor-mode/EditableText';
 import { usePublicOverrides } from '@/contexts/PublicOverridesContext';
 import { useWidgetStyles } from '@/hooks/useWidgetStyles';
-import { useContext } from 'react';
+import { useContext, memo } from 'react';
 import { EditorModeContext } from '@/contexts/EditorModeContext';
+
 interface FooterProps {
   editorMode?: boolean;
 }
-export const Footer = ({
+
+export const Footer = memo(({
   editorMode = false
 }: FooterProps) => {
   const {
@@ -101,4 +103,6 @@ export const Footer = ({
         </div>
       </div>
     </footer>;
-};
+});
+
+Footer.displayName = 'Footer';
