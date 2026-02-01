@@ -55,6 +55,7 @@ interface PageEditorContextType {
   
   // Section operations
   addSection: (index?: number) => void;
+  addSectionWithComponent: (component: DraggableComponent) => void;
   updateSection: (sectionId: string, updates: Partial<PageSection>) => void;
   deleteSection: (sectionId: string) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
@@ -410,6 +411,30 @@ export function PageEditorProvider({ children }: { children: React.ReactNode }) 
     });
   }, [pushHistory]);
 
+  // Add section with component (for drag-drop when no sections exist)
+  const addSectionWithComponent = useCallback((component: DraggableComponent) => {
+    setSchema(prev => {
+      const newComponent: PageComponent = {
+        id: generateComponentId(),
+        type: component.type,
+        content: { ...component.defaultContent },
+        styles: { ...component.defaultStyles },
+        seo: { ...component.defaultSEO },
+      };
+
+      const newSection: PageSection = {
+        id: generateSectionId(),
+        name: 'Section Baru',
+        components: [newComponent],
+        styles: { padding: '40px 20px' },
+      };
+      
+      const newSchema = { ...prev, sections: [...prev.sections, newSection] };
+      pushHistory(newSchema);
+      return newSchema;
+    });
+  }, [pushHistory]);
+
   // Update section
   const updateSection = useCallback((sectionId: string, updates: Partial<PageSection>) => {
     setSchema(prev => {
@@ -492,6 +517,7 @@ export function PageEditorProvider({ children }: { children: React.ReactNode }) 
       deleteComponent,
       moveComponent,
       addSection,
+      addSectionWithComponent,
       updateSection,
       deleteSection,
       moveSection,

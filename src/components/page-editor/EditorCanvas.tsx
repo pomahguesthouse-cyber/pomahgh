@@ -81,7 +81,7 @@ export function EditorCanvas() {
               strategy={verticalListSortingStrategy}
             >
               {schema.sections.length === 0 ? (
-                <div className="p-12 text-center border-2 border-dashed border-muted-foreground/20 m-4 rounded-lg">
+                <div className="p-12 text-center border-2 border-dashed border-primary/30 m-4 rounded-lg bg-primary/5 min-h-[200px] flex flex-col items-center justify-center">
                   <p className="text-muted-foreground mb-4">
                     Drag komponen ke sini atau tambah section baru
                   </p>
