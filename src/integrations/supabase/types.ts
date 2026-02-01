@@ -1885,6 +1885,7 @@ export type Database = {
           meta_description: string | null
           og_image_url: string | null
           page_content: string | null
+          page_schema: Json | null
           page_title: string
           primary_keyword: string
           published_at: string | null
@@ -1908,6 +1909,7 @@ export type Database = {
           meta_description?: string | null
           og_image_url?: string | null
           page_content?: string | null
+          page_schema?: Json | null
           page_title: string
           primary_keyword: string
           published_at?: string | null
@@ -1931,6 +1933,7 @@ export type Database = {
           meta_description?: string | null
           og_image_url?: string | null
           page_content?: string | null
+          page_schema?: Json | null
           page_title?: string
           primary_keyword?: string
           published_at?: string | null
