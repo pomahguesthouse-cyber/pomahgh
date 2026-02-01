@@ -26,6 +26,7 @@ import AdminChannelManagers from "./pages/admin/AdminChannelManagers";
 import AdminBankAccounts from "./pages/admin/AdminBankAccounts";
 import AdminRoomFeatures from "./pages/admin/AdminRoomFeatures";
 import AdminSeoSettings from "./pages/admin/AdminSeoSettings";
+import AdminLandingPages from "./pages/admin/AdminLandingPages";
 import RoomDetail from "./pages/RoomDetail";
 import AdminInvoiceTemplate from "./pages/admin/AdminInvoiceTemplate";
 import AdminRoomAddons from "./pages/admin/AdminRoomAddons";
@@ -33,6 +34,7 @@ import AdminPromotions from "./pages/admin/AdminPromotions";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import NotFound from "./pages/NotFound";
 import ExploreSemarang from "./pages/ExploreSemarang";
+import LandingPage from "./pages/LandingPage";
 import AttractionDetail from "./pages/AttractionDetail";
 import AdminCityAttractions from "./pages/admin/AdminCityAttractions";
 import AdminExploreHeroSlides from "./pages/admin/AdminExploreHeroSlides";
@@ -85,6 +87,7 @@ const App = () => (
           <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
+          <Route path="/admin/landing-pages" element={<AdminLayout><AdminLandingPages /></AdminLayout>} />
           <Route path="/admin/invoice-template" element={<AdminLayout><AdminInvoiceTemplate /></AdminLayout>} />
           <Route path="/admin/city-attractions" element={<AdminLayout><AdminCityAttractions /></AdminLayout>} />
           <Route path="/admin/explore-hero-slides" element={<AdminLayout><AdminExploreHeroSlides /></AdminLayout>} />
@@ -93,6 +96,8 @@ const App = () => (
           <Route path="/admin/developer-tools" element={<AdminLayout><AdminDeveloperTools /></AdminLayout>} />
           <Route path="/admin/editor" element={<AdminEditorMode />} />
           <Route path="/manager/view-calendar/:token" element={<ManagerCalendar />} />
+          {/* Dynamic landing pages - must be before catch-all */}
+          <Route path="/:slug" element={<LandingPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1872,6 +1872,78 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_pages: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          cta_text: string | null
+          display_order: number | null
+          hero_headline: string
+          hero_image_alt: string | null
+          hero_image_url: string | null
+          id: string
+          meta_description: string | null
+          og_image_url: string | null
+          page_content: string | null
+          page_title: string
+          primary_keyword: string
+          published_at: string | null
+          secondary_keywords: string[] | null
+          slug: string
+          status: string
+          subheadline: string | null
+          updated_at: string
+          whatsapp_message_template: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          cta_text?: string | null
+          display_order?: number | null
+          hero_headline: string
+          hero_image_alt?: string | null
+          hero_image_url?: string | null
+          id?: string
+          meta_description?: string | null
+          og_image_url?: string | null
+          page_content?: string | null
+          page_title: string
+          primary_keyword: string
+          published_at?: string | null
+          secondary_keywords?: string[] | null
+          slug: string
+          status?: string
+          subheadline?: string | null
+          updated_at?: string
+          whatsapp_message_template?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          cta_text?: string | null
+          display_order?: number | null
+          hero_headline?: string
+          hero_image_alt?: string | null
+          hero_image_url?: string | null
+          id?: string
+          meta_description?: string | null
+          og_image_url?: string | null
+          page_content?: string | null
+          page_title?: string
+          primary_keyword?: string
+          published_at?: string | null
+          secondary_keywords?: string[] | null
+          slug?: string
+          status?: string
+          subheadline?: string | null
+          updated_at?: string
+          whatsapp_message_template?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
       manager_access_tokens: {
         Row: {
           created_at: string
