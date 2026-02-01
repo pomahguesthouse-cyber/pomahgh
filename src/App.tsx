@@ -45,6 +45,7 @@ import AdminCityEvents from "./pages/admin/AdminCityEvents";
 import EventDetail from "./pages/EventDetail";
 import AdminDeveloperTools from "./pages/admin/AdminDeveloperTools";
 import AdminEditorMode from "./pages/admin/AdminEditorMode";
+import PageEditor from "./pages/PageEditor";
 import ManagerCalendar from "./pages/public/ManagerCalendar";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,7 @@ const App = () => (
           <Route path="/admin/competitor-analysis" element={<AdminCompetitorAnalysis />} />
           <Route path="/admin/developer-tools" element={<AdminLayout><AdminDeveloperTools /></AdminLayout>} />
           <Route path="/admin/editor" element={<AdminEditorMode />} />
+          <Route path="/editor" element={<PageEditor />} />
           <Route path="/manager/view-calendar/:token" element={<ManagerCalendar />} />
           {/* Dynamic landing pages - must be before catch-all */}
           <Route path="/:slug" element={<LandingPage />} />

@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, ExternalLink, Sparkles } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ExternalLink, Sparkles, PenTool } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { LandingPageFormDialog } from "@/components/admin/landing-pages/LandingPageFormDialog";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -48,6 +49,7 @@ export default function AdminLandingPages() {
   const [editingPage, setEditingPage] = useState<LandingPage | null>(null);
   const [deletingPage, setDeletingPage] = useState<LandingPage | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: pages, isLoading } = useQuery({
     queryKey: ["landing-pages"],
@@ -104,10 +106,16 @@ export default function AdminLandingPages() {
             Buat halaman SEO untuk keyword lokal dan konversi WhatsApp
           </p>
         </div>
-        <Button onClick={handleCreate} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Buat Halaman
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/editor')} className="gap-2">
+            <PenTool className="h-4 w-4" />
+            Visual Editor
+          </Button>
+          <Button onClick={handleCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Buat Halaman
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
