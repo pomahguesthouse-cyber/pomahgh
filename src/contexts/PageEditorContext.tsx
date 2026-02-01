@@ -9,6 +9,7 @@ import {
   DraggableComponent,
   ComponentType
 } from '@/types/page-editor';
+import { SectionTemplate } from '@/types/section-templates';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -56,9 +57,17 @@ interface PageEditorContextType {
   // Section operations
   addSection: (index?: number) => void;
   addSectionWithComponent: (component: DraggableComponent) => void;
+  addSectionFromTemplate: (template: SectionTemplate) => void;
   updateSection: (sectionId: string, updates: Partial<PageSection>) => void;
   deleteSection: (sectionId: string) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
+  
+  // Drag state
+  isDragging: boolean;
+  
+  // Zoom
+  zoom: number;
+  setZoom: (zoom: number) => void;
   
   // History
   undo: () => void;
@@ -435,6 +444,21 @@ export function PageEditorProvider({ children }: { children: React.ReactNode }) 
     });
   }, [pushHistory]);
 
+  // Add section from template
+  const addSectionFromTemplate = useCallback((template: SectionTemplate) => {
+    setSchema(prev => {
+      const newSection = template.createSection();
+      const newSchema = { ...prev, sections: [...prev.sections, newSection] };
+      pushHistory(newSchema);
+      return newSchema;
+    });
+  }, [pushHistory]);
+  
+  // Zoom
+  const setZoom = useCallback((zoom: number) => {
+    setEditorState(prev => ({ ...prev, zoom }));
+  }, []);
+
   // Update section
   const updateSection = useCallback((sectionId: string, updates: Partial<PageSection>) => {
     setSchema(prev => {
@@ -518,6 +542,7 @@ export function PageEditorProvider({ children }: { children: React.ReactNode }) 
       moveComponent,
       addSection,
       addSectionWithComponent,
+      addSectionFromTemplate,
       updateSection,
       deleteSection,
       moveSection,
@@ -529,6 +554,9 @@ export function PageEditorProvider({ children }: { children: React.ReactNode }) 
       isLoading,
       isSaving,
       hasUnsavedChanges,
+      isDragging: editorState.isDragging,
+      zoom: editorState.zoom,
+      setZoom,
     }}>
       {children}
     </PageEditorContext.Provider>

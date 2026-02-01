@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DndContext, DragOverlay, closestCenter, DragStartEvent, DragEndEvent, DragOverEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { PageEditorProvider, usePageEditor } from '@/contexts/PageEditorContext';
-import { ComponentPanel } from '@/components/page-editor/ComponentPanel';
-import { EditorTopBar } from '@/components/page-editor/EditorTopBar';
-import { EditorCanvas } from '@/components/page-editor/EditorCanvas';
+import { IconSidebar, PanelType } from '@/components/page-editor/IconSidebar';
+import { SectionPanel } from '@/components/page-editor/SectionPanel';
+import { ElementsPanel } from '@/components/page-editor/ElementsPanel';
+import { WixEditorTopBar } from '@/components/page-editor/WixEditorTopBar';
+import { WixEditorCanvas } from '@/components/page-editor/WixEditorCanvas';
 import { PropertiesPanel } from '@/components/page-editor/PropertiesPanel';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { DraggableComponent } from '@/types/page-editor';
+import { SectionTemplate } from '@/types/section-templates';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -15,12 +18,15 @@ function EditorContent() {
   const navigate = useNavigate();
   const { isAdmin, isLoading: authLoading } = useAdminCheck();
   const [activeComponent, setActiveComponent] = useState<DraggableComponent | null>(null);
+  const [activePanel, setActivePanel] = useState<PanelType | null>('add-section');
+  
   const { 
     isLoading, 
     setIsDragging, 
     addComponent, 
     moveComponent,
     addSectionWithComponent,
+    addSectionFromTemplate,
     schema 
   } = usePageEditor();
 
@@ -28,7 +34,7 @@ function EditorContent() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // 8px movement required before drag starts
+        distance: 8,
       },
     })
   );
@@ -38,11 +44,9 @@ function EditorContent() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
-        // undo handled by context
       }
       if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
         e.preventDefault();
-        // redo handled by context
       }
     };
     
@@ -68,6 +72,13 @@ function EditorContent() {
     const activeData = active.data.current;
     const overData = over.data.current;
 
+    // Dropping section template
+    if (activeData?.type === 'section-template') {
+      const template = activeData.template as SectionTemplate;
+      addSectionFromTemplate(template);
+      return;
+    }
+
     // Dropping from palette
     if (activeData?.type === 'palette') {
       const component = activeData.component as DraggableComponent;
@@ -81,11 +92,9 @@ function EditorContent() {
       
       // Drop to canvas (auto-create section if needed)
       if (overData?.type === 'canvas' || over.id === 'canvas-drop-zone') {
-        // If no sections exist, create one first then add component
         if (schema.sections.length === 0) {
           addSectionWithComponent(component);
         } else {
-          // Add to first section
           addComponent(schema.sections[0].id, component);
         }
         return;
@@ -99,7 +108,6 @@ function EditorContent() {
       const sourceSectionId = activeData.sectionId as string;
       
       if (sourceSectionId !== targetSectionId) {
-        // Find target index
         const targetSection = schema.sections.find(s => s.id === targetSectionId);
         const index = targetSection?.components.length || 0;
         moveComponent(componentId, targetSectionId, index);
@@ -113,14 +121,15 @@ function EditorContent() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="h-screen flex flex-col">
-        <div className="h-14 border-b flex items-center justify-between px-4">
+      <div className="h-screen flex flex-col bg-background">
+        <div className="h-12 border-b flex items-center justify-between px-4">
           <Skeleton className="h-8 w-32" />
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-8 w-40" />
         </div>
         <div className="flex-1 flex">
-          <Skeleton className="w-64 h-full" />
+          <Skeleton className="w-14 h-full" />
+          <Skeleton className="w-[320px] h-full" />
           <Skeleton className="flex-1 m-6" />
           <Skeleton className="w-72 h-full" />
         </div>
@@ -129,8 +138,26 @@ function EditorContent() {
   }
 
   if (!isAdmin) {
-    return null; // useAdminCheck handles redirect
+    return null;
   }
+
+  // Render the appropriate panel based on activePanel
+  const renderPanel = () => {
+    switch (activePanel) {
+      case 'add-section':
+        return <SectionPanel onClose={() => setActivePanel(null)} />;
+      case 'elements':
+        return <ElementsPanel onClose={() => setActivePanel(null)} title="Elements" />;
+      case 'text':
+        return <ElementsPanel onClose={() => setActivePanel(null)} filterCategory="content" title="Text" />;
+      case 'media':
+        return <ElementsPanel onClose={() => setActivePanel(null)} filterCategory="content" title="Media" />;
+      case 'design':
+        return <ElementsPanel onClose={() => setActivePanel(null)} filterCategory="marketing" title="Design" />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <DndContext
@@ -141,11 +168,20 @@ function EditorContent() {
       onDragOver={handleDragOver}
     >
       <div className="h-screen flex flex-col overflow-hidden bg-background">
-        <EditorTopBar />
+        <WixEditorTopBar />
         
         <div className="flex-1 flex overflow-hidden">
-          <ComponentPanel />
-          <EditorCanvas />
+          {/* Left: Icon sidebar + Panel */}
+          <IconSidebar 
+            activePanel={activePanel} 
+            onPanelChange={setActivePanel} 
+          />
+          {renderPanel()}
+          
+          {/* Center: Canvas */}
+          <WixEditorCanvas />
+          
+          {/* Right: Properties Panel */}
           <PropertiesPanel />
         </div>
       </div>
