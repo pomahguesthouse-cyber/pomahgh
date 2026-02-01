@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
 import { PublicOverridesProvider } from "@/contexts/PublicOverridesContext";
 import { GlobalSEO } from "@/components/GlobalSEO";
+import { SubdomainRouter } from "@/components/SubdomainRouter";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Bookings from "./pages/Bookings";
@@ -60,6 +61,7 @@ const App = () => (
         <SearchDatesProvider>
           <PublicOverridesProvider>
           <BrowserRouter>
+            <SubdomainRouter>
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -103,6 +105,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
+            </SubdomainRouter>
         </BrowserRouter>
           </PublicOverridesProvider>
       </SearchDatesProvider>
