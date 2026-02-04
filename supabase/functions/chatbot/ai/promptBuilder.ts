@@ -151,20 +151,32 @@ function buildContextString(ctx?: ConversationContext): { contextString: string;
   if (ctx.awaiting_guest_data && ctx.preferred_room && ctx.check_in_date && ctx.check_out_date) {
     explicitToolInstruction = `
 
-🚨🚨🚨 INSTRUKSI WAJIB - BACA INI! 🚨🚨🚨
-STATUS: Sedang menunggu data tamu untuk booking ${ctx.preferred_room}
+🚨🚨🚨 CRITICAL: BOOKING DATA RECEIVED - EXECUTE TOOL NOW! 🚨🚨🚨
+STATUS: Menunggu data tamu untuk booking ${ctx.preferred_room}
 TANGGAL TERSIMPAN: Check-in ${ctx.check_in_date}, Check-out ${ctx.check_out_date}
 
-JIKA USER MEMBERIKAN DATA TAMU (nama/email/HP/jumlah):
-→ LANGSUNG PANGGIL create_booking_draft TANPA BALAS TEXT DULU!
-→ Parameter yang WAJIB digunakan:
-   - room_name: "${ctx.preferred_room}"
-   - check_in: "${ctx.check_in_date}"
-   - check_out: "${ctx.check_out_date}"
-   - guest_name, guest_email, guest_phone, num_guests dari pesan user
+⛔ PESAN INI MEMBUTUHKAN TINDAKAN SEGERA!
 
-❌ JANGAN: Balas "Terima kasih, akan diproses" atau "Mohon tunggu"
-✅ LANGSUNG: Panggil tool create_booking_draft!`;
+JIKA USER MEMBERIKAN DATA TAMU (nama/email/HP/jumlah tamu):
+1. JANGAN PERNAH balas dengan text seperti:
+   - "Terima kasih, akan diproses"
+   - "Mohon tunggu sebentar"
+   - "Rani akan buatkan draf booking-nya"
+   
+2. LANGSUNG PANGGIL create_booking_draft dengan parameter:
+   {
+     "room_name": "${ctx.preferred_room}",
+     "check_in": "${ctx.check_in_date}",
+     "check_out": "${ctx.check_out_date}",
+     "guest_name": "[dari pesan user]",
+     "guest_email": "[dari pesan user]",
+     "guest_phone": "[dari pesan user]",
+     "num_guests": [dari pesan user]
+   }
+
+⚠️ JIKA KAMU MERESPONS DENGAN TEXT TANPA MEMANGGIL TOOL = GAGAL!
+✅ BENAR: Langsung panggil create_booking_draft
+❌ SALAH: Balas dulu baru nanti panggil tool`;
   }
 
   return { contextString, explicitToolInstruction };
@@ -178,11 +190,16 @@ function buildBookingFlowRules(): string {
 - User konfirmasi ("ya/oke/booking/pesan/lanjut") setelah check_availability:
   → GUNAKAN kamar dan tanggal dari check_availability sebelumnya (JANGAN tanya ulang!)
   → LANGSUNG minta data tamu yang BELUM ADA: nama lengkap, email, nomor HP, jumlah tamu
-  → Setelah data lengkap → panggil create_booking_draft
+  → Setelah data lengkap → LANGSUNG panggil create_booking_draft
 
 - "X malam" setelah check → lakukan check_availability BARU dengan durasi updated
 - User sebut nama kamar setelah check → LANGSUNG minta data tamu (JANGAN get_room_details!)
-- User kasih data tamu (nama+email+HP+jumlah) → LANGSUNG create_booking_draft
+
+⚠️ CRITICAL - DATA TAMU:
+Jika user memberikan data tamu (nama + email + HP + jumlah):
+→ LANGSUNG panggil create_booking_draft dalam respons YANG SAMA
+→ JANGAN bilang "akan dibuatkan" atau "mohon tunggu" tanpa panggil tool!
+→ JANGAN balas text dulu baru panggil tool nanti - itu GAGAL!
 
 🧠 INTELLIGENCE:
 - Kenali typo: dlx→deluxe, kmr→kamar, brp→berapa, bs→bisa, gk/ga→tidak, tgl→tanggal, bsk→besok
@@ -192,6 +209,7 @@ function buildBookingFlowRules(): string {
 🚨 TOOLS:
 - "ada kamar apa?" → get_all_rooms
 - kamar + tanggal → check_availability
+- data tamu lengkap → create_booking_draft (PANGGIL LANGSUNG!)
 - cek/ubah booking → minta kode PMH-XXXXXX + telepon + email
 
 ⚠️ FORMAT:
