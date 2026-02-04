@@ -1,49 +1,30 @@
 import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
-import { EditableText } from '@/components/admin/editor-mode/EditableText';
-import { usePublicOverrides } from '@/contexts/PublicOverridesContext';
-import { useWidgetStyles } from '@/hooks/useWidgetStyles';
-import { useContext, memo } from 'react';
-import { EditorModeContext } from '@/contexts/EditorModeContext';
+import { memo } from 'react';
 
 interface FooterProps {
   editorMode?: boolean;
 }
 
-export const Footer = memo(({
-  editorMode = false
-}: FooterProps) => {
-  const {
-    settings: hotelSettings
-  } = useHotelSettings();
-  const {
-    getElementStyles
-  } = usePublicOverrides();
-  const editorContext = useContext(EditorModeContext);
-  const isEditorMode = editorContext?.isEditorMode ?? editorMode;
-  const {
-    settings,
-    contentStyle
-  } = useWidgetStyles('footer');
-  const hotelName = settings.title_override || hotelSettings?.hotel_name?.toUpperCase() || "POMAH GUESTHOUSE";
-  const description = settings.subtitle_override || hotelSettings?.description || "Your tropical paradise awaits in the heart of Bali's most beautiful landscapes.";
+export const Footer = memo(({ editorMode = false }: FooterProps) => {
+  const { settings: hotelSettings } = useHotelSettings();
 
-  // Apply footer background from widget settings if specified
-  const footerBgStyle: React.CSSProperties = settings.content_bg_color && settings.content_bg_color !== 'transparent' ? {
-    backgroundColor: settings.content_bg_color
-  } : {};
-  return <footer className="bg-primary text-primary-foreground py-8 sm:py-10 md:py-12 px-4" style={footerBgStyle}>
+  const hotelName = hotelSettings?.hotel_name?.toUpperCase() || "POMAH GUESTHOUSE";
+  const description = hotelSettings?.description || "Your tropical paradise awaits in the heart of Bali's most beautiful landscapes.";
+
+  return (
+    <footer className="bg-primary text-primary-foreground py-8 sm:py-10 md:py-12 px-4">
       <div className="container mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
           {/* Brand */}
           <div className="text-center sm:text-left">
-            {isEditorMode ? <EditableText widgetId="footer" field="title" value={hotelName} as="h3" className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4" /> : <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4 font-sans" style={getElementStyles('footer-title')}>
-                {hotelName}
-              </h3>}
-            {isEditorMode ? <EditableText widgetId="footer" field="subtitle" value={description} as="p" multiline className="text-xs sm:text-sm md:text-base text-primary-foreground/80" /> : <p className="text-xs sm:text-sm md:text-base text-primary-foreground/80" style={getElementStyles('footer-subtitle')}>
-                {description}
-              </p>}
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4 font-sans">
+              {hotelName}
+            </h3>
+            <p className="text-xs sm:text-sm md:text-base text-primary-foreground/80">
+              {description}
+            </p>
           </div>
 
           {/* Quick Links */}
@@ -82,18 +63,26 @@ export const Footer = memo(({
           <div className="text-center sm:text-left">
             <h4 className="text-sm sm:text-base md:text-lg font-bold mb-2 sm:mb-4 font-mono">Follow Us</h4>
             <div className="flex gap-3 sm:gap-4 justify-center sm:justify-start">
-              {hotelSettings?.facebook_url && <a href={hotelSettings.facebook_url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors">
+              {hotelSettings?.facebook_url && (
+                <a href={hotelSettings.facebook_url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors">
                   <Facebook className="w-4 h-4 sm:w-5 sm:h-5" />
-                </a>}
-              {hotelSettings?.instagram_url && <a href={hotelSettings.instagram_url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors">
+                </a>
+              )}
+              {hotelSettings?.instagram_url && (
+                <a href={hotelSettings.instagram_url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors">
                   <Instagram className="w-4 h-4 sm:w-5 sm:h-5" />
-                </a>}
-              {hotelSettings?.twitter_url && <a href={hotelSettings.twitter_url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors">
+                </a>
+              )}
+              {hotelSettings?.twitter_url && (
+                <a href={hotelSettings.twitter_url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors">
                   <Twitter className="w-4 h-4 sm:w-5 sm:h-5" />
-                </a>}
-              {hotelSettings?.youtube_url && <a href={hotelSettings.youtube_url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors">
+                </a>
+              )}
+              {hotelSettings?.youtube_url && (
+                <a href={hotelSettings.youtube_url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors">
                   <Youtube className="w-4 h-4 sm:w-5 sm:h-5" />
-                </a>}
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -102,7 +91,8 @@ export const Footer = memo(({
           <p className="text-xs sm:text-sm">&copy; {new Date().getFullYear()} {hotelSettings?.hotel_name || "Pomah Guesthouse"}. All rights reserved.</p>
         </div>
       </div>
-    </footer>;
+    </footer>
+  );
 });
 
 Footer.displayName = 'Footer';

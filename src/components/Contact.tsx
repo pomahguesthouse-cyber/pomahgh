@@ -3,11 +3,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPin, Phone, Mail } from "lucide-react";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
-import { EditableText } from '@/components/admin/editor-mode/EditableText';
-import { usePublicOverrides } from '@/contexts/PublicOverridesContext';
-import { useWidgetStyles } from '@/hooks/useWidgetStyles';
-import { useContext, useState } from 'react';
-import { EditorModeContext } from '@/contexts/EditorModeContext';
 
 interface ContactProps {
   editorMode?: boolean;
@@ -15,14 +10,9 @@ interface ContactProps {
 
 export const Contact = ({ editorMode = false }: ContactProps) => {
   const { settings: hotelSettings } = useHotelSettings();
-  const { getElementStyles } = usePublicOverrides();
-  const editorContext = useContext(EditorModeContext);
-  const isEditorMode = editorContext?.isEditorMode ?? editorMode;
-  const { settings, lineStyle, buttonStyle } = useWidgetStyles('contact');
-  const [isButtonHovered, setIsButtonHovered] = useState(false);
   
-  const heading = settings.title_override || "Get in Touch";
-  const subtext = settings.subtitle_override || "Ready to experience paradise? Contact us to book your stay or ask any questions.";
+  const heading = "Get in Touch";
+  const subtext = "Ready to experience paradise? Contact us to book your stay or ask any questions.";
 
   const fullAddress = [
     hotelSettings?.address,
@@ -34,66 +24,19 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
     .filter(Boolean)
     .join(", ");
 
-  // Compute button styles from widget settings
-  const computedButtonStyle: React.CSSProperties = settings.button_bg_color
-    ? {
-        background: isButtonHovered && settings.button_hover_color 
-          ? settings.button_hover_color 
-          : settings.button_bg_color,
-        color: settings.button_text_color || undefined,
-        borderRadius: settings.button_border_radius !== 'default' 
-          ? settings.button_border_radius 
-          : undefined,
-      }
-    : {};
-
   return (
     <section id="contact" className="py-20 px-4 bg-secondary/30">
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12 sm:mb-16 animate-slide-up">
-          {isEditorMode ? (
-            <EditableText
-              widgetId="contact"
-              field="title"
-              value={heading}
-              as="h2"
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2"
-            />
-          ) : (
-            <h2 
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2"
-              style={getElementStyles('contact-title')}
-            >
-              {heading}
-            </h2>
-          )}
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 px-2">
+            {heading}
+          </h2>
           
-          {/* Line with widget styling */}
-          <div 
-            className="h-1 bg-primary mx-auto mb-4 sm:mb-6"
-            style={{
-              width: lineStyle.width || '96px',
-              height: lineStyle.height || '4px',
-              backgroundColor: lineStyle.backgroundColor || undefined,
-            }}
-          />
+          <div className="h-1 bg-primary mx-auto mb-4 sm:mb-6 w-24" />
           
-          {isEditorMode ? (
-            <EditableText
-              widgetId="contact"
-              field="subtitle"
-              value={subtext}
-              as="p"
-              className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
-            />
-          ) : (
-            <p 
-              className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
-              style={getElementStyles('contact-subtitle')}
-            >
-              {subtext}
-            </p>
-          )}
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+            {subtext}
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-12">
@@ -188,14 +131,7 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
                 />
               </div>
 
-              <Button 
-                variant="luxury" 
-                size="lg" 
-                className="w-full"
-                style={computedButtonStyle}
-                onMouseEnter={() => setIsButtonHovered(true)}
-                onMouseLeave={() => setIsButtonHovered(false)}
-              >
+              <Button variant="luxury" size="lg" className="w-full">
                 Send Message
               </Button>
             </form>

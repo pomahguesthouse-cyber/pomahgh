@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { RoomCardInfo } from "./RoomCardInfo";
 import { RoomCardPrice } from "./RoomCardPrice";
 import { RoomFeatures } from "./RoomFeatures";
-import { useWidgetStyles } from "@/hooks/useWidgetStyles";
 import type { RoomCardProps } from "./types";
 import familyChoiceIcon from "@/assets/family-choice-icon.png";
 import { useState } from "react";
@@ -23,23 +22,9 @@ export const RoomCard = ({
   onBookRoom,
 }: RoomCardProps) => {
   const isUnavailable = isAvailabilityLoaded && availability !== undefined && availability === 0;
-  const { settings, buttonStyle } = useWidgetStyles('rooms');
   const [isHovered, setIsHovered] = useState(false);
 
   const slug = room.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-
-  // Compute button styles from widget settings
-  const computedButtonStyle: React.CSSProperties = settings.button_bg_color
-    ? {
-        background: isHovered && settings.button_hover_color 
-          ? settings.button_hover_color 
-          : settings.button_bg_color,
-        color: settings.button_text_color || '#000000',
-        borderRadius: settings.button_border_radius !== 'default' 
-          ? settings.button_border_radius 
-          : undefined,
-      }
-    : {};
 
   return (
     <Link to={`/rooms/${slug}`} className="block">
@@ -51,8 +36,6 @@ export const RoomCard = ({
           cursor-pointer group
           rounded-2xl
           bg-white
-
-          /* IMPORTANT: do NOT clip shadow */
           overflow-visible 
           shadow-[0_2px_10px_rgba(0,0,0,0.08)]
           hover:shadow-[0_12px_28px_rgba(0,0,0,0.14)]
@@ -99,21 +82,11 @@ export const RoomCard = ({
 
           {/* BUTTON */}
           <Button
-            className={`
-              w-full 
-              ${!settings.button_bg_color ? 'bg-gradient-to-r from-amber-500 to-yellow-400' : ''} 
-              text-black font-semibold 
-              shadow-lg hover:shadow-xl 
-              hover:brightness-110 
-              active:scale-[0.98] 
-              transition-all duration-200
-              overflow-hidden
-            `}
-            style={computedButtonStyle}
+            className="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-semibold shadow-lg hover:shadow-xl hover:brightness-110 active:scale-[0.98] transition-all duration-200 overflow-hidden"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onClick={(e) => {
-              e.preventDefault(); // prevent link navigation
+              e.preventDefault();
               onBookRoom(room);
             }}
             disabled={isUnavailable}
