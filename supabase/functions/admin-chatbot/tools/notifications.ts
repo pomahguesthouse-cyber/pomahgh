@@ -246,3 +246,45 @@ export async function sendWhatsAppMessage(supabase: any, args: { phone: string; 
     };
   }
 }
+
+/**
+ * Get list of all registered managers
+ */
+export async function getManagerList(supabase: any) {
+  const { data: settings, error } = await supabase
+    .from('hotel_settings')
+    .select('whatsapp_manager_numbers')
+    .single();
+  
+  if (error) {
+    console.error('Error fetching manager list:', error);
+    return {
+      success: false,
+      error: 'Gagal mengambil daftar pengelola'
+    };
+  }
+  
+  const managers = settings?.whatsapp_manager_numbers || [];
+  
+  if (managers.length === 0) {
+    return {
+      success: true,
+      managers: [],
+      count: 0,
+      message: 'Belum ada pengelola yang terdaftar'
+    };
+  }
+  
+  return {
+    success: true,
+    managers: managers.map((m: any) => ({
+      name: m.name,
+      phone: m.phone,
+      role: m.role || 'manager'
+    })),
+    count: managers.length,
+    formatted_list: managers.map((m: any, i: number) => 
+      `${i + 1}. ${m.name} (${m.phone}) - ${m.role || 'manager'}`
+    ).join('\n')
+  };
+}
