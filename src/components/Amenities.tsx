@@ -1,4 +1,4 @@
-import * as Icons from "lucide-react";
+import { icons, Circle, type LucideIcon } from "lucide-react";
 import { useFacilities } from "@/hooks/useFacilities";
 import { useFacilityHeroSlides } from "@/hooks/useFacilityHeroSlides";
 import { motion } from "framer-motion";
@@ -17,7 +17,7 @@ export const FacilityCard = ({
   title: string;
   description: string;
 }) => {
-  const IconComponent = (Icons as Record<string, React.ComponentType<{ className?: string }>>)[icon] || Icons.Circle;
+  const IconComponent = (icons[icon as keyof typeof icons] as LucideIcon) || Circle;
   return (
     <div className="flex flex-col items-center text-center p-3 sm:p-4 md:p-6 rounded-lg bg-card hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-full bg-primary/10 mb-2 sm:mb-3 md:mb-4">

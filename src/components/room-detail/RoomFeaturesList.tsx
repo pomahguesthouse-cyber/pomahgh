@@ -1,8 +1,8 @@
-import * as Icons from "lucide-react";
+import { icons, Circle, type LucideIcon } from "lucide-react";
 import type { RoomFeaturesListProps } from "./types";
-const getIconComponent = (iconName: string) => {
-  const IconComponent = Icons[iconName as keyof typeof Icons] as any;
-  return IconComponent || Icons.Circle;
+
+const getIconComponent = (iconName: string): LucideIcon => {
+  return (icons[iconName as keyof typeof icons] as LucideIcon) || Circle;
 };
 export const RoomFeaturesList = ({
   features,
