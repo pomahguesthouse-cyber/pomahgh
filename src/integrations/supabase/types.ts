@@ -1983,6 +1983,57 @@ export type Database = {
         }
         Relationships: []
       }
+      media_library: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          file_name: string
+          file_size: number
+          file_type: string
+          file_url: string
+          folder: string | null
+          height: number | null
+          id: string
+          mime_type: string
+          original_name: string
+          tags: string[] | null
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          file_name: string
+          file_size: number
+          file_type: string
+          file_url: string
+          folder?: string | null
+          height?: number | null
+          id?: string
+          mime_type: string
+          original_name: string
+          tags?: string[] | null
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          file_url?: string
+          folder?: string | null
+          height?: number | null
+          id?: string
+          mime_type?: string
+          original_name?: string
+          tags?: string[] | null
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
       nearby_locations: {
         Row: {
           category: string

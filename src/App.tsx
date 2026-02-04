@@ -28,6 +28,7 @@ import AdminBankAccounts from "./pages/admin/AdminBankAccounts";
 import AdminRoomFeatures from "./pages/admin/AdminRoomFeatures";
 import AdminSeoSettings from "./pages/admin/AdminSeoSettings";
 import AdminLandingPages from "./pages/admin/AdminLandingPages";
+import AdminMediaLibrary from "./pages/admin/AdminMediaLibrary";
 import RoomDetail from "./pages/RoomDetail";
 import AdminInvoiceTemplate from "./pages/admin/AdminInvoiceTemplate";
 import AdminRoomAddons from "./pages/admin/AdminRoomAddons";
@@ -88,6 +89,7 @@ const App = () => (
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
           <Route path="/admin/landing-pages" element={<AdminLayout><AdminLandingPages /></AdminLayout>} />
+          <Route path="/admin/media-library" element={<AdminLayout><AdminMediaLibrary /></AdminLayout>} />
           <Route path="/admin/invoice-template" element={<AdminLayout><AdminInvoiceTemplate /></AdminLayout>} />
           <Route path="/admin/city-attractions" element={<AdminLayout><AdminCityAttractions /></AdminLayout>} />
           <Route path="/admin/explore-hero-slides" element={<AdminLayout><AdminExploreHeroSlides /></AdminLayout>} />
