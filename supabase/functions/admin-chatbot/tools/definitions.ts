@@ -235,5 +235,21 @@ export const TOOLS: ToolDefinition[] = [
         required: ["room_number", "extra_nights"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_whatsapp_message",
+      description: "Kirim pesan WhatsApp ke tamu atau pengelola lain. Gunakan saat manager minta: 'kirim pesan ke 08xxx', 'hubungi tamu xxx', 'WA ke xxx'. WAJIB ada nomor telepon dan isi pesan.",
+      parameters: {
+        type: "object",
+        properties: {
+          phone: { type: "string", description: "Nomor telepon tujuan (format 08xxx atau 62xxx)" },
+          message: { type: "string", description: "Isi pesan yang akan dikirim" },
+          booking_code: { type: "string", description: "Kode booking terkait (opsional, untuk konteks)" }
+        },
+        required: ["phone", "message"]
+      }
+    }
   }
 ];

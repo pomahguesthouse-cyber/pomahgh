@@ -85,6 +85,11 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
 - "statistik hari ini" → get_booking_stats(period="today")
 - "laporan minggu ini" → get_booking_stats(period="week")
 
+📤 KIRIM PESAN WHATSAPP:
+- "kirim pesan ke 08xxx" → send_whatsapp_message(phone, message)
+- "WA ke tamu xxx" → cari dulu via search_bookings, lalu send_whatsapp_message
+- "hubungi tamu kamar 207" → get_today_guests dulu, lalu send_whatsapp_message dengan nomor tamu
+
 ⚠️ CHECKOUT REMINDER FLOW:
 Saat manager merespons reminder checkout dengan angka:
 - "207 1" → langsung update_room_status ke checked_out
