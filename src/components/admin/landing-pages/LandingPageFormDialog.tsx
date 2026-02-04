@@ -36,6 +36,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, X, Sparkles, AlertCircle } from "lucide-react";
 import { LandingPage } from "@/pages/admin/AdminLandingPages";
 import { LandingPageAIAssist } from "./LandingPageAIAssist";
+import { HeroSliderManager, HeroSlide } from "./HeroSliderManager";
+import { MediaPickerField } from "./MediaPickerField";
 
 const formSchema = z.object({
   page_title: z
@@ -63,6 +65,11 @@ const formSchema = z.object({
   whatsapp_message_template: z.string().optional(),
   hero_image_url: z.string().optional(),
   hero_image_alt: z.string().optional(),
+  hero_slides: z.array(z.object({
+    id: z.string(),
+    image_url: z.string(),
+    alt_text: z.string(),
+  })).default([]),
   og_image_url: z.string().optional(),
   status: z.enum(["draft", "published"]).default("draft"),
 });
@@ -107,6 +114,7 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
       whatsapp_message_template: "",
       hero_image_url: "",
       hero_image_alt: "",
+      hero_slides: [],
       og_image_url: "",
       status: "draft",
     },
@@ -114,6 +122,12 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
 
   useEffect(() => {
     if (editingPage) {
+      // Parse hero_slides safely
+      let heroSlides: HeroSlide[] = [];
+      if (editingPage.hero_slides && Array.isArray(editingPage.hero_slides)) {
+        heroSlides = editingPage.hero_slides as HeroSlide[];
+      }
+      
       form.reset({
         page_title: editingPage.page_title,
         slug: editingPage.slug,
@@ -128,6 +142,7 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
         whatsapp_message_template: editingPage.whatsapp_message_template || "",
         hero_image_url: editingPage.hero_image_url || "",
         hero_image_alt: editingPage.hero_image_alt || "",
+        hero_slides: heroSlides,
         og_image_url: editingPage.og_image_url || "",
         status: editingPage.status,
       });
@@ -150,6 +165,7 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
         whatsapp_message_template: "",
         hero_image_url: "",
         hero_image_alt: "",
+        hero_slides: [],
         og_image_url: "",
         status: "draft",
       });
@@ -206,6 +222,7 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
         whatsapp_message_template: values.whatsapp_message_template || null,
         hero_image_url: values.hero_image_url || null,
         hero_image_alt: values.hero_image_alt || null,
+        hero_slides: values.hero_slides || [],
         og_image_url: values.og_image_url || null,
         status: values.status,
       };
@@ -590,54 +607,48 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
                   />
                 </TabsContent>
 
-                <TabsContent value="media" className="space-y-4 mt-4">
+                <TabsContent value="media" className="space-y-6 mt-4">
+                  {/* Hero Slider */}
                   <FormField
                     control={form.control}
-                    name="hero_image_url"
+                    name="hero_slides"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hero Image URL</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="https://..." />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="hero_image_alt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hero Image Alt Text</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="Penginapan dekat Undip Tembalang Semarang"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="og_image_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>OG Image URL</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="https://..." />
-                        </FormControl>
+                        <HeroSliderManager
+                          slides={(field.value || []) as HeroSlide[]}
+                          onChange={field.onChange}
+                        />
                         <FormDescription>
-                          Gambar untuk sharing di social media (1200x630)
+                          Tambahkan beberapa gambar untuk slider hero. Drag untuk mengatur urutan.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm font-medium mb-3 text-muted-foreground">
+                      Atau gunakan single hero image (legacy):
+                    </p>
+                    
+                    <MediaPickerField
+                      label="Hero Image"
+                      value={form.watch("hero_image_url") || ""}
+                      onChange={(url) => form.setValue("hero_image_url", url)}
+                      altText={form.watch("hero_image_alt") || ""}
+                      onAltChange={(alt) => form.setValue("hero_image_alt", alt)}
+                      showAltField={true}
+                    />
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <MediaPickerField
+                      label="OG Image (Social Media)"
+                      value={form.watch("og_image_url") || ""}
+                      onChange={(url) => form.setValue("og_image_url", url)}
+                      description="Gambar untuk sharing di social media (1200×630)"
+                    />
+                  </div>
                 </TabsContent>
               </ScrollArea>
             </Tabs>

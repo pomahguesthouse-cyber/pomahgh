@@ -1884,6 +1884,7 @@ export type Database = {
           hero_headline: string
           hero_image_alt: string | null
           hero_image_url: string | null
+          hero_slides: Json | null
           id: string
           meta_description: string | null
           og_image_url: string | null
@@ -1908,6 +1909,7 @@ export type Database = {
           hero_headline: string
           hero_image_alt?: string | null
           hero_image_url?: string | null
+          hero_slides?: Json | null
           id?: string
           meta_description?: string | null
           og_image_url?: string | null
@@ -1932,6 +1934,7 @@ export type Database = {
           hero_headline?: string
           hero_image_alt?: string | null
           hero_image_url?: string | null
+          hero_slides?: Json | null
           id?: string
           meta_description?: string | null
           og_image_url?: string | null
