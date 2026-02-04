@@ -251,5 +251,13 @@ export const TOOLS: ToolDefinition[] = [
         required: ["phone", "message"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_manager_list",
+      description: "Dapatkan daftar semua pengelola/manager yang terdaftar beserta nomor teleponnya. Gunakan saat manager minta: 'kirim ke semua pengelola', 'broadcast ke pengelola', 'daftar pengelola'",
+      parameters: { type: "object", properties: {} }
+    }
   }
 ];

@@ -24,6 +24,7 @@ export type Database = {
           id: string
           ip_address: string | null
           session_id: string | null
+          source_type: string | null
           tool_calls: Json | null
           user_agent: string | null
           user_message: string
@@ -37,6 +38,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           session_id?: string | null
+          source_type?: string | null
           tool_calls?: Json | null
           user_agent?: string | null
           user_message: string
@@ -50,6 +52,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           session_id?: string | null
+          source_type?: string | null
           tool_calls?: Json | null
           user_agent?: string | null
           user_message?: string

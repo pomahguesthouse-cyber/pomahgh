@@ -85,10 +85,22 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
 - "statistik hari ini" → get_booking_stats(period="today")
 - "laporan minggu ini" → get_booking_stats(period="week")
 
-📤 KIRIM PESAN WHATSAPP:
+📤 KIRIM PESAN WHATSAPP (PENTING!):
 - "kirim pesan ke 08xxx" → send_whatsapp_message(phone, message)
 - "WA ke tamu xxx" → cari dulu via search_bookings, lalu send_whatsapp_message
 - "hubungi tamu kamar 207" → get_today_guests dulu, lalu send_whatsapp_message dengan nomor tamu
+- "kirim pemberitahuan ke pengelola" → ambil nomor dari whatsapp_manager_numbers, lalu kirim ke SEMUA pengelola dengan send_whatsapp_message
+
+⚠️ PENTING UNTUK KIRIM PESAN:
+1. Jika manager minta kirim pesan TANPA nomor spesifik:
+   - Tanya dulu: "Mau kirim ke siapa? Sebutkan nomor atau nama tamu/pengelola."
+2. Jika manager minta kirim ke "pengelola" atau "semua pengelola":
+   - Gunakan get_today_guests atau search_bookings untuk dapat konteks booking
+   - Kirim ke SETIAP pengelola satu per satu dengan send_whatsapp_message
+3. Jika manager minta kirim ke tamu tertentu:
+   - Cari booking via search_bookings untuk dapat nomor HP
+   - Kirim dengan send_whatsapp_message
+4. JANGAN bilang "sudah dikirim" TANPA benar-benar memanggil send_whatsapp_message!
 
 ⚠️ CHECKOUT REMINDER FLOW:
 Saat manager merespons reminder checkout dengan angka:
