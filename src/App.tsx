@@ -46,6 +46,7 @@ import AdminChat from "./pages/admin/AdminChat";
 import AdminCityEvents from "./pages/admin/AdminCityEvents";
 import EventDetail from "./pages/EventDetail";
 import ManagerCalendar from "./pages/public/ManagerCalendar";
+import PageEditorPage from "./pages/PageEditorPage";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,7 @@ const App = () => (
           <Route path="/admin/explore-hero-slides" element={<AdminLayout><AdminExploreHeroSlides /></AdminLayout>} />
           <Route path="/admin/city-events" element={<AdminLayout><AdminCityEvents /></AdminLayout>} />
           <Route path="/admin/competitor-analysis" element={<AdminCompetitorAnalysis />} />
+          <Route path="/editor" element={<PageEditorPage />} />
           <Route path="/manager/view-calendar/:token" element={<ManagerCalendar />} />
           {/* Dynamic landing pages - must be before catch-all */}
           <Route path="/:slug" element={<LandingPage />} />
