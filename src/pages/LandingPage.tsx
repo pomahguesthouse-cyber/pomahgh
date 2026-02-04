@@ -9,6 +9,7 @@ import { MessageCircle, Phone, MapPin, Star, CheckCircle } from "lucide-react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import Markdown from "react-markdown";
 import NotFound from "./NotFound";
+import { LandingPageHeroSlider, HeroSlide } from "@/components/landing/LandingPageHeroSlider";
 
 interface LandingPageData {
   id: string;
@@ -26,6 +27,7 @@ interface LandingPageData {
   hero_image_url: string | null;
   hero_image_alt: string | null;
   og_image_url: string | null;
+  hero_slides: HeroSlide[] | null;
   status: string;
 }
 
@@ -43,7 +45,16 @@ export default function LandingPage() {
         .single();
 
       if (error) throw error;
-      return data as LandingPageData;
+      
+      // Parse hero_slides from JSON
+      const heroSlides = Array.isArray(data.hero_slides) 
+        ? (data.hero_slides as unknown as HeroSlide[])
+        : [];
+      
+      return {
+        ...data,
+        hero_slides: heroSlides,
+      } as LandingPageData;
     },
     enabled: !!slug,
   });
@@ -95,6 +106,13 @@ export default function LandingPage() {
     : `Halo, saya tertarik booking kamar. Saya menemukan info dari halaman ${page.page_title}.`;
 
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
+  // Build hero slides: use hero_slides array, fallback to single hero_image_url
+  const heroSlides: HeroSlide[] = page.hero_slides && page.hero_slides.length > 0
+    ? page.hero_slides
+    : page.hero_image_url
+      ? [{ id: 'legacy', image_url: page.hero_image_url, alt_text: page.hero_image_alt || page.hero_headline }]
+      : [];
 
   const schemaData = {
     "@context": "https://schema.org",
@@ -175,30 +193,12 @@ export default function LandingPage() {
       <Header />
 
       <main className="min-h-screen">
-        {/* Hero Section */}
-        <section className="relative min-h-[60vh] flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10">
-          {page.hero_image_url && (
-            <div className="absolute inset-0">
-              <OptimizedImage
-                src={page.hero_image_url}
-                alt={page.hero_image_alt || page.hero_headline}
-                className="w-full h-full object-cover"
-                context="landing"
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-background" />
-            </div>
-          )}
-
-          <div className="relative z-10 container mx-auto px-4 py-16 text-center">
-            <h1 className={`text-3xl md:text-5xl font-bold mb-4 ${page.hero_image_url ? "text-white" : "text-foreground"}`}>
-              {page.hero_headline}
-            </h1>
-            {page.subheadline && (
-              <h2 className={`text-lg md:text-xl mb-8 max-w-2xl mx-auto ${page.hero_image_url ? "text-white/90" : "text-muted-foreground"}`}>
-                {page.subheadline}
-              </h2>
-            )}
-
+        {/* Hero Section with Slider */}
+        <LandingPageHeroSlider
+          slides={heroSlides}
+          headline={page.hero_headline}
+          subheadline={page.subheadline}
+          ctaButton={
             <Button
               size="lg"
               className="gap-2 text-lg px-8 py-6"
@@ -209,8 +209,8 @@ export default function LandingPage() {
                 {page.cta_text || "Booking via WhatsApp"}
               </a>
             </Button>
-          </div>
-        </section>
+          }
+        />
 
         {/* Features Quick Info */}
         <section className="py-8 bg-muted/50 border-y">
