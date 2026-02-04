@@ -6,12 +6,8 @@ import { MapPin, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
-import { useState, useCallback, useEffect, useContext } from "react";
+import { useState, useCallback, useEffect } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { EditorModeContext } from "@/contexts/EditorModeContext";
-import { EditableText } from "@/components/admin/editor-mode/EditableText";
-import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
-import { useWidgetStyles } from "@/hooks/useWidgetStyles";
 
 interface NewsEventsProps {
   editorMode?: boolean;
@@ -91,10 +87,6 @@ const EventCard = ({ event }: { event: CityEvent }) => {
 
 export const NewsEvents = ({ editorMode = false }: NewsEventsProps) => {
   const { upcomingEvents, isLoadingUpcoming } = useCityEvents();
-  const editorContext = useContext(EditorModeContext);
-  const isEditorMode = editorContext?.isEditorMode ?? editorMode;
-  const { getElementStyles } = usePublicOverrides();
-  const { settings, lineStyle } = useWidgetStyles('news_events');
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
@@ -130,19 +122,12 @@ export const NewsEvents = ({ editorMode = false }: NewsEventsProps) => {
     };
   }, [emblaApi, onSelect]);
 
-  // Get text from widget settings or use defaults
-  const title = settings.title_override || "Agenda Seputar Semarang";
-  const subtitle = settings.subtitle_override || "Temukan berbagai event menarik yang akan diselenggarakan di Semarang";
-
-  // Apply section background from widget settings
-  const sectionStyle: React.CSSProperties = 
-    settings.content_bg_color && settings.content_bg_color !== 'transparent'
-      ? { backgroundColor: settings.content_bg_color }
-      : {};
+  const title = "Agenda Seputar Semarang";
+  const subtitle = "Temukan berbagai event menarik yang akan diselenggarakan di Semarang";
 
   if (isLoadingUpcoming) {
     return (
-      <section id="news-events" className="py-20 px-4 bg-secondary/30" style={sectionStyle}>
+      <section id="news-events" className="py-20 px-4 bg-secondary/30">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-12">
             <Skeleton className="h-10 w-64 mx-auto mb-4" />
@@ -161,52 +146,18 @@ export const NewsEvents = ({ editorMode = false }: NewsEventsProps) => {
 
   if (upcomingEvents.length === 0) {
     return (
-      <section id="news-events" className="py-20 px-4 bg-secondary/30" style={sectionStyle}>
+      <section id="news-events" className="py-20 px-4 bg-secondary/30">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-12 animate-slide-up">
-            {isEditorMode ? (
-              <EditableText
-                widgetId="news_events"
-                field="title"
-                value={title}
-                as="h2"
-                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 font-serif"
-              />
-            ) : (
-              <h2
-                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 font-serif"
-                style={getElementStyles('news_events-title')}
-              >
-                {title}
-              </h2>
-            )}
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 font-serif">
+              {title}
+            </h2>
             
-            {/* Line with widget styling */}
-            <div
-              className="h-1 bg-primary mx-auto mb-4 sm:mb-6"
-              style={{
-                width: lineStyle.width || '96px',
-                height: lineStyle.height || '4px',
-                backgroundColor: lineStyle.backgroundColor || undefined,
-              }}
-            />
+            <div className="h-1 bg-primary mx-auto mb-4 sm:mb-6 w-24" />
             
-            {isEditorMode ? (
-              <EditableText
-                widgetId="news_events"
-                field="subtitle"
-                value={subtitle}
-                as="p"
-                className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto"
-              />
-            ) : (
-              <p
-                className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto"
-                style={getElementStyles('news_events-subtitle')}
-              >
-                {subtitle}
-              </p>
-            )}
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+              {subtitle}
+            </p>
           </div>
           <div className="text-center py-12">
             <p className="text-muted-foreground">Belum ada event yang akan datang.</p>
@@ -217,53 +168,19 @@ export const NewsEvents = ({ editorMode = false }: NewsEventsProps) => {
   }
 
   return (
-    <section id="news-events" className="py-20 px-4 bg-secondary/30" style={sectionStyle}>
+    <section id="news-events" className="py-20 px-4 bg-secondary/30">
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
         <div className="text-center mb-12 animate-slide-up">
-          {isEditorMode ? (
-            <EditableText
-              widgetId="news_events"
-              field="title"
-              value={title}
-              as="h2"
-              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 font-serif"
-            />
-          ) : (
-            <h2
-              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 font-serif"
-              style={getElementStyles('news_events-title')}
-            >
-              {title}
-            </h2>
-          )}
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 font-serif">
+            {title}
+          </h2>
           
-          {/* Line with widget styling */}
-          <div
-            className="h-1 bg-primary mx-auto mb-4 sm:mb-6"
-            style={{
-              width: lineStyle.width || '96px',
-              height: lineStyle.height || '4px',
-              backgroundColor: lineStyle.backgroundColor || undefined,
-            }}
-          />
+          <div className="h-1 bg-primary mx-auto mb-4 sm:mb-6 w-24" />
           
-          {isEditorMode ? (
-            <EditableText
-              widgetId="news_events"
-              field="subtitle"
-              value={subtitle}
-              as="p"
-              className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto"
-            />
-          ) : (
-            <p
-              className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto"
-              style={getElementStyles('news_events-subtitle')}
-            >
-              {subtitle}
-            </p>
-          )}
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+            {subtitle}
+          </p>
         </div>
 
         {/* Carousel */}

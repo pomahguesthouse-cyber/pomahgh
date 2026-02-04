@@ -1,29 +1,14 @@
 import { useGoogleRating } from "@/hooks/useGoogleRating";
-import { Star, ExternalLink } from "lucide-react";
+import { Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReviewSlider } from "./ReviewSlider";
-import { useContext } from "react";
-import { EditorModeContext } from "@/contexts/EditorModeContext";
-import { EditableText } from "@/components/admin/editor-mode/EditableText";
-import { usePublicOverrides } from "@/contexts/PublicOverridesContext";
-import { useWidgetStyles } from "@/hooks/useWidgetStyles";
+
 export function GoogleRating() {
-  const {
-    data,
-    isLoading,
-    isError
-  } = useGoogleRating();
-  const editorContext = useContext(EditorModeContext);
-  const isEditorMode = editorContext?.isEditorMode ?? false;
-  const {
-    getElementStyles
-  } = usePublicOverrides();
-  const {
-    settings,
-    contentStyle
-  } = useWidgetStyles('google_rating');
+  const { data, isLoading, isError } = useGoogleRating();
+
   if (isLoading) {
-    return <section className="py-12 bg-muted/30">
+    return (
+      <section className="py-12 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center space-y-4">
             <Skeleton className="h-8 w-48" />
@@ -31,29 +16,23 @@ export function GoogleRating() {
             <Skeleton className="h-4 w-40" />
           </div>
         </div>
-      </section>;
+      </section>
+    );
   }
-  if (isError || !data?.rating) {
-    return null; // Silently hide if there's an error or no rating
-  }
-  const {
-    rating,
-    reviewCount,
-    googleMapsUrl,
-    reviews
-  } = data;
-  const label = settings.title_override || "Google Rating";
 
-  // Generate star display
+  if (isError || !data?.rating) {
+    return null;
+  }
+
+  const { rating, reviewCount, googleMapsUrl, reviews } = data;
+  const label = "Google Rating";
+
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
-  // Apply section background from widget settings
-  const sectionStyle: React.CSSProperties = settings.content_bg_color && settings.content_bg_color !== 'transparent' ? {
-    backgroundColor: settings.content_bg_color
-  } : {};
-  return <section className="py-12 bg-gradient-to-b from-background to-muted/30" style={sectionStyle}>
+  return (
+    <section className="py-12 bg-gradient-to-b from-background to-muted/30">
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center justify-center space-y-4">
           {/* Google Logo */}
@@ -64,22 +43,26 @@ export function GoogleRating() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            {isEditorMode ? <EditableText widgetId="google_rating" field="label" value={label} as="span" className="text-lg font-medium text-muted-foreground" /> : <span className="text-lg font-medium text-muted-foreground" style={getElementStyles('google-rating-label')}>
-                {label}
-              </span>}
+            <span className="text-lg font-medium text-muted-foreground">{label}</span>
           </div>
 
           {/* Star Rating */}
           <div className="flex items-center gap-2">
             <div className="flex items-center">
-              {[...Array(fullStars)].map((_, i) => <Star key={`full-${i}`} className="h-6 w-6 fill-amber-400 text-amber-400" />)}
-              {hasHalfStar && <div className="relative">
+              {[...Array(fullStars)].map((_, i) => (
+                <Star key={`full-${i}`} className="h-6 w-6 fill-amber-400 text-amber-400" />
+              ))}
+              {hasHalfStar && (
+                <div className="relative">
                   <Star className="h-6 w-6 text-muted-foreground/30" />
                   <div className="absolute inset-0 overflow-hidden w-1/2">
                     <Star className="h-6 w-6 fill-amber-400 text-amber-400" />
                   </div>
-                </div>}
-              {[...Array(emptyStars)].map((_, i) => <Star key={`empty-${i}`} className="h-6 w-6 text-muted-foreground/30" />)}
+                </div>
+              )}
+              {[...Array(emptyStars)].map((_, i) => (
+                <Star key={`empty-${i}`} className="h-6 w-6 text-muted-foreground/30" />
+              ))}
             </div>
             <span className="text-2xl font-bold text-foreground">{rating.toFixed(1)}</span>
           </div>
@@ -89,12 +72,10 @@ export function GoogleRating() {
             Berdasarkan {reviewCount.toLocaleString('id-ID')} ulasan Google
           </p>
 
-          {/* Link to Google Maps */}
-          
-
           {/* Review Slider */}
           {reviews && reviews.length > 0 && <ReviewSlider reviews={reviews} />}
         </div>
       </div>
-    </section>;
+    </section>
+  );
 }
