@@ -21,6 +21,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+export interface HeroSlide {
+  id: string;
+  image_url: string;
+  alt_text: string;
+}
+
 export interface LandingPage {
   id: string;
   page_title: string;
@@ -36,6 +42,7 @@ export interface LandingPage {
   whatsapp_message_template: string | null;
   hero_image_url: string | null;
   hero_image_alt: string | null;
+  hero_slides: HeroSlide[] | null;
   og_image_url: string | null;
   status: "draft" | "published";
   display_order: number;
@@ -60,7 +67,13 @@ export default function AdminLandingPages() {
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      return data as LandingPage[];
+      // Transform hero_slides from JSON to proper type
+      return (data || []).map((page) => ({
+        ...page,
+        hero_slides: Array.isArray(page.hero_slides) 
+          ? (page.hero_slides as unknown as HeroSlide[]) 
+          : [],
+      })) as LandingPage[];
     },
   });
 
