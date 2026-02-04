@@ -14,10 +14,26 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: ["react", "react-dom"],
+    dedupe: [
+      "react", 
+      "react-dom",
+      "@tanstack/react-query",
+      "zustand",
+      "immer",
+      "@dnd-kit/core",
+      "@dnd-kit/sortable",
+      "@dnd-kit/utilities",
+    ],
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "recharts"],
+    include: [
+      "react", 
+      "react-dom", 
+      "recharts",
+      "@tanstack/react-query",
+      "zustand",
+      "immer",
+    ],
   },
 }));
 
