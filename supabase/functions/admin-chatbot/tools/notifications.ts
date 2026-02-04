@@ -167,3 +167,82 @@ export async function sendCalendarLink(supabase: any, message?: string) {
     formatted_message: responseMessage
   };
 }
+
+/**
+ * Send WhatsApp message to a phone number
+ */
+export async function sendWhatsAppMessage(supabase: any, args: { phone: string; message: string; booking_code?: string }) {
+  const { phone, message, booking_code } = args;
+  
+  if (!phone || !message) {
+    return {
+      success: false,
+      error: "Nomor telepon dan pesan wajib diisi"
+    };
+  }
+  
+  // Normalize phone number
+  let normalizedPhone = phone.replace(/\D/g, '');
+  if (normalizedPhone.startsWith('0')) {
+    normalizedPhone = '62' + normalizedPhone.slice(1);
+  }
+  if (!normalizedPhone.startsWith('62')) {
+    normalizedPhone = '62' + normalizedPhone;
+  }
+  
+  console.log(`📤 Sending WhatsApp to ${normalizedPhone}: "${message.substring(0, 50)}..."`);
+  
+  try {
+    // Call send-whatsapp edge function
+    const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+      body: { 
+        phone: normalizedPhone, 
+        message: message 
+      }
+    });
+    
+    if (error) {
+      console.error('WhatsApp send error:', error);
+      return {
+        success: false,
+        error: `Gagal mengirim pesan: ${error.message || 'Unknown error'}`,
+        phone: normalizedPhone
+      };
+    }
+    
+    console.log('✅ WhatsApp sent successfully:', data);
+    
+    // Get booking info if booking_code provided
+    let bookingInfo = null;
+    if (booking_code) {
+      const { data: booking } = await supabase
+        .from('bookings')
+        .select('guest_name, rooms(name)')
+        .eq('booking_code', booking_code)
+        .single();
+      
+      if (booking) {
+        bookingInfo = {
+          booking_code,
+          guest_name: booking.guest_name,
+          room_name: booking.rooms?.name
+        };
+      }
+    }
+    
+    return {
+      success: true,
+      message: `✅ Pesan berhasil dikirim ke ${normalizedPhone}`,
+      phone: normalizedPhone,
+      sent_message: message,
+      booking_info: bookingInfo
+    };
+  } catch (err: any) {
+    console.error('WhatsApp send exception:', err);
+    return {
+      success: false,
+      error: `Error: ${err.message || 'Unknown error'}`,
+      phone: normalizedPhone
+    };
+  }
+}
