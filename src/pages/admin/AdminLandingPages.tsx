@@ -113,7 +113,7 @@ export default function AdminLandingPages() {
           </Button>
           <Button onClick={handleCreate} className="gap-2">
             <Plus className="h-4 w-4" />
-            Buat Halaman
+            Form Builder
           </Button>
         </div>
       </div>
@@ -197,7 +197,16 @@ export default function AdminLandingPages() {
                     onClick={() => handleEdit(page)}
                   >
                     <Edit className="h-3 w-3" />
-                    Edit
+                    Form
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-1"
+                    onClick={() => navigate(`/editor?id=${page.id}`)}
+                  >
+                    <PenTool className="h-3 w-3" />
+                    Visual
                   </Button>
                   {page.status === "published" && (
                     <Button
