@@ -19,6 +19,7 @@ import {
 import { useState } from "react";
 import { useEditorStore, EditorElement } from "@/stores/editorStore";
 import { ElementRenderer } from "./elements/ElementRenderer";
+ import { PagePreview } from "./PagePreview";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -73,6 +74,7 @@ export function EditorCanvas() {
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
+   const [showPreview, setShowPreview] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -159,64 +161,60 @@ export function EditorCanvas() {
     <div className="flex-1 bg-muted/30 overflow-hidden flex flex-col">
       <ScrollArea className="flex-1">
         <div className="p-8 min-h-full flex justify-center">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-          >
-            <div
-              onClick={handleCanvasClick}
-              style={{ width: getCanvasWidth(), maxWidth: "100%" }}
-              className={cn(
-                "bg-background shadow-lg rounded-lg min-h-[600px] transition-all",
-                viewMode !== "desktop" && "mx-auto"
-              )}
-            >
-              <div className="p-6">
-                {elements.length > 0 ? (
-                  <SortableContext
-                    items={elements.map((el) => el.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-4">
-                      {elements.map((element) => (
-                        <ElementRenderer
-                          key={element.id}
-                          element={element}
-                          isSelected={selectedElementId === element.id}
-                          isHovered={hoveredElementId === element.id}
-                          onSelect={() => selectElement(element.id)}
-                          onHover={(hover) => setHoveredElement(hover ? element.id : null)}
-                        />
-                      ))}
+           {/* Show PagePreview if there are no elements in the new schema */}
+           {elements.length === 0 ? (
+             <PagePreview />
+           ) : (
+             <DndContext
+               sensors={sensors}
+               collisionDetection={closestCenter}
+               onDragStart={handleDragStart}
+               onDragEnd={handleDragEnd}
+               onDragOver={handleDragOver}
+             >
+               <div
+                 onClick={handleCanvasClick}
+                 style={{ width: getCanvasWidth(), maxWidth: "100%" }}
+                 className={cn(
+                   "bg-background shadow-lg rounded-lg min-h-[600px] transition-all",
+                   viewMode !== "desktop" && "mx-auto"
+                 )}
+               >
+                 <div className="p-6">
+                   <SortableContext
+                     items={elements.map((el) => el.id)}
+                     strategy={verticalListSortingStrategy}
+                   >
+                     <div className="space-y-4">
+                       {elements.map((element) => (
+                         <ElementRenderer
+                           key={element.id}
+                           element={element}
+                           isSelected={selectedElementId === element.id}
+                           isHovered={hoveredElementId === element.id}
+                           onSelect={() => selectElement(element.id)}
+                           onHover={(hover) => setHoveredElement(hover ? element.id : null)}
+                         />
+                       ))}
                     </div>
-                  </SortableContext>
-                ) : (
-                  <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-border rounded-lg">
-                    <div className="text-center text-muted-foreground">
-                      <p className="text-lg font-medium mb-2">Start Building</p>
-                      <p className="text-sm">Drag components from the left panel to add them here</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <DragOverlay>
-              {activeType && (
-                <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg">
-                  + Add {activeType}
+                   </SortableContext>
                 </div>
-              )}
-              {activeId && (
-                <div className="bg-background border border-primary rounded-lg shadow-lg p-4 opacity-80">
-                  Moving element...
-                </div>
-              )}
-            </DragOverlay>
-          </DndContext>
+               </div>
+ 
+               <DragOverlay>
+                 {activeType && (
+                   <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg">
+                     + Add {activeType}
+                   </div>
+                 )}
+                 {activeId && (
+                   <div className="bg-background border border-primary rounded-lg shadow-lg p-4 opacity-80">
+                     Moving element...
+                   </div>
+                 )}
+               </DragOverlay>
+             </DndContext>
+           )}
         </div>
       </ScrollArea>
     </div>
