@@ -5,11 +5,11 @@ import { Helmet } from "react-helmet-async";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Phone, MapPin, Star, CheckCircle } from "lucide-react";
-import { OptimizedImage } from "@/components/ui/optimized-image";
+ import { MessageCircle, Phone, MapPin, Star, CheckCircle, Sparkles } from "lucide-react";
 import Markdown from "react-markdown";
 import NotFound from "./NotFound";
 import { LandingPageHeroSlider, HeroSlide } from "@/components/landing/LandingPageHeroSlider";
+ import { LandingRoomSlider } from "@/components/landing/LandingRoomSlider";
 
 interface LandingPageData {
   id: string;
@@ -67,24 +67,6 @@ export default function LandingPage() {
         .select("hotel_name, whatsapp_number, address, logo_url")
         .single();
       return data;
-    },
-  });
-
-  interface RoomPreview {
-    id: string;
-    name: string;
-    slug: string;
-    price_per_night: number | null;
-    image_url: string | null;
-  }
-  
-  const { data: rooms } = useQuery<RoomPreview[]>({
-    queryKey: ["rooms-for-landing"],
-    queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const query = supabase.from("rooms").select("id, name, slug, price_per_night, image_url") as any;
-      const { data } = await query.eq("is_active", true).order("display_order").limit(3);
-      return (data as RoomPreview[]) || [];
     },
   });
 
@@ -238,9 +220,22 @@ export default function LandingPage() {
 
         {/* Main Content */}
         {page.page_content && (
-          <section className="py-12 md:py-16">
+           <section className="py-16 md:py-24">
             <div className="container mx-auto px-4">
-              <article className="prose prose-lg max-w-4xl mx-auto prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-a:text-primary">
+               <article className="
+                 prose prose-lg md:prose-xl max-w-4xl mx-auto 
+                 prose-headings:font-bold prose-headings:text-foreground prose-headings:tracking-tight
+                 prose-h1:text-3xl prose-h1:md:text-4xl prose-h1:lg:text-5xl prose-h1:mb-6
+                 prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mt-12 prose-h2:mb-4
+                 prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mt-8 prose-h3:mb-3
+                 prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-6
+                 prose-strong:text-foreground prose-strong:font-semibold
+                 prose-a:text-primary prose-a:font-medium prose-a:no-underline hover:prose-a:underline
+                 prose-ul:my-6 prose-ul:space-y-2
+                 prose-li:text-muted-foreground prose-li:leading-relaxed
+                 prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/30 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-foreground/80
+                 prose-img:rounded-xl prose-img:shadow-lg
+               ">
                 <Markdown>{page.page_content}</Markdown>
               </article>
             </div>
@@ -248,13 +243,19 @@ export default function LandingPage() {
         )}
 
         {/* Mid CTA */}
-        <section className="py-12 bg-primary/5">
+         <section className="py-16 md:py-20 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent">
           <div className="container mx-auto px-4 text-center">
-            <h3 className="text-2xl font-bold mb-4">Tertarik Menginap?</h3>
-            <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
+             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+               <Sparkles className="h-4 w-4" />
+               Penawaran Spesial
+             </div>
+             <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 tracking-tight">
+               Tertarik Menginap?
+             </h3>
+             <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto leading-relaxed">
               Hubungi kami langsung via WhatsApp untuk booking cepat dan konfirmasi instan
             </p>
-            <Button size="lg" className="gap-2" asChild>
+             <Button size="lg" className="gap-2 text-base px-8 py-6 shadow-lg hover:shadow-xl transition-all" asChild>
               <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                 <MessageCircle className="h-5 w-5" />
                 Chat Sekarang
@@ -263,66 +264,51 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Rooms Preview */}
-        {rooms && rooms.length > 0 && (
-          <section className="py-12 md:py-16">
-            <div className="container mx-auto px-4">
-              <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
-                Pilihan Kamar Kami
-              </h2>
-              <div className="grid md:grid-cols-3 gap-6">
-                {rooms.map((room) => (
-                  <a
-                    key={room.id}
-                    href={`/rooms/${room.slug}`}
-                    className="group block rounded-xl overflow-hidden border bg-card hover:shadow-lg transition-shadow"
-                  >
-                    {room.image_url && (
-                      <div className="aspect-video overflow-hidden">
-                        <OptimizedImage
-                          src={room.image_url}
-                          alt={room.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          context="room"
-                        />
-                      </div>
-                    )}
-                    <div className="p-4">
-                      <h3 className="font-semibold text-lg mb-2">{room.name}</h3>
-                      <p className="text-primary font-bold">
-                        Rp {room.price_per_night?.toLocaleString("id-ID")}
-                        <span className="text-sm font-normal text-muted-foreground">/malam</span>
-                      </p>
-                    </div>
-                  </a>
-                ))}
+         {/* Rooms Section with Slider */}
+         <section className="py-16 md:py-24 bg-secondary/30">
+           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+             {/* Section Header */}
+             <div className="text-center mb-12">
+               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+                 <Star className="h-4 w-4" />
+                 Akomodasi Premium
               </div>
-              <div className="text-center mt-8">
-                <Button variant="outline" asChild>
-                  <a href="/#rooms">Lihat Semua Kamar</a>
-                </Button>
-              </div>
+               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-4">
+                 Pilihan Kamar Kami
+               </h2>
+               <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+                 Nikmati kenyamanan menginap dengan fasilitas lengkap dan pelayanan terbaik
+               </p>
             </div>
-          </section>
-        )}
+ 
+             {/* Room Slider */}
+             <LandingRoomSlider />
+           </div>
+         </section>
 
         {/* Bottom CTA */}
-        <section className="py-16 bg-primary text-primary-foreground">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">
+         <section className="py-20 md:py-28 bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground relative overflow-hidden">
+           {/* Decorative elements */}
+           <div className="absolute inset-0 opacity-10">
+             <div className="absolute top-0 left-0 w-72 h-72 bg-white rounded-full -translate-x-1/2 -translate-y-1/2" />
+             <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/3 translate-y-1/3" />
+           </div>
+           
+           <div className="container mx-auto px-4 text-center relative z-10">
+             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 tracking-tight">
               Siap Booking Sekarang?
             </h2>
-            <p className="mb-8 max-w-xl mx-auto opacity-90">
+             <p className="mb-10 max-w-xl mx-auto opacity-90 text-base md:text-lg leading-relaxed">
               Dapatkan harga terbaik dengan booking langsung via WhatsApp. Tim kami siap membantu 24 jam.
             </p>
             <Button
               size="lg"
               variant="secondary"
-              className="gap-2 text-lg"
+               className="gap-2 text-base md:text-lg px-8 py-6 shadow-xl hover:shadow-2xl transition-all hover:scale-105"
               asChild
             >
               <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="h-5 w-5" />
+                 <MessageCircle className="h-5 w-5 md:h-6 md:w-6" />
                 {page.cta_text || "Booking via WhatsApp"}
               </a>
             </Button>
@@ -337,10 +323,10 @@ export default function LandingPage() {
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-primary hover:bg-primary/90 text-primary-foreground p-4 rounded-full shadow-lg transition-all hover:scale-110"
+         className="fixed bottom-6 right-6 z-50 bg-primary hover:bg-primary/90 text-primary-foreground p-4 rounded-full shadow-xl transition-all hover:scale-110"
         aria-label="Chat via WhatsApp"
       >
-        <MessageCircle className="h-6 w-6" />
+         <MessageCircle className="h-5 w-5 md:h-6 md:w-6" />
       </a>
     </>
   );
