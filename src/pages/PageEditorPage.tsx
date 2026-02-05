@@ -9,6 +9,7 @@ import { PageSettingsDialog } from "@/components/page-editor/PageSettingsDialog"
 import { FloatingToolbar } from "@/components/page-editor/FloatingToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 
 export default function PageEditorPage() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function PageEditorPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const {
+    elements,
     pageSettings,
     setPageSettings,
     loadPage,
@@ -28,7 +30,13 @@ export default function PageEditorPage() {
     hasUnsavedChanges,
   } = useEditorStore();
 
-  const { elements } = useEditorStore();
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // Load existing page if editing
   useEffect(() => {
@@ -178,25 +186,27 @@ export default function PageEditorPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <EditorToolbar
-        onSave={handleSave}
-        onPreview={handlePreview}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
+    <DndContext sensors={sensors} collisionDetection={closestCenter}>
+      <div className="h-screen flex flex-col bg-background overflow-hidden">
+        <EditorToolbar
+          onSave={handleSave}
+          onPreview={handlePreview}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+        />
 
-      <div className="flex-1 flex overflow-hidden">
-        <ComponentLibrary />
-        <EditorCanvas />
-        <PropertiesPanel />
+        <div className="flex-1 flex overflow-hidden">
+          <ComponentLibrary />
+          <EditorCanvas />
+          <PropertiesPanel />
+        </div>
+
+        <FloatingToolbar />
+
+        <PageSettingsDialog
+          open={isSettingsOpen}
+          onOpenChange={setIsSettingsOpen}
+        />
       </div>
-
-      <FloatingToolbar />
-
-      <PageSettingsDialog
-        open={isSettingsOpen}
-        onOpenChange={setIsSettingsOpen}
-      />
-    </div>
+    </DndContext>
   );
 }
