@@ -71,6 +71,9 @@ export function EditorCanvas() {
     setIsDragging,
     saveToHistory,
   } = useEditorStore();
+  
+  // Defensive check: ensure elements is always an array
+  const safeElements = Array.isArray(elements) ? elements : [];
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
@@ -117,7 +120,7 @@ export function EditorCanvas() {
       saveToHistory();
       
       // Find insert index
-      const overIndex = elements.findIndex((el) => el.id === over.id);
+      const overIndex = safeElements.findIndex((el) => el.id === over.id);
       if (overIndex >= 0) {
         addElement(newElement, undefined, overIndex);
       } else {
@@ -128,12 +131,12 @@ export function EditorCanvas() {
 
     // Reorder existing elements
     if (active.id !== over.id) {
-      const oldIndex = elements.findIndex((el) => el.id === active.id);
-      const newIndex = elements.findIndex((el) => el.id === over.id);
+      const oldIndex = safeElements.findIndex((el) => el.id === active.id);
+      const newIndex = safeElements.findIndex((el) => el.id === over.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
         saveToHistory();
-        setElements(arrayMove(elements, oldIndex, newIndex));
+        setElements(arrayMove(safeElements, oldIndex, newIndex));
       }
     }
   };
@@ -162,7 +165,7 @@ export function EditorCanvas() {
       <ScrollArea className="flex-1">
         <div className="p-8 min-h-full flex justify-center">
            {/* Show PagePreview if there are no elements in the new schema */}
-           {elements.length === 0 ? (
+           {safeElements.length === 0 ? (
              <PagePreview />
            ) : (
              <DndContext
@@ -182,11 +185,11 @@ export function EditorCanvas() {
                >
                  <div className="p-6">
                    <SortableContext
-                     items={elements.map((el) => el.id)}
+                      items={safeElements.map((el) => el.id)}
                      strategy={verticalListSortingStrategy}
                    >
                      <div className="space-y-4">
-                       {elements.map((element) => (
+                        {safeElements.map((element) => (
                          <ElementRenderer
                            key={element.id}
                            element={element}
