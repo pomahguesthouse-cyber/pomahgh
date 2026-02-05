@@ -9,6 +9,7 @@ import {
   DragStartEvent,
   DragEndEvent,
   DragOverEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -21,8 +22,9 @@ import { useEditorStore, EditorElement } from "@/stores/editorStore";
 import { ElementRenderer } from "./elements/ElementRenderer";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Plus } from "lucide-react";
 
-function createNewElement(type: string): EditorElement {
+export function createNewElement(type: string): EditorElement {
   const id = `${type}-${Date.now()}`;
   const baseElement: EditorElement = {
     id,
@@ -55,6 +57,76 @@ function createNewElement(type: string): EditorElement {
     default:
       return baseElement;
   }
+}
+
+// Droppable empty canvas zone
+function EmptyCanvasDropZone() {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "canvas-drop-zone",
+  });
+
+  const { addElement, saveToHistory } = useEditorStore();
+
+  const handleQuickAdd = (type: string) => {
+    const newElement = createNewElement(type);
+    saveToHistory();
+    addElement(newElement);
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed rounded-lg transition-all",
+        isOver ? "border-primary bg-primary/10" : "border-border"
+      )}
+    >
+      <div className="text-center text-muted-foreground p-8">
+        <p className="text-lg font-medium mb-2">Start Building</p>
+        <p className="text-sm mb-6">Drag components from the left panel or click below to add</p>
+        
+        <div className="flex flex-wrap justify-center gap-2 max-w-md">
+          {[
+            { type: "section", label: "Section" },
+            { type: "heading", label: "Heading" },
+            { type: "paragraph", label: "Paragraph" },
+            { type: "image", label: "Image" },
+            { type: "button", label: "Button" },
+          ].map((item) => (
+            <button
+              key={item.type}
+              onClick={() => handleQuickAdd(item.type)}
+              className="flex items-center gap-1 px-3 py-2 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+            >
+              <Plus className="h-3 w-3" />
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Droppable zone at the end of elements list
+function CanvasEndDropZone() {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "canvas-end-zone",
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "min-h-[100px] border-2 border-dashed rounded-lg transition-all flex items-center justify-center",
+        isOver ? "border-primary bg-primary/10" : "border-transparent hover:border-border"
+      )}
+    >
+      <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+        Drop here to add at the end
+      </span>
+    </div>
+  );
 }
 
 export function EditorCanvas() {
@@ -114,12 +186,17 @@ export function EditorCanvas() {
       
       saveToHistory();
       
-      // Find insert index
-      const overIndex = elements.findIndex((el) => el.id === over.id);
-      if (overIndex >= 0) {
-        addElement(newElement, undefined, overIndex);
-      } else {
+      // Handle drop on empty canvas or end zone
+      if (over.id === "canvas-drop-zone" || over.id === "canvas-end-zone") {
         addElement(newElement);
+      } else {
+        // Find insert index
+        const overIndex = elements.findIndex((el) => el.id === over.id);
+        if (overIndex >= 0) {
+          addElement(newElement, undefined, overIndex);
+        } else {
+          addElement(newElement);
+        }
       }
       return;
     }
@@ -180,7 +257,7 @@ export function EditorCanvas() {
                     items={elements.map((el) => el.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    <div className="space-y-4">
+                    <div className="space-y-4 group">
                       {elements.map((element) => (
                         <ElementRenderer
                           key={element.id}
@@ -191,15 +268,11 @@ export function EditorCanvas() {
                           onHover={(hover) => setHoveredElement(hover ? element.id : null)}
                         />
                       ))}
+                      <CanvasEndDropZone />
                     </div>
                   </SortableContext>
                 ) : (
-                  <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-border rounded-lg">
-                    <div className="text-center text-muted-foreground">
-                      <p className="text-lg font-medium mb-2">Start Building</p>
-                      <p className="text-sm">Drag components from the left panel to add them here</p>
-                    </div>
-                  </div>
+                  <EmptyCanvasDropZone />
                 )}
               </div>
             </div>
