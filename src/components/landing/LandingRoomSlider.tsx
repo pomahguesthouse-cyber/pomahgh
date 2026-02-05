@@ -30,8 +30,8 @@
          .select("id, name, slug, price_per_night, image_url, description, max_guests") as any;
        
        const { data, error } = await query
-         .eq("is_active", true)
-         .order("display_order")
+        .eq("available", true)
+        .order("name")
          .limit(6);
        
        if (error) throw error;
