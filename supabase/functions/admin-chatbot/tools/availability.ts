@@ -100,8 +100,8 @@ export async function getAvailabilitySummary(supabase: SupabaseClient, checkIn: 
     .from('bookings')
     .select('id, room_id, allocated_room_number, check_in, check_out, check_out_time, guest_name')
     .neq('status', 'cancelled')
-    .lte('check_in', checkOut)
-    .gte('check_out', checkIn);
+    .lt('check_in', checkOut)
+    .gt('check_out', checkIn);
 
   if (bookingsError) throw bookingsError;
 
