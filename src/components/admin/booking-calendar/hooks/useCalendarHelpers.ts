@@ -26,10 +26,11 @@ export const useCalendarHelpers = (
       if (!isInRange) return false;
 
       // Single source of truth: use booking_rooms if available, else allocated_room_number
-      const hasBookingRooms = booking.booking_rooms && booking.booking_rooms.length > 0;
+      const bookingRooms = booking.booking_rooms;
+      const hasBookingRooms = bookingRooms && bookingRooms.length > 0;
       if (hasBookingRooms) {
         // Use booking_rooms as primary source
-        return booking.booking_rooms.some((br) => br.room_number === roomNumber);
+        return bookingRooms.some((br) => br.room_number === roomNumber);
       } else {
         // Fallback for legacy bookings without booking_rooms
         return booking.allocated_room_number === roomNumber;

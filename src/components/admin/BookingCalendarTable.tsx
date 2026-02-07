@@ -441,7 +441,7 @@ export const BookingCalendarTable = () => {
                                     <div className="text-[9px] opacity-90 flex items-center gap-1">
                                       <span>{nightsCount}N</span>
                                       <span>•</span>
-                                      <span>{getPaymentStatusBadge(booking.payment_status)}</span>
+                                      <span>{getPaymentStatusBadge(booking.payment_status ?? null)}</span>
                                     </div>
                                   </div>
                                 </DraggableBooking>

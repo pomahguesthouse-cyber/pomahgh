@@ -50,7 +50,7 @@ export const useAltTextGenerator = () => {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to generate alt texts";
       setError(message);
-      return images.map(() => null);
+      return images.map((): string | null => null);
     } finally {
       setIsGenerating(false);
     }

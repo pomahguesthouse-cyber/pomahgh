@@ -148,7 +148,7 @@ export default function AdminChannelManagers() {
                               {log.channel_managers?.name} - {log.rooms?.name}
                             </p>
                             <p className="text-muted-foreground text-xs">
-                              {formatDateTimeID(log.created_at)}
+                              {log.created_at && formatDateTimeID(log.created_at)}
                             </p>
                             {log.error_message && (
                               <p className="text-xs text-red-500 mt-1 truncate">
@@ -230,7 +230,7 @@ export default function AdminChannelManagers() {
                           }>
                             {entry.status}
                           </Badge>
-                          {entry.retry_count > 0 && (
+                          {(entry.retry_count ?? 0) > 0 && (
                             <p className="text-xs text-muted-foreground mt-1">
                               Retry: {entry.retry_count}
                             </p>

@@ -147,11 +147,11 @@ const insertElementAt = (elements: EditorElement[], element: EditorElement, pare
 
 export const useEditorStore = create<EditorState>()(
   immer((set, get) => ({
-    elements: [],
+    elements: [] as EditorElement[],
     pageSettings: initialPageSettings,
-    selectedElementId: null,
-    hoveredElementId: null,
-    history: [[]],
+    selectedElementId: null as string | null,
+    hoveredElementId: null as string | null,
+    history: [[]] as EditorElement[][],
     historyIndex: 0,
     isDragging: false,
     viewMode: 'desktop',

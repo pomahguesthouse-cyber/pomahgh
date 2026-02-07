@@ -6,11 +6,12 @@ export interface RankingData {
   id: string;
   page_url: string;
   query: string | null;
-  clicks: number;
-  impressions: number;
-  ctr: number;
-  position: number;
+  clicks: number | null;
+  impressions: number | null;
+  ctr: number | null;
+  position: number | null;
   date: string;
+  created_at?: string | null;
 }
 
 export interface RankingsSummary {

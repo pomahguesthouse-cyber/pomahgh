@@ -55,7 +55,7 @@ export const useVoiceInput = (options: UseVoiceInputOptions = {}): UseVoiceInput
       console.log('Voice recognition ended');
     };
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Voice recognition error:', event.error);
       setIsListening(false);
       
@@ -77,7 +77,7 @@ export const useVoiceInput = (options: UseVoiceInputOptions = {}): UseVoiceInput
       }
     };
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interimTranscript = '';
       let finalTranscript = '';
 

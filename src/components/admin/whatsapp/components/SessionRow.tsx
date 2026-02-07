@@ -80,7 +80,7 @@ export const SessionRow = ({ session }: SessionRowProps) => {
               variant="outline"
               size="sm"
               onClick={handleTakeover}
-              disabled={takeoverSession.isPending || session.is_blocked}
+              disabled={takeoverSession.isPending || !!session.is_blocked}
             >
               <Hand className="w-4 h-4 mr-1" />
               Ambil Alih

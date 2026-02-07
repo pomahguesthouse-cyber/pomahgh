@@ -171,7 +171,7 @@ export const useBookingValidation = () => {
       (blockedDates || []).forEach((bd) => {
         if (!bd.room_number) {
           // If no specific room_number, block all rooms of this type
-          room.room_numbers.forEach(rn => unavailableRoomNumbers.add(rn));
+          room.room_numbers?.forEach(rn => unavailableRoomNumbers.add(rn));
         } else {
           unavailableRoomNumbers.add(bd.room_number);
         }

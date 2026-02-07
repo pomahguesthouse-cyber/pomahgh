@@ -23,7 +23,7 @@ const EventDetail = () => {
       const { data, error } = await supabase
         .from("city_events")
         .select("*")
-        .eq("slug", slug)
+        .eq("slug", slug!)
         .eq("is_active", true)
         .single();
 

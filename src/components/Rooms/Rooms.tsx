@@ -33,7 +33,7 @@ export const Rooms = () => {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
 
-  const totalNights = calculateTotalNights(checkIn, checkOut);
+  const totalNights = calculateTotalNights(checkIn ?? null, checkOut ?? null);
 
   // Carousel listener
   useEffect(() => {
@@ -73,7 +73,7 @@ export const Rooms = () => {
         {/* Main container with padding + overflow fix */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
           {/* Header */}
-          <RoomsHeader checkIn={checkIn} checkOut={checkOut} totalNights={totalNights} />
+          <RoomsHeader checkIn={checkIn ?? null} checkOut={checkOut ?? null} totalNights={totalNights} />
 
           {/* Carousel wrapper with overflow fix */}
           <div className="overflow-visible">
@@ -86,8 +86,8 @@ export const Rooms = () => {
               onBookRoom={handleBookRoom}
               onViewTour={handleViewTour}
               setApi={setApi}
-              checkIn={checkIn}
-              checkOut={checkOut}
+              checkIn={checkIn ?? null}
+              checkOut={checkOut ?? null}
             />
           </div>
 

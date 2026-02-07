@@ -235,8 +235,8 @@ DatePickerSection.displayName = "DatePickerSection";
 const DEFAULT_SLIDE = {
   id: "default",
   media_type: "image",
-  image_url: null,
-  video_url: null,
+  image_url: null as string | null,
+  video_url: null as string | null,
   overlay_text: "Pomah Guesthouse",
   overlay_subtext: "Experience Tropical Paradise Where Luxury Meets Serenity",
   font_family: "Inter",
