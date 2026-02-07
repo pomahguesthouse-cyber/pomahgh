@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, Maximize2, MapPin } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, Maximize2, MapPin, Zap } from "lucide-react";
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -79,6 +79,7 @@ const AdminRooms = () => {
     friday_non_refundable: false,
     saturday_non_refundable: false,
     sunday_non_refundable: false,
+    use_autopricing: false,
   });
 
   const getIconComponent = (iconName: string) => {
@@ -122,6 +123,7 @@ const AdminRooms = () => {
       friday_non_refundable: false,
       saturday_non_refundable: false,
       sunday_non_refundable: false,
+      use_autopricing: false,
     });
     setEditingRoom(null);
   };
@@ -163,6 +165,7 @@ const AdminRooms = () => {
       friday_non_refundable: room.friday_non_refundable || false,
       saturday_non_refundable: room.saturday_non_refundable || false,
       sunday_non_refundable: room.sunday_non_refundable || false,
+      use_autopricing: room.use_autopricing || false,
     });
     setIsDialogOpen(true);
   };
@@ -277,6 +280,7 @@ const AdminRooms = () => {
       friday_non_refundable: formData.friday_non_refundable,
       saturday_non_refundable: formData.saturday_non_refundable,
       sunday_non_refundable: formData.sunday_non_refundable,
+      use_autopricing: formData.use_autopricing,
     };
 
     if (editingRoom) {
@@ -777,6 +781,22 @@ const AdminRooms = () => {
                 <Label htmlFor="available">Available for booking</Label>
               </div>
 
+              <div className="flex items-center space-x-2 p-4 border rounded-lg bg-blue-50/50">
+                <Switch
+                  id="use_autopricing"
+                  checked={formData.use_autopricing}
+                  onCheckedChange={(checked) => setFormData({ ...formData, use_autopricing: checked })}
+                />
+                <div className="flex flex-col">
+                  <Label htmlFor="use_autopricing" className="font-medium">
+                    Gunakan AutoPricing
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Jika aktif, harga kamar akan otomatis menyesuaikan berdasarkan occupancy dan demand
+                  </p>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
@@ -809,17 +829,23 @@ const AdminRooms = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {rooms?.map((room) => (
             <Card key={room.id}>
-              <CardHeader>
-                <CardTitle className="flex justify-between items-start">
-                  <span>{room.name}</span>
-                  <span className={`text-sm px-2 py-1 rounded ${room.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {room.available ? 'Available' : 'Unavailable'}
-                  </span>
-                </CardTitle>
-                <CardDescription>
-                  Rp {room.price_per_night.toLocaleString()}/night
-                </CardDescription>
-              </CardHeader>
+               <CardHeader>
+                 <CardTitle className="flex justify-between items-start">
+                   <span>{room.name}</span>
+                   <span className={`text-sm px-2 py-1 rounded ${room.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                     {room.available ? 'Available' : 'Unavailable'}
+                   </span>
+                 </CardTitle>
+                 <CardDescription className="flex items-center gap-2">
+                   <span>Rp {room.price_per_night.toLocaleString()}/night</span>
+                   {room.use_autopricing && (
+                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800">
+                       <Zap className="h-3 w-3" />
+                       AutoPricing
+                     </span>
+                   )}
+                 </CardDescription>
+               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                   {room.description}
