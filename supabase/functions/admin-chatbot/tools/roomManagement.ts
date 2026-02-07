@@ -1,8 +1,35 @@
 // ============= ROOM MANAGEMENT TOOLS =============
 
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { findBestRoomMatch } from "../lib/roomMatcher.ts";
 
-export async function getRoomInventory(supabase: any) {
+interface RoomInventoryRow {
+  id: string;
+  name: string;
+  room_count: number;
+  room_numbers: string[] | null;
+  available: boolean;
+  price_per_night: number;
+  max_guests: number;
+}
+
+interface RoomPriceRow {
+  id: string;
+  name: string;
+  price_per_night: number;
+  monday_price: number | null;
+  tuesday_price: number | null;
+  wednesday_price: number | null;
+  thursday_price: number | null;
+  friday_price: number | null;
+  saturday_price: number | null;
+  sunday_price: number | null;
+  promo_price: number | null;
+  promo_start_date: string | null;
+  promo_end_date: string | null;
+}
+
+export async function getRoomInventory(supabase: SupabaseClient) {
   const { data: rooms, error } = await supabase
     .from('rooms')
     .select('id, name, room_count, room_numbers, available, price_per_night, max_guests')
@@ -10,9 +37,10 @@ export async function getRoomInventory(supabase: any) {
 
   if (error) throw error;
 
+  const rows = (rooms || []) as RoomInventoryRow[];
   return {
-    total_room_types: rooms?.length || 0,
-    rooms: rooms?.map((r: any) => ({
+    total_room_types: rows.length,
+    rooms: rows.map((r) => ({
       id: r.id,
       name: r.name,
       status: r.available ? 'Tersedia' : 'Tidak Tersedia',
@@ -20,12 +48,18 @@ export async function getRoomInventory(supabase: any) {
       room_numbers: r.room_numbers || [],
       price_per_night: r.price_per_night,
       max_guests: r.max_guests
-    })) || []
+    }))
   };
 }
 
-export async function updateRoomPrice(supabase: any, args: any) {
-  const { room_name, price_type, new_price, promo_start_date, promo_end_date } = args;
+export async function updateRoomPrice(supabase: SupabaseClient, args: Record<string, unknown>) {
+  const { room_name, price_type, new_price, promo_start_date, promo_end_date } = args as {
+    room_name: string;
+    price_type: string;
+    new_price: number;
+    promo_start_date?: string;
+    promo_end_date?: string;
+  };
 
   const { data: allRooms, error: findError } = await supabase
     .from('rooms')
@@ -36,11 +70,12 @@ export async function updateRoomPrice(supabase: any, args: any) {
   const room = findBestRoomMatch(room_name, allRooms || []);
 
   if (!room) {
-    const roomList = allRooms?.map((r: any) => r.name).join(', ') || 'tidak ada';
+    const roomList = (allRooms || []).map((r: RoomPriceRow) => r.name).join(', ') || 'tidak ada';
     throw new Error(`Kamar "${room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
   }
 
-  const updateData: any = { updated_at: new Date().toISOString() };
+  const typedRoom = room as RoomPriceRow;
+  const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
   let priceFields: string[] = [];
 
   switch (price_type) {
@@ -102,43 +137,43 @@ export async function updateRoomPrice(supabase: any, args: any) {
   const { error: updateError } = await supabase
     .from('rooms')
     .update(updateData)
-    .eq('id', room.id);
+    .eq('id', typedRoom.id);
 
   if (updateError) throw updateError;
 
   // Get the old price for comparison
   let oldPrice: number | null = null;
   switch (price_type) {
-    case 'main': oldPrice = room.price_per_night; break;
-    case 'monday': oldPrice = room.monday_price; break;
-    case 'tuesday': oldPrice = room.tuesday_price; break;
-    case 'wednesday': oldPrice = room.wednesday_price; break;
-    case 'thursday': oldPrice = room.thursday_price; break;
-    case 'friday': oldPrice = room.friday_price; break;
-    case 'saturday': oldPrice = room.saturday_price; break;
-    case 'sunday': oldPrice = room.sunday_price; break;
-    case 'weekday': oldPrice = room.monday_price; break;
-    case 'weekend': oldPrice = room.saturday_price; break;
-    case 'promo': oldPrice = room.promo_price; break;
+    case 'main': oldPrice = typedRoom.price_per_night; break;
+    case 'monday': oldPrice = typedRoom.monday_price; break;
+    case 'tuesday': oldPrice = typedRoom.tuesday_price; break;
+    case 'wednesday': oldPrice = typedRoom.wednesday_price; break;
+    case 'thursday': oldPrice = typedRoom.thursday_price; break;
+    case 'friday': oldPrice = typedRoom.friday_price; break;
+    case 'saturday': oldPrice = typedRoom.saturday_price; break;
+    case 'sunday': oldPrice = typedRoom.sunday_price; break;
+    case 'weekday': oldPrice = typedRoom.monday_price; break;
+    case 'weekend': oldPrice = typedRoom.saturday_price; break;
+    case 'promo': oldPrice = typedRoom.promo_price; break;
   }
 
-  const result: any = {
+  const result: Record<string, unknown> = {
     success: true,
-    room_name: room.name,
+    room_name: typedRoom.name,
     price_type: priceFields.join(', '),
     old_price: oldPrice,
     new_price: new_price
   };
 
   if (price_type === 'promo' && (promo_start_date || promo_end_date)) {
-    result.promo_start_date = promo_start_date || room.promo_start_date;
-    result.promo_end_date = promo_end_date || room.promo_end_date;
+    result.promo_start_date = promo_start_date || typedRoom.promo_start_date;
+    result.promo_end_date = promo_end_date || typedRoom.promo_end_date;
   }
 
   return result;
 }
 
-export async function getRoomPrices(supabase: any, roomName?: string) {
+export async function getRoomPrices(supabase: SupabaseClient, roomName?: string) {
   const { data: allRooms, error } = await supabase
     .from('rooms')
     .select('id, name, price_per_night, monday_price, tuesday_price, wednesday_price, thursday_price, friday_price, saturday_price, sunday_price, promo_price, promo_start_date, promo_end_date')
@@ -150,20 +185,20 @@ export async function getRoomPrices(supabase: any, roomName?: string) {
     throw new Error('Tidak ada kamar yang ditemukan');
   }
 
-  let rooms = allRooms;
+  let rooms = allRooms as RoomPriceRow[];
 
   if (roomName) {
     const matchedRoom = findBestRoomMatch(roomName, allRooms);
     if (!matchedRoom) {
-      const roomList = allRooms.map((r: any) => r.name).join(', ');
+      const roomList = rooms.map((r) => r.name).join(', ');
       throw new Error(`Kamar "${roomName}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
     }
-    rooms = [matchedRoom];
+    rooms = [matchedRoom as RoomPriceRow];
   }
 
   return {
     count: rooms.length,
-    rooms: rooms.map((r: any) => {
+    rooms: rooms.map((r) => {
       const today = new Date().toISOString().split('T')[0];
       const hasActivePromo = r.promo_price && r.promo_start_date && r.promo_end_date 
         && r.promo_start_date <= today && r.promo_end_date >= today;

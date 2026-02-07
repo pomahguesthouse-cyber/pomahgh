@@ -1,5 +1,6 @@
 // ============= TOOL EXECUTOR WITH ROLE VALIDATION =============
 
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { isToolAllowed } from "../lib/toolFilter.ts";
 import type { ManagerRole } from "../lib/constants.ts";
 
@@ -14,11 +15,11 @@ import { sendCheckinReminder, sendCalendarLink, sendWhatsAppMessage, getManagerL
  * This provides an extra security layer beyond initial filtering
  */
 export async function executeToolWithValidation(
-  supabase: any,
+  supabase: SupabaseClient,
   toolName: string,
-  toolArgs: Record<string, any>,
+  toolArgs: Record<string, unknown>,
   managerRole: ManagerRole
-): Promise<any> {
+): Promise<unknown> {
   // SECURITY: Re-validate role has access to this tool
   if (!isToolAllowed(toolName, managerRole)) {
     throw new Error(`Akses ditolak: Role "${managerRole}" tidak dapat menggunakan "${toolName}"`);
@@ -30,21 +31,21 @@ export async function executeToolWithValidation(
 /**
  * Execute tool by name
  */
-async function executeTool(supabase: any, toolName: string, args: any): Promise<any> {
+async function executeTool(supabase: SupabaseClient, toolName: string, args: Record<string, unknown>): Promise<unknown> {
   console.log(`Executing tool: ${toolName}`, args);
   
   switch (toolName) {
     case 'get_availability_summary':
-      return await getAvailabilitySummary(supabase, args.check_in, args.check_out);
+      return await getAvailabilitySummary(supabase, args.check_in as string, args.check_out as string);
     
     case 'get_booking_stats':
-      return await getBookingStats(supabase, args.period);
+      return await getBookingStats(supabase, args.period as string);
     
     case 'get_recent_bookings':
-      return await getRecentBookings(supabase, args.limit, args.status);
+      return await getRecentBookings(supabase, args.limit as number, args.status as string | undefined);
     
     case 'search_bookings':
-      return await searchBookings(supabase, args.query, args.date_from, args.date_to, args.limit);
+      return await searchBookings(supabase, args.query as string | undefined, args.date_from as string | undefined, args.date_to as string | undefined, args.limit as number);
     
     case 'get_room_inventory':
       return await getRoomInventory(supabase);
@@ -73,13 +74,13 @@ async function executeTool(supabase: any, toolName: string, args: any): Promise<
       return await updateRoomPrice(supabase, args);
     
     case 'get_room_prices':
-      return await getRoomPrices(supabase, args.room_name);
+      return await getRoomPrices(supabase, args.room_name as string | undefined);
     
     case 'get_booking_detail':
-      return await getBookingDetail(supabase, args.booking_code);
+      return await getBookingDetail(supabase, args.booking_code as string);
     
     case 'update_booking_status':
-      return await updateBookingStatus(supabase, args.booking_code, args.new_status, args.cancellation_reason);
+      return await updateBookingStatus(supabase, args.booking_code as string, args.new_status as string, args.cancellation_reason as string | undefined);
     
     case 'update_guest_info':
       return await updateGuestInfo(supabase, args);
@@ -103,13 +104,13 @@ async function executeTool(supabase: any, toolName: string, args: any): Promise<
       return await checkExtendAvailability(supabase, args);
     
     case 'send_checkin_reminder':
-      return await sendCheckinReminder(supabase, args.date);
+      return await sendCheckinReminder(supabase, args.date as string);
     
     case 'get_today_guests':
-      return await getTodayGuests(supabase, args.type, args.date);
+      return await getTodayGuests(supabase, args.type as string, args.date as string | undefined);
     
     case 'send_calendar_link':
-      return await sendCalendarLink(supabase, args.message);
+      return await sendCalendarLink(supabase, args.message as string);
     
     case 'send_whatsapp_message':
       return await sendWhatsAppMessage(supabase, args);

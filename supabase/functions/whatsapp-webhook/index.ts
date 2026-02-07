@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -595,7 +595,7 @@ serve(async (req) => {
     if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {
       console.log(`Tool calls detected: ${aiMessage.tool_calls.length}`);
       
-      const toolResults: any[] = [];
+      const toolResults: Array<{ role: string; content: string; tool_call_id: string }> = [];
       for (const toolCall of aiMessage.tool_calls) {
         console.log(`Executing tool: ${toolCall.function.name}`);
         
@@ -722,7 +722,7 @@ serve(async (req) => {
 });
 
 // Helper: Ensure conversation exists
-async function ensureConversation(supabase: any, session: any, phone: string): Promise<string> {
+async function ensureConversation(supabase: SupabaseClient, session: { conversation_id?: string } | null, phone: string): Promise<string> {
   if (session?.conversation_id) return session.conversation_id;
   
   const { data: newConv } = await supabase
@@ -734,7 +734,7 @@ async function ensureConversation(supabase: any, session: any, phone: string): P
 }
 
 // Helper: Log message to database
-async function logMessage(supabase: any, conversationId: string, role: string, content: string) {
+async function logMessage(supabase: SupabaseClient, conversationId: string, role: string, content: string) {
   if (!conversationId) return;
   
   await supabase.from('chat_messages').insert({
@@ -757,7 +757,7 @@ async function logMessage(supabase: any, conversationId: string, role: string, c
 }
 
 // Helper: Update session with session_type
-async function updateSession(supabase: any, phone: string, conversationId: string, isTakeover: boolean, sessionType: 'guest' | 'admin' = 'guest') {
+async function updateSession(supabase: SupabaseClient, phone: string, conversationId: string, isTakeover: boolean, sessionType: 'guest' | 'admin' = 'guest') {
   await supabase
     .from('whatsapp_sessions')
     .upsert({

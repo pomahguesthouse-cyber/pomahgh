@@ -1,8 +1,79 @@
 // ============= AVAILABILITY TOOLS =============
 
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getWibDate, formatDateISO, isBeforeTime, getCurrentTimeWIB } from "../lib/dateHelpers.ts";
 
-export async function getAvailabilitySummary(supabase: any, checkIn: string, checkOut: string) {
+interface RoomRow {
+  id: string;
+  name: string;
+  room_count: number;
+  room_numbers: string[] | null;
+  price_per_night: number;
+  promo_price: number | null;
+  promo_start_date: string | null;
+  promo_end_date: string | null;
+  sunday_price: number | null;
+  monday_price: number | null;
+  tuesday_price: number | null;
+  wednesday_price: number | null;
+  thursday_price: number | null;
+  friday_price: number | null;
+  saturday_price: number | null;
+}
+
+interface BookingRow {
+  id: string;
+  room_id: string;
+  allocated_room_number: string | null;
+  check_in: string;
+  check_out: string;
+  check_out_time: string | null;
+  guest_name: string;
+}
+
+interface BookingRoomRow {
+  booking_id: string;
+  room_id: string;
+  room_number: string;
+}
+
+interface BlockedDateRow {
+  room_id: string;
+  room_number: string;
+  unavailable_date: string;
+}
+
+interface RoomPromoRow {
+  room_id: string;
+  name: string;
+  is_active: boolean;
+  start_date: string;
+  end_date: string;
+  promo_price: number | null;
+  discount_percentage: number | null;
+  badge_text: string | null;
+  priority: number;
+}
+
+interface GuestBookingRow {
+  id: string;
+  booking_code: string;
+  guest_name: string;
+  guest_phone: string | null;
+  check_in: string;
+  check_out: string;
+  allocated_room_number: string | null;
+  num_guests: number;
+  total_price: number;
+  status: string;
+  rooms: { name: string } | null;
+}
+
+interface BookingRoomNumber {
+  room_number: string;
+}
+
+export async function getAvailabilitySummary(supabase: SupabaseClient, checkIn: string, checkOut: string) {
   // Get hotel settings for check-in/check-out times
   const { data: hotelSettings } = await supabase
     .from('hotel_settings')
@@ -23,10 +94,8 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
 
   if (roomsError) throw roomsError;
 
-  // Get bookings that might overlap - we need to include bookings where:
-  // 1. check_out > checkIn (still in room when new guest wants to check in)
-  // 2. check_in < checkOut (arrives before new guest checks out)
-  // But we also need to consider TIME, not just date
+  const typedRooms = (rooms || []) as RoomRow[];
+
   const { data: bookings, error: bookingsError } = await supabase
     .from('bookings')
     .select('id, room_id, allocated_room_number, check_in, check_out, check_out_time, guest_name')
@@ -36,15 +105,17 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
 
   if (bookingsError) throw bookingsError;
 
+  const typedBookings = (bookings || []) as BookingRow[];
+
   // Get booking_rooms for multi-room bookings
-  const bookingIds = bookings?.map((b: any) => b.id) || [];
-  let bookingRooms: any[] = [];
+  const bookingIds = typedBookings.map((b) => b.id);
+  let bookingRooms: BookingRoomRow[] = [];
   if (bookingIds.length > 0) {
     const { data: brData } = await supabase
       .from('booking_rooms')
       .select('booking_id, room_id, room_number')
       .in('booking_id', bookingIds);
-    bookingRooms = brData || [];
+    bookingRooms = (brData || []) as BookingRoomRow[];
   }
 
   // Get blocked dates
@@ -56,6 +127,8 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
 
   if (blockedError) throw blockedError;
 
+  const typedBlockedDates = (blockedDates || []) as BlockedDateRow[];
+
   // Fetch active promotions
   const { data: activePromos } = await supabase
     .from('room_promotions')
@@ -65,43 +138,34 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
     .gte('end_date', checkIn)
     .order('priority', { ascending: false });
 
+  const typedPromos = (activePromos || []) as RoomPromoRow[];
+
   // Helper function to check if a booking truly blocks availability
-  // considering check-in is AFTER check-out time
-  const isBookingBlocking = (booking: any, requestedCheckIn: string): boolean => {
+  const isBookingBlocking = (booking: BookingRow, requestedCheckIn: string): boolean => {
     const bookingCheckOut = booking.check_out;
     const bookingCheckOutTime = booking.check_out_time || standardCheckOutTime;
     
-    // If booking checks out BEFORE the requested check-in date, no conflict
-    if (bookingCheckOut < requestedCheckIn) return true; // Booking overlaps earlier dates
+    if (bookingCheckOut < requestedCheckIn) return true;
     
-    // If booking checks out ON the same date as requested check-in
     if (bookingCheckOut === requestedCheckIn) {
-      // Room is available if check-out time < standard check-in time
-      // e.g., check-out at 12:00, new check-in at 14:00 -> room available
-      // But if late checkout (e.g., 15:00), conflict with 14:00 check-in
       const checkOutHour = parseInt(bookingCheckOutTime.split(':')[0]);
       const checkInHour = parseInt(standardCheckInTime.split(':')[0]);
-      
-      // If checkout time is before or at standard checkout, room is available for new check-in
       const standardCheckOutHour = parseInt(standardCheckOutTime.split(':')[0]);
       if (checkOutHour <= standardCheckOutHour) {
-        return false; // Not blocking - checkout is on time
+        return false;
       }
-      
-      // Late checkout - check if it conflicts with check-in time
       if (checkOutHour >= checkInHour) {
-        return true; // Late checkout conflicts with new check-in
+        return true;
       }
-      return false; // Late checkout but still before new check-in time
+      return false;
     }
     
-    // Booking checkout is after requested check-in date - definitely blocking
     return true;
   };
 
   // Collect late checkout info
-  const lateCheckouts: any[] = [];
-  bookings?.forEach((b: any) => {
+  const lateCheckouts: Array<{ guest_name: string; check_out_time: string; booking_id: string }> = [];
+  typedBookings.forEach((b) => {
     if (b.check_out === checkIn && b.check_out_time) {
       const standardHour = parseInt(standardCheckOutTime.split(':')[0]);
       const actualHour = parseInt(b.check_out_time.split(':')[0]);
@@ -115,40 +179,36 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
     }
   });
 
-  const result = rooms.map((room: any) => {
-    const roomBookings = bookings?.filter((b: any) => b.room_id === room.id) || [];
+  const result = typedRooms.map((room) => {
+    const roomBookings = typedBookings.filter((b) => b.room_id === room.id);
     
-    // Collect booked room numbers from BOTH sources, but only if truly blocking
     const bookedNumbers = new Set<string>();
-    const lateCheckoutRooms: any[] = [];
+    const lateCheckoutRooms: Array<{ room_number: string; guest_name: string; checkout_time: string }> = [];
     
-    roomBookings.forEach((b: any) => {
-      // Check if this booking actually blocks the room
+    roomBookings.forEach((b) => {
       const isBlocking = isBookingBlocking(b, checkIn);
       
-      // Get room numbers from booking_rooms table for this booking
       const multiRoomNumbers = bookingRooms
-        .filter((br: any) => br.booking_id === b.id && br.room_id === room.id)
-        .map((br: any) => br.room_number);
+        .filter((br) => br.booking_id === b.id && br.room_id === room.id)
+        .map((br) => br.room_number);
       
       const roomNums = multiRoomNumbers.length > 0 
         ? multiRoomNumbers 
         : (b.allocated_room_number ? [b.allocated_room_number] : []);
       
       if (isBlocking) {
-        roomNums.forEach((num: string) => bookedNumbers.add(num));
+        roomNums.forEach((num) => bookedNumbers.add(num));
       }
       
-      // Track late checkouts for this room
       if (b.check_out === checkIn && b.check_out_time) {
         const standardHour = parseInt(standardCheckOutTime.split(':')[0]);
         const actualHour = parseInt(b.check_out_time.split(':')[0]);
         if (actualHour > standardHour) {
-          roomNums.forEach((num: string) => {
+          roomNums.forEach((num) => {
             lateCheckoutRooms.push({
               room_number: num,
               guest_name: b.guest_name,
-              checkout_time: b.check_out_time
+              checkout_time: b.check_out_time!
             });
           });
         }
@@ -156,18 +216,18 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
     });
     
     const blockedNumbers = new Set(
-      blockedDates?.filter((d: any) => d.room_id === room.id).map((d: any) => d.room_number) || []
+      typedBlockedDates.filter((d) => d.room_id === room.id).map((d) => d.room_number)
     );
 
     const allNumbers = room.room_numbers || [];
     const availableNumbers = allNumbers.filter(
-      (num: string) => !bookedNumbers.has(num) && !blockedNumbers.has(num)
+      (num) => !bookedNumbers.has(num) && !blockedNumbers.has(num)
     );
 
     // Check for active promo
-    const roomPromo = activePromos?.find((p: any) => p.room_id === room.id);
+    const roomPromo = typedPromos.find((p) => p.room_id === room.id);
     
-    let promoInfo = null;
+    let promoInfo: Record<string, unknown> | null = null;
     let finalPrice = room.price_per_night;
     let savings = 0;
 
@@ -222,13 +282,13 @@ export async function getAvailabilitySummary(supabase: any, checkIn: string, che
     standard_check_in_time: standardCheckInTime,
     standard_check_out_time: standardCheckOutTime,
     rooms: result,
-    total_available: result.reduce((sum: number, r: any) => sum + r.available_units, 0),
-    has_promos: result.some((r: any) => r.promo !== null),
+    total_available: result.reduce((sum, r) => sum + r.available_units, 0),
+    has_promos: result.some((r) => r.promo !== null),
     late_checkouts: lateCheckouts
   };
 }
 
-export async function getTodayGuests(supabase: any, type: string = 'all', dateStr?: string) {
+export async function getTodayGuests(supabase: SupabaseClient, type: string = 'all', dateStr?: string) {
   const wibDate = getWibDate();
   const targetDate = dateStr || formatDateISO(wibDate);
   const currentTimeStr = getCurrentTimeWIB();
@@ -246,7 +306,16 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
 
   console.log(`⏰ Checkout time: ${checkoutTime}, isBeforeCheckout: ${isBeforeCheckoutTime}`);
 
-  const results: any = {
+  const results: {
+    date: string;
+    current_time: string;
+    checkout_time: string;
+    is_before_checkout_time: boolean;
+    checkin_guests: Array<Record<string, unknown>>;
+    checkout_guests: Array<Record<string, unknown>>;
+    staying_guests: Array<Record<string, unknown>>;
+    summary?: Record<string, number>;
+  } = {
     date: targetDate,
     current_time: currentTimeStr,
     checkout_time: checkoutTime,
@@ -256,20 +325,20 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
     staying_guests: []
   };
 
-  // Helper to get all room numbers for a booking (from booking_rooms or fallback to allocated_room_number)
+  // Helper to get all room numbers for a booking
   const getRoomNumbers = async (bookingId: string, allocatedRoomNumber: string | null): Promise<string[]> => {
-    const { data: bookingRooms } = await supabase
+    const { data: bookingRoomsData } = await supabase
       .from('booking_rooms')
       .select('room_number')
       .eq('booking_id', bookingId);
     
-    if (bookingRooms && bookingRooms.length > 0) {
-      return bookingRooms.map((br: any) => br.room_number);
+    if (bookingRoomsData && bookingRoomsData.length > 0) {
+      return (bookingRoomsData as BookingRoomNumber[]).map((br) => br.room_number);
     }
     return allocatedRoomNumber ? [allocatedRoomNumber] : [];
   };
 
-  // Query for check-in today (include confirmed and checked_in status)
+  // Query for check-in today
   if (type === 'checkin' || type === 'all') {
     const { data } = await supabase
       .from('bookings')
@@ -279,7 +348,7 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
       .order('guest_name');
     
     const guests = [];
-    for (const b of data || []) {
+    for (const b of (data || []) as GuestBookingRow[]) {
       const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
       guests.push({
         booking_code: b.booking_code,
@@ -298,7 +367,7 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
     results.checkin_guests = guests;
   }
 
-  // Query for check-out today (include confirmed and checked_in status)
+  // Query for check-out today
   if (type === 'checkout' || type === 'all') {
     const { data } = await supabase
       .from('bookings')
@@ -308,7 +377,7 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
       .order('guest_name');
     
     const guests = [];
-    for (const b of data || []) {
+    for (const b of (data || []) as GuestBookingRow[]) {
       const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
       guests.push({
         booking_code: b.booking_code,
@@ -327,7 +396,7 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
     results.checkout_guests = guests;
   }
 
-  // Query for staying guests (include confirmed and checked_in status)
+  // Query for staying guests
   if (type === 'staying' || type === 'all') {
     let stayingQuery = supabase
       .from('bookings')
@@ -345,7 +414,7 @@ export async function getTodayGuests(supabase: any, type: string = 'all', dateSt
     const { data } = await stayingQuery;
     
     const guests = [];
-    for (const b of data || []) {
+    for (const b of (data || []) as GuestBookingRow[]) {
       const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
       guests.push({
         booking_code: b.booking_code,

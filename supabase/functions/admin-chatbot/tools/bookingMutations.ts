@@ -1,20 +1,56 @@
 // ============= BOOKING MUTATION TOOLS =============
 
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { findBestRoomMatch } from "../lib/roomMatcher.ts";
 import { DAY_PRICE_FIELDS } from "../lib/constants.ts";
 
+interface RoomWithPricing {
+  id: string;
+  name: string;
+  price_per_night: number;
+  room_numbers: string[] | null;
+  max_guests: number;
+  sunday_price: number | null;
+  monday_price: number | null;
+  tuesday_price: number | null;
+  wednesday_price: number | null;
+  thursday_price: number | null;
+  friday_price: number | null;
+  saturday_price: number | null;
+  promo_price: number | null;
+  promo_start_date: string | null;
+  promo_end_date: string | null;
+}
+
+interface PromoRow {
+  name: string;
+  room_id: string;
+  is_active: boolean;
+  start_date: string;
+  end_date: string;
+  promo_price: number | null;
+  discount_percentage: number | null;
+  priority: number;
+}
+
+interface BookingRoomEntry {
+  room_number: string;
+  room_id?: string;
+  rooms?: { name: string } | null;
+}
+
 // Helper function to get price for a specific day of week
-function getDayPrice(room: any, dayOfWeek: number): number {
+function getDayPrice(room: RoomWithPricing, dayOfWeek: number): number {
   const priceField = DAY_PRICE_FIELDS[dayOfWeek];
-  return room[priceField] || room.price_per_night;
+  return (room as Record<string, unknown>)[priceField] as number || room.price_per_night;
 }
 
 // Calculate final price with promo and day-of-week pricing
 function calculateFinalPrice(
-  room: any, 
+  room: RoomWithPricing, 
   checkIn: Date, 
   checkOut: Date, 
-  activePromo: any
+  activePromo: PromoRow | null
 ): { totalPrice: number; promoNights: number; originalPrice: number } {
   let totalPrice = 0;
   let originalPrice = 0;
@@ -51,7 +87,7 @@ function calculateFinalPrice(
   return { totalPrice, promoNights, originalPrice };
 }
 
-export async function createAdminBooking(supabase: any, args: any) {
+export async function createAdminBooking(supabase: SupabaseClient, args: Record<string, unknown>) {
   console.log(`📝 createAdminBooking called with args:`, JSON.stringify(args));
   
   // Fetch all rooms for smart matching
@@ -65,15 +101,15 @@ export async function createAdminBooking(supabase: any, args: any) {
 
   if (roomsError) throw roomsError;
 
-  const room = findBestRoomMatch(args.room_name, allRooms || []);
+  const room = findBestRoomMatch(args.room_name as string, allRooms || []) as RoomWithPricing | null;
   
   if (!room) {
-    const roomList = allRooms?.map((r: any) => r.name).join(', ') || 'tidak ada';
+    const roomList = (allRooms || []).map((r: { name: string }) => r.name).join(', ') || 'tidak ada';
     throw new Error(`Kamar "${args.room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
   }
 
-  const checkIn = new Date(args.check_in);
-  const checkOut = new Date(args.check_out);
+  const checkIn = new Date(args.check_in as string);
+  const checkOut = new Date(args.check_out as string);
   const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
 
   if (nights <= 0) {
@@ -90,7 +126,7 @@ export async function createAdminBooking(supabase: any, args: any) {
     .gte('end_date', args.check_in)
     .order('priority', { ascending: false });
 
-  const activePromo = activePromos?.[0] || null;
+  const activePromo = (activePromos?.[0] as PromoRow | undefined) || null;
 
   // Get existing bookings
   const { data: conflictingBookings } = await supabase
@@ -101,7 +137,7 @@ export async function createAdminBooking(supabase: any, args: any) {
     .lte('check_in', args.check_out)
     .gte('check_out', args.check_in);
 
-  const bookedNumbers = new Set(conflictingBookings?.map((b: any) => b.allocated_room_number) || []);
+  const bookedNumbers = new Set((conflictingBookings || []).map((b: { allocated_room_number: string | null }) => b.allocated_room_number).filter(Boolean) as string[]);
   
   // Get blocked dates
   const { data: blockedDates } = await supabase
@@ -111,10 +147,10 @@ export async function createAdminBooking(supabase: any, args: any) {
     .gte('unavailable_date', args.check_in)
     .lte('unavailable_date', args.check_out);
 
-  const blockedNumbers = new Set(blockedDates?.map((d: any) => d.room_number) || []);
+  const blockedNumbers = new Set((blockedDates || []).map((d: { room_number: string }) => d.room_number));
 
   // Determine allocated room number
-  let allocatedRoomNumber = args.room_number;
+  let allocatedRoomNumber = args.room_number as string | undefined;
   let allocationMode = 'manual';
 
   if (!allocatedRoomNumber) {
@@ -123,7 +159,7 @@ export async function createAdminBooking(supabase: any, args: any) {
     );
 
     if (availableNumbers.length === 0) {
-      throw new Error(`Tidak ada kamar ${room.name} yang tersedia untuk tanggal ${args.check_in} s.d. ${args.check_out}`);
+      throw new Error(`Tidak ada kamar ${room.name} yang tersedia untuk tanggal ${args.check_in as string} s.d. ${args.check_out as string}`);
     }
 
     allocatedRoomNumber = availableNumbers[0];
@@ -152,12 +188,12 @@ export async function createAdminBooking(supabase: any, args: any) {
     .insert({
       room_id: room.id,
       allocated_room_number: allocatedRoomNumber,
-      guest_name: args.guest_name,
-      guest_phone: args.guest_phone,
-      guest_email: args.guest_email || `${args.guest_phone}@guest.local`,
-      check_in: args.check_in,
-      check_out: args.check_out,
-      num_guests: args.num_guests,
+      guest_name: args.guest_name as string,
+      guest_phone: args.guest_phone as string,
+      guest_email: (args.guest_email as string) || `${args.guest_phone}@guest.local`,
+      check_in: args.check_in as string,
+      check_out: args.check_out as string,
+      num_guests: args.num_guests as number,
       total_nights: nights,
       total_price: totalPrice,
       status: 'confirmed',
@@ -178,12 +214,12 @@ export async function createAdminBooking(supabase: any, args: any) {
     await supabase.functions.invoke('notify-new-booking', {
       body: {
         booking_code: booking.booking_code,
-        guest_name: args.guest_name,
+    guest_name: args.guest_name as string,
         guest_phone: args.guest_phone,
         room_name: room.name,
         room_number: allocatedRoomNumber,
-        check_in: args.check_in,
-        check_out: args.check_out,
+    check_in: args.check_in as string,
+    check_out: args.check_out as string,
         total_nights: nights,
         num_guests: args.num_guests,
         total_price: totalPrice,
@@ -216,7 +252,7 @@ export async function createAdminBooking(supabase: any, args: any) {
   };
 }
 
-export async function updateBookingStatus(supabase: any, bookingCode: string, newStatus: string, reason?: string) {
+export async function updateBookingStatus(supabase: SupabaseClient, bookingCode: string, newStatus: string, reason?: string) {
   const { data: booking, error: findError } = await supabase
     .from('bookings')
     .select('id, booking_code, guest_name, status, special_requests, rooms(name)')
@@ -228,7 +264,7 @@ export async function updateBookingStatus(supabase: any, bookingCode: string, ne
   }
 
   const oldStatus = booking.status;
-  const updateData: any = { 
+  const updateData: Record<string, unknown> = { 
     status: newStatus,
     updated_at: new Date().toISOString()
   };
@@ -256,8 +292,10 @@ export async function updateBookingStatus(supabase: any, bookingCode: string, ne
   };
 }
 
-export async function updateGuestInfo(supabase: any, args: any) {
-  const { booking_code, guest_name, guest_phone, guest_email, num_guests } = args;
+export async function updateGuestInfo(supabase: SupabaseClient, args: Record<string, unknown>) {
+  const { booking_code, guest_name, guest_phone, guest_email, num_guests } = args as {
+    booking_code: string; guest_name?: string; guest_phone?: string; guest_email?: string; num_guests?: number;
+  };
 
   const { data: booking, error: findError } = await supabase
     .from('bookings')
@@ -269,7 +307,7 @@ export async function updateGuestInfo(supabase: any, args: any) {
     throw new Error(`Booking ${booking_code} tidak ditemukan`);
   }
 
-  const updateData: any = { updated_at: new Date().toISOString() };
+  const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
   const changes: string[] = [];
 
   if (guest_name && guest_name !== booking.guest_name) {
@@ -303,8 +341,10 @@ export async function updateGuestInfo(supabase: any, args: any) {
   return { success: true, booking_code, changes };
 }
 
-export async function rescheduleBooking(supabase: any, args: any) {
-  const { booking_code, new_check_in, new_check_out } = args;
+export async function rescheduleBooking(supabase: SupabaseClient, args: Record<string, unknown>) {
+  const { booking_code, new_check_in, new_check_out } = args as {
+    booking_code: string; new_check_in?: string; new_check_out?: string;
+  };
 
   if (!new_check_in && !new_check_out) {
     throw new Error('Harus menyertakan new_check_in atau new_check_out');
@@ -352,7 +392,7 @@ export async function rescheduleBooking(supabase: any, args: any) {
     .lte('unavailable_date', checkOut);
 
   if (blockedDates && blockedDates.length > 0) {
-    throw new Error(`Kamar diblokir pada tanggal: ${blockedDates.map((d: any) => d.unavailable_date).join(', ')}`);
+    throw new Error(`Kamar diblokir pada tanggal: ${blockedDates.map((d: { unavailable_date: string }) => d.unavailable_date).join(', ')}`);
   }
 
   const nights = Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24));
@@ -381,8 +421,10 @@ export async function rescheduleBooking(supabase: any, args: any) {
   };
 }
 
-export async function changeBookingRoom(supabase: any, args: any) {
-  const { booking_code, new_room_name, new_room_number } = args;
+export async function changeBookingRoom(supabase: SupabaseClient, args: Record<string, unknown>) {
+  const { booking_code, new_room_name, new_room_number } = args as {
+    booking_code: string; new_room_name: string; new_room_number: string;
+  };
 
   const { data: booking, error: findError } = await supabase
     .from('bookings')
@@ -398,7 +440,7 @@ export async function changeBookingRoom(supabase: any, args: any) {
   const newRoom = findBestRoomMatch(new_room_name, allRooms || []);
 
   if (!newRoom) {
-    const roomList = allRooms?.map((r: any) => r.name).join(', ') || 'tidak ada';
+    const roomList = (allRooms || []).map((r: { name: string }) => r.name).join(', ') || 'tidak ada';
     throw new Error(`Kamar "${new_room_name}" tidak ditemukan. Tersedia: ${roomList}`);
   }
 
@@ -414,7 +456,7 @@ export async function changeBookingRoom(supabase: any, args: any) {
     .eq('room_number', new_room_number)
     .neq('booking_id', booking.id);
 
-  const activeConflicts = (brConflicts || []).filter((br: any) => {
+  const activeConflicts = (brConflicts || []).filter((br: { bookings: { id: string; booking_code: string; check_in: string; check_out: string; status: string } | null }) => {
     const b = br.bookings;
     return b && b.status !== 'cancelled' && b.check_in < booking.check_out && b.check_out > booking.check_in;
   });
@@ -449,7 +491,7 @@ export async function changeBookingRoom(supabase: any, args: any) {
     .lte('unavailable_date', booking.check_out);
 
   if (blockedDates && blockedDates.length > 0) {
-    throw new Error(`Kamar ${newRoom.name} ${new_room_number} diblokir pada tanggal: ${blockedDates.map((d: any) => d.unavailable_date).join(', ')}`);
+    throw new Error(`Kamar ${newRoom.name} ${new_room_number} diblokir pada tanggal: ${blockedDates.map((d: { unavailable_date: string }) => d.unavailable_date).join(', ')}`);
   }
 
   const newTotalPrice = newRoom.price_per_night * booking.total_nights;
@@ -521,8 +563,8 @@ export async function changeBookingRoom(supabase: any, args: any) {
 
 // Update booking status by room number (for check-in/check-out reports from managers)
 // Set late checkout with time and fee
-export async function setLateCheckout(supabase: any, args: any) {
-  const { room_number, checkout_time, fee } = args;
+export async function setLateCheckout(supabase: SupabaseClient, args: Record<string, unknown>) {
+  const { room_number, checkout_time, fee } = args as { room_number: string; checkout_time: string; fee?: number };
   
   // Get today's date in WIB timezone
   const today = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).split(' ')[0];
@@ -542,9 +584,16 @@ export async function setLateCheckout(supabase: any, args: any) {
   if (findError) throw findError;
   
   // Find matching booking
-  const matchingBooking = bookings?.find((b: any) => {
+  interface BookingWithRooms {
+    id: string; booking_code: string; guest_name: string; status: string;
+    check_in: string; check_out: string; check_out_time: string | null;
+    total_price: number; total_nights: number; allocated_room_number: string | null; room_id: string;
+    rooms: { name: string; price_per_night: number } | null;
+    booking_rooms: BookingRoomEntry[] | null;
+  }
+  const matchingBooking = (bookings as BookingWithRooms[] | null)?.find((b) => {
     if (b.allocated_room_number === room_number) return true;
-    if (b.booking_rooms?.some((br: any) => br.room_number === room_number)) return true;
+    if (b.booking_rooms?.some((br) => br.room_number === room_number)) return true;
     return false;
   });
   
@@ -594,7 +643,7 @@ export async function setLateCheckout(supabase: any, args: any) {
     roomNumbers.push(matchingBooking.allocated_room_number);
   }
   if (matchingBooking.booking_rooms) {
-    matchingBooking.booking_rooms.forEach((br: any) => {
+    matchingBooking.booking_rooms.forEach((br) => {
       if (br.room_number && !roomNumbers.includes(br.room_number)) {
         roomNumbers.push(br.room_number);
       }
@@ -616,8 +665,8 @@ export async function setLateCheckout(supabase: any, args: any) {
 }
 
 // Update booking status by room number (for check-in/check-out reports from managers)
-export async function updateRoomStatus(supabase: any, args: any) {
-  const { room_number, new_status, date } = args;
+export async function updateRoomStatus(supabase: SupabaseClient, args: Record<string, unknown>) {
+  const { room_number, new_status, date } = args as { room_number: string; new_status: string; date?: string };
   
   // Get today's date in WIB timezone
   const today = date || new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).split(' ')[0];
@@ -652,11 +701,9 @@ export async function updateRoomStatus(supabase: any, args: any) {
   if (findError) throw findError;
   
   // Find the booking that matches this room number
-  const matchingBooking = bookings?.find((b: any) => {
-    // Check allocated_room_number (legacy)
+  const matchingBooking = (bookings as Array<{ id: string; booking_code: string; guest_name: string; status: string; check_in: string; check_out: string; allocated_room_number: string | null; rooms: { name: string } | null; booking_rooms: BookingRoomEntry[] | null }> | null)?.find((b) => {
     if (b.allocated_room_number === room_number) return true;
-    // Check booking_rooms (multi-room)
-    if (b.booking_rooms?.some((br: any) => br.room_number === room_number)) return true;
+    if (b.booking_rooms?.some((br) => br.room_number === room_number)) return true;
     return false;
   });
   
@@ -682,7 +729,7 @@ export async function updateRoomStatus(supabase: any, args: any) {
     roomNumbers.push(matchingBooking.allocated_room_number);
   }
   if (matchingBooking.booking_rooms) {
-    matchingBooking.booking_rooms.forEach((br: any) => {
+    matchingBooking.booking_rooms.forEach((br) => {
       if (br.room_number && !roomNumbers.includes(br.room_number)) {
         roomNumbers.push(br.room_number);
       }
@@ -703,8 +750,8 @@ export async function updateRoomStatus(supabase: any, args: any) {
 }
 
 // Extend stay - perpanjang checkout
-export async function extendStay(supabase: any, args: any) {
-  const { room_number, new_check_out, extra_nights } = args;
+export async function extendStay(supabase: SupabaseClient, args: Record<string, unknown>) {
+  const { room_number, new_check_out, extra_nights } = args as { room_number: string; new_check_out?: string; extra_nights?: number };
   
   // Get today's date in WIB timezone
   const today = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).split(' ')[0];
@@ -724,9 +771,9 @@ export async function extendStay(supabase: any, args: any) {
   if (findError) throw findError;
   
   // Find matching booking
-  const matchingBooking = bookings?.find((b: any) => {
+  const matchingBooking = (bookings as Array<{ id: string; booking_code: string; guest_name: string; status: string; check_in: string; check_out: string; total_nights: number; total_price: number; allocated_room_number: string | null; room_id: string; rooms: { name: string; price_per_night: number } | null; booking_rooms: Array<BookingRoomEntry & { price_per_night?: number }> | null }> | null)?.find((b) => {
     if (b.allocated_room_number === room_number) return true;
-    if (b.booking_rooms?.some((br: any) => br.room_number === room_number)) return true;
+    if (b.booking_rooms?.some((br) => br.room_number === room_number)) return true;
     return false;
   });
   
@@ -789,7 +836,7 @@ export async function extendStay(supabase: any, args: any) {
     roomNumbers.push(matchingBooking.allocated_room_number);
   }
   if (matchingBooking.booking_rooms) {
-    matchingBooking.booking_rooms.forEach((br: any) => {
+    matchingBooking.booking_rooms.forEach((br) => {
       if (br.room_number && !roomNumbers.includes(br.room_number)) {
         roomNumbers.push(br.room_number);
       }
@@ -813,8 +860,8 @@ export async function extendStay(supabase: any, args: any) {
 }
 
 // Check extend availability before confirming
-export async function checkExtendAvailability(supabase: any, args: any) {
-  const { room_number, extra_nights } = args;
+export async function checkExtendAvailability(supabase: SupabaseClient, args: Record<string, unknown>) {
+  const { room_number, extra_nights } = args as { room_number: string; extra_nights: number };
   
   // Get today's date in WIB timezone
   const today = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).split(' ')[0];
@@ -833,9 +880,9 @@ export async function checkExtendAvailability(supabase: any, args: any) {
   
   if (findError) throw findError;
   
-  const matchingBooking = bookings?.find((b: any) => {
+  const matchingBooking = (bookings as Array<{ id: string; booking_code: string; guest_name: string; status: string; check_in: string; check_out: string; total_nights: number; total_price: number; allocated_room_number: string | null; room_id: string; rooms: { name: string; price_per_night: number } | null; booking_rooms: Array<BookingRoomEntry & { price_per_night?: number }> | null }> | null)?.find((b) => {
     if (b.allocated_room_number === room_number) return true;
-    if (b.booking_rooms?.some((br: any) => br.room_number === room_number)) return true;
+    if (b.booking_rooms?.some((br) => br.room_number === room_number)) return true;
     return false;
   });
   
@@ -888,7 +935,7 @@ export async function checkExtendAvailability(supabase: any, args: any) {
     roomNumbers.push(matchingBooking.allocated_room_number);
   }
   if (matchingBooking.booking_rooms) {
-    matchingBooking.booking_rooms.forEach((br: any) => {
+    matchingBooking.booking_rooms.forEach((br) => {
       if (br.room_number && !roomNumbers.includes(br.room_number)) {
         roomNumbers.push(br.room_number);
       }

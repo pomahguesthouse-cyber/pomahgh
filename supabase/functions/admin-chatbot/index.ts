@@ -1,6 +1,6 @@
 // ============= ADMIN CHATBOT - CLEAN ARCHITECTURE =============
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Import from modular files
 import { corsHeaders, LOVABLE_API_URL, type ManagerRole } from "./lib/constants.ts";
@@ -99,7 +99,8 @@ Deno.serve(async (req: Request) => {
     };
 
     // 3. Detect intent from last user message
-    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop();
+    interface ChatMessage { role: string; content: string }
+    const lastUserMessage = (messages as ChatMessage[]).filter((m) => m.role === 'user').pop();
     const userMessage = lastUserMessage?.content || '';
     const intentMatch = detectIntent(userMessage);
     const intentHint = getToolGuidanceHint(intentMatch);
@@ -134,9 +135,9 @@ Deno.serve(async (req: Request) => {
     // 6. Stream response
     const stream = createSSEStream(async (ctx: StreamContext) => {
       let finalResponse = '';
-      let currentMessages = [
+      let currentMessages: Array<{ role: string; content: string; tool_call_id?: string }> = [
         { role: "system", content: systemPrompt },
-        ...messages.map((m: any) => ({ role: m.role, content: m.content }))
+        ...(messages as ChatMessage[]).map((m) => ({ role: m.role, content: m.content }))
       ];
       
       let iterations = 0;
@@ -197,21 +198,22 @@ Deno.serve(async (req: Request) => {
                 tool_call_id: toolCall.id,
                 content: JSON.stringify(toolResult)
               });
-            } catch (toolError: any) {
+            } catch (toolError: unknown) {
+              const errMsg = toolError instanceof Error ? toolError.message : String(toolError);
               console.error(`Tool error (${toolName}):`, toolError);
               
               executedTools.push({
                 tool_name: toolName,
                 arguments: toolArgs,
-                error: toolError.message,
+                error: errMsg,
                 success: false,
                 executed_at: new Date().toISOString()
               });
 
               currentMessages.push({
-                role: "tool",
+                role: "tool" as const,
                 tool_call_id: toolCall.id,
-                content: JSON.stringify({ error: toolError.message })
+                content: JSON.stringify({ error: errMsg })
               });
             }
           }
@@ -245,8 +247,8 @@ Deno.serve(async (req: Request) => {
 
     return createSSEResponse(stream);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Admin chatbot error:", error);
-    return createErrorResponse(error.message, 500);
+    return createErrorResponse(error instanceof Error ? error.message : "Unknown error", 500);
   }
 });
