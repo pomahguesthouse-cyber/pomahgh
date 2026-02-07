@@ -11,6 +11,7 @@ import NotFound from "./NotFound";
 import { LandingPageHeroSlider, HeroSlide } from "@/components/landing/LandingPageHeroSlider";
  import { LandingRoomSlider } from "@/components/landing/LandingRoomSlider";
  import { LandingFacilities } from "@/components/landing/LandingFacilities";
+ import { Rooms } from "@/components/Rooms/Rooms";
 
 interface LandingPageData {
   id: string;
@@ -219,24 +220,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Rooms Section - Right Below Hero */}
-        <section className="py-16 md:py-24 bg-secondary/30">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
-                <Star className="h-4 w-4" />
-                Akomodasi Premium
-              </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-4">
-                Pilihan Kamar Kami
-              </h2>
-              <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-                Nikmati kenyamanan menginap dengan fasilitas lengkap dan pelayanan terbaik
-              </p>
-            </div>
-            <LandingRoomSlider />
-          </div>
-        </section>
+        {/* Rooms Section - Same as Homepage */}
+        <Rooms />
 
         {/* Facilities Section */}
         <LandingFacilities />
