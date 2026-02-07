@@ -218,24 +218,43 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Rooms Section - Right Below Hero */}
+        <section className="py-16 md:py-24 bg-secondary/30">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+                <Star className="h-4 w-4" />
+                Akomodasi Premium
+              </div>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-4">
+                Pilihan Kamar Kami
+              </h2>
+              <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+                Nikmati kenyamanan menginap dengan fasilitas lengkap dan pelayanan terbaik
+              </p>
+            </div>
+            <LandingRoomSlider />
+          </div>
+        </section>
+
         {/* Main Content */}
         {page.page_content && (
-           <section className="py-16 md:py-24">
+          <section className="py-16 md:py-24">
             <div className="container mx-auto px-4">
-               <article className="
-                 prose prose-lg md:prose-xl max-w-4xl mx-auto 
-                 prose-headings:font-bold prose-headings:text-foreground prose-headings:tracking-tight
-                 prose-h1:text-3xl prose-h1:md:text-4xl prose-h1:lg:text-5xl prose-h1:mb-6
-                 prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mt-12 prose-h2:mb-4
-                 prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mt-8 prose-h3:mb-3
-                 prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-6
-                 prose-strong:text-foreground prose-strong:font-semibold
-                 prose-a:text-primary prose-a:font-medium prose-a:no-underline hover:prose-a:underline
-                 prose-ul:my-6 prose-ul:space-y-2
-                 prose-li:text-muted-foreground prose-li:leading-relaxed
-                 prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/30 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-foreground/80
-                 prose-img:rounded-xl prose-img:shadow-lg
-               ">
+              <article className="
+                prose prose-lg md:prose-xl max-w-4xl mx-auto 
+                prose-headings:font-bold prose-headings:text-foreground prose-headings:tracking-tight
+                prose-h1:text-3xl prose-h1:md:text-4xl prose-h1:lg:text-5xl prose-h1:mb-6
+                prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mt-12 prose-h2:mb-4
+                prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mt-8 prose-h3:mb-3
+                prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-6
+                prose-strong:text-foreground prose-strong:font-semibold
+                prose-a:text-primary prose-a:font-medium prose-a:no-underline hover:prose-a:underline
+                prose-ul:my-6 prose-ul:space-y-2
+                prose-li:text-muted-foreground prose-li:leading-relaxed
+                prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/30 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-foreground/80
+                prose-img:rounded-xl prose-img:shadow-lg
+              ">
                 <Markdown>{page.page_content}</Markdown>
               </article>
             </div>
@@ -243,19 +262,19 @@ export default function LandingPage() {
         )}
 
         {/* Mid CTA */}
-         <section className="py-16 md:py-20 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent">
+        <section className="py-16 md:py-20 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent">
           <div className="container mx-auto px-4 text-center">
-             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
-               <Sparkles className="h-4 w-4" />
-               Penawaran Spesial
-             </div>
-             <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 tracking-tight">
-               Tertarik Menginap?
-             </h3>
-             <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto leading-relaxed">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Sparkles className="h-4 w-4" />
+              Penawaran Spesial
+            </div>
+            <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 tracking-tight">
+              Tertarik Menginap?
+            </h3>
+            <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto leading-relaxed">
               Hubungi kami langsung via WhatsApp untuk booking cepat dan konfirmasi instan
             </p>
-             <Button size="lg" className="gap-2 text-base px-8 py-6 shadow-lg hover:shadow-xl transition-all" asChild>
+            <Button size="lg" className="gap-2 text-base px-8 py-6 shadow-lg hover:shadow-xl transition-all" asChild>
               <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                 <MessageCircle className="h-5 w-5" />
                 Chat Sekarang
@@ -263,28 +282,6 @@ export default function LandingPage() {
             </Button>
           </div>
         </section>
-
-         {/* Rooms Section with Slider */}
-         <section className="py-16 md:py-24 bg-secondary/30">
-           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-             {/* Section Header */}
-             <div className="text-center mb-12">
-               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
-                 <Star className="h-4 w-4" />
-                 Akomodasi Premium
-              </div>
-               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-4">
-                 Pilihan Kamar Kami
-               </h2>
-               <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-                 Nikmati kenyamanan menginap dengan fasilitas lengkap dan pelayanan terbaik
-               </p>
-            </div>
- 
-             {/* Room Slider */}
-             <LandingRoomSlider />
-           </div>
-         </section>
 
         {/* Bottom CTA */}
          <section className="py-20 md:py-28 bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground relative overflow-hidden">

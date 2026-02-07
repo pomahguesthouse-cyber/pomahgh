@@ -279,9 +279,10 @@ export const useEditorStore = create<EditorState>()(
     }),
     
     loadPage: (elements, settings) => set((state) => {
-      state.elements = elements;
+      const safeElements = Array.isArray(elements) ? elements : [];
+      state.elements = safeElements;
       state.pageSettings = settings;
-      state.history = [JSON.parse(JSON.stringify(elements))];
+      state.history = [JSON.parse(JSON.stringify(safeElements))];
       state.historyIndex = 0;
       state.hasUnsavedChanges = false;
       state.selectedElementId = null;
