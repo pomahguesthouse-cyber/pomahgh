@@ -10,7 +10,6 @@ import { Location } from "@/components/Location";
 import { NewsEvents } from "@/components/NewsEvents";
 import { Footer } from "@/components/Footer";
 import ChatbotWidget from "@/components/ChatbotWidget";
-import VoiceChatButton from "@/components/VoiceChatButton";
 
 const Index = () => {
   const location = useLocation();
@@ -43,7 +42,6 @@ const Index = () => {
       </main>
       <Footer />
       <ChatbotWidget />
-      <VoiceChatButton />
     </div>
   );
 };

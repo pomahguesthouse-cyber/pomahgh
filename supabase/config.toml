@@ -125,12 +125,3 @@ verify_jwt = true
 
 [functions.prompt-consultant]
 verify_jwt = false
-
-[functions.elevenlabs-tts]
-verify_jwt = false
-
-[functions.elevenlabs-stt-token]
-verify_jwt = false
-
-[functions.elevenlabs-stt]
-verify_jwt = false
