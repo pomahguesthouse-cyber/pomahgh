@@ -66,7 +66,7 @@ interface GuestBookingRow {
   num_guests: number;
   total_price: number;
   status: string;
-  rooms: { name: string } | null;
+  rooms: { name: string }[] | { name: string } | null;
 }
 
 interface BookingRoomNumber {
@@ -94,7 +94,7 @@ export async function getAvailabilitySummary(supabase: SupabaseClient, checkIn: 
 
   if (roomsError) throw roomsError;
 
-  const typedRooms = (rooms || []) as RoomRow[];
+  const typedRooms = (rooms || []) as unknown as RoomRow[];
 
   const { data: bookings, error: bookingsError } = await supabase
     .from('bookings')
@@ -348,13 +348,13 @@ export async function getTodayGuests(supabase: SupabaseClient, type: string = 'a
       .order('guest_name');
     
     const guests = [];
-    for (const b of (data || []) as GuestBookingRow[]) {
+    for (const b of (data || []) as unknown as GuestBookingRow[]) {
       const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
       guests.push({
         booking_code: b.booking_code,
         guest_name: b.guest_name,
         guest_phone: b.guest_phone,
-        room_name: b.rooms?.name,
+        room_name: Array.isArray(b.rooms) ? b.rooms[0]?.name : b.rooms?.name,
         room_number: roomNumbers.join(', '),
         room_numbers: roomNumbers,
         room_count: roomNumbers.length,
@@ -377,13 +377,13 @@ export async function getTodayGuests(supabase: SupabaseClient, type: string = 'a
       .order('guest_name');
     
     const guests = [];
-    for (const b of (data || []) as GuestBookingRow[]) {
+    for (const b of (data || []) as unknown as GuestBookingRow[]) {
       const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
       guests.push({
         booking_code: b.booking_code,
         guest_name: b.guest_name,
         guest_phone: b.guest_phone,
-        room_name: b.rooms?.name,
+        room_name: Array.isArray(b.rooms) ? b.rooms[0]?.name : b.rooms?.name,
         room_number: roomNumbers.join(', '),
         room_numbers: roomNumbers,
         room_count: roomNumbers.length,
@@ -414,13 +414,13 @@ export async function getTodayGuests(supabase: SupabaseClient, type: string = 'a
     const { data } = await stayingQuery;
     
     const guests = [];
-    for (const b of (data || []) as GuestBookingRow[]) {
+    for (const b of (data || []) as unknown as GuestBookingRow[]) {
       const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
       guests.push({
         booking_code: b.booking_code,
         guest_name: b.guest_name,
         guest_phone: b.guest_phone,
-        room_name: b.rooms?.name,
+        room_name: Array.isArray(b.rooms) ? b.rooms[0]?.name : b.rooms?.name,
         room_number: roomNumbers.join(', '),
         room_numbers: roomNumbers,
         room_count: roomNumbers.length,

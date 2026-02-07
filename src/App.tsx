@@ -36,7 +36,7 @@ const RoomDetail = lazy(() => import("./pages/RoomDetail"));
 const AdminInvoiceTemplate = lazy(() => import("./pages/admin/AdminInvoiceTemplate"));
 const AdminRoomAddons = lazy(() => import("./pages/admin/AdminRoomAddons"));
 const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
-const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
+const AdminLayout = lazy(() => import("./components/admin/AdminLayout").then(m => ({ default: m.AdminLayout })));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ExploreSemarang = lazy(() => import("./pages/ExploreSemarang"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));

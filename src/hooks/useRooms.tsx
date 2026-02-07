@@ -107,7 +107,7 @@ const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null): number
   // Third priority: Check day-of-week pricing
   const dayOfWeek = today.getDay();
   return getDayPrice(room, dayOfWeek);
-}, []);
+};
 
 export const useRooms = () => {
   return useQuery({
