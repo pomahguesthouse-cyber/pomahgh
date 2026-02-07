@@ -75,7 +75,9 @@ export const BookingBar = ({
     adjustedNights = Math.max(1, adjustedNights); // Minimum 1 night
   }
   
-  const bookingWidth = `${adjustedNights * cellWidth}px`;
+  // For truncated-left bars: starts at left:0 (cell edge), needs extra cellWidth/2 to reach checkout center
+  // For normal bars: starts at cellWidth/2 (cell center), width = nights * cellWidth reaches checkout center
+  const bookingWidth = `${adjustedNights * cellWidth + (isTruncatedLeft ? cellWidth / 2 : 0)}px`;
   const isPending = booking.status === "pending";
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
