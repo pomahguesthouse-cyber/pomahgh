@@ -10,6 +10,7 @@ import Markdown from "react-markdown";
 import NotFound from "./NotFound";
 import { LandingPageHeroSlider, HeroSlide } from "@/components/landing/LandingPageHeroSlider";
  import { LandingRoomSlider } from "@/components/landing/LandingRoomSlider";
+ import { LandingFacilities } from "@/components/landing/LandingFacilities";
 
 interface LandingPageData {
   id: string;
@@ -236,6 +237,9 @@ export default function LandingPage() {
             <LandingRoomSlider />
           </div>
         </section>
+
+        {/* Facilities Section */}
+        <LandingFacilities />
 
         {/* Main Content */}
         {page.page_content && (
