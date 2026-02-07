@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { usePriceAnalysis } from "@/hooks/usePriceAnalysis";
 import { usePricingAdjustmentLogs } from "@/hooks/usePricingAdjustmentLogs";
-import { usePriceChangeNotifications } from "@/hooks/usePriceChangeNotifications";
+import { usePriceChangeNotifications, PriceChangeNotification } from "@/hooks/usePriceChangeNotifications";
 import { useRooms } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
-import { TrendingUp, TrendingDown, Minus, Play, RefreshCw, Settings2, History, Bell, BellRing, CheckCheck, AlertTriangle, Zap, Shield, Percent } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Play, RefreshCw, Settings2, History, Bell, BellRing, CheckCheck, AlertTriangle, Zap, Shield, Percent, Check, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { formatRupiahID } from "@/utils/indonesianFormat";
@@ -60,6 +60,65 @@ export const AnalysisDashboardTab = () => {
     lastMinuteHours: 24,
   });
   const [showAggressiveSettings, setShowAggressiveSettings] = useState(false);
+  const [updatingPrice, setUpdatingPrice] = useState<string | null>(null);
+
+  const handleUseCompetitorPrice = async (notification: PriceChangeNotification) => {
+    if (!notification.our_room?.id) {
+      toast({
+        title: "Error",
+        description: "Tidak ada kamar yang terkait dengan notifikasi ini",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUpdatingPrice(notification.id);
+    try {
+      // Update room price to match competitor's new price
+      const { error } = await supabase
+        .from('rooms')
+        .update({ 
+          base_price: notification.new_price,
+          price_per_night: notification.new_price
+        })
+        .eq('id', notification.our_room.id);
+
+      if (error) throw error;
+
+      // Log the adjustment
+      await supabase
+        .from('pricing_adjustment_logs')
+        .insert({
+          room_id: notification.our_room.id,
+          previous_price: notification.previous_price,
+          new_price: notification.new_price,
+          competitor_avg_price: notification.new_price,
+          adjustment_reason: `Mengikuti harga kompetitor ${notification.competitor_room?.competitor_hotel?.name}: ${notification.competitor_room?.room_name}`,
+          adjustment_type: 'manual'
+        });
+
+      // Mark notification as read
+      await markAsRead.mutate(notification.id);
+
+      toast({
+        title: "Harga berhasil diupdate",
+        description: `Harga ${notification.our_room.name} diupdate ke ${formatRupiahID(notification.new_price)}`
+      });
+
+      // Refresh data
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['pricing-adjustment-logs'] });
+    } catch (error: unknown) {
+      toast({
+        title: "Gagal mengupdate harga",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdatingPrice(null);
+    }
+  };
 
   const handleRunAutoPricing = async () => {
     setIsRunning(true);
@@ -524,24 +583,49 @@ export const AnalysisDashboardTab = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-mono">
-                        {formatRupiahID(notif.previous_price)} → {formatRupiahID(notif.new_price)}
-                      </div>
-                      <Badge 
-                        variant={notif.price_change_percent > 0 ? "destructive" : "default"}
-                        className="mt-1"
-                      >
-                        {notif.price_change_percent > 0 ? "+" : ""}{notif.price_change_percent}%
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
+                     <div className="text-right">
+                       <div className="text-sm font-mono">
+                         {formatRupiahID(notif.previous_price)} → {formatRupiahID(notif.new_price)}
+                       </div>
+                       <div className="flex items-center gap-2 mt-1 justify-end">
+                         <Badge 
+                           variant={notif.price_change_percent > 0 ? "destructive" : "default"}
+                         >
+                           {notif.price_change_percent > 0 ? "+" : ""}{notif.price_change_percent}%
+                         </Badge>
+                         {notif.our_room && (
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             className="h-6 text-xs px-2"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               handleUseCompetitorPrice(notif);
+                             }}
+                             disabled={updatingPrice === notif.id}
+                           >
+                             {updatingPrice === notif.id ? (
+                               <>
+                                 <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                 Updating...
+                               </>
+                             ) : (
+                               <>
+                                 <Check className="h-3 w-3 mr-1" />
+                                 Gunakan Harga Ini
+                               </>
+                             )}
+                           </Button>
+                         )}
+                       </div>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             </ScrollArea>
+           </CardContent>
+         </Card>
+       )}
 
       {/* Price Comparison Chart */}
       <Card>
