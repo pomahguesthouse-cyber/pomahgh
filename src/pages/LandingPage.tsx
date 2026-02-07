@@ -12,6 +12,7 @@ import { LandingPageHeroSlider, HeroSlide } from "@/components/landing/LandingPa
  import { LandingRoomSlider } from "@/components/landing/LandingRoomSlider";
  import { LandingFacilities } from "@/components/landing/LandingFacilities";
  import { Rooms } from "@/components/Rooms/Rooms";
+import { Location } from "@/components/Location";
 
 interface LandingPageData {
   id: string;
@@ -225,6 +226,9 @@ export default function LandingPage() {
 
         {/* Facilities Section */}
         <LandingFacilities />
+
+        {/* Location & Nearby Section - Same as Homepage */}
+        <Location />
 
         {/* Main Content */}
         {page.page_content && (
