@@ -61,10 +61,11 @@ export const Panorama360Viewer = ({
         draggable
         compass
         onLoad={() => console.log("360° panorama loaded")}
-        onMouseup={(event: any) => {
+        onMouseup={(event: unknown) => {
           if (editMode && onAddHotspot) {
-            const pitch = event.pitch;
-            const yaw = event.yaw;
+            const e = event as { pitch: number; yaw: number };
+            const pitch = e.pitch;
+            const yaw = e.yaw;
             onAddHotspot(pitch, yaw);
           }
         }}

@@ -199,7 +199,7 @@ const AdminBookings = () => {
     setInvoiceDialogOpen(true);
   };
 
-  const handleSaveEdit = async (data: any) => {
+  const handleSaveEdit = async (data: Partial<Booking> & { id: string }) => {
     await updateBooking(data);
     setEditDialogOpen(false);
     setSelectedBooking(null);
@@ -208,13 +208,13 @@ const AdminBookings = () => {
   // Export handlers
   const handleExportPDF = () => {
     if (filteredBookings && filteredBookings.length > 0) {
-      exportToPDF(filteredBookings as any, undefined, 'booking-list');
+      exportToPDF(filteredBookings as unknown as Parameters<typeof exportToPDF>[0], undefined, 'booking-list');
     }
   };
 
   const handleExportExcel = () => {
     if (filteredBookings && filteredBookings.length > 0) {
-      exportToExcel(filteredBookings as any, undefined, 'booking-list');
+      exportToExcel(filteredBookings as unknown as Parameters<typeof exportToExcel>[0], undefined, 'booking-list');
     }
   };
 

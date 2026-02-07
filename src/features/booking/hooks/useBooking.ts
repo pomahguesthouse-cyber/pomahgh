@@ -147,7 +147,7 @@ export const useBooking = () => {
         let roomNumbersStr = bookingData.allocated_room_number || '';
 
         if (bookingRooms && bookingRooms.length > 0) {
-          roomNames = bookingRooms.map(br => (br.rooms as any)?.name || roomData?.name || 'Unknown').join(', ');
+          roomNames = bookingRooms.map(br => (br.rooms as { name?: string } | null)?.name || roomData?.name || 'Unknown').join(', ');
           roomNumbersStr = bookingRooms.map(br => br.room_number).join(', ');
         }
 

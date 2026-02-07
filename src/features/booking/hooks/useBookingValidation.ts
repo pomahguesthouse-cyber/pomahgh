@@ -57,8 +57,15 @@ export const useBookingValidation = () => {
       console.error("Error checking booking_rooms conflict:", bookingRoomsError);
     }
 
+    // Define inner booking shape from the joined query
+    interface BookingRoomJoined {
+      room_number: string;
+      booking_id: string;
+      bookings: { id: string; check_in: string; check_out: string; status: string; guest_name: string; check_in_time?: string | null; check_out_time?: string | null } | null;
+    }
+
     // Filter booking_rooms for overlapping dates and non-cancelled status
-    const overlappingBookingRooms = (bookingRoomsData || []).filter((br: any) => {
+    const overlappingBookingRooms = (bookingRoomsData as BookingRoomJoined[] || []).filter((br) => {
       const booking = br.bookings;
       if (!booking || booking.status === "cancelled") return false;
       return booking.check_in <= checkOutStr && booking.check_out >= checkInStr;
@@ -67,8 +74,8 @@ export const useBookingValidation = () => {
     // Combine all bookings
     const allBookings = [
       ...(directBookings || []),
-      ...overlappingBookingRooms.map((br: any) => ({
-        ...br.bookings,
+      ...overlappingBookingRooms.map((br) => ({
+        ...br.bookings!,
         allocated_room_number: br.room_number
       }))
     ];
@@ -192,7 +199,7 @@ export const useBookingValidation = () => {
     if (directError) {
       console.error("Error checking room type availability:", directError);
     } else {
-      (directBookings || []).forEach((b: any) => {
+      (directBookings || []).forEach((b: { id: string; allocated_room_number: string | null }) => {
         if (excludeBookingId && b.id === excludeBookingId) return;
         if (b.allocated_room_number) {
           unavailableRoomNumbers.add(b.allocated_room_number);
@@ -213,8 +220,14 @@ export const useBookingValidation = () => {
     if (bookingRoomsError) {
       console.error("Error checking booking_rooms availability:", bookingRoomsError);
     } else {
+      // Re-use the same joined type
+      interface BookingRoomAvail {
+        room_number: string;
+        booking_id: string;
+        bookings: { id: string; check_in: string; check_out: string; status: string } | null;
+      }
       // Filter booking_rooms for overlapping dates
-      (bookingRoomsData || []).forEach((br: any) => {
+      (bookingRoomsData as BookingRoomAvail[] || []).forEach((br) => {
         const booking = br.bookings;
         if (!booking || booking.status === "cancelled") return;
         if (excludeBookingId && booking.id === excludeBookingId) return;

@@ -109,7 +109,7 @@ const AdminCityEvents = () => {
     }
 
     const slug = formData.slug || generateSlug(formData.name || "");
-    const data = { ...formData, slug } as any;
+    const data = { ...formData, slug, name: formData.name, event_date: formData.event_date } as unknown as Omit<CityEvent, 'id' | 'created_at' | 'updated_at'>;
     
     if (editingEvent?.id) {
       updateEvent.mutate({ id: editingEvent.id, ...data }, {

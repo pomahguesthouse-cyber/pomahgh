@@ -106,8 +106,10 @@ const AdminCityAttractions = () => {
   };
 
   const handleSubmit = () => {
-    const slug = formData.slug || generateSlug(formData.name || "");
-    const data = { ...formData, slug } as any;
+    if (!formData.name || !formData.category) return;
+
+    const slug = formData.slug || generateSlug(formData.name);
+    const data = { ...formData, slug, name: formData.name, category: formData.category } as Omit<CityAttraction, 'id' | 'created_at' | 'updated_at'>;
     
     if (editingAttraction?.id) {
       updateAttraction.mutate({ id: editingAttraction.id, ...data }, {

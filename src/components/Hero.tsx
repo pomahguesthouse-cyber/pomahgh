@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useHeroSlides } from "@/hooks/useHeroSlides";
+import { useHeroSlides, HeroSlide } from "@/hooks/useHeroSlides";
 import heroImage from "@/assets/hero-guesthouse.jpg";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
@@ -106,7 +106,7 @@ export default function Hero() {
             transition_effect: "fade",
           },
         ]
-  ) as any[];
+  ) as HeroSlide[];
 
   // Build an autoplay plugin *per current first slide duration* — simpler and predictable
   useEffect(() => {

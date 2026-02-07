@@ -37,7 +37,7 @@ interface BookingDetailDialogProps {
   booking: Booking | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (booking: Booking) => Promise<void>;
+  onSave: (booking: Partial<Booking> & { id: string; editedRooms?: Array<{ id?: string; roomId: string; roomNumber: string; pricePerNight: number }> }) => Promise<void>;
   rooms: Room[] | undefined;
   isUpdating: boolean;
   defaultEditMode?: boolean;
@@ -169,7 +169,7 @@ export const BookingDetailDialog = ({
       editedRooms: editedRooms
     };
 
-    await onSave(bookingToSave as any);
+    await onSave(bookingToSave as Partial<Booking> & { id: string; editedRooms: typeof editedRooms });
     setIsEditMode(false);
   };
 

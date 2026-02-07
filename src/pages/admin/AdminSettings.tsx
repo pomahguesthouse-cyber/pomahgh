@@ -223,7 +223,7 @@ export default function AdminSettings() {
                   <Input 
                     id="google_place_id" 
                     name="google_place_id" 
-                    defaultValue={(settings as any).google_place_id || ""} 
+                    defaultValue={settings.google_place_id || ""} 
                     placeholder="e.g. ChIJaUZXtrSLcC4RwmPfjuHaiO8"
                   />
                   <p className="text-sm text-muted-foreground">

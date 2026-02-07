@@ -201,8 +201,8 @@ const AdminRooms = () => {
       }));
 
       toast.success(`${uploadedUrls.length} image(s) uploaded`);
-    } catch (error: any) {
-      toast.error("Upload failed", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Upload failed", { description: error instanceof Error ? error.message : "Unknown error" });
     } finally {
       setUploading(false);
     }
@@ -228,9 +228,9 @@ const AdminRooms = () => {
       const publicUrl = await upload360Image(file);
       setFormData(prev => ({ ...prev, virtual_tour_url: publicUrl }));
       toast.success("Gambar 360° berhasil diupload");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Gagal upload gambar 360°", {
-        description: error.message
+        description: error instanceof Error ? error.message : "Unknown error"
       });
     } finally {
       setUploading360(false);

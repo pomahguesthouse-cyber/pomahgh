@@ -70,6 +70,12 @@ export interface HotelSettings {
   refund_policy_text?: string;
   hotel_policies_text?: string;
   hotel_policies_enabled?: boolean;
+  google_place_id?: string;
+  header_bg_color?: string;
+  header_bg_opacity?: number;
+  header_blur?: number;
+  header_show_logo?: boolean;
+  header_text_color?: string;
   // WhatsApp settings
   whatsapp_session_timeout_minutes?: number;
   whatsapp_ai_whitelist?: string[];
