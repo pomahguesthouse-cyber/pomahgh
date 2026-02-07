@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useMemo } from "react";
 
 export interface RoomPromotion {
   id: string;
@@ -62,7 +61,6 @@ export interface Room {
   active_promotion?: RoomPromotion | null;
 }
 
-// Optimized memoized price calculation
 const getDayPrice = (room: Room, dayOfWeek: number): number => {
   const dayPrices = [
     room.sunday_price,
@@ -76,7 +74,6 @@ const getDayPrice = (room: Room, dayOfWeek: number): number => {
   return dayPrices[dayOfWeek] || room.price_per_night;
 };
 
-// Optimized current price calculation function
 const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null): number => {
   const today = new Date();
   
@@ -107,7 +104,7 @@ const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null): number
   // Third priority: Check day-of-week pricing
   const dayOfWeek = today.getDay();
   return getDayPrice(room, dayOfWeek);
-}, []);
+};
 
 export const useRooms = () => {
   return useQuery({
@@ -115,21 +112,10 @@ export const useRooms = () => {
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       
-      // Optimized query with specific fields only
+      // Fetch rooms
       const { data: rooms, error: roomsError } = await supabase
         .from("rooms")
-        .select(`
-          id, name, slug, description, price_per_night, max_guests,
-          features, image_url, image_urls, virtual_tour_url, available,
-          size_sqm, room_count, room_numbers, allotment, base_price,
-          final_price, promo_price, promo_start_date, promo_end_date,
-          monday_price, tuesday_price, wednesday_price, thursday_price,
-          friday_price, saturday_price, sunday_price,
-          transition_effect, floor_plan_url, floor_plan_enabled,
-          is_non_refundable, monday_non_refundable, tuesday_non_refundable,
-          wednesday_non_refundable, thursday_non_refundable,
-          friday_non_refundable, saturday_non_refundable, sunday_non_refundable
-        `)
+        .select("*")
         .eq("available", true)
         .order("price_per_night", { ascending: true });
 
@@ -146,7 +132,7 @@ export const useRooms = () => {
 
       if (promosError) throw promosError;
 
-      // Optimized promotion mapping using Map for O(1) lookup
+      // Map promotions to rooms (get best promo per room based on priority)
       const promosByRoom = new Map<string, RoomPromotion>();
       promotions?.forEach((promo) => {
         if (!promosByRoom.has(promo.room_id)) {
@@ -154,7 +140,7 @@ export const useRooms = () => {
         }
       });
       
-      // Calculate current price for each room - optimized processing
+      // Calculate current price for each room
       return (rooms as Room[]).map(room => {
         const activePromo = promosByRoom.get(room.id) || null;
         return {
@@ -164,9 +150,5 @@ export const useRooms = () => {
         };
       });
     },
-    // Optimized caching
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
-    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-    retry: 1,
   });
 };

@@ -7,7 +7,7 @@ export class DatabaseService {
   static async fetchWithCache<T>(
     table: string,
     select: string = "*",
-    filters?: Record<string, any>,
+    filters?: Record<string, unknown>,
     orderBy?: { column: string; ascending?: boolean }
   ): Promise<T[]> {
     let query = supabase.from(table).select(select);
@@ -34,7 +34,7 @@ export class DatabaseService {
     queries: Array<{
       table: string;
       select: string;
-      filters?: Record<string, any>;
+      filters?: Record<string, unknown>;
       orderBy?: { column: string; ascending?: boolean };
     }>
   ): Promise<T[][]> {

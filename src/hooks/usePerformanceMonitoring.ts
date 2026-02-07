@@ -36,7 +36,7 @@ export const usePerformanceMonitor = (componentName: string) => {
     }
 
     renderStartTime.current = Date.now();
-  });
+  }, [componentName]);
 
   return metrics;
 };

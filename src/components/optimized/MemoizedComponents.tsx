@@ -1,4 +1,5 @@
 import React, { memo, useMemo, useCallback } from 'react';
+import { createMemoizedComponent } from '@/utils/memoization';
 import { Button } from '@/components/ui/button';
 
 // Example of optimized component with memoization
@@ -35,13 +36,7 @@ export const OptimizedButton = memo(
 
 OptimizedButton.displayName = 'OptimizedButton';
 
-// Generic memoized component pattern
-export const createMemoizedComponent = <P extends object>(
-  Component: React.ComponentType<P>,
-  areEqual?: (prevProps: P, nextProps: P) => boolean
-) => {
-  return memo(Component, areEqual);
-};
+
 
 // Optimized list component
 interface OptimizedListItemProps<T> {
@@ -56,8 +51,8 @@ export const OptimizedListItem = memo(<T,>({
   renderItem,
   index,
   getItemKey = (item) => 
-    (item as any).id || 
-    (item as any).key || 
+    (item as { id?: string | number }).id || 
+    (item as { key?: string | number }).key || 
     index
 }: OptimizedListItemProps<T>) => {
   // Memoize rendered item
