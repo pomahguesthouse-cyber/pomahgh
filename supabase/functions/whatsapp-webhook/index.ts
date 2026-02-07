@@ -384,10 +384,224 @@ serve(async (req) => {
       });
     }
 
-    // Check if phone is registered as manager - route to admin-chatbot
+    // Check if phone is registered as manager
     const isManager = managerNumbers.some(m => m.phone === phone);
+    const managerInfo = isManager ? managerNumbers.find(m => m.phone === phone) : null;
+    
+    // PRIORITY: Check for price approval responses first (before manager mode)
+    const approvalPattern = /^(APPROVE|REJECT)\s+([a-f0-9-]+)(?:\s+(.+))?/i;
+    const approvalMatch = normalizedMessage.match(approvalPattern);
+    
+    if (approvalMatch && isManager) {
+      console.log(`✅ PRICE APPROVAL RESPONSE detected from manager ${phone}`);
+      
+      const action = approvalMatch[1].toUpperCase();
+      const roomId = approvalMatch[2];
+      const reason = approvalMatch[3] || (action === 'REJECT' ? 'Rejected via WhatsApp' : null);
+      
+      try {
+        // Find pending approval for this room
+        const { data: approval } = await supabase
+          .from('price_approvals')
+          .select('*')
+          .eq('room_id', roomId)
+          .eq('status', 'pending')
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (!approval) {
+          console.log(`⚠️ No pending approval found for room ${roomId}`);
+          
+          // Send error message back to manager
+          const errorMessage = `❌ *Approval Not Found*
+
+Tidak ada permintaan persetujuan harga yang tertunda untuk kamar ini.
+
+Room ID: ${roomId}
+
+Pastikan ID kamar benar atau persetujuan sudah kadaluarsa (30 menit).`;
+          
+          await fetch('https://api.fonnte.com/send', {
+            method: 'POST',
+            headers: {
+              'Authorization': FONNTE_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              target: phone,
+              message: errorMessage,
+            }),
+          });
+          
+          return new Response(JSON.stringify({ 
+            status: "approval_not_found",
+            room_id: roomId 
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        
+        // Process approval or rejection
+        if (action === 'APPROVE') {
+          // Approve the price change
+          await supabase
+            .from('rooms')
+            .update({ base_price: approval.new_price })
+            .eq('id', roomId);
+          
+          await supabase
+            .from('price_approvals')
+            .update({
+              status: 'approved',
+              approved_by: managerInfo?.id || null,
+              approved_at: new Date().toISOString()
+            })
+            .eq('id', approval.id);
+          
+          // Log the adjustment
+          await supabase
+            .from('pricing_adjustment_logs')
+            .insert({
+              room_id: roomId,
+              previous_price: approval.old_price,
+              new_price: approval.new_price,
+              adjustment_reason: `WhatsApp approved by ${managerInfo?.name || 'Manager'}`,
+              adjustment_type: 'manual_approved'
+            });
+          
+          // Send confirmation
+          const confirmMessage = `✅ *PRICE CHANGE APPROVED*
+
+🛏️ Room: ${approval.room_id}
+💰 Change: ${approval.price_change_percentage.toFixed(1)}%
+💵 New Price: Rp ${approval.new_price.toLocaleString('id-ID')}
+
+✓ Price updated successfully
+⏰ ${new Date().toLocaleString('id-ID')}
+
+_Approved by: ${managerInfo?.name || 'Manager'}_`;
+          
+          await fetch('https://api.fonnte.com/send', {
+            method: 'POST',
+            headers: {
+              'Authorization': FONNTE_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              target: phone,
+              message: confirmMessage,
+            }),
+          });
+          
+          console.log(`✅ Price change approved for room ${roomId} by ${managerInfo?.name}`);
+          
+          return new Response(JSON.stringify({ 
+            status: "price_approved",
+            room_id: roomId,
+            new_price: approval.new_price,
+            approved_by: managerInfo?.name 
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+          
+        } else if (action === 'REJECT') {
+          // Reject the price change
+          await supabase
+            .from('price_approvals')
+            .update({
+              status: 'rejected',
+              approved_by: managerInfo?.id || null,
+              approved_at: new Date().toISOString(),
+              rejection_reason: reason
+            })
+            .eq('id', approval.id);
+          
+          // Log the rejection
+          await supabase
+            .from('pricing_adjustment_logs')
+            .insert({
+              room_id: roomId,
+              previous_price: approval.old_price,
+              new_price: approval.new_price,
+              adjustment_reason: `WhatsApp rejected: ${reason}`,
+              adjustment_type: 'manual_rejected'
+            });
+          
+          // Send confirmation
+          const rejectMessage = `❌ *PRICE CHANGE REJECTED*
+
+🛏️ Room: ${approval.room_id}
+💰 Proposed: Rp ${approval.new_price.toLocaleString('id-ID')}
+💵 Current: Rp ${approval.old_price.toLocaleString('id-ID')}
+📝 Reason: ${reason}
+
+✓ Rejection recorded
+⏰ ${new Date().toLocaleString('id-ID')}
+
+_Rejected by: ${managerInfo?.name || 'Manager'}_`;
+          
+          await fetch('https://api.fonnte.com/send', {
+            method: 'POST',
+            headers: {
+              'Authorization': FONNTE_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              target: phone,
+              message: rejectMessage,
+            }),
+          });
+          
+          console.log(`❌ Price change rejected for room ${roomId} by ${managerInfo?.name}`);
+          
+          return new Response(JSON.stringify({ 
+            status: "price_rejected",
+            room_id: roomId,
+            reason: reason,
+            rejected_by: managerInfo?.name 
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        
+      } catch (error) {
+        console.error('❌ Error processing price approval:', error);
+        
+        // Send error message
+        const errorMsg = `❌ *Error Processing Approval*
+
+Terjadi kesalahan saat memproses persetujuan harga.
+
+Error: ${error instanceof Error ? error.message : 'Unknown error'}
+
+Silakan coba lagi atau hubungi technical support.`;
+        
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': FONNTE_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            target: phone,
+            message: errorMsg,
+          }),
+        });
+        
+        return new Response(JSON.stringify({ 
+          status: "error", 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+    
+    // Continue with manager mode routing if not an approval response
     if (isManager) {
-      const managerInfo = managerNumbers.find(m => m.phone === phone);
       console.log(`📱 MANAGER MODE - routing to admin-chatbot for ${phone} (${managerInfo?.name})`);
       
       // Ensure conversation exists

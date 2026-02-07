@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
-import { TrendingUp, TrendingDown, Minus, Play, RefreshCw, Settings2, History, Bell, BellRing, CheckCheck, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Play, RefreshCw, Settings2, History, Bell, BellRing, CheckCheck, AlertTriangle, Zap, Shield, Percent } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { formatRupiahID } from "@/utils/indonesianFormat";
@@ -47,6 +47,19 @@ export const AnalysisDashboardTab = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [editingRoom, setEditingRoom] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ min: string; max: string }>({ min: "", max: "" });
+  
+  // Aggressive pricing settings
+  const [aggressiveSettings, setAggressiveSettings] = useState({
+    enabled: false,
+    occupancy30Threshold: 30,
+    occupancy70Threshold: 70,
+    occupancy85Threshold: 85,
+    occupancy95Threshold: 95,
+    autoApprovalThreshold: 10,
+    lastMinuteEnabled: false,
+    lastMinuteHours: 24,
+  });
+  const [showAggressiveSettings, setShowAggressiveSettings] = useState(false);
 
   const handleRunAutoPricing = async () => {
     setIsRunning(true);
@@ -112,6 +125,53 @@ export const AnalysisDashboardTab = () => {
     }
   };
 
+  const handleToggleAggressivePricing = async () => {
+    const newEnabled = !aggressiveSettings.enabled;
+    setAggressiveSettings(prev => ({ ...prev, enabled: newEnabled }));
+    
+    toast({ 
+      title: newEnabled ? "Aggressive Pricing Diaktifkan" : "Aggressive Pricing Dinonaktifkan",
+      description: newEnabled 
+        ? "Sistem akan secara otomatis menyesuaikan harga berdasarkan occupancy real-time"
+        : "Mode normal aktif - hanya perubahan competitor-based"
+    });
+  };
+
+  const handleRunPricingProcessor = async () => {
+    setIsRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('pricing-processor', {
+        body: { 
+          aggressive_mode: aggressiveSettings.enabled,
+          occupancy_thresholds: {
+            low: aggressiveSettings.occupancy30Threshold,
+            medium: aggressiveSettings.occupancy70Threshold,
+            high: aggressiveSettings.occupancy85Threshold,
+            critical: aggressiveSettings.occupancy95Threshold,
+          }
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Pricing Processor Selesai",
+        description: `${data.result.events_processed} events diproses, ${data.result.prices_updated} harga diupdate`
+      });
+      
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ['pricing-adjustment-logs'] });
+    } catch (error: unknown) {
+      toast({
+        title: "Gagal menjalankan pricing processor",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
   const chartData = analysis.map(a => ({
     name: a.room_name,
     'Harga Kita': a.our_price,
@@ -174,6 +234,197 @@ export const AnalysisDashboardTab = () => {
           </Button>
         </div>
       </div>
+
+      {/* Aggressive Pricing Controls */}
+      <Card className={aggressiveSettings.enabled ? "border-orange-300 bg-orange-50/30" : "border-border"}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Zap className={`h-5 w-5 ${aggressiveSettings.enabled ? 'text-orange-500' : 'text-muted-foreground'}`} />
+              Aggressive Dynamic Pricing
+              {aggressiveSettings.enabled && (
+                <Badge variant="default" className="bg-orange-500">Aktif</Badge>
+              )}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={aggressiveSettings.enabled}
+                onCheckedChange={handleToggleAggressivePricing}
+              />
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowAggressiveSettings(!showAggressiveSettings)}
+              >
+                <Settings2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <CardDescription>
+            {aggressiveSettings.enabled 
+              ? "Sistem akan menyesuaikan harga real-time berdasarkan occupancy, demand, dan competitor"
+              : "Aktifkan untuk pricing otomatis berbasis occupancy dan demand"
+            }
+          </CardDescription>
+        </CardHeader>
+        
+        {showAggressiveSettings && (
+          <CardContent className="space-y-6">
+            {/* Occupancy Thresholds */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <Percent className="h-4 w-4" />
+                Occupancy Thresholds & Multipliers
+              </h4>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Low Demand (≤30%)</label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={aggressiveSettings.occupancy30Threshold}
+                      onChange={(e) => setAggressiveSettings(prev => ({ 
+                        ...prev, 
+                        occupancy30Threshold: parseInt(e.target.value) || 30 
+                      }))}
+                      className="w-20"
+                    />
+                    <span className="text-sm font-medium">× 0.85</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Diskon 15%</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Medium (≥70%)</label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={aggressiveSettings.occupancy70Threshold}
+                      onChange={(e) => setAggressiveSettings(prev => ({ 
+                        ...prev, 
+                        occupancy70Threshold: parseInt(e.target.value) || 70 
+                      }))}
+                      className="w-20"
+                    />
+                    <span className="text-sm font-medium">× 1.15</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Premium 15%</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">High (≥85%)</label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={aggressiveSettings.occupancy85Threshold}
+                      onChange={(e) => setAggressiveSettings(prev => ({ 
+                        ...prev, 
+                        occupancy85Threshold: parseInt(e.target.value) || 85 
+                      }))}
+                      className="w-20"
+                    />
+                    <span className="text-sm font-medium">× 1.30</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Premium 30%</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Critical (≥95%)</label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={aggressiveSettings.occupancy95Threshold}
+                      onChange={(e) => setAggressiveSettings(prev => ({ 
+                        ...prev, 
+                        occupancy95Threshold: parseInt(e.target.value) || 95 
+                      }))}
+                      className="w-20"
+                    />
+                    <span className="text-sm font-medium">× 1.50</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Premium 50%</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Auto-Approval Settings */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Approval Settings
+              </h4>
+              
+              <div className="flex items-center gap-4">
+                <div className="space-y-2 flex-1">
+                  <label className="text-xs text-muted-foreground">Auto-Approval Threshold</label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={aggressiveSettings.autoApprovalThreshold}
+                      onChange={(e) => setAggressiveSettings(prev => ({ 
+                        ...prev, 
+                        autoApprovalThreshold: parseInt(e.target.value) || 10 
+                      }))}
+                      className="w-24"
+                    />
+                    <span className="text-sm">%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Perubahan di bawah threshold ini akan di-approve otomatis
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Last Minute Pricing */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium">Last-Minute Pricing</h4>
+                <Switch
+                  checked={aggressiveSettings.lastMinuteEnabled}
+                  onCheckedChange={(checked) => setAggressiveSettings(prev => ({ 
+                    ...prev, 
+                    lastMinuteEnabled: checked 
+                  }))}
+                />
+              </div>
+              
+              {aggressiveSettings.lastMinuteEnabled && (
+                <div className="flex items-center gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Window (hours before check-in)</label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={aggressiveSettings.lastMinuteHours}
+                        onChange={(e) => setAggressiveSettings(prev => ({ 
+                          ...prev, 
+                          lastMinuteHours: parseInt(e.target.value) || 24 
+                        }))}
+                        className="w-24"
+                      />
+                      <span className="text-sm">jam</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-4 border-t">
+              <Button 
+                onClick={handleRunPricingProcessor}
+                disabled={isRunning}
+                className="flex-1"
+              >
+                <Play className="h-4 w-4 mr-2" />
+                {isRunning ? "Processing..." : "Run Pricing Processor Now"}
+              </Button>
+            </div>
+          </CardContent>
+        )}
+      </Card>
 
       {/* Price Change Notifications */}
       {notifications.length > 0 && (
