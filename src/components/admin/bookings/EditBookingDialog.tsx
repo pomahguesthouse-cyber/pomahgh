@@ -37,6 +37,7 @@ interface EditBookingDialogProps {
   booking: Booking | null;
   rooms: Room[] | undefined;
   roomTypeAvailability: RoomTypeAvailability[] | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSave: (data: any) => void;
   onCheckConflict?: (params: {
     roomId: string;

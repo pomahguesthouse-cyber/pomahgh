@@ -64,10 +64,10 @@ export default function AdminSettings() {
       setLogoFile(null);
       setFaviconFile(null);
       setInvoiceLogoFile(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Upload Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     } finally {

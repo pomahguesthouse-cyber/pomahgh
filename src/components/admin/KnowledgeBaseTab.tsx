@@ -107,10 +107,10 @@ const KnowledgeBaseTab = () => {
     }
   };
 
-  const handleEdit = (entry: any) => {
+  const handleEdit = (entry: { id: string; title: string; category: string | null }) => {
     setEditingId(entry.id);
     setEditTitle(entry.title);
-    setEditCategory(entry.category);
+    setEditCategory(entry.category ?? '');
   };
 
   const handleSaveEdit = async () => {

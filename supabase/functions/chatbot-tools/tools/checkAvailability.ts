@@ -74,7 +74,7 @@ export async function handleCheckAvailability(
     });
 
     // Check booking_rooms (multi-room bookings)
-    (bookingRoomsData || []).forEach((br: any) => {
+    (bookingRoomsData || []).forEach((br: { room_id: string; room_number: string | null; booking: { check_in: string; check_out: string } | null }) => {
       if (br.room_id === room.id && br.room_number) {
         const booking = br.booking;
         if (booking && 

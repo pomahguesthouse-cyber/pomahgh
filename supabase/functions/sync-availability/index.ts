@@ -98,7 +98,7 @@ serve(async (req) => {
 
     // 4. Process queue entries (invoke push function) - non-blocking
     if (queueData) {
-      const pushPromises = queueData.map(async (queueEntry: any) => {
+      const pushPromises = queueData.map(async (queueEntry: { id: string }) => {
         try {
           const { error } = await supabase.functions.invoke('push-availability', {
             body: { queue_id: queueEntry.id }

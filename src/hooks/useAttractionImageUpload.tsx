@@ -40,8 +40,8 @@ export const useAttractionImageUpload = () => {
       const url = await uploadImage(file);
       toast({ title: "Sukses", description: "Gambar berhasil diupload" });
       return url;
-    } catch (error: any) {
-      toast({ title: "Upload gagal", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Upload gagal", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
       throw error;
     } finally {
       setUploading(false);
@@ -58,8 +58,8 @@ export const useAttractionImageUpload = () => {
       }
       toast({ title: "Sukses", description: `${urls.length} gambar berhasil diupload` });
       return urls;
-    } catch (error: any) {
-      toast({ title: "Upload gagal", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Upload gagal", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
       throw error;
     } finally {
       setUploadingGallery(false);

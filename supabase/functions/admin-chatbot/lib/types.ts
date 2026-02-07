@@ -66,8 +66,8 @@ export interface ToolDefinition {
 
 export interface ToolExecution {
   tool_name: string;
-  arguments: Record<string, any>;
-  result?: any;
+  arguments: Record<string, unknown>;
+  result?: unknown;
   error?: string;
   success: boolean;
   executed_at: string;

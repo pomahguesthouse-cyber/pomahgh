@@ -58,7 +58,7 @@ export const PanoramaManager = ({ roomId, roomName, onEditHotspots }: PanoramaMa
       if (url) {
         setFormData({ ...formData, image_url: url });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Upload error:", error);
     } finally {
       setUploading(false);

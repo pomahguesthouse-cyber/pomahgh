@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, memo, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { useHeroSlides } from "@/hooks/useHeroSlides";
+import { useHeroSlides, type HeroSlide as HeroSlideType } from "@/hooks/useHeroSlides";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { motion, AnimatePresence } from "framer-motion";
@@ -54,7 +54,17 @@ const alignMap = {
 } as const;
 
 // Memoized slide component
-const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, checkOut, setCheckIn, setCheckOut }: any) => {
+interface HeroSlideProps {
+  slide: HeroSlideType | typeof DEFAULT_SLIDE;
+  showDatePickers: boolean;
+  setShowDatePickers: (v: boolean) => void;
+  checkIn: Date | undefined;
+  checkOut: Date | undefined;
+  setCheckIn: (d: Date | undefined) => void;
+  setCheckOut: (d: Date | undefined) => void;
+}
+
+const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, checkOut, setCheckIn, setCheckOut }: HeroSlideProps) => {
   const titleAnim = getTextAnimation(slide.title_animation, slide.title_animation_loop || false);
   const subtitleAnim = getTextAnimation(slide.subtitle_animation, slide.subtitle_animation_loop || false);
   const align = alignMap[(slide.text_align as keyof typeof alignMap) || "center"];
@@ -167,7 +177,14 @@ const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, c
 HeroSlide.displayName = "HeroSlide";
 
 // Separate date picker section
-const DatePickerSection = memo(({ checkIn, checkOut, setCheckIn, setCheckOut }: any) => (
+interface DatePickerSectionProps {
+  checkIn: Date | undefined;
+  checkOut: Date | undefined;
+  setCheckIn: (d: Date | undefined) => void;
+  setCheckOut: (d: Date | undefined) => void;
+}
+
+const DatePickerSection = memo(({ checkIn, checkOut, setCheckIn, setCheckOut }: DatePickerSectionProps) => (
   <motion.div
     initial={{ opacity: 0, height: 0 }}
     animate={{ opacity: 1, height: "auto" }}
@@ -245,7 +262,13 @@ const DEFAULT_SLIDE = {
   text_color: "#FFFFFF",
   text_align: "center",
   title_animation: "fade-up",
+  title_animation_loop: false as boolean | null,
   subtitle_animation: "fade-up",
+  subtitle_animation_loop: false as boolean | null,
+  subtitle_font_family: null as string | null,
+  subtitle_font_size: null as string | null,
+  subtitle_font_weight: null as string | null,
+  subtitle_text_color: null as string | null,
   show_overlay: true,
   overlay_gradient_from: "#0F766E",
   overlay_gradient_to: "#000000",
@@ -287,7 +310,7 @@ export default function OptimizedHero() {
     >
       <Carousel opts={carouselRootOpts} plugins={autoplayRef.current ? [autoplayRef.current] : undefined} className="w-full h-full">
         <CarouselContent className="h-screen">
-          {heroSlides.map((slide: any) => (
+          {heroSlides.map((slide) => (
             <HeroSlide
               key={slide.id}
               slide={slide}

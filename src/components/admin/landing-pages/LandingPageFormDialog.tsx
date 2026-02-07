@@ -248,8 +248,8 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
       toast.success(editingPage ? "Halaman diperbarui" : "Halaman dibuat");
       onOpenChange(false);
     },
-    onError: (error: any) => {
-      if (error.code === "23505") {
+    onError: (error: unknown) => {
+      if (error instanceof Object && 'code' in error && (error as { code: string }).code === "23505") {
         toast.error("Slug sudah digunakan");
       } else {
         toast.error("Gagal menyimpan halaman");

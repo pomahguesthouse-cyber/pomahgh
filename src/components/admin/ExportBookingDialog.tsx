@@ -12,11 +12,17 @@ import { cn } from '@/lib/utils';
 import { useBookingExport, ExportFilter } from '@/hooks/useBookingExport';
 import { toast } from 'sonner';
 
+interface ExportBookingRoom {
+  id: string;
+  name: string;
+}
+
 interface ExportBookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   bookings: any[];
-  rooms: any[];
+  rooms: ExportBookingRoom[];
 }
 
 export const ExportBookingDialog = ({
