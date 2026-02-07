@@ -16,7 +16,7 @@ export interface HotelSettings {
   check_in_time: string;
   check_out_time: string;
   whatsapp_number: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 export interface Room {

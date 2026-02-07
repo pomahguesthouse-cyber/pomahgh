@@ -1,8 +1,49 @@
 // ============= BOOKING STATS TOOLS =============
 
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getWibDate, formatDateISO } from "../lib/dateHelpers.ts";
 
-export async function getBookingStats(supabase: any, period: string) {
+interface BookingRow {
+  id: string;
+  status: string;
+  total_price: number;
+  created_at: string;
+}
+
+interface BookingWithRoom {
+  id: string;
+  booking_code: string;
+  guest_name: string;
+  guest_phone: string | null;
+  check_in: string;
+  check_out: string;
+  status: string;
+  total_price: number;
+  created_at: string;
+  rooms: { name: string } | null;
+}
+
+interface BookingDetail {
+  booking_code: string;
+  status: string;
+  guest_name: string;
+  guest_phone: string | null;
+  guest_email: string;
+  num_guests: number;
+  allocated_room_number: string | null;
+  check_in: string;
+  check_out: string;
+  total_nights: number;
+  total_price: number;
+  payment_status: string | null;
+  payment_amount: number | null;
+  booking_source: string | null;
+  special_requests: string | null;
+  created_at: string;
+  rooms: { name: string; price_per_night: number; max_guests: number } | null;
+}
+
+export async function getBookingStats(supabase: SupabaseClient, period: string) {
   const wibTime = getWibDate();
   const today = formatDateISO(wibTime);
 
@@ -21,19 +62,20 @@ export async function getBookingStats(supabase: any, period: string) {
   const { data: bookings, error } = await query;
   if (error) throw error;
 
+  const rows = (bookings || []) as BookingRow[];
   const stats = {
-    total_bookings: bookings?.length || 0,
-    confirmed: bookings?.filter((b: any) => b.status === 'confirmed').length || 0,
-    pending: bookings?.filter((b: any) => b.status === 'pending').length || 0,
-    cancelled: bookings?.filter((b: any) => b.status === 'cancelled').length || 0,
-    total_revenue: bookings?.filter((b: any) => b.status === 'confirmed')
-      .reduce((sum: number, b: any) => sum + (b.total_price || 0), 0) || 0
+    total_bookings: rows.length,
+    confirmed: rows.filter((b) => b.status === 'confirmed').length,
+    pending: rows.filter((b) => b.status === 'pending').length,
+    cancelled: rows.filter((b) => b.status === 'cancelled').length,
+    total_revenue: rows.filter((b) => b.status === 'confirmed')
+      .reduce((sum, b) => sum + (b.total_price || 0), 0)
   };
 
   return { period, ...stats };
 }
 
-export async function getRecentBookings(supabase: any, limit: number = 5, status?: string) {
+export async function getRecentBookings(supabase: SupabaseClient, limit: number = 5, status?: string) {
   const actualLimit = Math.min(Math.max(limit || 5, 1), 20);
   
   let queryBuilder = supabase
@@ -49,9 +91,10 @@ export async function getRecentBookings(supabase: any, limit: number = 5, status
   const { data, error } = await queryBuilder;
   if (error) throw error;
 
+  const rows = (data || []) as BookingWithRoom[];
   return {
-    count: data.length,
-    bookings: data.map((b: any) => ({
+    count: rows.length,
+    bookings: rows.map((b) => ({
       booking_code: b.booking_code,
       guest_name: b.guest_name,
       guest_phone: b.guest_phone,
@@ -65,7 +108,7 @@ export async function getRecentBookings(supabase: any, limit: number = 5, status
   };
 }
 
-export async function searchBookings(supabase: any, query?: string, dateFrom?: string, dateTo?: string, limit: number = 10) {
+export async function searchBookings(supabase: SupabaseClient, query?: string, dateFrom?: string, dateTo?: string, limit: number = 10) {
   const actualLimit = Math.min(Math.max(limit || 10, 1), 50);
   
   let queryBuilder = supabase
@@ -87,10 +130,11 @@ export async function searchBookings(supabase: any, query?: string, dateFrom?: s
   const { data, error } = await queryBuilder;
   if (error) throw error;
 
+  const rows = (data || []) as BookingWithRoom[];
   return {
     query: query || null,
-    count: data?.length || 0,
-    bookings: data?.map((b: any) => ({
+    count: rows.length,
+    bookings: rows.map((b) => ({
       booking_code: b.booking_code,
       guest_name: b.guest_name,
       guest_phone: b.guest_phone,
@@ -99,11 +143,11 @@ export async function searchBookings(supabase: any, query?: string, dateFrom?: s
       check_out: b.check_out,
       status: b.status,
       total_price: b.total_price
-    })) || []
+    }))
   };
 }
 
-export async function getBookingDetail(supabase: any, bookingCode: string) {
+export async function getBookingDetail(supabase: SupabaseClient, bookingCode: string) {
   const { data, error } = await supabase
     .from('bookings')
     .select('*, rooms(name, price_per_night, max_guests)')
@@ -114,33 +158,34 @@ export async function getBookingDetail(supabase: any, bookingCode: string) {
     throw new Error(`Booking ${bookingCode} tidak ditemukan`);
   }
 
+  const b = data as BookingDetail;
   return {
-    booking_code: data.booking_code,
-    status: data.status,
+    booking_code: b.booking_code,
+    status: b.status,
     guest: {
-      name: data.guest_name,
-      phone: data.guest_phone,
-      email: data.guest_email,
-      count: data.num_guests
+      name: b.guest_name,
+      phone: b.guest_phone,
+      email: b.guest_email,
+      count: b.num_guests
     },
     room: {
-      name: data.rooms?.name,
-      number: data.allocated_room_number,
-      price_per_night: data.rooms?.price_per_night,
-      max_guests: data.rooms?.max_guests
+      name: b.rooms?.name,
+      number: b.allocated_room_number,
+      price_per_night: b.rooms?.price_per_night,
+      max_guests: b.rooms?.max_guests
     },
     dates: {
-      check_in: data.check_in,
-      check_out: data.check_out,
-      nights: data.total_nights
+      check_in: b.check_in,
+      check_out: b.check_out,
+      nights: b.total_nights
     },
     payment: {
-      total_price: data.total_price,
-      payment_status: data.payment_status,
-      payment_amount: data.payment_amount
+      total_price: b.total_price,
+      payment_status: b.payment_status,
+      payment_amount: b.payment_amount
     },
-    booking_source: data.booking_source,
-    special_requests: data.special_requests,
-    created_at: data.created_at
+    booking_source: b.booking_source,
+    special_requests: b.special_requests,
+    created_at: b.created_at
   };
 }
