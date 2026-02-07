@@ -49,7 +49,7 @@ const AdminSeoSettings = () => {
     rankings: rankingsRef,
   };
 
-  const handleUpdate = (field: string, value: any) => {
+  const handleUpdate = (field: string, value: string | boolean | number | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 

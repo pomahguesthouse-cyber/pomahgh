@@ -55,7 +55,13 @@ export const useBookingValidation = () => {
     }
 
     // Filter booking_rooms for overlapping dates and non-cancelled/no_show status
-    const overlappingBookingRooms = (bookingRoomsData || []).filter((br: any) => {
+    interface BookingRoomRow {
+      room_number: string;
+      booking_id: string;
+      bookings: { id: string; check_in: string; check_out: string; status: string; guest_name: string; check_in_time?: string | null; check_out_time?: string | null } | null;
+    }
+
+    const overlappingBookingRooms = (bookingRoomsData as BookingRoomRow[] || []).filter((br) => {
       const booking = br.bookings;
       if (!booking || booking.status === "cancelled" || booking.status === "no_show") return false;
       return booking.check_in <= checkOutStr && booking.check_out >= checkInStr;
@@ -64,9 +70,15 @@ export const useBookingValidation = () => {
     // Combine all bookings
     const allBookings = [
       ...(directBookings || []),
-      ...overlappingBookingRooms.map((br: any) => ({
-        ...br.bookings,
-        allocated_room_number: br.room_number
+      ...overlappingBookingRooms.map((br) => ({
+        id: br.bookings?.id ?? '',
+        check_in: br.bookings?.check_in ?? '',
+        check_out: br.bookings?.check_out ?? '',
+        check_in_time: br.bookings?.check_in_time ?? null,
+        check_out_time: br.bookings?.check_out_time ?? null,
+        status: br.bookings?.status ?? '',
+        guest_name: br.bookings?.guest_name ?? '',
+        allocated_room_number: br.room_number,
       }))
     ];
 
@@ -190,7 +202,7 @@ export const useBookingValidation = () => {
     if (directError) {
       console.error("Error checking room type availability:", directError);
     } else {
-      (directBookings || []).forEach((b: any) => {
+      (directBookings || []).forEach((b: { id: string; allocated_room_number: string | null }) => {
         if (excludeBookingId && b.id === excludeBookingId) return;
         if (b.allocated_room_number) {
           unavailableRoomNumbers.add(b.allocated_room_number);
@@ -212,7 +224,7 @@ export const useBookingValidation = () => {
       console.error("Error checking booking_rooms availability:", bookingRoomsError);
     } else {
       // Filter booking_rooms for overlapping dates
-      (bookingRoomsData || []).forEach((br: any) => {
+      (bookingRoomsData as Array<{ room_number: string; booking_id: string; bookings: { id: string; check_in: string; check_out: string; status: string } | null }> || []).forEach((br) => {
         const booking = br.bookings;
         if (!booking || booking.status === "cancelled" || booking.status === "no_show") return;
         if (excludeBookingId && booking.id === excludeBookingId) return;

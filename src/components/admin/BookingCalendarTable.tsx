@@ -22,8 +22,35 @@ import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
+// Use index signature to be compatible with Booking type
+interface CalendarBookingBase {
+  id: string;
+  booking_code: string;
+  guest_name: string;
+  check_in: string;
+  check_out: string;
+  status: string;
+  room_id: string;
+  total_price: number;
+  num_guests: number;
+  guest_email: string;
+  total_nights: number;
+  // Optional fields (compatible with Booking type which uses `?`)
+  allocated_room_number?: string | null;
+  guest_phone?: string | null;
+  special_requests?: string | null;
+  remark?: string | null;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  payment_status?: string | null;
+  payment_amount?: number | null;
+  rooms?: { name: string; [key: string]: unknown } | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
+}
+
 interface DraggableBookingProps {
-  booking: any;
+  booking: CalendarBookingBase;
   children: React.ReactNode;
 }
 
@@ -77,10 +104,10 @@ type ViewMode = 'month' | 'week' | '2months';
 export const BookingCalendarTable = () => {
   const [currentDate, setCurrentDate] = useState(getWIBToday());
   const [viewMode, setViewMode] = useState<ViewMode>('month');
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [selectedBooking, setSelectedBooking] = useState<CalendarBookingBase | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editedBooking, setEditedBooking] = useState<any>(null);
+  const [editedBooking, setEditedBooking] = useState<CalendarBookingBase | null>(null);
   
   const { bookings, updateBooking, isUpdating } = useAdminBookings();
   const { rooms } = useAdminRooms();
@@ -207,7 +234,7 @@ export const BookingCalendarTable = () => {
     }
   };
 
-  const handleBookingClick = (booking: any) => {
+  const handleBookingClick = (booking: CalendarBookingBase) => {
     setSelectedBooking(booking);
     setEditedBooking(booking);
     setIsEditMode(false);
@@ -217,11 +244,13 @@ export const BookingCalendarTable = () => {
   const handleEditToggle = () => {
     setIsEditMode(!isEditMode);
     if (!isEditMode) {
-      setEditedBooking({ ...selectedBooking });
+      setEditedBooking(selectedBooking ? { ...selectedBooking } : null);
     }
   };
 
   const handleSaveChanges = async () => {
+    if (!editedBooking) return;
+    
     // Validate payment amount
     if (editedBooking.payment_status === 'partial') {
       if (!editedBooking.payment_amount || editedBooking.payment_amount <= 0) {

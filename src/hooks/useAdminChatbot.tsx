@@ -89,8 +89,8 @@ export const useAdminChatbot = () => {
         });
       }
 
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name !== 'AbortError') {
         console.error('Chat error:', error);
         toast.error('Gagal mengirim pesan');
       }

@@ -26,7 +26,9 @@ interface RoomWithAutoPricing {
   auto_pricing_enabled?: boolean;
   min_auto_price?: number | null;
   max_auto_price?: number | null;
-  [key: string]: any;
+  price_per_night?: number;
+  allotment?: number;
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 export const AnalysisDashboardTab = () => {
@@ -63,10 +65,10 @@ export const AnalysisDashboardTab = () => {
       refetch();
       queryClient.invalidateQueries({ queryKey: ['pricing-adjustment-logs'] });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Gagal menjalankan auto-pricing",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive"
       });
     } finally {
@@ -85,8 +87,8 @@ export const AnalysisDashboardTab = () => {
       
       toast({ title: enabled ? "Auto-pricing diaktifkan" : "Auto-pricing dinonaktifkan" });
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-    } catch (error: any) {
-      toast({ title: "Gagal update", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Gagal update", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
     }
   };
 
@@ -105,8 +107,8 @@ export const AnalysisDashboardTab = () => {
       toast({ title: "Batas harga berhasil disimpan" });
       setEditingRoom(null);
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
-    } catch (error: any) {
-      toast({ title: "Gagal menyimpan", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Gagal menyimpan", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
     }
   };
 

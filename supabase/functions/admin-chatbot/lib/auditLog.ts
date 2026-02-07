@@ -1,5 +1,6 @@
 // ============= AUDIT LOGGING =============
 
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { ToolExecution } from "./types.ts";
 
 interface AuditEntry {
@@ -19,7 +20,7 @@ interface AuditEntry {
  * Non-blocking - failures don't break the chatbot
  */
 export async function logAuditEntry(
-  supabase: any,
+  supabase: SupabaseClient,
   entry: AuditEntry
 ): Promise<void> {
   try {
