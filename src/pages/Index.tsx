@@ -10,6 +10,7 @@ import { Location } from "@/components/Location";
 import { NewsEvents } from "@/components/NewsEvents";
 import { Footer } from "@/components/Footer";
 import ChatbotWidget from "@/components/ChatbotWidget";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 
 const Index = () => {
   const location = useLocation();
@@ -42,6 +43,7 @@ const Index = () => {
       </main>
       <Footer />
       <ChatbotWidget />
+      <FloatingWhatsApp />
     </div>
   );
 };
