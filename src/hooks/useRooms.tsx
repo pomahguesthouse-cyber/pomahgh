@@ -78,7 +78,12 @@ const getDayPrice = (room: Room, dayOfWeek: number): number => {
 const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null, autoPricingPrice?: number | null): number => {
   const today = new Date();
   
-  // First priority: Check room_promotions table
+  // FIRST priority: Autopricing overrides everything when enabled
+  if (room.use_autopricing && autoPricingPrice) {
+    return autoPricingPrice;
+  }
+  
+  // Second priority: Check room_promotions table
   if (activePromo) {
     if (activePromo.promo_price) {
       return activePromo.promo_price;
@@ -88,7 +93,7 @@ const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null, autoPri
     }
   }
   
-  // Second priority: Check legacy promo fields on rooms table
+  // Third priority: Check legacy promo fields on rooms table
   if (
     room.promo_price &&
     room.promo_start_date &&
@@ -100,11 +105,6 @@ const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null, autoPri
     if (today >= promoStart && today <= promoEnd) {
       return room.promo_price;
     }
-  }
-  
-  // Third priority: Check autopricing if enabled
-  if (room.use_autopricing && autoPricingPrice) {
-    return autoPricingPrice;
   }
   
   // Fourth priority: Check day-of-week pricing

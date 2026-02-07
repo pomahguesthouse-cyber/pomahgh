@@ -61,6 +61,7 @@ export interface Room {
   friday_non_refundable?: boolean | null;
   saturday_non_refundable?: boolean | null;
   sunday_non_refundable?: boolean | null;
+  use_autopricing?: boolean | null;
   active_promotion?: RoomPromotion | null;
 }
 
