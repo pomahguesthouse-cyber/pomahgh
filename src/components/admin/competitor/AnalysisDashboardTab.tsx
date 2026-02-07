@@ -140,32 +140,69 @@ export const AnalysisDashboardTab = () => {
   const handleRunPricingProcessor = async () => {
     setIsRunning(true);
     try {
-      const { data, error } = await supabase.functions.invoke('pricing-processor', {
-        body: { 
-          aggressive_mode: aggressiveSettings.enabled,
-          occupancy_thresholds: {
-            low: aggressiveSettings.occupancy30Threshold,
-            medium: aggressiveSettings.occupancy70Threshold,
-            high: aggressiveSettings.occupancy85Threshold,
-            critical: aggressiveSettings.occupancy95Threshold,
-          }
-        }
-      });
+      // Try to call pricing-processor, fallback to auto-pricing if not deployed
+      let data;
+      let usedFallback = false;
       
-      if (error) throw error;
+      try {
+        const result = await supabase.functions.invoke('pricing-processor', {
+          body: { 
+            aggressive_mode: aggressiveSettings.enabled,
+            occupancy_thresholds: {
+              low: aggressiveSettings.occupancy30Threshold,
+              medium: aggressiveSettings.occupancy70Threshold,
+              high: aggressiveSettings.occupancy85Threshold,
+              critical: aggressiveSettings.occupancy95Threshold,
+            }
+          }
+        });
+        data = result.data;
+        if (result.error) throw result.error;
+      } catch (processorError: any) {
+        // If pricing-processor not found, fallback to auto-pricing
+        if (processorError.message?.includes('Edge Function') || 
+            processorError.message?.includes('404')) {
+          console.log('Pricing processor not deployed, using auto-pricing fallback');
+          usedFallback = true;
+          
+          const fallbackResult = await supabase.functions.invoke('auto-pricing', {
+            body: { 
+              triggered_by: 'manual_aggressive_mode',
+              aggressive_mode: aggressiveSettings.enabled,
+              occupancy_thresholds: {
+                low: aggressiveSettings.occupancy30Threshold,
+                medium: aggressiveSettings.occupancy70Threshold,
+                high: aggressiveSettings.occupancy85Threshold,
+                critical: aggressiveSettings.occupancy95Threshold,
+              }
+            }
+          });
+          
+          data = fallbackResult.data;
+          if (fallbackResult.error) throw fallbackResult.error;
+        } else {
+          throw processorError;
+        }
+      }
       
       toast({
-        title: "Pricing Processor Selesai",
-        description: `${data.result.events_processed} events diproses, ${data.result.prices_updated} harga diupdate`
+        title: usedFallback ? "Auto-Pricing Selesai (Fallback)" : "Pricing Processor Selesai",
+        description: usedFallback 
+          ? `${data.rooms_adjusted || 0} kamar diupdate. Deploy pricing-processor untuk fitur lengkap.`
+          : `${data.result?.events_processed || 0} events diproses, ${data.result?.prices_updated || 0} harga diupdate`,
+        duration: 5000,
       });
       
       refetch();
       queryClient.invalidateQueries({ queryKey: ['pricing-adjustment-logs'] });
     } catch (error: unknown) {
+      console.error('Pricing processor error:', error);
+      
       toast({
         title: "Gagal menjalankan pricing processor",
         description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 6000,
       });
     } finally {
       setIsRunning(false);
