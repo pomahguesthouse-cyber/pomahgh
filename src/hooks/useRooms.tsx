@@ -153,13 +153,15 @@ export const useRooms = () => {
       if (roomsWithAutopricing.length > 0) {
         const { data: priceCacheData } = await supabase
           .from('price_cache')
-          .select('room_id, price_per_night')
+          .select('room_id, cached_price')
           .in('room_id', roomsWithAutopricing.map(r => r.id))
           .eq('date', today)
-          .gt('valid_until', new Date().toISOString());
+          .gt('expires_at', new Date().toISOString());
         
         priceCacheData?.forEach(cache => {
-          autoPricingPrices.set(cache.room_id, cache.price_per_night);
+          if (cache.room_id && cache.cached_price) {
+            autoPricingPrices.set(cache.room_id, cache.cached_price);
+          }
         });
       }
       

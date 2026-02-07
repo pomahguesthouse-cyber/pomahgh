@@ -2783,6 +2783,7 @@ export type Database = {
           tuesday_non_refundable: boolean | null
           tuesday_price: number | null
           updated_at: string
+          use_autopricing: boolean | null
           virtual_tour_url: string | null
           wednesday_non_refundable: boolean | null
           wednesday_price: number | null
@@ -2830,6 +2831,7 @@ export type Database = {
           tuesday_non_refundable?: boolean | null
           tuesday_price?: number | null
           updated_at?: string
+          use_autopricing?: boolean | null
           virtual_tour_url?: string | null
           wednesday_non_refundable?: boolean | null
           wednesday_price?: number | null
@@ -2877,6 +2879,7 @@ export type Database = {
           tuesday_non_refundable?: boolean | null
           tuesday_price?: number | null
           updated_at?: string
+          use_autopricing?: boolean | null
           virtual_tour_url?: string | null
           wednesday_non_refundable?: boolean | null
           wednesday_price?: number | null

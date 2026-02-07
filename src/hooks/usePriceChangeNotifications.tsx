@@ -18,6 +18,7 @@ export interface PriceChangeNotification {
     } | null;
   };
   our_room?: {
+    id: string;
     name: string;
   } | null;
 }
@@ -37,7 +38,7 @@ export const usePriceChangeNotifications = () => {
             room_name,
             competitor_hotel:competitor_hotels(name)
           ),
-          our_room:rooms(name)
+          our_room:rooms(id, name)
         `)
         .order("created_at", { ascending: false })
         .limit(50);
