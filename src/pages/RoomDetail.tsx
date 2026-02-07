@@ -71,7 +71,7 @@ const RoomDetail = () => {
 
   const images = room.image_urls && room.image_urls.length > 0 ? room.image_urls : [room.image_url];
 
-  const activePromo = (room as any).active_promotion;
+  const activePromo = room.active_promotion;
   const hasLegacyPromo =
     room.promo_price &&
     room.promo_start_date &&

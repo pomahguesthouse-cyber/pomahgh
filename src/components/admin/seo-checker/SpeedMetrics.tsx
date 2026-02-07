@@ -15,7 +15,7 @@ interface MetricCardProps {
 }
 
 const MetricCard = ({ name, metric, value, icon, description }: MetricCardProps) => {
-  const rating = getRating(metric as any, value);
+  const rating = getRating(metric, value);
   const formattedValue = formatMetricValue(metric, value);
 
   return (

@@ -28,7 +28,7 @@ export const NearbyFromHotel = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {locations.slice(0, 6).map((location, index) => {
-            const IconComponent = (Icons as any)[location.icon_name] || Icons.MapPin;
+            const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[location.icon_name] || Icons.MapPin;
             return (
               <motion.div
                 key={location.id}

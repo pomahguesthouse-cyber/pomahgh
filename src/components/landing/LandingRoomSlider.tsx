@@ -23,19 +23,16 @@
  
    const { data: rooms, isLoading } = useQuery<RoomData[]>({
      queryKey: ["rooms-landing-slider"],
-     queryFn: async (): Promise<RoomData[]> => {
-       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-       const query = supabase
+    queryFn: async (): Promise<RoomData[]> => {
+       const { data, error } = await supabase
          .from("rooms")
-         .select("id, name, slug, price_per_night, image_url, description, max_guests") as any;
-       
-       const { data, error } = await query
-        .eq("available", true)
-        .order("name")
+         .select("id, name, slug, price_per_night, image_url, description, max_guests")
+         .eq("available", true)
+         .order("name")
          .limit(6);
        
        if (error) throw error;
-       return (data as RoomData[]) || [];
+       return (data ?? []) as unknown as RoomData[];
      },
    });
  

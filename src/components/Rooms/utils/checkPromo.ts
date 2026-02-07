@@ -3,7 +3,7 @@ import { calculateDynamicPrice } from "./calculateDynamicPrice";
 
 export const checkPromo = (room: Room): boolean => {
   // First check if there's an active promotion from room_promotions table
-  if ((room as any).active_promotion) {
+  if (room.active_promotion) {
     return true;
   }
   
@@ -24,7 +24,7 @@ export const getDynamicDisplayPrice = (
   checkIn?: Date | null,
   checkOut?: Date | null
 ): { price: number; hasDateRange: boolean } => {
-  const activePromo = (room as any).active_promotion;
+  const activePromo = room.active_promotion;
   const result = calculateDynamicPrice(room, checkIn, checkOut, activePromo);
   return { price: result.averagePrice, hasDateRange: result.hasDateRange };
 };

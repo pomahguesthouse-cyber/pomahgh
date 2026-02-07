@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 
 export const RoomCardPrice = ({ room, hasPromo, displayPrice, isBestPrice, hasDateRange }: RoomCardPriceProps) => {
   // Get active promotion from room_promotions table if available
-  const activePromo = (room as any).active_promotion;
+  const activePromo = room.active_promotion;
 
   return (
     <div className="text-right flex-shrink-0">

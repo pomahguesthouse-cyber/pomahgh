@@ -82,8 +82,8 @@ const AdminRooms = () => {
   });
 
   const getIconComponent = (iconName: string) => {
-    const IconComponent = Icons[iconName as keyof typeof Icons] as any;
-    return IconComponent || Icons.Circle;
+    const icons = Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
+    return icons[iconName] || Icons.Circle;
   };
 
   const resetForm = () => {
@@ -154,15 +154,15 @@ const AdminRooms = () => {
       friday_price: room.friday_price?.toString() || "",
       saturday_price: room.saturday_price?.toString() || "",
       sunday_price: room.sunday_price?.toString() || "",
-      transition_effect: (room as any).transition_effect || "slide",
-      is_non_refundable: (room as any).is_non_refundable || false,
-      monday_non_refundable: (room as any).monday_non_refundable || false,
-      tuesday_non_refundable: (room as any).tuesday_non_refundable || false,
-      wednesday_non_refundable: (room as any).wednesday_non_refundable || false,
-      thursday_non_refundable: (room as any).thursday_non_refundable || false,
-      friday_non_refundable: (room as any).friday_non_refundable || false,
-      saturday_non_refundable: (room as any).saturday_non_refundable || false,
-      sunday_non_refundable: (room as any).sunday_non_refundable || false,
+      transition_effect: room.transition_effect || "slide",
+      is_non_refundable: room.is_non_refundable || false,
+      monday_non_refundable: room.monday_non_refundable || false,
+      tuesday_non_refundable: room.tuesday_non_refundable || false,
+      wednesday_non_refundable: room.wednesday_non_refundable || false,
+      thursday_non_refundable: room.thursday_non_refundable || false,
+      friday_non_refundable: room.friday_non_refundable || false,
+      saturday_non_refundable: room.saturday_non_refundable || false,
+      sunday_non_refundable: room.sunday_non_refundable || false,
     });
     setIsDialogOpen(true);
   };

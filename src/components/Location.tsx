@@ -9,8 +9,8 @@ export const Location = () => {
   const { locations, isLoading: locationsLoading } = useNearbyLocations();
 
   const getIcon = (iconName: string) => {
-    const Icon = (LucideIcons as any)[iconName] || MapPin;
-    return Icon;
+    const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
+    return icons[iconName] || MapPin;
   };
 
   const title = "Lokasi Kami";

@@ -206,7 +206,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
         check_out_time: formData.check_out_time + ":00",
         price_per_night: room.price_per_night,
         room_quantity: roomQuantity,
-        is_non_refundable: (room as any).is_non_refundable || false,
+        is_non_refundable: room.is_non_refundable || false,
         addons: selectedAddons.length > 0 ? selectedAddons : undefined,
       };
 
@@ -512,7 +512,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
           )}
 
           {/* Non-Refundable Warning */}
-          {(room as any).is_non_refundable && (
+          {room.is_non_refundable && (
             <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg dark:bg-amber-950/20 dark:border-amber-900">
               <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
                 <AlertCircle className="w-4 h-4" />

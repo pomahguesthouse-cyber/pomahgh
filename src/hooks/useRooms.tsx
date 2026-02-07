@@ -49,6 +49,14 @@ export interface Room {
   transition_effect?: string | null;
   floor_plan_url?: string | null;
   floor_plan_enabled?: boolean | null;
+  is_non_refundable?: boolean | null;
+  monday_non_refundable?: boolean | null;
+  tuesday_non_refundable?: boolean | null;
+  wednesday_non_refundable?: boolean | null;
+  thursday_non_refundable?: boolean | null;
+  friday_non_refundable?: boolean | null;
+  saturday_non_refundable?: boolean | null;
+  sunday_non_refundable?: boolean | null;
   // New promo fields from room_promotions table
   active_promotion?: RoomPromotion | null;
 }

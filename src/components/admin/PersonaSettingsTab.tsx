@@ -72,13 +72,13 @@ export default function PersonaSettingsTab() {
   useEffect(() => {
     if (settings) {
       setFormData({
-        persona_name: (settings as any).persona_name || "Rani",
-        persona_role: (settings as any).persona_role || "Customer Service",
-        persona_traits: (settings as any).persona_traits || ["ramah", "profesional", "helpful"],
-        communication_style: (settings as any).communication_style || "santai-profesional",
-        emoji_usage: (settings as any).emoji_usage || "moderate",
-        language_formality: (settings as any).language_formality || "semi-formal",
-        custom_instructions: (settings as any).custom_instructions || "",
+        persona_name: settings.persona_name || "Rani",
+        persona_role: settings.persona_role || "Customer Service",
+        persona_traits: settings.persona_traits || ["ramah", "profesional", "helpful"],
+        communication_style: settings.communication_style || "santai-profesional",
+        emoji_usage: settings.emoji_usage || "moderate",
+        language_formality: settings.language_formality || "semi-formal",
+        custom_instructions: settings.custom_instructions || "",
         greeting_message: settings.greeting_message || "",
         persona: settings.persona || "",
       });
