@@ -52,8 +52,8 @@ export default function PageEditorPage() {
           if (error) throw error;
 
           if (data) {
-            const schema = (data.page_schema as any) || [];
-            loadPage(schema, {
+            const schema = Array.isArray(data.page_schema) ? data.page_schema : [];
+            loadPage(schema as any, {
               id: data.id,
               title: data.page_title,
               slug: data.slug,
