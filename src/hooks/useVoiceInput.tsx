@@ -1,5 +1,45 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+// TypeScript declarations for Web Speech API
+interface SpeechRecognitionErrorEventCustom extends Event {
+  error: string;
+}
+
+interface SpeechRecognitionResultCustom {
+  isFinal: boolean;
+  0: { transcript: string };
+  length: number;
+}
+
+interface SpeechRecognitionEventCustom extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultCustom[];
+}
+
+interface SpeechRecognitionInstance extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventCustom) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventCustom) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognitionInstance;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: SpeechRecognitionConstructor;
+    webkitSpeechRecognition: SpeechRecognitionConstructor;
+  }
+}
+
 interface UseVoiceInputOptions {
   onTranscript?: (transcript: string) => void;
   onFinalTranscript?: (transcript: string) => void;
@@ -21,24 +61,23 @@ export const useVoiceInput = (options: UseVoiceInputOptions = {}): UseVoiceInput
   const {
     onTranscript,
     onFinalTranscript,
-    language = 'id-ID', // Indonesian by default
+    language = 'id-ID',
     continuous = false,
   } = options;
 
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
-  // Check if browser supports Web Speech API
   const isSupported = typeof window !== 'undefined' && 
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
   useEffect(() => {
     if (!isSupported) return;
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionCtor();
 
     recognition.continuous = continuous;
     recognition.interimResults = true;
@@ -47,16 +86,13 @@ export const useVoiceInput = (options: UseVoiceInputOptions = {}): UseVoiceInput
     recognition.onstart = () => {
       setIsListening(true);
       setError(null);
-      console.log('Voice recognition started');
     };
 
     recognition.onend = () => {
       setIsListening(false);
-      console.log('Voice recognition ended');
     };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Voice recognition error:', event.error);
+    recognition.onerror = (event: SpeechRecognitionErrorEventCustom) => {
       setIsListening(false);
       
       switch (event.error) {
@@ -77,7 +113,7 @@ export const useVoiceInput = (options: UseVoiceInputOptions = {}): UseVoiceInput
       }
     };
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: SpeechRecognitionEventCustom) => {
       let interimTranscript = '';
       let finalTranscript = '';
 
@@ -121,7 +157,6 @@ export const useVoiceInput = (options: UseVoiceInputOptions = {}): UseVoiceInput
     try {
       recognitionRef.current?.start();
     } catch (err) {
-      console.error('Error starting recognition:', err);
       // Already started, ignore
     }
   }, [isSupported]);
@@ -130,10 +165,10 @@ export const useVoiceInput = (options: UseVoiceInputOptions = {}): UseVoiceInput
     if (recognitionRef.current) {
       try {
         recognitionRef.current.abort();
-      } catch (err) {
+      } catch {
         try {
           recognitionRef.current.stop();
-        } catch (e) {
+        } catch {
           // Ignore
         }
       }
@@ -159,28 +194,3 @@ export const useVoiceInput = (options: UseVoiceInputOptions = {}): UseVoiceInput
     error,
   };
 };
-
-// Add TypeScript declarations for Web Speech API
-interface SpeechRecognitionConstructor {
-  new (): SpeechRecognitionInstance;
-}
-
-interface SpeechRecognitionInstance extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onstart: (() => void) | null;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  start(): void;
-  stop(): void;
-  abort(): void;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: SpeechRecognitionConstructor;
-    webkitSpeechRecognition: SpeechRecognitionConstructor;
-  }
-}

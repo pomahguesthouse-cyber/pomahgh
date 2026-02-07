@@ -36,21 +36,20 @@ CardSkeleton.displayName = 'CardSkeleton';
 interface OptimizedListProps<T> {
   items: T[];
   renderItem: (item: T, index: number) => ReactNode;
-  getItemKey?: (item: T) => string | number;
+  getItemKey?: (item: T, index: number) => string | number;
   className?: string;
   emptyMessage?: string;
   loading?: boolean;
 }
 
-export const OptimizedList = memo(<T,>({
+function OptimizedListInner<T>({
   items,
   renderItem,
-  getItemKey = (item, index) => (item as any)?.id || index,
+  getItemKey = (item: T, index: number) => (item as Record<string, unknown>)?.id as string || index,
   className = '',
   emptyMessage = "No items found",
   loading = false
-}: OptimizedListProps<T>) => {
-  // Memoize rendered items
+}: OptimizedListProps<T>) {
   const renderedItems = useMemo(() => {
     if (loading) {
       return Array.from({ length: 3 }).map((_, index) => (
@@ -74,9 +73,9 @@ export const OptimizedList = memo(<T,>({
   }, [items, renderItem, getItemKey, emptyMessage, loading]);
 
   return <div className={className}>{renderedItems}</div>;
-}) as <T>(props: OptimizedListProps<T>) => React.ReactElement;
+}
 
-OptimizedList.displayName = 'OptimizedList';
+export const OptimizedList = memo(OptimizedListInner) as typeof OptimizedListInner;
 
 // Optimized button with memoization
 interface OptimizedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
