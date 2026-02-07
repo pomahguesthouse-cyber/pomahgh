@@ -180,7 +180,7 @@ export const ArrivingDepartingWidgets = () => {
                 </TableCell>
                 <TableCell>{b.allocated_room_number || b.rooms?.name || "-"}</TableCell>
                 <TableCell>
-                  {formatTimeID((type === "arriving" ? b.check_in_time : b.check_out_time || "12:00").slice(0, 5))}
+                  {formatTimeID(((type === "arriving" ? b.check_in_time : b.check_out_time) ?? "12:00").slice(0, 5))}
                 </TableCell>
                 <TableCell className="text-right">{getDynamicStatusBadge(status)}</TableCell>
               </TableRow>

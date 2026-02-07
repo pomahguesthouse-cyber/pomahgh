@@ -257,7 +257,7 @@ const AdminBookings = () => {
       roomName: rta.roomName,
       allotment: rta.totalRooms,
       availableRoomNumbers: rta.availableRooms || [],
-      bookedRoomNumbers: [],
+      bookedRoomNumbers: [] as string[],
       pricePerNight: rta.pricePerNight,
     }));
   }, [roomTypeAvailability]);

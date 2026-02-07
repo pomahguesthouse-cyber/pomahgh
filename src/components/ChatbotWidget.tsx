@@ -45,12 +45,12 @@ const ChatbotWidget = () => {
       {isOpen && <Card className={cn("fixed bottom-4 w-[90vw] sm:w-80 h-[480px] max-w-sm shadow-2xl z-50 flex flex-col", position)}>
           {/* Header */}
           <div className="p-3 rounded-t-lg flex items-center justify-between" style={{
-        backgroundColor: settings.primary_color
+        backgroundColor: settings.primary_color ?? undefined
       }}>
             <div className="flex items-center gap-2">
               <Avatar className={cn("h-8 w-8", settings.bot_avatar_style === "circle" ? "rounded-full" : settings.bot_avatar_style === "square" ? "rounded-none" : "rounded-md")}>
-                <AvatarImage src={settings.bot_avatar_url} />
-                <AvatarFallback className="bg-white text-primary text-sm">{settings.bot_name[0]}</AvatarFallback>
+                <AvatarImage src={settings.bot_avatar_url ?? undefined} />
+                <AvatarFallback className="bg-white text-primary text-sm">{(settings.bot_name ?? "B")[0]}</AvatarFallback>
               </Avatar>
               <div>
                 <p className="font-semibold text-white">{settings.bot_name}</p>
@@ -91,9 +91,9 @@ const ChatbotWidget = () => {
           {/* Input */}
           <div className="p-3 border-t">
             <div className="flex gap-2">
-              <Input value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyPress={handleKeyPress} placeholder="Ketik pesan..." maxLength={settings.max_message_length} disabled={isLoading} className="flex-1" />
+              <Input value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyPress={handleKeyPress} placeholder="Ketik pesan..." maxLength={settings.max_message_length ?? undefined} disabled={isLoading} className="flex-1" />
               <Button onClick={handleSend} disabled={isLoading || !inputValue.trim()} size="icon" style={{
-            backgroundColor: settings.primary_color
+            backgroundColor: settings.primary_color ?? undefined
           }}>
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white" />}
               </Button>

@@ -55,7 +55,8 @@ const AdminKnowledgeBaseTab = () => {
   const [category, setCategory] = useState('general');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [previewEntry, setPreviewEntry] = useState<typeof knowledge extends (infer T)[] ? T : never | null>(null);
+  type AdminKnowledgeEntry = NonNullable<typeof knowledge>[number];
+  const [previewEntry, setPreviewEntry] = useState<AdminKnowledgeEntry | null>(null);
 
   const handleAddKnowledge = async () => {
     if (addType === 'text') {

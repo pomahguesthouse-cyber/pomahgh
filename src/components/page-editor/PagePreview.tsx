@@ -10,13 +10,13 @@
  
  interface PageData {
    hero_headline: string;
-   subheadline?: string;
-   hero_image_url?: string;
+   subheadline?: string | null;
+   hero_image_url?: string | null;
    hero_slides?: HeroSlide[];
-   page_content?: string;
-   cta_text?: string;
-   whatsapp_number?: string;
-   whatsapp_message_template?: string;
+   page_content?: string | null;
+   cta_text?: string | null;
+   whatsapp_number?: string | null;
+   whatsapp_message_template?: string | null;
  }
  
  export function PagePreview() {

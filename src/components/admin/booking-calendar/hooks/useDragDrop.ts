@@ -87,9 +87,10 @@ export const useDragDrop = (
       if (b.status === "cancelled" || b.status === "no_show") return false;
 
       // Check if booking is on target room using single source of truth
-      const hasBookingRooms = b.booking_rooms && b.booking_rooms.length > 0;
+      const bookingRooms = b.booking_rooms;
+      const hasBookingRooms = bookingRooms && bookingRooms.length > 0;
       const isOnTargetRoom = hasBookingRooms
-        ? b.booking_rooms.some((br) => br.room_number === dropData.roomNumber)
+        ? bookingRooms.some((br) => br.room_number === dropData.roomNumber)
         : b.allocated_room_number === dropData.roomNumber;
       
       if (!isOnTargetRoom) return false;

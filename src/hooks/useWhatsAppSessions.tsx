@@ -294,7 +294,7 @@ export const useWhatsAppStats = (sessionType?: 'guest' | 'admin' | 'all') => {
       const { data: conversations, error: convError } = await supabase
         .from('chat_conversations')
         .select('id, message_count, booking_created')
-        .in('id', sessions?.filter(s => s.conversation_id).map(s => s.conversation_id) || []);
+        .in('id', (sessions?.filter(s => s.conversation_id).map(s => s.conversation_id) || []).filter((id): id is string => id !== null));
 
       if (convError) throw convError;
 

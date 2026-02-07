@@ -13,11 +13,11 @@ export interface RoomPromotion {
   discount_percentage: number | null;
   start_date: string;
   end_date: string;
-  is_active: boolean;
+  is_active: boolean | null;
   min_nights: number;
   promo_code: string | null;
-  badge_text: string;
-  badge_color: string;
+  badge_text: string | null;
+  badge_color: string | null;
   priority: number;
 }
 

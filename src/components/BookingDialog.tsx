@@ -99,8 +99,8 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
     if (user?.email) {
       setFormData(prev => ({
         ...prev,
-        guest_name: user.user_metadata?.full_name || "",
-        guest_email: user.email,
+        guest_name: (user.user_metadata?.full_name as string) || "",
+        guest_email: user.email ?? "",
       }));
     }
   }, [user]);
@@ -295,7 +295,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
                   <Calendar
                     mode="single"
                     selected={checkIn}
-                    onSelect={setCheckIn}
+                    onSelect={(day) => day && setCheckIn(day)}
                     disabled={(date) => {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
@@ -327,7 +327,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
                   <Calendar
                     mode="single"
                     selected={checkOut}
-                    onSelect={setCheckOut}
+                    onSelect={(day) => day && setCheckOut(day)}
                     disabled={(date) => !checkIn || date <= checkIn}
                     initialFocus
                     className="pointer-events-auto"
@@ -559,7 +559,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
             className="w-full" 
             disabled={
               isPending || 
-              (settings?.hotel_policies_enabled !== false && settings?.hotel_policies_text && !agreeToPolicy)
+              !!(settings?.hotel_policies_enabled !== false && settings?.hotel_policies_text && !agreeToPolicy)
             }
           >
             {isPending ? "Memproses..." : "Konfirmasi Booking"}

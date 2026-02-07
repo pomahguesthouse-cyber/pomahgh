@@ -382,7 +382,7 @@ export const BookingCalendar = () => {
             id: r.id,
             name: r.name,
             price_per_night: r.price_per_night,
-            room_numbers: r.room_numbers,
+            room_numbers: r.room_numbers ?? undefined,
           })) || []
         }
       />

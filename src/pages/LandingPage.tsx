@@ -43,7 +43,7 @@ export default function LandingPage() {
       const { data, error } = await supabase
         .from("landing_pages")
         .select("*")
-        .eq("slug", slug)
+        .eq("slug", slug!)
         .eq("status", "published")
         .single();
 
