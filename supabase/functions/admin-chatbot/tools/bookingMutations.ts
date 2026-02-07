@@ -406,8 +406,26 @@ export async function changeBookingRoom(supabase: any, args: any) {
     throw new Error(`Nomor kamar ${new_room_number} tidak ada di ${newRoom.name}. Tersedia: ${newRoom.room_numbers?.join(', ') || 'tidak ada'}`);
   }
 
-  // Check availability
-  const { data: conflicts } = await supabase
+  // Check availability via booking_rooms (primary) and bookings (legacy)
+  const { data: brConflicts } = await supabase
+    .from('booking_rooms')
+    .select('booking_id, bookings!inner(id, booking_code, check_in, check_out, status)')
+    .eq('room_id', newRoom.id)
+    .eq('room_number', new_room_number)
+    .neq('booking_id', booking.id);
+
+  const activeConflicts = (brConflicts || []).filter((br: any) => {
+    const b = br.bookings;
+    return b && b.status !== 'cancelled' && b.check_in < booking.check_out && b.check_out > booking.check_in;
+  });
+
+  if (activeConflicts.length > 0) {
+    const conflictCode = activeConflicts[0].bookings?.booking_code || 'unknown';
+    throw new Error(`Kamar ${newRoom.name} ${new_room_number} tidak tersedia (bentrok dengan ${conflictCode})`);
+  }
+
+  // Also check legacy allocated_room_number field
+  const { data: legacyConflicts } = await supabase
     .from('bookings')
     .select('id, booking_code')
     .eq('room_id', newRoom.id)
@@ -417,8 +435,8 @@ export async function changeBookingRoom(supabase: any, args: any) {
     .lt('check_in', booking.check_out)
     .gt('check_out', booking.check_in);
 
-  if (conflicts && conflicts.length > 0) {
-    throw new Error(`Kamar ${newRoom.name} ${new_room_number} tidak tersedia (bentrok dengan ${conflicts[0].booking_code})`);
+  if (legacyConflicts && legacyConflicts.length > 0) {
+    throw new Error(`Kamar ${newRoom.name} ${new_room_number} tidak tersedia (bentrok dengan ${legacyConflicts[0].booking_code})`);
   }
 
   // Check blocked dates
@@ -436,6 +454,7 @@ export async function changeBookingRoom(supabase: any, args: any) {
 
   const newTotalPrice = newRoom.price_per_night * booking.total_nights;
 
+  // Update bookings table (legacy + primary)
   const { error: updateError } = await supabase
     .from('bookings')
     .update({
@@ -447,6 +466,47 @@ export async function changeBookingRoom(supabase: any, args: any) {
     .eq('id', booking.id);
 
   if (updateError) throw updateError;
+
+  // Update booking_rooms junction table
+  const { data: existingBR } = await supabase
+    .from('booking_rooms')
+    .select('id')
+    .eq('booking_id', booking.id);
+
+  if (existingBR && existingBR.length > 0) {
+    // Update existing booking_rooms record(s) for this booking
+    // If single room booking, update the first record
+    const { error: brUpdateError } = await supabase
+      .from('booking_rooms')
+      .update({
+        room_id: newRoom.id,
+        room_number: new_room_number,
+        price_per_night: newRoom.price_per_night,
+        updated_at: new Date().toISOString()
+      })
+      .eq('booking_id', booking.id)
+      .eq('room_id', booking.room_id); // Only update the matching old room
+
+    if (brUpdateError) {
+      console.error('Failed to update booking_rooms:', brUpdateError);
+    }
+  } else {
+    // No booking_rooms entry exists, create one
+    const { error: brInsertError } = await supabase
+      .from('booking_rooms')
+      .insert({
+        booking_id: booking.id,
+        room_id: newRoom.id,
+        room_number: new_room_number,
+        price_per_night: newRoom.price_per_night
+      });
+
+    if (brInsertError) {
+      console.error('Failed to insert booking_rooms:', brInsertError);
+    }
+  }
+
+  console.log(`✅ Room change: ${booking_code} moved from ${booking.allocated_room_number} to ${new_room_number}, booking_rooms synced`);
 
   return {
     success: true,
