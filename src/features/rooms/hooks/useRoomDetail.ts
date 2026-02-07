@@ -7,23 +7,23 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RoomPromotion } from "../types";
 
 // Helper function to get day-of-week price
-const getDayPrice = (room: any, dayOfWeek: number): number => {
+const getDayPrice = (room: Record<string, unknown>, dayOfWeek: number): number => {
   const dayPrices = [
-    room.sunday_price,
-    room.monday_price,
-    room.tuesday_price,
-    room.wednesday_price,
-    room.thursday_price,
-    room.friday_price,
-    room.saturday_price,
+    room.sunday_price as number | null,
+    room.monday_price as number | null,
+    room.tuesday_price as number | null,
+    room.wednesday_price as number | null,
+    room.thursday_price as number | null,
+    room.friday_price as number | null,
+    room.saturday_price as number | null,
   ];
-  return dayPrices[dayOfWeek] || room.price_per_night;
+  return dayPrices[dayOfWeek] || (room.price_per_night as number);
 };
 
 // Calculate current price with promo
-const getCurrentPrice = (room: any, activePromo?: RoomPromotion | null): number => {
+const getCurrentPrice = (room: Record<string, unknown>, activePromo?: RoomPromotion | null): number => {
   const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = today.toISOString().split("T")[0] as string;
   const dayOfWeek = today.getDay();
   const basePrice = getDayPrice(room, dayOfWeek);
 
@@ -41,8 +41,8 @@ const getCurrentPrice = (room: any, activePromo?: RoomPromotion | null): number 
 
   // Fallback to legacy promo on rooms table
   if (room.promo_price && room.promo_start_date && room.promo_end_date) {
-    if (todayStr >= room.promo_start_date && todayStr <= room.promo_end_date) {
-      return room.promo_price;
+    if (todayStr >= (room.promo_start_date as string) && todayStr <= (room.promo_end_date as string)) {
+      return room.promo_price as number;
     }
   }
 
@@ -74,8 +74,8 @@ export const useRoomDetail = (roomSlug: string) => {
         .gte("end_date", today)
         .order("priority", { ascending: false });
 
-      const activePromo = promotions && promotions.length > 0 ? promotions[0] : null;
-      const finalPrice = getCurrentPrice(room, activePromo);
+      const activePromo = promotions && promotions.length > 0 ? promotions[0] as unknown as RoomPromotion : null;
+      const finalPrice = getCurrentPrice(room as unknown as Record<string, unknown>, activePromo);
 
       return {
         ...room,

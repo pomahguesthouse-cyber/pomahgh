@@ -79,7 +79,7 @@ const RoomDetail = () => {
     new Date() >= new Date(room.promo_start_date) &&
     new Date() <= new Date(room.promo_end_date);
 
-  const hasPromo = !!activePromo || hasLegacyPromo;
+  const hasPromo = !!activePromo || !!hasLegacyPromo;
   const displayPrice = room.final_price || room.price_per_night;
   const relatedRooms = allRooms?.filter((r) => r.id !== room.id).slice(0, 3) || [];
 
@@ -87,7 +87,7 @@ const RoomDetail = () => {
 
   return (
     <>
-      <RoomSEO room={room} images={images} displayPrice={displayPrice} roomSlug={roomSlug || ""} />
+      <RoomSEO room={room as Room} images={images} displayPrice={displayPrice} roomSlug={roomSlug || ""} />
 
       {/* HEADER — FIXED (NO VARIANT) */}
       <Header />
@@ -101,7 +101,7 @@ const RoomDetail = () => {
               <RoomGallery images={images} roomName={room.name} hasVirtualTour={!!room.virtual_tour_url} />
 
               <div>
-                <RoomHeader name={room.name} hasVirtualTour={!!room.virtual_tour_url} hasPromo={hasPromo} />
+                <RoomHeader name={room.name} hasVirtualTour={!!room.virtual_tour_url} hasPromo={!!hasPromo} />
                 <RoomInfo description={room.description} />
               </div>
 
@@ -135,8 +135,8 @@ const RoomDetail = () => {
 
             <div className="lg:col-span-1">
               <RoomBookingCard
-                room={room}
-                hasPromo={hasPromo}
+                room={room as Room}
+                hasPromo={!!hasPromo}
                 displayPrice={displayPrice}
                 onBookNow={(roomQty, guests) => {
                   setInitialRoomQuantity(roomQty);

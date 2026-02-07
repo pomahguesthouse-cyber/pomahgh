@@ -31,7 +31,8 @@ const AdminChatbot = () => {
   const [newManagerPhone, setNewManagerPhone] = useState("");
   const [newManagerName, setNewManagerName] = useState("");
   
-  const [formData, setFormData] = useState({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [formData, setFormData] = useState<any>({
     persona: '',
     greeting_message: '',
     bot_name: '',
@@ -50,7 +51,7 @@ const AdminChatbot = () => {
 
   useEffect(() => {
     if (settings) {
-      setFormData(settings);
+      setFormData(settings as any);
     }
   }, [settings]);
 

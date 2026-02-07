@@ -19,7 +19,7 @@ interface Booking {
   total_price: number;
   num_guests: number;
   status: string;
-  special_requests?: string;
+  special_requests?: string | null;
   created_at: string;
 }
 

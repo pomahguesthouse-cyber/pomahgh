@@ -3,6 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useBookingValidation } from "./useBookingValidation";
 import { parseISO } from "date-fns";
+interface BookingConflictParams {
+  roomId: string;
+  roomNumber: string | null;
+  checkIn: Date;
+  checkOut: Date;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+  excludeBookingId?: string;
+}
 
 interface Booking {
   id: string;
@@ -10,21 +19,21 @@ interface Booking {
   room_id: string;
   guest_name: string;
   guest_email: string;
-  guest_phone?: string;
+  guest_phone?: string | null;
   check_in: string;
   check_out: string;
-  check_in_time?: string;
-  check_out_time?: string;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
   total_nights: number;
   total_price: number;
   num_guests: number;
   status: string;
-  special_requests?: string;
+  special_requests?: string | null;
   created_at: string;
   allocated_room_number?: string | null;
-  payment_status?: string;
-  payment_amount?: number;
-  booking_source?: "direct" | "ota" | "walk_in" | "other";
+  payment_status?: string | null;
+  payment_amount?: number | null;
+  booking_source?: string | null;
   ota_name?: string | null;
   other_source?: string | null;
   rooms?: {
@@ -116,8 +125,8 @@ export const useAdminBookings = () => {
             roomNumber: room.roomNumber,
             checkIn: booking.check_in ? parseISO(booking.check_in) : parseISO(currentBooking.check_in),
             checkOut: booking.check_out ? parseISO(booking.check_out) : parseISO(currentBooking.check_out),
-            checkInTime: booking.check_in_time || currentBooking.check_in_time,
-            checkOutTime: booking.check_out_time || currentBooking.check_out_time,
+            checkInTime: booking.check_in_time ?? currentBooking.check_in_time ?? undefined,
+            checkOutTime: booking.check_out_time ?? currentBooking.check_out_time ?? undefined,
             excludeBookingId: booking.id
           });
 
@@ -129,11 +138,11 @@ export const useAdminBookings = () => {
         // Fallback: check single room conflict if no editedRooms
         const conflict = await checkBookingConflict({
           roomId: currentBooking.room_id,
-          roomNumber: booking.allocated_room_number || currentBooking.allocated_room_number,
+          roomNumber: booking.allocated_room_number ?? currentBooking.allocated_room_number ?? '',
           checkIn: booking.check_in ? parseISO(booking.check_in) : parseISO(currentBooking.check_in),
           checkOut: booking.check_out ? parseISO(booking.check_out) : parseISO(currentBooking.check_out),
-          checkInTime: booking.check_in_time || currentBooking.check_in_time,
-          checkOutTime: booking.check_out_time || currentBooking.check_out_time,
+          checkInTime: booking.check_in_time ?? currentBooking.check_in_time ?? undefined,
+          checkOutTime: booking.check_out_time ?? currentBooking.check_out_time ?? undefined,
           excludeBookingId: booking.id
         });
 
