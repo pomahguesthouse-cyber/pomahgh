@@ -103,24 +103,6 @@ const findElementById = (elements: EditorElement[], id: string): EditorElement |
   return null;
 };
 
-// Optimized element search using Map for better performance
-const createElementMap = (elements: EditorElement[]): Map<string, EditorElement> => {
-  const map = new Map<string, EditorElement>();
-  const traverse = (els: EditorElement[]) => {
-    els.forEach(el => {
-      map.set(el.id, el);
-      if (el.children) traverse(el.children);
-    });
-  };
-  traverse(elements);
-  return map;
-};
-
-// Optimized element finding
-const findElementByIdOptimized = (elementMap: Map<string, EditorElement>, id: string): EditorElement | null => {
-  return elementMap.get(id) || null;
-};
-
 const removeElementById = (elements: EditorElement[], id: string): EditorElement[] => {
   return elements.filter(el => {
     if (el.id === id) return false;
@@ -165,38 +147,21 @@ const insertElementAt = (elements: EditorElement[], element: EditorElement, pare
 };
 
 export const useEditorStore = create<EditorState>()(
-  immer((set, get) => {
-    let elementMapCache: Map<string, EditorElement> | null = null;
-    
-    // Cache invalidation function
-    const invalidateElementCache = () => {
-      elementMapCache = null;
-    };
-    
-    // Get element map with caching
-    const getElementMap = () => {
-      if (!elementMapCache) {
-        elementMapCache = createElementMap(get().elements);
-      }
-      return elementMapCache;
-    };
-
-    return {
-      elements: [] as EditorElement[],
-      pageSettings: initialPageSettings,
-      selectedElementId: null as string | null,
-      hoveredElementId: null as string | null,
-      history: [[]] as EditorElement[][],
-      historyIndex: 0,
-      isDragging: false,
-      viewMode: 'desktop',
-      isSaving: false,
-      hasUnsavedChanges: false,
+  immer((set, get) => ({
+    elements: [] as EditorElement[],
+    pageSettings: initialPageSettings,
+    selectedElementId: null as string | null,
+    hoveredElementId: null as string | null,
+    history: [[]] as EditorElement[][],
+    historyIndex: 0,
+    isDragging: false,
+    viewMode: 'desktop',
+    isSaving: false,
+    hasUnsavedChanges: false,
     
     setElements: (elements) => set((state) => {
       state.elements = elements;
       state.hasUnsavedChanges = true;
-      invalidateElementCache();
     }),
     
     addElement: (element, parentId, index) => set((state) => {
@@ -208,13 +173,11 @@ export const useEditorStore = create<EditorState>()(
       }
       state.hasUnsavedChanges = true;
       state.selectedElementId = element.id;
-      invalidateElementCache();
     }),
     
     updateElement: (id, updates) => set((state) => {
       state.elements = updateElementById(state.elements, id, updates);
       state.hasUnsavedChanges = true;
-      invalidateElementCache();
     }),
     
     removeElement: (id) => set((state) => {
@@ -223,27 +186,25 @@ export const useEditorStore = create<EditorState>()(
         state.selectedElementId = null;
       }
       state.hasUnsavedChanges = true;
-      invalidateElementCache();
     }),
     
     moveElement: (id, newParentId, newIndex) => set((state) => {
-      const element = findElementByIdOptimized(getElementMap(), id);
+      const element = findElementById(state.elements, id);
       if (!element) return;
       
       state.elements = removeElementById(state.elements, id);
       state.elements = insertElementAt(state.elements, element, newParentId, newIndex);
       state.hasUnsavedChanges = true;
-      invalidateElementCache();
     }),
     
     duplicateElement: (id) => set((state) => {
-      const element = findElementByIdOptimized(getElementMap(), id);
+      const element = findElementById(state.elements, id);
       if (!element) return;
       
-      // Optimized deep clone using structuredClone if available
-      const duplicate: EditorElement = typeof structuredClone !== 'undefined' 
-        ? structuredClone({ ...element, id: `${element.type}-${Date.now()}` })
-        : { ...JSON.parse(JSON.stringify(element)), id: `${element.type}-${Date.now()}` };
+      const duplicate: EditorElement = {
+        ...JSON.parse(JSON.stringify(element)),
+        id: `${element.type}-${Date.now()}`,
+      };
       
       // Find index and add after
       const index = state.elements.findIndex(el => el.id === id);
@@ -254,7 +215,6 @@ export const useEditorStore = create<EditorState>()(
       }
       state.selectedElementId = duplicate.id;
       state.hasUnsavedChanges = true;
-      invalidateElementCache();
     }),
     
     selectElement: (id) => set((state) => {
@@ -288,36 +248,24 @@ export const useEditorStore = create<EditorState>()(
     
     saveToHistory: () => set((state) => {
       const newHistory = state.history.slice(0, state.historyIndex + 1);
-      // Optimized clone using structuredClone
-      const elementsClone = typeof structuredClone !== 'undefined' 
-        ? structuredClone(state.elements)
-        : JSON.parse(JSON.stringify(state.elements));
-      newHistory.push(elementsClone);
-      state.history = newHistory.slice(-30); // Reduced from 50 to 30 for better performance
+      newHistory.push(JSON.parse(JSON.stringify(state.elements)));
+      state.history = newHistory.slice(-50); // Keep last 50 states
       state.historyIndex = state.history.length - 1;
     }),
     
     undo: () => set((state) => {
       if (state.historyIndex > 0) {
         state.historyIndex -= 1;
-        const elementsClone = typeof structuredClone !== 'undefined' 
-          ? structuredClone(state.history[state.historyIndex])
-          : JSON.parse(JSON.stringify(state.history[state.historyIndex]));
-        state.elements = elementsClone;
+        state.elements = JSON.parse(JSON.stringify(state.history[state.historyIndex]));
         state.hasUnsavedChanges = true;
-        invalidateElementCache();
       }
     }),
     
     redo: () => set((state) => {
       if (state.historyIndex < state.history.length - 1) {
         state.historyIndex += 1;
-        const elementsClone = typeof structuredClone !== 'undefined' 
-          ? structuredClone(state.history[state.historyIndex])
-          : JSON.parse(JSON.stringify(state.history[state.historyIndex]));
-        state.elements = elementsClone;
+        state.elements = JSON.parse(JSON.stringify(state.history[state.historyIndex]));
         state.hasUnsavedChanges = true;
-        invalidateElementCache();
       }
     }),
     
@@ -329,21 +277,16 @@ export const useEditorStore = create<EditorState>()(
       state.history = [[]];
       state.historyIndex = 0;
       state.hasUnsavedChanges = false;
-      invalidateElementCache();
     }),
     
     loadPage: (elements, settings) => set((state) => {
       const safeElements = Array.isArray(elements) ? elements : [];
       state.elements = safeElements;
       state.pageSettings = settings;
-      state.history = [typeof structuredClone !== 'undefined' 
-        ? structuredClone(safeElements)
-        : JSON.parse(JSON.stringify(safeElements))];
+      state.history = [JSON.parse(JSON.stringify(safeElements))];
       state.historyIndex = 0;
       state.hasUnsavedChanges = false;
       state.selectedElementId = null;
-      invalidateElementCache();
     }),
-    };
-  })
+  }))
 );
