@@ -1644,6 +1644,8 @@ export type Database = {
           account_holder_name: string | null
           account_number: string | null
           address: string
+          aggressive_pricing_enabled: boolean | null
+          auto_approval_threshold: number | null
           bank_name: string | null
           check_in_time: string | null
           check_out_time: string | null
@@ -1670,6 +1672,8 @@ export type Database = {
           id: string
           instagram_url: string | null
           invoice_logo_url: string | null
+          last_minute_hours: number | null
+          last_minute_pricing_enabled: boolean | null
           latitude: number | null
           logo_url: string | null
           longitude: number | null
@@ -1700,6 +1704,7 @@ export type Database = {
           whatsapp_contact_numbers: Json | null
           whatsapp_manager_numbers: Json | null
           whatsapp_number: string | null
+          whatsapp_price_approval_enabled: boolean | null
           whatsapp_response_mode: string | null
           whatsapp_session_timeout_minutes: number | null
           youtube_url: string | null
@@ -1709,6 +1714,8 @@ export type Database = {
           account_holder_name?: string | null
           account_number?: string | null
           address?: string
+          aggressive_pricing_enabled?: boolean | null
+          auto_approval_threshold?: number | null
           bank_name?: string | null
           check_in_time?: string | null
           check_out_time?: string | null
@@ -1735,6 +1742,8 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           invoice_logo_url?: string | null
+          last_minute_hours?: number | null
+          last_minute_pricing_enabled?: boolean | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
@@ -1765,6 +1774,7 @@ export type Database = {
           whatsapp_contact_numbers?: Json | null
           whatsapp_manager_numbers?: Json | null
           whatsapp_number?: string | null
+          whatsapp_price_approval_enabled?: boolean | null
           whatsapp_response_mode?: string | null
           whatsapp_session_timeout_minutes?: number | null
           youtube_url?: string | null
@@ -1774,6 +1784,8 @@ export type Database = {
           account_holder_name?: string | null
           account_number?: string | null
           address?: string
+          aggressive_pricing_enabled?: boolean | null
+          auto_approval_threshold?: number | null
           bank_name?: string | null
           check_in_time?: string | null
           check_out_time?: string | null
@@ -1800,6 +1812,8 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           invoice_logo_url?: string | null
+          last_minute_hours?: number | null
+          last_minute_pricing_enabled?: boolean | null
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
@@ -1830,6 +1844,7 @@ export type Database = {
           whatsapp_contact_numbers?: Json | null
           whatsapp_manager_numbers?: Json | null
           whatsapp_number?: string | null
+          whatsapp_price_approval_enabled?: boolean | null
           whatsapp_response_mode?: string | null
           whatsapp_session_timeout_minutes?: number | null
           youtube_url?: string | null
@@ -2076,6 +2091,100 @@ export type Database = {
         }
         Relationships: []
       }
+      price_approvals: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          new_price: number
+          old_price: number
+          price_change_percentage: number
+          pricing_factors: Json | null
+          rejected_reason: string | null
+          room_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          new_price: number
+          old_price: number
+          price_change_percentage?: number
+          pricing_factors?: Json | null
+          rejected_reason?: string | null
+          room_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          new_price?: number
+          old_price?: number
+          price_change_percentage?: number
+          pricing_factors?: Json | null
+          rejected_reason?: string | null
+          room_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_approvals_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_cache: {
+        Row: {
+          cached_at: string
+          cached_price: number | null
+          date: string
+          demand_score: number | null
+          expires_at: string
+          id: string
+          occupancy_rate: number | null
+          room_id: string | null
+        }
+        Insert: {
+          cached_at?: string
+          cached_price?: number | null
+          date: string
+          demand_score?: number | null
+          expires_at?: string
+          id?: string
+          occupancy_rate?: number | null
+          room_id?: string | null
+        }
+        Update: {
+          cached_at?: string
+          cached_price?: number | null
+          date?: string
+          demand_score?: number | null
+          expires_at?: string
+          id?: string
+          occupancy_rate?: number | null
+          room_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_cache_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_change_notifications: {
         Row: {
           competitor_room_id: string | null
@@ -2158,6 +2267,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "pricing_adjustment_logs_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_events: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          priority: number
+          processed: boolean
+          processing_completed_at: string | null
+          processing_started_at: string | null
+          retry_count: number
+          room_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          priority?: number
+          processed?: boolean
+          processing_completed_at?: string | null
+          processing_started_at?: string | null
+          retry_count?: number
+          room_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          priority?: number
+          processed?: boolean
+          processing_completed_at?: string | null
+          processing_started_at?: string | null
+          retry_count?: number
+          room_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_events_room_id_fkey"
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
@@ -3204,6 +3369,17 @@ export type Database = {
       allocate_room_number: {
         Args: { p_check_in: string; p_check_out: string; p_room_id: string }
         Returns: string
+      }
+      calculate_real_time_occupancy: {
+        Args: { p_date?: string; p_room_id: string }
+        Returns: {
+          available_units: number
+          booked_units: number
+          demand_score: number
+          occupancy_rate: number
+          room_id: string
+          total_allotment: number
+        }[]
       }
       calculate_room_availability: {
         Args: { p_date_from: string; p_date_to: string; p_room_id: string }

@@ -125,3 +125,6 @@ verify_jwt = true
 
 [functions.prompt-consultant]
 verify_jwt = false
+
+[functions.pricing-processor]
+verify_jwt = false
