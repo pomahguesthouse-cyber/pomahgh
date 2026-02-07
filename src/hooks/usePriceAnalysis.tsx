@@ -26,8 +26,28 @@ interface RoomPromotion {
   priority: number;
 }
 
+interface RoomWithPricing {
+  id: string;
+  name: string;
+  base_price: number | null;
+  price_per_night: number;
+  min_auto_price: number | null;
+  max_auto_price: number | null;
+  auto_pricing_enabled: boolean | null;
+  promo_price: number | null;
+  promo_start_date: string | null;
+  promo_end_date: string | null;
+  monday_price: number | null;
+  tuesday_price: number | null;
+  wednesday_price: number | null;
+  thursday_price: number | null;
+  friday_price: number | null;
+  saturday_price: number | null;
+  sunday_price: number | null;
+}
+
 // Helper: Get price for a specific day of the week
-const getDayPrice = (room: any, dayOfWeek: number): number => {
+const getDayPrice = (room: RoomWithPricing, dayOfWeek: number): number => {
   const dayPrices = [
     room.sunday_price,
     room.monday_price,
@@ -41,7 +61,7 @@ const getDayPrice = (room: any, dayOfWeek: number): number => {
 };
 
 // Helper: Calculate current price with promotions and day-of-week pricing
-const getCurrentPrice = (room: any, activePromo?: RoomPromotion | null): number => {
+const getCurrentPrice = (room: RoomWithPricing, activePromo?: RoomPromotion | null): number => {
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
 

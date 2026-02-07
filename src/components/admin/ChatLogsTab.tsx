@@ -163,7 +163,7 @@ const ChatLogsTab = () => {
   };
 
   // Find the user message before an assistant message
-  const findUserQuestion = (messages: any[], currentIndex: number) => {
+  const findUserQuestion = (messages: Array<{ role: string; content: string }>, currentIndex: number) => {
     for (let i = currentIndex - 1; i >= 0; i--) {
       if (messages[i].role === 'user') {
         return messages[i].content;

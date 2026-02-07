@@ -25,6 +25,7 @@ export interface ElementStyles {
 export interface EditorElement {
   id: string;
   type: 'section' | 'heading' | 'paragraph' | 'image' | 'button' | 'spacer' | 'divider' | 'container' | 'gallery' | 'html';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic props per element type; typed narrowing deferred
   props: Record<string, any>;
   styles: ElementStyles;
   children?: EditorElement[];

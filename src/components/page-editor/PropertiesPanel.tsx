@@ -37,7 +37,7 @@ export function PropertiesPanel() {
 
   const selectedElement = selectedElementId ? findElement(elements, selectedElementId) : null;
 
-  const handlePropChange = (key: string, value: any) => {
+  const handlePropChange = (key: string, value: string | number | boolean) => {
     if (!selectedElement) return;
     saveToHistory();
     updateElement(selectedElement.id, {
@@ -45,7 +45,7 @@ export function PropertiesPanel() {
     });
   };
 
-  const handleStyleChange = (key: string, value: any) => {
+  const handleStyleChange = (key: string, value: string | number) => {
     if (!selectedElement) return;
     saveToHistory();
     updateElement(selectedElement.id, {
@@ -123,7 +123,7 @@ function ContentProperties({
   onPropChange,
 }: {
   element: EditorElement;
-  onPropChange: (key: string, value: any) => void;
+  onPropChange: (key: string, value: string | number | boolean) => void;
 }) {
   switch (element.type) {
     case "heading":
@@ -276,7 +276,7 @@ function StyleProperties({
   onStyleChange,
 }: {
   element: EditorElement;
-  onStyleChange: (key: string, value: any) => void;
+  onStyleChange: (key: string, value: string | number) => void;
 }) {
   return (
     <Accordion type="multiple" defaultValue={["typography", "colors"]}>
@@ -373,7 +373,7 @@ function LayoutProperties({
   onStyleChange,
 }: {
   element: EditorElement;
-  onStyleChange: (key: string, value: any) => void;
+  onStyleChange: (key: string, value: string | number) => void;
 }) {
   return (
     <Accordion type="multiple" defaultValue={["spacing", "size"]}>

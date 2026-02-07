@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEditorStore } from "@/stores/editorStore";
+import { useEditorStore, EditorElement } from "@/stores/editorStore";
 import { ComponentLibrary } from "@/components/page-editor/ComponentLibrary";
 import { EditorCanvas } from "@/components/page-editor/EditorCanvas";
 import { PropertiesPanel } from "@/components/page-editor/PropertiesPanel";
@@ -53,7 +53,7 @@ export default function PageEditorPage() {
 
           if (data) {
             const schema = Array.isArray(data.page_schema) ? data.page_schema : [];
-            loadPage(schema as any, {
+            loadPage(schema as unknown as EditorElement[], {
               id: data.id,
               title: data.page_title,
               slug: data.slug,
@@ -161,9 +161,9 @@ export default function PageEditorPage() {
       }
 
       setHasUnsavedChanges(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving page:", error);
-      toast.error(error.message || "Failed to save page");
+      toast.error(error instanceof Error ? error.message : "Failed to save page");
     } finally {
       setIsSaving(false);
     }

@@ -235,7 +235,7 @@ export const BookingCalendar = () => {
     }
   };
 
-  const handleSaveBooking = async (editedBooking: Booking & { editedRooms?: Array<{ roomId: string; roomNumber: string; pricePerNight: number }> }) => {
+  const handleSaveBooking = async (editedBooking: Partial<Booking> & { id: string; editedRooms?: Array<{ id?: string; roomId: string; roomNumber: string; pricePerNight: number }> }) => {
     try {
       await updateBooking({
         id: editedBooking.id,

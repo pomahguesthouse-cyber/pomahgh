@@ -37,7 +37,7 @@ export function ButtonElement({
       "justify-end": textAlign === "right",
     })}>
       <Button
-        variant={variant as any}
+        variant={variant as "default" | "secondary" | "outline" | "ghost" | "destructive" | "link"}
         onClick={(e) => {
           if (isPreview && url) {
             window.open(url, "_blank");

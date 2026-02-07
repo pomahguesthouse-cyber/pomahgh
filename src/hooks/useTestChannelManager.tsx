@@ -14,7 +14,7 @@ interface TestConnectionResult {
   statusText?: string;
   duration_ms?: number;
   message: string;
-  response_preview?: any;
+  response_preview?: Record<string, unknown>;
   error?: string;
 }
 

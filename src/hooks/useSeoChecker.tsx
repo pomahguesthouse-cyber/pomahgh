@@ -515,9 +515,9 @@ export const useSeoChecker = () => {
           newUrl: publicUrl,
           savedBytes,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("WebP conversion failed:", error);
-        toast.error("Conversion failed", { description: error.message });
+        toast.error("Conversion failed", { description: error instanceof Error ? error.message : "Unknown error" });
         return { success: false };
       }
     },

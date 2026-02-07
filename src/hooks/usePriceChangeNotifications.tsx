@@ -93,7 +93,7 @@ export const usePriceChangeNotifications = () => {
         description: data.message,
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message,

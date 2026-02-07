@@ -98,8 +98,8 @@ const AdminHeroSlides = () => {
       const url = await uploadHeroImage(file);
       setFormData({ ...formData, image_url: url });
       toast.success("Gambar berhasil diupload");
-    } catch (error: any) {
-      toast.error("Gagal upload gambar: " + error.message);
+    } catch (error: unknown) {
+      toast.error("Gagal upload gambar: " + (error instanceof Error ? error.message : "Unknown error"));
     } finally {
       setUploading(false);
     }
@@ -119,8 +119,8 @@ const AdminHeroSlides = () => {
       const url = await uploadHeroVideo(file);
       setFormData({ ...formData, video_url: url });
       toast.success("Video berhasil diupload");
-    } catch (error: any) {
-      toast.error("Gagal upload video: " + error.message);
+    } catch (error: unknown) {
+      toast.error("Gagal upload video: " + (error instanceof Error ? error.message : "Unknown error"));
     } finally {
       setUploading(false);
     }
@@ -756,7 +756,7 @@ const AdminHeroSlides = () => {
                 {/* Text Content */}
                 <div 
                   className="absolute inset-0 flex items-center justify-center p-4"
-                  style={{ textAlign: formData.text_align as any }}
+                  style={{ textAlign: formData.text_align as React.CSSProperties['textAlign'] }}
                 >
                   <div className="space-y-2 text-center">
                     {formData.overlay_text && (
