@@ -88,9 +88,14 @@ serve(async (req) => {
     const footerText = invoiceTemplate?.footer_text || 'Kami menantikan kedatangan Anda!';
     const customNotes = invoiceTemplate?.custom_notes || '';
 
+    interface BookingRoomItem { rooms?: { name: string } | null; room_number: string; price_per_night: number }
+    interface BankAccountItem { bank_name: string; account_number: string; account_holder_name: string }
+    interface BookingAddonItem { room_addons?: { name: string; icon_name?: string; price_type?: string } | null; quantity: number; unit_price: number; total_price: number }
+    interface RoomListItem { room_name: string; room_number: string; price_per_night: number }
+
     // Format room list
     const roomsList = bookingRooms && bookingRooms.length > 0
-      ? bookingRooms.map((br: any) => 
+      ? (bookingRooms as BookingRoomItem[]).map((br) => 
           `• ${br.rooms?.name || booking.rooms?.name} #${br.room_number} - Rp ${br.price_per_night.toLocaleString('id-ID')}`
         ).join('\n')
       : `• ${booking.rooms?.name} - Rp ${booking.total_price.toLocaleString('id-ID')}`;
@@ -102,7 +107,7 @@ serve(async (req) => {
     // Format bank accounts for display - show "Lunas" message if fully paid
     const bankAccountsList = remainingBalance > 0 
       ? (bankAccounts && bankAccounts.length > 0
-          ? bankAccounts.map((bank: any) => 
+          ? (bankAccounts as BankAccountItem[]).map((bank) => 
               `🏦 ${bank.bank_name}: ${bank.account_number}\n   a.n. ${bank.account_holder_name}`
             ).join('\n\n')
           : hotelSettings.bank_name && hotelSettings.account_number
@@ -135,7 +140,7 @@ serve(async (req) => {
     
     // Prepare room list items
     const roomListItems = bookingRooms && bookingRooms.length > 0
-      ? bookingRooms.map((br: any) => ({
+      ? (bookingRooms as BookingRoomItem[]).map((br) => ({
           room_name: br.rooms?.name || booking.rooms?.name,
           room_number: br.room_number,
           price_per_night: br.price_per_night
@@ -152,7 +157,7 @@ serve(async (req) => {
     
     // Prepare bank accounts HTML
     const bankAccountsHtml = bankAccounts && bankAccounts.length > 0
-      ? bankAccounts.map((bank: any) => `
+      ? (bankAccounts as BankAccountItem[]).map((bank) => `
         <div class="bank-card">
           <div class="bank-name">🏦 ${bank.bank_name}</div>
           <div class="bank-detail">Rekening: <strong>${bank.account_number}</strong></div>
@@ -473,7 +478,7 @@ serve(async (req) => {
         </tr>
       </thead>
       <tbody>
-        ${roomListItems.map((room: any, index: number) => `
+        ${roomListItems.map((room: RoomListItem, index: number) => `
           <tr>
             <td>${index + 1}</td>
             <td>
@@ -485,7 +490,7 @@ serve(async (req) => {
             <td class="text-right"><strong>${formatRupiah(room.price_per_night * booking.total_nights)}</strong></td>
           </tr>
         `).join('')}
-        ${bookingAddons && bookingAddons.length > 0 ? bookingAddons.map((addon: any, index: number) => `
+        ${bookingAddons && bookingAddons.length > 0 ? (bookingAddons as BookingAddonItem[]).map((addon, index: number) => `
           <tr style="background-color: #f8f9fa;">
             <td>${roomListItems.length + index + 1}</td>
             <td>

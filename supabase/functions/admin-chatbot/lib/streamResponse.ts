@@ -44,10 +44,10 @@ export function createSSEStream(
       try {
         await processRequest(ctx);
         controller.close();
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Stream error:", error);
         // Send error as plain text for backward compatibility
-        controller.enqueue(encoder.encode(`Error: ${error.message}`));
+        controller.enqueue(encoder.encode(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
         controller.close();
       }
     }

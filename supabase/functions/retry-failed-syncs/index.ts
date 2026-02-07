@@ -44,7 +44,7 @@ serve(async (req) => {
 
     // Process each retry by invoking push-availability
     const results = await Promise.allSettled(
-      (pendingRetries || []).map(async (entry: any) => {
+      (pendingRetries || []).map(async (entry: { id: string }) => {
         try {
           const { error } = await supabase.functions.invoke('push-availability', {
             body: { queue_id: entry.id }

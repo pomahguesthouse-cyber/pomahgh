@@ -1,5 +1,6 @@
 // ============= NOTIFICATION TOOLS =============
 
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { formatDateIndonesian, getWibDate, formatDateISO } from "../lib/dateHelpers.ts";
 import { getTemplate, replaceTemplateVariables } from "../lib/templateHelpers.ts";
 
@@ -13,7 +14,7 @@ Total: {{jumlah_tamu}} tamu
 
 _Pesan otomatis dari sistem_`;
 
-export async function sendCheckinReminder(supabase: any, dateStr?: string) {
+export async function sendCheckinReminder(supabase: SupabaseClient, dateStr?: string) {
   const wibDate = getWibDate();
   const targetDate = dateStr || formatDateISO(wibDate);
 
@@ -50,7 +51,7 @@ export async function sendCheckinReminder(supabase: any, dateStr?: string) {
       .eq('booking_id', bookingId);
     
     if (roomData && roomData.length > 0) {
-      return roomData.map((r: any) => r.room_number).join(', ');
+      return roomData.map((r: { room_number: string }) => r.room_number).join(', ');
     }
     return fallback || '-';
   }
@@ -134,7 +135,7 @@ export async function sendCheckinReminder(supabase: any, dateStr?: string) {
   };
 }
 
-export async function sendCalendarLink(supabase: any, message?: string) {
+export async function sendCalendarLink(supabase: SupabaseClient, message?: string) {
   // 1. Get active token from manager_access_tokens
   const { data: token, error: tokenError } = await supabase
     .from('manager_access_tokens')
@@ -171,7 +172,7 @@ export async function sendCalendarLink(supabase: any, message?: string) {
 /**
  * Send WhatsApp message to a phone number
  */
-export async function sendWhatsAppMessage(supabase: any, args: { phone: string; message: string; booking_code?: string }) {
+export async function sendWhatsAppMessage(supabase: SupabaseClient, args: { phone: string; message: string; booking_code?: string }) {
   const { phone, message, booking_code } = args;
   
   if (!phone || !message) {
@@ -237,11 +238,11 @@ export async function sendWhatsAppMessage(supabase: any, args: { phone: string; 
       sent_message: message,
       booking_info: bookingInfo
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('WhatsApp send exception:', err);
     return {
       success: false,
-      error: `Error: ${err.message || 'Unknown error'}`,
+      error: `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
       phone: normalizedPhone
     };
   }
@@ -250,7 +251,7 @@ export async function sendWhatsAppMessage(supabase: any, args: { phone: string; 
 /**
  * Get list of all registered managers
  */
-export async function getManagerList(supabase: any) {
+export async function getManagerList(supabase: SupabaseClient) {
   const { data: settings, error } = await supabase
     .from('hotel_settings')
     .select('whatsapp_manager_numbers')
@@ -275,15 +276,17 @@ export async function getManagerList(supabase: any) {
     };
   }
   
+  interface ManagerEntry { name: string; phone: string; role?: string }
+
   return {
     success: true,
-    managers: managers.map((m: any) => ({
+    managers: (managers as ManagerEntry[]).map((m) => ({
       name: m.name,
       phone: m.phone,
       role: m.role || 'manager'
     })),
     count: managers.length,
-    formatted_list: managers.map((m: any, i: number) => 
+    formatted_list: (managers as ManagerEntry[]).map((m, i: number) => 
       `${i + 1}. ${m.name} (${m.phone}) - ${m.role || 'manager'}`
     ).join('\n')
   };

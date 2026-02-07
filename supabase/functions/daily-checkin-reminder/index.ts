@@ -61,7 +61,19 @@ Deno.serve(async (req) => {
     }
 
     // Build reminder message
-    const guestList = todayBookings.map((b: any, i: number) => 
+    interface CheckinBooking {
+      booking_code: string;
+      guest_name: string;
+      guest_phone: string | null;
+      num_guests: number;
+      check_in: string;
+      check_out: string;
+      total_nights: number;
+      allocated_room_number: string | null;
+      rooms: { name: string } | null;
+    }
+
+    const guestList = (todayBookings as CheckinBooking[]).map((b, i: number) => 
       `${i + 1}. *${b.guest_name}* (${b.num_guests} tamu)\n` +
       `   📱 ${b.guest_phone || '-'}\n` +
       `   🛏️ ${b.rooms?.name} - ${b.allocated_room_number}\n` +
@@ -86,7 +98,8 @@ Deno.serve(async (req) => {
       console.error("Error fetching settings:", settingsError);
     }
 
-    const managers: any[] = settings?.whatsapp_manager_numbers || [];
+    interface ManagerContact { phone: string; name: string }
+    const managers: ManagerContact[] = settings?.whatsapp_manager_numbers || [];
     
     if (managers.length === 0) {
       console.log("No managers configured to receive notifications");
@@ -103,7 +116,7 @@ Deno.serve(async (req) => {
 
     // Send to each manager
     const sendResults = await Promise.allSettled(
-      managers.map(async (manager: any) => {
+      managers.map(async (manager: ManagerContact) => {
         const phone = (manager.phone || '').toString().replace(/\D/g, '');
         if (!phone) {
           throw new Error(`No phone number for ${manager.name}`);

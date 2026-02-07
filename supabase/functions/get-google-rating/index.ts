@@ -67,11 +67,19 @@ Deno.serve(async (req) => {
     const placeData = await response.json();
     console.log('Google Places API response:', placeData);
 
+    interface GoogleReview {
+      rating: number;
+      authorAttribution?: { displayName?: string; photoUri?: string };
+      text?: { text?: string };
+      relativePublishTimeDescription?: string;
+      publishTime?: string;
+    }
+
     // Filter reviews with rating >= 4 and map to simplified structure
-    const reviews = (placeData.reviews || [])
-      .filter((review: any) => review.rating >= 4)
+    const reviews = ((placeData.reviews || []) as GoogleReview[])
+      .filter((review) => review.rating >= 4)
       .slice(0, 5)
-      .map((review: any) => ({
+      .map((review) => ({
         authorName: review.authorAttribution?.displayName || 'Anonim',
         authorPhoto: review.authorAttribution?.photoUri || null,
         rating: review.rating,

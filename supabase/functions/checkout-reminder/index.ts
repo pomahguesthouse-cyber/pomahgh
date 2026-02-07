@@ -93,13 +93,26 @@ Deno.serve(async (req) => {
 
     // Filter bookings based on their individual checkout time
     // Reminder should be sent 1 hour before the actual checkout time
-    const bookingsToNotify = allBookings.filter((booking: any) => {
-      // Use booking's custom checkout time or standard checkout time
+    interface CheckoutBooking {
+      booking_code: string;
+      guest_name: string;
+      guest_phone: string | null;
+      check_in: string;
+      check_out: string;
+      check_out_time: string | null;
+      total_nights: number;
+      total_price: number;
+      status: string;
+      allocated_room_number: string | null;
+      rooms: { name: string; price_per_night: number } | null;
+      booking_rooms: Array<{ room_number: string; rooms: { name: string } | null }> | null;
+    }
+
+    const bookingsToNotify = (allBookings as CheckoutBooking[]).filter((booking) => {
       const bookingCheckoutTime = booking.check_out_time || standardCheckoutTime;
       const [checkoutHour] = bookingCheckoutTime.split(':').map(Number);
       const reminderHour = checkoutHour - 1;
       
-      // Check if current hour matches the reminder hour for this booking
       const isReminderTime = currentHour === reminderHour;
       
       console.log(`Booking ${booking.booking_code}: checkout ${bookingCheckoutTime}, reminder at ${reminderHour}:00, current ${currentHour}:00, notify: ${isReminderTime || force}`);
@@ -137,14 +150,14 @@ Deno.serve(async (req) => {
 
     // Build individual checkout reminders for each booking
     const sendResults = await Promise.allSettled(
-      bookingsToNotify.map(async (booking: any) => {
+      bookingsToNotify.map(async (booking) => {
         // Get all room numbers for this booking
         const roomNumbers: string[] = [];
         if (booking.allocated_room_number) {
           roomNumbers.push(booking.allocated_room_number);
         }
         if (booking.booking_rooms) {
-          booking.booking_rooms.forEach((br: any) => {
+          booking.booking_rooms.forEach((br) => {
             if (br.room_number && !roomNumbers.includes(br.room_number)) {
               roomNumbers.push(br.room_number);
             }

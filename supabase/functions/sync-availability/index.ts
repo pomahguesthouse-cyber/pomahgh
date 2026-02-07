@@ -43,7 +43,8 @@ serve(async (req) => {
     }
 
     // Transform to date: count map
-    const availabilityMap = (availabilityData || []).reduce((acc: Record<string, number>, row: any) => {
+    interface AvailabilityRow { availability_date: string; available_count: number }
+    const availabilityMap = (availabilityData || []).reduce((acc: Record<string, number>, row: AvailabilityRow) => {
       acc[row.availability_date] = row.available_count;
       return acc;
     }, {} as Record<string, number>);

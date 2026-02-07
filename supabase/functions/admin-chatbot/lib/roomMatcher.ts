@@ -29,14 +29,16 @@ function normalizeRoomName(name: string): string {
  * 3. Starts with match
  * 4. Contains match (fallback)
  */
-export function findBestRoomMatch(searchName: string, rooms: any[]): any | null {
+interface RoomEntry { name: string; [key: string]: unknown }
+
+export function findBestRoomMatch(searchName: string, rooms: RoomEntry[]): RoomEntry | null {
   const normalizedSearch = normalizeRoomName(searchName);
   
   console.log(`🔍 Room matching: "${searchName}" -> "${normalizedSearch}"`);
-  console.log(`📋 Available rooms: ${rooms.map((r: any) => `"${r.name}" -> "${normalizeRoomName(r.name)}"`).join(', ')}`);
+  console.log(`📋 Available rooms: ${rooms.map((r) => `"${r.name}" -> "${normalizeRoomName(r.name)}"`).join(', ')}`);
 
   // Priority 1: Exact match
-  const exactMatch = rooms.find((r: any) => 
+  const exactMatch = rooms.find((r) => 
     normalizeRoomName(r.name) === normalizedSearch
   );
   if (exactMatch) {
@@ -55,7 +57,7 @@ export function findBestRoomMatch(searchName: string, rooms: any[]): any | null 
   }
 
   // Priority 3: Starts with
-  const startsWithMatch = rooms.find((r: any) => 
+  const startsWithMatch = rooms.find((r) => 
     normalizeRoomName(r.name).startsWith(normalizedSearch) ||
     normalizedSearch.startsWith(normalizeRoomName(r.name))
   );
@@ -65,7 +67,7 @@ export function findBestRoomMatch(searchName: string, rooms: any[]): any | null 
   }
 
   // Priority 4: Contains (fallback)
-  const containsMatch = rooms.find((r: any) => {
+  const containsMatch = rooms.find((r) => {
     const normalized = normalizeRoomName(r.name);
     return normalized.includes(normalizedSearch) || normalizedSearch.includes(normalized);
   });
