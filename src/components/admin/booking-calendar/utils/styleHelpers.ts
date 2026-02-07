@@ -19,7 +19,7 @@ export const getStatusVariant = (status: string) => {
   }
 };
 
-export const getPaymentVariant = (status?: string) => {
+export const getPaymentVariant = (status?: string | null) => {
   switch (status?.toLowerCase()) {
     case "paid":
       return "default";

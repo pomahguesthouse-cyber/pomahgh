@@ -27,7 +27,7 @@ export interface Room {
   max_guests: number;
   features: string[];
   image_url: string;
-  image_urls: string[];
+  image_urls: string[] | null;
   virtual_tour_url: string | null;
   available: boolean;
   size_sqm: number | null;

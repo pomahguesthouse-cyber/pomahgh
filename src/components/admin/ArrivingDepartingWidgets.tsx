@@ -21,8 +21,8 @@ interface Booking {
   allocated_room_number?: string | null;
   check_in: string;
   check_out: string;
-  check_in_time?: string;
-  check_out_time?: string;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
   status: string;
   rooms?: { name: string };
 }

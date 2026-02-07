@@ -26,7 +26,8 @@ const AdminGuestChatbot = () => {
   const [newContactLabel, setNewContactLabel] = useState("");
   const [newWhitelistNumber, setNewWhitelistNumber] = useState("");
   
-  const [formData, setFormData] = useState({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [formData, setFormData] = useState<any>({
     persona: '',
     greeting_message: '',
     bot_name: '',
@@ -45,7 +46,7 @@ const AdminGuestChatbot = () => {
 
   useEffect(() => {
     if (settings) {
-      setFormData(settings);
+      setFormData(settings as any);
     }
   }, [settings]);
 

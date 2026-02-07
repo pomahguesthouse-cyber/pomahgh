@@ -19,7 +19,7 @@ interface DropData {
 interface Room {
   id: string;
   name: string;
-  room_numbers?: string[];
+  room_numbers?: string[] | null;
 }
 
 interface UnavailableDate {
