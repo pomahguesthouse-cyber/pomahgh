@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
+import type { ChatbotSettingsFormData } from "@/types/chatbot-settings.types";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -49,11 +50,12 @@ export const useUpdateChatbotSettings = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (settings: any) => {
+    mutationFn: async (settings: Partial<ChatbotSettingsFormData> & { id: string }) => {
+      const { id, ...updateData } = settings;
       const { data, error } = await supabase
         .from("chatbot_settings")
-        .update(settings)
-        .eq("id", settings.id)
+        .update(updateData)
+        .eq("id", id)
         .select()
         .single();
 

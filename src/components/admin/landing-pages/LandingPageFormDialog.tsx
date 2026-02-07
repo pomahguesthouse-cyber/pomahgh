@@ -208,7 +208,7 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const payload: Record<string, unknown> = {
+      const payload = {
         page_title: values.page_title,
         slug: values.slug,
         meta_description: values.meta_description || null,
@@ -222,9 +222,10 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
         whatsapp_message_template: values.whatsapp_message_template || null,
         hero_image_url: values.hero_image_url || null,
         hero_image_alt: values.hero_image_alt || null,
-        hero_slides: values.hero_slides || [],
+        hero_slides: (values.hero_slides || []) as unknown as import("@/integrations/supabase/types").Json,
         og_image_url: values.og_image_url || null,
         status: values.status,
+        published_at: undefined as string | undefined,
       };
 
       if (values.status === "published" && !editingPage?.published_at) {
@@ -238,7 +239,7 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
           .eq("id", editingPage.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("landing_pages").insert(payload as any);
+        const { error } = await supabase.from("landing_pages").insert(payload);
         if (error) throw error;
       }
     },

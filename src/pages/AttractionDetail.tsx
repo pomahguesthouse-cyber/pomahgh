@@ -94,7 +94,7 @@ const AttractionDetail = () => {
     );
   }
 
-  const IconComponent = (Icons as any)[attraction.icon_name] || Icons.MapPin;
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[attraction.icon_name] || Icons.MapPin;
   const imageUrl = attraction.image_url || defaultImages[attraction.category] || defaultImages.wisata;
 
   const attractionSchema = {

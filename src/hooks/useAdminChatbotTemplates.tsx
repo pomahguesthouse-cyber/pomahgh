@@ -83,16 +83,15 @@ export function useCreateAdminChatbotTemplate() {
 
   return useMutation({
     mutationFn: async (template: Omit<AdminChatbotTemplate, 'id' | 'created_at' | 'updated_at'>) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const insertData = {
         command_key: template.command_key,
         command_name: template.command_name,
-        command_description: template.command_description,
+        command_description: template.command_description ?? null,
         template_content: template.template_content,
-        available_variables: template.available_variables,
+        available_variables: template.available_variables as unknown as import("@/integrations/supabase/types").Json,
         is_active: template.is_active,
         display_order: template.display_order
-      } as any;
+      };
 
       const { data, error } = await supabase
         .from('admin_chatbot_templates')

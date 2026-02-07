@@ -90,9 +90,10 @@ const AdminPersonaSettingsTab = () => {
   };
 
   const handleSave = async () => {
+    if (!settings?.id) return;
     await updateSettings.mutateAsync({ 
       ...formData, 
-      id: settings?.id 
+      id: settings.id 
     });
   };
 

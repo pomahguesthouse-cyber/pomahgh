@@ -39,7 +39,7 @@ const getTransitionClass = (effect?: string) => {
 };
 
 export const RoomCardImage = ({ room, images, hasPromo, onViewTour }: RoomCardImageProps) => {
-  const transitionEffect = (room as any).transition_effect || "slide";
+  const transitionEffect = room.transition_effect || "slide";
   const transitionClass = getTransitionClass(transitionEffect);
   const isSlide = transitionEffect === "slide";
 

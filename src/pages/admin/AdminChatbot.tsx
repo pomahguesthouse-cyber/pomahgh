@@ -18,6 +18,7 @@ import ChatLogsTab from '@/components/admin/ChatLogsTab';
 import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
 import PersonaSettingsTab from '@/components/admin/PersonaSettingsTab';
 import MessageTemplatesTab from '@/components/admin/chatbot/MessageTemplatesTab';
+import { ChatbotSettingsFormData, DEFAULT_CHATBOT_FORM_DATA } from '@/types/chatbot-settings.types';
 
 const AdminChatbot = () => {
   const { data: settings, isLoading } = useChatbotSettings();
@@ -31,32 +32,21 @@ const AdminChatbot = () => {
   const [newManagerPhone, setNewManagerPhone] = useState("");
   const [newManagerName, setNewManagerName] = useState("");
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [formData, setFormData] = useState<any>({
-    persona: '',
-    greeting_message: '',
-    bot_name: '',
-    bot_avatar_url: '',
-    bot_avatar_style: 'circle',
-    primary_color: '#8B4513',
-    response_speed: 'balanced',
-    enable_booking_assistance: true,
-    enable_availability_check: true,
-    enable_facility_info: true,
-    max_message_length: 500,
-    show_typing_indicator: true,
-    sound_enabled: false,
-    widget_position: 'bottom-right'
-  });
+  const [formData, setFormData] = useState<ChatbotSettingsFormData>(DEFAULT_CHATBOT_FORM_DATA);
 
   useEffect(() => {
     if (settings) {
-      setFormData(settings as any);
+      // Convert DB nulls to undefined for React form compatibility
+      const cleaned = Object.fromEntries(
+        Object.entries(settings).map(([k, v]) => [k, v === null ? undefined : v])
+      );
+      setFormData(cleaned as unknown as ChatbotSettingsFormData);
     }
   }, [settings]);
 
   const handleSave = async () => {
-    await updateSettings.mutateAsync({ ...formData, id: settings?.id });
+    if (!settings?.id) return;
+    await updateSettings.mutateAsync({ ...formData, id: settings.id });
   };
 
   if (isLoading) {
@@ -134,7 +124,7 @@ const AdminChatbot = () => {
                 <Label htmlFor="avatar_url">URL Avatar Bot</Label>
                 <Input
                   id="avatar_url"
-                  value={formData.bot_avatar_url || ''}
+                  value={formData.bot_avatar_url ?? ''}
                   onChange={(e) => setFormData({ ...formData, bot_avatar_url: e.target.value })}
                   placeholder="https://..."
                 />
@@ -143,7 +133,7 @@ const AdminChatbot = () => {
               <div>
                 <Label htmlFor="avatar_style">Bentuk Avatar</Label>
                 <Select
-                  value={formData.bot_avatar_style}
+                  value={formData.bot_avatar_style ?? 'circle'}
                   onValueChange={(value) => setFormData({ ...formData, bot_avatar_style: value })}
                 >
                   <SelectTrigger>
@@ -163,12 +153,12 @@ const AdminChatbot = () => {
                   <Input
                     id="primary_color"
                     type="color"
-                    value={formData.primary_color}
+                    value={formData.primary_color ?? '#8B4513'}
                     onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
                     className="w-20 h-10"
                   />
                   <Input
-                    value={formData.primary_color}
+                    value={formData.primary_color ?? '#8B4513'}
                     onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
                     placeholder="#8B4513"
                   />

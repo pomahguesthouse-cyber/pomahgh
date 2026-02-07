@@ -3,8 +3,8 @@ import type { RoomFeaturesProps } from "./types";
 
 export const RoomFeatures = ({ features, roomFeatures, layout = "default" }: RoomFeaturesProps) => {
   const getIconComponent = (iconName: string) => {
-    const IconComponent = Icons[iconName as keyof typeof Icons] as any;
-    return IconComponent || Icons.Circle;
+    const icons = Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
+    return icons[iconName] || Icons.Circle;
   };
 
   return (

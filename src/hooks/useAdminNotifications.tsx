@@ -7,7 +7,8 @@ import { Bell, AlertCircle, MessageCircle } from "lucide-react";
 // Function to play notification sound using Web Audio API
 const playNotificationSound = () => {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const audioContext = new AudioCtx();
     
     // Create a pleasant notification sound
     const oscillator = audioContext.createOscillator();
@@ -47,7 +48,8 @@ export const useAdminNotifications = () => {
         audioInitialized.current = true;
         // Create and immediately close a context to "warm up" audio
         try {
-          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+          const ctx = new AudioCtx();
           ctx.close();
         } catch (e) {
           // Ignore errors
