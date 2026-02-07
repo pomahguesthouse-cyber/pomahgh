@@ -30,7 +30,7 @@ serve(async (req) => {
     const settings = await loadChatbotSettings(supabase, providedSettings);
 
     // Get last user message
-    const lastUserMessage = messages?.filter((m: any) => m.role === "user").pop()?.content || "";
+    const lastUserMessage = messages?.filter((m: { role: string; content: string }) => m.role === "user").pop()?.content || "";
 
     // Fast path: quick greeting bypass (skip AI for simple greetings)
     const greeting = getQuickGreeting(lastUserMessage, settings.persona_name);

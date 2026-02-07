@@ -1,11 +1,12 @@
 // ============= AUTHENTICATION & AUTHORIZATION =============
 
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { AuthResult } from "./types.ts";
 import type { ManagerRole } from "./constants.ts";
 
 export async function validateAuth(
   req: Request,
-  supabase: any
+  supabase: SupabaseClient
 ): Promise<AuthResult> {
   // Check if request is from WhatsApp (internal service call)
   const isWhatsAppSource = req.headers.get("X-WhatsApp-Source") === "true";

@@ -52,7 +52,7 @@ export async function handleUpdateBooking(
   }
 
   // 3. Prepare update data
-  const updateData: any = { updated_at: new Date().toISOString() };
+  const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
   // 4. If date changes, CHECK ROOM AVAILABILITY
   if (new_check_in || new_check_out) {
@@ -130,7 +130,7 @@ export async function handleUpdateBooking(
     guestName: updatedBooking.guest_name,
     guestEmail: updatedBooking.guest_email,
     guestPhone: updatedBooking.guest_phone,
-    roomsText: (updatedBooking.rooms as any)?.name || '',
+    roomsText: (updatedBooking.rooms as { name: string } | null)?.name || '',
     totalRooms: 1,
     checkIn: updatedBooking.check_in,
     checkOut: updatedBooking.check_out,
@@ -144,7 +144,7 @@ export async function handleUpdateBooking(
   return {
     message: "Booking berhasil diubah!",
     booking_code: updatedBooking.booking_code,
-    room_name: (updatedBooking.rooms as any)?.name,
+    room_name: (updatedBooking.rooms as { name: string } | null)?.name,
     check_in: formatDateIndonesian(updatedBooking.check_in),
     check_out: formatDateIndonesian(updatedBooking.check_out),
     num_guests: updatedBooking.num_guests,

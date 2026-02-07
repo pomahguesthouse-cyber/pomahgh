@@ -19,7 +19,9 @@ export function normalizeRoomName(name: string): string {
  * Find best matching room from a list
  * Priority order: exact match > starts with > contains
  */
-export function findBestRoomMatch(searchName: string, rooms: any[]): any | null {
+interface RoomEntry { name: string; [key: string]: unknown }
+
+export function findBestRoomMatch(searchName: string, rooms: RoomEntry[]): RoomEntry | null {
   const normalizedSearch = normalizeRoomName(searchName);
   
   console.log(`🔍 Room matching: "${searchName}" -> normalized: "${normalizedSearch}"`);
@@ -60,6 +62,6 @@ export function findBestRoomMatch(searchName: string, rooms: any[]): any | null 
 /**
  * Get list of available room names for error messages
  */
-export function getRoomListString(rooms: any[]): string {
+export function getRoomListString(rooms: RoomEntry[]): string {
   return rooms?.map(r => r.name).join(', ') || 'none';
 }

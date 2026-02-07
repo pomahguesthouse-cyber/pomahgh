@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     }
 
     // Filter today's bookings: only those past their checkout time
-    const overdueToday = (todayBookings || []).filter((b: any) => {
+    const overdueToday = (todayBookings || []).filter((b: { check_out_time?: string | null }) => {
       const checkoutTime = b.check_out_time || '12:00:00';
       return currentTimeStr >= checkoutTime;
     });
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     }
 
     // Update all overdue bookings to checked_out
-    const overdueIds = allOverdue.map((b: any) => b.id);
+    const overdueIds = allOverdue.map((b: { id: string }) => b.id);
     
     const { error: updateError } = await supabase
       .from('bookings')
@@ -82,16 +82,26 @@ Deno.serve(async (req) => {
     }
 
     // Log results
-    const results = allOverdue.map((b: any) => ({
+    interface OverdueBooking {
+      id: string;
+      booking_code: string;
+      guest_name: string;
+      check_out: string;
+      check_out_time: string | null;
+      allocated_room_number: string | null;
+      rooms: { name: string } | null;
+    }
+
+    const results = (allOverdue as OverdueBooking[]).map((b) => ({
       booking_code: b.booking_code,
       guest_name: b.guest_name,
-      room: `${(b.rooms as any)?.name || ''} ${b.allocated_room_number || ''}`.trim(),
+      room: `${b.rooms?.name || ''} ${b.allocated_room_number || ''}`.trim(),
       check_out: b.check_out,
       check_out_time: b.check_out_time || '12:00:00',
     }));
 
     console.log(`✅ Auto-checked out ${results.length} bookings:`);
-    results.forEach((r: any) => {
+    results.forEach((r) => {
       console.log(`  - ${r.booking_code} | ${r.guest_name} | ${r.room} | CO: ${r.check_out} ${r.check_out_time}`);
     });
 
@@ -109,7 +119,7 @@ Deno.serve(async (req) => {
             : [];
 
           if (managerNumbers.length > 0) {
-            const guestList = results.map((r: any) => 
+            const guestList = results.map((r) => 
               `• ${r.guest_name} - ${r.room} (CO: ${r.check_out_time.substring(0, 5)})`
             ).join('\n');
 
@@ -118,7 +128,7 @@ Deno.serve(async (req) => {
             const fonnte_key = Deno.env.get('FONNTE_API_KEY');
             if (fonnte_key) {
               for (const mgr of managerNumbers) {
-                const mgrNumber = typeof mgr === 'object' && mgr !== null ? (mgr as any).number : mgr;
+                const mgrNumber = typeof mgr === 'object' && mgr !== null ? (mgr as { number?: string }).number : mgr;
                 if (!mgrNumber) continue;
                 
                 await fetch('https://api.fonnte.com/send', {
@@ -154,7 +164,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Auto-checkout error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

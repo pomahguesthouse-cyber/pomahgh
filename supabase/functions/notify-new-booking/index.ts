@@ -123,8 +123,8 @@ serve(async (req) => {
     let errors: string[] = [];
 
     for (const manager of managers) {
-      const phone = ((manager as any).phone || '').toString().replace(/\D/g, '');
-      const name = (manager as any).name || 'Manager';
+      const phone = ((manager as { phone?: string }).phone || '').toString().replace(/\D/g, '');
+      const name = (manager as { name?: string }).name || 'Manager';
       
       if (!phone) {
         console.log(`Skipping manager ${name}: no phone number`);

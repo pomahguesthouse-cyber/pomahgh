@@ -133,8 +133,8 @@ function indonesianDateToISO(day: string, month: string, year: string): string {
 }
 
 // Extract conversation context from message history for booking continuation
-function extractConversationContext(messages: Array<{role: string, content: string}>): any {
-  const context: any = {};
+function extractConversationContext(messages: Array<{role: string, content: string}>): Record<string, unknown> | null {
+  const context: Record<string, unknown> = {};
   
   // Scan messages from newest to oldest
   for (let i = messages.length - 1; i >= 0; i--) {
@@ -276,7 +276,8 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse incoming webhook
-    let body: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Fonnte webhook payload shape is dynamic
+    let body: Record<string, unknown>;
     const contentType = req.headers.get('content-type') || '';
     console.log("Request content-type:", contentType);
 

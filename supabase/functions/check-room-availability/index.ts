@@ -118,7 +118,7 @@ serve(async (req) => {
       // 2. Check bookings from booking_rooms table (multi-room bookings)
       bookedRooms?.forEach((br) => {
         if (br.room_id === room.id && br.room_number) {
-          const booking = br.booking as any
+          const booking = br.booking as { status: string; check_in: string; check_out: string } | null
           // Check if booking is active and overlaps with date range
           if (
             booking &&

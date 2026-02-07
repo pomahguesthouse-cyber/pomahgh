@@ -36,7 +36,12 @@ export async function getAvailableRoomNumbers(
     .eq("room_id", roomId)
     .not("booking.status", "in", '("cancelled","rejected")');
 
-  (bookingRooms || []).forEach((br: any) => {
+  interface BookingRoomEntry {
+    room_number: string | null;
+    booking: { id: string; check_in: string; check_out: string; status: string } | null;
+  }
+
+  ((bookingRooms || []) as BookingRoomEntry[]).forEach((br) => {
     if (br.room_number && br.booking) {
       // Exclude current booking if updating
       if (excludeBookingId && br.booking.id === excludeBookingId) return;

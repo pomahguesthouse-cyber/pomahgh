@@ -46,9 +46,9 @@ serve(async (req) => {
     const startTime = Date.now();
     let success = false;
     let errorMessage = null;
-    let responsePayload: any = null;
+    let responsePayload: Record<string, unknown> | string | null = null;
     let httpStatus: number | null = null;
-    let requestPayload: any = null;
+    let requestPayload: Record<string, unknown> | null = null;
 
     try {
       const cm = queueEntry.channel_managers;
@@ -192,8 +192,10 @@ serve(async (req) => {
 });
 
 // Helper: Build payload based on channel manager
-function buildChannelManagerPayload(cm: any, queueEntry: any) {
-  const availability = Object.entries(queueEntry.availability_data).map(([date, count]) => ({
+function buildChannelManagerPayload(cm: Record<string, unknown>, queueEntry: Record<string, unknown>) {
+  const availabilityData = queueEntry.availability_data as Record<string, number>;
+  const rooms = queueEntry.rooms as { slug?: string; name?: string } | null;
+  const availability = Object.entries(availabilityData).map(([date, count]) => ({
     date,
     available: count
   }));
@@ -201,15 +203,15 @@ function buildChannelManagerPayload(cm: any, queueEntry: any) {
   // Generic format (can be customized per channel manager)
   return {
     property_id: Deno.env.get('PROPERTY_ID') || 'default',
-    room_type_id: queueEntry.rooms?.slug || 'unknown',
-    room_name: queueEntry.rooms?.name || 'Unknown Room',
+    room_type_id: rooms?.slug || 'unknown',
+    room_name: rooms?.name || 'Unknown Room',
     availability,
     updated_at: new Date().toISOString()
   };
 }
 
 // Helper: Sign webhook payload with HMAC-SHA256
-async function signPayload(payload: any, secret: string): Promise<string> {
+async function signPayload(payload: Record<string, unknown>, secret: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(JSON.stringify(payload));
   const keyData = encoder.encode(secret);
