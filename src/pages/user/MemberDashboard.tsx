@@ -168,7 +168,7 @@ export default function MemberDashboard() {
                 <div>
                   <p className="text-sm text-slate-500">Bergabung</p>
                   <p className="font-medium">
-                    {format(parseISO(user.created_at), "dd MMM yyyy", { locale: localeId })}
+                    {user.created_at ? format(parseISO(user.created_at), "dd MMM yyyy", { locale: localeId }) : "-"}
                   </p>
                 </div>
               </div>

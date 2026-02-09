@@ -7,7 +7,8 @@ export interface UserProfile {
   email: string;
   full_name: string | null;
   phone_number: string | null;
-  created_at: string;
+  created_at: string | null;
+  updated_at?: string | null;
 }
 
 interface UseMemberAuthReturn {
