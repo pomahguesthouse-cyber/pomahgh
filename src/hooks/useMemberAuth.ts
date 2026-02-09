@@ -65,10 +65,39 @@ export const useMemberAuth = (): UseMemberAuthReturn => {
         .from("user_profiles")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      setUser(data);
+      
+      if (data) {
+        setUser(data);
+      } else {
+        // Profile doesn't exist yet - create it from auth user data
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const newProfile = {
+            id: authUser.id,
+            email: authUser.email || "",
+            full_name: authUser.user_metadata?.full_name || "",
+            phone_number: authUser.user_metadata?.phone_number || "",
+          };
+          const { data: created, error: insertError } = await supabase
+            .from("user_profiles")
+            .insert(newProfile)
+            .select()
+            .single();
+          
+          if (insertError) {
+            console.error("Error creating profile:", insertError);
+            // Still set basic user data even if insert fails
+            setUser({ ...newProfile, created_at: new Date().toISOString() } as UserProfile);
+          } else {
+            setUser(created);
+          }
+        } else {
+          setUser(null);
+        }
+      }
     } catch (error) {
       console.error("Error fetching profile:", error);
       setUser(null);
