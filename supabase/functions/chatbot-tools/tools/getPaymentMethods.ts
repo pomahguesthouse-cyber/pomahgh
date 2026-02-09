@@ -1,25 +1,7 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { GetPaymentMethodsParams } from '../lib/types.ts';
+import { md5 } from '../../_shared/md5.ts';
 
-// Helper to create MD5 hash for Duitku signature
-async function md5(message: string): Promise<string> {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('MD5', msgBuffer).catch(() => null);
-  
-  if (hashBuffer) {
-    return Array.from(new Uint8Array(hashBuffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-  }
-  
-  // Fallback: Use a simple MD5 implementation
-  const { createHash } = await import("https://deno.land/std@0.177.0/node/crypto.ts");
-  return createHash("md5").update(message).digest("hex");
-}
-
-/**
- * Get available payment methods for a booking
- */
 export async function handleGetPaymentMethods(
   supabase: SupabaseClient,
   params: GetPaymentMethodsParams
@@ -30,10 +12,8 @@ export async function handleGetPaymentMethods(
     throw new Error("Kode booking, nomor telepon, dan email wajib diisi untuk melihat metode pembayaran");
   }
 
-  // Normalize booking code
   const normalizedCode = booking_id.toUpperCase().replace(/\s+/g, '');
 
-  // Verify booking ownership
   const { data: booking, error: bookingError } = await supabase
     .from("bookings")
     .select("id, booking_code, total_price, status, payment_status, guest_name")
@@ -65,7 +45,6 @@ export async function handleGetPaymentMethods(
 
   const amount = Math.round(booking.total_price);
 
-  // Get Duitku credentials
   const merchantCode = Deno.env.get("DUITKU_MERCHANT_CODE");
   const apiKey = Deno.env.get("DUITKU_API_KEY");
 
@@ -73,20 +52,13 @@ export async function handleGetPaymentMethods(
     throw new Error("Konfigurasi payment gateway belum lengkap");
   }
 
-  // Create signature for getpaymentmethod
   const datetime = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 14);
-  const signature = await md5(merchantCode + amount.toString() + datetime + apiKey);
+  const signature = md5(merchantCode + amount.toString() + datetime + apiKey);
 
-  // Call Duitku API
   const response = await fetch("https://sandbox.duitku.com/webapi/api/merchant/paymentmethod/getpaymentmethod", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      merchantcode: merchantCode,
-      amount,
-      datetime,
-      signature,
-    }),
+    body: JSON.stringify({ merchantcode: merchantCode, amount, datetime, signature }),
   });
 
   if (!response.ok) {
@@ -101,7 +73,6 @@ export async function handleGetPaymentMethods(
     throw new Error("Gagal mengambil metode pembayaran dari gateway");
   }
 
-  // Format payment methods for chatbot
   const methods = (data.paymentFee || []).map((m: { paymentMethod: string; paymentName: string; paymentImage: string; totalFee: string }) => ({
     code: m.paymentMethod,
     name: m.paymentName,
@@ -109,7 +80,6 @@ export async function handleGetPaymentMethods(
     fee: parseInt(m.totalFee) || 0,
   }));
 
-  // Group by type for cleaner display
   const grouped: Record<string, Array<{ name: string; code: string; fee: number }>> = {};
   for (const m of methods) {
     const type = m.name.includes('Virtual Account') || m.code.startsWith('B') ? 'Virtual Account' :
@@ -120,7 +90,6 @@ export async function handleGetPaymentMethods(
     grouped[type].push({ name: m.name, code: m.code, fee: m.fee });
   }
 
-  // Build text summary
   const summaryParts: string[] = [];
   for (const [type, items] of Object.entries(grouped)) {
     const names = items.map(i => i.name).join(', ');

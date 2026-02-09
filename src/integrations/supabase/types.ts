@@ -496,23 +496,28 @@ export type Database = {
       bookings: {
         Row: {
           allocated_room_number: string | null
+          bank_code: string | null
           booking_code: string
           booking_source: string | null
+          cancellation_reason: string | null
           check_in: string
           check_in_time: string | null
           check_out: string
           check_out_time: string | null
           created_at: string
           guest_email: string
+          guest_email_backup: string | null
           guest_name: string
           guest_phone: string | null
           id: string
+          is_inline_payment: boolean | null
           is_non_refundable: boolean | null
           num_guests: number
           ota_name: string | null
           other_source: string | null
           payment_account_holder: string | null
           payment_amount: number | null
+          payment_expires_at: string | null
           payment_proof_url: string | null
           payment_status: string | null
           remark: string | null
@@ -522,26 +527,33 @@ export type Database = {
           total_nights: number
           total_price: number
           updated_at: string
+          user_id: string | null
+          va_number: string | null
         }
         Insert: {
           allocated_room_number?: string | null
+          bank_code?: string | null
           booking_code?: string
           booking_source?: string | null
+          cancellation_reason?: string | null
           check_in: string
           check_in_time?: string | null
           check_out: string
           check_out_time?: string | null
           created_at?: string
           guest_email: string
+          guest_email_backup?: string | null
           guest_name: string
           guest_phone?: string | null
           id?: string
+          is_inline_payment?: boolean | null
           is_non_refundable?: boolean | null
           num_guests?: number
           ota_name?: string | null
           other_source?: string | null
           payment_account_holder?: string | null
           payment_amount?: number | null
+          payment_expires_at?: string | null
           payment_proof_url?: string | null
           payment_status?: string | null
           remark?: string | null
@@ -551,26 +563,33 @@ export type Database = {
           total_nights: number
           total_price: number
           updated_at?: string
+          user_id?: string | null
+          va_number?: string | null
         }
         Update: {
           allocated_room_number?: string | null
+          bank_code?: string | null
           booking_code?: string
           booking_source?: string | null
+          cancellation_reason?: string | null
           check_in?: string
           check_in_time?: string | null
           check_out?: string
           check_out_time?: string | null
           created_at?: string
           guest_email?: string
+          guest_email_backup?: string | null
           guest_name?: string
           guest_phone?: string | null
           id?: string
+          is_inline_payment?: boolean | null
           is_non_refundable?: boolean | null
           num_guests?: number
           ota_name?: string | null
           other_source?: string | null
           payment_account_holder?: string | null
           payment_amount?: number | null
+          payment_expires_at?: string | null
           payment_proof_url?: string | null
           payment_status?: string | null
           remark?: string | null
@@ -580,6 +599,8 @@ export type Database = {
           total_nights?: number
           total_price?: number
           updated_at?: string
+          user_id?: string | null
+          va_number?: string | null
         }
         Relationships: [
           {
@@ -587,6 +608,13 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2091,15 +2119,52 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_security_logs: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_security_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_transactions: {
         Row: {
           amount: number
+          bank_code: string | null
           booking_id: string
           callback_data: Json | null
           created_at: string
           duitku_reference: string | null
           expires_at: string | null
           id: string
+          is_inline: boolean | null
           merchant_order_id: string
           paid_at: string | null
           payment_method: string
@@ -2112,12 +2177,14 @@ export type Database = {
         }
         Insert: {
           amount: number
+          bank_code?: string | null
           booking_id: string
           callback_data?: Json | null
           created_at?: string
           duitku_reference?: string | null
           expires_at?: string | null
           id?: string
+          is_inline?: boolean | null
           merchant_order_id: string
           paid_at?: string | null
           payment_method: string
@@ -2130,12 +2197,14 @@ export type Database = {
         }
         Update: {
           amount?: number
+          bank_code?: string | null
           booking_id?: string
           callback_data?: Json | null
           created_at?: string
           duitku_reference?: string | null
           expires_at?: string | null
           id?: string
+          is_inline?: boolean | null
           merchant_order_id?: string
           paid_at?: string | null
           payment_method?: string
@@ -3268,6 +3337,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          phone_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -3438,6 +3534,7 @@ export type Database = {
         Args: { p_check_in: string; p_check_out: string; p_room_id: string }
         Returns: string
       }
+      auto_cancel_expired_bookings: { Args: never; Returns: number }
       calculate_real_time_occupancy: {
         Args: { p_date?: string; p_room_id: string }
         Returns: {

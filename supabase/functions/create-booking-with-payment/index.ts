@@ -1,7 +1,4 @@
 // Create Booking with Inline BCA VA Payment
-// File: supabase/functions/create-booking-with-payment/index.ts
-// Purpose: Create booking + generate BCA VA simultaneously
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { md5 } from "../_shared/md5.ts";
@@ -11,7 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Logger utility
 const log = (level: 'info' | 'error' | 'warn', message: string, data?: Record<string, unknown>) => {
   console.log(JSON.stringify({
     timestamp: new Date().toISOString(),
@@ -23,7 +19,6 @@ const log = (level: 'info' | 'error' | 'warn', message: string, data?: Record<st
   }));
 };
 
-// Generate booking code: PMH-XXXXXX
 const generateBookingCode = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let result = 'PMH-';
@@ -43,22 +38,11 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const {
-      guest_name,
-      guest_email,
-      guest_phone,
-      room_id,
-      room_ids,
-      check_in,
-      check_out,
-      total_nights,
-      total_price,
-      num_guests,
-      special_requests,
-      booking_source = 'manual',
-      user_id
+      guest_name, guest_email, guest_phone, room_id, room_ids,
+      check_in, check_out, total_nights, total_price, num_guests,
+      special_requests, booking_source = 'manual', user_id
     } = body;
 
-    // Validation
     if (!guest_name || !guest_email || !check_in || !check_out || !total_price) {
       log('error', 'Missing required fields', { requestId, body });
       return new Response(
@@ -71,19 +55,14 @@ serve(async (req) => {
     const apiKey = Deno.env.get("DUITKU_API_KEY")!;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const callbackSecret = Deno.env.get("DUITKU_CALLBACK_SECRET")!;
+    const callbackSecret = Deno.env.get("DUITKU_CALLBACK_SECRET") || "";
     const duitkuEnv = Deno.env.get("DUITKU_ENV") || "sandbox";
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    log('info', 'Creating booking with payment', { 
-      requestId, 
-      guest_email,
-      total_price,
-      user_id: user_id || 'guest'
-    });
+    log('info', 'Creating booking with payment', { requestId, guest_email, total_price, user_id: user_id || 'guest' });
 
-    // 1. Get room details
+    // Get room details
     const { data: rooms, error: roomError } = await supabase
       .from("rooms")
       .select("id, name, room_numbers, allotment")
@@ -102,33 +81,12 @@ serve(async (req) => {
     const paymentAmount = Math.round(total_price);
     const merchantOrderId = `${bookingCode}-${Date.now()}`;
 
-    // 2. Check room availability (exclude rooms with pending payment)
-    const { data: conflictingBookings } = await supabase
-      .from("bookings")
-      .select("id, status, room_id")
-      .in("room_id", room_ids || [room_id])
-      .or(`status.eq.confirmed,status.eq.checked_in,and(status.eq.pending_payment,payment_expires_at.gt.${new Date().toISOString()})`)
-      .overlaps("check_in,check_out", [check_in, check_out]);
-
-    if (conflictingBookings && conflictingBookings.length > 0) {
-      log('warn', 'Room not available', { 
-        requestId, 
-        room_id, 
-        conflicting: conflictingBookings.length 
-      });
-      return new Response(
-        JSON.stringify({ error: "Room not available for selected dates" }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 3. Prepare Duitku payload
+    // Prepare Duitku payload
     const siteUrl = req.headers.get("origin") || "*";
-    const callbackUrl = `${supabaseUrl}/functions/v1/duitku-callback?secret=${callbackSecret}`;
+    const callbackUrl = `${supabaseUrl}/functions/v1/duitku-callback${callbackSecret ? `?secret=${callbackSecret}` : ''}`;
     const returnUrl = `${siteUrl}/booking/${bookingCode}/status`;
 
-    // Generate signature
-    const signature = await md5(merchantCode + merchantOrderId + paymentAmount + apiKey);
+    const signature = md5(merchantCode + merchantOrderId + paymentAmount + apiKey);
 
     const DUITKU_BASE_URL = duitkuEnv === "production"
       ? "https://passport.duitku.com"
@@ -146,14 +104,13 @@ serve(async (req) => {
       customerVaName: guest_name,
       callbackUrl,
       returnUrl,
-      expiryPeriod: 60, // 1 hour in minutes
+      expiryPeriod: 60,
       signature,
-      paymentMethod: "BC", // BCA Virtual Account
+      paymentMethod: "BC",
     };
 
     log('info', 'Calling Duitku API', { requestId, merchantOrderId, amount: paymentAmount });
 
-    // 4. Call Duitku API
     const duitkuResponse = await fetch(
       `${DUITKU_BASE_URL}/webapi/api/merchant/v2/inquiry`,
       {
@@ -166,21 +123,16 @@ serve(async (req) => {
     const duitkuData = await duitkuResponse.json();
 
     if (duitkuData.statusCode !== "00") {
-      log('error', 'Duitku API failed', { 
-        requestId, 
-        statusCode: duitkuData.statusCode,
-        message: duitkuData.statusMessage 
-      });
+      log('error', 'Duitku API failed', { requestId, statusCode: duitkuData.statusCode, message: duitkuData.statusMessage });
       return new Response(
         JSON.stringify({ error: "Failed to create payment", detail: duitkuData.statusMessage }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 5. Calculate expiry (1 hour from now)
     const paymentExpiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
-    // 6. Create booking
+    // Create booking
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .insert({
@@ -188,7 +140,7 @@ serve(async (req) => {
         guest_name,
         guest_email,
         guest_phone: guest_phone || null,
-        room_id: room_ids ? null : room_id,
+        room_id: room_ids ? room_ids[0] : room_id,
         check_in,
         check_out,
         total_nights,
@@ -213,7 +165,7 @@ serve(async (req) => {
       throw bookingError;
     }
 
-    // 7. Create payment transaction record
+    // Create payment transaction
     const { error: txnError } = await supabase
       .from("payment_transactions")
       .insert({
@@ -228,60 +180,35 @@ serve(async (req) => {
         payment_url: duitkuData.paymentUrl,
         expires_at: paymentExpiresAt,
         is_inline: true,
-        bank_code: "BCA",
-        metadata: {
-          request_id: requestId,
-          duitku_env: duitkuEnv,
-          booking_code: bookingCode
-        }
+        bank_code: "BCA"
       });
 
     if (txnError) {
-      log('error', 'Failed to create payment transaction', { requestId, error: txnError.message });
-      // Don't throw, booking already created
+      log('warn', 'Failed to create payment transaction', { requestId, error: txnError.message });
     }
 
-    // 8. Handle multi-room bookings
+    // Handle multi-room bookings
     if (room_ids && room_ids.length > 0) {
       const bookingRooms = room_ids.map((rid: string, idx: number) => ({
         booking_id: booking.id,
         room_id: rid,
         price_per_night: Math.round(paymentAmount / total_nights / room_ids.length),
-        room_number: rooms[idx]?.room_numbers?.[0] || null
+        room_number: (rooms[idx]?.room_numbers as string[] | null)?.[0] || ''
       }));
-
       await supabase.from("booking_rooms").insert(bookingRooms);
     }
 
-    // 9. Send WhatsApp notification
+    // Send WhatsApp notification (fire and forget)
     try {
-      const waMessage = `✅ *Booking Berhasil Dibuat!*\n\n` +
-        `Kode: *${bookingCode}*\n` +
-        `Kamar: ${roomNames}\n` +
-        `Check-in: ${check_in}\n` +
-        `Total: Rp ${paymentAmount.toLocaleString('id-ID')}\n\n` +
-        `🏦 *BCA Virtual Account:*\n` +
-        `${duitkuData.vaNumber}\n\n` +
-        `⏰ Bayar sebelum 1 jam\n\n` +
-        `Salin nomor VA untuk pembayaran via BCA Mobile/myBCA.`;
-
+      const waMessage = `✅ *Booking Berhasil Dibuat!*\n\nKode: *${bookingCode}*\nKamar: ${roomNames}\nCheck-in: ${check_in}\nTotal: Rp ${paymentAmount.toLocaleString('id-ID')}\n\n🏦 *BCA Virtual Account:*\n${duitkuData.vaNumber}\n\n⏰ Bayar sebelum 1 jam\n\nSalin nomor VA untuk pembayaran via BCA Mobile/myBCA.`;
       await supabase.functions.invoke("send-whatsapp", {
-        body: {
-          phone: guest_phone || guest_email, // Fallback
-          message: waMessage,
-          type: "booking_confirmation"
-        }
+        body: { phone: guest_phone || guest_email, message: waMessage, type: "booking_confirmation" }
       });
-    } catch (waError) {
-      log('warn', 'Failed to send WhatsApp', { requestId, error: waError.message });
+    } catch (waError: unknown) {
+      log('warn', 'Failed to send WhatsApp', { requestId, error: (waError as Error).message });
     }
 
-    log('info', 'Booking created successfully', { 
-      requestId, 
-      bookingId: booking.id,
-      bookingCode,
-      vaNumber: duitkuData.vaNumber
-    });
+    log('info', 'Booking created successfully', { requestId, bookingId: booking.id, bookingCode, vaNumber: duitkuData.vaNumber });
 
     return new Response(
       JSON.stringify({
@@ -300,15 +227,10 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
-  } catch (error) {
-    log('error', 'Error creating booking', { 
-      requestId, 
-      error: error.message,
-      stack: error.stack 
-    });
+  } catch (error: unknown) {
+    log('error', 'Error creating booking', { requestId, error: (error as Error).message, stack: (error as Error).stack });
     return new Response(
-      JSON.stringify({ error: "Internal server error", detail: error.message }),
+      JSON.stringify({ error: "Internal server error", detail: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

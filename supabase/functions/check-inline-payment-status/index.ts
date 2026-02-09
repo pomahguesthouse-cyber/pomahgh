@@ -1,7 +1,4 @@
 // Check Inline Payment Status
-// File: supabase/functions/check-inline-payment-status/index.ts
-// Purpose: Poll payment status for inline BCA VA
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { md5 } from "../_shared/md5.ts";
@@ -11,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const log = (level: 'info' | 'error', message: string, data?: Record<string, unknown>) => {
+const log = (level: 'info' | 'error' | 'warn', message: string, data?: Record<string, unknown>) => {
   console.log(JSON.stringify({
     timestamp: new Date().toISOString(),
     level,
@@ -47,7 +44,6 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 1. Get booking details
     let query = supabase
       .from("bookings")
       .select("*, rooms(name)")
@@ -68,11 +64,10 @@ serve(async (req) => {
       );
     }
 
-    // 2. Check if already expired
-    if (new Date(booking.payment_expires_at) < new Date()) {
+    // Check if already expired
+    if (booking.payment_expires_at && new Date(booking.payment_expires_at) < new Date()) {
       log('info', 'Payment expired', { requestId, bookingId: booking.id });
       
-      // Auto-cancel
       await supabase
         .from("bookings")
         .update({
@@ -94,7 +89,7 @@ serve(async (req) => {
       );
     }
 
-    // 3. Get payment transaction
+    // Get payment transaction
     const { data: txn } = await supabase
       .from("payment_transactions")
       .select("merchant_order_id")
@@ -110,8 +105,8 @@ serve(async (req) => {
       );
     }
 
-    // 4. Check with Duitku API
-    const signature = await md5(merchantCode + txn.merchant_order_id + apiKey);
+    // Check with Duitku API
+    const signature = md5(merchantCode + txn.merchant_order_id + apiKey);
     
     const DUITKU_BASE_URL = duitkuEnv === "production"
       ? "https://passport.duitku.com"
@@ -132,33 +127,22 @@ serve(async (req) => {
 
     const duitkuData = await duitkuResponse.json();
 
-    // 5. Map status
     let status = "pending";
     if (duitkuData.statusCode === "00") status = "paid";
     else if (duitkuData.statusCode === "02") status = "expired";
 
-    // 6. Update if status changed
+    // Update if status changed
     if (status === "paid" && booking.payment_status !== "paid") {
       await supabase
         .from("bookings")
-        .update({
-          payment_status: "paid",
-          status: "confirmed",
-          updated_at: new Date().toISOString()
-        })
+        .update({ payment_status: "paid", status: "confirmed", updated_at: new Date().toISOString() })
         .eq("id", booking.id);
 
-      // Update transaction
       await supabase
         .from("payment_transactions")
-        .update({
-          status: "paid",
-          paid_at: new Date().toISOString(),
-          payment_amount: duitkuData.amount
-        })
+        .update({ status: "paid", paid_at: new Date().toISOString() })
         .eq("booking_id", booking.id);
 
-      // Send success notification
       try {
         await supabase.functions.invoke("send-whatsapp", {
           body: {
@@ -167,15 +151,15 @@ serve(async (req) => {
             type: "payment_success"
           }
         });
-      } catch (e) {
-        log('warn', 'Failed to send success notification', { requestId, error: e.message });
+      } catch (e: unknown) {
+        log('warn', 'Failed to send success notification', { requestId, error: (e as Error).message });
       }
 
       log('info', 'Payment confirmed', { requestId, bookingId: booking.id });
     }
 
-    // 7. Calculate remaining time
-    const expiresAt = new Date(booking.payment_expires_at);
+    // Calculate remaining time
+    const expiresAt = booking.payment_expires_at ? new Date(booking.payment_expires_at) : new Date();
     const now = new Date();
     const remainingMs = expiresAt.getTime() - now.getTime();
     const remainingMinutes = Math.max(0, Math.floor(remainingMs / 60000));
@@ -196,9 +180,8 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
-  } catch (error) {
-    log('error', 'Error checking status', { requestId, error: error.message });
+  } catch (error: unknown) {
+    log('error', 'Error checking status', { requestId, error: (error as Error).message });
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
