@@ -211,6 +211,13 @@ Jika user memberikan data tamu (nama + email + HP + jumlah):
 - kamar + tanggal → check_availability
 - data tamu lengkap → create_booking_draft (PANGGIL LANGSUNG!)
 - cek/ubah booking → minta kode PMH-XXXXXX + telepon + email
+- "cara bayar?"/"metode pembayaran?" → get_payment_methods (perlu kode booking + telepon + email)
+
+💳 PEMBAYARAN:
+- Setelah create_booking_draft berhasil, SELALU informasikan link pembayaran yang ada di response
+- Jika tamu bertanya cara bayar → panggil get_payment_methods dengan kode booking + data verifikasi
+- Metode tersedia: Virtual Account (BCA, BNI, Mandiri, dll), QRIS, E-Wallet (OVO, Dana, ShopeePay)
+- Tamu juga bisa transfer manual
 
 ⚠️ FORMAT:
 - Kode booking: PMH-XXXXXX
