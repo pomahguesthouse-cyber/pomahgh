@@ -129,5 +129,21 @@ export const tools = [
         required: ["booking_id", "guest_phone", "guest_email"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_payment_methods",
+      description: "Tampilkan metode pembayaran online (VA, QRIS, E-Wallet) untuk booking tertentu. Gunakan setelah booking berhasil dibuat atau saat tamu bertanya tentang cara pembayaran.",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_id: { type: "string", description: "Kode booking PMH-XXXXXX" },
+          guest_phone: { type: "string", description: "Nomor telepon tamu" },
+          guest_email: { type: "string", description: "Email tamu" }
+        },
+        required: ["booking_id", "guest_phone", "guest_email"]
+      }
+    }
   }
 ];
