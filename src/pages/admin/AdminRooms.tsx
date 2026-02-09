@@ -835,7 +835,7 @@ const AdminRooms = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => handleEdit(room)} className="flex-1">
+                    <Button size="sm" variant="outline" onClick={() => handleEdit(room)} className="flex-1 bg-[#2a7ffe] text-primary-foreground">
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
@@ -848,7 +848,7 @@ const AdminRooms = () => {
                       Delete
                     </Button>
                   </div>
-                  <Button size="sm" variant="secondary" onClick={() => setViewingCalendar(room)} className="w-full">
+                  <Button size="sm" variant="secondary" onClick={() => setViewingCalendar(room)} className="w-full bg-[#66aaea] text-primary-foreground">
                     <CalendarIcon className="h-4 w-4 mr-1" />
                     View Availability
                   </Button>
