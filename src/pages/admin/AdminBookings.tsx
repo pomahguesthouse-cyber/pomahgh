@@ -291,33 +291,37 @@ const AdminBookings = () => {
 
       {/* Table Header + Booking List */}
       <div className="border rounded-lg overflow-hidden bg-card">
-        <BookingListHeader />
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+          <div className="min-w-[1400px]">
+            <BookingListHeader />
 
-        {/* Booking List */}
-        {paginatedBookings && paginatedBookings.length > 0 ? (
-          <Accordion type="single" collapsible>
-            {paginatedBookings.map((booking, idx) => (
-              <BookingAccordionItem
-                key={booking.id}
-                booking={booking as Booking}
-                index={startIndex + idx + 1}
-                rooms={roomsForComponents}
-                getRoomName={getRoomName}
-                bankAccounts={bankAccountsForComponents}
-                onStatusChange={handleStatusChange}
-                onEditClick={handleEditClick}
-                onDeleteClick={handleDeleteClick}
-                onInvoiceClick={handleInvoiceClick}
-                isUpdating={isUpdating}
-                isDeleting={isDeleting}
-              />
-            ))}
-          </Accordion>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            No bookings found
+            {/* Booking List */}
+            {paginatedBookings && paginatedBookings.length > 0 ? (
+              <Accordion type="single" collapsible>
+                {paginatedBookings.map((booking, idx) => (
+                  <BookingAccordionItem
+                    key={booking.id}
+                    booking={booking as Booking}
+                    index={startIndex + idx + 1}
+                    rooms={roomsForComponents}
+                    getRoomName={getRoomName}
+                    bankAccounts={bankAccountsForComponents}
+                    onStatusChange={handleStatusChange}
+                    onEditClick={handleEditClick}
+                    onDeleteClick={handleDeleteClick}
+                    onInvoiceClick={handleInvoiceClick}
+                    isUpdating={isUpdating}
+                    isDeleting={isDeleting}
+                  />
+                ))}
+              </Accordion>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No bookings found
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Pagination */}
