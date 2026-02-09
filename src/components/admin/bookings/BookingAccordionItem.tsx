@@ -129,7 +129,7 @@ export function BookingAccordionItem({
       >
         {/* Desktop: Table-like row */}
         <TooltipProvider>
-          <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_80px_100px_100px_70px_120px_100px_130px_120px] gap-1 w-full text-[13px] text-gray-700 font-roboto items-center">
+          <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_80px_100px_100px_70px_130px_130px_130px_120px] gap-1 w-full text-[13px] text-gray-700 font-roboto items-center">
             <div className="text-center font-medium">{index}</div>
             <div className="text-xs">{booking.booking_code}</div>
             <Tooltip>
@@ -158,17 +158,25 @@ export function BookingAccordionItem({
               {format(checkOutDate, "dd/MM/yyyy")}
             </div>
             <div className="text-center">{booking.total_nights}</div>
-            <div className="text-right">{formatNumberID(pricePerNight)}</div>
-            <div className="text-center text-xs">
-              {STATUS_LABELS[booking.status]}
+            <div className="text-right font-medium">{formatNumberID(pricePerNight)}</div>
+            <div className="text-right font-semibold">
+              {formatNumberID(booking.total_price)}
             </div>
             <div
               className={`text-center text-xs font-medium ${PAYMENT_STATUS_COLORS[paymentStatus]}`}
             >
               {PAYMENT_STATUS_LABELS[paymentStatus]}
             </div>
-            <div className="text-right font-semibold bg-green-50 px-2 py-1 rounded">
-              {formatNumberID(booking.total_price)}
+            <div className="text-center text-xs font-medium">
+              <span className={`px-2 py-1 rounded ${
+                booking.status === 'checked_in' ? 'bg-blue-100 text-blue-700' :
+                booking.status === 'checked_out' ? 'bg-green-100 text-green-700' :
+                booking.status === 'confirmed' ? 'bg-purple-100 text-purple-700' :
+                booking.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {STATUS_LABELS[booking.status]}
+              </span>
             </div>
           </div>
         </TooltipProvider>
