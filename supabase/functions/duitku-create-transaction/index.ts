@@ -8,15 +8,45 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Logger utility
+const log = (level: 'info' | 'error' | 'warn', message: string, data?: Record<string, unknown>) => {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level,
+    service: 'payment-gateway',
+    function: 'duitku-create-transaction',
+    message,
+    ...data
+  }));
+};
+
+// Retry utility with exponential backoff
+const retryWithBackoff = async <T>(fn: () => Promise<T>, retries = 3): Promise<T> => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      const delay = Math.pow(2, i) * 1000;
+      log('warn', `Retry attempt ${i + 1}/${retries} after ${delay}ms`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error("Max retries reached");
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = crypto.randomUUID();
+  
   try {
     const { booking_id, payment_method } = await req.json();
 
     if (!booking_id || !payment_method) {
+      log('error', 'Missing required parameters', { requestId, booking_id, payment_method });
       return new Response(
         JSON.stringify({ error: "booking_id and payment_method are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -27,8 +57,12 @@ serve(async (req) => {
     const apiKey = Deno.env.get("DUITKU_API_KEY")!;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const callbackSecret = Deno.env.get("DUITKU_CALLBACK_SECRET")!;
+    const duitkuEnv = Deno.env.get("DUITKU_ENV") || "sandbox";
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    log('info', 'Creating payment transaction', { requestId, booking_id, payment_method });
 
     // Get booking data
     const { data: booking, error: bookingError } = await supabase
@@ -38,9 +72,45 @@ serve(async (req) => {
       .single();
 
     if (bookingError || !booking) {
+      log('error', 'Booking not found', { requestId, booking_id, error: bookingError?.message });
       return new Response(
         JSON.stringify({ error: "Booking not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check for existing pending transaction (IDEMPOTENCY)
+    const { data: existingTxn } = await supabase
+      .from("payment_transactions")
+      .select("*")
+      .eq("booking_id", booking_id)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (existingTxn) {
+      log('info', 'Returning existing pending transaction', { 
+        requestId, 
+        booking_id, 
+        existingTxnId: existingTxn.id,
+        expiresAt: existingTxn.expires_at 
+      });
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          payment_url: existingTxn.payment_url,
+          reference: existingTxn.duitku_reference,
+          va_number: existingTxn.va_number,
+          qr_string: existingTxn.qr_string,
+          amount: existingTxn.amount,
+          transaction_id: existingTxn.id,
+          expires_at: existingTxn.expires_at,
+          is_existing: true
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -61,6 +131,14 @@ serve(async (req) => {
 
     const expiryPeriod = 1440; // 24 hours in minutes
 
+    // Environment-based URL
+    const DUITKU_BASE_URL = duitkuEnv === "production"
+      ? "https://passport.duitku.com"
+      : "https://sandbox.duitku.com";
+
+    // Secure callback URL with secret
+    const callbackUrl = `${supabaseUrl}/functions/v1/duitku-callback?secret=${callbackSecret}`;
+
     const duitkuPayload = {
       merchantCode,
       paymentAmount,
@@ -71,33 +149,46 @@ serve(async (req) => {
       additionalParam: booking_id,
       merchantUserInfo: customerVaName,
       customerVaName,
-      callbackUrl: `${supabaseUrl}/functions/v1/duitku-callback`,
+      callbackUrl,
       returnUrl: paymentReturnUrl,
       expiryPeriod,
       signature,
       paymentMethod: payment_method,
     };
 
-    console.log("Duitku request:", JSON.stringify({ ...duitkuPayload, signature: "***" }));
+    log('info', 'Calling Duitku API', { 
+      requestId, 
+      merchantOrderId, 
+      paymentAmount,
+      environment: duitkuEnv,
+      url: `${DUITKU_BASE_URL}/webapi/api/merchant/v2/inquiry`
+    });
 
-    const duitkuResponse = await fetch(
-      "https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(duitkuPayload),
-      }
-    );
-
-    const duitkuData = await duitkuResponse.json();
-    console.log("Duitku response:", JSON.stringify(duitkuData));
-
-    if (duitkuData.statusCode !== "00") {
-      return new Response(
-        JSON.stringify({ error: "Failed to create payment", detail: duitkuData.statusMessage || duitkuData }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    // Retry logic for Duitku API call
+    const duitkuData = await retryWithBackoff(async () => {
+      const response = await fetch(
+        `${DUITKU_BASE_URL}/webapi/api/merchant/v2/inquiry`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(duitkuPayload),
+        }
       );
-    }
+      
+      const data = await response.json();
+      
+      if (!response.ok || data.statusCode !== "00") {
+        throw new Error(data.statusMessage || `Duitku API error: ${response.status}`);
+      }
+      
+      return data;
+    });
+
+    log('info', 'Duitku transaction created successfully', { 
+      requestId, 
+      reference: duitkuData.reference,
+      merchantOrderId
+    });
 
     const expiresAt = new Date(Date.now() + expiryPeriod * 60 * 1000).toISOString();
 
@@ -115,11 +206,29 @@ serve(async (req) => {
         va_number: duitkuData.vaNumber || null,
         qr_string: duitkuData.qrString || null,
         expires_at: expiresAt,
+        metadata: {
+          request_id: requestId,
+          duitku_env: duitkuEnv,
+          ip_address: req.headers.get("x-forwarded-for") || "unknown"
+        }
       })
       .select()
       .single();
 
-    if (txnError) console.error("Failed to save transaction:", txnError);
+    if (txnError) {
+      log('error', 'Failed to save transaction to database', { 
+        requestId, 
+        error: txnError.message,
+        merchantOrderId
+      });
+      throw txnError;
+    }
+
+    log('info', 'Transaction saved successfully', { 
+      requestId, 
+      transactionId: txn.id,
+      booking_id
+    });
 
     return new Response(
       JSON.stringify({
@@ -129,13 +238,18 @@ serve(async (req) => {
         va_number: duitkuData.vaNumber || null,
         qr_string: duitkuData.qrString || null,
         amount: paymentAmount,
-        transaction_id: txn?.id,
+        transaction_id: txn.id,
         expires_at: expiresAt,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error creating Duitku transaction:", error);
+    log('error', 'Error creating Duitku transaction', { 
+      requestId, 
+      error: error.message,
+      stack: error.stack
+    });
+    
     return new Response(
       JSON.stringify({ error: "Internal server error", detail: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

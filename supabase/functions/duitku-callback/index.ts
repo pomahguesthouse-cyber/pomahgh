@@ -8,12 +8,39 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Logger utility
+const log = (level: 'info' | 'error' | 'warn', message: string, data?: Record<string, unknown>) => {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level,
+    service: 'payment-gateway',
+    function: 'duitku-callback',
+    message,
+    ...data
+  }));
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = crypto.randomUUID();
+  
   try {
+    // Validate callback secret
+    const url = new URL(req.url);
+    const secret = url.searchParams.get("secret");
+    const expectedSecret = Deno.env.get("DUITKU_CALLBACK_SECRET");
+    
+    if (secret !== expectedSecret) {
+      log('error', 'Invalid callback secret', { requestId, providedSecret: secret?.slice(0, 5) + '***' });
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const merchantCode = Deno.env.get("DUITKU_MERCHANT_CODE")!;
     const apiKey = Deno.env.get("DUITKU_API_KEY")!;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -35,7 +62,11 @@ serve(async (req) => {
       callbackData = await req.json();
     }
 
-    console.log("Duitku callback received:", JSON.stringify(callbackData));
+    log('info', 'Duitku callback received', { 
+      requestId, 
+      merchantOrderId: callbackData.merchantOrderId,
+      resultCode: callbackData.resultCode
+    });
 
     const { merchantOrderId, amount, resultCode, reference, signature: receivedSignature } = callbackData;
 
@@ -43,10 +74,61 @@ serve(async (req) => {
     const expectedSignature = await md5(merchantCode + amount + merchantOrderId + apiKey);
 
     if (receivedSignature !== expectedSignature) {
-      console.error("Invalid signature!", { received: receivedSignature, expected: expectedSignature });
+      log('error', 'Invalid signature', { 
+        requestId, 
+        received: receivedSignature?.slice(0, 10) + '***', 
+        expected: expectedSignature?.slice(0, 10) + '***'
+      });
       return new Response(
         JSON.stringify({ error: "Invalid signature" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get existing transaction
+    const { data: txn, error: txnError } = await supabase
+      .from("payment_transactions")
+      .select("*, bookings(guest_name, guest_email, booking_code)")
+      .eq("merchant_order_id", merchantOrderId)
+      .single();
+
+    if (txnError || !txn) {
+      log('error', 'Transaction not found', { requestId, merchantOrderId, error: txnError?.message });
+      return new Response(
+        JSON.stringify({ error: "Transaction not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // VALIDATE AMOUNT MATCH
+    const callbackAmount = Number(amount);
+    const expectedAmount = Number(txn.amount);
+    
+    if (callbackAmount !== expectedAmount) {
+      log('error', 'Amount mismatch detected', { 
+        requestId, 
+        merchantOrderId,
+        callbackAmount,
+        expectedAmount,
+        difference: callbackAmount - expectedAmount
+      });
+      
+      // Log suspicious activity
+      await supabase
+        .from("payment_security_logs")
+        .insert({
+          transaction_id: txn.id,
+          event_type: "amount_mismatch",
+          details: {
+            callback_amount: callbackAmount,
+            expected_amount: expectedAmount,
+            callback_data: callbackData
+          }
+        });
+      
+      return new Response(
+        JSON.stringify({ error: "Amount mismatch" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -55,50 +137,89 @@ serve(async (req) => {
     else if (resultCode === "01") status = "pending";
     else status = "failed";
 
-    const { data: txn, error: txnError } = await supabase
+    // Only process if status changed
+    if (txn.status === status) {
+      log('info', 'Status unchanged, skipping update', { requestId, merchantOrderId, status });
+      return new Response(
+        JSON.stringify({ success: true, status, message: "Status unchanged" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { error: updateError } = await supabase
       .from("payment_transactions")
       .update({
         status,
         duitku_reference: reference,
         callback_data: callbackData,
         paid_at: status === "paid" ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
       })
-      .eq("merchant_order_id", merchantOrderId)
-      .select("booking_id, amount")
-      .single();
+      .eq("merchant_order_id", merchantOrderId);
 
-    if (txnError) console.error("Failed to update transaction:", txnError);
+    if (updateError) {
+      log('error', 'Failed to update transaction', { requestId, merchantOrderId, error: updateError.message });
+      throw updateError;
+    }
 
-    if (status === "paid" && txn) {
+    log('info', 'Transaction updated successfully', { 
+      requestId, 
+      merchantOrderId, 
+      status,
+      amount: callbackAmount
+    });
+
+    if (status === "paid") {
+      // Update booking status
       await supabase
         .from("bookings")
-        .update({ payment_status: "paid", payment_amount: txn.amount })
+        .update({ 
+          payment_status: "paid", 
+          payment_amount: callbackAmount,
+          status: "confirmed"
+        })
         .eq("id", txn.booking_id);
 
-      // Notify managers
+      log('info', 'Booking updated to paid', { requestId, bookingId: txn.booking_id });
+
+      // Notify managers (with retry)
       try {
-        const { data: booking } = await supabase
-          .from("bookings")
-          .select("booking_code, guest_name, total_price, rooms(name)")
-          .eq("id", txn.booking_id)
-          .single();
+        const booking = txn.bookings as unknown as { 
+          booking_code: string; 
+          guest_name: string;
+        } | null;
 
         if (booking) {
-          const room = booking.rooms as unknown as { name: string } | null;
           const { data: settings } = await supabase
             .from("hotel_settings")
-            .select("whatsapp_manager_numbers")
+            .select("whatsapp_manager_numbers, hotel_name")
             .single();
 
           const managerNumbers = (settings?.whatsapp_manager_numbers as Array<{ phone: string; name: string }>) || [];
 
           for (const manager of managerNumbers) {
-            const message = `💰 *Pembayaran Diterima!*\n\nBooking: ${booking.booking_code}\nTamu: ${booking.guest_name}\nKamar: ${room?.name || '-'}\nTotal: Rp ${Number(txn.amount).toLocaleString('id-ID')}\nMetode: Duitku Online Payment\n\n✅ Pembayaran telah dikonfirmasi otomatis.`;
-            await supabase.functions.invoke("send-whatsapp", { body: { phone: manager.phone, message } });
+            const message = `💰 *Pembayaran Diterima!*\n\n` +
+              `Hotel: ${settings?.hotel_name || 'Hotel'}\n` +
+              `Booking: ${booking.booking_code}\n` +
+              `Tamu: ${booking.guest_name}\n` +
+              `Total: Rp ${callbackAmount.toLocaleString('id-ID')}\n` +
+              `Metode: Duitku Online Payment\n\n` +
+              `✅ Pembayaran telah dikonfirmasi otomatis.`;
+            
+            await supabase.functions.invoke("send-whatsapp", { 
+              body: { phone: manager.phone, message } 
+            }).catch(err => {
+              log('warn', 'Failed to send WhatsApp notification', { 
+                requestId, 
+                manager: manager.phone,
+                error: err.message 
+              });
+            });
           }
         }
       } catch (e) {
-        console.error("Failed to notify managers:", e);
+        log('warn', 'Failed to notify managers', { requestId, error: e.message });
+        // Don't fail the callback if notification fails
       }
     }
 
@@ -107,7 +228,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Callback error:", error);
+    log('error', 'Callback error', { requestId, error: error.message, stack: error.stack });
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
