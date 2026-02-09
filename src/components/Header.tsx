@@ -1,14 +1,16 @@
 import { useEffect, useState, memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, User, Home } from "lucide-react";
+import { Menu, User, Home, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = memo(function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const { settings } = useHotelSettings();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -37,6 +39,10 @@ const Header = memo(function Header() {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }, 100);
     }
+  };
+
+  const handleUserClick = () => {
+    navigate(user ? "/member" : "/auth");
   };
 
   const menuItems = [
@@ -78,8 +84,19 @@ const Header = memo(function Header() {
               <Link to="/explore-semarang">Explore Semarang</Link>
             </nav>
 
-            <Button size="icon" onClick={() => navigate("/auth")} className="rounded-full bg-white/20 text-white">
-              <User size={18} />
+            <Button 
+              size="sm" 
+              onClick={handleUserClick} 
+              className="rounded-full bg-white/20 text-white hover:bg-white/30 gap-2"
+            >
+              <User size={16} />
+              {user ? (
+                <span className="text-xs max-w-[100px] truncate">
+                  {user.user_metadata?.full_name || "Akun Saya"}
+                </span>
+              ) : (
+                <span className="text-xs">Masuk</span>
+              )}
             </Button>
           </div>
         </div>
@@ -99,8 +116,8 @@ const Header = memo(function Header() {
         >
           <div className="h-full flex items-center justify-between">
             <img src={settings?.logo_url || "/logo.png"} alt="Pomah Guesthouse" className="h-8" />
-            <Button size="icon" onClick={() => navigate("/auth")} className="rounded-full bg-white/20 text-white">
-              <User size={18} />
+            <Button size="icon" onClick={handleUserClick} className="rounded-full bg-white/20 text-white">
+              {user ? <User size={18} /> : <LogIn size={18} />}
             </Button>
           </div>
         </div>
