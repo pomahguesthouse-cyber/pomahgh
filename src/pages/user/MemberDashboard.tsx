@@ -105,11 +105,11 @@ export default function MemberDashboard() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Akses Ditolak</h2>
-            <p className="text-slate-600 mb-4">Anda harus login untuk melihat dashboard</p>
-            <Button onClick={() => window.location.href = "/login"}>
-              Login
+            <p className="text-muted-foreground mb-4">Anda harus login untuk melihat dashboard</p>
+            <Button onClick={() => window.location.href = "/auth"}>
+              Masuk / Daftar
             </Button>
           </CardContent>
         </Card>

@@ -30,6 +30,9 @@ export const useBooking = () => {
 
   return useMutation({
     mutationFn: async (bookingData: BookingData) => {
+      // Get current user for linking booking
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const roomQuantity = bookingData.room_quantity || 1;
       const totalNights = differenceInDays(bookingData.check_out, bookingData.check_in);
       const roomPrice = totalNights * bookingData.price_per_night * roomQuantity;
@@ -77,6 +80,7 @@ export const useBooking = () => {
         is_non_refundable: bookingData.is_non_refundable || false,
         booking_source: 'other',
         other_source: 'Website',
+        user_id: user?.id || null,
       }).select().single();
 
       if (error) throw error;

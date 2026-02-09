@@ -49,6 +49,7 @@ import ManagerCalendar from "./pages/public/ManagerCalendar";
 import Payment from "./pages/public/Payment";
 import PaymentStatus from "./pages/public/PaymentStatus";
 import PageEditorPage from "./pages/PageEditorPage";
+import MemberDashboard from "./pages/user/MemberDashboard";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
             <Route path="/explore-semarang/:slug" element={<AttractionDetail />} />
             <Route path="/events/:slug" element={<EventDetail />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/member" element={<MemberDashboard />} />
             <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
           <Route path="/admin/rooms" element={<AdminLayout><AdminRooms /></AdminLayout>} />
