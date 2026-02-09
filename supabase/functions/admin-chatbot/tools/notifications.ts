@@ -64,7 +64,7 @@ export async function sendCheckinReminder(supabase: SupabaseClient, dateStr?: st
     guestListParts.push(
       `${i + 1}. *${b.guest_name}* (${b.num_guests} tamu)\n` +
       `   📱 ${b.guest_phone || '-'}\n` +
-      `   🛏️ ${b.rooms?.name} - ${roomNumbers}\n` +
+      `   🛏️ ${(b.rooms as unknown as { name: string })?.name} - ${roomNumbers}\n` +
       `   📅 ${b.total_nights} malam s.d. ${formatDateIndonesian(b.check_out)}\n` +
       `   🎫 ${b.booking_code}`
     );
@@ -226,7 +226,7 @@ export async function sendWhatsAppMessage(supabase: SupabaseClient, args: { phon
         bookingInfo = {
           booking_code,
           guest_name: booking.guest_name,
-          room_name: booking.rooms?.name
+          room_name: (booking.rooms as unknown as { name: string })?.name
         };
       }
     }

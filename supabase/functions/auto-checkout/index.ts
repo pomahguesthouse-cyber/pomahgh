@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       rooms: { name: string } | null;
     }
 
-    const results = (allOverdue as OverdueBooking[]).map((b) => ({
+    const results = (allOverdue as unknown as OverdueBooking[]).map((b) => ({
       booking_code: b.booking_code,
       guest_name: b.guest_name,
       room: `${b.rooms?.name || ''} ${b.allocated_room_number || ''}`.trim(),

@@ -335,59 +335,72 @@ const AdminRooms = () => {
           </DialogTrigger>
           
           {/* ELEGANT REDESIGNED FORM */}
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 flex flex-col">
-            <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 to-white">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 flex flex-col font-[system-ui,_'Segoe_UI',_Roboto,_sans-serif]">
+            <DialogHeader className="px-6 py-3.5 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
               <div className="flex items-center justify-between">
-                <div>
-                  <DialogTitle className="text-2xl font-semibold flex items-center gap-3 text-slate-800">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Building2 className="w-6 h-6 text-primary" />
-                    </div>
-                    {editingRoom ? `Edit ${editingRoom.name}` : "Add New Room"}
-                  </DialogTitle>
-                  {editingRoom && (
-                    <p className="text-sm text-slate-500 mt-2 flex items-center gap-2">
-                      <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">{editingRoom.id.slice(0, 8)}</span>
-                      <span>•</span>
-                      <span>Last updated {editingRoom.updated_at ? format(new Date(editingRoom.updated_at), "dd MMM yyyy, HH:mm", { locale: localeId }) : "Never"}</span>
-                    </p>
-                  )}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 bg-primary/10 rounded-xl shrink-0">
+                    <Building2 className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <DialogTitle className="text-lg font-bold tracking-tight text-foreground truncate">
+                      {editingRoom ? `Edit ${editingRoom.name}` : "Add New Room"}
+                    </DialogTitle>
+                    {editingRoom && (
+                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                        <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-[10px]">{editingRoom.id.slice(0, 8)}</span>
+                        <span>•</span>
+                        <span>{editingRoom.updated_at ? format(new Date(editingRoom.updated_at), "dd MMM yyyy, HH:mm", { locale: localeId }) : "—"}</span>
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border shadow-sm">
-                  <span className="text-sm font-medium text-slate-600">Status:</span>
-                  <Switch
-                    checked={formData.available}
-                    onCheckedChange={(checked) => setFormData({ ...formData, available: checked })}
-                  />
-                  <span className={cn("text-sm font-semibold", formData.available ? "text-green-600" : "text-slate-400")}>
-                    {formData.available ? "Available" : "Closed"}
-                  </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full border">
+                    <Switch
+                      checked={formData.available}
+                      onCheckedChange={(checked) => setFormData({ ...formData, available: checked })}
+                      className="scale-90"
+                    />
+                    <span className={cn("text-xs font-semibold", formData.available ? "text-green-600" : "text-muted-foreground")}>
+                      {formData.available ? "Available" : "Closed"}
+                    </span>
+                  </div>
+                  <Button 
+                    type="submit"
+                    form="room-form"
+                    size="sm"
+                    className="h-8 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg shadow-sm"
+                  >
+                    <Save className="w-3.5 h-3.5 mr-1.5" />
+                    {editingRoom ? "Save" : "Create"}
+                  </Button>
                 </div>
               </div>
             </DialogHeader>
             
-            <form onSubmit={handleSubmit} className="flex flex-col h-[calc(90vh-80px)]">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                <TabsList className="mx-6 mt-4 grid w-auto grid-cols-4 bg-slate-100/80 p-1.5 rounded-xl">
-                  <TabsTrigger value="general" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    <Building2 className="w-4 h-4" />
+            <form id="room-form" onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+                <TabsList className="mx-6 mt-3 mb-0 grid w-auto grid-cols-4 bg-muted/60 p-1 rounded-lg h-9">
+                  <TabsTrigger value="general" className="flex items-center gap-1.5 rounded-md text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <Building2 className="w-3.5 h-3.5" />
                     General
                   </TabsTrigger>
-                  <TabsTrigger value="pricing" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    <span className="font-semibold">Rp</span>
+                  <TabsTrigger value="pricing" className="flex items-center gap-1.5 rounded-md text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <span className="font-bold text-xs">Rp</span>
                     Pricing
                   </TabsTrigger>
-                  <TabsTrigger value="features" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    <Check className="w-4 h-4" />
+                  <TabsTrigger value="features" className="flex items-center gap-1.5 rounded-md text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <Check className="w-3.5 h-3.5" />
                     Features
                   </TabsTrigger>
-                  <TabsTrigger value="media" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                    <ImageIcon className="w-4 h-4" />
+                  <TabsTrigger value="media" className="flex items-center gap-1.5 rounded-md text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <ImageIcon className="w-3.5 h-3.5" />
                     Media
                   </TabsTrigger>
                 </TabsList>
                 
-                <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400">
+                <div className="flex-1 overflow-y-auto px-6 py-5 min-h-0">
                   
                   {/* TAB: GENERAL */}
                   <TabsContent value="general" className="mt-0 space-y-6">
@@ -894,24 +907,6 @@ const AdminRooms = () => {
                   </TabsContent>
                 </div>
 
-                {/* Footer Actions */}
-                <DialogFooter className="border-t bg-slate-50/50 px-6 py-4 gap-3">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsDialogOpen(false)}
-                    className="h-11 px-6"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit"
-                    className="h-11 px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {editingRoom ? "Save Changes" : "Create Room"}
-                  </Button>
-                </DialogFooter>
               </Tabs>
             </form>
           </DialogContent>

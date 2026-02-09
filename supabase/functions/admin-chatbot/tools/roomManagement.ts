@@ -74,7 +74,7 @@ export async function updateRoomPrice(supabase: SupabaseClient, args: Record<str
     throw new Error(`Kamar "${room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
   }
 
-  const typedRoom = room as RoomPriceRow;
+  const typedRoom = room as unknown as RoomPriceRow;
   const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
   let priceFields: string[] = [];
 
@@ -185,7 +185,7 @@ export async function getRoomPrices(supabase: SupabaseClient, roomName?: string)
     throw new Error('Tidak ada kamar yang ditemukan');
   }
 
-  let rooms = allRooms as RoomPriceRow[];
+  let rooms = allRooms as unknown as RoomPriceRow[];
 
   if (roomName) {
     const matchedRoom = findBestRoomMatch(roomName, allRooms);
@@ -193,7 +193,7 @@ export async function getRoomPrices(supabase: SupabaseClient, roomName?: string)
       const roomList = rooms.map((r) => r.name).join(', ');
       throw new Error(`Kamar "${roomName}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
     }
-    rooms = [matchedRoom as RoomPriceRow];
+    rooms = [matchedRoom as unknown as RoomPriceRow];
   }
 
   return {

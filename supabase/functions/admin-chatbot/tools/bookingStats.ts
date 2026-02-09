@@ -91,7 +91,7 @@ export async function getRecentBookings(supabase: SupabaseClient, limit: number 
   const { data, error } = await queryBuilder;
   if (error) throw error;
 
-  const rows = (data || []) as BookingWithRoom[];
+  const rows = (data || []) as unknown as BookingWithRoom[];
   return {
     count: rows.length,
     bookings: rows.map((b) => ({
@@ -130,7 +130,7 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
   const { data, error } = await queryBuilder;
   if (error) throw error;
 
-  const rows = (data || []) as BookingWithRoom[];
+  const rows = (data || []) as unknown as BookingWithRoom[];
   return {
     query: query || null,
     count: rows.length,
