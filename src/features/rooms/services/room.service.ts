@@ -24,10 +24,15 @@ const getDayPrice = (room: Room, dayOfWeek: number): number => {
   return dayPrices[dayOfWeek] || room.price_per_night;
 };
 
-const calculateCurrentPrice = (room: Room, activePromo?: RoomPromotion | null): number => {
+const calculateCurrentPrice = (room: Room, activePromo?: RoomPromotion | null, autoPricingPrice?: number | null): number => {
   const today = new Date();
 
-  // First priority: Check room_promotions table
+  // FIRST priority: Autopricing overrides everything when enabled
+  if (room.use_autopricing && autoPricingPrice) {
+    return autoPricingPrice;
+  }
+
+  // Second priority: Check room_promotions table
   if (activePromo) {
     if (activePromo.promo_price) {
       return activePromo.promo_price;
@@ -37,7 +42,7 @@ const calculateCurrentPrice = (room: Room, activePromo?: RoomPromotion | null): 
     }
   }
 
-  // Second priority: Check legacy promo fields on rooms table
+  // Third priority: Check legacy promo fields on rooms table
   if (room.promo_price && room.promo_start_date && room.promo_end_date) {
     const promoStart = new Date(room.promo_start_date);
     const promoEnd = new Date(room.promo_end_date);
@@ -47,7 +52,7 @@ const calculateCurrentPrice = (room: Room, activePromo?: RoomPromotion | null): 
     }
   }
 
-  // Third priority: Check day-of-week pricing
+  // Fourth priority: Check day-of-week pricing
   const dayOfWeek = today.getDay();
   return getDayPrice(room, dayOfWeek);
 };
@@ -87,13 +92,33 @@ export const roomService = {
       }
     });
 
+    // Fetch autopricing data for rooms with use_autopricing enabled
+    const roomsWithAutopricing = (rooms as Room[]).filter(r => r.use_autopricing);
+    const autoPricingPrices = new Map<string, number>();
+
+    if (roomsWithAutopricing.length > 0) {
+      const { data: priceCacheData } = await supabase
+        .from('price_cache')
+        .select('room_id, cached_price')
+        .in('room_id', roomsWithAutopricing.map(r => r.id))
+        .eq('date', today)
+        .gt('expires_at', new Date().toISOString());
+
+      priceCacheData?.forEach(cache => {
+        if (cache.room_id && cache.cached_price) {
+          autoPricingPrices.set(cache.room_id, cache.cached_price);
+        }
+      });
+    }
+
     // Calculate current price for each room
     return (rooms as Room[]).map((room) => {
       const activePromo = promosByRoom.get(room.id) || null;
+      const autoPricingPrice = autoPricingPrices.get(room.id) || null;
       return {
         ...room,
         active_promotion: activePromo,
-        final_price: calculateCurrentPrice(room, activePromo),
+        final_price: calculateCurrentPrice(room, activePromo, autoPricingPrice),
       };
     });
   },

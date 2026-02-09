@@ -42,7 +42,7 @@ interface BookingRoomEntry {
 // Helper function to get price for a specific day of week
 function getDayPrice(room: RoomWithPricing, dayOfWeek: number): number {
   const priceField = DAY_PRICE_FIELDS[dayOfWeek];
-  return (room as Record<string, unknown>)[priceField] as number || room.price_per_night;
+  return ((room as unknown as Record<string, unknown>)[priceField] as number) || room.price_per_night;
 }
 
 // Calculate final price with promo and day-of-week pricing
@@ -101,10 +101,10 @@ export async function createAdminBooking(supabase: SupabaseClient, args: Record<
 
   if (roomsError) throw roomsError;
 
-  const room = findBestRoomMatch(args.room_name as string, allRooms || []) as RoomWithPricing | null;
+  const room = findBestRoomMatch(args.room_name as string, (allRooms || []) as unknown as Array<{ name: string; [key: string]: unknown }>) as RoomWithPricing | null;
   
   if (!room) {
-    const roomList = (allRooms || []).map((r: { name: string }) => r.name).join(', ') || 'tidak ada';
+    const roomList = (allRooms || []).map((r: any) => r.name).join(', ') || 'tidak ada';
     throw new Error(`Kamar "${args.room_name}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
   }
 
@@ -285,7 +285,7 @@ export async function updateBookingStatus(supabase: SupabaseClient, bookingCode:
     success: true,
     booking_code: bookingCode,
     guest_name: booking.guest_name,
-    room_name: booking.rooms?.name,
+    room_name: (booking.rooms as any)?.name,
     old_status: oldStatus,
     new_status: newStatus,
     cancellation_reason: reason || null
@@ -396,7 +396,7 @@ export async function rescheduleBooking(supabase: SupabaseClient, args: Record<s
   }
 
   const nights = Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24));
-  const totalPrice = booking.rooms?.price_per_night * nights;
+  const totalPrice = (booking.rooms as any)?.price_per_night * nights;
 
   const { error: updateError } = await supabase
     .from('bookings')
@@ -437,10 +437,10 @@ export async function changeBookingRoom(supabase: SupabaseClient, args: Record<s
   }
 
   const { data: allRooms } = await supabase.from('rooms').select('*');
-  const newRoom = findBestRoomMatch(new_room_name, allRooms || []);
+  const newRoom = findBestRoomMatch(new_room_name, (allRooms || []) as unknown as Array<{ name: string; [key: string]: unknown }>) as any;
 
   if (!newRoom) {
-    const roomList = (allRooms || []).map((r: { name: string }) => r.name).join(', ') || 'tidak ada';
+    const roomList = (allRooms || []).map((r: any) => r.name).join(', ') || 'tidak ada';
     throw new Error(`Kamar "${new_room_name}" tidak ditemukan. Tersedia: ${roomList}`);
   }
 
@@ -456,13 +456,15 @@ export async function changeBookingRoom(supabase: SupabaseClient, args: Record<s
     .eq('room_number', new_room_number)
     .neq('booking_id', booking.id);
 
-  const activeConflicts = (brConflicts || []).filter((br: { bookings: { id: string; booking_code: string; check_in: string; check_out: string; status: string } | null }) => {
-    const b = br.bookings;
+  const activeConflicts = (brConflicts || []).filter((br: any) => {
+    const b = Array.isArray(br.bookings) ? br.bookings[0] : br.bookings;
     return b && b.status !== 'cancelled' && b.check_in < booking.check_out && b.check_out > booking.check_in;
   });
 
   if (activeConflicts.length > 0) {
-    const conflictCode = activeConflicts[0].bookings?.booking_code || 'unknown';
+    const firstConflict = activeConflicts[0] as any;
+    const b = Array.isArray(firstConflict.bookings) ? firstConflict.bookings[0] : firstConflict.bookings;
+    const conflictCode = b?.booking_code || 'unknown';
     throw new Error(`Kamar ${newRoom.name} ${new_room_number} tidak tersedia (bentrok dengan ${conflictCode})`);
   }
 
@@ -494,7 +496,7 @@ export async function changeBookingRoom(supabase: SupabaseClient, args: Record<s
     throw new Error(`Kamar ${newRoom.name} ${new_room_number} diblokir pada tanggal: ${blockedDates.map((d: { unavailable_date: string }) => d.unavailable_date).join(', ')}`);
   }
 
-  const newTotalPrice = newRoom.price_per_night * booking.total_nights;
+  const newTotalPrice = (newRoom.price_per_night as number) * booking.total_nights;
 
   // Update bookings table (legacy + primary)
   const { error: updateError } = await supabase
@@ -553,11 +555,11 @@ export async function changeBookingRoom(supabase: SupabaseClient, args: Record<s
   return {
     success: true,
     booking_code,
-    old_room: { name: booking.rooms?.name, number: booking.allocated_room_number },
+    old_room: { name: (booking.rooms as any)?.name, number: booking.allocated_room_number },
     new_room: { name: newRoom.name, number: new_room_number },
-    old_total_price: booking.rooms?.price_per_night * booking.total_nights,
+    old_total_price: ((booking.rooms as any)?.price_per_night || 0) * booking.total_nights,
     new_total_price: newTotalPrice,
-    price_difference: newTotalPrice - (booking.rooms?.price_per_night || 0) * booking.total_nights
+    price_difference: newTotalPrice - ((booking.rooms as any)?.price_per_night || 0) * booking.total_nights
   };
 }
 
@@ -591,7 +593,7 @@ export async function setLateCheckout(supabase: SupabaseClient, args: Record<str
     rooms: { name: string; price_per_night: number } | null;
     booking_rooms: BookingRoomEntry[] | null;
   }
-  const matchingBooking = (bookings as BookingWithRooms[] | null)?.find((b) => {
+  const matchingBooking = (bookings as unknown as BookingWithRooms[] | null)?.find((b) => {
     if (b.allocated_room_number === room_number) return true;
     if (b.booking_rooms?.some((br) => br.room_number === room_number)) return true;
     return false;
@@ -701,7 +703,7 @@ export async function updateRoomStatus(supabase: SupabaseClient, args: Record<st
   if (findError) throw findError;
   
   // Find the booking that matches this room number
-  const matchingBooking = (bookings as Array<{ id: string; booking_code: string; guest_name: string; status: string; check_in: string; check_out: string; allocated_room_number: string | null; rooms: { name: string } | null; booking_rooms: BookingRoomEntry[] | null }> | null)?.find((b) => {
+  const matchingBooking = (bookings as unknown as Array<{ id: string; booking_code: string; guest_name: string; status: string; check_in: string; check_out: string; allocated_room_number: string | null; rooms: { name: string } | null; booking_rooms: BookingRoomEntry[] | null }> | null)?.find((b) => {
     if (b.allocated_room_number === room_number) return true;
     if (b.booking_rooms?.some((br) => br.room_number === room_number)) return true;
     return false;
