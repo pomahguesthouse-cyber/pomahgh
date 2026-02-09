@@ -58,7 +58,6 @@ export interface Room {
   saturday_non_refundable?: boolean | null;
   sunday_non_refundable?: boolean | null;
   use_autopricing?: boolean | null;
-  // New promo fields from room_promotions table
   active_promotion?: RoomPromotion | null;
 }
 
@@ -78,7 +77,6 @@ const getDayPrice = (room: Room, dayOfWeek: number): number => {
 const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null, autoPricingPrice?: number | null): number => {
   const today = new Date();
   
-  // First priority: Check room_promotions table
   if (activePromo) {
     if (activePromo.promo_price) {
       return activePromo.promo_price;
@@ -88,7 +86,6 @@ const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null, autoPri
     }
   }
   
-  // Second priority: Check legacy promo fields on rooms table
   if (
     room.promo_price &&
     room.promo_start_date &&
@@ -102,15 +99,27 @@ const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null, autoPri
     }
   }
   
-  // Third priority: Check autopricing if enabled
   if (room.use_autopricing && autoPricingPrice) {
     return autoPricingPrice;
   }
   
-  // Fourth priority: Check day-of-week pricing
   const dayOfWeek = today.getDay();
   return getDayPrice(room, dayOfWeek);
 };
+
+// Define columns explicitly to avoid schema cache issues
+const ROOM_COLUMNS = `
+  id, name, slug, description, price_per_night, max_guests, features,
+  image_url, image_urls, virtual_tour_url, available, size_sqm,
+  room_count, room_numbers, allotment, base_price, final_price,
+  promo_price, promo_start_date, promo_end_date,
+  monday_price, tuesday_price, wednesday_price, thursday_price,
+  friday_price, saturday_price, sunday_price, transition_effect,
+  floor_plan_url, floor_plan_enabled, is_non_refundable,
+  monday_non_refundable, tuesday_non_refundable, wednesday_non_refundable,
+  thursday_non_refundable, friday_non_refundable, saturday_non_refundable,
+  sunday_non_refundable, created_at, updated_at
+`;
 
 export const useRooms = () => {
   return useQuery({
@@ -118,71 +127,35 @@ export const useRooms = () => {
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       
-      // Fetch rooms
-      let roomsQuery = supabase
-        .from("rooms")
-        .select("*");
+      // Try with use_autopricing first
+      let rooms: Room[] = [];
+      let hasAutopricingColumn = false;
       
-      const { data: rooms, error: roomsError } = await roomsQuery
-        .eq("available", true)
-        .order("price_per_night", { ascending: true });
-
-      // Handle schema cache error
-      if (roomsError && roomsError.message?.includes("use_autopricing")) {
-        console.warn("use_autopricing column not found in schema, retrying without it");
-        const { data: fallbackRooms, error: fallbackError } = await supabase
+      try {
+        const { data, error } = await supabase
           .from("rooms")
-          .select(`
-            id, name, slug, description, price_per_night, max_guests, features,
-            image_url, image_urls, virtual_tour_url, available, size_sqm,
-            room_count, room_numbers, allotment, base_price, final_price,
-            promo_price, promo_start_date, promo_end_date,
-            monday_price, tuesday_price, wednesday_price, thursday_price,
-            friday_price, saturday_price, sunday_price, transition_effect,
-            floor_plan_url, floor_plan_enabled, is_non_refundable,
-            monday_non_refundable, tuesday_non_refundable, wednesday_non_refundable,
-            thursday_non_refundable, friday_non_refundable, saturday_non_refundable,
-            sunday_non_refundable, created_at, updated_at
-          `)
+          .select("*")
           .eq("available", true)
           .order("price_per_night", { ascending: true });
         
-        if (fallbackError) throw fallbackError;
-        // Add use_autopricing: false as default
-        const roomsWithDefault = (fallbackRooms || []).map(room => ({ 
-          ...room, 
-          use_autopricing: false 
-        })) as Room[];
-        
-        // Continue with promotions logic
-        const { data: promotions, error: promosError } = await supabase
-          .from("room_promotions")
-          .select("*")
-          .eq("is_active", true)
-          .lte("start_date", today)
-          .gte("end_date", today)
-          .order("priority", { ascending: false });
-
-        if (promosError) throw promosError;
-
-        const promosByRoom = new Map<string, RoomPromotion>();
-        promotions?.forEach((promo) => {
-          if (!promosByRoom.has(promo.room_id)) {
-            promosByRoom.set(promo.room_id, promo as RoomPromotion);
-          }
-        });
-        
-        return roomsWithDefault.map(room => {
-          const activePromo = promosByRoom.get(room.id) || null;
-          return {
-            ...room,
-            active_promotion: activePromo,
-            final_price: getCurrentPrice(room, activePromo, null)
-          };
-        });
+        if (error) throw error;
+        rooms = data as Room[];
+        hasAutopricingColumn = true;
+      } catch (err: any) {
+        if (err.message?.includes("use_autopricing")) {
+          console.warn("use_autopricing column not found, using fallback query");
+          const { data, error } = await supabase
+            .from("rooms")
+            .select(ROOM_COLUMNS)
+            .eq("available", true)
+            .order("price_per_night", { ascending: true });
+          
+          if (error) throw error;
+          rooms = (data || []).map(r => ({ ...r, use_autopricing: false })) as Room[];
+        } else {
+          throw err;
+        }
       }
-
-      if (roomsError) throw roomsError;
       
       // Fetch active promotions
       const { data: promotions, error: promosError } = await supabase
@@ -195,7 +168,6 @@ export const useRooms = () => {
 
       if (promosError) throw promosError;
 
-      // Map promotions to rooms (get best promo per room based on priority)
       const promosByRoom = new Map<string, RoomPromotion>();
       promotions?.forEach((promo) => {
         if (!promosByRoom.has(promo.room_id)) {
@@ -203,25 +175,27 @@ export const useRooms = () => {
         }
       });
       
-      // Fetch autopricing data for rooms with use_autopricing enabled
-      const roomsWithAutopricing = rooms?.filter(r => r.use_autopricing) || [];
+      // Fetch autopricing data only if column exists and rooms have it enabled
       const autoPricingPrices = new Map<string, number>();
       
-      if (roomsWithAutopricing.length > 0) {
-        const { data: priceCacheData } = await supabase
-          .from('price_cache')
-          .select('room_id, price_per_night')
-          .in('room_id', roomsWithAutopricing.map(r => r.id))
-          .eq('date', today)
-          .gt('valid_until', new Date().toISOString());
+      if (hasAutopricingColumn) {
+        const roomsWithAutopricing = rooms.filter(r => r.use_autopricing);
         
-        priceCacheData?.forEach(cache => {
-          autoPricingPrices.set(cache.room_id, cache.price_per_night);
-        });
+        if (roomsWithAutopricing.length > 0) {
+          const { data: priceCacheData } = await supabase
+            .from('price_cache')
+            .select('room_id, price_per_night')
+            .in('room_id', roomsWithAutopricing.map(r => r.id))
+            .eq('date', today)
+            .gt('valid_until', new Date().toISOString());
+          
+          priceCacheData?.forEach(cache => {
+            autoPricingPrices.set(cache.room_id, cache.price_per_night);
+          });
+        }
       }
       
-      // Calculate current price for each room
-      return (rooms as Room[]).map(room => {
+      return rooms.map(room => {
         const activePromo = promosByRoom.get(room.id) || null;
         const autoPricingPrice = autoPricingPrices.get(room.id) || null;
         return {

@@ -3,7 +3,7 @@
 -- Purpose: Allow rooms to use autopricing as primary price source
 
 -- Add column to rooms table
-ALTER TABLE rooms 
+ALTER TABLE IF EXISTS rooms 
 ADD COLUMN IF NOT EXISTS use_autopricing BOOLEAN DEFAULT false;
 
 -- Add comment for documentation
@@ -15,7 +15,7 @@ UPDATE rooms SET use_autopricing = false WHERE use_autopricing IS NULL;
 -- Create index for performance
 CREATE INDEX IF NOT EXISTS idx_rooms_use_autopricing ON rooms(use_autopricing);
 
--- Verify migration
+-- Verify column exists
 DO $$
 BEGIN
   IF EXISTS (
@@ -28,3 +28,6 @@ BEGIN
   END IF;
 END;
 $$;
+
+-- Refresh schema cache
+NOTIFY pgrst, 'reload schema';
