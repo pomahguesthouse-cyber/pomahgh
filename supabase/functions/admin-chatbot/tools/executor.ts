@@ -113,7 +113,7 @@ async function executeTool(supabase: SupabaseClient, toolName: string, args: Rec
       return await sendCalendarLink(supabase, args.message as string);
     
     case 'send_whatsapp_message':
-      return await sendWhatsAppMessage(supabase, args);
+      return await sendWhatsAppMessage(supabase, args as { phone: string; message: string; booking_code?: string });
     
     case 'get_manager_list':
       return await getManagerList(supabase);

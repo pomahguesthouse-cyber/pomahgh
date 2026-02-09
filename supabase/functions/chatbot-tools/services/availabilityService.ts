@@ -41,7 +41,7 @@ export async function getAvailableRoomNumbers(
     booking: { id: string; check_in: string; check_out: string; status: string } | null;
   }
 
-  ((bookingRooms || []) as BookingRoomEntry[]).forEach((br) => {
+  ((bookingRooms || []) as unknown as BookingRoomEntry[]).forEach((br) => {
     if (br.room_number && br.booking) {
       // Exclude current booking if updating
       if (excludeBookingId && br.booking.id === excludeBookingId) return;

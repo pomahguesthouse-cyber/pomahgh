@@ -773,7 +773,7 @@ export async function extendStay(supabase: SupabaseClient, args: Record<string, 
   if (findError) throw findError;
   
   // Find matching booking
-  const matchingBooking = (bookings as Array<{ id: string; booking_code: string; guest_name: string; status: string; check_in: string; check_out: string; total_nights: number; total_price: number; allocated_room_number: string | null; room_id: string; rooms: { name: string; price_per_night: number } | null; booking_rooms: Array<BookingRoomEntry & { price_per_night?: number }> | null }> | null)?.find((b) => {
+  const matchingBooking = (bookings as unknown as Array<{ id: string; booking_code: string; guest_name: string; status: string; check_in: string; check_out: string; total_nights: number; total_price: number; allocated_room_number: string | null; room_id: string; rooms: { name: string; price_per_night: number } | null; booking_rooms: Array<BookingRoomEntry & { price_per_night?: number }> | null }> | null)?.find((b) => {
     if (b.allocated_room_number === room_number) return true;
     if (b.booking_rooms?.some((br) => br.room_number === room_number)) return true;
     return false;
@@ -882,7 +882,7 @@ export async function checkExtendAvailability(supabase: SupabaseClient, args: Re
   
   if (findError) throw findError;
   
-  const matchingBooking = (bookings as Array<{ id: string; booking_code: string; guest_name: string; status: string; check_in: string; check_out: string; total_nights: number; total_price: number; allocated_room_number: string | null; room_id: string; rooms: { name: string; price_per_night: number } | null; booking_rooms: Array<BookingRoomEntry & { price_per_night?: number }> | null }> | null)?.find((b) => {
+  const matchingBooking = (bookings as unknown as Array<{ id: string; booking_code: string; guest_name: string; status: string; check_in: string; check_out: string; total_nights: number; total_price: number; allocated_room_number: string | null; room_id: string; rooms: { name: string; price_per_night: number } | null; booking_rooms: Array<BookingRoomEntry & { price_per_night?: number }> | null }> | null)?.find((b) => {
     if (b.allocated_room_number === room_number) return true;
     if (b.booking_rooms?.some((br) => br.room_number === room_number)) return true;
     return false;
