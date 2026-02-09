@@ -27,6 +27,8 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "../BookingConfirmationDialog";
+import { BookingSuccessDialog } from "../booking/BookingSuccessDialog";
+import { useMemberAuth } from "@/hooks/useMemberAuth";
 
 interface CreateBookingDialogProps {
   open: boolean;
@@ -72,6 +74,9 @@ export const CreateBookingDialog = ({
   const [checkIn, setCheckIn] = useState<Date | undefined>(getDefaultCheckIn());
   const [checkOut, setCheckOut] = useState<Date | undefined>(checkIn ? getDefaultCheckOut(checkIn) : undefined);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [createdBooking, setCreatedBooking] = useState<any>(null);
+  const { user } = useMemberAuth();
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
@@ -275,94 +280,102 @@ export const CreateBookingDialog = ({
 
       // Calculate total price for all rooms
       let totalPrice = 0;
+      let pricePerNight = 0;
       if (useCustomPrice) {
         if (pricingMode === "per_night" && customPricePerNight) {
-          totalPrice = totalNights * parseFloat(customPricePerNight) * selectedRooms.length;
+          pricePerNight = parseFloat(customPricePerNight);
+          totalPrice = totalNights * pricePerNight * selectedRooms.length;
         } else if (pricingMode === "total" && customTotalPrice) {
           totalPrice = parseFloat(customTotalPrice);
+          pricePerNight = totalNights > 0 && selectedRooms.length > 0 ? totalPrice / totalNights / selectedRooms.length : 0;
         }
       } else {
+        pricePerNight = selectedRooms.reduce((sum, room) => sum + room.pricePerNight, 0) / selectedRooms.length;
         totalPrice = selectedRooms.reduce((sum, room) => sum + room.pricePerNight * totalNights, 0);
       }
 
-      // Insert main booking (use first room for backward compatibility)
-      const { data: bookingData, error: bookingError } = await supabase
-        .from("bookings")
-        .insert({
-          room_id: selectedRooms[0].roomId,
-          allocated_room_number: selectedRooms[0].roomNumber,
+      // Call new edge function for inline payment
+      const { data: result, error: paymentError } = await supabase.functions.invoke('create-booking-with-payment', {
+        body: {
           guest_name: formData.guest_name,
           guest_email: formData.guest_email,
           guest_phone: formData.guest_phone,
+          room_ids: selectedRooms.map(r => r.roomId),
+          room_numbers: selectedRooms.map(r => r.roomNumber),
           check_in: format(checkIn, "yyyy-MM-dd"),
           check_out: format(checkOut, "yyyy-MM-dd"),
-          check_in_time: formData.check_in_time + ":00",
-          check_out_time: formData.check_out_time + ":00",
           total_nights: totalNights,
           total_price: totalPrice,
+          price_per_night: pricePerNight,
           num_guests: formData.num_guests,
-          special_requests: formData.special_requests || null,
-          remark: formData.remark || null,
-          status: "confirmed",
-          payment_status: "unpaid",
+          special_requests: formData.special_requests,
+          remark: formData.remark,
           booking_source: bookingSource,
           ota_name: bookingSource === "ota" ? otaName : null,
           other_source: bookingSource === "other" ? otherSource : null,
-        })
-        .select()
-        .single();
+          user_id: user?.id || null
+        }
+      });
 
-      if (bookingError) throw bookingError;
+      if (paymentError) throw paymentError;
 
-      // Insert each room into booking_rooms table
-      const bookingRoomsData = selectedRooms.map((room) => ({
-        booking_id: bookingData.id,
-        room_id: room.roomId,
-        room_number: room.roomNumber,
-        price_per_night: useCustomPrice && customPricePerNight ? parseFloat(customPricePerNight) : room.pricePerNight,
-      }));
-
-      const { error: bookingRoomsError } = await supabase.from("booking_rooms").insert(bookingRoomsData);
-
-      if (bookingRoomsError) throw bookingRoomsError;
-
-      const roomsText =
-        selectedRooms.length > 1 ? `${selectedRooms.length} kamar` : `kamar ${selectedRooms[0].roomNumber}`;
-      
-      // Notify managers via WhatsApp
-      try {
-        await supabase.functions.invoke('notify-new-booking', {
-          body: {
-            booking_code: bookingData.booking_code,
-            guest_name: formData.guest_name,
-            guest_phone: formData.guest_phone,
-            room_name: selectedRooms.map(r => r.roomName).join(', '),
-            room_number: selectedRooms.map(r => r.roomNumber).join(', '),
-            check_in: format(checkIn, 'yyyy-MM-dd'),
-            check_out: format(checkOut, 'yyyy-MM-dd'),
-            total_nights: totalNights,
-            num_guests: formData.num_guests,
-            total_price: effectiveTotalPrice,
-            booking_source: bookingSource,
-            ota_name: otaName,
-            other_source: otherSource
-          }
-        });
-        console.log('✅ Manager notification sent');
-      } catch (e) {
-        console.error("Failed to notify managers:", e);
+      if (!result?.success) {
+        throw new Error(result?.error || "Failed to create booking with payment");
       }
-      
-      toast.success(`Booking berhasil dibuat untuk ${roomsText}`);
-      queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+
+      // Set created booking and show payment dialog
+      setCreatedBooking({
+        id: result.booking.id,
+        booking_code: result.booking.booking_code,
+        guest_name: formData.guest_name,
+        guest_email: formData.guest_email,
+        va_number: result.booking.va_number,
+        total_price: result.booking.total_price,
+        payment_expires_at: result.booking.payment_expires_at,
+        room_name: selectedRooms.map(r => r.roomName).join(', '),
+        check_in: format(checkIn, "yyyy-MM-dd"),
+        check_out: format(checkOut, "yyyy-MM-dd"),
+        total_nights: totalNights
+      });
+
       setShowConfirmation(false);
-      onOpenChange(false);
-    } catch (error) {
+      setShowPaymentDialog(true);
+      
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      
+    } catch (error: any) {
       console.error("Create booking error:", error);
-      toast.error("Gagal membuat booking");
+      toast.error(error.message || "Gagal membuat booking");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCheckPaymentStatus = async () => {
+    if (!createdBooking) return { status: "pending", is_expired: false };
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('check-inline-payment-status', {
+        body: { booking_id: createdBooking.id }
+      });
+
+      if (error) throw error;
+
+      return {
+        status: data.status,
+        is_expired: data.is_expired
+      };
+    } catch (error) {
+      console.error("Check payment status error:", error);
+      return { status: "pending", is_expired: false };
+    }
+  };
+
+  const handlePaymentComplete = () => {
+    setShowPaymentDialog(false);
+    onOpenChange(false);
+    toast.success("Booking dan pembayaran berhasil!");
   };
 
   const totalNights =
@@ -410,6 +423,15 @@ export const CreateBookingDialog = ({
         totalPrice={effectiveTotalPrice}
         numGuests={formData.num_guests}
       />
+      
+      {/* Inline Payment Success Dialog */}
+      <BookingSuccessDialog
+        isOpen={showPaymentDialog}
+        onClose={handlePaymentComplete}
+        booking={createdBooking}
+        onCheckStatus={handleCheckPaymentStatus}
+      />
+      
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
