@@ -1,125 +1,97 @@
 
 
-# Integrasi Payment Gateway Duitku
+# Tampilkan Metode Pembayaran di Checkout & Chatbot
 
 ## Ringkasan
-Menambahkan Duitku sebagai payment gateway sehingga tamu hotel dapat membayar booking secara online melalui Virtual Account, QRIS, E-Wallet, dan metode pembayaran lainnya yang tersedia di Duitku.
+Dua perubahan utama:
+1. **Booking Checkout (Website)**: Setelah tamu konfirmasi booking, tampilkan pilihan metode pembayaran Duitku langsung di dialog konfirmasi, sebelum redirect ke halaman pembayaran.
+2. **Guest Chatbot**: Tambahkan tool baru `get_payment_methods` agar chatbot bisa menampilkan opsi pembayaran kepada tamu dan mengarahkan mereka ke link pembayaran.
 
-## Alur Pembayaran
+## Perubahan Detail
 
+### 1. Update BookingDialog - Tampilkan Payment Methods Setelah Booking Sukses
+
+**Alur baru:**
 ```text
-Tamu Booking --> Konfirmasi --> Pilih Metode Bayar --> Redirect ke Duitku --> Bayar --> Callback Update Status --> Redirect Kembali
+Isi Form Booking --> Konfirmasi --> Booking Dibuat --> Tampil Metode Pembayaran --> Pilih & Redirect ke Payment Page
 ```
 
-**Alur Detail:**
-1. Tamu mengisi form booking dan klik "Konfirmasi"
-2. Sistem membuat booking dengan status `pending` dan `payment_status: unpaid`
-3. Tamu diarahkan ke halaman pilih pembayaran (Duitku atau transfer manual)
-4. Jika pilih Duitku: sistem memanggil edge function yang membuat transaksi ke Duitku API
-5. Tamu diarahkan ke halaman pembayaran Duitku
-6. Setelah bayar, Duitku mengirim callback ke webhook untuk update status
-7. Tamu di-redirect kembali ke halaman konfirmasi pembayaran berhasil
+**File yang diubah:**
+- `src/components/BookingDialog.tsx` - Setelah `createBooking` sukses, simpan `bookingId` dari response, lalu tampilkan `BookingConfirmationDialog` dengan tombol "Bayar Sekarang"
+- `src/components/BookingConfirmationDialog.tsx` - Tambahkan tampilan daftar metode pembayaran (VA, QRIS, E-Wallet) dengan logo langsung di dialog. Tamu bisa pilih metode lalu klik "Bayar" untuk redirect ke halaman Duitku.
+- `src/hooks/useBooking.tsx` - Pastikan `onSuccess` callback mengembalikan `booking.id` agar bisa digunakan untuk redirect payment
 
-## Komponen yang Akan Dibuat/Diubah
+**Perubahan teknis:**
+- `BookingDialog` akan menyimpan `bookingId` state setelah booking berhasil
+- `BookingConfirmationDialog` sekarang menjadi dialog "Booking Berhasil + Pilih Pembayaran":
+  - Fetch metode pembayaran dari `duitku-payment-methods` menggunakan `useDuitkuPayment`
+  - Tampilkan grid metode bayar (dengan gambar/logo)
+  - Tombol "Bayar Sekarang" memanggil `duitku-create-transaction` lalu redirect
+  - Tombol alternatif "Transfer Manual" mengarah ke `/confirm-payment/:bookingId`
 
-### 1. Setup Secrets (Duitku API Key)
-- Menyimpan `DUITKU_MERCHANT_CODE` dan `DUITKU_API_KEY` sebagai secrets
-- Digunakan oleh edge functions untuk komunikasi dengan Duitku API
+### 2. Tambah Tool Chatbot: `get_payment_methods`
 
-### 2. Database: Tabel `payment_transactions`
-Tabel baru untuk menyimpan riwayat transaksi pembayaran:
-- `id` (UUID, primary key)
-- `booking_id` (UUID, FK ke bookings)
-- `merchant_order_id` (text, unique - format: `PMH-{booking_code}-{timestamp}`)
-- `duitku_reference` (text - reference dari Duitku)
-- `payment_method` (text - kode metode bayar: VC, BK, M1, dll)
-- `payment_method_name` (text - nama metode: "Bank BCA VA", "QRIS", dll)
-- `amount` (numeric)
-- `status` (text: pending/paid/failed/expired/cancelled)
-- `payment_url` (text - URL redirect ke Duitku)
-- `callback_data` (jsonb - raw callback dari Duitku)
-- `expires_at` (timestamptz)
-- `paid_at` (timestamptz)
-- `created_at` / `updated_at`
+**Tool baru di chatbot** agar AI bisa menampilkan opsi pembayaran:
 
-RLS: Public read untuk booking owner (by booking_id), service role untuk insert/update.
+**File yang diubah/dibuat:**
+- `supabase/functions/chatbot-tools/tools/getPaymentMethods.ts` (baru) - Handler yang memanggil Duitku API untuk mendapatkan daftar metode pembayaran berdasarkan `booking_id` atau `amount`
+- `supabase/functions/chatbot-tools/index.ts` - Tambah routing untuk tool `get_payment_methods`
+- `supabase/functions/chatbot-tools/lib/types.ts` - Tambah interface `GetPaymentMethodsParams`
+- `supabase/functions/chatbot/ai/tools.ts` - Tambah definisi tool `get_payment_methods` agar AI tahu kapan memanggilnya
+- `supabase/functions/chatbot/ai/promptBuilder.ts` - Tambah instruksi di system prompt tentang kapan menawarkan metode pembayaran (setelah booking dibuat, atau saat tamu bertanya cara bayar)
 
-### 3. Edge Function: `duitku-create-transaction`
-Membuat transaksi pembayaran di Duitku:
-- Menerima `booking_id` dan `payment_method`
-- Mengambil data booking dari database
-- Membuat signature MD5 sesuai Duitku API
-- Memanggil Duitku API `v2/inquiry` (sandbox/production)
-- Menyimpan response ke `payment_transactions`
-- Mengembalikan `payment_url` untuk redirect tamu
-
-### 4. Edge Function: `duitku-callback`
-Webhook endpoint untuk menerima notifikasi pembayaran dari Duitku:
-- Memvalidasi signature callback
-- Update status di `payment_transactions`
-- Jika berhasil (`00`): Update `bookings.payment_status` ke `paid`, `bookings.payment_amount` ke full amount
-- Kirim notifikasi WhatsApp ke manager (reuse existing `send-whatsapp`)
-
-### 5. Edge Function: `duitku-check-status`
-Untuk mengecek status pembayaran secara manual:
-- Memanggil Duitku API `transactionStatus`
-- Update database sesuai response terbaru
-
-### 6. Edge Function: `duitku-payment-methods`
-Mengambil daftar metode pembayaran aktif dari Duitku:
-- Memanggil Duitku API `getpaymentmethod`
-- Mengembalikan list metode bayar beserta fee dan gambar
-
-### 7. Halaman Payment: `/payment/:bookingId`
-Halaman public (tanpa login) untuk memilih dan melakukan pembayaran:
-- Menampilkan ringkasan booking (nama, kamar, tanggal, total)
-- Menampilkan opsi pembayaran:
-  - **Duitku**: Grid metode pembayaran (VA, QRIS, E-Wallet) dengan logo dan fee
-  - **Transfer Manual**: Info rekening bank (existing feature)
-- Setelah pilih metode Duitku dan klik bayar, redirect ke Duitku payment page
-
-### 8. Halaman Payment Status: `/payment/:bookingId/status`
-Halaman return setelah pembayaran:
-- Cek status pembayaran real-time
-- Tampilkan status: berhasil / pending / gagal
-- Tombol kembali ke halaman utama
-
-### 9. Update Booking Flow
-- **BookingDialog**: Setelah booking sukses, tampilkan tombol "Bayar Sekarang" yang redirect ke `/payment/:bookingId`
-- **useBooking hook**: Setelah sukses create booking, sertakan booking ID di response untuk redirect
-
-## Detail Teknis
-
-### Duitku API Endpoints (Sandbox)
-- **Create Transaction**: `POST https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry`
-- **Check Status**: `POST https://sandbox.duitku.com/webapi/api/merchant/transactionStatus`
-- **Get Payment Methods**: `POST https://sandbox.duitku.com/webapi/api/merchant/paymentmethod/getpaymentmethod`
-
-### Signature Generation
+**Definisi tool AI:**
 ```text
-Signature (Create) = MD5(merchantCode + merchantOrderId + paymentAmount + apiKey)
-Signature (Callback) = MD5(merchantCode + paymentAmount + merchantOrderId + apiKey)
-Signature (Check Status) = MD5(merchantCode + merchantOrderId + apiKey)
+get_payment_methods:
+  description: "Tampilkan metode pembayaran online (VA, QRIS, E-Wallet) untuk booking tertentu. Gunakan setelah booking berhasil dibuat atau saat tamu bertanya tentang cara pembayaran."
+  parameters:
+    - booking_id (string, required): Kode booking PMH-XXXXXX
+    - guest_phone (string, required): Nomor telepon tamu
+    - guest_email (string, required): Email tamu
 ```
 
-### File Baru
-- `supabase/functions/duitku-create-transaction/index.ts`
-- `supabase/functions/duitku-callback/index.ts`
-- `supabase/functions/duitku-check-status/index.ts`
-- `supabase/functions/duitku-payment-methods/index.ts`
-- `src/pages/public/Payment.tsx`
-- `src/pages/public/PaymentStatus.tsx`
-- `src/hooks/useDuitkuPayment.tsx`
+**Logika handler:**
+1. Verifikasi booking (kode + telepon + email) - reuse validasi yang sudah ada
+2. Ambil `total_price` dari booking
+3. Panggil Duitku API `getpaymentmethod` dengan amount tersebut
+4. Return daftar metode bayar + link pembayaran (`/payment/{bookingId}`)
 
-### File yang Diubah
-- `src/App.tsx` - Tambah routes `/payment/:bookingId` dan `/payment/:bookingId/status`
-- `src/hooks/useBooking.tsx` - Return booking ID setelah sukses untuk redirect
-- `src/components/BookingConfirmationDialog.tsx` - Tambah tombol "Bayar Sekarang"
-- Database migration untuk tabel `payment_transactions`
+**Update System Prompt:**
+- Setelah `create_booking_draft` berhasil, AI akan secara otomatis menawarkan opsi pembayaran
+- Jika tamu bertanya "bagaimana cara bayar?" atau "metode pembayaran apa saja?", AI bisa memanggil `get_payment_methods`
+- AI akan menyertakan link pembayaran: `/payment/{bookingId}`
 
-### Keamanan
-- Callback endpoint memvalidasi signature MD5 dari Duitku
-- Tabel `payment_transactions` dilindungi RLS (read-only untuk anonymous by booking_id)
-- API keys disimpan sebagai secrets, hanya diakses dari edge functions
-- Tidak ada data sensitif yang di-expose ke frontend
+### 3. Update Response Booking Draft
 
+**File yang diubah:**
+- `supabase/functions/chatbot-tools/tools/createBookingDraft.ts` - Tambahkan `booking_id` dan `payment_url` di response, sehingga AI bisa langsung menginformasikan link pembayaran
+
+Response baru dari `create_booking_draft`:
+```text
+{
+  message: "Booking berhasil! Kode: PMH-XXXXXX...",
+  booking_code: "PMH-XXXXXX",
+  booking_id: "uuid-here",
+  payment_url: "https://pomahgh.lovable.app/payment/{bookingId}",
+  ...
+}
+```
+
+Dengan ini, AI bisa langsung memberikan link pembayaran setelah booking dibuat, dan juga menyebutkan metode yang tersedia (VA BCA, QRIS, OVO, dll).
+
+### 4. Tidak Ada Perubahan Database
+
+Semua perubahan menggunakan tabel dan struktur yang sudah ada (`payment_transactions`, `bookings`). Tidak perlu migrasi database baru.
+
+## Rangkuman File
+
+| File | Aksi | Deskripsi |
+|------|------|-----------|
+| `src/components/BookingDialog.tsx` | Edit | Simpan bookingId, tampilkan payment dialog setelah sukses |
+| `src/components/BookingConfirmationDialog.tsx` | Edit | Tambah grid metode pembayaran dengan Duitku |
+| `supabase/functions/chatbot-tools/tools/getPaymentMethods.ts` | Baru | Handler tool untuk fetch metode pembayaran |
+| `supabase/functions/chatbot-tools/index.ts` | Edit | Tambah routing tool `get_payment_methods` |
+| `supabase/functions/chatbot-tools/lib/types.ts` | Edit | Tambah interface params |
+| `supabase/functions/chatbot/ai/tools.ts` | Edit | Tambah definisi tool AI |
+| `supabase/functions/chatbot/ai/promptBuilder.ts` | Edit | Update prompt tentang pembayaran |
+| `supabase/functions/chatbot-tools/tools/createBookingDraft.ts` | Edit | Sertakan booking_id & payment_url di response |
