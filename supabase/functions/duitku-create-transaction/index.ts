@@ -205,12 +205,7 @@ serve(async (req) => {
         payment_url: duitkuData.paymentUrl,
         va_number: duitkuData.vaNumber || null,
         qr_string: duitkuData.qrString || null,
-        expires_at: expiresAt,
-        metadata: {
-          request_id: requestId,
-          duitku_env: duitkuEnv,
-          ip_address: req.headers.get("x-forwarded-for") || "unknown"
-        }
+        expires_at: expiresAt
       })
       .select()
       .single();
