@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,8 +10,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { CreditCard } from "lucide-react";
 
 interface BookingConfirmationDialogProps {
   open: boolean;
@@ -24,6 +27,8 @@ interface BookingConfirmationDialogProps {
   totalPrice: number;
   numGuests: number;
   roomQuantity?: number;
+  bookingId?: string | null;
+  showPaymentButton?: boolean;
 }
 
 export const BookingConfirmationDialog = ({
@@ -38,7 +43,10 @@ export const BookingConfirmationDialog = ({
   totalPrice,
   numGuests,
   roomQuantity = 1,
+  bookingId,
+  showPaymentButton = false,
 }: BookingConfirmationDialogProps) => {
+  const navigate = useNavigate();
   // Don't render if dates are not valid
   if (!checkIn || !checkOut) {
     return null;
@@ -91,11 +99,24 @@ export const BookingConfirmationDialog = ({
           </div>
         </div>
 
-        <AlertDialogFooter>
+        <AlertDialogFooter className="flex-col sm:flex-row gap-2">
           <AlertDialogCancel>Batal</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
-            Konfirmasi Booking
-          </AlertDialogAction>
+          {showPaymentButton && bookingId ? (
+            <Button
+              onClick={() => {
+                onOpenChange(false);
+                navigate(`/payment/${bookingId}`);
+              }}
+              className="gap-2"
+            >
+              <CreditCard className="w-4 h-4" />
+              Bayar Sekarang
+            </Button>
+          ) : (
+            <AlertDialogAction onClick={onConfirm}>
+              Konfirmasi Booking
+            </AlertDialogAction>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -2091,6 +2091,71 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_transactions: {
+        Row: {
+          amount: number
+          booking_id: string
+          callback_data: Json | null
+          created_at: string
+          duitku_reference: string | null
+          expires_at: string | null
+          id: string
+          merchant_order_id: string
+          paid_at: string | null
+          payment_method: string
+          payment_method_name: string | null
+          payment_url: string | null
+          qr_string: string | null
+          status: string
+          updated_at: string
+          va_number: string | null
+        }
+        Insert: {
+          amount: number
+          booking_id: string
+          callback_data?: Json | null
+          created_at?: string
+          duitku_reference?: string | null
+          expires_at?: string | null
+          id?: string
+          merchant_order_id: string
+          paid_at?: string | null
+          payment_method: string
+          payment_method_name?: string | null
+          payment_url?: string | null
+          qr_string?: string | null
+          status?: string
+          updated_at?: string
+          va_number?: string | null
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          callback_data?: Json | null
+          created_at?: string
+          duitku_reference?: string | null
+          expires_at?: string | null
+          id?: string
+          merchant_order_id?: string
+          paid_at?: string | null
+          payment_method?: string
+          payment_method_name?: string | null
+          payment_url?: string | null
+          qr_string?: string | null
+          status?: string
+          updated_at?: string
+          va_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_approvals: {
         Row: {
           approved_by: string | null

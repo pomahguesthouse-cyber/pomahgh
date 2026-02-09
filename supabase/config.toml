@@ -128,3 +128,15 @@ verify_jwt = false
 
 [functions.pricing-processor]
 verify_jwt = false
+
+[functions.duitku-create-transaction]
+verify_jwt = false
+
+[functions.duitku-callback]
+verify_jwt = false
+
+[functions.duitku-check-status]
+verify_jwt = false
+
+[functions.duitku-payment-methods]
+verify_jwt = false
