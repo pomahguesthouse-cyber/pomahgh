@@ -5,24 +5,22 @@ import { use360Upload } from "@/hooks/use360Upload";
 import * as Icons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, Maximize2, MapPin, Zap } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, MapPin, Zap, Building2, Users, Maximize, Save, Image as ImageIcon, Check, Hash } from "lucide-react";
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RoomAvailabilityCalendar } from "@/components/admin/RoomAvailabilityCalendar";
-import { Panorama360Viewer } from "@/components/Panorama360Viewer";
-import { HotspotEditor } from "@/components/admin/HotspotEditor";
 import { PanoramaManager } from "@/components/admin/PanoramaManager";
 import { FloorPlanEditor } from "@/components/admin/FloorPlanEditor";
 import { useAdminRoomPanoramas } from "@/hooks/useRoomPanoramas";
-import { useAdminRoomHotspots } from "@/hooks/useRoomHotspots";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -37,13 +35,12 @@ const AdminRooms = () => {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [viewingCalendar, setViewingCalendar] = useState<Room | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploading360, setUploading360] = useState(false);
-  const [hotspotEditorOpen, setHotspotEditorOpen] = useState(false);
-  const [selectedRoomForHotspots, setSelectedRoomForHotspots] = useState<Room | null>(null);
-  const [selectedPanoramaId, setSelectedPanoramaId] = useState<string | undefined>();
   const [panoramaManagerOpen, setPanoramaManagerOpen] = useState(false);
   const [floorPlanEditorOpen, setFloorPlanEditorOpen] = useState(false);
   const [selectedRoomForFloorPlan, setSelectedRoomForFloorPlan] = useState<Room | null>(null);
+  const [selectedRoomForPanorama, setSelectedRoomForPanorama] = useState<Room | null>(null);
+  const [activeTab, setActiveTab] = useState("general");
+  
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -126,6 +123,7 @@ const AdminRooms = () => {
       use_autopricing: false,
     });
     setEditingRoom(null);
+    setActiveTab("general");
   };
 
   const handleEdit = (room: Room) => {
@@ -222,26 +220,6 @@ const AdminRooms = () => {
     });
   };
 
-  const handle360Upload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploading360(true);
-    try {
-      const publicUrl = await upload360Image(file);
-      setFormData(prev => ({ ...prev, virtual_tour_url: publicUrl }));
-      toast.success("Gambar 360° berhasil diupload");
-    } catch (error: unknown) {
-      toast.error("Gagal upload gambar 360°", {
-        description: error instanceof Error ? error.message : "Unknown error"
-      });
-    } finally {
-      setUploading360(false);
-      // Reset file input
-      event.target.value = "";
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -319,6 +297,25 @@ const AdminRooms = () => {
     setFormData({ ...formData, features: newFeatures });
   };
 
+  const addRoomNumber = () => {
+    const newCount = Number(formData.room_count) + 1;
+    setFormData(prev => ({
+      ...prev,
+      room_count: newCount.toString(),
+      room_numbers: [...prev.room_numbers, `${newCount}`]
+    }));
+  };
+
+  const removeRoomNumber = (index: number) => {
+    if (formData.room_numbers.length <= 1) return;
+    const newNumbers = formData.room_numbers.filter((_, i) => i !== index);
+    setFormData(prev => ({
+      ...prev,
+      room_count: (Number(prev.room_count) - 1).toString(),
+      room_numbers: newNumbers
+    }));
+  };
+
   if (isLoading) {
     return <div>Loading rooms...</div>;
   }
@@ -336,478 +333,592 @@ const AdminRooms = () => {
               Add Room
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingRoom ? "Edit Room" : "Add New Room"}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          
+          {/* ELEGANT REDESIGNED FORM */}
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+            <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 to-white">
+              <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="name">Room Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="price">Price per Night (Rp) *</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="price"
-                      type="number"
-                      value={formData.price_per_night}
-                      onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
-                      required
-                      className="flex-1"
-                    />
-                    <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-muted/50 border">
-                      <Checkbox
-                        id="is_non_refundable"
-                        checked={formData.is_non_refundable}
-                        onCheckedChange={(checked) => setFormData({ ...formData, is_non_refundable: !!checked })}
-                      />
-                      <Label htmlFor="is_non_refundable" className="text-xs cursor-pointer whitespace-nowrap">
-                        Non-Refundable
-                      </Label>
+                  <DialogTitle className="text-2xl font-semibold flex items-center gap-3 text-slate-800">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Building2 className="w-6 h-6 text-primary" />
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description *</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="max_guests">Max Guests *</Label>
-                  <Input
-                    id="max_guests"
-                    type="number"
-                    value={formData.max_guests}
-                    onChange={(e) => setFormData({ ...formData, max_guests: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="size">Size (sqm)</Label>
-                  <Input
-                    id="size"
-                    type="number"
-                    value={formData.size_sqm}
-                    onChange={(e) => setFormData({ ...formData, size_sqm: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="base_price">Base Price (Rp)</Label>
-                  <Input
-                    id="base_price"
-                    type="number"
-                    value={formData.base_price}
-                    onChange={(e) => setFormData({ ...formData, base_price: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="final_price">Final Price (Rp)</Label>
-                  <Input
-                    id="final_price"
-                    type="number"
-                    value={formData.final_price}
-                    onChange={(e) => setFormData({ ...formData, final_price: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="room_count">Number of Rooms *</Label>
-                  <Input
-                    id="room_count"
-                    type="number"
-                    min="1"
-                    value={formData.room_count}
-                    onChange={(e) => handleRoomCountChange(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label>Room Numbers *</Label>
-                <div className="grid grid-cols-4 gap-2 mt-2">
-                  {Array.from({ length: Number(formData.room_count) || 1 }).map((_, index) => (
-                    <Input
-                      key={index}
-                      placeholder={`Room ${index + 1}`}
-                      value={formData.room_numbers[index] || ""}
-                      onChange={(e) => handleRoomNumberChange(index, e.target.value)}
-                      required
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="image_upload">Upload Room Images</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="image_upload"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
-                    disabled={uploading}
-                    className="cursor-pointer"
-                  />
-                  <Button type="button" disabled={uploading} variant="outline" size="sm">
-                    <Upload className="h-4 w-4" />
-                  </Button>
-                </div>
-                {uploading && <p className="text-sm text-muted-foreground mt-2">Uploading...</p>}
-              </div>
-
-              {formData.image_urls.length > 0 && (
-                <div>
-                  <Label>Uploaded Images</Label>
-                  <div className="grid grid-cols-3 gap-2 mt-2">
-                    {formData.image_urls.map((url, index) => (
-                      <div key={index} className="relative">
-                        <img src={url} alt={`Room ${index + 1}`} className="w-full h-24 object-cover rounded" />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-1 right-1 h-6 w-6"
-                          onClick={() => removeImage(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <Label htmlFor="transition_effect">Efek Transisi Foto</Label>
-                <select
-                  id="transition_effect"
-                  value={formData.transition_effect}
-                  onChange={(e) => setFormData({ ...formData, transition_effect: e.target.value })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value="slide">Slide</option>
-                  <option value="fade">Fade</option>
-                  <option value="blur">Blur</option>
-                  <option value="zoom">Zoom</option>
-                  <option value="flip">Flip</option>
-                </select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Pilih efek animasi saat foto kamar berpindah
-                </p>
-              </div>
-
-              <div className="space-y-4 border-t pt-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <RotateCw className="h-5 w-5" />
-                    Virtual Tour 360°
-                  </h3>
+                    {editingRoom ? `Edit ${editingRoom.name}` : "Add New Room"}
+                  </DialogTitle>
                   {editingRoom && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedRoomForHotspots(editingRoom);
-                        setPanoramaManagerOpen(true);
-                      }}
-                    >
-                      Kelola Panorama
-                    </Button>
+                    <p className="text-sm text-slate-500 mt-2 flex items-center gap-2">
+                      <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">{editingRoom.id.slice(0, 8)}</span>
+                      <span>•</span>
+                      <span>Last updated {editingRoom.updated_at ? format(new Date(editingRoom.updated_at), "dd MMM yyyy, HH:mm", { locale: localeId }) : "Never"}</span>
+                    </p>
                   )}
                 </div>
+                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border shadow-sm">
+                  <span className="text-sm font-medium text-slate-600">Status:</span>
+                  <Switch
+                    checked={formData.available}
+                    onCheckedChange={(checked) => setFormData({ ...formData, available: checked })}
+                  />
+                  <span className={cn("text-sm font-semibold", formData.available ? "text-green-600" : "text-slate-400")}>
+                    {formData.available ? "Available" : "Closed"}
+                  </span>
+                </div>
+              </div>
+            </DialogHeader>
+            
+            <form onSubmit={handleSubmit} className="flex flex-col h-[calc(90vh-80px)]">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+                <TabsList className="mx-6 mt-4 grid w-auto grid-cols-4 bg-slate-100/80 p-1.5 rounded-xl">
+                  <TabsTrigger value="general" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <Building2 className="w-4 h-4" />
+                    General
+                  </TabsTrigger>
+                  <TabsTrigger value="pricing" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <span className="font-semibold">Rp</span>
+                    Pricing
+                  </TabsTrigger>
+                  <TabsTrigger value="features" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <Check className="w-4 h-4" />
+                    Features
+                  </TabsTrigger>
+                  <TabsTrigger value="media" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <ImageIcon className="w-4 h-4" />
+                    Media
+                  </TabsTrigger>
+                </TabsList>
                 
-                {!editingRoom && (
-                  <div className="p-4 border border-dashed rounded-lg bg-muted/30 text-center text-sm text-muted-foreground">
-                    Simpan room terlebih dahulu untuk menambahkan panorama 360°
-                  </div>
-                )}
-              </div>
+                <div className="flex-1 overflow-y-auto px-6 py-6">
+                  
+                  {/* TAB: GENERAL */}
+                  <TabsContent value="general" className="mt-0 space-y-6">
+                    <Card className="border-none shadow-sm bg-slate-50/50">
+                      <CardContent className="p-6 space-y-6">
+                        {/* Room Name */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                            <Building2 className="w-4 h-4 text-slate-400" />
+                            Room Name <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            className="h-12 text-lg font-medium bg-white border-slate-200 focus:border-primary"
+                            placeholder="e.g., Deluxe Suite"
+                            required
+                          />
+                        </div>
 
-              <div>
-                <Label>Features</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2 p-4 border rounded-md">
-                  {roomFeatures?.map((feature) => {
-                    const IconComponent = getIconComponent(feature.icon_name);
-                    return (
-                      <div key={feature.feature_key} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={feature.feature_key}
-                          checked={formData.features.includes(feature.feature_key)}
-                          onCheckedChange={() => toggleFeature(feature.feature_key)}
-                        />
-                        <Label
-                          htmlFor={feature.feature_key}
-                          className="flex items-center gap-2 cursor-pointer font-normal"
-                        >
-                          <IconComponent className="h-4 w-4" />
-                          {feature.label}
-                        </Label>
+                        {/* Description */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-semibold text-slate-700">Description <span className="text-red-500">*</span></Label>
+                          <Textarea
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            className="min-h-[120px] resize-none bg-white border-slate-200"
+                            placeholder="Describe the room features, amenities, and what makes it special..."
+                            required
+                          />
+                        </div>
+
+                        {/* Grid 2 columns */}
+                        <div className="grid grid-cols-2 gap-6">
+                          {/* Max Guests */}
+                          <div className="space-y-3">
+                            <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                              <Users className="w-4 h-4 text-slate-400" />
+                              Max Guests <span className="text-red-500">*</span>
+                            </Label>
+                            <div className="flex items-center gap-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-10 w-10 rounded-lg"
+                                onClick={() => setFormData(prev => ({ ...prev, max_guests: Math.max(1, Number(prev.max_guests) - 1).toString() }))}
+                              >
+                                -
+                              </Button>
+                              <span className="text-2xl font-semibold w-12 text-center text-slate-700">
+                                {formData.max_guests}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-10 w-10 rounded-lg"
+                                onClick={() => setFormData(prev => ({ ...prev, max_guests: (Number(prev.max_guests) + 1).toString() }))}
+                              >
+                                +
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Room Size */}
+                          <div className="space-y-3">
+                            <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                              <Maximize className="w-4 h-4 text-slate-400" />
+                              Room Size
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                value={formData.size_sqm}
+                                onChange={(e) => setFormData({ ...formData, size_sqm: e.target.value })}
+                                className="h-12 bg-white border-slate-200 pr-12"
+                                placeholder="25"
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">
+                                m²
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Room Numbers */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                              <Hash className="w-4 h-4 text-slate-400" />
+                              Room Numbers <span className="text-red-500">*</span>
+                            </Label>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-slate-500">Total:</span>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={formData.room_count}
+                                onChange={(e) => handleRoomCountChange(e.target.value)}
+                                className="w-20 h-8 text-center"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2 p-4 bg-white rounded-xl border border-slate-200">
+                            {formData.room_numbers.map((num, index) => (
+                              <div key={index} className="flex items-center gap-1">
+                                <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-lg border border-slate-200">
+                                  <Input
+                                    value={num}
+                                    onChange={(e) => handleRoomNumberChange(index, e.target.value)}
+                                    className="w-16 h-7 text-center border-0 bg-transparent p-0 font-medium"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRoomNumber(index)}
+                                    className="text-slate-400 hover:text-red-500 transition-colors"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={addRoomNumber}
+                              className="h-10 px-3 border-dashed"
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              Add
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* TAB: PRICING */}
+                  <TabsContent value="pricing" className="mt-0 space-y-6">
+                    {/* Main Price Card */}
+                    <Card className="relative overflow-hidden border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-primary/2 to-transparent">
+                      <div className="absolute top-4 right-4">
+                        <Badge className="bg-primary text-white font-medium px-3 py-1">
+                          Active Price
+                        </Badge>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                      <CardContent className="p-8">
+                        <Label className="text-sm text-slate-500 uppercase tracking-wider font-semibold">
+                          Base Price per Night
+                        </Label>
+                        <div className="flex items-baseline gap-3 mt-3">
+                          <span className="text-slate-400 text-3xl font-medium">Rp</span>
+                          <Input
+                            type="number"
+                            value={formData.price_per_night}
+                            onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
+                            className="text-5xl font-bold border-0 bg-transparent focus-visible:ring-0 p-0 w-auto min-w-[200px]"
+                            placeholder="0"
+                            required
+                          />
+                        </div>
+                        <p className="text-sm text-slate-500 mt-3">
+                          This is the standard price guests will see
+                        </p>
+                      </CardContent>
+                    </Card>
 
-              <div className="space-y-4 border-t pt-4">
-                <h3 className="font-semibold text-lg">Promotional Pricing</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="promo_price">Promo Price (Rp)</Label>
-                    <Input
-                      id="promo_price"
-                      type="number"
-                      value={formData.promo_price}
-                      onChange={(e) => setFormData({ ...formData, promo_price: e.target.value })}
-                      placeholder="Override price"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="promo_start_date">Tanggal Mulai</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          className={cn("w-full justify-start text-left font-normal", !formData.promo_start_date && "text-muted-foreground")}
+                    {/* AutoPricing Card */}
+                    <Card className={cn(
+                      "transition-all duration-300 border-2",
+                      formData.use_autopricing 
+                        ? "border-orange-400 bg-gradient-to-br from-orange-50/50 to-transparent" 
+                        : "border-slate-200 hover:border-slate-300"
+                    )}>
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-4">
+                            <div className={cn(
+                              "p-3 rounded-xl transition-all duration-300",
+                              formData.use_autopricing 
+                                ? "bg-orange-100 text-orange-600 shadow-sm" 
+                                : "bg-slate-100 text-slate-500"
+                            )}>
+                              <Zap className="w-7 h-7" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3">
+                                <h3 className="font-semibold text-lg text-slate-800">AutoPricing</h3>
+                                {formData.use_autopricing && (
+                                  <Badge className="bg-orange-500 text-white">Active</Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+                                Automatically adjust prices based on occupancy rates, competitor pricing, and demand patterns
+                              </p>
+                              
+                              {formData.use_autopricing && (
+                                <div className="mt-5 p-4 bg-white rounded-xl border border-orange-200 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm text-slate-600 flex items-center gap-2">
+                                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                      Current Auto-Price
+                                    </span>
+                                    <span className="text-lg font-bold text-orange-600">
+                                      Rp {(Number(formData.price_per_night) * 1.15).toLocaleString('id-ID')}
+                                    </span>
+                                  </div>
+                                  <div className="h-px bg-slate-100" />
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-slate-500">Occupancy Rate</span>
+                                    <span className="font-medium text-slate-700">85%</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-slate-500">Last Updated</span>
+                                    <span className="text-slate-500">5 minutes ago</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <Switch
+                            checked={formData.use_autopricing}
+                            onCheckedChange={(checked) => setFormData({ ...formData, use_autopricing: checked })}
+                            className="data-[state=checked]:bg-orange-500"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Day-of-Week Pricing */}
+                    <Card className="border-slate-200">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="text-base font-semibold text-slate-700">Day-of-Week Pricing</CardTitle>
+                        <CardDescription>Set different prices for specific days (optional)</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-7 gap-2">
+                          {[
+                            { key: 'monday_price', label: 'Mon', short: 'M' },
+                            { key: 'tuesday_price', label: 'Tue', short: 'T' },
+                            { key: 'wednesday_price', label: 'Wed', short: 'W' },
+                            { key: 'thursday_price', label: 'Thu', short: 'T' },
+                            { key: 'friday_price', label: 'Fri', short: 'F' },
+                            { key: 'saturday_price', label: 'Sat', short: 'S' },
+                            { key: 'sunday_price', label: 'Sun', short: 'S' },
+                          ].map((day) => (
+                            <div key={day.key} className="space-y-2">
+                              <Label className="text-xs text-center block text-slate-500 font-medium">{day.label}</Label>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  value={formData[day.key as keyof typeof formData] as string}
+                                  onChange={(e) => setFormData({ ...formData, [day.key]: e.target.value })}
+                                  className="text-center text-sm h-12 bg-white"
+                                  placeholder="-"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-3 text-center">Leave empty to use base price</p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Promo Section */}
+                    <Card className="border-slate-200">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="text-base font-semibold text-slate-700 flex items-center gap-2">
+                          <span className="text-green-600">%</span>
+                          Promotional Pricing
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm text-slate-600">Promo Price (Rp)</Label>
+                            <Input
+                              type="number"
+                              value={formData.promo_price}
+                              onChange={(e) => setFormData({ ...formData, promo_price: e.target.value })}
+                              className="bg-white"
+                              placeholder="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm text-slate-600">Start Date</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  className={cn("w-full justify-start text-left font-normal h-10", !formData.promo_start_date && "text-slate-400")}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {formData.promo_start_date ? format(new Date(formData.promo_start_date), "dd MMM", { locale: localeId }) : "Select"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={formData.promo_start_date ? new Date(formData.promo_start_date) : undefined}
+                                  onSelect={(date) => date && setFormData({ ...formData, promo_start_date: format(date, "yyyy-MM-dd") })}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm text-slate-600">End Date</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  className={cn("w-full justify-start text-left font-normal h-10", !formData.promo_end_date && "text-slate-400")}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {formData.promo_end_date ? format(new Date(formData.promo_end_date), "dd MMM", { locale: localeId }) : "Select"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={formData.promo_end_date ? new Date(formData.promo_end_date) : undefined}
+                                  onSelect={(date) => date && setFormData({ ...formData, promo_end_date: format(date, "yyyy-MM-dd") })}
+                                  disabled={(date) => formData.promo_start_date ? date < new Date(formData.promo_start_date) : false}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* TAB: FEATURES */}
+                  <TabsContent value="features" className="mt-0">
+                    <Card className="border-none shadow-sm bg-slate-50/50">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="text-lg font-semibold text-slate-800">Room Features</CardTitle>
+                        <CardDescription>Select all amenities and features available in this room</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {featuresLoading ? (
+                          <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-4">
+                            {roomFeatures?.map((feature) => {
+                              const IconComponent = getIconComponent(feature.icon_name);
+                              const isSelected = formData.features.includes(feature.feature_key);
+                              
+                              return (
+                                <label
+                                  key={feature.feature_key}
+                                  className={cn(
+                                    "flex flex-col items-center gap-3 p-6 rounded-xl border-2 cursor-pointer transition-all duration-200",
+                                    isSelected
+                                      ? "border-primary bg-primary/5 shadow-sm"
+                                      : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                                  )}
+                                >
+                                  <div className={cn(
+                                    "p-3 rounded-full transition-colors",
+                                    isSelected ? "bg-primary text-white" : "bg-slate-100 text-slate-400"
+                                  )}>
+                                    <IconComponent className="w-6 h-6" />
+                                  </div>
+                                  <span className={cn(
+                                    "text-sm font-medium text-center",
+                                    isSelected ? "text-slate-800" : "text-slate-600"
+                                  )}>
+                                    {feature.label}
+                                  </span>
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={() => toggleFeature(feature.feature_key)}
+                                    className="sr-only"
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* TAB: MEDIA */}
+                  <TabsContent value="media" className="mt-0 space-y-6">
+                    {/* Image Upload Zone */}
+                    <Card className="border-slate-200">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                          <ImageIcon className="w-5 h-5 text-slate-400" />
+                          Room Images
+                        </CardTitle>
+                        <CardDescription>Upload high-quality images to showcase your room</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {/* Upload Zone */}
+                        <div 
+                          className="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer relative group"
+                          onClick={() => document.getElementById('image-upload')?.click()}
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formData.promo_start_date ? format(new Date(formData.promo_start_date), "PPP", { locale: localeId }) : "Pilih tanggal"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={formData.promo_start_date ? new Date(formData.promo_start_date) : undefined}
-                          onSelect={(date) => date && setFormData({ ...formData, promo_start_date: format(date, "yyyy-MM-dd") })}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div>
-                    <Label htmlFor="promo_end_date">Tanggal Akhir</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          className={cn("w-full justify-start text-left font-normal", !formData.promo_end_date && "text-muted-foreground")}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formData.promo_end_date ? format(new Date(formData.promo_end_date), "PPP", { locale: localeId }) : "Pilih tanggal"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={formData.promo_end_date ? new Date(formData.promo_end_date) : undefined}
-                          onSelect={(date) => date && setFormData({ ...formData, promo_end_date: format(date, "yyyy-MM-dd") })}
-                          disabled={(date) => formData.promo_start_date ? date < new Date(formData.promo_start_date) : false}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                          <input
+                            id="image-upload"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                          <div className="p-4 bg-slate-100 rounded-full w-fit mx-auto mb-4 group-hover:bg-white group-hover:shadow-md transition-all">
+                            <Upload className="w-8 h-8 text-slate-400 group-hover:text-primary" />
+                          </div>
+                          <p className="text-lg font-medium text-slate-700">Drop images here</p>
+                          <p className="text-sm text-slate-500 mt-1">or click to browse</p>
+                          <p className="text-xs text-slate-400 mt-3">Supports: JPG, PNG, WEBP</p>
+                        </div>
+
+                        {/* Image Gallery */}
+                        {formData.image_urls.length > 0 && (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-sm font-semibold text-slate-700">
+                                Uploaded Images ({formData.image_urls.length})
+                              </Label>
+                              <span className="text-xs text-slate-400">First image will be the cover</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-4">
+                              {formData.image_urls.map((url, index) => (
+                                <div 
+                                  key={index} 
+                                  className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200"
+                                >
+                                  <img 
+                                    src={url} 
+                                    alt={`Room ${index + 1}`} 
+                                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute bottom-3 left-3 right-3 flex gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        className="flex-1 bg-white/90 hover:bg-white"
+                                        onClick={() => window.open(url, '_blank')}
+                                      >
+                                        <Eye className="h-4 w-4 mr-1" />
+                                        View
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => removeImage(index)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  {index === 0 && (
+                                    <Badge className="absolute top-2 left-2 bg-primary text-white font-medium">
+                                      Cover
+                                    </Badge>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Virtual Tour */}
+                    {editingRoom && (
+                      <Card className="border-slate-200">
+                        <CardHeader className="pb-4">
+                          <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                            <RotateCw className="w-5 h-5 text-slate-400" />
+                            Virtual Tour 360°
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full h-16 border-dashed"
+                            onClick={() => {
+                              setSelectedRoomForPanorama(editingRoom);
+                              setPanoramaManagerOpen(true);
+                            }}
+                          >
+                            <RotateCw className="w-5 h-5 mr-2" />
+                            Manage Panorama 360°
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
                 </div>
-              </div>
 
-              <div className="space-y-4 border-t pt-4">
-                <h3 className="font-semibold text-lg">Day-of-Week Pricing</h3>
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="monday_price">Monday (Rp)</Label>
-                    <Input
-                      id="monday_price"
-                      type="number"
-                      value={formData.monday_price}
-                      onChange={(e) => setFormData({ ...formData, monday_price: e.target.value })}
-                    />
-                    <div className="flex items-center gap-1.5">
-                      <Checkbox
-                        id="monday_non_refundable"
-                        checked={formData.monday_non_refundable}
-                        onCheckedChange={(checked) => setFormData({ ...formData, monday_non_refundable: !!checked })}
-                      />
-                      <Label htmlFor="monday_non_refundable" className="text-xs cursor-pointer">
-                        Non-Refundable
-                      </Label>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tuesday_price">Tuesday (Rp)</Label>
-                    <Input
-                      id="tuesday_price"
-                      type="number"
-                      value={formData.tuesday_price}
-                      onChange={(e) => setFormData({ ...formData, tuesday_price: e.target.value })}
-                    />
-                    <div className="flex items-center gap-1.5">
-                      <Checkbox
-                        id="tuesday_non_refundable"
-                        checked={formData.tuesday_non_refundable}
-                        onCheckedChange={(checked) => setFormData({ ...formData, tuesday_non_refundable: !!checked })}
-                      />
-                      <Label htmlFor="tuesday_non_refundable" className="text-xs cursor-pointer">
-                        Non-Refundable
-                      </Label>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="wednesday_price">Wednesday (Rp)</Label>
-                    <Input
-                      id="wednesday_price"
-                      type="number"
-                      value={formData.wednesday_price}
-                      onChange={(e) => setFormData({ ...formData, wednesday_price: e.target.value })}
-                    />
-                    <div className="flex items-center gap-1.5">
-                      <Checkbox
-                        id="wednesday_non_refundable"
-                        checked={formData.wednesday_non_refundable}
-                        onCheckedChange={(checked) => setFormData({ ...formData, wednesday_non_refundable: !!checked })}
-                      />
-                      <Label htmlFor="wednesday_non_refundable" className="text-xs cursor-pointer">
-                        Non-Refundable
-                      </Label>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="thursday_price">Thursday (Rp)</Label>
-                    <Input
-                      id="thursday_price"
-                      type="number"
-                      value={formData.thursday_price}
-                      onChange={(e) => setFormData({ ...formData, thursday_price: e.target.value })}
-                    />
-                    <div className="flex items-center gap-1.5">
-                      <Checkbox
-                        id="thursday_non_refundable"
-                        checked={formData.thursday_non_refundable}
-                        onCheckedChange={(checked) => setFormData({ ...formData, thursday_non_refundable: !!checked })}
-                      />
-                      <Label htmlFor="thursday_non_refundable" className="text-xs cursor-pointer">
-                        Non-Refundable
-                      </Label>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="friday_price">Friday (Rp)</Label>
-                    <Input
-                      id="friday_price"
-                      type="number"
-                      value={formData.friday_price}
-                      onChange={(e) => setFormData({ ...formData, friday_price: e.target.value })}
-                    />
-                    <div className="flex items-center gap-1.5">
-                      <Checkbox
-                        id="friday_non_refundable"
-                        checked={formData.friday_non_refundable}
-                        onCheckedChange={(checked) => setFormData({ ...formData, friday_non_refundable: !!checked })}
-                      />
-                      <Label htmlFor="friday_non_refundable" className="text-xs cursor-pointer">
-                        Non-Refundable
-                      </Label>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="saturday_price">Saturday (Rp)</Label>
-                    <Input
-                      id="saturday_price"
-                      type="number"
-                      value={formData.saturday_price}
-                      onChange={(e) => setFormData({ ...formData, saturday_price: e.target.value })}
-                    />
-                    <div className="flex items-center gap-1.5">
-                      <Checkbox
-                        id="saturday_non_refundable"
-                        checked={formData.saturday_non_refundable}
-                        onCheckedChange={(checked) => setFormData({ ...formData, saturday_non_refundable: !!checked })}
-                      />
-                      <Label htmlFor="saturday_non_refundable" className="text-xs cursor-pointer">
-                        Non-Refundable
-                      </Label>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sunday_price">Sunday (Rp)</Label>
-                    <Input
-                      id="sunday_price"
-                      type="number"
-                      value={formData.sunday_price}
-                      onChange={(e) => setFormData({ ...formData, sunday_price: e.target.value })}
-                    />
-                    <div className="flex items-center gap-1.5">
-                      <Checkbox
-                        id="sunday_non_refundable"
-                        checked={formData.sunday_non_refundable}
-                        onCheckedChange={(checked) => setFormData({ ...formData, sunday_non_refundable: !!checked })}
-                      />
-                      <Label htmlFor="sunday_non_refundable" className="text-xs cursor-pointer">
-                        Non-Refundable
-                      </Label>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">Leave empty to use base price. Promo price overrides day-of-week pricing.</p>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="available"
-                  checked={formData.available}
-                  onCheckedChange={(checked) => setFormData({ ...formData, available: checked })}
-                />
-                <Label htmlFor="available">Available for booking</Label>
-              </div>
-
-              <div className="flex items-center space-x-2 p-4 border rounded-lg bg-blue-50/50">
-                <Switch
-                  id="use_autopricing"
-                  checked={formData.use_autopricing}
-                  onCheckedChange={(checked) => setFormData({ ...formData, use_autopricing: checked })}
-                />
-                <div className="flex flex-col">
-                  <Label htmlFor="use_autopricing" className="font-medium">
-                    Gunakan AutoPricing
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Jika aktif, harga kamar akan otomatis menyesuaikan berdasarkan occupancy dan demand
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">{editingRoom ? "Update" : "Create"} Room</Button>
-              </div>
+                {/* Footer Actions */}
+                <DialogFooter className="border-t bg-slate-50/50 px-6 py-4 gap-3">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsDialogOpen(false)}
+                    className="h-11 px-6"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit"
+                    className="h-11 px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {editingRoom ? "Save Changes" : "Create Room"}
+                  </Button>
+                </DialogFooter>
+              </Tabs>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
+      {/* Rest of the component (room list) remains the same */}
       {viewingCalendar && (
         <div className="mb-6">
           <Button
@@ -828,32 +939,49 @@ const AdminRooms = () => {
       {!viewingCalendar && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {rooms?.map((room) => (
-            <Card key={room.id}>
-               <CardHeader>
-                 <CardTitle className="flex justify-between items-start">
-                   <span>{room.name}</span>
-                   <span className={`text-sm px-2 py-1 rounded ${room.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                     {room.available ? 'Available' : 'Unavailable'}
-                   </span>
-                 </CardTitle>
-                 <CardDescription className="flex items-center gap-2">
-                   <span>Rp {room.price_per_night.toLocaleString()}/night</span>
-                   {room.use_autopricing && (
-                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800">
-                       <Zap className="h-3 w-3" />
-                       AutoPricing
-                     </span>
-                   )}
-                 </CardDescription>
-               </CardHeader>
+            <Card key={room.id} className="group hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex justify-between items-start">
+                  <span className="text-lg">{room.name}</span>
+                  <Badge 
+                    variant={room.available ? "default" : "secondary"}
+                    className={room.available ? "bg-green-100 text-green-800 hover:bg-green-100" : ""}
+                  >
+                    {room.available ? 'Available' : 'Closed'}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="flex items-center gap-2 flex-wrap">
+                  <span className="text-base font-semibold text-slate-700">
+                    Rp {room.price_per_night.toLocaleString()}
+                  </span>
+                  <span className="text-slate-400">/night</span>
+                  {room.use_autopricing && (
+                    <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-100">
+                      <Zap className="w-3 h-3 mr-1" />
+                      AutoPricing
+                    </Badge>
+                  )}
+                </CardDescription>
+              </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                <p className="text-sm text-slate-600 mb-4 line-clamp-2">
                   {room.description}
                 </p>
-                <div className="text-sm space-y-1 mb-4">
-                  <p>Max Guests: {room.max_guests}</p>
-                  <p>Total Rooms: {room.room_count}</p>
-                  {room.size_sqm && <p>Size: {room.size_sqm} sqm</p>}
+                <div className="text-sm space-y-1.5 mb-4 text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span>Max {room.max_guests} guests</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Hash className="w-4 h-4" />
+                    <span>{room.room_count} rooms</span>
+                  </div>
+                  {room.size_sqm && (
+                    <div className="flex items-center gap-2">
+                      <Maximize className="w-4 h-4" />
+                      <span>{room.size_sqm} m²</span>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <div className="flex gap-2">
@@ -880,41 +1008,15 @@ const AdminRooms = () => {
                       Delete
                     </Button>
                   </div>
-                   <Button
-                     size="sm"
-                     variant="default"
-                     onClick={() => setViewingCalendar(room)}
-                     className="w-full"
-                   >
-                     <CalendarIcon className="h-4 w-4 mr-1" />
-                     View Availability
-                   </Button>
-                   <div className="flex gap-2">
-                     <Button
-                       size="sm"
-                       variant="outline"
-                       onClick={() => {
-                         setSelectedRoomForHotspots(room);
-                         setPanoramaManagerOpen(true);
-                       }}
-                       className="flex-1"
-                     >
-                       <RotateCw className="h-4 w-4 mr-1" />
-                       Panorama
-                     </Button>
-                     <Button
-                       size="sm"
-                       variant="outline"
-                       onClick={() => {
-                         setSelectedRoomForFloorPlan(room);
-                         setFloorPlanEditorOpen(true);
-                       }}
-                       className="flex-1"
-                     >
-                       <MapPin className="h-4 w-4 mr-1" />
-                       Floor Plan
-                     </Button>
-                   </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setViewingCalendar(room)}
+                    className="w-full"
+                  >
+                    <CalendarIcon className="h-4 w-4 mr-1" />
+                    View Availability
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -922,35 +1024,19 @@ const AdminRooms = () => {
         </div>
       )}
 
-      {/* Hotspot Editor Dialog */}
-      {selectedRoomForHotspots && selectedPanoramaId && (
-        <HotspotEditor
-          roomId={selectedRoomForHotspots.id}
-          roomName={selectedRoomForHotspots.name}
-          panoramaId={selectedPanoramaId}
-          virtualTourUrl={selectedRoomForHotspots.virtual_tour_url || ""}
-          open={hotspotEditorOpen}
-          onOpenChange={setHotspotEditorOpen}
-        />
-      )}
-
       {/* Panorama Manager Dialog */}
-      {selectedRoomForHotspots && (
+      {selectedRoomForPanorama && (
         <Dialog open={panoramaManagerOpen} onOpenChange={setPanoramaManagerOpen}>
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <RotateCw className="w-6 h-6" />
-                Kelola Panorama - {selectedRoomForHotspots.name}
+                Manage Panorama - {selectedRoomForPanorama.name}
               </DialogTitle>
             </DialogHeader>
             <PanoramaManager
-              roomId={selectedRoomForHotspots.id}
-              roomName={selectedRoomForHotspots.name}
-              onEditHotspots={(panoramaId) => {
-                setSelectedPanoramaId(panoramaId);
-                setHotspotEditorOpen(true);
-              }}
+              roomId={selectedRoomForPanorama.id}
+              roomName={selectedRoomForPanorama.name}
             />
           </DialogContent>
         </Dialog>
@@ -968,6 +1054,7 @@ const AdminRooms = () => {
   );
 };
 
+// Floor Plan Editor Dialog Component
 const FloorPlanEditorDialog = ({ 
   room, 
   open, 
