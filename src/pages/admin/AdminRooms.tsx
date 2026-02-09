@@ -335,7 +335,7 @@ const AdminRooms = () => {
           </DialogTrigger>
           
           {/* ELEGANT REDESIGNED FORM */}
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 flex flex-col">
             <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 to-white">
               <div className="flex items-center justify-between">
                 <div>
@@ -387,7 +387,7 @@ const AdminRooms = () => {
                   </TabsTrigger>
                 </TabsList>
                 
-                <div className="flex-1 overflow-y-auto px-6 py-6">
+                <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400">
                   
                   {/* TAB: GENERAL */}
                   <TabsContent value="general" className="mt-0 space-y-6">
