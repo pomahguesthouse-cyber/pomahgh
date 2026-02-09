@@ -39,7 +39,7 @@ DialogFooter.displayName = "DialogFooter";
 const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>>(({
   className,
   ...props
-}, ref) => <DialogPrimitive.Title ref={ref} className={cn("text-lg leading-none tracking-tight font-sans font-bold", className)} {...props} />);
+}, ref) => <DialogPrimitive.Title ref={ref} className={cn("leading-none tracking-tight font-sans font-bold text-3xl", className)} {...props} />);
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 const DialogDescription = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Description>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>>(({
   className,

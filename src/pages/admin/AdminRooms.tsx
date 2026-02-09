@@ -362,7 +362,7 @@ const AdminRooms = () => {
                       {formData.available ? "Available" : "Closed"}
                     </span>
                   </div>
-                  <Button type="submit" form="room-form" size="sm" className="h-8 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg shadow-sm">
+                  <Button type="submit" form="room-form" size="sm" className="h-8 px-4 text-primary-foreground text-xs font-semibold rounded-lg shadow-sm bg-[#91b0f2]">
                     <Save className="w-3.5 h-3.5 mr-1.5" />
                     {editingRoom ? "Save" : "Create"}
                   </Button>
