@@ -58,6 +58,8 @@ export interface Room {
   saturday_non_refundable?: boolean | null;
   sunday_non_refundable?: boolean | null;
   use_autopricing?: boolean | null;
+  updated_at?: string;
+  created_at?: string;
   // New promo fields from room_promotions table
   active_promotion?: RoomPromotion | null;
 }

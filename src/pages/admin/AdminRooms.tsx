@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, MapPin, Zap, Building2, Users, Maximize, Save, Image as ImageIcon, Check, Hash } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, MapPin, Zap, Building2, Users, Maximize, Save, Image as ImageIcon, Check, Hash, Eye } from "lucide-react";
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -1037,6 +1037,7 @@ const AdminRooms = () => {
             <PanoramaManager
               roomId={selectedRoomForPanorama.id}
               roomName={selectedRoomForPanorama.name}
+              onEditHotspots={() => {}}
             />
           </DialogContent>
         </Dialog>
