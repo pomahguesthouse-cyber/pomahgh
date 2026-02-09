@@ -20,6 +20,7 @@ import { handleCreateBookingDraft } from "./tools/createBookingDraft.ts";
 import { handleGetBookingDetails } from "./tools/getBookingDetails.ts";
 import { handleUpdateBooking } from "./tools/updateBooking.ts";
 import { handleCheckPaymentStatus } from "./tools/checkPaymentStatus.ts";
+import { handleGetPaymentMethods } from "./tools/getPaymentMethods.ts";
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -70,6 +71,10 @@ serve(async (req) => {
 
       case "check_payment_status":
         result = await handleCheckPaymentStatus(supabase, parameters);
+        break;
+
+      case "get_payment_methods":
+        result = await handleGetPaymentMethods(supabase, parameters);
         break;
 
       default:

@@ -125,3 +125,10 @@ export interface CheckAvailabilityParams {
 export interface GetRoomDetailsParams {
   room_name: string;
 }
+
+// Get payment methods parameters
+export interface GetPaymentMethodsParams {
+  booking_id: string;
+  guest_phone: string;
+  guest_email: string;
+}

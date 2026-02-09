@@ -70,6 +70,8 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
   const [checkIn, setCheckIn] = useState<Date>(getDefaultCheckIn());
   const [checkOut, setCheckOut] = useState<Date>(getDefaultCheckOut());
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [bookingComplete, setBookingComplete] = useState(false);
   const [roomQuantity, setRoomQuantity] = useState(initialRoomQuantity);
   const [agreeToPolicy, setAgreeToPolicy] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState<BookingAddon[]>([]);
@@ -211,28 +213,10 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
       };
 
       createBooking(bookingData, {
-        onSuccess: () => {
+        onSuccess: (data) => {
           setShowConfirmation(false);
-          onOpenChange(false);
-          // Reset to default dates
-          const resetToday = new Date();
-          resetToday.setHours(0, 0, 0, 0);
-          const resetTomorrow = new Date(resetToday);
-          resetTomorrow.setDate(resetTomorrow.getDate() + 1);
-          setCheckIn(resetToday);
-          setCheckOut(resetTomorrow);
-          setRoomQuantity(1);
-          setFormData({
-            guest_name: "",
-            guest_email: "",
-            guest_phone: "",
-            num_guests: 1,
-            special_requests: "",
-            check_in_time: "14:00",
-            check_out_time: "12:00",
-          });
-          setErrors({});
-          setSelectedAddons([]);
+          setBookingId(data.id);
+          setBookingComplete(true);
         },
       });
     } catch (error) {
@@ -263,6 +247,46 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
         totalPrice={totalPrice}
         numGuests={formData.num_guests}
         roomQuantity={roomQuantity}
+      />
+      <BookingConfirmationDialog
+        open={bookingComplete}
+        onOpenChange={(open) => {
+          setBookingComplete(open);
+          if (!open) {
+            onOpenChange(false);
+            // Reset form
+            const resetToday = new Date();
+            resetToday.setHours(0, 0, 0, 0);
+            const resetTomorrow = new Date(resetToday);
+            resetTomorrow.setDate(resetTomorrow.getDate() + 1);
+            setCheckIn(resetToday);
+            setCheckOut(resetTomorrow);
+            setRoomQuantity(1);
+            setFormData({
+              guest_name: "",
+              guest_email: "",
+              guest_phone: "",
+              num_guests: 1,
+              special_requests: "",
+              check_in_time: "14:00",
+              check_out_time: "12:00",
+            });
+            setErrors({});
+            setSelectedAddons([]);
+            setBookingId(null);
+          }
+        }}
+        onConfirm={() => {}}
+        guestName={formData.guest_name}
+        roomName={room.name}
+        checkIn={checkIn}
+        checkOut={checkOut}
+        totalNights={totalNights}
+        totalPrice={totalPrice}
+        numGuests={formData.num_guests}
+        roomQuantity={roomQuantity}
+        bookingId={bookingId}
+        showPaymentButton={true}
       />
       <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

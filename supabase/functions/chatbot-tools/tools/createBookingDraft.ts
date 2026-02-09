@@ -250,11 +250,15 @@ export async function handleCreateBookingDraft(
     bookingCode: booking.booking_code
   }, isUpdate ? 'reschedule' : 'new');
 
+  const paymentUrl = `https://pomahgh.lovable.app/payment/${booking.id}`;
+
   return {
     message: isUpdate
-      ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}. Total baru: Rp ${totalPrice.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`
-      : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar). Total: Rp ${totalPrice.toLocaleString('id-ID')}. Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`,
+      ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}. Total baru: Rp ${totalPrice.toLocaleString('id-ID')}. Silakan lakukan pembayaran melalui link berikut: ${paymentUrl}`
+      : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar). Total: Rp ${totalPrice.toLocaleString('id-ID')}. Silakan lakukan pembayaran melalui link berikut: ${paymentUrl}`,
     booking_code: booking.booking_code,
+    booking_id: booking.id,
+    payment_url: paymentUrl,
     rooms_booked: roomsSummary,
     total_rooms: totalRooms,
     total_price: totalPrice,
