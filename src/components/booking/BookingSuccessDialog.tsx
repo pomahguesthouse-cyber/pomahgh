@@ -55,7 +55,7 @@ export function BookingSuccessDialog({
     isExpired, 
     progress, 
     totalSecondsRemaining 
-  } = useCountdown(booking.payment_expires_at);
+  } = useCountdown(booking?.payment_expires_at ?? new Date().toISOString());
 
   const [copied, setCopied] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
