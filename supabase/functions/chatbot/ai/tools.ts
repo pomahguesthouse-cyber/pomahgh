@@ -145,5 +145,24 @@ export const tools = [
         required: ["booking_id", "guest_phone", "guest_email"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "notify_longstay_inquiry",
+      description: "Kirim notifikasi ke superadmin saat tamu menanyakan harga khusus untuk menginap LONG STAY (3 malam atau lebih). WAJIB dipanggil sebelum meminta tamu menunggu.",
+      parameters: {
+        type: "object",
+        properties: {
+          guest_name: { type: "string", description: "Nama tamu (jika sudah diketahui)" },
+          guest_phone: { type: "string", description: "Nomor HP tamu (jika sudah diketahui)" },
+          room_name: { type: "string", description: "Tipe kamar yang diminati" },
+          check_in: { type: "string", description: "Tanggal check-in YYYY-MM-DD" },
+          check_out: { type: "string", description: "Tanggal check-out YYYY-MM-DD" },
+          num_nights: { type: "number", description: "Jumlah malam menginap" },
+          message_summary: { type: "string", description: "Ringkasan permintaan tamu" }
+        }
+      }
+    }
   }
 ];
