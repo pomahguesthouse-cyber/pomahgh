@@ -50,12 +50,13 @@ export function BookingSuccessDialog({
   booking,
   onCheckStatus 
 }: BookingSuccessDialogProps) {
+  const expiresAt = booking?.payment_expires_at ?? new Date().toISOString();
   const { 
     formattedTime, 
     isExpired, 
     progress, 
     totalSecondsRemaining 
-  } = useCountdown(booking?.payment_expires_at ?? new Date().toISOString());
+  } = useCountdown(expiresAt);
 
   const [copied, setCopied] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
@@ -64,7 +65,7 @@ export function BookingSuccessDialog({
 
   // Auto-check status every 30 seconds
   useEffect(() => {
-    if (!isOpen || paymentStatus !== "pending") return;
+    if (!isOpen || !booking || paymentStatus !== "pending") return;
 
     const interval = setInterval(async () => {
       try {
@@ -81,7 +82,11 @@ export function BookingSuccessDialog({
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [isOpen, paymentStatus, onCheckStatus]);
+  }, [isOpen, booking, paymentStatus, onCheckStatus]);
+
+  if (!booking) {
+    return null;
+  }
 
   const handleCopyVA = async () => {
     try {
