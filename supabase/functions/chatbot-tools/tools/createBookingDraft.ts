@@ -222,10 +222,12 @@ export async function handleCreateBookingDraft(
     bookingCode: booking.booking_code as string
   }, isUpdate ? 'reschedule' : 'new');
 
+  const bankInfo = `Silakan transfer ke:\n🏦 Bank BCA\n💳 No. Rek: 0095584379\n👤 a.n. Faizal Abdurachman\n\nSetelah transfer, kirimkan bukti pembayaran kepada kami.`;
+
   return {
     message: isUpdate
-      ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}. Total baru: Rp ${totalPrice.toLocaleString('id-ID')}. Tim kami akan segera menghubungi Anda melalui WhatsApp untuk instruksi pembayaran.`
-      : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar). Total: Rp ${totalPrice.toLocaleString('id-ID')}. Tim kami akan segera menghubungi Anda melalui WhatsApp untuk instruksi pembayaran.`,
+      ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}. Total baru: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}`
+      : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar). Total: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}`,
     booking_code: booking.booking_code,
     booking_id: booking.id,
     rooms_booked: roomsSummary,
