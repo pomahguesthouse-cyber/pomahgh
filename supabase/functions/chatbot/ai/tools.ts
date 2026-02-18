@@ -164,5 +164,21 @@ export const tools = [
         }
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "notify_payment_proof",
+      description: "Kirim notifikasi ke SEMUA pengelola saat tamu mengirimkan bukti pembayaran/transfer. WAJIB dipanggil saat tamu bilang sudah bayar/transfer.",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_code: { type: "string", description: "Kode booking PMH-XXXXXX" },
+          guest_name: { type: "string", description: "Nama tamu" },
+          guest_phone: { type: "string", description: "Nomor HP tamu" },
+          payment_details: { type: "string", description: "Detail pembayaran yang disampaikan tamu" }
+        }
+      }
+    }
   }
 ];
