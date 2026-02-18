@@ -96,14 +96,11 @@ export async function handleGetPaymentMethods(
     summaryParts.push(`${type}: ${names}`);
   }
 
-  const paymentUrl = `https://pomahgh.lovable.app/payment/${booking.id}`;
-
   return {
-    message: `Metode pembayaran tersedia untuk booking ${booking.booking_code} (Rp ${amount.toLocaleString('id-ID')}):\n\n${summaryParts.join('\n')}\n\nSilakan klik link berikut untuk melakukan pembayaran:\n${paymentUrl}`,
+    message: `Untuk pembayaran booking ${booking.booking_code} (Rp ${amount.toLocaleString('id-ID')}), tim kami akan menghubungi Anda melalui WhatsApp dengan instruksi pembayaran. Mohon ditunggu sebentar ya! 🙏`,
     booking_code: booking.booking_code,
     booking_id: booking.id,
     total_price: amount,
-    payment_url: paymentUrl,
     methods_summary: summaryParts,
     methods_count: methods.length,
     already_paid: false,
