@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMemberAuth } from "@/hooks/useMemberAuth";
-import { useBookingHistory } from "@/hooks/useBookingHistory";
+import { useBookingHistory, BookingHistoryItem } from "@/hooks/useBookingHistory";
+import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,8 @@ import {
   Mail,
   AlertCircle,
   CheckCircle2,
-  XCircle
+  XCircle,
+  FileText
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -33,6 +35,10 @@ export default function MemberDashboard() {
   } = useBookingHistory(user?.id || null);
 
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<BookingHistoryItem | null>(null);
+
+  const canShowInvoice = (booking: BookingHistoryItem) =>
+    booking.status !== "cancelled" && booking.payment_status !== "expired";
 
   const handleCancel = async (bookingId: string) => {
     if (!confirm("Apakah Anda yakin ingin membatalkan booking ini?")) return;
@@ -249,6 +255,16 @@ export default function MemberDashboard() {
 
                       {/* Action buttons */}
                       <div className="flex gap-2 pt-2">
+                        {canShowInvoice(booking) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedInvoiceBooking(booking)}
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Invoice
+                          </Button>
+                        )}
                         {booking.status === "pending_payment" && (
                           <Button
                             variant="destructive"
@@ -314,6 +330,18 @@ export default function MemberDashboard() {
                         </span>
                         <span className="font-medium">{formatPrice(booking.total_price)}</span>
                       </div>
+                      {canShowInvoice(booking) && (
+                        <div className="pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedInvoiceBooking(booking)}
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Invoice
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -321,6 +349,18 @@ export default function MemberDashboard() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Invoice Dialog */}
+        {selectedInvoiceBooking && (
+          <InvoicePreviewDialog
+            open={!!selectedInvoiceBooking}
+            onOpenChange={(open) => !open && setSelectedInvoiceBooking(null)}
+            bookingId={selectedInvoiceBooking.id}
+            guestName={selectedInvoiceBooking.guest_name}
+            guestPhone={selectedInvoiceBooking.guest_phone || ""}
+            bookingCode={selectedInvoiceBooking.booking_code}
+          />
+        )}
       </div>
     </div>
   );
