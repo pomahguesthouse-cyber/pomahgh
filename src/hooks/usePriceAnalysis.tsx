@@ -29,60 +29,19 @@ interface RoomPromotion {
 interface RoomWithPricing {
   id: string;
   name: string;
-  base_price: number | null;
   price_per_night: number;
   min_auto_price: number | null;
   max_auto_price: number | null;
-  auto_pricing_enabled: boolean | null;
-  promo_price: number | null;
-  promo_start_date: string | null;
-  promo_end_date: string | null;
-  monday_price: number | null;
-  tuesday_price: number | null;
-  wednesday_price: number | null;
-  thursday_price: number | null;
-  friday_price: number | null;
-  saturday_price: number | null;
-  sunday_price: number | null;
 }
 
-// Helper: Get price for a specific day of the week
-const getDayPrice = (room: RoomWithPricing, dayOfWeek: number): number => {
-  const dayPrices = [
-    room.sunday_price,
-    room.monday_price,
-    room.tuesday_price,
-    room.wednesday_price,
-    room.thursday_price,
-    room.friday_price,
-    room.saturday_price,
-  ];
-  return dayPrices[dayOfWeek] || room.price_per_night;
-};
-
-// Helper: Calculate current price with promotions and day-of-week pricing
 const getCurrentPrice = (room: RoomWithPricing, activePromo?: RoomPromotion | null): number => {
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-
-  // Priority 1: Active promotion from room_promotions table
   if (activePromo) {
     if (activePromo.promo_price) return activePromo.promo_price;
     if (activePromo.discount_percentage) {
-      const basePrice = getDayPrice(room, today.getDay());
-      return Math.round(basePrice * (1 - activePromo.discount_percentage / 100));
+      return Math.round(room.price_per_night * (1 - activePromo.discount_percentage / 100));
     }
   }
-
-  // Priority 2: Legacy promo fields on rooms table
-  if (room.promo_price && room.promo_start_date && room.promo_end_date) {
-    if (todayStr >= room.promo_start_date && todayStr <= room.promo_end_date) {
-      return room.promo_price;
-    }
-  }
-
-  // Priority 3: Day-of-week pricing
-  return getDayPrice(room, today.getDay());
+  return room.price_per_night;
 };
 
 export const usePriceAnalysis = () => {
@@ -91,21 +50,13 @@ export const usePriceAnalysis = () => {
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
 
-      // 1. Fetch our rooms with all pricing fields
       const { data: rooms, error: roomsError } = await supabase
         .from('rooms')
-        .select(`
-          id, name, base_price, price_per_night, 
-          min_auto_price, max_auto_price, auto_pricing_enabled,
-          promo_price, promo_start_date, promo_end_date,
-          monday_price, tuesday_price, wednesday_price, 
-          thursday_price, friday_price, saturday_price, sunday_price
-        `)
+        .select('id, name, price_per_night, min_auto_price, max_auto_price')
         .eq('available', true);
 
       if (roomsError) throw roomsError;
 
-      // 2. Fetch active promotions
       const { data: promotions } = await supabase
         .from('room_promotions')
         .select('*')
@@ -114,7 +65,6 @@ export const usePriceAnalysis = () => {
         .gte('end_date', today)
         .order('priority', { ascending: false });
 
-      // Map promotions to rooms (first one wins due to priority ordering)
       const promosByRoom = new Map<string, RoomPromotion>();
       promotions?.forEach((promo) => {
         if (!promosByRoom.has(promo.room_id)) {
@@ -122,7 +72,6 @@ export const usePriceAnalysis = () => {
         }
       });
 
-      // 3. Fetch competitor rooms with mapping
       const { data: competitorRooms, error: compError } = await supabase
         .from('competitor_rooms')
         .select('id, comparable_room_id')
@@ -131,7 +80,6 @@ export const usePriceAnalysis = () => {
 
       if (compError) throw compError;
 
-      // 4. Get surveys from last 7 days
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const fromDate = sevenDaysAgo.toISOString().split('T')[0];
@@ -143,37 +91,26 @@ export const usePriceAnalysis = () => {
 
       if (surveyError) throw surveyError;
 
-      // 5. Build analysis per room
       const results: RoomPriceAnalysis[] = [];
 
       for (const room of rooms || []) {
-        // Find competitor rooms mapped to this room
         const mappedCompRoomIds = (competitorRooms || [])
           .filter(cr => cr.comparable_room_id === room.id)
           .map(cr => cr.id);
 
-        // Get surveys for these competitor rooms
         const relevantSurveys = (surveys || [])
           .filter(s => mappedCompRoomIds.includes(s.competitor_room_id))
           .map(s => Number(s.price));
 
-        // Calculate final price with promotions and day-of-week pricing
         const activePromo = promosByRoom.get(room.id);
         const ourPrice = getCurrentPrice(room, activePromo);
 
         if (relevantSurveys.length === 0) {
           results.push({
-            room_id: room.id,
-            room_name: room.name,
-            our_price: ourPrice,
-            competitor_avg: 0,
-            competitor_min: 0,
-            competitor_max: 0,
-            survey_count: 0,
-            price_position: 'competitive',
-            position_percentage: 100,
-            recommendation: 'Tidak ada data kompetitor',
-            suggested_price: ourPrice
+            room_id: room.id, room_name: room.name, our_price: ourPrice,
+            competitor_avg: 0, competitor_min: 0, competitor_max: 0, survey_count: 0,
+            price_position: 'competitive', position_percentage: 100,
+            recommendation: 'Tidak ada data kompetitor', suggested_price: ourPrice
           });
           continue;
         }
@@ -201,26 +138,15 @@ export const usePriceAnalysis = () => {
           suggestedPrice = ourPrice;
         }
 
-        // Apply min/max constraints
-        if (room.min_auto_price && suggestedPrice < room.min_auto_price) {
-          suggestedPrice = room.min_auto_price;
-        }
-        if (room.max_auto_price && suggestedPrice > room.max_auto_price) {
-          suggestedPrice = room.max_auto_price;
-        }
+        if (room.min_auto_price && suggestedPrice < room.min_auto_price) suggestedPrice = room.min_auto_price;
+        if (room.max_auto_price && suggestedPrice > room.max_auto_price) suggestedPrice = room.max_auto_price;
 
         results.push({
-          room_id: room.id,
-          room_name: room.name,
-          our_price: ourPrice,
-          competitor_avg: Math.round(competitorAvg),
-          competitor_min: competitorMin,
-          competitor_max: competitorMax,
-          survey_count: relevantSurveys.length,
-          price_position: pricePosition,
-          position_percentage: Math.round(positionPercentage),
-          recommendation,
-          suggested_price: suggestedPrice
+          room_id: room.id, room_name: room.name, our_price: ourPrice,
+          competitor_avg: Math.round(competitorAvg), competitor_min: competitorMin,
+          competitor_max: competitorMax, survey_count: relevantSurveys.length,
+          price_position: pricePosition, position_percentage: Math.round(positionPercentage),
+          recommendation, suggested_price: suggestedPrice
         });
       }
 
@@ -228,10 +154,5 @@ export const usePriceAnalysis = () => {
     }
   });
 
-  return {
-    analysis,
-    isLoading,
-    error,
-    refetch
-  };
+  return { analysis, isLoading, error, refetch };
 };

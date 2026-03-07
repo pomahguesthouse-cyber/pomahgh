@@ -72,14 +72,7 @@ const RoomDetail = () => {
   const images = room.image_urls && room.image_urls.length > 0 ? room.image_urls : [room.image_url];
 
   const activePromo = room.active_promotion;
-  const hasLegacyPromo =
-    room.promo_price &&
-    room.promo_start_date &&
-    room.promo_end_date &&
-    new Date() >= new Date(room.promo_start_date) &&
-    new Date() <= new Date(room.promo_end_date);
-
-  const hasPromo = !!activePromo || !!hasLegacyPromo;
+  const hasPromo = !!activePromo;
   const displayPrice = room.final_price || room.price_per_night;
   const relatedRooms = allRooms?.filter((r) => r.id !== room.id).slice(0, 3) || [];
 
