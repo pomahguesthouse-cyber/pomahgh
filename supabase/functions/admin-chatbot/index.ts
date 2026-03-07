@@ -193,7 +193,7 @@ Deno.serve(async (req: Request) => {
       let finalResponse = '';
       let currentMessages: Array<{ role: string; content: string; tool_call_id?: string }> = [
         { role: "system", content: systemPrompt },
-        ...(messages as ChatMessage[]).map((m) => ({ role: m.role, content: m.content }))
+        ...(chatMessages as ChatMessage[]).map((m) => ({ role: m.role, content: m.content }))
       ];
       
       let iterations = 0;
