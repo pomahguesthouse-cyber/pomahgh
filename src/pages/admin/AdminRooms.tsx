@@ -422,13 +422,20 @@ const AdminRooms = () => {
                     </Card>
                   </TabsContent>
 
-                  {/* TAB: PRICING */}
+                  {/* TAB: ROOM PRICING */}
                   <TabsContent value="pricing" className="mt-0 space-y-6">
-                    {/* Main Price Card */}
+                    <div className="space-y-1 mb-2">
+                      <h2 className="text-xl font-bold text-slate-800">Room Pricing</h2>
+                      <p className="text-sm text-muted-foreground">
+                        Prioritas harga: <strong>Base Price</strong> → <strong>Promo Price</strong> → <strong>Dynamic Price</strong>
+                      </p>
+                    </div>
+
+                    {/* Priority 1: Base Price */}
                     <Card className="relative overflow-hidden border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-primary/2 to-transparent">
                       <div className="absolute top-4 right-4">
-                        <Badge className="bg-primary text-white font-medium px-3 py-1">
-                          Active Price
+                        <Badge className="bg-primary text-primary-foreground font-medium px-3 py-1">
+                          Prioritas 1
                         </Badge>
                       </div>
                       <CardContent className="p-8">
@@ -443,7 +450,76 @@ const AdminRooms = () => {
                         })} className="text-5xl font-bold border-0 bg-transparent focus-visible:ring-0 p-0 w-auto min-w-[200px]" placeholder="0" required />
                         </div>
                         <p className="text-sm text-slate-500 mt-3">
-                          This is the standard price guests will see
+                          Harga dasar yang selalu berlaku jika tidak ada promo atau dynamic pricing aktif.
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Priority 2: Promo Price */}
+                    <Card className="border-amber-200 bg-amber-50/30">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-slate-800">Promo Price</h3>
+                              <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                                Prioritas 2
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-slate-500">
+                              Jika ada promo aktif di tabel <strong>Promotions</strong>, harga promo akan menggantikan Base Price.
+                            </p>
+                          </div>
+                        </div>
+                        {editingRoom?.active_promotion ? (
+                          <div className="mt-4 p-4 bg-white rounded-lg border border-amber-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-slate-700">{editingRoom.active_promotion.badge_text}</p>
+                                <p className="text-sm text-slate-500">{editingRoom.active_promotion.name}</p>
+                              </div>
+                              <div className="text-right">
+                                {editingRoom.active_promotion.promo_price ? (
+                                  <p className="text-lg font-bold text-amber-600">
+                                    Rp {editingRoom.active_promotion.promo_price.toLocaleString("id-ID")}
+                                  </p>
+                                ) : editingRoom.active_promotion.discount_percentage ? (
+                                  <p className="text-lg font-bold text-amber-600">
+                                    -{editingRoom.active_promotion.discount_percentage}%
+                                  </p>
+                                ) : null}
+                                <p className="text-xs text-slate-400">
+                                  {editingRoom.active_promotion.start_date} — {editingRoom.active_promotion.end_date}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-xs text-slate-400 italic">
+                            Belum ada promo aktif. Kelola promo di menu <strong>Promotions</strong>.
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Priority 3: Dynamic Price */}
+                    <Card className="border-blue-200 bg-blue-50/30">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-slate-800">Dynamic Price</h3>
+                              <Badge variant="outline" className="text-blue-600 border-blue-300 text-xs">
+                                Prioritas 3
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-slate-500">
+                              Harga otomatis berdasarkan tingkat okupansi. Jika aktif, menimpa Base Price & Promo Price.
+                            </p>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-xs text-slate-400 italic">
+                          Konfigurasi dynamic pricing tersedia di menu <strong>Analysis Dashboard</strong>.
                         </p>
                       </CardContent>
                     </Card>
@@ -455,7 +531,7 @@ const AdminRooms = () => {
                           <div>
                             <h3 className="font-semibold text-slate-800">Non-Refundable Rate</h3>
                             <p className="text-sm text-slate-500 mt-1">
-                              Enable if this room price is non-refundable (no cancellation allowed)
+                              Aktifkan jika harga kamar ini tidak bisa di-refund (tidak ada pembatalan)
                             </p>
                           </div>
                           <Switch checked={formData.is_non_refundable} onCheckedChange={checked => setFormData({
@@ -465,10 +541,6 @@ const AdminRooms = () => {
                         </div>
                       </CardContent>
                     </Card>
-
-                    <p className="text-sm text-muted-foreground text-center">
-                      Gunakan menu <strong>Promotions</strong> untuk mengatur harga promo dengan periode dan diskon khusus.
-                    </p>
                   </TabsContent>
 
                   {/* TAB: FEATURES */}
