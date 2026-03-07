@@ -188,7 +188,6 @@ const AdminRooms = () => {
       transition_effect: formData.transition_effect,
       is_non_refundable: formData.is_non_refundable
     };
-    };
     if (editingRoom) {
       updateRoom({
         id: editingRoom.id,
