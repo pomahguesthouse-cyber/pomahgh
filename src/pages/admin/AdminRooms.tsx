@@ -604,10 +604,6 @@ const AdminRooms = () => {
                     Rp {room.price_per_night.toLocaleString()}
                   </span>
                   <span className="text-slate-400">/night</span>
-                  {room.use_autopricing && <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-100">
-                      <Zap className="w-3 h-3 mr-1" />
-                      AutoPricing
-                    </Badge>}
                 </CardDescription>
               </CardHeader>
               <CardContent>
