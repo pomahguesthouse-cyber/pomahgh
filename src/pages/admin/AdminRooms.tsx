@@ -207,7 +207,8 @@ const AdminRooms = () => {
       room_count: Number(formData.room_count),
       allotment: Number(formData.allotment),
       transition_effect: formData.transition_effect,
-      is_non_refundable: formData.is_non_refundable
+      is_non_refundable: formData.is_non_refundable,
+      pricing_priority: formData.pricing_priority
     };
     if (editingRoom) {
       updateRoom({
