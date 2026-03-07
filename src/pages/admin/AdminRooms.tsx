@@ -663,7 +663,8 @@ const AdminRooms = () => {
 
       {/* Floor Plan Editor Dialog */}
       {selectedRoomForFloorPlan && <FloorPlanEditorDialog room={selectedRoomForFloorPlan} open={floorPlanEditorOpen} onOpenChange={setFloorPlanEditorOpen} />}
-    </div>;
+    </div>
+  );
 };
 
 // Floor Plan Editor Dialog Component
