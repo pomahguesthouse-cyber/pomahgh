@@ -66,26 +66,8 @@ const AdminRooms = () => {
     room_numbers: [] as string[],
     room_count: "1",
     allotment: "0",
-    promo_price: "",
-    promo_start_date: "",
-    promo_end_date: "",
-    monday_price: "",
-    tuesday_price: "",
-    wednesday_price: "",
-    thursday_price: "",
-    friday_price: "",
-    saturday_price: "",
-    sunday_price: "",
     transition_effect: "slide",
-    is_non_refundable: false,
-    monday_non_refundable: false,
-    tuesday_non_refundable: false,
-    wednesday_non_refundable: false,
-    thursday_non_refundable: false,
-    friday_non_refundable: false,
-    saturday_non_refundable: false,
-    sunday_non_refundable: false,
-    use_autopricing: false
+    is_non_refundable: false
   });
   const getIconComponent = (iconName: string) => {
     const icons = Icons as unknown as Record<string, React.ComponentType<{
