@@ -1,0 +1,1 @@
+ALTER TABLE public.rooms ADD COLUMN IF NOT EXISTS pricing_priority text[] NOT NULL DEFAULT ARRAY['base', 'promo', 'dynamic'];

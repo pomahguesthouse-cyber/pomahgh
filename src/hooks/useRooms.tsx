@@ -43,19 +43,28 @@ export interface Room {
   updated_at?: string;
   created_at?: string;
   active_promotion?: RoomPromotion | null;
+  pricing_priority?: string[];
 }
 
 const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null): number => {
-  // Check active promotion from room_promotions table
-  if (activePromo) {
-    if (activePromo.promo_price) {
-      return activePromo.promo_price;
-    }
-    if (activePromo.discount_percentage) {
-      return room.price_per_night * (1 - activePromo.discount_percentage / 100);
+  const priority = room.pricing_priority || ["base", "promo", "dynamic"];
+  
+  for (const source of priority) {
+    switch (source) {
+      case "promo":
+        if (activePromo) {
+          if (activePromo.promo_price) return activePromo.promo_price;
+          if (activePromo.discount_percentage) return room.price_per_night * (1 - activePromo.discount_percentage / 100);
+        }
+        break;
+      case "dynamic":
+        // Dynamic pricing resolved externally
+        break;
+      case "base":
+      default:
+        return room.price_per_night;
     }
   }
-  
   return room.price_per_night;
 };
 

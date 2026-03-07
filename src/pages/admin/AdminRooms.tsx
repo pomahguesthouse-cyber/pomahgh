@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useAdminRoomFeatures } from "@/hooks/useRoomFeatures";
 import { use360Upload } from "@/hooks/use360Upload";
 import * as Icons from "lucide-react";
@@ -13,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, MapPin, Building2, Users, Maximize, Save, Image as ImageIcon, Check, Hash, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, MapPin, Building2, Users, Maximize, Save, Image as ImageIcon, Check, Hash, Eye, GripVertical } from "lucide-react";
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,6 +29,126 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+// Pricing card config
+const PRICING_CARD_CONFIG: Record<string, { title: string; description: string; borderClass: string; bgClass: string; badgeClass: string }> = {
+  base: {
+    title: "Base Price",
+    description: "Harga dasar per malam yang ditetapkan manual.",
+    borderClass: "border-2 border-primary/20",
+    bgClass: "bg-gradient-to-br from-primary/5 via-primary/2 to-transparent",
+    badgeClass: "bg-primary text-primary-foreground",
+  },
+  promo: {
+    title: "Promo Price",
+    description: "Harga promo dari tabel Promotions (jika aktif).",
+    borderClass: "border-amber-200",
+    bgClass: "bg-amber-50/30",
+    badgeClass: "bg-amber-500 text-white",
+  },
+  dynamic: {
+    title: "Dynamic Price",
+    description: "Harga otomatis berdasarkan tingkat okupansi.",
+    borderClass: "border-blue-200",
+    bgClass: "bg-blue-50/30",
+    badgeClass: "bg-blue-500 text-white",
+  },
+};
+
+interface SortablePricingCardProps {
+  id: string;
+  index: number;
+  type: string;
+  formData: any;
+  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  editingRoom: Room | null;
+}
+
+const SortablePricingCard = ({ id, index, type, formData, setFormData, editingRoom }: SortablePricingCardProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+  const config = PRICING_CARD_CONFIG[type];
+  if (!config) return null;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card className={cn("relative overflow-hidden", config.borderClass, config.bgClass, isDragging && "shadow-xl ring-2 ring-primary/30")}>
+        <div className="absolute top-4 right-4">
+          <Badge className={cn("font-medium px-3 py-1", config.badgeClass)}>
+            Prioritas {index + 1}
+          </Badge>
+        </div>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              className="mt-1 cursor-grab active:cursor-grabbing p-1.5 rounded-md hover:bg-black/5 transition-colors text-slate-400 hover:text-slate-600"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="w-5 h-5" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-slate-800 text-lg">{config.title}</h3>
+              <p className="text-sm text-slate-500 mt-0.5">{config.description}</p>
+
+              {/* Base Price: editable */}
+              {type === "base" && (
+                <div className="flex items-baseline gap-3 mt-4">
+                  <span className="text-slate-400 text-2xl font-medium">Rp</span>
+                  <Input
+                    type="number"
+                    value={formData.price_per_night}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: any) => ({ ...prev, price_per_night: e.target.value }))}
+                    className="text-4xl font-bold border-0 bg-transparent focus-visible:ring-0 p-0 w-auto min-w-[180px]"
+                    placeholder="0"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Promo Price: show active promo info */}
+              {type === "promo" && (
+                editingRoom?.active_promotion ? (
+                  <div className="mt-4 p-4 bg-white rounded-lg border border-amber-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-slate-700">{editingRoom.active_promotion.badge_text}</p>
+                        <p className="text-sm text-slate-500">{editingRoom.active_promotion.name}</p>
+                      </div>
+                      <div className="text-right">
+                        {editingRoom.active_promotion.promo_price ? (
+                          <p className="text-lg font-bold text-amber-600">Rp {editingRoom.active_promotion.promo_price.toLocaleString("id-ID")}</p>
+                        ) : editingRoom.active_promotion.discount_percentage ? (
+                          <p className="text-lg font-bold text-amber-600">-{editingRoom.active_promotion.discount_percentage}%</p>
+                        ) : null}
+                        <p className="text-xs text-slate-400">{editingRoom.active_promotion.start_date} — {editingRoom.active_promotion.end_date}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-slate-400 italic">Belum ada promo aktif. Kelola di menu <strong>Promotions</strong>.</p>
+                )
+              )}
+
+              {/* Dynamic Price: info only */}
+              {type === "dynamic" && (
+                <p className="mt-3 text-xs text-slate-400 italic">Konfigurasi di menu <strong>Analysis Dashboard</strong>.</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+
 const AdminRooms = () => {
   const {
     rooms,
@@ -67,8 +190,24 @@ const AdminRooms = () => {
     room_count: "1",
     allotment: "0",
     transition_effect: "slide",
-    is_non_refundable: false
+    is_non_refundable: false,
+    pricing_priority: ["base", "promo", "dynamic"] as string[]
   });
+
+  const pricingSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handlePricingDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setFormData(prev => {
+      const oldIndex = prev.pricing_priority.indexOf(active.id as string);
+      const newIndex = prev.pricing_priority.indexOf(over.id as string);
+      return { ...prev, pricing_priority: arrayMove(prev.pricing_priority, oldIndex, newIndex) };
+    });
+  }, []);
   const getIconComponent = (iconName: string) => {
     const icons = Icons as unknown as Record<string, React.ComponentType<{
       className?: string;
@@ -93,7 +232,8 @@ const AdminRooms = () => {
       room_count: "1",
       allotment: "0",
       transition_effect: "slide",
-      is_non_refundable: false
+      is_non_refundable: false,
+      pricing_priority: ["base", "promo", "dynamic"]
     });
     setEditingRoom(null);
     setActiveTab("general");
@@ -117,7 +257,8 @@ const AdminRooms = () => {
       room_count: room.room_count?.toString() || "1",
       allotment: room.allotment?.toString() || "0",
       transition_effect: room.transition_effect || "slide",
-      is_non_refundable: room.is_non_refundable || false
+      is_non_refundable: room.is_non_refundable || false,
+      pricing_priority: (room as any).pricing_priority || ["base", "promo", "dynamic"]
     });
     setIsDialogOpen(true);
   };
@@ -186,7 +327,8 @@ const AdminRooms = () => {
       room_count: Number(formData.room_count),
       allotment: Number(formData.allotment),
       transition_effect: formData.transition_effect,
-      is_non_refundable: formData.is_non_refundable
+      is_non_refundable: formData.is_non_refundable,
+      pricing_priority: formData.pricing_priority
     };
     if (editingRoom) {
       updateRoom({
@@ -427,102 +569,25 @@ const AdminRooms = () => {
                     <div className="space-y-1 mb-2">
                       <h2 className="text-xl font-bold text-slate-800">Room Pricing</h2>
                       <p className="text-sm text-muted-foreground">
-                        Prioritas harga: <strong>Base Price</strong> → <strong>Promo Price</strong> → <strong>Dynamic Price</strong>
+                        Drag card untuk mengatur prioritas. Card teratas = harga yang ditampilkan di frontend.
                       </p>
                     </div>
 
-                    {/* Priority 1: Base Price */}
-                    <Card className="relative overflow-hidden border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-primary/2 to-transparent">
-                      <div className="absolute top-4 right-4">
-                        <Badge className="bg-primary text-primary-foreground font-medium px-3 py-1">
-                          Prioritas 1
-                        </Badge>
-                      </div>
-                      <CardContent className="p-8">
-                        <Label className="text-sm text-slate-500 uppercase tracking-wider font-semibold">
-                          Base Price per Night
-                        </Label>
-                        <div className="flex items-baseline gap-3 mt-3">
-                          <span className="text-slate-400 text-3xl font-medium">Rp</span>
-                          <Input type="number" value={formData.price_per_night} onChange={e => setFormData({
-                          ...formData,
-                          price_per_night: e.target.value
-                        })} className="text-5xl font-bold border-0 bg-transparent focus-visible:ring-0 p-0 w-auto min-w-[200px]" placeholder="0" required />
-                        </div>
-                        <p className="text-sm text-slate-500 mt-3">
-                          Harga dasar yang selalu berlaku jika tidak ada promo atau dynamic pricing aktif.
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    {/* Priority 2: Promo Price */}
-                    <Card className="border-amber-200 bg-amber-50/30">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-slate-800">Promo Price</h3>
-                              <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
-                                Prioritas 2
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-slate-500">
-                              Jika ada promo aktif di tabel <strong>Promotions</strong>, harga promo akan menggantikan Base Price.
-                            </p>
-                          </div>
-                        </div>
-                        {editingRoom?.active_promotion ? (
-                          <div className="mt-4 p-4 bg-white rounded-lg border border-amber-200">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-slate-700">{editingRoom.active_promotion.badge_text}</p>
-                                <p className="text-sm text-slate-500">{editingRoom.active_promotion.name}</p>
-                              </div>
-                              <div className="text-right">
-                                {editingRoom.active_promotion.promo_price ? (
-                                  <p className="text-lg font-bold text-amber-600">
-                                    Rp {editingRoom.active_promotion.promo_price.toLocaleString("id-ID")}
-                                  </p>
-                                ) : editingRoom.active_promotion.discount_percentage ? (
-                                  <p className="text-lg font-bold text-amber-600">
-                                    -{editingRoom.active_promotion.discount_percentage}%
-                                  </p>
-                                ) : null}
-                                <p className="text-xs text-slate-400">
-                                  {editingRoom.active_promotion.start_date} — {editingRoom.active_promotion.end_date}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="mt-3 text-xs text-slate-400 italic">
-                            Belum ada promo aktif. Kelola promo di menu <strong>Promotions</strong>.
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    {/* Priority 3: Dynamic Price */}
-                    <Card className="border-blue-200 bg-blue-50/30">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-slate-800">Dynamic Price</h3>
-                              <Badge variant="outline" className="text-blue-600 border-blue-300 text-xs">
-                                Prioritas 3
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-slate-500">
-                              Harga otomatis berdasarkan tingkat okupansi. Jika aktif, menimpa Base Price & Promo Price.
-                            </p>
-                          </div>
-                        </div>
-                        <p className="mt-3 text-xs text-slate-400 italic">
-                          Konfigurasi dynamic pricing tersedia di menu <strong>Analysis Dashboard</strong>.
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <DndContext sensors={pricingSensors} collisionDetection={closestCenter} onDragEnd={handlePricingDragEnd}>
+                      <SortableContext items={formData.pricing_priority} strategy={verticalListSortingStrategy}>
+                        {formData.pricing_priority.map((type, index) => (
+                          <SortablePricingCard
+                            key={type}
+                            id={type}
+                            index={index}
+                            type={type}
+                            formData={formData}
+                            setFormData={setFormData}
+                            editingRoom={editingRoom}
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
 
                     {/* Non-Refundable Toggle */}
                     <Card className="border-slate-200">
@@ -542,6 +607,8 @@ const AdminRooms = () => {
                       </CardContent>
                     </Card>
                   </TabsContent>
+
+
 
                   {/* TAB: FEATURES */}
                   <TabsContent value="features" className="mt-0">
