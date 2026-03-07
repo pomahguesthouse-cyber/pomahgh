@@ -55,6 +55,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { messages, forceRefresh = false } = await req.json();
+    const chatMessages = Array.isArray(messages) ? messages : [];
 
     // 2. Fetch context data with caching
     const [hotelSettingsData, chatbotSettingsData, knowledgeData, trainingData] = await Promise.all([
@@ -121,11 +122,11 @@ Deno.serve(async (req: Request) => {
 
     // 3. Detect intent from last user message
     interface ChatMessage { role: string; content: string }
-    const lastUserMessage = (messages as ChatMessage[]).filter((m) => m.role === 'user').pop();
+    const lastUserMessage = (chatMessages as ChatMessage[]).filter((m) => m.role === 'user').pop();
     const userMessage = lastUserMessage?.content || '';
     const intentMatch = detectIntent(userMessage);
     const intentHint = getToolGuidanceHint(intentMatch);
-    
+
     console.log(`📝 Intent detected: ${intentMatch.intent} (${intentMatch.confidence}) → ${intentMatch.suggestedTool || 'none'}`);
 
     // 4. Build system prompt with intent hint
@@ -139,7 +140,7 @@ Deno.serve(async (req: Request) => {
       personaSettings,
       knowledgeContext,
       trainingContext,
-      isFirstMessage: messages.length <= 1,
+      isFirstMessage: chatMessages.length <= 1,
       intentHint
     });
 
@@ -152,6 +153,40 @@ Deno.serve(async (req: Request) => {
     const executedTools: ToolExecution[] = [];
     const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
+
+    // Force tool execution for room price requests to avoid hallucination
+    if (intentMatch.suggestedTool === 'get_room_prices' && intentMatch.confidence !== 'low') {
+      const roomToolResult = await executeToolWithValidation(supabase, 'get_room_prices', {}, auth.managerRole);
+
+      executedTools.push({
+        tool_name: 'get_room_prices',
+        arguments: {},
+        result: roomToolResult,
+        success: true,
+        executed_at: new Date().toISOString()
+      });
+
+      const forcedResponse = formatRoomPricesResponse(hotelSettings.hotel_name, roomToolResult);
+
+      await logAuditEntry(supabase, {
+        adminId: auth.adminId!,
+        adminEmail: auth.adminEmail,
+        sessionId,
+        userMessage,
+        executedTools,
+        aiResponse: forcedResponse,
+        durationMs: Date.now() - startTime,
+        ipAddress,
+        userAgent
+      });
+
+      const stream = createSSEStream(async (ctx: StreamContext) => {
+        sendTextChunk(ctx, forcedResponse);
+        return forcedResponse;
+      });
+
+      return createSSEResponse(stream);
+    }
 
     // 6. Stream response
     const stream = createSSEStream(async (ctx: StreamContext) => {
