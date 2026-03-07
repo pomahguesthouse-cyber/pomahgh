@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useAdminRoomFeatures } from "@/hooks/useRoomFeatures";
 import { use360Upload } from "@/hooks/use360Upload";
 import * as Icons from "lucide-react";
