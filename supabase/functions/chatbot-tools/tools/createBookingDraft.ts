@@ -202,7 +202,7 @@ export async function handleCreateBookingDraft(
 
   const { data: hotelSettings } = await supabase
     .from("hotel_settings")
-    .select("whatsapp_number, hotel_name")
+    .select("whatsapp_number, hotel_name, hotel_policies_enabled, hotel_policies_text, check_in_time, check_out_time")
     .single();
 
   const roomsText = roomsSummary.join(", ");
@@ -224,10 +224,20 @@ export async function handleCreateBookingDraft(
 
   const bankInfo = `Silakan transfer ke:\n🏦 Bank BCA\n💳 No. Rek: 0095584379\n👤 a.n. Faizal Abdurachman\n\nSetelah transfer, kirimkan bukti pembayaran kepada kami.`;
 
+  // Build hotel policies section
+  let policiesInfo = '';
+  if (hotelSettings?.hotel_policies_enabled && hotelSettings?.hotel_policies_text) {
+    policiesInfo = `\n\n📋 *PERATURAN MENGINAP DI ${(hotelSettings.hotel_name || 'POMAH GUESTHOUSE').toUpperCase()}:*\n${hotelSettings.hotel_policies_text}`;
+  }
+
+  const checkInTime = hotelSettings?.check_in_time || '14:00';
+  const checkOutTime = hotelSettings?.check_out_time || '12:00';
+  const timeInfo = `\n\n⏰ *Jam Check-in:* ${checkInTime} WIB\n⏰ *Jam Check-out:* ${checkOutTime} WIB`;
+
   return {
     message: isUpdate
-      ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}. Total baru: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}`
-      : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar). Total: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}`,
+      ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}. Total baru: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}${timeInfo}${policiesInfo}`
+      : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar). Total: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}${timeInfo}${policiesInfo}`,
     booking_code: booking.booking_code,
     booking_id: booking.id,
     rooms_booked: roomsSummary,
