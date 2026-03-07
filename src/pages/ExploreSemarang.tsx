@@ -8,6 +8,7 @@ import { CategoryTabs } from "@/components/explore/CategoryTabs";
 import { NearbyFromHotel } from "@/components/explore/NearbyFromHotel";
 import { GettingHere } from "@/components/explore/GettingHere";
 import { ExploreCTA } from "@/components/explore/ExploreCTA";
+import UpcomingEvents from "@/components/explore/UpcomingEvents";
 import { useCityAttractions } from "@/hooks/useCityAttractions";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
