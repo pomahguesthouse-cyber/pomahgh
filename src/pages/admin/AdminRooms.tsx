@@ -92,26 +92,8 @@ const AdminRooms = () => {
       room_numbers: [],
       room_count: "1",
       allotment: "0",
-      promo_price: "",
-      promo_start_date: "",
-      promo_end_date: "",
-      monday_price: "",
-      tuesday_price: "",
-      wednesday_price: "",
-      thursday_price: "",
-      friday_price: "",
-      saturday_price: "",
-      sunday_price: "",
       transition_effect: "slide",
-      is_non_refundable: false,
-      monday_non_refundable: false,
-      tuesday_non_refundable: false,
-      wednesday_non_refundable: false,
-      thursday_non_refundable: false,
-      friday_non_refundable: false,
-      saturday_non_refundable: false,
-      sunday_non_refundable: false,
-      use_autopricing: false
+      is_non_refundable: false
     });
     setEditingRoom(null);
     setActiveTab("general");
@@ -134,26 +116,8 @@ const AdminRooms = () => {
       room_numbers: room.room_numbers || [],
       room_count: room.room_count?.toString() || "1",
       allotment: room.allotment?.toString() || "0",
-      promo_price: room.promo_price?.toString() || "",
-      promo_start_date: room.promo_start_date || "",
-      promo_end_date: room.promo_end_date || "",
-      monday_price: room.monday_price?.toString() || "",
-      tuesday_price: room.tuesday_price?.toString() || "",
-      wednesday_price: room.wednesday_price?.toString() || "",
-      thursday_price: room.thursday_price?.toString() || "",
-      friday_price: room.friday_price?.toString() || "",
-      saturday_price: room.saturday_price?.toString() || "",
-      sunday_price: room.sunday_price?.toString() || "",
       transition_effect: room.transition_effect || "slide",
-      is_non_refundable: room.is_non_refundable || false,
-      monday_non_refundable: room.monday_non_refundable || false,
-      tuesday_non_refundable: room.tuesday_non_refundable || false,
-      wednesday_non_refundable: room.wednesday_non_refundable || false,
-      thursday_non_refundable: room.thursday_non_refundable || false,
-      friday_non_refundable: room.friday_non_refundable || false,
-      saturday_non_refundable: room.saturday_non_refundable || false,
-      sunday_non_refundable: room.sunday_non_refundable || false,
-      use_autopricing: room.use_autopricing || false
+      is_non_refundable: room.is_non_refundable || false
     });
     setIsDialogOpen(true);
   };
@@ -221,26 +185,9 @@ const AdminRooms = () => {
       room_numbers: formData.room_numbers,
       room_count: Number(formData.room_count),
       allotment: Number(formData.allotment),
-      promo_price: formData.promo_price ? Number(formData.promo_price) : null,
-      promo_start_date: formData.promo_start_date || null,
-      promo_end_date: formData.promo_end_date || null,
-      monday_price: formData.monday_price ? Number(formData.monday_price) : null,
-      tuesday_price: formData.tuesday_price ? Number(formData.tuesday_price) : null,
-      wednesday_price: formData.wednesday_price ? Number(formData.wednesday_price) : null,
-      thursday_price: formData.thursday_price ? Number(formData.thursday_price) : null,
-      friday_price: formData.friday_price ? Number(formData.friday_price) : null,
-      saturday_price: formData.saturday_price ? Number(formData.saturday_price) : null,
-      sunday_price: formData.sunday_price ? Number(formData.sunday_price) : null,
       transition_effect: formData.transition_effect,
-      is_non_refundable: formData.is_non_refundable,
-      monday_non_refundable: formData.monday_non_refundable,
-      tuesday_non_refundable: formData.tuesday_non_refundable,
-      wednesday_non_refundable: formData.wednesday_non_refundable,
-      thursday_non_refundable: formData.thursday_non_refundable,
-      friday_non_refundable: formData.friday_non_refundable,
-      saturday_non_refundable: formData.saturday_non_refundable,
-      sunday_non_refundable: formData.sunday_non_refundable,
-      use_autopricing: formData.use_autopricing
+      is_non_refundable: formData.is_non_refundable
+    };
     };
     if (editingRoom) {
       updateRoom({
