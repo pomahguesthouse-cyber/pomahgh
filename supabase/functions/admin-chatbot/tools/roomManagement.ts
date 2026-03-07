@@ -167,7 +167,7 @@ export async function updateRoomPrice(supabase: SupabaseClient, args: Record<str
 export async function getRoomPrices(supabase: SupabaseClient, roomName?: string) {
   const { data: allRooms, error } = await supabase
     .from('rooms')
-    .select('id, name, price_per_night, monday_price, tuesday_price, wednesday_price, thursday_price, friday_price, saturday_price, sunday_price, promo_price, promo_start_date, promo_end_date')
+    .select('id, name, price_per_night, pricing_priority')
     .order('name');
 
   if (error) throw error;
@@ -187,30 +187,61 @@ export async function getRoomPrices(supabase: SupabaseClient, roomName?: string)
     rooms = [matchedRoom as unknown as RoomPriceRow];
   }
 
+  const today = new Date().toISOString().split('T')[0];
+
+  // Fetch active promotions for all rooms
+  const { data: activePromos } = await supabase
+    .from('room_promotions')
+    .select('room_id, name, discount_percentage, promo_price, start_date, end_date, badge_text')
+    .eq('is_active', true)
+    .lte('start_date', today)
+    .gte('end_date', today);
+
+  const promoMap = new Map<string, any>();
+  (activePromos || []).forEach((p: any) => {
+    promoMap.set(p.room_id, p);
+  });
+
   return {
     count: rooms.length,
     rooms: rooms.map((r) => {
-      const today = new Date().toISOString().split('T')[0];
-      const hasActivePromo = r.promo_price && r.promo_start_date && r.promo_end_date 
-        && r.promo_start_date <= today && r.promo_end_date >= today;
+      const priority = r.pricing_priority || ['base', 'promo', 'dynamic'];
+      const promo = promoMap.get(r.id);
+      
+      // Calculate effective price based on priority order
+      let effectivePrice = r.price_per_night;
+      let priceSource = 'base';
+
+      for (const source of priority) {
+        if (source === 'promo' && promo) {
+          effectivePrice = promo.promo_price 
+            ? promo.promo_price 
+            : Math.round(r.price_per_night * (1 - (promo.discount_percentage || 0) / 100));
+          priceSource = 'promo';
+          break;
+        }
+        if (source === 'base') {
+          effectivePrice = r.price_per_night;
+          priceSource = 'base';
+          break;
+        }
+        // dynamic pricing is handled by external system, skip if not first
+      }
 
       return {
         name: r.name,
-        price_per_night: r.price_per_night,
-        daily_prices: {
-          senin: r.monday_price || r.price_per_night,
-          selasa: r.tuesday_price || r.price_per_night,
-          rabu: r.wednesday_price || r.price_per_night,
-          kamis: r.thursday_price || r.price_per_night,
-          jumat: r.friday_price || r.price_per_night,
-          sabtu: r.saturday_price || r.price_per_night,
-          minggu: r.sunday_price || r.price_per_night
-        },
-        promo: r.promo_price ? {
-          price: r.promo_price,
-          start_date: r.promo_start_date,
-          end_date: r.promo_end_date,
-          is_active: hasActivePromo
+        base_price: r.price_per_night,
+        effective_price: effectivePrice,
+        price_formatted: `Rp ${effectivePrice.toLocaleString('id-ID')}`,
+        price_source: priceSource,
+        pricing_priority: priority,
+        promo: promo ? {
+          name: promo.name,
+          badge: promo.badge_text,
+          discount_percentage: promo.discount_percentage,
+          promo_price: promo.promo_price,
+          start_date: promo.start_date,
+          end_date: promo.end_date,
         } : null
       };
     })
