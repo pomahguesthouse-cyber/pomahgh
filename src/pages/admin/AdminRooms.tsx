@@ -70,8 +70,24 @@ const AdminRooms = () => {
     room_count: "1",
     allotment: "0",
     transition_effect: "slide",
-    is_non_refundable: false
+    is_non_refundable: false,
+    pricing_priority: ["base", "promo", "dynamic"] as string[]
   });
+
+  const pricingSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handlePricingDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setFormData(prev => {
+      const oldIndex = prev.pricing_priority.indexOf(active.id as string);
+      const newIndex = prev.pricing_priority.indexOf(over.id as string);
+      return { ...prev, pricing_priority: arrayMove(prev.pricing_priority, oldIndex, newIndex) };
+    });
+  }, []);
   const getIconComponent = (iconName: string) => {
     const icons = Icons as unknown as Record<string, React.ComponentType<{
       className?: string;
