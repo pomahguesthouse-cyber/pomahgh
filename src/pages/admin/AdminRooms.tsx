@@ -487,12 +487,8 @@ const AdminRooms = () => {
                       </CardContent>
                     </Card>
                   </TabsContent>
-                            is_non_refundable: checked
-                          })} />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
+
+
 
                   {/* TAB: FEATURES */}
                   <TabsContent value="features" className="mt-0">
