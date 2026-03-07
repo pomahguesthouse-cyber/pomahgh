@@ -29,6 +29,126 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+// Pricing card config
+const PRICING_CARD_CONFIG: Record<string, { title: string; description: string; borderClass: string; bgClass: string; badgeClass: string }> = {
+  base: {
+    title: "Base Price",
+    description: "Harga dasar per malam yang ditetapkan manual.",
+    borderClass: "border-2 border-primary/20",
+    bgClass: "bg-gradient-to-br from-primary/5 via-primary/2 to-transparent",
+    badgeClass: "bg-primary text-primary-foreground",
+  },
+  promo: {
+    title: "Promo Price",
+    description: "Harga promo dari tabel Promotions (jika aktif).",
+    borderClass: "border-amber-200",
+    bgClass: "bg-amber-50/30",
+    badgeClass: "bg-amber-500 text-white",
+  },
+  dynamic: {
+    title: "Dynamic Price",
+    description: "Harga otomatis berdasarkan tingkat okupansi.",
+    borderClass: "border-blue-200",
+    bgClass: "bg-blue-50/30",
+    badgeClass: "bg-blue-500 text-white",
+  },
+};
+
+interface SortablePricingCardProps {
+  id: string;
+  index: number;
+  type: string;
+  formData: any;
+  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  editingRoom: Room | null;
+}
+
+const SortablePricingCard = ({ id, index, type, formData, setFormData, editingRoom }: SortablePricingCardProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+  const config = PRICING_CARD_CONFIG[type];
+  if (!config) return null;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card className={cn("relative overflow-hidden", config.borderClass, config.bgClass, isDragging && "shadow-xl ring-2 ring-primary/30")}>
+        <div className="absolute top-4 right-4">
+          <Badge className={cn("font-medium px-3 py-1", config.badgeClass)}>
+            Prioritas {index + 1}
+          </Badge>
+        </div>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              className="mt-1 cursor-grab active:cursor-grabbing p-1.5 rounded-md hover:bg-black/5 transition-colors text-slate-400 hover:text-slate-600"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="w-5 h-5" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-slate-800 text-lg">{config.title}</h3>
+              <p className="text-sm text-slate-500 mt-0.5">{config.description}</p>
+
+              {/* Base Price: editable */}
+              {type === "base" && (
+                <div className="flex items-baseline gap-3 mt-4">
+                  <span className="text-slate-400 text-2xl font-medium">Rp</span>
+                  <Input
+                    type="number"
+                    value={formData.price_per_night}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: any) => ({ ...prev, price_per_night: e.target.value }))}
+                    className="text-4xl font-bold border-0 bg-transparent focus-visible:ring-0 p-0 w-auto min-w-[180px]"
+                    placeholder="0"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Promo Price: show active promo info */}
+              {type === "promo" && (
+                editingRoom?.active_promotion ? (
+                  <div className="mt-4 p-4 bg-white rounded-lg border border-amber-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-slate-700">{editingRoom.active_promotion.badge_text}</p>
+                        <p className="text-sm text-slate-500">{editingRoom.active_promotion.name}</p>
+                      </div>
+                      <div className="text-right">
+                        {editingRoom.active_promotion.promo_price ? (
+                          <p className="text-lg font-bold text-amber-600">Rp {editingRoom.active_promotion.promo_price.toLocaleString("id-ID")}</p>
+                        ) : editingRoom.active_promotion.discount_percentage ? (
+                          <p className="text-lg font-bold text-amber-600">-{editingRoom.active_promotion.discount_percentage}%</p>
+                        ) : null}
+                        <p className="text-xs text-slate-400">{editingRoom.active_promotion.start_date} — {editingRoom.active_promotion.end_date}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-slate-400 italic">Belum ada promo aktif. Kelola di menu <strong>Promotions</strong>.</p>
+                )
+              )}
+
+              {/* Dynamic Price: info only */}
+              {type === "dynamic" && (
+                <p className="mt-3 text-xs text-slate-400 italic">Konfigurasi di menu <strong>Analysis Dashboard</strong>.</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+
 const AdminRooms = () => {
   const {
     rooms,
