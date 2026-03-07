@@ -17,16 +17,7 @@ interface RoomPriceRow {
   id: string;
   name: string;
   price_per_night: number;
-  monday_price: number | null;
-  tuesday_price: number | null;
-  wednesday_price: number | null;
-  thursday_price: number | null;
-  friday_price: number | null;
-  saturday_price: number | null;
-  sunday_price: number | null;
-  promo_price: number | null;
-  promo_start_date: string | null;
-  promo_end_date: string | null;
+  pricing_priority: string[];
 }
 
 export async function getRoomInventory(supabase: SupabaseClient) {
