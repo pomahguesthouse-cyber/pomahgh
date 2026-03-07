@@ -2900,6 +2900,7 @@ export type Database = {
           monday_price: number | null
           name: string
           price_per_night: number
+          pricing_priority: string[]
           promo_end_date: string | null
           promo_price: number | null
           promo_start_date: string | null
@@ -2948,6 +2949,7 @@ export type Database = {
           monday_price?: number | null
           name: string
           price_per_night: number
+          pricing_priority?: string[]
           promo_end_date?: string | null
           promo_price?: number | null
           promo_start_date?: string | null
@@ -2996,6 +2998,7 @@ export type Database = {
           monday_price?: number | null
           name?: string
           price_per_night?: number
+          pricing_priority?: string[]
           promo_end_date?: string | null
           promo_price?: number | null
           promo_start_date?: string | null
