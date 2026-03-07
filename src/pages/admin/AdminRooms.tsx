@@ -137,7 +137,8 @@ const AdminRooms = () => {
       room_count: room.room_count?.toString() || "1",
       allotment: room.allotment?.toString() || "0",
       transition_effect: room.transition_effect || "slide",
-      is_non_refundable: room.is_non_refundable || false
+      is_non_refundable: room.is_non_refundable || false,
+      pricing_priority: (room as any).pricing_priority || ["base", "promo", "dynamic"]
     });
     setIsDialogOpen(true);
   };
