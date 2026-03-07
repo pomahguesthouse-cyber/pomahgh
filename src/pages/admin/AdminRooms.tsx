@@ -449,162 +449,27 @@ const AdminRooms = () => {
                       </CardContent>
                     </Card>
 
-                    {/* AutoPricing Card */}
-                    <Card className={cn("transition-all duration-300 border-2", formData.use_autopricing ? "border-orange-400 bg-gradient-to-br from-orange-50/50 to-transparent" : "border-slate-200 hover:border-slate-300")}>
+                    {/* Non-Refundable Toggle */}
+                    <Card className="border-slate-200">
                       <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            <div className={cn("p-3 rounded-xl transition-all duration-300", formData.use_autopricing ? "bg-orange-100 text-orange-600 shadow-sm" : "bg-slate-100 text-slate-500")}>
-                              <Zap className="w-7 h-7" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3">
-                                <h3 className="font-semibold text-lg text-slate-800">AutoPricing</h3>
-                                {formData.use_autopricing && <Badge className="bg-orange-500 text-white">Active</Badge>}
-                              </div>
-                              <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                                Automatically adjust prices based on occupancy rates, competitor pricing, and demand patterns
-                              </p>
-                              
-                              {formData.use_autopricing && <div className="mt-5 p-4 bg-white rounded-xl border border-orange-200 space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm text-slate-600 flex items-center gap-2">
-                                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                      Current Auto-Price
-                                    </span>
-                                    <span className="text-lg font-bold text-orange-600">
-                                      Rp {(Number(formData.price_per_night) * 1.15).toLocaleString('id-ID')}
-                                    </span>
-                                  </div>
-                                  <div className="h-px bg-slate-100" />
-                                  <div className="flex items-center justify-between text-sm">
-                                    <span className="text-slate-500">Occupancy Rate</span>
-                                    <span className="font-medium text-slate-700">85%</span>
-                                  </div>
-                                  <div className="flex items-center justify-between text-sm">
-                                    <span className="text-slate-500">Last Updated</span>
-                                    <span className="text-slate-500">5 minutes ago</span>
-                                  </div>
-                                </div>}
-                            </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-slate-800">Non-Refundable Rate</h3>
+                            <p className="text-sm text-slate-500 mt-1">
+                              Enable if this room price is non-refundable (no cancellation allowed)
+                            </p>
                           </div>
-                          <Switch checked={formData.use_autopricing} onCheckedChange={checked => setFormData({
-                          ...formData,
-                          use_autopricing: checked
-                        })} className="data-[state=checked]:bg-orange-500" />
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Day-of-Week Pricing */}
-                    <Card className="border-slate-200">
-                      <CardHeader className="pb-4">
-                        <CardTitle className="text-base text-slate-700 font-sans font-bold">Day-of-Week Pricing</CardTitle>
-                        <CardDescription>Set different prices for specific days (optional)</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-7 gap-2">
-                          {[{
-                          key: 'monday_price',
-                          label: 'Mon',
-                          short: 'M'
-                        }, {
-                          key: 'tuesday_price',
-                          label: 'Tue',
-                          short: 'T'
-                        }, {
-                          key: 'wednesday_price',
-                          label: 'Wed',
-                          short: 'W'
-                        }, {
-                          key: 'thursday_price',
-                          label: 'Thu',
-                          short: 'T'
-                        }, {
-                          key: 'friday_price',
-                          label: 'Fri',
-                          short: 'F'
-                        }, {
-                          key: 'saturday_price',
-                          label: 'Sat',
-                          short: 'S'
-                        }, {
-                          key: 'sunday_price',
-                          label: 'Sun',
-                          short: 'S'
-                        }].map(day => <div key={day.key} className="space-y-2">
-                              <Label className="text-xs text-center block text-slate-500 font-medium">{day.label}</Label>
-                              <div className="relative">
-                                <Input type="number" value={formData[day.key as keyof typeof formData] as string} onChange={e => setFormData({
-                              ...formData,
-                              [day.key]: e.target.value
-                            })} className="text-center text-sm h-12 bg-white" placeholder="-" />
-                              </div>
-                            </div>)}
-                        </div>
-                        <p className="text-xs text-slate-400 mt-3 text-center">Leave empty to use base price</p>
-                      </CardContent>
-                    </Card>
-
-                    {/* Promo Section */}
-                    <Card className="border-slate-200">
-                      <CardHeader className="pb-4">
-                        <CardTitle className="text-base text-slate-700 flex items-center gap-2 font-sans font-bold">
-                          <span className="text-green-600">%</span>
-                          Promotional Pricing
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm text-slate-600">Promo Price (Rp)</Label>
-                            <Input type="number" value={formData.promo_price} onChange={e => setFormData({
+                          <Switch checked={formData.is_non_refundable} onCheckedChange={checked => setFormData({
                             ...formData,
-                            promo_price: e.target.value
-                          })} className="bg-white" placeholder="0" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm text-slate-600">Start Date</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !formData.promo_start_date && "text-slate-400")}>
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {formData.promo_start_date ? format(new Date(formData.promo_start_date), "dd MMM", {
-                                  locale: localeId
-                                }) : "Select"}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={formData.promo_start_date ? new Date(formData.promo_start_date) : undefined} onSelect={date => date && setFormData({
-                                ...formData,
-                                promo_start_date: format(date, "yyyy-MM-dd")
-                              })} initialFocus />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm text-slate-600">End Date</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !formData.promo_end_date && "text-slate-400")}>
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {formData.promo_end_date ? format(new Date(formData.promo_end_date), "dd MMM", {
-                                  locale: localeId
-                                }) : "Select"}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={formData.promo_end_date ? new Date(formData.promo_end_date) : undefined} onSelect={date => date && setFormData({
-                                ...formData,
-                                promo_end_date: format(date, "yyyy-MM-dd")
-                              })} disabled={date => formData.promo_start_date ? date < new Date(formData.promo_start_date) : false} initialFocus />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                            is_non_refundable: checked
+                          })} />
                         </div>
                       </CardContent>
                     </Card>
-                  </TabsContent>
+
+                    <p className="text-sm text-muted-foreground text-center">
+                      Gunakan menu <strong>Promotions</strong> untuk mengatur harga promo dengan periode dan diskon khusus.
+                    </p>
 
                   {/* TAB: FEATURES */}
                   <TabsContent value="features" className="mt-0">
