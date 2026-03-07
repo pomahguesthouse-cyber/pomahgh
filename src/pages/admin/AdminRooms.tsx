@@ -470,6 +470,7 @@ const AdminRooms = () => {
                     <p className="text-sm text-muted-foreground text-center">
                       Gunakan menu <strong>Promotions</strong> untuk mengatur harga promo dengan periode dan diskon khusus.
                     </p>
+                  </TabsContent>
 
                   {/* TAB: FEATURES */}
                   <TabsContent value="features" className="mt-0">
