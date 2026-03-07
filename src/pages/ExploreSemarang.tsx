@@ -52,6 +52,7 @@ const ExploreSemarang = () => {
         )}
         
         <NearbyFromHotel />
+        <UpcomingEvents />
         <GettingHere />
         <ExploreCTA />
       </main>
