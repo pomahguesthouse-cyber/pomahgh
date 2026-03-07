@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, MapPin, Zap, Building2, Users, Maximize, Save, Image as ImageIcon, Check, Hash, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, MapPin, Building2, Users, Maximize, Save, Image as ImageIcon, Check, Hash, Eye } from "lucide-react";
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -66,26 +66,8 @@ const AdminRooms = () => {
     room_numbers: [] as string[],
     room_count: "1",
     allotment: "0",
-    promo_price: "",
-    promo_start_date: "",
-    promo_end_date: "",
-    monday_price: "",
-    tuesday_price: "",
-    wednesday_price: "",
-    thursday_price: "",
-    friday_price: "",
-    saturday_price: "",
-    sunday_price: "",
     transition_effect: "slide",
-    is_non_refundable: false,
-    monday_non_refundable: false,
-    tuesday_non_refundable: false,
-    wednesday_non_refundable: false,
-    thursday_non_refundable: false,
-    friday_non_refundable: false,
-    saturday_non_refundable: false,
-    sunday_non_refundable: false,
-    use_autopricing: false
+    is_non_refundable: false
   });
   const getIconComponent = (iconName: string) => {
     const icons = Icons as unknown as Record<string, React.ComponentType<{
@@ -110,26 +92,8 @@ const AdminRooms = () => {
       room_numbers: [],
       room_count: "1",
       allotment: "0",
-      promo_price: "",
-      promo_start_date: "",
-      promo_end_date: "",
-      monday_price: "",
-      tuesday_price: "",
-      wednesday_price: "",
-      thursday_price: "",
-      friday_price: "",
-      saturday_price: "",
-      sunday_price: "",
       transition_effect: "slide",
-      is_non_refundable: false,
-      monday_non_refundable: false,
-      tuesday_non_refundable: false,
-      wednesday_non_refundable: false,
-      thursday_non_refundable: false,
-      friday_non_refundable: false,
-      saturday_non_refundable: false,
-      sunday_non_refundable: false,
-      use_autopricing: false
+      is_non_refundable: false
     });
     setEditingRoom(null);
     setActiveTab("general");
@@ -152,26 +116,8 @@ const AdminRooms = () => {
       room_numbers: room.room_numbers || [],
       room_count: room.room_count?.toString() || "1",
       allotment: room.allotment?.toString() || "0",
-      promo_price: room.promo_price?.toString() || "",
-      promo_start_date: room.promo_start_date || "",
-      promo_end_date: room.promo_end_date || "",
-      monday_price: room.monday_price?.toString() || "",
-      tuesday_price: room.tuesday_price?.toString() || "",
-      wednesday_price: room.wednesday_price?.toString() || "",
-      thursday_price: room.thursday_price?.toString() || "",
-      friday_price: room.friday_price?.toString() || "",
-      saturday_price: room.saturday_price?.toString() || "",
-      sunday_price: room.sunday_price?.toString() || "",
       transition_effect: room.transition_effect || "slide",
-      is_non_refundable: room.is_non_refundable || false,
-      monday_non_refundable: room.monday_non_refundable || false,
-      tuesday_non_refundable: room.tuesday_non_refundable || false,
-      wednesday_non_refundable: room.wednesday_non_refundable || false,
-      thursday_non_refundable: room.thursday_non_refundable || false,
-      friday_non_refundable: room.friday_non_refundable || false,
-      saturday_non_refundable: room.saturday_non_refundable || false,
-      sunday_non_refundable: room.sunday_non_refundable || false,
-      use_autopricing: room.use_autopricing || false
+      is_non_refundable: room.is_non_refundable || false
     });
     setIsDialogOpen(true);
   };
@@ -239,26 +185,9 @@ const AdminRooms = () => {
       room_numbers: formData.room_numbers,
       room_count: Number(formData.room_count),
       allotment: Number(formData.allotment),
-      promo_price: formData.promo_price ? Number(formData.promo_price) : null,
-      promo_start_date: formData.promo_start_date || null,
-      promo_end_date: formData.promo_end_date || null,
-      monday_price: formData.monday_price ? Number(formData.monday_price) : null,
-      tuesday_price: formData.tuesday_price ? Number(formData.tuesday_price) : null,
-      wednesday_price: formData.wednesday_price ? Number(formData.wednesday_price) : null,
-      thursday_price: formData.thursday_price ? Number(formData.thursday_price) : null,
-      friday_price: formData.friday_price ? Number(formData.friday_price) : null,
-      saturday_price: formData.saturday_price ? Number(formData.saturday_price) : null,
-      sunday_price: formData.sunday_price ? Number(formData.sunday_price) : null,
       transition_effect: formData.transition_effect,
-      is_non_refundable: formData.is_non_refundable,
-      monday_non_refundable: formData.monday_non_refundable,
-      tuesday_non_refundable: formData.tuesday_non_refundable,
-      wednesday_non_refundable: formData.wednesday_non_refundable,
-      thursday_non_refundable: formData.thursday_non_refundable,
-      friday_non_refundable: formData.friday_non_refundable,
-      saturday_non_refundable: formData.saturday_non_refundable,
-      sunday_non_refundable: formData.sunday_non_refundable,
-      use_autopricing: formData.use_autopricing
+      is_non_refundable: formData.is_non_refundable
+    };
     };
     if (editingRoom) {
       updateRoom({
@@ -520,161 +449,27 @@ const AdminRooms = () => {
                       </CardContent>
                     </Card>
 
-                    {/* AutoPricing Card */}
-                    <Card className={cn("transition-all duration-300 border-2", formData.use_autopricing ? "border-orange-400 bg-gradient-to-br from-orange-50/50 to-transparent" : "border-slate-200 hover:border-slate-300")}>
+                    {/* Non-Refundable Toggle */}
+                    <Card className="border-slate-200">
                       <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            <div className={cn("p-3 rounded-xl transition-all duration-300", formData.use_autopricing ? "bg-orange-100 text-orange-600 shadow-sm" : "bg-slate-100 text-slate-500")}>
-                              <Zap className="w-7 h-7" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3">
-                                <h3 className="font-semibold text-lg text-slate-800">AutoPricing</h3>
-                                {formData.use_autopricing && <Badge className="bg-orange-500 text-white">Active</Badge>}
-                              </div>
-                              <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                                Automatically adjust prices based on occupancy rates, competitor pricing, and demand patterns
-                              </p>
-                              
-                              {formData.use_autopricing && <div className="mt-5 p-4 bg-white rounded-xl border border-orange-200 space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm text-slate-600 flex items-center gap-2">
-                                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                      Current Auto-Price
-                                    </span>
-                                    <span className="text-lg font-bold text-orange-600">
-                                      Rp {(Number(formData.price_per_night) * 1.15).toLocaleString('id-ID')}
-                                    </span>
-                                  </div>
-                                  <div className="h-px bg-slate-100" />
-                                  <div className="flex items-center justify-between text-sm">
-                                    <span className="text-slate-500">Occupancy Rate</span>
-                                    <span className="font-medium text-slate-700">85%</span>
-                                  </div>
-                                  <div className="flex items-center justify-between text-sm">
-                                    <span className="text-slate-500">Last Updated</span>
-                                    <span className="text-slate-500">5 minutes ago</span>
-                                  </div>
-                                </div>}
-                            </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-slate-800">Non-Refundable Rate</h3>
+                            <p className="text-sm text-slate-500 mt-1">
+                              Enable if this room price is non-refundable (no cancellation allowed)
+                            </p>
                           </div>
-                          <Switch checked={formData.use_autopricing} onCheckedChange={checked => setFormData({
-                          ...formData,
-                          use_autopricing: checked
-                        })} className="data-[state=checked]:bg-orange-500" />
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Day-of-Week Pricing */}
-                    <Card className="border-slate-200">
-                      <CardHeader className="pb-4">
-                        <CardTitle className="text-base text-slate-700 font-sans font-bold">Day-of-Week Pricing</CardTitle>
-                        <CardDescription>Set different prices for specific days (optional)</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-7 gap-2">
-                          {[{
-                          key: 'monday_price',
-                          label: 'Mon',
-                          short: 'M'
-                        }, {
-                          key: 'tuesday_price',
-                          label: 'Tue',
-                          short: 'T'
-                        }, {
-                          key: 'wednesday_price',
-                          label: 'Wed',
-                          short: 'W'
-                        }, {
-                          key: 'thursday_price',
-                          label: 'Thu',
-                          short: 'T'
-                        }, {
-                          key: 'friday_price',
-                          label: 'Fri',
-                          short: 'F'
-                        }, {
-                          key: 'saturday_price',
-                          label: 'Sat',
-                          short: 'S'
-                        }, {
-                          key: 'sunday_price',
-                          label: 'Sun',
-                          short: 'S'
-                        }].map(day => <div key={day.key} className="space-y-2">
-                              <Label className="text-xs text-center block text-slate-500 font-medium">{day.label}</Label>
-                              <div className="relative">
-                                <Input type="number" value={formData[day.key as keyof typeof formData] as string} onChange={e => setFormData({
-                              ...formData,
-                              [day.key]: e.target.value
-                            })} className="text-center text-sm h-12 bg-white" placeholder="-" />
-                              </div>
-                            </div>)}
-                        </div>
-                        <p className="text-xs text-slate-400 mt-3 text-center">Leave empty to use base price</p>
-                      </CardContent>
-                    </Card>
-
-                    {/* Promo Section */}
-                    <Card className="border-slate-200">
-                      <CardHeader className="pb-4">
-                        <CardTitle className="text-base text-slate-700 flex items-center gap-2 font-sans font-bold">
-                          <span className="text-green-600">%</span>
-                          Promotional Pricing
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm text-slate-600">Promo Price (Rp)</Label>
-                            <Input type="number" value={formData.promo_price} onChange={e => setFormData({
+                          <Switch checked={formData.is_non_refundable} onCheckedChange={checked => setFormData({
                             ...formData,
-                            promo_price: e.target.value
-                          })} className="bg-white" placeholder="0" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm text-slate-600">Start Date</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !formData.promo_start_date && "text-slate-400")}>
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {formData.promo_start_date ? format(new Date(formData.promo_start_date), "dd MMM", {
-                                  locale: localeId
-                                }) : "Select"}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={formData.promo_start_date ? new Date(formData.promo_start_date) : undefined} onSelect={date => date && setFormData({
-                                ...formData,
-                                promo_start_date: format(date, "yyyy-MM-dd")
-                              })} initialFocus />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm text-slate-600">End Date</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !formData.promo_end_date && "text-slate-400")}>
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {formData.promo_end_date ? format(new Date(formData.promo_end_date), "dd MMM", {
-                                  locale: localeId
-                                }) : "Select"}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={formData.promo_end_date ? new Date(formData.promo_end_date) : undefined} onSelect={date => date && setFormData({
-                                ...formData,
-                                promo_end_date: format(date, "yyyy-MM-dd")
-                              })} disabled={date => formData.promo_start_date ? date < new Date(formData.promo_start_date) : false} initialFocus />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                            is_non_refundable: checked
+                          })} />
                         </div>
                       </CardContent>
                     </Card>
+
+                    <p className="text-sm text-muted-foreground text-center">
+                      Gunakan menu <strong>Promotions</strong> untuk mengatur harga promo dengan periode dan diskon khusus.
+                    </p>
                   </TabsContent>
 
                   {/* TAB: FEATURES */}
@@ -809,10 +604,6 @@ const AdminRooms = () => {
                     Rp {room.price_per_night.toLocaleString()}
                   </span>
                   <span className="text-slate-400">/night</span>
-                  {room.use_autopricing && <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-100">
-                      <Zap className="w-3 h-3 mr-1" />
-                      AutoPricing
-                    </Badge>}
                 </CardDescription>
               </CardHeader>
               <CardContent>

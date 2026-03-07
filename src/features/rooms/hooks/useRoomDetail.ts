@@ -6,29 +6,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoomPromotion } from "../types";
 
-// Helper function to get day-of-week price
-const getDayPrice = (room: Record<string, unknown>, dayOfWeek: number): number => {
-  const dayPrices = [
-    room.sunday_price as number | null,
-    room.monday_price as number | null,
-    room.tuesday_price as number | null,
-    room.wednesday_price as number | null,
-    room.thursday_price as number | null,
-    room.friday_price as number | null,
-    room.saturday_price as number | null,
-  ];
-  return dayPrices[dayOfWeek] || (room.price_per_night as number);
-};
-
-// Calculate current price with promo
 const getCurrentPrice = (room: Record<string, unknown>, activePromo?: RoomPromotion | null): number => {
-  const today = new Date();
-  const todayStr = today.toISOString().split("T")[0] as string;
-  const dayOfWeek = today.getDay();
-  const basePrice = getDayPrice(room, dayOfWeek);
+  const basePrice = room.price_per_night as number;
 
-  // Check active promotion from room_promotions table
   if (activePromo) {
+    const todayStr = new Date().toISOString().split("T")[0];
     if (todayStr >= activePromo.start_date && todayStr <= activePromo.end_date) {
       if (activePromo.promo_price) {
         return activePromo.promo_price;
@@ -39,13 +21,6 @@ const getCurrentPrice = (room: Record<string, unknown>, activePromo?: RoomPromot
     }
   }
 
-  // Fallback to legacy promo on rooms table
-  if (room.promo_price && room.promo_start_date && room.promo_end_date) {
-    if (todayStr >= (room.promo_start_date as string) && todayStr <= (room.promo_end_date as string)) {
-      return room.promo_price as number;
-    }
-  }
-
   return basePrice;
 };
 
@@ -53,7 +28,6 @@ export const useRoomDetail = (roomSlug: string) => {
   return useQuery({
     queryKey: ["room-detail", roomSlug],
     queryFn: async () => {
-      // Fetch room data
       const { data: room, error } = await supabase
         .from("rooms")
         .select("*")
@@ -63,7 +37,6 @@ export const useRoomDetail = (roomSlug: string) => {
       if (error) throw error;
       if (!room) throw new Error("Room not found");
 
-      // Fetch active promotions for this room
       const today = new Date().toISOString().split("T")[0];
       const { data: promotions } = await supabase
         .from("room_promotions")

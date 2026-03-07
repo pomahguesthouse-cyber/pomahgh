@@ -21,7 +21,7 @@ export interface RoomPromotion {
   priority: number;
 }
 
-// Core room interface
+// Core room interface - simplified pricing
 export interface Room {
   id: string;
   name: string;
@@ -40,28 +40,10 @@ export interface Room {
   allotment: number;
   base_price: number | null;
   final_price: number | null;
-  promo_price: number | null;
-  promo_start_date: string | null;
-  promo_end_date: string | null;
-  monday_price: number | null;
-  tuesday_price: number | null;
-  wednesday_price: number | null;
-  thursday_price: number | null;
-  friday_price: number | null;
-  saturday_price: number | null;
-  sunday_price: number | null;
   transition_effect?: string | null;
   floor_plan_url?: string | null;
   floor_plan_enabled?: boolean | null;
   is_non_refundable?: boolean | null;
-  monday_non_refundable?: boolean | null;
-  tuesday_non_refundable?: boolean | null;
-  wednesday_non_refundable?: boolean | null;
-  thursday_non_refundable?: boolean | null;
-  friday_non_refundable?: boolean | null;
-  saturday_non_refundable?: boolean | null;
-  sunday_non_refundable?: boolean | null;
-  use_autopricing?: boolean | null;
   active_promotion?: RoomPromotion | null;
 }
 

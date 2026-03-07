@@ -3,7 +3,7 @@
  * Transforms database entities to DTOs and vice versa
  */
 
-import type { Room, RoomPromotion, RoomAddon, RoomFeature } from "@/types/room.types";
+import type { Room, RoomPromotion, RoomAddon } from "@/types/room.types";
 import { formatRupiah } from "@/lib/format/currency";
 
 // DTO for room display (camelCase)
@@ -78,12 +78,9 @@ const PRICE_TYPE_LABELS: Record<string, string> = {
 };
 
 export const roomMapper = {
-  /**
-   * Transform database entity to full DTO
-   */
   toDTO: (entity: Room, activePromotion?: RoomPromotion | null): RoomDTO => {
     const finalPrice = entity.final_price || entity.price_per_night;
-    const hasPromotion = !!activePromotion || (entity.promo_price !== null && entity.promo_price > 0);
+    const hasPromotion = !!activePromotion;
     
     let discountPercentage: number | null = null;
     if (hasPromotion && finalPrice < entity.price_per_night) {
@@ -118,9 +115,6 @@ export const roomMapper = {
     };
   },
 
-  /**
-   * Transform to card item for listings
-   */
   toCardItem: (entity: Room, activePromotion?: RoomPromotion | null): RoomCardItem => {
     const finalPrice = entity.final_price || entity.price_per_night;
     const hasPromotion = !!activePromotion || finalPrice < entity.price_per_night;
@@ -141,9 +135,6 @@ export const roomMapper = {
     };
   },
 
-  /**
-   * Transform to select option
-   */
   toSelectOption: (entity: Room): RoomSelectOption => ({
     value: entity.id,
     label: entity.name,
@@ -151,9 +142,6 @@ export const roomMapper = {
     maxGuests: entity.max_guests,
   }),
 
-  /**
-   * Transform addon to DTO
-   */
   toAddonDTO: (addon: RoomAddon): RoomAddonDTO => ({
     id: addon.id,
     name: addon.name,
@@ -168,31 +156,19 @@ export const roomMapper = {
     extraCapacity: addon.extra_capacity || 0,
   }),
 
-  /**
-   * Transform multiple entities to DTOs
-   */
   toDTOList: (entities: Room[], promotions?: Map<string, RoomPromotion>): RoomDTO[] =>
     entities.map((entity) =>
       roomMapper.toDTO(entity, promotions?.get(entity.id) || entity.active_promotion)
     ),
 
-  /**
-   * Transform multiple entities to card items
-   */
   toCardItems: (entities: Room[], promotions?: Map<string, RoomPromotion>): RoomCardItem[] =>
     entities.map((entity) =>
       roomMapper.toCardItem(entity, promotions?.get(entity.id) || entity.active_promotion)
     ),
 
-  /**
-   * Transform multiple entities to select options
-   */
   toSelectOptions: (entities: Room[]): RoomSelectOption[] =>
     entities.map(roomMapper.toSelectOption),
 
-  /**
-   * Transform multiple addons to DTOs
-   */
   toAddonDTOList: (addons: RoomAddon[]): RoomAddonDTO[] =>
     addons.map(roomMapper.toAddonDTO),
 };
