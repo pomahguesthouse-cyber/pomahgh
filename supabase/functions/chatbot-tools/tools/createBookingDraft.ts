@@ -202,7 +202,7 @@ export async function handleCreateBookingDraft(
 
   const { data: hotelSettings } = await supabase
     .from("hotel_settings")
-    .select("whatsapp_number, hotel_name")
+    .select("whatsapp_number, hotel_name, hotel_policies_enabled, hotel_policies_text, check_in_time, check_out_time")
     .single();
 
   const roomsText = roomsSummary.join(", ");
