@@ -860,7 +860,7 @@ Silakan coba lagi atau hubungi technical support.`;
           ],
           session_id: `wa_${phone}`,
           channel: 'whatsapp',
-          conversationContext, // Pass extracted context to chatbot
+          conversationContext,
         }),
       });
 
@@ -870,6 +870,115 @@ Silakan coba lagi atau hubungi technical support.`;
         aiResponse = finalData.choices?.[0]?.message?.content || aiResponse;
       } else {
         console.error("Final response error:", await finalResponse.text());
+      }
+    }
+
+    // 🛡️ STUCK RESPONSE DETECTOR: AI said "mohon tunggu" / "akan cek" but didn't call a tool
+    const stuckPatterns = /mohon\s+tunggu|akan\s+(saya\s+)?bantu\s+cek|saya\s+cek(kan)?\s+dulu|sebentar\s+ya/i;
+    const hasToolCalls = aiMessage?.tool_calls && aiMessage.tool_calls.length > 0;
+    
+    if (!hasToolCalls && stuckPatterns.test(aiResponse)) {
+      console.log("⚠️ STUCK RESPONSE DETECTED - AI promised to check but didn't call tool. Retrying...");
+      
+      // Retry with explicit instruction to call the tool
+      const retryMessages = [
+        ...messages,
+        { role: 'assistant', content: aiResponse },
+        { 
+          role: 'user', 
+          content: `[SYSTEM: Kamu baru saja bilang "${aiResponse.substring(0, 80)}..." tapi TIDAK memanggil tool check_availability. INI GAGAL. SEKARANG PANGGIL check_availability DENGAN TANGGAL YANG DISEBUTKAN USER. Jika user bilang "sehari" berarti 1 malam. Jangan balas text - LANGSUNG panggil tool!]` 
+        }
+      ];
+      
+      const retryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          messages: retryMessages,
+          session_id: `wa_${phone}`,
+          channel: 'whatsapp',
+          conversationContext,
+        }),
+      });
+      
+      if (retryResponse.ok) {
+        const retryData = await retryResponse.json();
+        const retryMessage = retryData.choices?.[0]?.message;
+        console.log("Retry response:", JSON.stringify(retryData).substring(0, 300));
+        
+        // If retry has tool calls, execute them
+        if (retryMessage?.tool_calls && retryMessage.tool_calls.length > 0) {
+          console.log(`✅ Retry triggered ${retryMessage.tool_calls.length} tool call(s)`);
+          
+          const retryToolResults: Array<{ role: string; content: string; tool_call_id: string }> = [];
+          for (const toolCall of retryMessage.tool_calls) {
+            console.log(`Executing retry tool: ${toolCall.function.name}`);
+            try {
+              const toolResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${supabaseServiceKey}`,
+                },
+                body: JSON.stringify({
+                  tool_name: toolCall.function.name,
+                  parameters: JSON.parse(toolCall.function.arguments || '{}'),
+                }),
+              });
+              const toolResult = await toolResponse.json();
+              console.log(`Retry tool ${toolCall.function.name} result:`, JSON.stringify(toolResult).substring(0, 200));
+              retryToolResults.push({
+                role: 'tool',
+                content: JSON.stringify(toolResult),
+                tool_call_id: toolCall.id,
+              });
+            } catch (toolError) {
+              console.error(`Retry tool error:`, toolError);
+              retryToolResults.push({
+                role: 'tool',
+                content: JSON.stringify({ error: "Tool execution failed" }),
+                tool_call_id: toolCall.id,
+              });
+            }
+          }
+          
+          // Get final response with retry tool results
+          const finalRetryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              messages: [
+                ...retryMessages,
+                { role: 'assistant', content: retryMessage.content, tool_calls: retryMessage.tool_calls },
+                ...retryToolResults,
+              ],
+              session_id: `wa_${phone}`,
+              channel: 'whatsapp',
+              conversationContext,
+            }),
+          });
+          
+          if (finalRetryResponse.ok) {
+            const finalRetryData = await finalRetryResponse.json();
+            const retryContent = finalRetryData.choices?.[0]?.message?.content;
+            if (retryContent) {
+              aiResponse = retryContent;
+              console.log(`✅ Stuck response recovered: "${aiResponse.substring(0, 100)}..."`);
+            }
+          }
+        } else if (retryMessage?.content) {
+          // Retry returned text (hopefully with actual data)
+          aiResponse = retryMessage.content;
+          console.log(`Retry returned text response: "${aiResponse.substring(0, 100)}..."`);
+        }
+      } else {
+        console.error("Retry failed:", await retryResponse.text());
       }
     }
 
