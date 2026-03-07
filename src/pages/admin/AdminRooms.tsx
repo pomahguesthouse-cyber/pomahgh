@@ -112,7 +112,8 @@ const AdminRooms = () => {
       room_count: "1",
       allotment: "0",
       transition_effect: "slide",
-      is_non_refundable: false
+      is_non_refundable: false,
+      pricing_priority: ["base", "promo", "dynamic"]
     });
     setEditingRoom(null);
     setActiveTab("general");
