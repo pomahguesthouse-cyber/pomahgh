@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useDuitkuPayment } from "@/hooks/useDuitkuPayment";
+import { useDokuPayment } from "@/hooks/useDokuPayment";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Loader2, CreditCard, Building2, QrCode, Wallet, ArrowLeft, ExternalLink } from "lucide-react";
