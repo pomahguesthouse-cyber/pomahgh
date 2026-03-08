@@ -147,6 +147,7 @@ serve(async (req) => {
       },
       additional_info: {
         override_notification_url: notificationUrl,
+        notification_url: notificationUrl,
       },
     };
 
