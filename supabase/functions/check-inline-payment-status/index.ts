@@ -1,7 +1,7 @@
-// Check Inline Payment Status
+// Check Inline Payment Status via DOKU
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { md5 } from "../_shared/md5.ts";
+import { buildDokuHeaders } from "../_shared/doku-signature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,11 +36,11 @@ serve(async (req) => {
       );
     }
 
-    const merchantCode = Deno.env.get("DUITKU_MERCHANT_CODE")!;
-    const apiKey = Deno.env.get("DUITKU_API_KEY")!;
+    const clientId = Deno.env.get("DOKU_CLIENT_ID")!;
+    const secretKey = Deno.env.get("DOKU_SECRET_KEY")!;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const duitkuEnv = Deno.env.get("DUITKU_ENV") || "sandbox";
+    const dokuEnv = Deno.env.get("DOKU_ENV") || "production";
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -67,7 +67,7 @@ serve(async (req) => {
     // Check if already expired
     if (booking.payment_expires_at && new Date(booking.payment_expires_at) < new Date()) {
       log('info', 'Payment expired', { requestId, bookingId: booking.id });
-      
+
       await supabase
         .from("bookings")
         .update({
@@ -105,31 +105,26 @@ serve(async (req) => {
       );
     }
 
-    // Check with Duitku API
-    const signature = md5(merchantCode + txn.merchant_order_id + apiKey);
+    // Check with DOKU API
+    const requestTarget = `/orders/v1/status/${txn.merchant_order_id}`;
+    const emptyBody = "";
     
-    const DUITKU_BASE_URL = duitkuEnv === "production"
-      ? "https://passport.duitku.com"
-      : "https://sandbox.duitku.com";
-
-    const duitkuResponse = await fetch(
-      `${DUITKU_BASE_URL}/webapi/api/merchant/transactionStatus`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          merchantCode,
-          merchantOrderId: txn.merchant_order_id,
-          signature
-        })
-      }
+    const { headers: dokuHeaders, baseUrl } = await buildDokuHeaders(
+      clientId, secretKey, requestTarget, emptyBody, dokuEnv
     );
+    delete dokuHeaders["Content-Type"];
 
-    const duitkuData = await duitkuResponse.json();
+    const dokuResponse = await fetch(`${baseUrl}${requestTarget}`, {
+      method: "GET",
+      headers: dokuHeaders,
+    });
+
+    const dokuData = await dokuResponse.json();
 
     let status = "pending";
-    if (duitkuData.statusCode === "00") status = "paid";
-    else if (duitkuData.statusCode === "02") status = "expired";
+    const txnStatus = dokuData.transaction?.status;
+    if (txnStatus === "SUCCESS") status = "paid";
+    else if (txnStatus === "EXPIRED") status = "expired";
 
     // Update if status changed
     if (status === "paid" && booking.payment_status !== "paid") {

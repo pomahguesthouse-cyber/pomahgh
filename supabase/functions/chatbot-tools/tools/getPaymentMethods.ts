@@ -1,6 +1,21 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { GetPaymentMethodsParams } from '../lib/types.ts';
-import { md5 } from '../../_shared/md5.ts';
+
+// DOKU static payment methods
+const DOKU_PAYMENT_METHODS = [
+  { code: "VIRTUAL_ACCOUNT_BCA", name: "BCA Virtual Account", category: "Virtual Account" },
+  { code: "VIRTUAL_ACCOUNT_BANK_MANDIRI", name: "Mandiri Virtual Account", category: "Virtual Account" },
+  { code: "VIRTUAL_ACCOUNT_BRI", name: "BRI Virtual Account", category: "Virtual Account" },
+  { code: "VIRTUAL_ACCOUNT_BNI", name: "BNI Virtual Account", category: "Virtual Account" },
+  { code: "VIRTUAL_ACCOUNT_PERMATA", name: "Permata Virtual Account", category: "Virtual Account" },
+  { code: "VIRTUAL_ACCOUNT_BANK_SYARIAH_MANDIRI", name: "BSI Virtual Account", category: "Virtual Account" },
+  { code: "VIRTUAL_ACCOUNT_DOKU", name: "DOKU Virtual Account", category: "Virtual Account" },
+  { code: "QRIS", name: "QRIS", category: "QRIS" },
+  { code: "EMONEY_OVO", name: "OVO", category: "E-Wallet" },
+  { code: "EMONEY_DANA", name: "DANA", category: "E-Wallet" },
+  { code: "EMONEY_SHOPEEPAY", name: "ShopeePay", category: "E-Wallet" },
+  { code: "EMONEY_LINKAJA", name: "LinkAja", category: "E-Wallet" },
+];
 
 export async function handleGetPaymentMethods(
   supabase: SupabaseClient,
@@ -45,55 +60,16 @@ export async function handleGetPaymentMethods(
 
   const amount = Math.round(booking.total_price);
 
-  const merchantCode = Deno.env.get("DUITKU_MERCHANT_CODE");
-  const apiKey = Deno.env.get("DUITKU_API_KEY");
-
-  if (!merchantCode || !apiKey) {
-    throw new Error("Konfigurasi payment gateway belum lengkap");
-  }
-
-  const datetime = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 14);
-  const signature = md5(merchantCode + amount.toString() + datetime + apiKey);
-
-  const response = await fetch("https://sandbox.duitku.com/webapi/api/merchant/paymentmethod/getpaymentmethod", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ merchantcode: merchantCode, amount, datetime, signature }),
-  });
-
-  if (!response.ok) {
-    console.error("Duitku API error:", response.status);
-    throw new Error("Gagal mengambil metode pembayaran");
-  }
-
-  const data = await response.json();
-
-  if (data.responseCode !== "00") {
-    console.error("Duitku response error:", data);
-    throw new Error("Gagal mengambil metode pembayaran dari gateway");
-  }
-
-  const methods = (data.paymentFee || []).map((m: { paymentMethod: string; paymentName: string; paymentImage: string; totalFee: string }) => ({
-    code: m.paymentMethod,
-    name: m.paymentName,
-    image: m.paymentImage,
-    fee: parseInt(m.totalFee) || 0,
-  }));
-
-  const grouped: Record<string, Array<{ name: string; code: string; fee: number }>> = {};
-  for (const m of methods) {
-    const type = m.name.includes('Virtual Account') || m.code.startsWith('B') ? 'Virtual Account' :
-                 m.code === 'SP' || m.name.includes('QRIS') ? 'QRIS' :
-                 m.name.includes('OVO') || m.name.includes('Dana') || m.name.includes('ShopeePay') || m.name.includes('LinkAja') ? 'E-Wallet' :
-                 'Lainnya';
-    if (!grouped[type]) grouped[type] = [];
-    grouped[type].push({ name: m.name, code: m.code, fee: m.fee });
+  // Group DOKU methods by category
+  const grouped: Record<string, string[]> = {};
+  for (const m of DOKU_PAYMENT_METHODS) {
+    if (!grouped[m.category]) grouped[m.category] = [];
+    grouped[m.category].push(m.name);
   }
 
   const summaryParts: string[] = [];
-  for (const [type, items] of Object.entries(grouped)) {
-    const names = items.map(i => i.name).join(', ');
-    summaryParts.push(`${type}: ${names}`);
+  for (const [type, names] of Object.entries(grouped)) {
+    summaryParts.push(`${type}: ${names.join(', ')}`);
   }
 
   return {
@@ -102,7 +78,7 @@ export async function handleGetPaymentMethods(
     booking_id: booking.id,
     total_price: amount,
     methods_summary: summaryParts,
-    methods_count: methods.length,
+    methods_count: DOKU_PAYMENT_METHODS.length,
     already_paid: false,
   };
 }
