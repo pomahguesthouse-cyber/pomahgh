@@ -5,7 +5,7 @@ import { ArrowRight, Bed } from "lucide-react";
 import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 
 export const ExploreCTA = () => {
-  const { settings } = useHotelSettings();
+  const { settings } = usePublicHotelSettings();
 
   return (
     <section className="py-20 px-4 bg-primary/5">

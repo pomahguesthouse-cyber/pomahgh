@@ -5,7 +5,7 @@ import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 
 const Chat = () => {
   const { messages, isLoading, sendMessage, clearChat, settings } = useChatbot();
-  const { settings: hotelSettings } = useHotelSettings();
+  const { settings: hotelSettings } = usePublicHotelSettings();
 
   return (
     <>

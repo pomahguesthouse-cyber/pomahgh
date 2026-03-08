@@ -8,7 +8,7 @@ interface FooterProps {
 }
 
 export const Footer = memo(({ editorMode = false }: FooterProps) => {
-  const { settings: hotelSettings } = useHotelSettings();
+  const { settings: hotelSettings } = usePublicHotelSettings();
 
   const hotelName = hotelSettings?.hotel_name?.toUpperCase() || "POMAH GUESTHOUSE";
   const description = hotelSettings?.description || "Your tropical paradise awaits in the heart of Bali's most beautiful landscapes.";

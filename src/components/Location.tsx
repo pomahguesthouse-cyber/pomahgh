@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import * as LucideIcons from "lucide-react";
 
 export const Location = () => {
-  const { settings: hotelSettings, isLoading } = useHotelSettings();
+  const { settings: hotelSettings, isLoading } = usePublicHotelSettings();
   const { locations, isLoading: locationsLoading } = useNearbyLocations();
 
   const getIcon = (iconName: string) => {

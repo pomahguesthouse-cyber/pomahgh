@@ -19,7 +19,7 @@ const getCategoryTouristType = (category: string): string[] => {
 
 export const ExploreSEO = ({ attractions }: ExploreSEOProps) => {
   const { settings } = useSeoSettings();
-  const { settings: hotelSettings } = useHotelSettings();
+  const { settings: hotelSettings } = usePublicHotelSettings();
   
   const baseUrl = settings?.canonical_url || "https://pomahguesthouse.com";
   const pageTitle = "Explore Semarang - Wisata, Kuliner & Destinasi Terbaik | " + (settings?.site_title || "Pomah Guesthouse");

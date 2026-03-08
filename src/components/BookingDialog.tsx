@@ -51,7 +51,7 @@ const bookingSchema = z.object({
 export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 1, initialNumGuests = 1 }: BookingDialogProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { settings } = useHotelSettings();
+  const { settings } = usePublicHotelSettings();
   const { checkIn: searchCheckIn, checkOut: searchCheckOut } = useSearchDates();
   
   // Set default dates: use search dates if available, otherwise today and tomorrow (WIB)

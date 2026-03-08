@@ -25,7 +25,7 @@ const transportModes = [
 ];
 
 export const GettingHere = () => {
-  const { settings } = useHotelSettings();
+  const { settings } = usePublicHotelSettings();
 
   return (
     <section className="py-16 px-4">

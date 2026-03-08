@@ -9,7 +9,7 @@ const Header = memo(function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const { settings } = useHotelSettings();
+  const { settings } = usePublicHotelSettings();
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

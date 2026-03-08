@@ -9,7 +9,7 @@ interface ContactProps {
 }
 
 export const Contact = ({ editorMode = false }: ContactProps) => {
-  const { settings: hotelSettings } = useHotelSettings();
+  const { settings: hotelSettings } = usePublicHotelSettings();
   
   const heading = "Get in Touch";
   const subtext = "Ready to experience paradise? Contact us to book your stay or ask any questions.";

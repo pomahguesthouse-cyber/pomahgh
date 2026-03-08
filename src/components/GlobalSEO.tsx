@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 export const GlobalSEO = () => {
   const { settings } = useSeoSettings();
-  const { settings: hotelSettings } = useHotelSettings();
+  const { settings: hotelSettings } = usePublicHotelSettings();
 
   /* --------------------------------------------------
    * Inject third-party scripts (Analytics, GTM, Pixel)
