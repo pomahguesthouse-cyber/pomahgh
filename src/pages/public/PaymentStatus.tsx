@@ -41,9 +41,9 @@ const PaymentStatus = () => {
     if (booking?.payment_status === "paid" || txn?.status === "paid") {
       setStatus("paid");
     } else if (txn) {
-      // Also try checking with Duitku
+      // Also try checking with DOKU
       try {
-        const { data: checkResult } = await supabase.functions.invoke("duitku-check-status", {
+        const { data: checkResult } = await supabase.functions.invoke("doku-check-status", {
           body: { merchant_order_id: txn.merchant_order_id },
         });
         setStatus(checkResult?.status || txn.status);

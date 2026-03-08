@@ -39,7 +39,7 @@ const Payment = () => {
     isCreating,
     fetchPaymentMethods,
     createTransaction,
-  } = useDuitkuPayment();
+  } = useDokuPayment();
 
   useEffect(() => {
     if (bookingId) loadBooking();
