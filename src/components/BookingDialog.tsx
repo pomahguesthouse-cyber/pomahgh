@@ -526,7 +526,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
           {totalNights > 0 && (
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Kamar: Rp {room.price_per_night.toLocaleString("id-ID")} × {totalNights} malam × {roomQuantity} kamar</span>
+                <span>Kamar: Rp {effectivePrice.toLocaleString("id-ID")} × {totalNights} malam × {roomQuantity} kamar</span>
                 <span>Rp {roomPrice.toLocaleString("id-ID")}</span>
               </div>
               {addonsPrice > 0 && (
