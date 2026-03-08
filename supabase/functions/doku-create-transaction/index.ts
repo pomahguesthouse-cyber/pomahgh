@@ -284,9 +284,10 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    log('error', 'Error creating DOKU transaction', { requestId, error: error.message, stack: error.stack });
+    const errorMessage = (error?.message || "Unknown error").replace("[NO_RETRY] ", "");
+    log('error', 'Error creating DOKU transaction', { requestId, error: errorMessage, stack: error.stack });
     return new Response(
-      JSON.stringify({ error: "Internal server error", detail: error.message }),
+      JSON.stringify({ error: "Internal server error", detail: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
