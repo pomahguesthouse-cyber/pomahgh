@@ -55,11 +55,12 @@ serve(async (req) => {
     const secretKey = Deno.env.get("DOKU_SECRET_KEY")!;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const dokuEnv = Deno.env.get("DOKU_ENV") || "production";
+    // Use sandbox for BRN- prefixed Client IDs, otherwise production
+    const dokuEnv = clientId.startsWith("BRN-") ? "sandbox" : "production";
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    log('info', 'Creating payment transaction', { requestId, booking_id, payment_method });
+    log('info', 'Creating payment transaction', { requestId, booking_id, payment_method, dokuEnv });
 
     // Get booking data
     const { data: booking, error: bookingError } = await supabase
@@ -105,25 +106,25 @@ serve(async (req) => {
       );
     }
 
-    const room = booking.rooms as unknown as { name: string } | null;
     const paymentAmount = Math.round(booking.total_price);
-    const invoiceNumber = `${booking.booking_code}-${Date.now()}`;
+    const invoiceNumber = `INV-${booking.booking_code}-${Date.now()}`;
     const email = booking.guest_email || "guest@hotel.com";
-    const phoneNumber = booking.guest_phone || "";
+    const phoneNumber = (booking.guest_phone || "").replace(/[^0-9]/g, "");
     const customerName = booking.guest_name;
 
     const siteUrl = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/[^/]*$/, "") || "";
-    const paymentReturnUrl = `${siteUrl}/payment/${booking_id}/status`;
-
-    const callbackUrl = `${supabaseUrl}/functions/v1/doku-callback`;
+    const callbackUrl = `${siteUrl}/payment/${booking_id}/status`;
+    const notificationUrl = `${supabaseUrl}/functions/v1/doku-callback`;
 
     const expiryMinutes = 1440; // 24 hours
 
-    // Build DOKU Checkout request body
+    // Build DOKU Checkout request body per official docs
+    // https://developers.doku.com/accept-payments/doku-checkout/integration-guide/backend-integration
     const dokuBody: Record<string, unknown> = {
       order: {
         amount: paymentAmount,
         invoice_number: invoiceNumber,
+        currency: "IDR",
         callback_url: callbackUrl,
         auto_redirect: true,
       },
@@ -137,25 +138,42 @@ serve(async (req) => {
         phone: phoneNumber,
         country: "ID",
       },
+      additional_info: {
+        override_notification_url: notificationUrl,
+      },
     };
 
     // Add payment method filter if specified
     if (payment_method) {
-      dokuBody.payment = {
-        ...(dokuBody.payment as Record<string, unknown>),
-        payment_method_types: [payment_method],
-      };
+      (dokuBody.payment as Record<string, unknown>).payment_method_types = [payment_method];
     }
 
     const bodyString = JSON.stringify(dokuBody);
     const requestTarget = "/checkout/v1/payment";
 
-    log('info', 'Calling DOKU Checkout API', { requestId, invoiceNumber, paymentAmount, environment: dokuEnv });
+    log('info', 'Calling DOKU Checkout API', { 
+      requestId, 
+      invoiceNumber, 
+      paymentAmount, 
+      environment: dokuEnv,
+      notificationUrl,
+      callbackUrl,
+      requestBody: dokuBody,
+    });
 
     const dokuData = await retryWithBackoff(async () => {
       const { headers: dokuHeaders, baseUrl } = await buildDokuHeaders(
         clientId, secretKey, requestTarget, bodyString, dokuEnv
       );
+
+      log('info', 'DOKU request headers', { 
+        requestId,
+        url: `${baseUrl}${requestTarget}`,
+        clientId: dokuHeaders["Client-Id"],
+        reqId: dokuHeaders["Request-Id"],
+        timestamp: dokuHeaders["Request-Timestamp"],
+        signature: dokuHeaders["Signature"]?.slice(0, 30) + "...",
+      });
 
       const response = await fetch(`${baseUrl}${requestTarget}`, {
         method: "POST",
@@ -163,19 +181,35 @@ serve(async (req) => {
         body: bodyString,
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+      log('info', 'DOKU API raw response', { requestId, status: response.status, body: responseText });
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error(`DOKU API returned non-JSON: ${responseText}`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.error?.message || `DOKU API error: ${response.status}`);
+        const errorMsg = data?.error?.message || data?.message || JSON.stringify(data);
+        throw new Error(`DOKU API error ${response.status}: ${errorMsg}`);
       }
 
       return data;
     });
 
-    log('info', 'DOKU transaction created successfully', { requestId, invoiceNumber });
+    log('info', 'DOKU transaction created successfully', { requestId, invoiceNumber, response: dokuData });
 
-    const paymentUrl = dokuData.response?.payment?.url || dokuData.payment?.url || null;
-    const tokenId = dokuData.response?.payment?.token_id || dokuData.payment?.token_id || null;
+    // Extract payment URL from response
+    // DOKU Checkout response: { message: [...], response: { payment: { url, token_id } } }
+    const paymentUrl = dokuData?.response?.payment?.url || dokuData?.payment?.url || null;
+    const tokenId = dokuData?.response?.payment?.token_id || dokuData?.payment?.token_id || null;
+
+    if (!paymentUrl) {
+      log('error', 'No payment URL in DOKU response', { requestId, invoiceNumber, dokuData });
+      throw new Error("DOKU did not return a payment URL");
+    }
 
     const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();
 
