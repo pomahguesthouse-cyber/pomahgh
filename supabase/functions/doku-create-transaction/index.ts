@@ -55,6 +55,11 @@ serve(async (req) => {
     const secretKey = (Deno.env.get("DOKU_SECRET_KEY") || "").trim();
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    if (!clientId || !secretKey) {
+      throw new Error("DOKU credentials are not configured");
+    }
+
     // Use sandbox for BRN- prefixed Client IDs, otherwise production
     const dokuEnv = clientId.startsWith("BRN-") ? "sandbox" : "production";
 
