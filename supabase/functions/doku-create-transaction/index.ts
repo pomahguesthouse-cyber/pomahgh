@@ -24,6 +24,8 @@ const retryWithBackoff = async <T>(fn: () => Promise<T>, retries = 3): Promise<T
     try {
       return await fn();
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.startsWith("[NO_RETRY]")) throw err;
       if (i === retries - 1) throw err;
       const delay = Math.pow(2, i) * 1000;
       log('warn', `Retry attempt ${i + 1}/${retries} after ${delay}ms`);
@@ -51,10 +53,15 @@ serve(async (req) => {
       );
     }
 
-    const clientId = Deno.env.get("DOKU_CLIENT_ID")!;
-    const secretKey = Deno.env.get("DOKU_SECRET_KEY")!;
+    const clientId = (Deno.env.get("DOKU_CLIENT_ID") || "").trim();
+    const secretKey = (Deno.env.get("DOKU_SECRET_KEY") || "").trim();
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    if (!clientId || !secretKey) {
+      throw new Error("DOKU credentials are not configured");
+    }
+
     // Use sandbox for BRN- prefixed Client IDs, otherwise production
     const dokuEnv = clientId.startsWith("BRN-") ? "sandbox" : "production";
 
@@ -161,43 +168,68 @@ serve(async (req) => {
       requestBody: dokuBody,
     });
 
-    const dokuData = await retryWithBackoff(async () => {
-      const { headers: dokuHeaders, baseUrl } = await buildDokuHeaders(
-        clientId, secretKey, requestTarget, bodyString, dokuEnv
-      );
+    const requestDokuCheckout = async (env: string) => {
+      return retryWithBackoff(async () => {
+        const { headers: dokuHeaders, baseUrl } = await buildDokuHeaders(
+          clientId,
+          secretKey,
+          requestTarget,
+          bodyString,
+          env
+        );
 
-      log('info', 'DOKU request headers', { 
-        requestId,
-        url: `${baseUrl}${requestTarget}`,
-        clientId: dokuHeaders["Client-Id"],
-        reqId: dokuHeaders["Request-Id"],
-        timestamp: dokuHeaders["Request-Timestamp"],
-        signature: dokuHeaders["Signature"]?.slice(0, 30) + "...",
+        log('info', 'DOKU request headers', {
+          requestId,
+          url: `${baseUrl}${requestTarget}`,
+          environment: env,
+          clientId: dokuHeaders["Client-Id"],
+          reqId: dokuHeaders["Request-Id"],
+          timestamp: dokuHeaders["Request-Timestamp"],
+          signature: dokuHeaders["Signature"]?.slice(0, 30) + "...",
+        });
+
+        const response = await fetch(`${baseUrl}${requestTarget}`, {
+          method: "POST",
+          headers: dokuHeaders,
+          body: bodyString,
+        });
+
+        const responseText = await response.text();
+        log('info', 'DOKU API raw response', { requestId, environment: env, status: response.status, body: responseText });
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          throw new Error(`DOKU API returned non-JSON: ${responseText}`);
+        }
+
+        if (!response.ok) {
+          const errorMsg = data?.error?.message || data?.message || JSON.stringify(data);
+          if (response.status >= 400 && response.status < 500) {
+            throw new Error(`[NO_RETRY] DOKU API error ${response.status}: ${errorMsg}`);
+          }
+          throw new Error(`DOKU API error ${response.status}: ${errorMsg}`);
+        }
+
+        return data;
       });
+    };
 
-      const response = await fetch(`${baseUrl}${requestTarget}`, {
-        method: "POST",
-        headers: dokuHeaders,
-        body: bodyString,
-      });
+    let dokuData;
+    try {
+      dokuData = await requestDokuCheckout(dokuEnv);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const fallbackEnv = dokuEnv === "sandbox" ? "production" : "sandbox";
 
-      const responseText = await response.text();
-      log('info', 'DOKU API raw response', { requestId, status: response.status, body: responseText });
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        throw new Error(`DOKU API returned non-JSON: ${responseText}`);
+      if (message.includes("Invalid Client-Id")) {
+        log('warn', 'Retrying DOKU request in fallback environment', { requestId, dokuEnv, fallbackEnv, reason: message });
+        dokuData = await requestDokuCheckout(fallbackEnv);
+      } else {
+        throw err;
       }
-
-      if (!response.ok) {
-        const errorMsg = data?.error?.message || data?.message || JSON.stringify(data);
-        throw new Error(`DOKU API error ${response.status}: ${errorMsg}`);
-      }
-
-      return data;
-    });
+    }
 
     log('info', 'DOKU transaction created successfully', { requestId, invoiceNumber, response: dokuData });
 
@@ -252,9 +284,10 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    log('error', 'Error creating DOKU transaction', { requestId, error: error.message, stack: error.stack });
+    const errorMessage = (error?.message || "Unknown error").replace("[NO_RETRY] ", "");
+    log('error', 'Error creating DOKU transaction', { requestId, error: errorMessage, stack: error.stack });
     return new Response(
-      JSON.stringify({ error: "Internal server error", detail: error.message }),
+      JSON.stringify({ error: "Internal server error", detail: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
