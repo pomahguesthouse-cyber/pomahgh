@@ -3561,6 +3561,7 @@ export type Database = {
       generate_booking_code: { Args: never; Returns: string }
       generate_manager_token: { Args: never; Returns: string }
       get_manager_role: { Args: { _user_id: string }; Returns: string }
+      get_public_hotel_settings: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
