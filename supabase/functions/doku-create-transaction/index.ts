@@ -166,43 +166,65 @@ serve(async (req) => {
       requestBody: dokuBody,
     });
 
-    const dokuData = await retryWithBackoff(async () => {
-      const { headers: dokuHeaders, baseUrl } = await buildDokuHeaders(
-        clientId, secretKey, requestTarget, bodyString, dokuEnv
-      );
+    const requestDokuCheckout = async (env: string) => {
+      return retryWithBackoff(async () => {
+        const { headers: dokuHeaders, baseUrl } = await buildDokuHeaders(
+          clientId,
+          secretKey,
+          requestTarget,
+          bodyString,
+          env
+        );
 
-      log('info', 'DOKU request headers', { 
-        requestId,
-        url: `${baseUrl}${requestTarget}`,
-        clientId: dokuHeaders["Client-Id"],
-        reqId: dokuHeaders["Request-Id"],
-        timestamp: dokuHeaders["Request-Timestamp"],
-        signature: dokuHeaders["Signature"]?.slice(0, 30) + "...",
+        log('info', 'DOKU request headers', {
+          requestId,
+          url: `${baseUrl}${requestTarget}`,
+          environment: env,
+          clientId: dokuHeaders["Client-Id"],
+          reqId: dokuHeaders["Request-Id"],
+          timestamp: dokuHeaders["Request-Timestamp"],
+          signature: dokuHeaders["Signature"]?.slice(0, 30) + "...",
+        });
+
+        const response = await fetch(`${baseUrl}${requestTarget}`, {
+          method: "POST",
+          headers: dokuHeaders,
+          body: bodyString,
+        });
+
+        const responseText = await response.text();
+        log('info', 'DOKU API raw response', { requestId, environment: env, status: response.status, body: responseText });
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          throw new Error(`DOKU API returned non-JSON: ${responseText}`);
+        }
+
+        if (!response.ok) {
+          const errorMsg = data?.error?.message || data?.message || JSON.stringify(data);
+          throw new Error(`DOKU API error ${response.status}: ${errorMsg}`);
+        }
+
+        return data;
       });
+    };
 
-      const response = await fetch(`${baseUrl}${requestTarget}`, {
-        method: "POST",
-        headers: dokuHeaders,
-        body: bodyString,
-      });
+    let dokuData;
+    try {
+      dokuData = await requestDokuCheckout(dokuEnv);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const fallbackEnv = dokuEnv === "sandbox" ? "production" : "sandbox";
 
-      const responseText = await response.text();
-      log('info', 'DOKU API raw response', { requestId, status: response.status, body: responseText });
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        throw new Error(`DOKU API returned non-JSON: ${responseText}`);
+      if (message.includes("Invalid Client-Id")) {
+        log('warn', 'Retrying DOKU request in fallback environment', { requestId, dokuEnv, fallbackEnv, reason: message });
+        dokuData = await requestDokuCheckout(fallbackEnv);
+      } else {
+        throw err;
       }
-
-      if (!response.ok) {
-        const errorMsg = data?.error?.message || data?.message || JSON.stringify(data);
-        throw new Error(`DOKU API error ${response.status}: ${errorMsg}`);
-      }
-
-      return data;
-    });
+    }
 
     log('info', 'DOKU transaction created successfully', { requestId, invoiceNumber, response: dokuData });
 
