@@ -227,8 +227,14 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
     }
   };
 
+  const effectivePrice = useMemo(() => {
+    if (!room) return 0;
+    const { price } = getDynamicDisplayPrice(room, checkIn, checkOut);
+    return price;
+  }, [room, checkIn, checkOut]);
+
   const totalNights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
-  const roomPrice = room ? totalNights * room.price_per_night * roomQuantity : 0;
+  const roomPrice = room ? totalNights * effectivePrice * roomQuantity : 0;
   const addonsPrice = selectedAddons.reduce((sum, addon) => sum + addon.total_price, 0);
   const totalPrice = roomPrice + addonsPrice;
 
