@@ -5,8 +5,8 @@ export async function generateDigest(body: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(body);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  const base64Digest = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+  return base64Digest;
 }
 
 export async function generateSignature(
