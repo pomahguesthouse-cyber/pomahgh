@@ -1,11 +1,11 @@
 import { MapPin, Clock, Navigation } from "lucide-react";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { useNearbyLocations } from "@/hooks/useNearbyLocations";
 import { Card, CardContent } from "@/components/ui/card";
 import * as LucideIcons from "lucide-react";
 
 export const Location = () => {
-  const { settings: hotelSettings, isLoading } = useHotelSettings();
+  const { settings: hotelSettings, isLoading } = usePublicHotelSettings();
   const { locations, isLoading: locationsLoading } = useNearbyLocations();
 
   const getIcon = (iconName: string) => {

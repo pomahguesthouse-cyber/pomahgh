@@ -2,14 +2,14 @@ import { useEffect, useState, memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, User, Home, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { useAuth } from "@/hooks/useAuth";
 
 const Header = memo(function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const { settings } = useHotelSettings();
+  const { settings } = usePublicHotelSettings();
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

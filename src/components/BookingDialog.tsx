@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { Room } from "@/hooks/useRooms";
 import { getDynamicDisplayPrice } from "@/components/Rooms/utils/checkPromo";
 import { useBooking, BookingData } from "@/hooks/useBooking";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
 import { AddonSelector } from "./booking/AddonSelector";
 import { BookingAddon } from "@/hooks/useRoomAddons";
@@ -51,7 +51,7 @@ const bookingSchema = z.object({
 export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 1, initialNumGuests = 1 }: BookingDialogProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { settings } = useHotelSettings();
+  const { settings } = usePublicHotelSettings();
   const { checkIn: searchCheckIn, checkOut: searchCheckOut } = useSearchDates();
   
   // Set default dates: use search dates if available, otherwise today and tomorrow (WIB)

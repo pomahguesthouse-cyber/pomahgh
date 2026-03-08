@@ -2,14 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPin, Phone, Mail } from "lucide-react";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 
 interface ContactProps {
   editorMode?: boolean;
 }
 
 export const Contact = ({ editorMode = false }: ContactProps) => {
-  const { settings: hotelSettings } = useHotelSettings();
+  const { settings: hotelSettings } = usePublicHotelSettings();
   
   const heading = "Get in Touch";
   const subtext = "Ready to experience paradise? Contact us to book your stay or ask any questions.";

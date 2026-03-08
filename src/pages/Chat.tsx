@@ -1,11 +1,11 @@
 import { Helmet } from "react-helmet-async";
 import { ChatHeader, ChatInput, ChatMessages } from "@/components/chat";
 import { useChatbot } from "@/hooks/useChatbot";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 
 const Chat = () => {
   const { messages, isLoading, sendMessage, clearChat, settings } = useChatbot();
-  const { settings: hotelSettings } = useHotelSettings();
+  const { settings: hotelSettings } = usePublicHotelSettings();
 
   return (
     <>
