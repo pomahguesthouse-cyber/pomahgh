@@ -19,7 +19,7 @@ interface CreateTransactionResult {
   expires_at: string;
 }
 
-export const useDuitkuPayment = () => {
+export const useDokuPayment = () => {
   const [isLoadingMethods, setIsLoadingMethods] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
@@ -28,7 +28,7 @@ export const useDuitkuPayment = () => {
   const fetchPaymentMethods = async (amount: number) => {
     setIsLoadingMethods(true);
     try {
-      const { data, error } = await supabase.functions.invoke("duitku-payment-methods", {
+      const { data, error } = await supabase.functions.invoke("doku-payment-methods", {
         body: { amount },
       });
 
@@ -46,10 +46,10 @@ export const useDuitkuPayment = () => {
     }
   };
 
-  const createTransaction = async (bookingId: string, paymentMethod: string) => {
+  const createTransaction = async (bookingId: string, paymentMethod?: string) => {
     setIsCreating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("duitku-create-transaction", {
+      const { data, error } = await supabase.functions.invoke("doku-create-transaction", {
         body: { booking_id: bookingId, payment_method: paymentMethod },
       });
 
@@ -69,7 +69,7 @@ export const useDuitkuPayment = () => {
   const checkStatus = async (merchantOrderId: string) => {
     setIsChecking(true);
     try {
-      const { data, error } = await supabase.functions.invoke("duitku-check-status", {
+      const { data, error } = await supabase.functions.invoke("doku-check-status", {
         body: { merchant_order_id: merchantOrderId },
       });
 

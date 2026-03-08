@@ -1,7 +1,7 @@
-// Create Booking with Inline BCA VA Payment
+// Create Booking with Inline Payment via DOKU
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { md5 } from "../_shared/md5.ts";
+import { buildDokuHeaders } from "../_shared/doku-signature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,12 +51,11 @@ serve(async (req) => {
       );
     }
 
-    const merchantCode = Deno.env.get("DUITKU_MERCHANT_CODE")!;
-    const apiKey = Deno.env.get("DUITKU_API_KEY")!;
+    const clientId = Deno.env.get("DOKU_CLIENT_ID")!;
+    const secretKey = Deno.env.get("DOKU_SECRET_KEY")!;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const callbackSecret = Deno.env.get("DUITKU_CALLBACK_SECRET") || "";
-    const duitkuEnv = Deno.env.get("DUITKU_ENV") || "sandbox";
+    const dokuEnv = Deno.env.get("DOKU_ENV") || "production";
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -79,57 +78,61 @@ serve(async (req) => {
     const roomNames = rooms.map(r => r.name).join(', ');
     const bookingCode = generateBookingCode();
     const paymentAmount = Math.round(total_price);
-    const merchantOrderId = `${bookingCode}-${Date.now()}`;
+    const invoiceNumber = `${bookingCode}-${Date.now()}`;
 
-    // Prepare Duitku payload
     const siteUrl = req.headers.get("origin") || "*";
-    const callbackUrl = `${supabaseUrl}/functions/v1/duitku-callback${callbackSecret ? `?secret=${callbackSecret}` : ''}`;
+    const callbackUrl = `${supabaseUrl}/functions/v1/doku-callback`;
     const returnUrl = `${siteUrl}/booking/${bookingCode}/status`;
 
-    const signature = md5(merchantCode + merchantOrderId + paymentAmount + apiKey);
+    // Build DOKU Checkout request - BCA VA specific
+    const dokuBody = JSON.stringify({
+      order: {
+        amount: paymentAmount,
+        invoice_number: invoiceNumber,
+        callback_url: callbackUrl,
+        auto_redirect: true,
+      },
+      payment: {
+        payment_due_date: 60, // 60 minutes for inline
+        payment_method_types: ["VIRTUAL_ACCOUNT_BCA"],
+      },
+      customer: {
+        id: bookingCode,
+        name: guest_name,
+        email: guest_email,
+        phone: guest_phone || "",
+        country: "ID",
+      },
+    });
 
-    const DUITKU_BASE_URL = duitkuEnv === "production"
-      ? "https://passport.duitku.com"
-      : "https://sandbox.duitku.com";
+    const requestTarget = "/checkout/v1/payment";
 
-    const duitkuPayload = {
-      merchantCode,
-      paymentAmount,
-      merchantOrderId,
-      productDetails: `Booking ${roomNames} - ${bookingCode}`,
-      email: guest_email,
-      phoneNumber: guest_phone || "",
-      additionalParam: bookingCode,
-      merchantUserInfo: guest_name,
-      customerVaName: guest_name,
-      callbackUrl,
-      returnUrl,
-      expiryPeriod: 60,
-      signature,
-      paymentMethod: "BC",
-    };
+    log('info', 'Calling DOKU API', { requestId, invoiceNumber, amount: paymentAmount });
 
-    log('info', 'Calling Duitku API', { requestId, merchantOrderId, amount: paymentAmount });
-
-    const duitkuResponse = await fetch(
-      `${DUITKU_BASE_URL}/webapi/api/merchant/v2/inquiry`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(duitkuPayload),
-      }
+    const { headers: dokuHeaders, baseUrl } = await buildDokuHeaders(
+      clientId, secretKey, requestTarget, dokuBody, dokuEnv
     );
 
-    const duitkuData = await duitkuResponse.json();
+    const dokuResponse = await fetch(`${baseUrl}${requestTarget}`, {
+      method: "POST",
+      headers: dokuHeaders,
+      body: dokuBody,
+    });
 
-    if (duitkuData.statusCode !== "00") {
-      log('error', 'Duitku API failed', { requestId, statusCode: duitkuData.statusCode, message: duitkuData.statusMessage });
+    const dokuData = await dokuResponse.json();
+
+    if (!dokuResponse.ok) {
+      log('error', 'DOKU API failed', { requestId, error: dokuData });
       return new Response(
-        JSON.stringify({ error: "Failed to create payment", detail: duitkuData.statusMessage }),
+        JSON.stringify({ error: "Failed to create payment", detail: dokuData }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    const paymentUrl = dokuData.response?.payment?.url || dokuData.payment?.url || null;
+    const tokenId = dokuData.response?.payment?.token_id || dokuData.payment?.token_id || null;
+    // DOKU Checkout returns VA info in the response for VA-only payments
+    const vaNumber = dokuData.virtual_account_info?.virtual_account_number || null;
     const paymentExpiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
     // Create booking
@@ -152,7 +155,7 @@ serve(async (req) => {
         booking_source,
         user_id: user_id || null,
         guest_email_backup: guest_email,
-        va_number: duitkuData.vaNumber,
+        va_number: vaNumber,
         payment_expires_at: paymentExpiresAt,
         bank_code: "BCA",
         is_inline_payment: true
@@ -170,14 +173,14 @@ serve(async (req) => {
       .from("payment_transactions")
       .insert({
         booking_id: booking.id,
-        merchant_order_id: merchantOrderId,
-        duitku_reference: duitkuData.reference,
-        payment_method: "BC",
+        merchant_order_id: invoiceNumber,
+        duitku_reference: tokenId,
+        payment_method: "VIRTUAL_ACCOUNT_BCA",
         payment_method_name: "BCA Virtual Account",
         amount: paymentAmount,
         status: "pending",
-        va_number: duitkuData.vaNumber,
-        payment_url: duitkuData.paymentUrl,
+        va_number: vaNumber,
+        payment_url: paymentUrl,
         expires_at: paymentExpiresAt,
         is_inline: true,
         bank_code: "BCA"
@@ -200,7 +203,8 @@ serve(async (req) => {
 
     // Send WhatsApp notification (fire and forget)
     try {
-      const waMessage = `✅ *Booking Berhasil Dibuat!*\n\nKode: *${bookingCode}*\nKamar: ${roomNames}\nCheck-in: ${check_in}\nTotal: Rp ${paymentAmount.toLocaleString('id-ID')}\n\n🏦 *BCA Virtual Account:*\n${duitkuData.vaNumber}\n\n⏰ Bayar sebelum 1 jam\n\nSalin nomor VA untuk pembayaran via BCA Mobile/myBCA.`;
+      const vaInfo = vaNumber ? `\n\n🏦 *BCA Virtual Account:*\n${vaNumber}\n\n⏰ Bayar sebelum 1 jam\n\nSalin nomor VA untuk pembayaran via BCA Mobile/myBCA.` : `\n\nSilakan lanjutkan pembayaran melalui link yang diberikan.`;
+      const waMessage = `✅ *Booking Berhasil Dibuat!*\n\nKode: *${bookingCode}*\nKamar: ${roomNames}\nCheck-in: ${check_in}\nTotal: Rp ${paymentAmount.toLocaleString('id-ID')}${vaInfo}`;
       await supabase.functions.invoke("send-whatsapp", {
         body: { phone: guest_phone || guest_email, message: waMessage, type: "booking_confirmation" }
       });
@@ -208,7 +212,7 @@ serve(async (req) => {
       log('warn', 'Failed to send WhatsApp', { requestId, error: (waError as Error).message });
     }
 
-    log('info', 'Booking created successfully', { requestId, bookingId: booking.id, bookingCode, vaNumber: duitkuData.vaNumber });
+    log('info', 'Booking created successfully', { requestId, bookingId: booking.id, bookingCode, vaNumber });
 
     return new Response(
       JSON.stringify({
@@ -217,7 +221,8 @@ serve(async (req) => {
           id: booking.id,
           booking_code: bookingCode,
           status: "pending_payment",
-          va_number: duitkuData.vaNumber,
+          va_number: vaNumber,
+          payment_url: paymentUrl,
           payment_expires_at: paymentExpiresAt,
           total_price: paymentAmount,
           guest_name,
