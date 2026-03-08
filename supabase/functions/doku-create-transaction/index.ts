@@ -51,8 +51,8 @@ serve(async (req) => {
       );
     }
 
-    const clientId = Deno.env.get("DOKU_CLIENT_ID")!;
-    const secretKey = Deno.env.get("DOKU_SECRET_KEY")!;
+    const clientId = (Deno.env.get("DOKU_CLIENT_ID") || "").trim();
+    const secretKey = (Deno.env.get("DOKU_SECRET_KEY") || "").trim();
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     // Use sandbox for BRN- prefixed Client IDs, otherwise production
