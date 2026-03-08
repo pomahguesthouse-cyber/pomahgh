@@ -207,7 +207,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
         check_out: checkOut,
         check_in_time: formData.check_in_time + ":00",
         check_out_time: formData.check_out_time + ":00",
-        price_per_night: room.price_per_night,
+        price_per_night: effectivePrice,
         room_quantity: roomQuantity,
         is_non_refundable: room.is_non_refundable || false,
         addons: selectedAddons.length > 0 ? selectedAddons : undefined,
