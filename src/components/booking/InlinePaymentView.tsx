@@ -1,21 +1,14 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { useCountdown } from "@/hooks/useCountdown";
 import {
-  Copy,
   CheckCircle2,
-  Clock,
   AlertCircle,
   RefreshCw,
-  Building2,
   Loader2,
-  ChevronDown,
-  ChevronUp,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
 interface InlinePaymentViewProps {
@@ -26,13 +19,6 @@ interface InlinePaymentViewProps {
   onExpired?: () => void;
 }
 
-interface PaymentData {
-  va_number: string;
-  expires_at: string;
-  transaction_id: string;
-  merchant_order_id: string;
-}
-
 export function InlinePaymentView({
   bookingId,
   totalPrice,
@@ -40,50 +26,15 @@ export function InlinePaymentView({
   onPaymentSuccess,
   onExpired,
 }: InlinePaymentViewProps) {
-  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<"creating" | "pending" | "paid" | "expired">("creating");
-  const [copied, setCopied] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(true);
+  const [paymentStatus, setPaymentStatus] = useState<"idle" | "paid" | "expired">("idle");
   const [checking, setChecking] = useState(false);
-
-  // Create BCA VA transaction on mount
-  useEffect(() => {
-    if (!bookingId || totalPrice <= 0) return;
-    createBcaTransaction();
-  }, [bookingId]);
-
-  const createBcaTransaction = async () => {
-    setIsCreating(true);
-    setCreateError(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("doku-create-transaction", {
-        body: { booking_id: bookingId, payment_method: "VIRTUAL_ACCOUNT_BCA" },
-      });
-
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Gagal membuat transaksi");
-
-      setPaymentData({
-        va_number: data.va_number || "",
-        expires_at: data.expires_at || new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-        transaction_id: data.transaction_id || "",
-        merchant_order_id: data.merchant_order_id || "",
-      });
-      setPaymentStatus("pending");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Gagal membuat pembayaran";
-      setCreateError(message);
-      toast.error(message);
-    } finally {
-      setIsCreating(false);
-    }
-  };
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
   // Auto-poll payment status every 30 seconds
   useEffect(() => {
-    if (paymentStatus !== "pending" || !bookingId) return;
+    if (paymentStatus !== "idle" || !bookingId) return;
 
     const interval = setInterval(async () => {
       try {
@@ -108,6 +59,36 @@ export function InlinePaymentView({
 
     return () => clearInterval(interval);
   }, [paymentStatus, bookingId, onPaymentSuccess, onExpired]);
+
+  const handlePayNow = async () => {
+    setIsCreating(true);
+    setCreateError(null);
+    try {
+      // Create DOKU Checkout transaction - no payment method specified
+      // DOKU Checkout page handles method selection
+      const { data, error } = await supabase.functions.invoke("doku-create-transaction", {
+        body: { booking_id: bookingId },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || data?.detail || "Gagal membuat transaksi");
+
+      if (data.payment_url) {
+        setPaymentUrl(data.payment_url);
+        // Open DOKU Checkout in new tab
+        window.open(data.payment_url, "_blank");
+        toast.success("Halaman pembayaran DOKU telah dibuka. Silakan selesaikan pembayaran.");
+      } else {
+        throw new Error("Tidak mendapat link pembayaran");
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Gagal membuat pembayaran";
+      setCreateError(message);
+      toast.error(message);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const handleCheckStatus = async () => {
     setChecking(true);
@@ -136,48 +117,12 @@ export function InlinePaymentView({
     }
   };
 
-  const handleCopyVA = async () => {
-    if (!paymentData?.va_number) return;
-    try {
-      await navigator.clipboard.writeText(paymentData.va_number);
-      setCopied(true);
-      toast.success("Nomor VA disalin!");
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Gagal menyalin nomor");
-    }
-  };
-
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(price);
-
-  // Creating state
-  if (paymentStatus === "creating" || isCreating) {
-    return (
-      <div className="flex flex-col items-center justify-center py-8 space-y-3">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Membuat Virtual Account BCA...</p>
-      </div>
-    );
-  }
-
-  // Error state
-  if (createError && !paymentData) {
-    return (
-      <div className="flex flex-col items-center justify-center py-6 space-y-3">
-        <AlertCircle className="w-8 h-8 text-destructive" />
-        <p className="text-sm text-destructive">{createError}</p>
-        <Button variant="outline" size="sm" onClick={createBcaTransaction}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Coba Lagi
-        </Button>
-      </div>
-    );
-  }
 
   // Success state
   if (paymentStatus === "paid") {
@@ -200,169 +145,92 @@ export function InlinePaymentView({
         <AlertCircle className="w-12 h-12 text-red-600 mx-auto" />
         <h3 className="font-semibold text-red-800 text-lg">Pembayaran Kadaluarsa</h3>
         <p className="text-sm text-red-700">
-          Booking dibatalkan karena pembayaran tidak diterima dalam 1 jam.
+          Booking dibatalkan karena pembayaran tidak diterima tepat waktu.
         </p>
         <p className="text-sm text-red-600">Silakan buat booking baru jika masih ingin menginap.</p>
       </div>
     );
   }
 
-  // Pending payment — show VA + countdown
-  if (!paymentData) return null;
-
-  return <PendingPaymentView paymentData={paymentData} totalPrice={totalPrice} copied={copied} onCopyVA={handleCopyVA} showInstructions={showInstructions} onToggleInstructions={() => setShowInstructions(!showInstructions)} checking={checking} onCheckStatus={handleCheckStatus} formatPrice={formatPrice} />;
-}
-
-// Extracted pending payment UI
-function PendingPaymentView({
-  paymentData,
-  totalPrice,
-  copied,
-  onCopyVA,
-  showInstructions,
-  onToggleInstructions,
-  checking,
-  onCheckStatus,
-  formatPrice,
-}: {
-  paymentData: PaymentData;
-  totalPrice: number;
-  copied: boolean;
-  onCopyVA: () => void;
-  showInstructions: boolean;
-  onToggleInstructions: () => void;
-  checking: boolean;
-  onCheckStatus: () => void;
-  formatPrice: (price: number) => string;
-}) {
-  const { formattedTime, isExpired, progress, totalSecondsRemaining } = useCountdown(paymentData.expires_at);
-  const isUrgent = totalSecondsRemaining < 600 && !isExpired;
-
   return (
     <div className="space-y-4">
-      {/* VA Card */}
-      <Card className={cn("border-2", isUrgent ? "border-red-300 bg-red-50/50" : "border-orange-200 bg-orange-50/50")}>
+      <Card className="border-2 border-primary/20 bg-primary/5">
         <CardContent className="p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <Building2 className={cn("w-5 h-5", isUrgent ? "text-red-600" : "text-orange-600")} />
-            <h3 className={cn("font-semibold", isUrgent ? "text-red-800" : "text-orange-800")}>
-              BCA Virtual Account
-            </h3>
+          <div className="text-center space-y-2">
+            <p className="text-sm text-muted-foreground">Total Pembayaran</p>
+            <p className="text-2xl font-bold text-primary">{formatPrice(totalPrice)}</p>
           </div>
 
-          {/* VA Number */}
-          <div className="bg-background rounded-lg p-4 border">
-            <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">
-              Nomor Virtual Account
-            </label>
-            <div className="flex items-center gap-3">
-              <span className="flex-1 font-mono text-2xl font-bold tracking-wider">
-                {paymentData.va_number}
-              </span>
-              <Button variant="outline" size="sm" onClick={onCopyVA} className="shrink-0">
-                {copied ? (
-                  <CheckCircle2 className="w-4 h-4 mr-1 text-green-600" />
+          <div className="space-y-2 text-xs text-muted-foreground">
+            <p className="text-center">Metode pembayaran tersedia:</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              <span className="bg-background rounded px-2 py-1 text-center">🏦 Virtual Account</span>
+              <span className="bg-background rounded px-2 py-1 text-center">📱 QRIS</span>
+              <span className="bg-background rounded px-2 py-1 text-center">💳 E-Wallet</span>
+              <span className="bg-background rounded px-2 py-1 text-center">🏧 Credit Card</span>
+            </div>
+          </div>
+
+          {/* Error */}
+          {createError && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded p-3 text-center">
+              <p className="text-sm text-destructive">{createError}</p>
+            </div>
+          )}
+
+          {/* Pay button */}
+          <Button
+            className="w-full h-11 font-semibold"
+            disabled={isCreating}
+            onClick={handlePayNow}
+          >
+            {isCreating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Memproses...
+              </>
+            ) : (
+              <>
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Bayar Sekarang
+              </>
+            )}
+          </Button>
+
+          {/* If payment URL was already generated, show link */}
+          {paymentUrl && (
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => window.open(paymentUrl, "_blank")}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Buka Halaman Pembayaran
+              </Button>
+
+              <Button
+                onClick={handleCheckStatus}
+                disabled={checking}
+                className="w-full"
+                variant="ghost"
+              >
+                {checking ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Mengecek status...
+                  </>
                 ) : (
-                  <Copy className="w-4 h-4 mr-1" />
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Sudah Bayar? Cek Status
+                  </>
                 )}
-                {copied ? "Tersalin" : "Salin"}
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Total: <strong>{formatPrice(totalPrice)}</strong>
-            </p>
-          </div>
-
-          {/* Countdown Timer */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className={cn("w-4 h-4", isUrgent ? "text-red-500" : "text-orange-600")} />
-                <span className={cn("text-sm font-medium", isUrgent ? "text-red-600" : "text-orange-800")}>
-                  Bayar sebelum:
-                </span>
-              </div>
-              <span className={cn("font-mono text-xl font-bold", isUrgent ? "text-red-600" : "text-orange-800")}>
-                {isExpired ? "00:00" : formattedTime}
-              </span>
-            </div>
-
-            <Progress
-              value={progress}
-              className={cn("h-2", isUrgent ? "[&>div]:bg-red-500 bg-red-100" : "[&>div]:bg-orange-500 bg-orange-100")}
-            />
-
-            {isUrgent && (
-              <p className="text-xs text-red-600 font-medium">⚠️ Segera lakukan pembayaran!</p>
-            )}
-          </div>
+          )}
         </CardContent>
       </Card>
-
-      {/* Payment Instructions */}
-      <div className="bg-muted/50 rounded-lg p-4">
-        <button
-          onClick={onToggleInstructions}
-          className="flex items-center justify-between w-full text-left"
-          type="button"
-        >
-          <span className="font-medium text-foreground">Cara Pembayaran</span>
-          {showInstructions ? (
-            <ChevronUp className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
-        </button>
-
-        {showInstructions && (
-          <ol className="mt-3 space-y-2 text-sm text-muted-foreground">
-            <li className="flex gap-2">
-              <span className="font-medium">1.</span>
-              <span>
-                Buka aplikasi <strong>BCA Mobile</strong> atau <strong>myBCA</strong>
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-medium">2.</span>
-              <span>
-                Pilih menu <strong>Transfer</strong> → <strong>Virtual Account</strong>
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-medium">3.</span>
-              <span>
-                Masukkan nomor VA: <strong className="font-mono">{paymentData.va_number}</strong>
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-medium">4.</span>
-              <span>
-                Konfirmasi pembayaran sebesar{" "}
-                <strong>{formatPrice(totalPrice)}</strong>
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-medium">5.</span>
-              <span>Masukkan PIN BCA Anda</span>
-            </li>
-          </ol>
-        )}
-      </div>
-
-      {/* Check Status Button */}
-      <Button onClick={onCheckStatus} disabled={checking} className="w-full" variant="outline">
-        {checking ? (
-          <>
-            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            Mengecek status...
-          </>
-        ) : (
-          <>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Cek Status Pembayaran
-          </>
-        )}
-      </Button>
     </div>
   );
 }
