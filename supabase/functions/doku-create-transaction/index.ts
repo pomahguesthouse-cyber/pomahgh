@@ -206,6 +206,9 @@ serve(async (req) => {
 
         if (!response.ok) {
           const errorMsg = data?.error?.message || data?.message || JSON.stringify(data);
+          if (response.status >= 400 && response.status < 500) {
+            throw new Error(`[NO_RETRY] DOKU API error ${response.status}: ${errorMsg}`);
+          }
           throw new Error(`DOKU API error ${response.status}: ${errorMsg}`);
         }
 
