@@ -58,8 +58,8 @@ export function InlinePaymentView({
     setIsCreating(true);
     setCreateError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("duitku-create-transaction", {
-        body: { booking_id: bookingId, payment_method: "BC" },
+      const { data, error } = await supabase.functions.invoke("doku-create-transaction", {
+        body: { booking_id: bookingId, payment_method: "VIRTUAL_ACCOUNT_BCA" },
       });
 
       if (error) throw error;
