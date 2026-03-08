@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { Room } from "@/hooks/useRooms";
 import { getDynamicDisplayPrice } from "@/components/Rooms/utils/checkPromo";
 import { useBooking, BookingData } from "@/hooks/useBooking";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
 import { AddonSelector } from "./booking/AddonSelector";
 import { BookingAddon } from "@/hooks/useRoomAddons";

@@ -1,5 +1,5 @@
 import { MapPin, Clock, Navigation } from "lucide-react";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { useNearbyLocations } from "@/hooks/useNearbyLocations";
 import { Card, CardContent } from "@/components/ui/card";
 import * as LucideIcons from "lucide-react";

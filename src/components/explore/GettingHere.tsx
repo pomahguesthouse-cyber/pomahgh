@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Plane, Train, Car, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 
 const transportModes = [
   {

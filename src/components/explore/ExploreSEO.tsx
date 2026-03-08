@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { useSeoSettings } from "@/hooks/useSeoSettings";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { CityAttraction } from "@/hooks/useCityAttractions";
 
 interface ExploreSEOProps {

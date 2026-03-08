@@ -2,7 +2,7 @@ import { useEffect, useState, memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, User, Home, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { useAuth } from "@/hooks/useAuth";
 
 const Header = memo(function Header() {
