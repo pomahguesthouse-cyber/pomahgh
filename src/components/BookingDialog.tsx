@@ -15,6 +15,7 @@ import { getWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Room } from "@/hooks/useRooms";
+import { getDynamicDisplayPrice } from "@/components/Rooms/utils/checkPromo";
 import { useBooking, BookingData } from "@/hooks/useBooking";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
