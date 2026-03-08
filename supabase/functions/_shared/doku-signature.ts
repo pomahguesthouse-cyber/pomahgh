@@ -84,6 +84,8 @@ export async function buildDokuHeaders(
       "Client-Id": clientId,
       "Request-Id": requestId,
       "Request-Timestamp": requestTimestamp,
+      "Request-Target": requestTarget,
+      "Digest": digest,
       "Signature": signature,
       "Content-Type": "application/json",
     },
