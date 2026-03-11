@@ -1,35 +1,33 @@
 
-# Tambah Fungsi Download Invoice di Halaman Member
 
-## Ringkasan
-Menambahkan tombol "Download Invoice" pada setiap kartu booking di halaman member dashboard. Tombol ini akan membuka dialog preview invoice yang sudah ada (`InvoicePreviewDialog`), di mana member bisa melihat preview dan download PDF invoice.
+## Plan: Form Koneksi OTA Booking.com
 
-## Perubahan
+### Masalah Saat Ini
+Kredensial Booking.com (Username, Password, Hotel ID) disimpan sebagai secrets yang hanya bisa diubah oleh developer. Admin tidak punya cara untuk mengelola koneksi OTA dari UI.
 
-### 1. `src/pages/user/MemberDashboard.tsx`
-- Import komponen `InvoicePreviewDialog`, icon `FileText` dari lucide-react
-- Tambah state untuk menyimpan booking yang dipilih untuk invoice (`selectedInvoiceBooking`)
-- Tambah tombol **"Invoice"** di setiap kartu booking (aktif maupun riwayat) -- hanya tampil jika status booking bukan `cancelled` dan payment bukan `expired`
-- Render `InvoicePreviewDialog` dengan data dari booking yang dipilih
+### Solusi
+Buat tabel database `ota_connections` untuk menyimpan konfigurasi koneksi OTA, lalu tambahkan form koneksi di BookingcomSyncPanel.
 
-### Detail Teknis
+### Perubahan
 
-**State baru:**
-```text
-selectedInvoiceBooking: { id, booking_code, guest_name, guest_phone } | null
-```
+**1. Database Migration**
+- Tabel baru `ota_connections` dengan kolom: `id`, `provider` (enum: booking_com, agoda, traveloka, dll), `hotel_id`, `username`, `password_encrypted`, `api_endpoint`, `is_active`, `is_connected`, `last_tested_at`, `created_at`, `updated_at`
+- RLS: admin-only untuk semua operasi
+- Satu row per provider (unique constraint on provider)
 
-**Tombol Invoice** akan ditambahkan di:
-- Kartu booking aktif (di samping tombol Batalkan)
-- Kartu riwayat booking (untuk booking yang sudah checked_out / confirmed)
+**2. Update Edge Functions**
+- `bookingcom-push-availability` dan `bookingcom-pull-reservations`: baca kredensial dari tabel `ota_connections` (fallback ke env vars untuk backward compatibility)
 
-**Kondisi tampil:** Booking dengan status selain `cancelled` dan payment selain `expired`
+**3. Komponen UI: OTA Connection Form**
+- Card "Koneksi OTA" di bagian atas BookingcomSyncPanel
+- Form fields: Hotel ID, Username, Password
+- Tombol "Test Koneksi" untuk verifikasi kredensial
+- Status badge (Connected/Disconnected)
+- Simpan/update ke tabel `ota_connections`
 
-### 2. `src/hooks/useBookingHistory.ts`
-- Tambah field `guest_phone` ke interface `BookingHistoryItem` dan query select agar data nomor telepon tersedia untuk dialog invoice
+**4. File yang Diubah**
+- `supabase/migrations/` — tabel `ota_connections`
+- `src/components/admin/BookingcomSyncPanel.tsx` — tambah connection form card
+- `supabase/functions/bookingcom-push-availability/index.ts` — baca dari DB
+- `supabase/functions/bookingcom-pull-reservations/index.ts` — baca dari DB
 
-## Alur Pengguna
-1. Member buka dashboard --> lihat daftar booking
-2. Klik tombol "Invoice" pada booking tertentu
-3. Dialog preview invoice muncul dengan data booking
-4. Member bisa download PDF atau kirim via WhatsApp
