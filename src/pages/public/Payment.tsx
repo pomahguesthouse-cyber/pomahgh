@@ -61,9 +61,7 @@ const Payment = () => {
     setIsCreating(true);
 
     try {
-      // Create DOKU Checkout transaction without specifying payment method
-      // DOKU Checkout page will show all available methods
-      const { data, error } = await supabase.functions.invoke("doku-create-transaction", {
+      const { data, error } = await supabase.functions.invoke("midtrans-create-transaction", {
         body: { booking_id: bookingId },
       });
 
@@ -71,10 +69,9 @@ const Payment = () => {
       if (!data?.success) throw new Error(data?.error || data?.detail || "Gagal membuat transaksi pembayaran");
 
       if (data.payment_url) {
-        // Redirect to DOKU Checkout page
         window.location.href = data.payment_url;
       } else {
-        toast.error("Tidak mendapat link pembayaran dari DOKU");
+        toast.error("Tidak mendapat link pembayaran dari Midtrans");
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Gagal membuat transaksi pembayaran";
@@ -130,7 +127,6 @@ const Payment = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-4 py-8 space-y-6">
-        {/* Header */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="w-5 h-5" />
@@ -141,7 +137,6 @@ const Payment = () => {
           </div>
         </div>
 
-        {/* Booking Summary */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Ringkasan Booking</CardTitle>
@@ -181,7 +176,6 @@ const Payment = () => {
           </CardContent>
         </Card>
 
-        {/* Payment Info */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -191,7 +185,7 @@ const Payment = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Anda akan diarahkan ke halaman pembayaran DOKU untuk memilih metode pembayaran yang tersedia:
+              Anda akan diarahkan ke halaman pembayaran Midtrans untuk memilih metode pembayaran yang tersedia:
             </p>
             <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
@@ -201,7 +195,7 @@ const Payment = () => {
                 <span>📱</span> QRIS
               </div>
               <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                <span>💳</span> E-Wallet (OVO, DANA, ShopeePay)
+                <span>💳</span> E-Wallet (GoPay, ShopeePay)
               </div>
               <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
                 <span>🏧</span> Credit Card
@@ -210,7 +204,6 @@ const Payment = () => {
           </CardContent>
         </Card>
 
-        {/* Pay Button */}
         <Button
           className="w-full h-12 text-base font-semibold"
           disabled={isCreating}
