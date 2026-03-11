@@ -6,7 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Booking.com OTA API base URL
 const BOOKINGCOM_API_BASE = 'https://supply-xml.booking.com/hotels/xml';
 
 serve(async (req) => {
@@ -22,12 +21,33 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const username = Deno.env.get('BOOKINGCOM_USERNAME');
-    const password = Deno.env.get('BOOKINGCOM_PASSWORD');
-    const hotelId = Deno.env.get('BOOKINGCOM_HOTEL_ID');
+    // Try to get credentials from ota_connections table first
+    let username: string | undefined;
+    let password: string | undefined;
+    let hotelId: string | undefined;
+
+    const { data: otaConn } = await supabase
+      .from('ota_connections')
+      .select('hotel_id, username, password_encrypted')
+      .eq('provider', 'booking_com')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (otaConn?.hotel_id && otaConn?.username && otaConn?.password_encrypted) {
+      username = otaConn.username;
+      password = otaConn.password_encrypted;
+      hotelId = otaConn.hotel_id;
+      console.log('[Booking.com Push] Using credentials from ota_connections');
+    } else {
+      // Fallback to env vars
+      username = Deno.env.get('BOOKINGCOM_USERNAME');
+      password = Deno.env.get('BOOKINGCOM_PASSWORD');
+      hotelId = Deno.env.get('BOOKINGCOM_HOTEL_ID');
+      console.log('[Booking.com Push] Using credentials from environment variables');
+    }
 
     if (!username || !password || !hotelId) {
-      throw new Error('Booking.com credentials not configured');
+      throw new Error('Booking.com credentials not configured. Set them in OTA Connection settings or environment variables.');
     }
 
     const { room_id, date_from, date_to } = await req.json();
@@ -89,7 +109,6 @@ serve(async (req) => {
         const success = response.ok && !responseText.includes('<Error');
         const duration = Date.now() - startTime;
 
-        // Log to bookingcom_sync_logs
         await supabase.from('bookingcom_sync_logs').insert({
           sync_type: 'push_availability',
           direction: 'outbound',
@@ -144,21 +163,6 @@ function buildAvailabilityXML(
   rateId: string,
   availability: Array<{ availability_date: string; available_count: number }>
 ): string {
-  const statusMessages = availability.map(row => {
-    const date = row.availability_date;
-    const count = row.available_count;
-    return `
-      <StatusApplicationControl
-        Start="${date}"
-        End="${date}"
-        InvTypeCode="${roomId}"
-        RatePlanCode="${rateId}"/>
-      <LengthsOfStay>
-        <LengthOfStay MinMaxMessageType="SetMinLOS" Time="1"/>
-      </LengthsOfStay>
-      <BookingLimit>${count}</BookingLimit>`;
-  }).join('');
-
   return `<?xml version="1.0" encoding="UTF-8"?>
 <OTA_HotelAvailNotifRQ xmlns="http://www.opentravel.org/OTA/2003/05"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
