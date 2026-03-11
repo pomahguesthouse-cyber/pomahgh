@@ -31,7 +31,7 @@ export const BookingBar = ({
   isResizing,
 }: BookingBarProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  const hoverTimer = useRef<NodeJS.Timeout | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const totalNights = visibleNights ?? booking.total_nights;
   
