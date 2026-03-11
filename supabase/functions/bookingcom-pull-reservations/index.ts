@@ -21,12 +21,32 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const username = Deno.env.get('BOOKINGCOM_USERNAME');
-    const password = Deno.env.get('BOOKINGCOM_PASSWORD');
-    const hotelId = Deno.env.get('BOOKINGCOM_HOTEL_ID');
+    // Try to get credentials from ota_connections table first
+    let username: string | undefined;
+    let password: string | undefined;
+    let hotelId: string | undefined;
+
+    const { data: otaConn } = await supabase
+      .from('ota_connections')
+      .select('hotel_id, username, password_encrypted')
+      .eq('provider', 'booking_com')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (otaConn?.hotel_id && otaConn?.username && otaConn?.password_encrypted) {
+      username = otaConn.username;
+      password = otaConn.password_encrypted;
+      hotelId = otaConn.hotel_id;
+      console.log('[Booking.com Pull] Using credentials from ota_connections');
+    } else {
+      username = Deno.env.get('BOOKINGCOM_USERNAME');
+      password = Deno.env.get('BOOKINGCOM_PASSWORD');
+      hotelId = Deno.env.get('BOOKINGCOM_HOTEL_ID');
+      console.log('[Booking.com Pull] Using credentials from environment variables');
+    }
 
     if (!username || !password || !hotelId) {
-      throw new Error('Booking.com credentials not configured');
+      throw new Error('Booking.com credentials not configured. Set them in OTA Connection settings or environment variables.');
     }
 
     const { last_change } = await req.json();
@@ -34,7 +54,6 @@ serve(async (req) => {
 
     console.log(`[Booking.com Pull] Fetching reservations since ${lastChangeDate}`);
 
-    // Build OTA_ReadRQ XML
     const xmlPayload = `<?xml version="1.0" encoding="UTF-8"?>
 <OTA_ReadRQ xmlns="http://www.opentravel.org/OTA/2003/05"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -59,7 +78,6 @@ serve(async (req) => {
     const responseText = await response.text();
     const duration = Date.now() - startTime;
 
-    // Log the pull
     await supabase.from('bookingcom_sync_logs').insert({
       sync_type: 'pull_reservations',
       direction: 'inbound',
@@ -72,7 +90,6 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      // Return graceful error with details instead of throwing 500
       const errorDetail = response.status === 404
         ? 'Endpoint tidak ditemukan. Pastikan Hotel ID benar dan properti sudah aktif di Booking.com Connectivity Partner.'
         : response.status === 401 || response.status === 403
@@ -89,12 +106,9 @@ serve(async (req) => {
       );
     }
 
-    // Parse reservations from XML response
     const reservations = parseReservationsXML(responseText);
-
     console.log(`[Booking.com Pull] Found ${reservations.length} reservations`);
 
-    // Process each reservation
     const results = [];
     for (const reservation of reservations) {
       try {
@@ -145,8 +159,6 @@ interface ParsedReservation {
 
 function parseReservationsXML(xml: string): ParsedReservation[] {
   const reservations: ParsedReservation[] = [];
-
-  // Simple XML parsing using regex (for OTA_HotelResNotifRQ format)
   const resRegex = /<HotelReservation[^>]*>([\s\S]*?)<\/HotelReservation>/gi;
   let match;
 
@@ -194,7 +206,6 @@ async function processReservation(
   reservation: ParsedReservation,
   _hotelId: string
 ) {
-  // Find room mapping
   const { data: mapping } = await supabase
     .from('bookingcom_room_mappings')
     .select('room_id')
@@ -211,7 +222,6 @@ async function processReservation(
     };
   }
 
-  // Check if booking already exists
   const bookingCode = `BDC-${reservation.confirmationNumber}`;
   const { data: existingBooking } = await supabase
     .from('bookings')
@@ -227,7 +237,6 @@ async function processReservation(
   );
 
   if (reservation.status === 'Cancel' || reservation.status === 'Cancelled') {
-    // Cancel existing booking
     if (existingBooking) {
       await supabase
         .from('bookings')
@@ -239,7 +248,6 @@ async function processReservation(
   }
 
   if (existingBooking) {
-    // Update existing booking
     await supabase
       .from('bookings')
       .update({
@@ -259,7 +267,6 @@ async function processReservation(
     return { booking_id: bookingCode, success: true, action: 'updated' };
   }
 
-  // Create new booking
   const { error: insertError } = await supabase
     .from('bookings')
     .insert({
