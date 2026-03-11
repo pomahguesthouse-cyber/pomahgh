@@ -240,7 +240,7 @@ export default function BookingcomSyncPanel() {
               Pull Reservasi dari Booking.com
             </h4>
             <Button
-              onClick={() => pullReservations.mutate()}
+              onClick={() => pullReservations.mutate(undefined)}
               disabled={pullReservations.isPending}
             >
               {pullReservations.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
