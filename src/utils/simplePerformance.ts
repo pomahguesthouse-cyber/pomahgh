@@ -48,7 +48,7 @@ export const throttle = <T extends (...args: any[]) => any>(
 
 // Simple performance logging (development only)
 export const logPerformance = (componentName: string, action: string, duration: number) => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log(`[Performance] ${componentName} - ${action}: ${duration}ms`);
   }
 };
