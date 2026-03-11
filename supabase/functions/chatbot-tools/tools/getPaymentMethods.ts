@@ -1,20 +1,17 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { GetPaymentMethodsParams } from '../lib/types.ts';
 
-// DOKU static payment methods
-const DOKU_PAYMENT_METHODS = [
-  { code: "VIRTUAL_ACCOUNT_BCA", name: "BCA Virtual Account", category: "Virtual Account" },
-  { code: "VIRTUAL_ACCOUNT_BANK_MANDIRI", name: "Mandiri Virtual Account", category: "Virtual Account" },
-  { code: "VIRTUAL_ACCOUNT_BRI", name: "BRI Virtual Account", category: "Virtual Account" },
-  { code: "VIRTUAL_ACCOUNT_BNI", name: "BNI Virtual Account", category: "Virtual Account" },
-  { code: "VIRTUAL_ACCOUNT_PERMATA", name: "Permata Virtual Account", category: "Virtual Account" },
-  { code: "VIRTUAL_ACCOUNT_BANK_SYARIAH_MANDIRI", name: "BSI Virtual Account", category: "Virtual Account" },
-  { code: "VIRTUAL_ACCOUNT_DOKU", name: "DOKU Virtual Account", category: "Virtual Account" },
-  { code: "QRIS", name: "QRIS", category: "QRIS" },
-  { code: "EMONEY_OVO", name: "OVO", category: "E-Wallet" },
-  { code: "EMONEY_DANA", name: "DANA", category: "E-Wallet" },
-  { code: "EMONEY_SHOPEEPAY", name: "ShopeePay", category: "E-Wallet" },
-  { code: "EMONEY_LINKAJA", name: "LinkAja", category: "E-Wallet" },
+// Midtrans supported payment methods
+const MIDTRANS_PAYMENT_METHODS = [
+  { code: "bank_transfer_bca", name: "BCA Virtual Account", category: "Virtual Account" },
+  { code: "bank_transfer_bni", name: "BNI Virtual Account", category: "Virtual Account" },
+  { code: "bank_transfer_bri", name: "BRI Virtual Account", category: "Virtual Account" },
+  { code: "bank_transfer_mandiri", name: "Mandiri Bill Payment", category: "Virtual Account" },
+  { code: "bank_transfer_permata", name: "Permata Virtual Account", category: "Virtual Account" },
+  { code: "qris", name: "QRIS", category: "QRIS" },
+  { code: "gopay", name: "GoPay", category: "E-Wallet" },
+  { code: "shopeepay", name: "ShopeePay", category: "E-Wallet" },
+  { code: "credit_card", name: "Credit Card", category: "Kartu Kredit" },
 ];
 
 export async function handleGetPaymentMethods(
@@ -60,9 +57,9 @@ export async function handleGetPaymentMethods(
 
   const amount = Math.round(booking.total_price);
 
-  // Group DOKU methods by category
+  // Group Midtrans methods by category
   const grouped: Record<string, string[]> = {};
-  for (const m of DOKU_PAYMENT_METHODS) {
+  for (const m of MIDTRANS_PAYMENT_METHODS) {
     if (!grouped[m.category]) grouped[m.category] = [];
     grouped[m.category].push(m.name);
   }
@@ -78,7 +75,7 @@ export async function handleGetPaymentMethods(
     booking_id: booking.id,
     total_price: amount,
     methods_summary: summaryParts,
-    methods_count: DOKU_PAYMENT_METHODS.length,
+    methods_count: MIDTRANS_PAYMENT_METHODS.length,
     already_paid: false,
   };
 }
