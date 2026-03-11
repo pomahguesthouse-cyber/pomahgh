@@ -55,7 +55,7 @@ export const logPerformance = (componentName: string, action: string, duration: 
 
 // Memory usage checker (development only)
 export const checkMemoryUsage = (componentName: string) => {
-  if (process.env.NODE_ENV === 'development' && 'memory' in performance) {
+  if (import.meta.env.DEV && 'memory' in performance) {
     const memory = (performance as any).memory;
     console.log(`[Memory] ${componentName}:`, {
       used: `${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
