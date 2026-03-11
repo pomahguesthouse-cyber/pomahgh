@@ -111,10 +111,15 @@ export const useBookingcomSync = () => {
         body: { last_change: lastChange }
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`Pulled ${data?.results?.length || 0} reservations from Booking.com`);
+      if (data?.results) {
+        toast.success(`Pulled ${data.results.length} reservations from Booking.com`);
+      } else {
+        toast.info("Pull selesai, tidak ada reservasi baru");
+      }
       queryClient.invalidateQueries({ queryKey: ["bookingcom-sync-logs"] });
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
     },
