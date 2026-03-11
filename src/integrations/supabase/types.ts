@@ -2207,6 +2207,54 @@ export type Database = {
         }
         Relationships: []
       }
+      ota_connections: {
+        Row: {
+          api_endpoint: string | null
+          created_at: string
+          hotel_id: string
+          id: string
+          is_active: boolean
+          is_connected: boolean
+          last_test_result: Json | null
+          last_tested_at: string | null
+          password_encrypted: string
+          provider: Database["public"]["Enums"]["ota_provider"]
+          provider_name: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          api_endpoint?: string | null
+          created_at?: string
+          hotel_id?: string
+          id?: string
+          is_active?: boolean
+          is_connected?: boolean
+          last_test_result?: Json | null
+          last_tested_at?: string | null
+          password_encrypted?: string
+          provider: Database["public"]["Enums"]["ota_provider"]
+          provider_name?: string
+          updated_at?: string
+          username?: string
+        }
+        Update: {
+          api_endpoint?: string | null
+          created_at?: string
+          hotel_id?: string
+          id?: string
+          is_active?: boolean
+          is_connected?: boolean
+          last_test_result?: Json | null
+          last_tested_at?: string | null
+          password_encrypted?: string
+          provider?: Database["public"]["Enums"]["ota_provider"]
+          provider_name?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       payment_security_logs: {
         Row: {
           booking_id: string | null
@@ -3661,6 +3709,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      ota_provider:
+        | "booking_com"
+        | "agoda"
+        | "traveloka"
+        | "expedia"
+        | "tiket_com"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3789,6 +3844,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      ota_provider: [
+        "booking_com",
+        "agoda",
+        "traveloka",
+        "expedia",
+        "tiket_com",
+        "other",
+      ],
     },
   },
 } as const
