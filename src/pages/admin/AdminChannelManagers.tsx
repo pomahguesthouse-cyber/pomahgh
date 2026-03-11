@@ -8,6 +8,7 @@ import { RefreshCw, CheckCircle, XCircle, Clock, Loader2, AlertCircle, Pencil } 
 import { ChannelManagerForm } from "@/components/admin/ChannelManagerForm";
 import { DeleteChannelManagerDialog } from "@/components/admin/DeleteChannelManagerDialog";
 import { TestChannelManagerButton } from "@/components/admin/TestChannelManagerButton";
+import BookingcomSyncPanel from "@/components/admin/BookingcomSyncPanel";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import { formatDateTimeID } from "@/utils/indonesianFormat";
