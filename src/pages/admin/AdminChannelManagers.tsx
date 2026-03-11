@@ -245,6 +245,10 @@ export default function AdminChannelManagers() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="bookingcom">
+            <BookingcomSyncPanel />
+          </TabsContent>
         </Tabs>
       </div>
   );
