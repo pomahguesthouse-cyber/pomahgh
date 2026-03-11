@@ -72,7 +72,21 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Booking.com API error: ${response.status}`);
+      // Return graceful error with details instead of throwing 500
+      const errorDetail = response.status === 404
+        ? 'Endpoint tidak ditemukan. Pastikan Hotel ID benar dan properti sudah aktif di Booking.com Connectivity Partner.'
+        : response.status === 401 || response.status === 403
+        ? 'Autentikasi gagal. Periksa username dan password Booking.com.'
+        : `Booking.com API error: ${response.status}`;
+      
+      return new Response(
+        JSON.stringify({ 
+          error: errorDetail,
+          http_status: response.status,
+          response_body: responseText.substring(0, 500),
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
     }
 
     // Parse reservations from XML response
