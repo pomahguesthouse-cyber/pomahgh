@@ -65,11 +65,8 @@ export default function LandingPage() {
   const { data: hotelSettings } = useQuery({
     queryKey: ["hotel-settings-landing"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("hotel_settings")
-        .select("hotel_name, whatsapp_number, address, logo_url")
-        .single();
-      return data;
+      const { data } = await supabase.rpc("get_public_hotel_settings");
+      return data as Record<string, unknown> | null;
     },
   });
 

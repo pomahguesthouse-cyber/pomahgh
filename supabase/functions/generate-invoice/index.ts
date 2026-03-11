@@ -80,12 +80,12 @@ serve(async (req) => {
 
     if (addonsError) throw addonsError;
 
-    // Get invoice settings (use defaults if not configured)
-    const primaryColor = invoiceTemplate?.invoice_primary_color || '#8B4513';
-    const secondaryColor = invoiceTemplate?.invoice_secondary_color || '#f8f4f0';
+    // Get invoice settings
+    const primaryColor = invoiceTemplate?.invoice_primary_color || '#4a9bd9';
+    const secondaryColor = invoiceTemplate?.invoice_secondary_color || '#e8f4fd';
     const showLogo = invoiceTemplate?.show_logo ?? true;
     const showBankAccounts = invoiceTemplate?.show_bank_accounts ?? true;
-    const footerText = invoiceTemplate?.footer_text || 'Kami menantikan kedatangan Anda!';
+    const footerText = invoiceTemplate?.footer_text || '';
     const customNotes = invoiceTemplate?.custom_notes || '';
 
     interface BookingRoomItem { rooms?: { name: string } | null; room_number: string; price_per_night: number }
@@ -93,51 +93,37 @@ serve(async (req) => {
     interface BookingAddonItem { room_addons?: { name: string; icon_name?: string; price_type?: string } | null; quantity: number; unit_price: number; total_price: number }
     interface RoomListItem { room_name: string; room_number: string; price_per_night: number }
 
-    // Format room list
-    const roomsList = bookingRooms && bookingRooms.length > 0
-      ? (bookingRooms as BookingRoomItem[]).map((br) => 
-          `• ${br.rooms?.name || booking.rooms?.name} #${br.room_number} - Rp ${br.price_per_night.toLocaleString('id-ID')}`
-        ).join('\n')
-      : `• ${booking.rooms?.name} - Rp ${booking.total_price.toLocaleString('id-ID')}`;
-
     // Calculate remaining balance
     const paidAmount = booking.payment_amount || 0;
     const remainingBalance = booking.total_price - paidAmount;
-    
-    // Format bank accounts for display - show "Lunas" message if fully paid
-    const bankAccountsList = remainingBalance > 0 
-      ? (bankAccounts && bankAccounts.length > 0
-          ? (bankAccounts as BankAccountItem[]).map((bank) => 
-              `🏦 ${bank.bank_name}: ${bank.account_number}\n   a.n. ${bank.account_holder_name}`
-            ).join('\n\n')
-          : hotelSettings.bank_name && hotelSettings.account_number
-            ? `🏦 ${hotelSettings.bank_name}: ${hotelSettings.account_number}\n   a.n. ${hotelSettings.account_holder_name || 'Pomah Guesthouse'}`
-            : 'Silakan hubungi admin untuk detail pembayaran')
-      : '✓ Pembayaran sudah lunas - Terima kasih!';
-
-    // Calculate payment status
-    let paymentStatus = "BELUM LUNAS";
-    if (paidAmount === 0) {
-      paymentStatus = "BELUM BAYAR";
-    } else if (remainingBalance === 0) {
-      paymentStatus = "LUNAS ✓";
-    } else {
-      paymentStatus = `DP (Sisa: Rp ${remainingBalance.toLocaleString('id-ID')})`;
-    }
+    const isFullyPaid = remainingBalance <= 0;
 
     // Format dates
-    const checkInDate = format(new Date(booking.check_in), "d MMMM yyyy", { locale: id });
-    const checkOutDate = format(new Date(booking.check_out), "d MMMM yyyy", { locale: id });
+    const checkInDate = format(new Date(booking.check_in), "dd-MM-yyyy", { locale: id });
+    const checkOutDate = format(new Date(booking.check_out), "dd-MM-yyyy", { locale: id });
+    const checkInDateLong = format(new Date(booking.check_in), "d MMMM yyyy", { locale: id });
+    const checkOutDateLong = format(new Date(booking.check_out), "d MMMM yyyy", { locale: id });
     const checkInTime = booking.check_in_time || hotelSettings.check_in_time || "14:00";
     const checkOutTime = booking.check_out_time || hotelSettings.check_out_time || "12:00";
+    const createdAtFormatted = format(new Date(booking.created_at), "d MMM yyyy, HH:mm", { locale: id });
+    const createdAtDay = format(new Date(booking.created_at), "EEEE", { locale: id });
 
-    // Format data for invoice
-    const formattedCheckIn = format(new Date(booking.check_in), "d MMMM yyyy", { locale: id });
-    const formattedCheckOut = format(new Date(booking.check_out), "d MMMM yyyy", { locale: id });
-    const formattedCreatedAt = format(new Date(booking.created_at), "d MMMM yyyy", { locale: id });
-    
-    const formatRupiah = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
-    
+    const formatRupiah = (amount: number) => amount.toLocaleString('id-ID') + ',-';
+
+    // Payment method display
+    let paymentMethodLabel = 'Bank Transfer';
+    if (booking.bank_code) {
+      paymentMethodLabel = `Bank Transfer (${booking.bank_code.toUpperCase()})`;
+    }
+
+    // Transaction status
+    let transactionStatus = 'Belum Bayar';
+    if (isFullyPaid) {
+      transactionStatus = 'Lunas';
+    } else if (paidAmount > 0) {
+      transactionStatus = 'DP';
+    }
+
     // Prepare room list items
     const roomListItems = bookingRooms && bookingRooms.length > 0
       ? (bookingRooms as BookingRoomItem[]).map((br) => ({
@@ -150,31 +136,78 @@ serve(async (req) => {
           room_number: booking.allocated_room_number || '-',
           price_per_night: booking.total_price / booking.total_nights
         }];
-    
-    // Calculate tax
-    const taxRate = hotelSettings.tax_rate || 0;
-    const taxAmount = (booking.total_price * taxRate) / 100;
-    
-    // Prepare bank accounts HTML
+
+    // Build detail pembelian rows
+    let rowIndex = 0;
+    const detailRows = roomListItems.map((room: RoomListItem) => {
+      rowIndex++;
+      const subtotal = room.price_per_night * booking.total_nights;
+      return `
+        <tr>
+          <td style="text-align:center;">${rowIndex}.</td>
+          <td>Akomodasi</td>
+          <td>${hotelSettings.hotel_name || 'Pomah Guesthouse'} ${room.room_name} #${room.room_number}<br>${booking.num_guests} Tamu</td>
+          <td style="text-align:center;">${booking.total_nights}</td>
+          <td style="text-align:right;">${formatRupiah(room.price_per_night)}</td>
+          <td style="text-align:right;">${formatRupiah(subtotal)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Addon rows
+    const addonRows = bookingAddons && bookingAddons.length > 0
+      ? (bookingAddons as BookingAddonItem[]).map((addon) => {
+          rowIndex++;
+          return `
+            <tr>
+              <td style="text-align:center;">${rowIndex}.</td>
+              <td>Add-on</td>
+              <td>${addon.room_addons?.name || 'Add-on'}</td>
+              <td style="text-align:center;">${addon.quantity}</td>
+              <td style="text-align:right;">${formatRupiah(addon.unit_price)}</td>
+              <td style="text-align:right;">${formatRupiah(addon.total_price)}</td>
+            </tr>
+          `;
+        }).join('')
+      : '';
+
+    // Bank accounts for WhatsApp / text
+    const bankAccountsList = remainingBalance > 0 
+      ? (bankAccounts && bankAccounts.length > 0
+          ? (bankAccounts as BankAccountItem[]).map((bank) => 
+              `🏦 ${bank.bank_name}: ${bank.account_number}\n   a.n. ${bank.account_holder_name}`
+            ).join('\n\n')
+          : 'Silakan hubungi admin untuk detail pembayaran')
+      : '✓ Pembayaran sudah lunas - Terima kasih!';
+
+    // Room list text for WhatsApp
+    const roomsList = bookingRooms && bookingRooms.length > 0
+      ? (bookingRooms as BookingRoomItem[]).map((br) => 
+          `• ${br.rooms?.name || booking.rooms?.name} #${br.room_number} - Rp ${br.price_per_night.toLocaleString('id-ID')}`
+        ).join('\n')
+      : `• ${booking.rooms?.name} - Rp ${booking.total_price.toLocaleString('id-ID')}`;
+
+    let paymentStatus = "BELUM LUNAS";
+    if (paidAmount === 0) {
+      paymentStatus = "BELUM BAYAR";
+    } else if (remainingBalance <= 0) {
+      paymentStatus = "LUNAS ✓";
+    } else {
+      paymentStatus = `DP (Sisa: Rp ${remainingBalance.toLocaleString('id-ID')})`;
+    }
+
+    // Bank accounts HTML for invoice
     const bankAccountsHtml = bankAccounts && bankAccounts.length > 0
       ? (bankAccounts as BankAccountItem[]).map((bank) => `
-        <div class="bank-card">
-          <div class="bank-name">🏦 ${bank.bank_name}</div>
-          <div class="bank-detail">Rekening: <strong>${bank.account_number}</strong></div>
-          <div class="bank-detail">a.n. ${bank.account_holder_name}</div>
+        <div style="background:#fff;padding:12px 16px;margin-bottom:8px;border-radius:4px;border:1px solid #e0e0e0;">
+          <strong>${bank.bank_name}</strong><br>
+          No. Rek: <strong>${bank.account_number}</strong><br>
+          a.n. ${bank.account_holder_name}
         </div>
       `).join('')
-      : hotelSettings.bank_name && hotelSettings.account_number
-        ? `
-        <div class="bank-card">
-          <div class="bank-name">🏦 ${hotelSettings.bank_name}</div>
-          <div class="bank-detail">Rekening: <strong>${hotelSettings.account_number}</strong></div>
-          <div class="bank-detail">a.n. ${hotelSettings.account_holder_name || 'Pomah Guesthouse'}</div>
-        </div>
-        `
-        : '<p>Silakan hubungi admin untuk detail pembayaran.</p>';
+      : '';
 
-    // Generate HTML invoice
+    // Generate HTML invoice matching the reference receipt design
     const invoiceHtml = `
 <!DOCTYPE html>
 <html lang="id">
@@ -185,241 +218,173 @@ serve(async (req) => {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { 
-      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; 
-      background-color: #f8f9fa;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+      background: #f0f0f0;
       padding: 20px;
       color: #333;
+      font-size: 14px;
+      line-height: 1.5;
     }
     .invoice-container { 
-      max-width: 850px; 
+      max-width: 800px; 
       margin: 0 auto; 
       background: white; 
-      padding: 50px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      padding: 0;
     }
-    .header { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: flex-start;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 3px solid ${primaryColor};
-    }
-    .header-left { display: flex; align-items: center; gap: 15px; }
-    .logo { max-height: 60px; max-width: 180px; object-fit: contain; }
-    .hotel-name { font-size: 24px; font-weight: bold; color: ${primaryColor}; }
-    .header-right { text-align: right; font-size: 13px; color: #666; line-height: 1.8; }
-    .invoice-title-section { 
-      text-align: right; 
-      margin-bottom: 40px;
-    }
-    .invoice-title { 
-      font-size: 42px; 
-      font-weight: bold; 
-      font-style: italic; 
-      color: ${primaryColor};
-      margin-bottom: 10px;
-    }
-    .invoice-meta { 
-      font-size: 14px; 
-      color: #666; 
-      line-height: 1.8;
-    }
-    .status-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-      margin-top: 5px;
-    }
-    .status-confirmed { background-color: #d4edda; color: #155724; }
-    .status-pending { background-color: #fff3cd; color: #856404; }
-    .status-cancelled { background-color: #f8d7da; color: #721c24; }
-    .guest-info-box { 
-      background: white;
-      border-left: 4px solid ${primaryColor};
-      padding: 25px 30px;
-      margin-bottom: 40px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .guest-label { 
-      font-style: italic; 
-      color: ${primaryColor}; 
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-    .guest-name { 
-      font-size: 20px; 
-      font-weight: bold; 
-      margin-bottom: 8px;
-      color: #222;
-    }
-    .guest-detail { 
-      font-size: 14px; 
-      color: #666; 
-      margin: 4px 0;
-    }
-    .section-title { 
-      font-size: 18px; 
-      font-weight: bold; 
-      color: ${primaryColor};
-      margin: 40px 0 20px 0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .booking-table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-bottom: 30px;
-      font-size: 14px;
-    }
-    .booking-table thead { 
-      background: ${primaryColor}; 
-      color: white;
-    }
-    .booking-table th { 
-      padding: 14px 12px; 
-      text-align: left; 
-      font-weight: 600;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .booking-table td { 
-      padding: 14px 12px; 
-      border-bottom: 1px solid #e9ecef;
-    }
-    .booking-table tbody tr:hover { 
-      background-color: #f8f9fa;
-    }
-    .booking-table .text-right { text-align: right; }
-    .booking-table .text-center { text-align: center; }
-    .stay-details {
-      background: #f8f9fa;
-      padding: 20px 25px;
-      border-radius: 6px;
-      margin-bottom: 30px;
-    }
-    .stay-details-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-      font-size: 14px;
-    }
-    .stay-detail-item {
-      display: flex;
-      gap: 8px;
-    }
-    .stay-detail-label {
-      font-weight: 600;
-      color: #555;
-      min-width: 80px;
-    }
-    .stay-detail-value {
-      color: #222;
-    }
-    .summary-section { 
-      margin-top: 40px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-    }
-    .summary-table {
-      width: 350px;
-      font-size: 15px;
-    }
-    .summary-row {
+    /* Header */
+    .header {
       display: flex;
       justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid #e9ecef;
+      align-items: flex-start;
+      padding: 30px 40px 20px;
+      border-left: 5px solid ${primaryColor};
     }
-    .summary-row.total {
-      border-top: 2px solid ${primaryColor};
-      border-bottom: none;
-      padding-top: 15px;
-      margin-top: 10px;
-      font-size: 18px;
-      font-weight: bold;
-      color: ${primaryColor};
+    .header-left h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #222;
+      margin-bottom: 4px;
     }
-    .payment-section {
-      background: #f5f5f5;
-      padding: 25px;
-      margin-top: 40px;
-      border-radius: 6px;
-    }
-    .payment-title {
-      font-size: 18px;
-      font-weight: bold;
-      color: ${primaryColor};
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .payment-instruction {
-      font-size: 14px;
+    .header-left .meta {
+      font-size: 13px;
       color: #666;
-      margin-bottom: 20px;
       line-height: 1.6;
     }
-    .bank-card {
-      background: white;
-      padding: 20px;
-      margin-bottom: 15px;
-      border-radius: 6px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    .header-right {
+      text-align: right;
     }
-    .bank-name {
-      font-size: 16px;
-      font-weight: bold;
-      color: #222;
-      margin-bottom: 10px;
+    .header-right img {
+      max-height: 60px;
+      max-width: 150px;
+      object-fit: contain;
+    }
+
+    /* Section Header */
+    .section-bar {
+      background: ${secondaryColor};
+      padding: 8px 40px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-left: 5px solid ${primaryColor};
+    }
+
+    /* Section content */
+    .section-content {
+      padding: 16px 40px 20px;
+    }
+    .section-content p {
+      font-size: 13px;
+      color: #444;
+      line-height: 1.7;
+    }
+
+    /* Detail Pembayaran row */
+    .payment-row {
       display: flex;
-      align-items: center;
-      gap: 8px;
+      justify-content: space-between;
+      padding: 16px 40px 20px;
+      font-size: 13px;
+      color: #444;
     }
-    .bank-detail {
-      font-size: 14px;
-      color: #666;
-      margin: 5px 0;
+    .payment-row .col {
+      flex: 1;
     }
-    .paid-message {
-      background: #d4edda;
-      color: #155724;
-      padding: 20px;
-      border-radius: 6px;
-      text-align: center;
-      font-weight: 600;
-      font-size: 16px;
+    .payment-row .col strong {
+      color: #222;
     }
-    .footer {
-      margin-top: 50px;
-      padding-top: 25px;
-      border-top: 2px solid #e9ecef;
-      text-align: center;
-      color: #999;
+
+    /* Detail Pembelian Table */
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
       font-size: 13px;
     }
-    .notes-section {
-      background: #fffbf0;
-      padding: 20px;
-      margin-top: 30px;
-      border-radius: 6px;
-      border-left: 4px solid #ffc107;
+    .detail-table thead th {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+      font-size: 12px;
     }
-    .notes-title {
-      font-weight: bold;
-      color: #856404;
-      margin-bottom: 10px;
+    .detail-table tbody td {
+      border: 1px solid #ddd;
+      padding: 10px 12px;
+      vertical-align: top;
+      color: #444;
     }
-    .notes-content {
-      font-size: 14px;
-      color: #856404;
-      line-height: 1.6;
+    .detail-table tfoot td {
+      border: 1px solid #ddd;
+      padding: 10px 12px;
+      font-weight: 600;
+      color: #222;
+    }
+
+    /* Stamp */
+    .stamp-section {
+      padding: 40px 40px 20px;
+      display: flex;
+      align-items: flex-start;
+    }
+    .stamp {
+      position: relative;
+      width: 130px;
+      text-align: center;
+    }
+    .stamp-logo {
+      max-height: 40px;
+      max-width: 100px;
+      margin-bottom: 4px;
+    }
+    .stamp-badge {
+      background: ${primaryColor};
+      color: white;
+      font-size: 22px;
+      font-weight: 900;
+      padding: 6px 24px;
+      border-radius: 4px;
+      display: inline-block;
+      letter-spacing: 2px;
+    }
+    .stamp-receipt {
+      color: ${primaryColor};
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    /* Payment section */
+    .payment-info-section {
+      padding: 0 40px 30px;
+    }
+    .bank-card-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Footer */
+    .footer-help {
+      text-align: center;
+      padding: 30px 40px 15px;
+      font-size: 13px;
+      color: #666;
+    }
+    .footer-bar {
+      background: ${primaryColor};
+      color: white;
+      text-align: center;
+      padding: 12px 40px;
+      font-size: 12px;
+    }
+    .footer-bar a {
+      color: white;
     }
   </style>
 </head>
@@ -428,158 +393,155 @@ serve(async (req) => {
     <!-- Header -->
     <div class="header">
       <div class="header-left">
-        ${showLogo && (hotelSettings.invoice_logo_url || hotelSettings.logo_url) ? `
+        <h1>BUKTI PEMBELIAN (RECEIPT)</h1>
+        <div class="meta">
+          Nomor &nbsp;: #${booking.booking_code}<br>
+          Tanggal : ${createdAtFormatted} (${createdAtDay})
+        </div>
+      </div>
+      ${showLogo && (hotelSettings.invoice_logo_url || hotelSettings.logo_url) ? `
+        <div class="header-right">
           <img 
             src="${hotelSettings.invoice_logo_url || hotelSettings.logo_url}" 
             alt="${hotelSettings.hotel_name} Logo" 
-            class="logo"
             crossorigin="anonymous"
             onerror="this.style.display='none'"
           >
-        ` : ''}
-        <div class="hotel-name">${hotelSettings.hotel_name || 'Pomah Guesthouse'}</div>
-      </div>
-      <div class="header-right">
-        ${hotelSettings.address ? `📍 ${hotelSettings.address}` : ''}<br>
-        ${hotelSettings.city ? `${hotelSettings.city}, ${hotelSettings.country || 'Indonesia'}` : ''}<br>
-        ${hotelSettings.email_primary ? `📧 ${hotelSettings.email_primary}` : ''}<br>
-        ${hotelSettings.phone_primary ? `📞 ${hotelSettings.phone_primary}` : ''}
-      </div>
+        </div>
+      ` : ''}
     </div>
 
-    <!-- Invoice Title Section -->
-    <div class="invoice-title-section">
-      <div class="invoice-title">INVOICE</div>
-      <div class="invoice-meta">
-        <strong>Kode Booking #${booking.booking_code}</strong><br>
-        Tanggal: ${formattedCreatedAt}<br>
-        <span class="status-badge status-${booking.status}">${booking.status.toUpperCase()}</span>
-      </div>
+    <!-- Detail Pembayaran -->
+    <div class="section-bar">DETAIL PEMBAYARAN</div>
+    <div class="payment-row">
+      <div class="col">P.O. NUMBER: ${booking.booking_code}</div>
+      <div class="col">PEMBELIAN MELALUI: ${paymentMethodLabel}</div>
+      <div class="col" style="text-align:right;">DETAIL TRANSAKSI: <strong>${transactionStatus}</strong></div>
     </div>
 
-    <!-- Guest Information -->
-    <div class="guest-info-box">
-      <div class="guest-label">Nama Tamu</div>
-      <div class="guest-name">${booking.guest_name}</div>
-      <div class="guest-detail">${booking.guest_email}</div>
-      ${booking.guest_phone ? `<div class="guest-detail">${booking.guest_phone}</div>` : ''}
+    <!-- Data Pemesan -->
+    <div class="section-bar">DATA PEMESAN</div>
+    <div class="section-content">
+      <p>
+        Nama &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ${booking.guest_name}<br>
+        Email &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ${booking.guest_email}<br>
+        ${booking.guest_phone ? `No. Kontak : ${booking.guest_phone}` : ''}
+      </p>
     </div>
 
-    <!-- Detail Booking -->
-    <div class="section-title">📋 DETAIL BOOKING</div>
-    <table class="booking-table">
-      <thead>
-        <tr>
-          <th style="width: 60px;">NO</th>
-          <th>DESKRIPSI</th>
-          <th class="text-right" style="width: 140px;">HARGA/MALAM</th>
-          <th class="text-center" style="width: 80px;">MALAM</th>
-          <th class="text-right" style="width: 140px;">SUBTOTAL</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${roomListItems.map((room: RoomListItem, index: number) => `
+    <!-- Tamu -->
+    <div class="section-bar">TAMU</div>
+    <div class="section-content">
+      <p>
+        1. ${booking.guest_name}<br>
+        ${booking.num_guests > 1 ? `<span style="color:#999;">+ ${booking.num_guests - 1} tamu lainnya</span>` : ''}
+      </p>
+    </div>
+
+    <!-- Detail Hotel -->
+    <div class="section-bar">DETAIL HOTEL</div>
+    <div class="section-content">
+      <p>
+        <strong>${hotelSettings.hotel_name || 'Pomah Guesthouse'}</strong><br>
+        ${hotelSettings.address ? `Alamat: ${hotelSettings.address}${hotelSettings.city ? `, ${hotelSettings.city}` : ''}${hotelSettings.postal_code ? `, ${hotelSettings.postal_code}` : ''}` : ''}<br>
+        Check-in: ${checkInDate}<br>
+        Check-out: ${checkOutDate}<br>
+        Durasi: ${booking.total_nights} malam
+      </p>
+    </div>
+
+    <!-- Detail Pembelian -->
+    <div class="section-bar">DETAIL PEMBELIAN</div>
+    <div style="padding: 16px 40px 20px;">
+      <table class="detail-table">
+        <thead>
           <tr>
-            <td>${index + 1}</td>
-            <td>
-              <strong>${room.room_name}</strong><br>
-              <small style="color: #666;">Nomor Kamar: ${room.room_number}</small>
-            </td>
-            <td class="text-right">${formatRupiah(room.price_per_night)}</td>
-            <td class="text-center">${booking.total_nights}</td>
-            <td class="text-right"><strong>${formatRupiah(room.price_per_night * booking.total_nights)}</strong></td>
+            <th style="width:40px;text-align:center;">No</th>
+            <th style="width:120px;">Jenis Pemesanan</th>
+            <th>Deskripsi</th>
+            <th style="width:50px;text-align:center;">Jml.</th>
+            <th style="width:120px;text-align:right;">Harga Satuan (Rp)</th>
+            <th style="width:120px;text-align:right;">Total (Rp)</th>
           </tr>
-        `).join('')}
-        ${bookingAddons && bookingAddons.length > 0 ? (bookingAddons as BookingAddonItem[]).map((addon, index: number) => `
-          <tr style="background-color: #f8f9fa;">
-            <td>${roomListItems.length + index + 1}</td>
-            <td>
-              <strong>✨ ${addon.room_addons?.name || 'Add-on'}</strong><br>
-              <small style="color: #666;">Qty: ${addon.quantity}</small>
-            </td>
-            <td class="text-right">${formatRupiah(addon.unit_price)}</td>
-            <td class="text-center">-</td>
-            <td class="text-right"><strong>${formatRupiah(addon.total_price)}</strong></td>
+        </thead>
+        <tbody>
+          ${detailRows}
+          ${addonRows}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" style="border:none;"></td>
+            <td style="text-align:right;"><strong>TOTAL</strong></td>
+            <td style="text-align:right;"><strong>${formatRupiah(booking.total_price)}</strong></td>
           </tr>
-        `).join('') : ''}
-      </tbody>
-    </table>
-
-    <!-- Detail Menginap -->
-    <div class="section-title">🗓️ Detail Menginap</div>
-    <div class="stay-details">
-      <div class="stay-details-grid">
-        <div class="stay-detail-item">
-          <span class="stay-detail-label">Check-in:</span>
-          <span class="stay-detail-value">${formattedCheckIn}, ${booking.check_in_time || '14:00'} WIB</span>
-        </div>
-        <div class="stay-detail-item">
-          <span class="stay-detail-label">Check-out:</span>
-          <span class="stay-detail-value">${formattedCheckOut}, ${booking.check_out_time || '12:00'} WIB</span>
-        </div>
-        <div class="stay-detail-item">
-          <span class="stay-detail-label">Durasi:</span>
-          <span class="stay-detail-value">${booking.total_nights} malam</span>
-        </div>
-        <div class="stay-detail-item">
-          <span class="stay-detail-label">Tamu:</span>
-          <span class="stay-detail-value">${booking.num_guests} orang</span>
-        </div>
-      </div>
+          ${paidAmount > 0 && !isFullyPaid ? `
+          <tr>
+            <td colspan="4" style="border:none;"></td>
+            <td style="text-align:right;">DIBAYAR</td>
+            <td style="text-align:right;">${formatRupiah(paidAmount)}</td>
+          </tr>
+          <tr>
+            <td colspan="4" style="border:none;"></td>
+            <td style="text-align:right;"><strong>SISA</strong></td>
+            <td style="text-align:right;"><strong>${formatRupiah(remainingBalance)}</strong></td>
+          </tr>
+          ` : ''}
+          <tr>
+            <td colspan="4" style="border:none;"></td>
+            <td style="text-align:right;"><strong>JUMLAH PEMBAYARAN</strong></td>
+            <td style="text-align:right;"><strong>${formatRupiah(isFullyPaid ? booking.total_price : paidAmount)}</strong></td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
 
-    <!-- Summary -->
-    <div class="summary-section">
-      <div class="summary-table">
-        <div class="summary-row">
-          <span>Subtotal:</span>
-          <span>${formatRupiah(booking.total_price)}</span>
+    <!-- Payment instructions if not fully paid -->
+    ${remainingBalance > 0 && showBankAccounts && bankAccountsHtml ? `
+      <div class="section-bar">INSTRUKSI PEMBAYARAN</div>
+      <div class="payment-info-section" style="padding-top:16px;">
+        <p style="font-size:13px;color:#666;margin-bottom:12px;">Silakan transfer sisa pembayaran sebesar <strong>Rp ${remainingBalance.toLocaleString('id-ID')}</strong> ke rekening berikut:</p>
+        <div class="bank-card-row">
+          ${bankAccountsHtml}
         </div>
-        <div class="summary-row">
-          <span>Pajak (${taxRate}%):</span>
-          <span>${formatRupiah(taxAmount)}</span>
-        </div>
-        <div class="summary-row total">
-          <span>TOTAL:</span>
-          <span>${formatRupiah(booking.total_price)}</span>
-        </div>
+      </div>
+    ` : ''}
+
+    <!-- Paid Stamp -->
+    ${isFullyPaid ? `
+    <div class="stamp-section">
+      <div class="stamp">
+        ${showLogo && (hotelSettings.invoice_logo_url || hotelSettings.logo_url) ? `
+          <img src="${hotelSettings.invoice_logo_url || hotelSettings.logo_url}" alt="Logo" class="stamp-logo" crossorigin="anonymous" onerror="this.style.display='none'">
+        ` : ''}
+        <div class="stamp-badge">PAID</div>
+        <div class="stamp-receipt">RECEIPT</div>
       </div>
     </div>
-
-    <!-- Payment Instructions or Paid Message -->
-    ${remainingBalance > 0 && showBankAccounts ? `
-      <div class="payment-section">
-        <div class="payment-title">💳 Instruksi Pembayaran</div>
-        <div class="payment-instruction">
-          Silakan transfer ${remainingBalance === booking.total_price ? 'pembayaran' : 'sisa pembayaran'} sebesar <strong>${formatRupiah(remainingBalance)}</strong> ke salah satu rekening berikut:
-        </div>
-        ${bankAccountsHtml}
-      </div>
-    ` : remainingBalance === 0 ? `
-      <div class="paid-message">
-        ✓ Pembayaran sudah lunas - Terima kasih!
-      </div>
     ` : ''}
 
     <!-- Custom Notes -->
     ${customNotes ? `
-      <div class="notes-section">
-        <div class="notes-title">📌 Catatan Penting</div>
-        <div class="notes-content">${customNotes}</div>
+      <div style="padding: 0 40px 20px;">
+        <div style="background:#fffbf0;padding:16px;border-radius:4px;border-left:4px solid #ffc107;">
+          <strong style="color:#856404;">📌 Catatan:</strong>
+          <p style="font-size:13px;color:#856404;margin-top:6px;">${customNotes}</p>
+        </div>
       </div>
     ` : ''}
 
     <!-- Footer -->
-    <div class="footer">
-      ${footerText || 'Terima kasih telah memilih ' + (hotelSettings.hotel_name || 'Pomah Guesthouse') + '. Kami menantikan kedatangan Anda!'}<br>
-      <small>Invoice ini dibuat secara otomatis pada ${formattedCreatedAt}</small>
+    <div class="footer-help">
+      ${footerText || `Untuk pertanyaan apa pun, kunjungi ${hotelSettings.hotel_name || 'Pomah Guesthouse'} Help Center: ${hotelSettings.phone_primary || ''}`}
+    </div>
+    <div class="footer-bar">
+      Syarat dan Ketentuan berlaku. ${hotelSettings.email_primary ? `Email: ${hotelSettings.email_primary}` : ''}
     </div>
   </div>
 </body>
 </html>
     `;
 
-    // Prepare variables map for template replacement
+    // Prepare variables map for WhatsApp template replacement
     const variables = {
       hotel_name: hotelSettings.hotel_name || 'Pomah Guesthouse',
       hotel_address: hotelSettings.address || '',
@@ -589,9 +551,9 @@ serve(async (req) => {
       guest_name: booking.guest_name,
       guest_email: booking.guest_email,
       guest_phone: booking.guest_phone || '-',
-      check_in_date: checkInDate,
+      check_in_date: checkInDateLong,
       check_in_time: checkInTime + ' WIB',
-      check_out_date: checkOutDate,
+      check_out_date: checkOutDateLong,
       check_out_time: checkOutTime + ' WIB',
       total_nights: `${booking.total_nights} malam`,
       num_guests: `${booking.num_guests} orang`,

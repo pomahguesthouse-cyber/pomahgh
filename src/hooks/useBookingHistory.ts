@@ -7,6 +7,7 @@ export interface BookingHistoryItem {
   booking_code: string;
   guest_name: string;
   guest_email: string;
+  guest_phone: string | null;
   room_name: string;
   check_in: string;
   check_out: string;
@@ -49,6 +50,7 @@ export const useBookingHistory = (userId: string | null): UseBookingHistoryRetur
           booking_code,
           guest_name,
           guest_email,
+          guest_phone,
           check_in,
           check_out,
           total_nights,
@@ -70,6 +72,7 @@ export const useBookingHistory = (userId: string | null): UseBookingHistoryRetur
         booking_code: booking.booking_code,
         guest_name: booking.guest_name,
         guest_email: booking.guest_email,
+        guest_phone: booking.guest_phone || null,
         room_name: booking.rooms?.name || "Unknown Room",
         check_in: booking.check_in,
         check_out: booking.check_out,

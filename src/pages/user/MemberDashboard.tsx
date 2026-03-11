@@ -1,10 +1,20 @@
 import { useState } from "react";
 import { useMemberAuth } from "@/hooks/useMemberAuth";
-import { useBookingHistory } from "@/hooks/useBookingHistory";
+import { useBookingHistory, BookingHistoryItem } from "@/hooks/useBookingHistory";
+import { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { 
   User, 
   Calendar, 
@@ -17,14 +27,16 @@ import {
   Mail,
   AlertCircle,
   CheckCircle2,
-  XCircle
+  XCircle,
+  FileText,
+  Pencil
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { toast } from "sonner";
 
 export default function MemberDashboard() {
-  const { user, isLoading: authLoading, logout } = useMemberAuth();
+  const { user, isLoading: authLoading, logout, updateProfile } = useMemberAuth();
   const { 
     activeBookings, 
     pastBookings, 
@@ -33,6 +45,34 @@ export default function MemberDashboard() {
   } = useBookingHistory(user?.id || null);
 
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [selectedInvoiceBooking, setSelectedInvoiceBooking] = useState<BookingHistoryItem | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
+  const canShowInvoice = (booking: BookingHistoryItem) =>
+    booking.status !== "cancelled" && booking.payment_status !== "expired";
+
+  const openEditProfile = () => {
+    setEditName(user?.full_name || "");
+    setEditPhone(user?.phone_number || "");
+    setEditOpen(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editPhone.trim()) {
+      toast.error("Nomor telepon wajib diisi");
+      return;
+    }
+    setEditSaving(true);
+    const success = await updateProfile({
+      full_name: editName.trim(),
+      phone_number: editPhone.trim(),
+    });
+    setEditSaving(false);
+    if (success) setEditOpen(false);
+  };
 
   const handleCancel = async (bookingId: string) => {
     if (!confirm("Apakah Anda yakin ingin membatalkan booking ini?")) return;
@@ -41,6 +81,8 @@ export default function MemberDashboard() {
     await cancelBooking(bookingId);
     setCancellingId(null);
   };
+
+
 
   const handleLogout = async () => {
     await logout();
@@ -134,11 +176,15 @@ export default function MemberDashboard() {
 
         {/* Profile Card */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
               Profil Saya
             </CardTitle>
+            <Button variant="outline" size="sm" onClick={openEditProfile}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit Profil
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
@@ -249,6 +295,16 @@ export default function MemberDashboard() {
 
                       {/* Action buttons */}
                       <div className="flex gap-2 pt-2">
+                        {canShowInvoice(booking) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedInvoiceBooking(booking)}
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Invoice
+                          </Button>
+                        )}
                         {booking.status === "pending_payment" && (
                           <Button
                             variant="destructive"
@@ -314,6 +370,18 @@ export default function MemberDashboard() {
                         </span>
                         <span className="font-medium">{formatPrice(booking.total_price)}</span>
                       </div>
+                      {canShowInvoice(booking) && (
+                        <div className="pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedInvoiceBooking(booking)}
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Invoice
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -321,6 +389,66 @@ export default function MemberDashboard() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Invoice Dialog */}
+        {selectedInvoiceBooking && (
+          <InvoicePreviewDialog
+            open={!!selectedInvoiceBooking}
+            onOpenChange={(open) => !open && setSelectedInvoiceBooking(null)}
+            bookingId={selectedInvoiceBooking.id}
+            guestName={selectedInvoiceBooking.guest_name}
+            guestPhone={selectedInvoiceBooking.guest_phone || ""}
+            bookingCode={selectedInvoiceBooking.booking_code}
+          />
+        )}
+
+        {/* Edit Profile Dialog */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Profil</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Nama Lengkap</Label>
+                <Input
+                  id="edit-name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Masukkan nama lengkap"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">
+                  Nomor Telepon <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="edit-phone"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="08xxxxxxxxxx"
+                  required
+                />
+                {!editPhone.trim() && (
+                  <p className="text-sm text-destructive">Nomor telepon wajib diisi</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input value={user?.email || ""} disabled className="opacity-60" />
+                <p className="text-xs text-muted-foreground">Email tidak dapat diubah</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleSaveProfile} disabled={editSaving}>
+                {editSaving ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

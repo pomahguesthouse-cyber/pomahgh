@@ -16,6 +16,27 @@ import type { HotelSettings, PersonaSettings, ToolExecution } from "./lib/types.
 import { adminCache, ADMIN_CACHE_KEYS, ADMIN_CACHE_TTL, getOrLoadAdmin } from "./lib/cache.ts";
 import { detectIntent, getToolGuidanceHint } from "./lib/intentDetector.ts";
 
+const formatRoomPricesResponse = (hotelName: string, toolResult: unknown): string => {
+  const rooms = (toolResult as { rooms?: Array<{ name: string; price_formatted?: string; effective_price?: number; base_price?: number; price_source?: string }> })?.rooms || [];
+
+  if (rooms.length === 0) {
+    return `Data harga kamar ${hotelName} tidak tersedia saat ini.`;
+  }
+
+  const lines = rooms.map((room, index) => {
+    const formattedPrice = room.price_formatted || `Rp ${(room.effective_price || room.base_price || 0).toLocaleString('id-ID')}`;
+    const sourceLabel = room.price_source === 'promo'
+      ? ' (Promo)'
+      : room.price_source === 'dynamic'
+        ? ' (Dynamic)'
+        : '';
+
+    return `${index + 1}. *${room.name}*\n   💰 ${formattedPrice}${sourceLabel}`;
+  });
+
+  return `Berikut daftar harga kamar *${hotelName}* per malam:\n\n${lines.join('\n\n')}`;
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -34,6 +55,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { messages, forceRefresh = false } = await req.json();
+    const chatMessages = Array.isArray(messages) ? messages : [];
 
     // 2. Fetch context data with caching
     const [hotelSettingsData, chatbotSettingsData, knowledgeData, trainingData] = await Promise.all([
@@ -100,11 +122,11 @@ Deno.serve(async (req: Request) => {
 
     // 3. Detect intent from last user message
     interface ChatMessage { role: string; content: string }
-    const lastUserMessage = (messages as ChatMessage[]).filter((m) => m.role === 'user').pop();
+    const lastUserMessage = (chatMessages as ChatMessage[]).filter((m) => m.role === 'user').pop();
     const userMessage = lastUserMessage?.content || '';
     const intentMatch = detectIntent(userMessage);
     const intentHint = getToolGuidanceHint(intentMatch);
-    
+
     console.log(`📝 Intent detected: ${intentMatch.intent} (${intentMatch.confidence}) → ${intentMatch.suggestedTool || 'none'}`);
 
     // 4. Build system prompt with intent hint
@@ -118,7 +140,7 @@ Deno.serve(async (req: Request) => {
       personaSettings,
       knowledgeContext,
       trainingContext,
-      isFirstMessage: messages.length <= 1,
+      isFirstMessage: chatMessages.length <= 1,
       intentHint
     });
 
@@ -132,12 +154,46 @@ Deno.serve(async (req: Request) => {
     const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
+    // Force tool execution for room price requests to avoid hallucination
+    if (intentMatch.suggestedTool === 'get_room_prices' && intentMatch.confidence !== 'low') {
+      const roomToolResult = await executeToolWithValidation(supabase, 'get_room_prices', {}, auth.managerRole);
+
+      executedTools.push({
+        tool_name: 'get_room_prices',
+        arguments: {},
+        result: roomToolResult,
+        success: true,
+        executed_at: new Date().toISOString()
+      });
+
+      const forcedResponse = formatRoomPricesResponse(hotelSettings.hotel_name, roomToolResult);
+
+      await logAuditEntry(supabase, {
+        adminId: auth.adminId!,
+        adminEmail: auth.adminEmail,
+        sessionId,
+        userMessage,
+        executedTools,
+        aiResponse: forcedResponse,
+        durationMs: Date.now() - startTime,
+        ipAddress,
+        userAgent
+      });
+
+      const stream = createSSEStream(async (ctx: StreamContext) => {
+        sendTextChunk(ctx, forcedResponse);
+        return forcedResponse;
+      });
+
+      return createSSEResponse(stream);
+    }
+
     // 6. Stream response
     const stream = createSSEStream(async (ctx: StreamContext) => {
       let finalResponse = '';
       let currentMessages: Array<{ role: string; content: string; tool_call_id?: string }> = [
         { role: "system", content: systemPrompt },
-        ...(messages as ChatMessage[]).map((m) => ({ role: m.role, content: m.content }))
+        ...(chatMessages as ChatMessage[]).map((m) => ({ role: m.role, content: m.content }))
       ];
       
       let iterations = 0;

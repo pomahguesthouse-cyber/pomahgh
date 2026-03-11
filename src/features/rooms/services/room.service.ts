@@ -11,28 +11,8 @@ export interface RoomWithPromotion extends Room {
   final_price: number;
 }
 
-const getDayPrice = (room: Room, dayOfWeek: number): number => {
-  const dayPrices = [
-    room.sunday_price,
-    room.monday_price,
-    room.tuesday_price,
-    room.wednesday_price,
-    room.thursday_price,
-    room.friday_price,
-    room.saturday_price,
-  ];
-  return dayPrices[dayOfWeek] || room.price_per_night;
-};
-
-const calculateCurrentPrice = (room: Room, activePromo?: RoomPromotion | null, autoPricingPrice?: number | null): number => {
-  const today = new Date();
-
-  // FIRST priority: Autopricing overrides everything when enabled
-  if (room.use_autopricing && autoPricingPrice) {
-    return autoPricingPrice;
-  }
-
-  // Second priority: Check room_promotions table
+const calculateCurrentPrice = (room: Room, activePromo?: RoomPromotion | null): number => {
+  // Check active promotion from room_promotions table
   if (activePromo) {
     if (activePromo.promo_price) {
       return activePromo.promo_price;
@@ -42,29 +22,13 @@ const calculateCurrentPrice = (room: Room, activePromo?: RoomPromotion | null, a
     }
   }
 
-  // Third priority: Check legacy promo fields on rooms table
-  if (room.promo_price && room.promo_start_date && room.promo_end_date) {
-    const promoStart = new Date(room.promo_start_date);
-    const promoEnd = new Date(room.promo_end_date);
-
-    if (today >= promoStart && today <= promoEnd) {
-      return room.promo_price;
-    }
-  }
-
-  // Fourth priority: Check day-of-week pricing
-  const dayOfWeek = today.getDay();
-  return getDayPrice(room, dayOfWeek);
+  return room.price_per_night;
 };
 
 export const roomService = {
-  /**
-   * Fetch all available rooms with active promotions
-   */
   getAll: async (): Promise<RoomWithPromotion[]> => {
     const today = new Date().toISOString().split("T")[0];
 
-    // Fetch rooms
     const { data: rooms, error: roomsError } = await supabase
       .from("rooms")
       .select("*")
@@ -73,7 +37,6 @@ export const roomService = {
 
     if (roomsError) throw roomsError;
 
-    // Fetch active promotions
     const { data: promotions, error: promosError } = await supabase
       .from("room_promotions")
       .select("*")
@@ -84,7 +47,6 @@ export const roomService = {
 
     if (promosError) throw promosError;
 
-    // Map promotions to rooms
     const promosByRoom = new Map<string, RoomPromotion>();
     promotions?.forEach((promo) => {
       if (!promosByRoom.has(promo.room_id)) {
@@ -92,40 +54,16 @@ export const roomService = {
       }
     });
 
-    // Fetch autopricing data for rooms with use_autopricing enabled
-    const roomsWithAutopricing = (rooms as Room[]).filter(r => r.use_autopricing);
-    const autoPricingPrices = new Map<string, number>();
-
-    if (roomsWithAutopricing.length > 0) {
-      const { data: priceCacheData } = await supabase
-        .from('price_cache')
-        .select('room_id, cached_price')
-        .in('room_id', roomsWithAutopricing.map(r => r.id))
-        .eq('date', today)
-        .gt('expires_at', new Date().toISOString());
-
-      priceCacheData?.forEach(cache => {
-        if (cache.room_id && cache.cached_price) {
-          autoPricingPrices.set(cache.room_id, cache.cached_price);
-        }
-      });
-    }
-
-    // Calculate current price for each room
     return (rooms as Room[]).map((room) => {
       const activePromo = promosByRoom.get(room.id) || null;
-      const autoPricingPrice = autoPricingPrices.get(room.id) || null;
       return {
         ...room,
         active_promotion: activePromo,
-        final_price: calculateCurrentPrice(room, activePromo, autoPricingPrice),
+        final_price: calculateCurrentPrice(room, activePromo),
       };
     });
   },
 
-  /**
-   * Fetch all rooms including unavailable (for admin)
-   */
   getAllAdmin: async (): Promise<Room[]> => {
     const { data, error } = await supabase
       .from("rooms")
@@ -136,9 +74,6 @@ export const roomService = {
     return data as Room[];
   },
 
-  /**
-   * Fetch room by ID
-   */
   getById: async (id: string): Promise<Room> => {
     const { data, error } = await supabase
       .from("rooms")
@@ -150,9 +85,6 @@ export const roomService = {
     return data as Room;
   },
 
-  /**
-   * Fetch room by slug
-   */
   getBySlug: async (slug: string): Promise<Room> => {
     const { data, error } = await supabase
       .from("rooms")
@@ -164,9 +96,6 @@ export const roomService = {
     return data as Room;
   },
 
-  /**
-   * Fetch room addons
-   */
   getAddons: async (roomId?: string): Promise<RoomAddon[]> => {
     let query = supabase
       .from("room_addons")
@@ -183,9 +112,6 @@ export const roomService = {
     return data as RoomAddon[];
   },
 
-  /**
-   * Fetch room panoramas
-   */
   getPanoramas: async (roomId: string): Promise<RoomPanorama[]> => {
     const { data, error } = await supabase
       .from("room_panoramas")
@@ -198,9 +124,6 @@ export const roomService = {
     return data as RoomPanorama[];
   },
 
-  /**
-   * Fetch active promotions for a room
-   */
   getActivePromotions: async (roomId: string): Promise<RoomPromotion[]> => {
     const today = new Date().toISOString().split("T")[0];
 
@@ -217,15 +140,11 @@ export const roomService = {
     return data as RoomPromotion[];
   },
 
-  /**
-   * Check room availability for date range
-   */
   checkAvailability: async (
     roomId: string,
     checkIn: string,
     checkOut: string
   ): Promise<{ available: boolean; bookedNumbers: string[]; availableNumbers: string[] }> => {
-    // Get room details
     const { data: room, error: roomError } = await supabase
       .from("rooms")
       .select("room_numbers, allotment")
@@ -234,7 +153,6 @@ export const roomService = {
 
     if (roomError) throw roomError;
 
-    // Get booked rooms for the date range
     const { data: bookings, error: bookingsError } = await supabase
       .from("bookings")
       .select("allocated_room_number, booking_rooms(room_number)")
@@ -245,7 +163,6 @@ export const roomService = {
 
     if (bookingsError) throw bookingsError;
 
-    // Collect all booked room numbers
     const bookedNumbers = new Set<string>();
     bookings?.forEach((booking) => {
       if (booking.allocated_room_number) {
@@ -256,7 +173,6 @@ export const roomService = {
       });
     });
 
-    // Get unavailable dates
     const { data: unavailable, error: unavailableError } = await supabase
       .from("room_unavailable_dates")
       .select("room_number")
@@ -270,7 +186,6 @@ export const roomService = {
       if (u.room_number) bookedNumbers.add(u.room_number);
     });
 
-    // Calculate available rooms
     const allRoomNumbers = room.room_numbers || [];
     const availableNumbers = allRoomNumbers.filter((num) => !bookedNumbers.has(num));
 
@@ -281,25 +196,12 @@ export const roomService = {
     };
   },
 
-  /**
-   * Get price for specific date
-   */
-  getPriceForDate: (room: Room, date: Date): number => {
-    return getDayPrice(room, date.getDay());
+  getPriceForDate: (room: Room, _date: Date): number => {
+    return room.price_per_night;
   },
 
-  /**
-   * Calculate total price for date range
-   */
   calculateTotalPrice: (room: Room, checkIn: Date, checkOut: Date): number => {
-    let total = 0;
-    const current = new Date(checkIn);
-
-    while (current < checkOut) {
-      total += getDayPrice(room, current.getDay());
-      current.setDate(current.getDate() + 1);
-    }
-
-    return total;
+    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    return room.price_per_night * nights;
   },
 };

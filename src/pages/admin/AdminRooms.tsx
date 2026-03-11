@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useAdminRoomFeatures } from "@/hooks/useRoomFeatures";
 import { use360Upload } from "@/hooks/use360Upload";
 import * as Icons from "lucide-react";
@@ -13,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, MapPin, Zap, Building2, Users, Maximize, Save, Image as ImageIcon, Check, Hash, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, RotateCw, MapPin, Building2, Users, Maximize, Save, Image as ImageIcon, Check, Hash, Eye, GripVertical } from "lucide-react";
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,6 +29,126 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+// Pricing card config
+const PRICING_CARD_CONFIG: Record<string, { title: string; description: string; borderClass: string; bgClass: string; badgeClass: string }> = {
+  base: {
+    title: "Base Price",
+    description: "Harga dasar per malam yang ditetapkan manual.",
+    borderClass: "border-2 border-primary/20",
+    bgClass: "bg-gradient-to-br from-primary/5 via-primary/2 to-transparent",
+    badgeClass: "bg-primary text-primary-foreground",
+  },
+  promo: {
+    title: "Promo Price",
+    description: "Harga promo dari tabel Promotions (jika aktif).",
+    borderClass: "border-amber-200",
+    bgClass: "bg-amber-50/30",
+    badgeClass: "bg-amber-500 text-white",
+  },
+  dynamic: {
+    title: "Dynamic Price",
+    description: "Harga otomatis berdasarkan tingkat okupansi.",
+    borderClass: "border-blue-200",
+    bgClass: "bg-blue-50/30",
+    badgeClass: "bg-blue-500 text-white",
+  },
+};
+
+interface SortablePricingCardProps {
+  id: string;
+  index: number;
+  type: string;
+  formData: any;
+  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  editingRoom: Room | null;
+}
+
+const SortablePricingCard = ({ id, index, type, formData, setFormData, editingRoom }: SortablePricingCardProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+  const config = PRICING_CARD_CONFIG[type];
+  if (!config) return null;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card className={cn("relative overflow-hidden", config.borderClass, config.bgClass, isDragging && "shadow-xl ring-2 ring-primary/30")}>
+        <div className="absolute top-4 right-4">
+          <Badge className={cn("font-medium px-3 py-1", config.badgeClass)}>
+            Prioritas {index + 1}
+          </Badge>
+        </div>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              className="mt-1 cursor-grab active:cursor-grabbing p-1.5 rounded-md hover:bg-black/5 transition-colors text-slate-400 hover:text-slate-600"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="w-5 h-5" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-slate-800 text-lg">{config.title}</h3>
+              <p className="text-sm text-slate-500 mt-0.5">{config.description}</p>
+
+              {/* Base Price: editable */}
+              {type === "base" && (
+                <div className="flex items-baseline gap-3 mt-4">
+                  <span className="text-slate-400 text-2xl font-medium">Rp</span>
+                  <Input
+                    type="number"
+                    value={formData.price_per_night}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev: any) => ({ ...prev, price_per_night: e.target.value }))}
+                    className="text-4xl font-bold border-0 bg-transparent focus-visible:ring-0 p-0 w-auto min-w-[180px]"
+                    placeholder="0"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Promo Price: show active promo info */}
+              {type === "promo" && (
+                editingRoom?.active_promotion ? (
+                  <div className="mt-4 p-4 bg-white rounded-lg border border-amber-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-slate-700">{editingRoom.active_promotion.badge_text}</p>
+                        <p className="text-sm text-slate-500">{editingRoom.active_promotion.name}</p>
+                      </div>
+                      <div className="text-right">
+                        {editingRoom.active_promotion.promo_price ? (
+                          <p className="text-lg font-bold text-amber-600">Rp {editingRoom.active_promotion.promo_price.toLocaleString("id-ID")}</p>
+                        ) : editingRoom.active_promotion.discount_percentage ? (
+                          <p className="text-lg font-bold text-amber-600">-{editingRoom.active_promotion.discount_percentage}%</p>
+                        ) : null}
+                        <p className="text-xs text-slate-400">{editingRoom.active_promotion.start_date} — {editingRoom.active_promotion.end_date}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-slate-400 italic">Belum ada promo aktif. Kelola di menu <strong>Promotions</strong>.</p>
+                )
+              )}
+
+              {/* Dynamic Price: info only */}
+              {type === "dynamic" && (
+                <p className="mt-3 text-xs text-slate-400 italic">Konfigurasi di menu <strong>Analysis Dashboard</strong>.</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+
 const AdminRooms = () => {
   const {
     rooms,
@@ -66,27 +189,25 @@ const AdminRooms = () => {
     room_numbers: [] as string[],
     room_count: "1",
     allotment: "0",
-    promo_price: "",
-    promo_start_date: "",
-    promo_end_date: "",
-    monday_price: "",
-    tuesday_price: "",
-    wednesday_price: "",
-    thursday_price: "",
-    friday_price: "",
-    saturday_price: "",
-    sunday_price: "",
     transition_effect: "slide",
     is_non_refundable: false,
-    monday_non_refundable: false,
-    tuesday_non_refundable: false,
-    wednesday_non_refundable: false,
-    thursday_non_refundable: false,
-    friday_non_refundable: false,
-    saturday_non_refundable: false,
-    sunday_non_refundable: false,
-    use_autopricing: false
+    pricing_priority: ["base", "promo", "dynamic"] as string[]
   });
+
+  const pricingSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handlePricingDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setFormData(prev => {
+      const oldIndex = prev.pricing_priority.indexOf(active.id as string);
+      const newIndex = prev.pricing_priority.indexOf(over.id as string);
+      return { ...prev, pricing_priority: arrayMove(prev.pricing_priority, oldIndex, newIndex) };
+    });
+  }, []);
   const getIconComponent = (iconName: string) => {
     const icons = Icons as unknown as Record<string, React.ComponentType<{
       className?: string;
@@ -110,26 +231,9 @@ const AdminRooms = () => {
       room_numbers: [],
       room_count: "1",
       allotment: "0",
-      promo_price: "",
-      promo_start_date: "",
-      promo_end_date: "",
-      monday_price: "",
-      tuesday_price: "",
-      wednesday_price: "",
-      thursday_price: "",
-      friday_price: "",
-      saturday_price: "",
-      sunday_price: "",
       transition_effect: "slide",
       is_non_refundable: false,
-      monday_non_refundable: false,
-      tuesday_non_refundable: false,
-      wednesday_non_refundable: false,
-      thursday_non_refundable: false,
-      friday_non_refundable: false,
-      saturday_non_refundable: false,
-      sunday_non_refundable: false,
-      use_autopricing: false
+      pricing_priority: ["base", "promo", "dynamic"]
     });
     setEditingRoom(null);
     setActiveTab("general");
@@ -152,26 +256,9 @@ const AdminRooms = () => {
       room_numbers: room.room_numbers || [],
       room_count: room.room_count?.toString() || "1",
       allotment: room.allotment?.toString() || "0",
-      promo_price: room.promo_price?.toString() || "",
-      promo_start_date: room.promo_start_date || "",
-      promo_end_date: room.promo_end_date || "",
-      monday_price: room.monday_price?.toString() || "",
-      tuesday_price: room.tuesday_price?.toString() || "",
-      wednesday_price: room.wednesday_price?.toString() || "",
-      thursday_price: room.thursday_price?.toString() || "",
-      friday_price: room.friday_price?.toString() || "",
-      saturday_price: room.saturday_price?.toString() || "",
-      sunday_price: room.sunday_price?.toString() || "",
       transition_effect: room.transition_effect || "slide",
       is_non_refundable: room.is_non_refundable || false,
-      monday_non_refundable: room.monday_non_refundable || false,
-      tuesday_non_refundable: room.tuesday_non_refundable || false,
-      wednesday_non_refundable: room.wednesday_non_refundable || false,
-      thursday_non_refundable: room.thursday_non_refundable || false,
-      friday_non_refundable: room.friday_non_refundable || false,
-      saturday_non_refundable: room.saturday_non_refundable || false,
-      sunday_non_refundable: room.sunday_non_refundable || false,
-      use_autopricing: room.use_autopricing || false
+      pricing_priority: (room as any).pricing_priority || ["base", "promo", "dynamic"]
     });
     setIsDialogOpen(true);
   };
@@ -239,26 +326,9 @@ const AdminRooms = () => {
       room_numbers: formData.room_numbers,
       room_count: Number(formData.room_count),
       allotment: Number(formData.allotment),
-      promo_price: formData.promo_price ? Number(formData.promo_price) : null,
-      promo_start_date: formData.promo_start_date || null,
-      promo_end_date: formData.promo_end_date || null,
-      monday_price: formData.monday_price ? Number(formData.monday_price) : null,
-      tuesday_price: formData.tuesday_price ? Number(formData.tuesday_price) : null,
-      wednesday_price: formData.wednesday_price ? Number(formData.wednesday_price) : null,
-      thursday_price: formData.thursday_price ? Number(formData.thursday_price) : null,
-      friday_price: formData.friday_price ? Number(formData.friday_price) : null,
-      saturday_price: formData.saturday_price ? Number(formData.saturday_price) : null,
-      sunday_price: formData.sunday_price ? Number(formData.sunday_price) : null,
       transition_effect: formData.transition_effect,
       is_non_refundable: formData.is_non_refundable,
-      monday_non_refundable: formData.monday_non_refundable,
-      tuesday_non_refundable: formData.tuesday_non_refundable,
-      wednesday_non_refundable: formData.wednesday_non_refundable,
-      thursday_non_refundable: formData.thursday_non_refundable,
-      friday_non_refundable: formData.friday_non_refundable,
-      saturday_non_refundable: formData.saturday_non_refundable,
-      sunday_non_refundable: formData.sunday_non_refundable,
-      use_autopricing: formData.use_autopricing
+      pricing_priority: formData.pricing_priority
     };
     if (editingRoom) {
       updateRoom({
@@ -494,188 +564,51 @@ const AdminRooms = () => {
                     </Card>
                   </TabsContent>
 
-                  {/* TAB: PRICING */}
+                  {/* TAB: ROOM PRICING */}
                   <TabsContent value="pricing" className="mt-0 space-y-6">
-                    {/* Main Price Card */}
-                    <Card className="relative overflow-hidden border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-primary/2 to-transparent">
-                      <div className="absolute top-4 right-4">
-                        <Badge className="bg-primary text-white font-medium px-3 py-1">
-                          Active Price
-                        </Badge>
-                      </div>
-                      <CardContent className="p-8">
-                        <Label className="text-sm text-slate-500 uppercase tracking-wider font-semibold">
-                          Base Price per Night
-                        </Label>
-                        <div className="flex items-baseline gap-3 mt-3">
-                          <span className="text-slate-400 text-3xl font-medium">Rp</span>
-                          <Input type="number" value={formData.price_per_night} onChange={e => setFormData({
-                          ...formData,
-                          price_per_night: e.target.value
-                        })} className="text-5xl font-bold border-0 bg-transparent focus-visible:ring-0 p-0 w-auto min-w-[200px]" placeholder="0" required />
-                        </div>
-                        <p className="text-sm text-slate-500 mt-3">
-                          This is the standard price guests will see
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <div className="space-y-1 mb-2">
+                      <h2 className="text-xl font-bold text-slate-800">Room Pricing</h2>
+                      <p className="text-sm text-muted-foreground">
+                        Drag card untuk mengatur prioritas. Card teratas = harga yang ditampilkan di frontend.
+                      </p>
+                    </div>
 
-                    {/* AutoPricing Card */}
-                    <Card className={cn("transition-all duration-300 border-2", formData.use_autopricing ? "border-orange-400 bg-gradient-to-br from-orange-50/50 to-transparent" : "border-slate-200 hover:border-slate-300")}>
+                    <DndContext sensors={pricingSensors} collisionDetection={closestCenter} onDragEnd={handlePricingDragEnd}>
+                      <SortableContext items={formData.pricing_priority} strategy={verticalListSortingStrategy}>
+                        {formData.pricing_priority.map((type, index) => (
+                          <SortablePricingCard
+                            key={type}
+                            id={type}
+                            index={index}
+                            type={type}
+                            formData={formData}
+                            setFormData={setFormData}
+                            editingRoom={editingRoom}
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
+
+                    {/* Non-Refundable Toggle */}
+                    <Card className="border-slate-200">
                       <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            <div className={cn("p-3 rounded-xl transition-all duration-300", formData.use_autopricing ? "bg-orange-100 text-orange-600 shadow-sm" : "bg-slate-100 text-slate-500")}>
-                              <Zap className="w-7 h-7" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3">
-                                <h3 className="font-semibold text-lg text-slate-800">AutoPricing</h3>
-                                {formData.use_autopricing && <Badge className="bg-orange-500 text-white">Active</Badge>}
-                              </div>
-                              <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                                Automatically adjust prices based on occupancy rates, competitor pricing, and demand patterns
-                              </p>
-                              
-                              {formData.use_autopricing && <div className="mt-5 p-4 bg-white rounded-xl border border-orange-200 space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm text-slate-600 flex items-center gap-2">
-                                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                      Current Auto-Price
-                                    </span>
-                                    <span className="text-lg font-bold text-orange-600">
-                                      Rp {(Number(formData.price_per_night) * 1.15).toLocaleString('id-ID')}
-                                    </span>
-                                  </div>
-                                  <div className="h-px bg-slate-100" />
-                                  <div className="flex items-center justify-between text-sm">
-                                    <span className="text-slate-500">Occupancy Rate</span>
-                                    <span className="font-medium text-slate-700">85%</span>
-                                  </div>
-                                  <div className="flex items-center justify-between text-sm">
-                                    <span className="text-slate-500">Last Updated</span>
-                                    <span className="text-slate-500">5 minutes ago</span>
-                                  </div>
-                                </div>}
-                            </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-slate-800">Non-Refundable Rate</h3>
+                            <p className="text-sm text-slate-500 mt-1">
+                              Aktifkan jika harga kamar ini tidak bisa di-refund (tidak ada pembatalan)
+                            </p>
                           </div>
-                          <Switch checked={formData.use_autopricing} onCheckedChange={checked => setFormData({
-                          ...formData,
-                          use_autopricing: checked
-                        })} className="data-[state=checked]:bg-orange-500" />
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Day-of-Week Pricing */}
-                    <Card className="border-slate-200">
-                      <CardHeader className="pb-4">
-                        <CardTitle className="text-base text-slate-700 font-sans font-bold">Day-of-Week Pricing</CardTitle>
-                        <CardDescription>Set different prices for specific days (optional)</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-7 gap-2">
-                          {[{
-                          key: 'monday_price',
-                          label: 'Mon',
-                          short: 'M'
-                        }, {
-                          key: 'tuesday_price',
-                          label: 'Tue',
-                          short: 'T'
-                        }, {
-                          key: 'wednesday_price',
-                          label: 'Wed',
-                          short: 'W'
-                        }, {
-                          key: 'thursday_price',
-                          label: 'Thu',
-                          short: 'T'
-                        }, {
-                          key: 'friday_price',
-                          label: 'Fri',
-                          short: 'F'
-                        }, {
-                          key: 'saturday_price',
-                          label: 'Sat',
-                          short: 'S'
-                        }, {
-                          key: 'sunday_price',
-                          label: 'Sun',
-                          short: 'S'
-                        }].map(day => <div key={day.key} className="space-y-2">
-                              <Label className="text-xs text-center block text-slate-500 font-medium">{day.label}</Label>
-                              <div className="relative">
-                                <Input type="number" value={formData[day.key as keyof typeof formData] as string} onChange={e => setFormData({
-                              ...formData,
-                              [day.key]: e.target.value
-                            })} className="text-center text-sm h-12 bg-white" placeholder="-" />
-                              </div>
-                            </div>)}
-                        </div>
-                        <p className="text-xs text-slate-400 mt-3 text-center">Leave empty to use base price</p>
-                      </CardContent>
-                    </Card>
-
-                    {/* Promo Section */}
-                    <Card className="border-slate-200">
-                      <CardHeader className="pb-4">
-                        <CardTitle className="text-base text-slate-700 flex items-center gap-2 font-sans font-bold">
-                          <span className="text-green-600">%</span>
-                          Promotional Pricing
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm text-slate-600">Promo Price (Rp)</Label>
-                            <Input type="number" value={formData.promo_price} onChange={e => setFormData({
+                          <Switch checked={formData.is_non_refundable} onCheckedChange={checked => setFormData({
                             ...formData,
-                            promo_price: e.target.value
-                          })} className="bg-white" placeholder="0" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm text-slate-600">Start Date</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !formData.promo_start_date && "text-slate-400")}>
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {formData.promo_start_date ? format(new Date(formData.promo_start_date), "dd MMM", {
-                                  locale: localeId
-                                }) : "Select"}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={formData.promo_start_date ? new Date(formData.promo_start_date) : undefined} onSelect={date => date && setFormData({
-                                ...formData,
-                                promo_start_date: format(date, "yyyy-MM-dd")
-                              })} initialFocus />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm text-slate-600">End Date</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !formData.promo_end_date && "text-slate-400")}>
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {formData.promo_end_date ? format(new Date(formData.promo_end_date), "dd MMM", {
-                                  locale: localeId
-                                }) : "Select"}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={formData.promo_end_date ? new Date(formData.promo_end_date) : undefined} onSelect={date => date && setFormData({
-                                ...formData,
-                                promo_end_date: format(date, "yyyy-MM-dd")
-                              })} disabled={date => formData.promo_start_date ? date < new Date(formData.promo_start_date) : false} initialFocus />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                            is_non_refundable: checked
+                          })} />
                         </div>
                       </CardContent>
                     </Card>
                   </TabsContent>
+
+
 
                   {/* TAB: FEATURES */}
                   <TabsContent value="features" className="mt-0">
@@ -809,10 +742,6 @@ const AdminRooms = () => {
                     Rp {room.price_per_night.toLocaleString()}
                   </span>
                   <span className="text-slate-400">/night</span>
-                  {room.use_autopricing && <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-100">
-                      <Zap className="w-3 h-3 mr-1" />
-                      AutoPricing
-                    </Badge>}
                 </CardDescription>
               </CardHeader>
               <CardContent>

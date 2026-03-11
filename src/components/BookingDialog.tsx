@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -15,8 +15,9 @@ import { getWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Room } from "@/hooks/useRooms";
+import { getDynamicDisplayPrice } from "@/components/Rooms/utils/checkPromo";
 import { useBooking, BookingData } from "@/hooks/useBooking";
-import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
 import { AddonSelector } from "./booking/AddonSelector";
 import { BookingAddon } from "@/hooks/useRoomAddons";
@@ -50,7 +51,7 @@ const bookingSchema = z.object({
 export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 1, initialNumGuests = 1 }: BookingDialogProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { settings } = useHotelSettings();
+  const { settings } = usePublicHotelSettings();
   const { checkIn: searchCheckIn, checkOut: searchCheckOut } = useSearchDates();
   
   // Set default dates: use search dates if available, otherwise today and tomorrow (WIB)
@@ -206,7 +207,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
         check_out: checkOut,
         check_in_time: formData.check_in_time + ":00",
         check_out_time: formData.check_out_time + ":00",
-        price_per_night: room.price_per_night,
+        price_per_night: effectivePrice,
         room_quantity: roomQuantity,
         is_non_refundable: room.is_non_refundable || false,
         addons: selectedAddons.length > 0 ? selectedAddons : undefined,
@@ -226,8 +227,14 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
     }
   };
 
+  const effectivePrice = useMemo(() => {
+    if (!room) return 0;
+    const { price } = getDynamicDisplayPrice(room, checkIn, checkOut);
+    return price;
+  }, [room, checkIn, checkOut]);
+
   const totalNights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
-  const roomPrice = room ? totalNights * room.price_per_night * roomQuantity : 0;
+  const roomPrice = room ? totalNights * effectivePrice * roomQuantity : 0;
   const addonsPrice = selectedAddons.reduce((sum, addon) => sum + addon.total_price, 0);
   const totalPrice = roomPrice + addonsPrice;
 
@@ -519,7 +526,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
           {totalNights > 0 && (
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Kamar: Rp {room.price_per_night.toLocaleString("id-ID")} × {totalNights} malam × {roomQuantity} kamar</span>
+                <span>Kamar: Rp {effectivePrice.toLocaleString("id-ID")} × {totalNights} malam × {roomQuantity} kamar</span>
                 <span>Rp {roomPrice.toLocaleString("id-ID")}</span>
               </div>
               {addonsPrice > 0 && (

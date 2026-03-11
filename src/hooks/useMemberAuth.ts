@@ -165,12 +165,14 @@ export const useMemberAuth = (): UseMemberAuthReturn => {
   const logout = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Use scope: 'local' to clear local session even if server session is already gone
+      await supabase.auth.signOut({ scope: 'local' });
       setUser(null);
       toast.success("Logout berhasil");
     } catch (error: any) {
-      toast.error(error.message || "Logout gagal");
+      // Even if signOut fails, clear local state
+      setUser(null);
+      console.warn("Logout warning:", error.message);
     } finally {
       setIsLoading(false);
     }

@@ -1,22 +1,14 @@
-// Check Inline Payment Status
+// Check Inline Payment Status via Midtrans
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { md5 } from "../_shared/md5.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const log = (level: 'info' | 'error' | 'warn', message: string, data?: Record<string, unknown>) => {
-  console.log(JSON.stringify({
-    timestamp: new Date().toISOString(),
-    level,
-    service: 'payment-gateway',
-    function: 'check-inline-payment-status',
-    message,
-    ...data
-  }));
+const log = (level: string, message: string, data?: Record<string, unknown>) => {
+  console.log(JSON.stringify({ timestamp: new Date().toISOString(), level, service: "payment-gateway", function: "check-inline-payment-status", message, ...data }));
 };
 
 serve(async (req) => {
@@ -36,12 +28,9 @@ serve(async (req) => {
       );
     }
 
-    const merchantCode = Deno.env.get("DUITKU_MERCHANT_CODE")!;
-    const apiKey = Deno.env.get("DUITKU_API_KEY")!;
+    const serverKey = Deno.env.get("MIDTRANS_SERVER_KEY")!;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const duitkuEnv = Deno.env.get("DUITKU_ENV") || "sandbox";
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     let query = supabase
@@ -66,15 +55,15 @@ serve(async (req) => {
 
     // Check if already expired
     if (booking.payment_expires_at && new Date(booking.payment_expires_at) < new Date()) {
-      log('info', 'Payment expired', { requestId, bookingId: booking.id });
-      
+      log("info", "Payment expired", { requestId, bookingId: booking.id });
+
       await supabase
         .from("bookings")
         .update({
           status: "cancelled",
           payment_status: "expired",
           cancellation_reason: "Payment timeout - 1 hour expired",
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq("id", booking.id);
 
@@ -83,7 +72,8 @@ serve(async (req) => {
           status: "expired",
           booking_id: booking.id,
           booking_code: booking.booking_code,
-          message: "Payment expired. Booking cancelled."
+          message: "Payment expired. Booking cancelled.",
+          is_expired: true,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -105,31 +95,29 @@ serve(async (req) => {
       );
     }
 
-    // Check with Duitku API
-    const signature = md5(merchantCode + txn.merchant_order_id + apiKey);
-    
-    const DUITKU_BASE_URL = duitkuEnv === "production"
-      ? "https://passport.duitku.com"
-      : "https://sandbox.duitku.com";
+    // Check with Midtrans API
+    const isSandbox = serverKey.startsWith("SB-");
+    const apiBase = isSandbox
+      ? "https://api.sandbox.midtrans.com/v2"
+      : "https://api.midtrans.com/v2";
 
-    const duitkuResponse = await fetch(
-      `${DUITKU_BASE_URL}/webapi/api/merchant/transactionStatus`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          merchantCode,
-          merchantOrderId: txn.merchant_order_id,
-          signature
-        })
-      }
-    );
+    const authString = btoa(serverKey + ":");
 
-    const duitkuData = await duitkuResponse.json();
+    const midtransResponse = await fetch(`${apiBase}/${txn.merchant_order_id}/status`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Basic ${authString}`,
+      },
+    });
+
+    const midtransData = await midtransResponse.json();
 
     let status = "pending";
-    if (duitkuData.statusCode === "00") status = "paid";
-    else if (duitkuData.statusCode === "02") status = "expired";
+    const ts = midtransData.transaction_status;
+    if (ts === "settlement" || (ts === "capture" && midtransData.fraud_status === "accept")) status = "paid";
+    else if (ts === "expire") status = "expired";
+    else if (["cancel", "deny"].includes(ts)) status = "failed";
 
     // Update if status changed
     if (status === "paid" && booking.payment_status !== "paid") {
@@ -148,14 +136,14 @@ serve(async (req) => {
           body: {
             phone: booking.guest_phone || booking.guest_email,
             message: `💰 Pembayaran Berhasil!\n\nBooking ${booking.booking_code} telah lunas.`,
-            type: "payment_success"
-          }
+            type: "payment_success",
+          },
         });
       } catch (e: unknown) {
-        log('warn', 'Failed to send success notification', { requestId, error: (e as Error).message });
+        log("warn", "Failed to send success notification", { requestId, error: (e as Error).message });
       }
 
-      log('info', 'Payment confirmed', { requestId, bookingId: booking.id });
+      log("info", "Payment confirmed", { requestId, bookingId: booking.id });
     }
 
     // Calculate remaining time
@@ -176,12 +164,12 @@ serve(async (req) => {
         remaining_seconds: remainingSeconds,
         expires_at: booking.payment_expires_at,
         is_expired: remainingMs <= 0,
-        paid_at: status === "paid" ? new Date().toISOString() : null
+        paid_at: status === "paid" ? new Date().toISOString() : null,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
-    log('error', 'Error checking status', { requestId, error: (error as Error).message });
+    log("error", "Error checking status", { requestId, error: (error as Error).message });
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

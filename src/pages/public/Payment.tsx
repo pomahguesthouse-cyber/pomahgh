@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useDuitkuPayment } from "@/hooks/useDuitkuPayment";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { Loader2, CreditCard, Building2, QrCode, Wallet, ArrowLeft, ExternalLink } from "lucide-react";
+import { Loader2, CreditCard, ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 interface BookingData {
@@ -31,15 +29,7 @@ const Payment = () => {
   const navigate = useNavigate();
   const [booking, setBooking] = useState<BookingData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-
-  const {
-    paymentMethods,
-    isLoadingMethods,
-    isCreating,
-    fetchPaymentMethods,
-    createTransaction,
-  } = useDuitkuPayment();
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     if (bookingId) loadBooking();
@@ -63,26 +53,32 @@ const Payment = () => {
 
     const room = data.rooms as unknown as { name: string } | null;
     setBooking({ ...data, rooms: room } as BookingData);
-
-    // Fetch payment methods
-    await fetchPaymentMethods(data.total_price);
     setLoading(false);
   };
 
-  const handlePay = async () => {
-    if (!bookingId || !selectedMethod) return;
+  const handlePayNow = async () => {
+    if (!bookingId) return;
+    setIsCreating(true);
 
-    const result = await createTransaction(bookingId, selectedMethod);
-    if (result?.payment_url) {
-      window.location.href = result.payment_url;
+    try {
+      const { data, error } = await supabase.functions.invoke("midtrans-create-transaction", {
+        body: { booking_id: bookingId },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || data?.detail || "Gagal membuat transaksi pembayaran");
+
+      if (data.payment_url) {
+        window.location.href = data.payment_url;
+      } else {
+        toast.error("Tidak mendapat link pembayaran dari Midtrans");
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Gagal membuat transaksi pembayaran";
+      toast.error(message);
+    } finally {
+      setIsCreating(false);
     }
-  };
-
-  const getCategoryIcon = (code: string) => {
-    if (["BC", "M2", "VA", "BT", "B1", "A1", "AG", "NC", "BR", "S1", "DM", "AT"].includes(code)) return <Building2 className="w-5 h-5" />;
-    if (["SP", "SA", "SL", "LA", "DA", "OV", "DN"].includes(code)) return <Wallet className="w-5 h-5" />;
-    if (code === "SP" || code === "SQ") return <QrCode className="w-5 h-5" />;
-    return <CreditCard className="w-5 h-5" />;
   };
 
   if (loading) {
@@ -131,7 +127,6 @@ const Payment = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-4 py-8 space-y-6">
-        {/* Header */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="w-5 h-5" />
@@ -142,7 +137,6 @@ const Payment = () => {
           </div>
         </div>
 
-        {/* Booking Summary */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Ringkasan Booking</CardTitle>
@@ -182,68 +176,38 @@ const Payment = () => {
           </CardContent>
         </Card>
 
-        {/* Payment Methods */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
-              Pilih Metode Pembayaran
+              Metode Pembayaran
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {isLoadingMethods ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <span className="ml-2 text-sm text-muted-foreground">Memuat metode pembayaran...</span>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Anda akan diarahkan ke halaman pembayaran Midtrans untuk memilih metode pembayaran yang tersedia:
+            </p>
+            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <span>🏦</span> Virtual Account (BCA, Mandiri, BRI, BNI, dll)
               </div>
-            ) : paymentMethods.length === 0 ? (
-              <p className="text-center py-6 text-muted-foreground text-sm">
-                Tidak ada metode pembayaran tersedia
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 gap-2">
-                {paymentMethods.map((method) => (
-                  <button
-                    key={method.code}
-                    onClick={() => setSelectedMethod(method.code)}
-                    className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
-                      selectedMethod === method.code
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/40"
-                    }`}
-                  >
-                    {method.image ? (
-                      <img
-                        src={method.image}
-                        alt={method.name}
-                        className="w-10 h-10 object-contain rounded"
-                      />
-                    ) : (
-                      getCategoryIcon(method.code)
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{method.name}</p>
-                      {method.fee > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          Fee: Rp {method.fee.toLocaleString("id-ID")}
-                        </p>
-                      )}
-                    </div>
-                    {selectedMethod === method.code && (
-                      <Badge variant="default" className="shrink-0">Dipilih</Badge>
-                    )}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <span>📱</span> QRIS
               </div>
-            )}
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <span>💳</span> E-Wallet (GoPay, ShopeePay)
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <span>🏧</span> Credit Card
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Pay Button */}
         <Button
           className="w-full h-12 text-base font-semibold"
-          disabled={!selectedMethod || isCreating}
-          onClick={handlePay}
+          disabled={isCreating}
+          onClick={handlePayNow}
         >
           {isCreating ? (
             <>
@@ -253,7 +217,7 @@ const Payment = () => {
           ) : (
             <>
               <ExternalLink className="w-5 h-5 mr-2" />
-              Bayar Sekarang
+              Bayar Sekarang — Rp {booking.total_price.toLocaleString("id-ID")}
             </>
           )}
         </Button>

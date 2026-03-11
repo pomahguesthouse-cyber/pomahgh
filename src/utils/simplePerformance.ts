@@ -22,7 +22,7 @@ export const debounce = <T extends (...args: any[]) => any>(
   fn: T,
   delay: number
 ): ((...args: Parameters<T>) => void) => {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
   
   return (...args: Parameters<T>) => {
     clearTimeout(timeoutId);
@@ -48,14 +48,14 @@ export const throttle = <T extends (...args: any[]) => any>(
 
 // Simple performance logging (development only)
 export const logPerformance = (componentName: string, action: string, duration: number) => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log(`[Performance] ${componentName} - ${action}: ${duration}ms`);
   }
 };
 
 // Memory usage checker (development only)
 export const checkMemoryUsage = (componentName: string) => {
-  if (process.env.NODE_ENV === 'development' && 'memory' in performance) {
+  if (import.meta.env.DEV && 'memory' in performance) {
     const memory = (performance as any).memory;
     console.log(`[Memory] ${componentName}:`, {
       used: `${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,

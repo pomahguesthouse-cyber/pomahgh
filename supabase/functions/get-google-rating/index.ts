@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     console.log('Fetching rating for Place ID:', placeId);
 
     // Fetch from Google Places API v1 (New) - include reviews
-    const url = `https://places.googleapis.com/v1/places/${placeId}?fields=rating,userRatingCount,googleMapsUri,reviews`;
+    const url = `https://places.googleapis.com/v1/places/${placeId}?fields=rating,userRatingCount,googleMapsUri,reviews&languageCode=id`;
     
     const response = await fetch(url, {
       method: 'GET',

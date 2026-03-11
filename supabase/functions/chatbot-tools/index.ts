@@ -22,6 +22,7 @@ import { handleUpdateBooking } from "./tools/updateBooking.ts";
 import { handleCheckPaymentStatus } from "./tools/checkPaymentStatus.ts";
 import { handleGetPaymentMethods } from "./tools/getPaymentMethods.ts";
 import { handleNotifyLongstayInquiry } from "./tools/notifyLongstayInquiry.ts";
+import { handleNotifyPaymentProof } from "./tools/notifyPaymentProof.ts";
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -80,6 +81,10 @@ serve(async (req) => {
 
       case "notify_longstay_inquiry":
         result = await handleNotifyLongstayInquiry(supabase, parameters);
+        break;
+
+      case "notify_payment_proof":
+        result = await handleNotifyPaymentProof(supabase, parameters);
         break;
 
       default:
