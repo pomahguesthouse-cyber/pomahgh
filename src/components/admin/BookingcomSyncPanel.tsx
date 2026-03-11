@@ -17,6 +17,7 @@ import { id as idLocale } from "date-fns/locale";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
+import OtaConnectionForm from "./OtaConnectionForm";
 
 export default function BookingcomSyncPanel() {
   const {
