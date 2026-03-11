@@ -493,6 +493,94 @@ export type Database = {
           },
         ]
       }
+      bookingcom_room_mappings: {
+        Row: {
+          bookingcom_rate_id: string
+          bookingcom_room_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          room_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          bookingcom_rate_id: string
+          bookingcom_room_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          room_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          bookingcom_rate_id?: string
+          bookingcom_room_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          room_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookingcom_room_mappings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookingcom_sync_logs: {
+        Row: {
+          created_at: string | null
+          direction: string
+          duration_ms: number | null
+          error_message: string | null
+          http_status_code: number | null
+          id: string
+          request_payload: Json | null
+          response_payload: Json | null
+          room_id: string | null
+          success: boolean | null
+          sync_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          direction: string
+          duration_ms?: number | null
+          error_message?: string | null
+          http_status_code?: number | null
+          id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          room_id?: string | null
+          success?: boolean | null
+          sync_type: string
+        }
+        Update: {
+          created_at?: string | null
+          direction?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          http_status_code?: number | null
+          id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          room_id?: string | null
+          success?: boolean | null
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookingcom_sync_logs_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           allocated_room_number: string | null
