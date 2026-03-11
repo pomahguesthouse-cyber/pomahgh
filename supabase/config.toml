@@ -137,3 +137,12 @@ verify_jwt = false
 
 [functions.midtrans-check-status]
 verify_jwt = false
+
+[functions.bookingcom-push-availability]
+verify_jwt = false
+
+[functions.bookingcom-pull-reservations]
+verify_jwt = false
+
+[functions.bookingcom-webhook]
+verify_jwt = false
