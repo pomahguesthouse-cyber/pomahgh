@@ -115,6 +115,7 @@ export default function AdminChannelManagers() {
           <TabsList>
             <TabsTrigger value="logs">Sync Logs</TabsTrigger>
             <TabsTrigger value="queue">Sync Queue</TabsTrigger>
+            <TabsTrigger value="bookingcom">Booking.com</TabsTrigger>
           </TabsList>
 
           <TabsContent value="logs">
