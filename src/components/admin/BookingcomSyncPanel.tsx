@@ -63,6 +63,9 @@ export default function BookingcomSyncPanel() {
 
   return (
     <div className="space-y-6">
+      {/* OTA Connection Form */}
+      <OtaConnectionForm />
+
       {/* Webhook URL Info */}
       <Card>
         <CardHeader>
