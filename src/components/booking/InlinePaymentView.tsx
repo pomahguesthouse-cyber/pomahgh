@@ -64,9 +64,7 @@ export function InlinePaymentView({
     setIsCreating(true);
     setCreateError(null);
     try {
-      // Create DOKU Checkout transaction - no payment method specified
-      // DOKU Checkout page handles method selection
-      const { data, error } = await supabase.functions.invoke("doku-create-transaction", {
+      const { data, error } = await supabase.functions.invoke("midtrans-create-transaction", {
         body: { booking_id: bookingId },
       });
 
@@ -75,9 +73,8 @@ export function InlinePaymentView({
 
       if (data.payment_url) {
         setPaymentUrl(data.payment_url);
-        // Open DOKU Checkout in new tab
         window.open(data.payment_url, "_blank");
-        toast.success("Halaman pembayaran DOKU telah dibuka. Silakan selesaikan pembayaran.");
+        toast.success("Halaman pembayaran Midtrans telah dibuka. Silakan selesaikan pembayaran.");
       } else {
         throw new Error("Tidak mendapat link pembayaran");
       }
@@ -124,7 +121,6 @@ export function InlinePaymentView({
       minimumFractionDigits: 0,
     }).format(price);
 
-  // Success state
   if (paymentStatus === "paid") {
     return (
       <div className="bg-green-50 border border-green-200 rounded-lg p-5 text-center space-y-3">
@@ -138,7 +134,6 @@ export function InlinePaymentView({
     );
   }
 
-  // Expired state
   if (paymentStatus === "expired") {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-5 text-center space-y-3">
@@ -171,14 +166,12 @@ export function InlinePaymentView({
             </div>
           </div>
 
-          {/* Error */}
           {createError && (
             <div className="bg-destructive/10 border border-destructive/20 rounded p-3 text-center">
               <p className="text-sm text-destructive">{createError}</p>
             </div>
           )}
 
-          {/* Pay button */}
           <Button
             className="w-full h-11 font-semibold"
             disabled={isCreating}
@@ -197,7 +190,6 @@ export function InlinePaymentView({
             )}
           </Button>
 
-          {/* If payment URL was already generated, show link */}
           {paymentUrl && (
             <div className="space-y-2">
               <Button

@@ -20,7 +20,6 @@ const PaymentStatus = () => {
     if (!bookingId) return;
     setIsRefreshing(true);
 
-    // First check local payment_transactions
     const { data: txn } = await supabase
       .from("payment_transactions")
       .select("status, merchant_order_id")
@@ -29,7 +28,6 @@ const PaymentStatus = () => {
       .limit(1)
       .single();
 
-    // Get booking code
     const { data: booking } = await supabase
       .from("bookings")
       .select("booking_code, payment_status")
@@ -41,9 +39,8 @@ const PaymentStatus = () => {
     if (booking?.payment_status === "paid" || txn?.status === "paid") {
       setStatus("paid");
     } else if (txn) {
-      // Also try checking with DOKU
       try {
-        const { data: checkResult } = await supabase.functions.invoke("doku-check-status", {
+        const { data: checkResult } = await supabase.functions.invoke("midtrans-check-status", {
           body: { merchant_order_id: txn.merchant_order_id },
         });
         setStatus(checkResult?.status || txn.status);
