@@ -24,6 +24,7 @@ import AdminChatbot from "./pages/admin/AdminChatbot";
 import AdminGuestChatbot from "./pages/admin/AdminGuestChatbot";
 import AdminAdminChatbot from "./pages/admin/AdminAdminChatbot";
 import AdminChannelManagers from "./pages/admin/AdminChannelManagers";
+import AdminBookingCom from "./pages/admin/AdminBookingCom";
 import AdminBankAccounts from "./pages/admin/AdminBankAccounts";
 import AdminRoomFeatures from "./pages/admin/AdminRoomFeatures";
 import AdminSeoSettings from "./pages/admin/AdminSeoSettings";
@@ -91,6 +92,7 @@ const App = () => (
           <Route path="/admin/chatbot/admin" element={<AdminLayout><AdminAdminChatbot /></AdminLayout>} />
           <Route path="/admin/chat" element={<AdminLayout><AdminChat /></AdminLayout>} />
           <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
+          <Route path="/admin/booking-com" element={<AdminLayout><AdminBookingCom /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
           <Route path="/admin/landing-pages" element={<AdminLayout><AdminLandingPages /></AdminLayout>} />

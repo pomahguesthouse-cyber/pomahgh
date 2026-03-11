@@ -140,3 +140,6 @@ verify_jwt = false
 
 [functions.duitku-payment-methods]
 verify_jwt = false
+
+[functions.booking-webhook]
+verify_jwt = false

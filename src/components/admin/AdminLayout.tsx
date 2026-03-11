@@ -20,6 +20,7 @@ const getPageTitle = (pathname: string): string => {
     "/admin/nearby-locations": "Nearby Locations",
     "/admin/chatbot": "Chatbot Settings",
     "/admin/channel-managers": "Channel Managers",
+    "/admin/booking-com": "Booking.com Integration",
     "/admin/room-features": "Room Features",
     "/admin/seo-settings": "SEO Settings",
     "/admin/landing-pages": "Landing Pages",
