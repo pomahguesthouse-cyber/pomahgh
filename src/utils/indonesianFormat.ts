@@ -53,7 +53,8 @@ export const formatNumberID = (num: number): string => {
  * @returns String Rupiah terformat
  * @example formatRupiahID(1760000) // "Rp 1.760.000"
  */
-export const formatRupiahID = (amount: number): string => {
+export const formatRupiahID = (amount: number | null | undefined): string => {
+  if (amount == null) return "Rp 0";
   return `Rp ${amount.toLocaleString("id-ID")}`;
 };
 
