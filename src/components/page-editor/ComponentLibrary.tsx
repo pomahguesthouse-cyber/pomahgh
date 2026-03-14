@@ -93,6 +93,11 @@ const components: ComponentItemProps[] = [
   { type: "container", label: "Container", icon: <Square className="h-5 w-5" /> },
   { type: "gallery", label: "Gallery", icon: <LayoutGrid className="h-5 w-5" /> },
   { type: "html", label: "HTML Block", icon: <Code className="h-5 w-5" /> },
+  { type: "video", label: "Video", icon: <Video className="h-5 w-5" /> },
+  { type: "icon", label: "Icon", icon: <Star className="h-5 w-5" /> },
+  { type: "social-links", label: "Social Links", icon: <Share2 className="h-5 w-5" /> },
+  { type: "whatsapp-button", label: "WhatsApp", icon: <MessageCircle className="h-5 w-5" /> },
+  { type: "map-embed", label: "Map", icon: <MapPin className="h-5 w-5" /> },
 ];
 
 const categoryLabels = {

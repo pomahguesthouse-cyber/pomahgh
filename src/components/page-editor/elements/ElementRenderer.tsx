@@ -9,6 +9,11 @@ import { SectionElement } from "./SectionElement";
 import { ContainerElement } from "./ContainerElement";
 import { GalleryElement } from "./GalleryElement";
 import { HtmlElement } from "./HtmlElement";
+import { VideoElement } from "./VideoElement";
+import { IconElement } from "./IconElement";
+import { SocialLinksElement } from "./SocialLinksElement";
+import { WhatsAppButtonElement } from "./WhatsAppButtonElement";
+import { MapEmbedElement } from "./MapEmbedElement";
 
 interface ElementRendererProps {
   element: EditorElement;
@@ -27,10 +32,7 @@ export function ElementRenderer({
   onHover,
   isPreview = false,
 }: ElementRendererProps) {
-  // Skip rendering hidden elements in preview mode
-  if (element.isVisible === false && isPreview) {
-    return null;
-  }
+  if (element.isVisible === false && isPreview) return null;
 
   const commonProps = {
     element,
@@ -41,7 +43,6 @@ export function ElementRenderer({
     isPreview,
   };
 
-  // Wrap in dimmed container if hidden in editor mode
   const wrapHidden = (node: React.ReactNode) => {
     if (element.isVisible === false && !isPreview) {
       return <div className="opacity-30 pointer-events-auto">{node}</div>;
@@ -53,35 +54,35 @@ export function ElementRenderer({
 
   switch (element.type) {
     case "heading":
-      rendered = <HeadingElement {...commonProps} />;
-      break;
+      rendered = <HeadingElement {...commonProps} />; break;
     case "paragraph":
-      rendered = <ParagraphElement {...commonProps} />;
-      break;
+      rendered = <ParagraphElement {...commonProps} />; break;
     case "image":
-      rendered = <ImageElement {...commonProps} />;
-      break;
+      rendered = <ImageElement {...commonProps} />; break;
     case "button":
-      rendered = <ButtonElement {...commonProps} />;
-      break;
+      rendered = <ButtonElement {...commonProps} />; break;
     case "spacer":
-      rendered = <SpacerElement {...commonProps} />;
-      break;
+      rendered = <SpacerElement {...commonProps} />; break;
     case "divider":
-      rendered = <DividerElement {...commonProps} />;
-      break;
+      rendered = <DividerElement {...commonProps} />; break;
     case "section":
-      rendered = <SectionElement {...commonProps} />;
-      break;
+      rendered = <SectionElement {...commonProps} />; break;
     case "container":
-      rendered = <ContainerElement {...commonProps} />;
-      break;
+      rendered = <ContainerElement {...commonProps} />; break;
     case "gallery":
-      rendered = <GalleryElement {...commonProps} />;
-      break;
+      rendered = <GalleryElement {...commonProps} />; break;
     case "html":
-      rendered = <HtmlElement {...commonProps} />;
-      break;
+      rendered = <HtmlElement {...commonProps} />; break;
+    case "video":
+      rendered = <VideoElement {...commonProps} />; break;
+    case "icon":
+      rendered = <IconElement {...commonProps} />; break;
+    case "social-links":
+      rendered = <SocialLinksElement {...commonProps} />; break;
+    case "whatsapp-button":
+      rendered = <WhatsAppButtonElement {...commonProps} />; break;
+    case "map-embed":
+      rendered = <MapEmbedElement {...commonProps} />; break;
     default:
       rendered = (
         <div className="p-4 bg-destructive/10 text-destructive rounded">
