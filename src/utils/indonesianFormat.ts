@@ -43,7 +43,8 @@ export const formatDateShortID = (date: Date | string): string => {
  * @returns String angka terformat
  * @example formatNumberID(1760000) // "1.760.000"
  */
-export const formatNumberID = (num: number): string => {
+export const formatNumberID = (num: number | null | undefined): string => {
+  if (num == null) return "0";
   return num.toLocaleString("id-ID");
 };
 
