@@ -70,7 +70,8 @@ serve(async (req) => {
     const totalWithCode = booking.total_price + uniqueCode;
 
     // Format dates
-    const checkInDate = format(new Date(booking.check_in), "dd-MM-yyyy", { locale: idLocale });
+    const checkInDate = format(new Date(booking.check_in), "dd MMMM yyyy", { locale: idLocale });
+    const checkOutDate = format(new Date(booking.check_out), "dd MMMM yyyy", { locale: idLocale });
     const createdAtFormatted = format(new Date(booking.created_at), "d MMM yyyy, HH:mm", { locale: idLocale });
     const createdAtDay = format(new Date(booking.created_at), "EEEE", { locale: idLocale });
 
@@ -122,14 +123,12 @@ serve(async (req) => {
     const detailRows = roomListItems.map((room) => {
       rowIndex++;
       const subtotal = room.price_per_night * booking.total_nights;
-      // If multiple rooms, show 1 tamu per room unless total guests specified
-      const guestsPerRoom = roomListItems.length > 1 ? 1 : booking.num_guests;
       return `
         <tr>
           <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${rowIndex}.</td>
           <td style="border:1px solid #ddd;padding:10px 12px;">Akomodasi</td>
-          <td style="border:1px solid #ddd;padding:10px 12px;">${hotelSettings.hotel_name || 'Pomah Guesthouse'} ${room.room_name || ''}<br>${guestsPerRoom} Tamu</td>
-          <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${booking.total_nights}</td>
+          <td style="border:1px solid #ddd;padding:10px 12px;">${hotelSettings.hotel_name || 'Pomah Guesthouse'} ${room.room_name || ''}</td>
+          <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${booking.total_nights} mlm</td>
           <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(room.price_per_night)}</td>
           <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(subtotal)}</td>
         </tr>
@@ -144,7 +143,7 @@ serve(async (req) => {
               <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${rowIndex}.</td>
               <td style="border:1px solid #ddd;padding:10px 12px;">Layanan Tambahan</td>
               <td style="border:1px solid #ddd;padding:10px 12px;">${addon.room_addons?.name || 'Add-on'}</td>
-              <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${addon.quantity}</td>
+              <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${addon.quantity}x ${booking.total_nights} mlm</td>
               <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(addon.unit_price)}</td>
               <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(addon.total_price)}</td>
             </tr>
@@ -152,13 +151,8 @@ serve(async (req) => {
         }).join('')
       : '';
 
-    // Tamu list
+    // Only show 1 guest name
     const tamuList = [`1. ${booking.guest_name}`];
-    if (booking.num_guests > 1) {
-      for (let i = 2; i <= booking.num_guests; i++) {
-        tamuList.push(`${i}. Tamu ${i}`);
-      }
-    }
 
     const primaryColor = '#4a9bd9';
     const secondaryColor = '#e8f4fd';
@@ -223,7 +217,8 @@ serve(async (req) => {
       <p style="font-size:13px;color:#444;line-height:1.7;margin:0;">
         <strong>${hotelSettings.hotel_name || 'Pomah Guesthouse'}</strong><br>
         ${hotelSettings.address ? `Alamat: ${hotelSettings.address}${hotelSettings.city ? `, ${hotelSettings.city}` : ''}${hotelSettings.postal_code ? `, ${hotelSettings.postal_code}` : ''}` : ''}<br>
-        Check-in: ${checkInDate}<br>
+        Check-in: ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}<br>
+        Check-out: ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}<br>
         Durasi: ${booking.total_nights} malam
       </p>
     </div>
