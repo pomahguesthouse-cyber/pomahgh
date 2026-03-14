@@ -146,6 +146,21 @@ export function EditBookingDialog({
       } else {
         setEditedRooms([]);
       }
+
+      // Initialize addons
+      if (booking.booking_addons && booking.booking_addons.length > 0) {
+        setEditedAddons(
+          booking.booking_addons.map((ba) => ({
+            addon_id: ba.id ? (ba as any).addon_id || ba.id : ba.id,
+            name: ba.room_addons?.name || 'Add-on',
+            quantity: ba.quantity,
+            unit_price: ba.unit_price,
+            total_price: ba.total_price,
+          }))
+        );
+      } else {
+        setEditedAddons([]);
+      }
       
       setStatus(booking.status);
       setPaymentStatus(booking.payment_status || "unpaid");
@@ -153,12 +168,15 @@ export function EditBookingDialog({
       
       // Detect custom pricing
       const room = rooms?.find((r) => r.id === booking.room_id);
-      const totalNights = Math.ceil(
+      const totalNightsVal = Math.ceil(
         (new Date(booking.check_out).getTime() - new Date(booking.check_in).getTime()) /
           (1000 * 60 * 60 * 24)
       );
       const normalPrice = room?.price || 0;
-      const actualPricePerNight = booking.total_price / totalNights;
+      // Subtract addon total from booking total to get room-only price
+      const addonTotal = booking.booking_addons?.reduce((s, a) => s + a.total_price, 0) || 0;
+      const roomOnlyTotal = booking.total_price - addonTotal;
+      const actualPricePerNight = roomOnlyTotal / totalNightsVal;
       
       if (Math.abs(actualPricePerNight - normalPrice) > 100) {
         setUseCustomPrice(true);
