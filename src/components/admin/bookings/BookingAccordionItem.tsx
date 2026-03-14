@@ -41,6 +41,7 @@ import {
   Clock,
   User,
   Calendar,
+  Package,
 } from "lucide-react";
 
 import { Booking, BankAccount, Room } from "./types";
