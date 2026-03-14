@@ -80,6 +80,16 @@ export const useAdminBookings = () => {
             room_id,
             room_number,
             price_per_night
+          ),
+          booking_addons (
+            id,
+            quantity,
+            unit_price,
+            total_price,
+            room_addons (
+              name,
+              icon_name
+            )
           )
         `)
         .order("created_at", { ascending: false });
