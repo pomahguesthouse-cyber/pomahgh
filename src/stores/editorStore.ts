@@ -59,6 +59,7 @@ interface EditorState {
   // UI State
   isDragging: boolean;
   viewMode: 'desktop' | 'tablet' | 'mobile';
+  showLayerPanel: boolean;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
   
