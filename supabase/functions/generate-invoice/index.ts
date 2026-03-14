@@ -83,10 +83,23 @@ serve(async (req) => {
       paymentMethodLabel = `Bank Transfer (${booking.bank_code.toUpperCase()})`;
     }
 
-    // Transaction status
+    // Transaction status - based on payment_status field
+    const paymentStatus = booking.payment_status || 'pending';
     let transactionStatus = 'Belum Bayar';
-    if (isFullyPaid) transactionStatus = 'Lunas';
-    else if (paidAmount > 0) transactionStatus = 'DP';
+    let isFullyPaid = false;
+    
+    if (paymentStatus === 'paid' || paymentStatus === 'lunas') {
+      transactionStatus = 'Lunas';
+      isFullyPaid = true;
+    } else if (paymentStatus === 'down_payment' || paymentStatus === 'partial') {
+      transactionStatus = 'DP';
+    } else if (paymentStatus === 'pay_at_hotel') {
+      transactionStatus = 'Bayar di Hotel';
+    } else if (remainingBalance <= 0 && paidAmount > 0) {
+      // Fallback: if amount paid covers total, mark as paid
+      transactionStatus = 'Lunas';
+      isFullyPaid = true;
+    }
 
     // Room list
     interface BookingRoomItem { rooms?: { name: string } | null; room_number: string; price_per_night: number }
