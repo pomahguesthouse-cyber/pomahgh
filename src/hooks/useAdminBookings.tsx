@@ -49,6 +49,7 @@ interface Booking {
   }>;
   booking_addons?: Array<{
     id: string;
+    addon_id: string;
     quantity: number;
     unit_price: number;
     total_price: number;
@@ -83,6 +84,7 @@ export const useAdminBookings = () => {
           ),
           booking_addons (
             id,
+            addon_id,
             quantity,
             unit_price,
             total_price,
@@ -123,8 +125,8 @@ export const useAdminBookings = () => {
   });
 
   const updateBooking = useMutation({
-    mutationFn: async (booking: Partial<Booking> & { id: string; editedRooms?: Array<{ id?: string; roomId: string; roomNumber: string; pricePerNight: number }>; booking_rooms?: unknown; rooms?: unknown }) => {
-      const { editedRooms, booking_rooms, rooms, ...bookingData } = booking;
+    mutationFn: async (booking: Partial<Booking> & { id: string; editedRooms?: Array<{ id?: string; roomId: string; roomNumber: string; pricePerNight: number }>; editedAddons?: Array<{ addon_id: string; name: string; quantity: number; unit_price: number; total_price: number }>; booking_rooms?: unknown; rooms?: unknown; booking_addons?: unknown }) => {
+      const { editedRooms, editedAddons, booking_rooms, rooms, booking_addons, ...bookingData } = booking;
 
       // Get current booking data for comparison
       const { data: currentBooking } = await supabase
@@ -228,6 +230,34 @@ export const useAdminBookings = () => {
             if (brError) {
               console.error("Error updating booking_room:", brError);
             }
+          }
+        }
+      }
+
+      // Handle editedAddons - delete and re-insert
+      if (editedAddons && Array.isArray(editedAddons)) {
+        // Delete existing booking_addons
+        await supabase
+          .from("booking_addons")
+          .delete()
+          .eq("booking_id", booking.id);
+
+        // Insert new addons if any
+        if (editedAddons.length > 0) {
+          const addonsData = editedAddons.map(addon => ({
+            booking_id: booking.id,
+            addon_id: addon.addon_id,
+            quantity: addon.quantity,
+            unit_price: addon.unit_price,
+            total_price: addon.total_price,
+          }));
+
+          const { error: addonInsertError } = await supabase
+            .from("booking_addons")
+            .insert(addonsData);
+
+          if (addonInsertError) {
+            console.error("Error inserting booking_addons:", addonInsertError);
           }
         }
       }

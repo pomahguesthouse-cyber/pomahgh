@@ -25,11 +25,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Users, Globe, UserCheck, HelpCircle } from "lucide-react";
+import { CalendarIcon, Users, Globe, UserCheck, HelpCircle, Plus, Minus, Package } from "lucide-react";
 import { Booking, SelectedRoom, Room, RoomTypeAvailability } from "./types";
 import { CustomPricingEditor } from "./CustomPricingEditor";
+import { useAllRoomAddons, RoomAddon, calculateAddonPrice, getPriceTypeLabel } from "@/hooks/useRoomAddons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+interface EditAddonItem {
+  addon_id: string;
+  name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
 
 interface EditBookingDialogProps {
   open: boolean;
@@ -59,6 +68,8 @@ export function EditBookingDialog({
   onSave,
   onCheckConflict,
 }: EditBookingDialogProps) {
+  const { data: availableAddons } = useAllRoomAddons();
+
   // Guest info state
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
@@ -80,6 +91,9 @@ export function EditBookingDialog({
   
   // Room selection state
   const [editedRooms, setEditedRooms] = useState<SelectedRoom[]>([]);
+  
+  // Add-ons state
+  const [editedAddons, setEditedAddons] = useState<EditAddonItem[]>([]);
   
   // Status state
   const [status, setStatus] = useState("pending");
@@ -132,6 +146,21 @@ export function EditBookingDialog({
       } else {
         setEditedRooms([]);
       }
+
+      // Initialize addons
+      if (booking.booking_addons && booking.booking_addons.length > 0) {
+        setEditedAddons(
+          booking.booking_addons.map((ba) => ({
+            addon_id: ba.addon_id,
+            name: ba.room_addons?.name || 'Add-on',
+            quantity: ba.quantity,
+            unit_price: ba.unit_price,
+            total_price: ba.total_price,
+          }))
+        );
+      } else {
+        setEditedAddons([]);
+      }
       
       setStatus(booking.status);
       setPaymentStatus(booking.payment_status || "unpaid");
@@ -139,12 +168,15 @@ export function EditBookingDialog({
       
       // Detect custom pricing
       const room = rooms?.find((r) => r.id === booking.room_id);
-      const totalNights = Math.ceil(
+      const totalNightsVal = Math.ceil(
         (new Date(booking.check_out).getTime() - new Date(booking.check_in).getTime()) /
           (1000 * 60 * 60 * 24)
       );
       const normalPrice = room?.price || 0;
-      const actualPricePerNight = booking.total_price / totalNights;
+      // Subtract addon total from booking total to get room-only price
+      const addonTotal = booking.booking_addons?.reduce((s, a) => s + a.total_price, 0) || 0;
+      const roomOnlyTotal = booking.total_price - addonTotal;
+      const actualPricePerNight = roomOnlyTotal / totalNightsVal;
       
       if (Math.abs(actualPricePerNight - normalPrice) > 100) {
         setUseCustomPrice(true);
@@ -174,18 +206,48 @@ export function EditBookingDialog({
     return 0;
   }, [editedRooms]);
 
-  // Calculate total price
+  // Calculate addon total
+  const addonTotal = useMemo(() => {
+    return editedAddons.reduce((sum, addon) => sum + addon.total_price, 0);
+  }, [editedAddons]);
+
+  // Calculate total price (rooms + addons)
   const calculatedTotalPrice = useMemo(() => {
+    let roomTotal = 0;
     if (useCustomPrice) {
       if (customPriceMode === "per_night") {
         const price = parseFloat(customPricePerNight) || 0;
-        return price * totalNights * editedRooms.length;
+        roomTotal = price * totalNights * editedRooms.length;
       } else {
-        return parseFloat(customTotalPrice) || 0;
+        roomTotal = parseFloat(customTotalPrice) || 0;
       }
+    } else {
+      roomTotal = normalPricePerNight * totalNights;
     }
-    return normalPricePerNight * totalNights;
-  }, [useCustomPrice, customPriceMode, customPricePerNight, customTotalPrice, normalPricePerNight, totalNights, editedRooms.length]);
+    return roomTotal + addonTotal;
+  }, [useCustomPrice, customPriceMode, customPricePerNight, customTotalPrice, normalPricePerNight, totalNights, editedRooms.length, addonTotal]);
+
+  // Add-on helpers
+  const updateAddonQuantity = (addonId: string, delta: number) => {
+    const addon = availableAddons?.find(a => a.id === addonId);
+    if (!addon) return;
+
+    setEditedAddons(prev => {
+      const existing = prev.find(a => a.addon_id === addonId);
+      if (existing) {
+        const newQty = existing.quantity + delta;
+        if (newQty <= 0) {
+          return prev.filter(a => a.addon_id !== addonId);
+        }
+        const newTotal = calculateAddonPrice(addon, newQty, totalNights, numGuests);
+        return prev.map(a => a.addon_id === addonId ? { ...a, quantity: newQty, total_price: newTotal } : a);
+      } else if (delta > 0) {
+        const newTotal = calculateAddonPrice(addon, 1, totalNights, numGuests);
+        return [...prev, { addon_id: addonId, name: addon.name, quantity: 1, unit_price: addon.price, total_price: newTotal }];
+      }
+      return prev;
+    });
+  };
 
   // Toggle room selection
   const toggleRoomSelection = (roomId: string, roomNumber: string, pricePerNight: number) => {
@@ -297,6 +359,7 @@ export function EditBookingDialog({
       ota_name: bookingSource === "ota" ? otaName : null,
       other_source: bookingSource === "other" ? otherSource : null,
       editedRooms,
+      editedAddons,
     });
     
     onOpenChange(false);
@@ -600,6 +663,65 @@ export function EditBookingDialog({
             />
           </div>
           
+          {/* Add-ons / Layanan Tambahan */}
+          {availableAddons && availableAddons.length > 0 && (
+            <div className="border-t pt-4 space-y-3">
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Layanan Tambahan
+              </Label>
+              <div className="space-y-2">
+                {availableAddons.filter(a => a.is_active).map((addon) => {
+                  const current = editedAddons.find(ea => ea.addon_id === addon.id);
+                  const qty = current?.quantity || 0;
+                  return (
+                    <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{addon.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Rp {addon.price.toLocaleString('id-ID')} {getPriceTypeLabel(addon.price_type)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => updateAddonQuantity(addon.id, -1)}
+                          disabled={qty === 0}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-6 text-center text-sm font-medium">{qty}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => updateAddonQuantity(addon.id, 1)}
+                          disabled={qty >= addon.max_quantity}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                        {qty > 0 && current && (
+                          <span className="text-xs font-medium text-primary ml-2">
+                            Rp {current.total_price.toLocaleString('id-ID')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {addonTotal > 0 && (
+                <p className="text-sm font-medium text-right">
+                  Total Add-ons: Rp {addonTotal.toLocaleString('id-ID')}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Custom Pricing */}
           <CustomPricingEditor
             enabled={useCustomPrice}
