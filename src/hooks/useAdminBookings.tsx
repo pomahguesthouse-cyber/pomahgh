@@ -125,8 +125,8 @@ export const useAdminBookings = () => {
   });
 
   const updateBooking = useMutation({
-    mutationFn: async (booking: Partial<Booking> & { id: string; editedRooms?: Array<{ id?: string; roomId: string; roomNumber: string; pricePerNight: number }>; booking_rooms?: unknown; rooms?: unknown }) => {
-      const { editedRooms, booking_rooms, rooms, ...bookingData } = booking;
+    mutationFn: async (booking: Partial<Booking> & { id: string; editedRooms?: Array<{ id?: string; roomId: string; roomNumber: string; pricePerNight: number }>; editedAddons?: Array<{ addon_id: string; name: string; quantity: number; unit_price: number; total_price: number }>; booking_rooms?: unknown; rooms?: unknown; booking_addons?: unknown }) => {
+      const { editedRooms, editedAddons, booking_rooms, rooms, booking_addons, ...bookingData } = booking;
 
       // Get current booking data for comparison
       const { data: currentBooking } = await supabase
