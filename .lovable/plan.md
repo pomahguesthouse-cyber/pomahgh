@@ -1,35 +1,24 @@
 
-# Tambah Fungsi Download Invoice di Halaman Member
+
+# Plan: Menggunakan Resend.com untuk Pengiriman Email Invoice
 
 ## Ringkasan
-Menambahkan tombol "Download Invoice" pada setiap kartu booking di halaman member dashboard. Tombol ini akan membuka dialog preview invoice yang sudah ada (`InvoicePreviewDialog`), di mana member bisa melihat preview dan download PDF invoice.
+Mengganti sistem pengiriman email saat ini (email queue internal) dengan Resend.com API langsung di edge function `generate-invoice`. Ini akan membuat pengiriman email lebih sederhana dan reliable.
 
-## Perubahan
+## Langkah-langkah
 
-### 1. `src/pages/user/MemberDashboard.tsx`
-- Import komponen `InvoicePreviewDialog`, icon `FileText` dari lucide-react
-- Tambah state untuk menyimpan booking yang dipilih untuk invoice (`selectedInvoiceBooking`)
-- Tambah tombol **"Invoice"** di setiap kartu booking (aktif maupun riwayat) -- hanya tampil jika status booking bukan `cancelled` dan payment bukan `expired`
-- Render `InvoicePreviewDialog` dengan data dari booking yang dipilih
+### 1. Simpan Resend API Key sebagai Secret
+- Menyimpan `RESEND_API_KEY` sebagai secret yang aman di backend (bukan di kode)
 
-### Detail Teknis
+### 2. Update Edge Function `generate-invoice`
+- Mengganti bagian pengiriman email yang menggunakan `supabase.rpc('enqueue_email', ...)` dengan panggilan langsung ke Resend API (`https://api.resend.com/emails`)
+- Menggunakan `RESEND_API_KEY` dari environment variable
+- Sender email: `noreply@notify.pomahguesthouse.com` (domain yang sudah dikonfigurasi)
+- Mengirim invoice HTML sebagai body email
 
-**State baru:**
-```text
-selectedInvoiceBooking: { id, booking_code, guest_name, guest_phone } | null
-```
+### 3. Deploy ulang Edge Function
+- Deploy `generate-invoice` dan test untuk memastikan email terkirim
 
-**Tombol Invoice** akan ditambahkan di:
-- Kartu booking aktif (di samping tombol Batalkan)
-- Kartu riwayat booking (untuk booking yang sudah checked_out / confirmed)
+## Perubahan File
+- `supabase/functions/generate-invoice/index.ts` — ganti logika email dari queue ke Resend API
 
-**Kondisi tampil:** Booking dengan status selain `cancelled` dan payment selain `expired`
-
-### 2. `src/hooks/useBookingHistory.ts`
-- Tambah field `guest_phone` ke interface `BookingHistoryItem` dan query select agar data nomor telepon tersedia untuk dialog invoice
-
-## Alur Pengguna
-1. Member buka dashboard --> lihat daftar booking
-2. Klik tombol "Invoice" pada booking tertentu
-3. Dialog preview invoice muncul dengan data booking
-4. Member bisa download PDF atau kirim via WhatsApp
