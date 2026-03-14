@@ -1,35 +1,47 @@
 
-# Tambah Fungsi Download Invoice di Halaman Member
 
-## Ringkasan
-Menambahkan tombol "Download Invoice" pada setiap kartu booking di halaman member dashboard. Tombol ini akan membuka dialog preview invoice yang sudah ada (`InvoicePreviewDialog`), di mana member bisa melihat preview dan download PDF invoice.
+# Plan: Perbaiki Rendering Landing Page — Pisahkan Page Editor vs Legacy
 
-## Perubahan
+## Masalah
+Saat ini ada **dua sistem** untuk mengelola landing page yang saling konflik:
 
-### 1. `src/pages/user/MemberDashboard.tsx`
-- Import komponen `InvoicePreviewDialog`, icon `FileText` dari lucide-react
-- Tambah state untuk menyimpan booking yang dipilih untuk invoice (`selectedInvoiceBooking`)
-- Tambah tombol **"Invoice"** di setiap kartu booking (aktif maupun riwayat) -- hanya tampil jika status booking bukan `cancelled` dan payment bukan `expired`
-- Render `InvoicePreviewDialog` dengan data dari booking yang dipilih
+1. **Legacy System** (`LandingPageFormDialog`) — menggunakan field `hero_headline`, `page_content`, `hero_slides`, dll
+2. **Visual Page Editor** (`PageEditorPage`) — menyimpan desain ke field `page_schema` sebagai JSON
 
-### Detail Teknis
+Masalahnya:
+- `LandingPage.tsx` (halaman publik) **hanya merender field legacy** (hero_headline, page_content, dll) dan **mengabaikan `page_schema`** sepenuhnya
+- Saat menyimpan dari Page Editor, field `hero_headline` di-overwrite dengan `pageSettings.title`, merusak konten legacy
+- Tidak ada logika untuk mendeteksi halaman mana yang dibuat via editor vs form
 
-**State baru:**
+## Solusi
+
+### 1. Deteksi Mode Rendering di `LandingPage.tsx`
+Tambahkan logika: jika `page_schema` ada dan berisi elemen, render menggunakan visual editor output. Jika tidak, render layout legacy seperti sekarang.
+
 ```text
-selectedInvoiceBooking: { id, booking_code, guest_name, guest_phone } | null
+if (page.page_schema && page.page_schema.length > 0) → render visual elements
+else → render legacy layout (hero + rooms + facilities + markdown)
 ```
 
-**Tombol Invoice** akan ditambahkan di:
-- Kartu booking aktif (di samping tombol Batalkan)
-- Kartu riwayat booking (untuk booking yang sudah checked_out / confirmed)
+### 2. Buat Komponen `PublicPageRenderer.tsx`
+Komponen baru yang merender `page_schema` elements secara read-only (tanpa editor UI, drag-drop, selection). Akan re-use element components yang sudah ada (`HeadingElement`, `ParagraphElement`, `ImageElement`, dll) dengan prop `isPreview={true}`.
 
-**Kondisi tampil:** Booking dengan status selain `cancelled` dan payment selain `expired`
+### 3. Update `LandingPage.tsx`
+- Tambah `page_schema` ke query select
+- Cek apakah `page_schema` punya elemen
+- Jika ya, render `<PublicPageRenderer elements={page.page_schema} />`
+- Jika tidak, render layout legacy yang sudah ada (tidak berubah)
+- SEO metadata (Helmet, JSON-LD) tetap dirender dari field yang tersedia
 
-### 2. `src/hooks/useBookingHistory.ts`
-- Tambah field `guest_phone` ke interface `BookingHistoryItem` dan query select agar data nomor telepon tersedia untuk dialog invoice
+### 4. Fix Save Logic di `PageEditorPage.tsx`
+- Jangan overwrite `hero_headline` dengan generic title saat save dari editor
+- Hanya simpan field yang relevan untuk editor: `page_title`, `slug`, `meta_description`, `page_schema`, `status`
 
-## Alur Pengguna
-1. Member buka dashboard --> lihat daftar booking
-2. Klik tombol "Invoice" pada booking tertentu
-3. Dialog preview invoice muncul dengan data booking
-4. Member bisa download PDF atau kirim via WhatsApp
+## File yang Diubah
+
+| File | Perubahan |
+|------|-----------|
+| `src/components/page-editor/PublicPageRenderer.tsx` | **Baru** — render page_schema elements secara read-only |
+| `src/pages/LandingPage.tsx` | Deteksi `page_schema` dan pilih mode rendering |
+| `src/pages/PageEditorPage.tsx` | Fix save agar tidak overwrite field legacy |
+
