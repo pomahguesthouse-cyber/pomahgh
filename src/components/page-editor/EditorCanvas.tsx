@@ -53,6 +53,16 @@ function createNewElement(type: string): EditorElement {
       return { ...baseElement, props: { images: [] }, styles: { columns: 3, gap: "16px" } };
     case "html":
       return { ...baseElement, props: { html: "" } };
+    case "video":
+      return { ...baseElement, props: { videoUrl: "" }, styles: { width: "100%" } };
+    case "icon":
+      return { ...baseElement, props: { iconName: "Star", iconSize: 48, iconColor: "#0f172a" }, styles: { textAlign: "center" } };
+    case "social-links":
+      return { ...baseElement, props: { links: [{ platform: "instagram", url: "#" }, { platform: "facebook", url: "#" }, { platform: "twitter", url: "#" }], iconSize: 24, iconColor: "#64748b" }, styles: { textAlign: "center" } };
+    case "whatsapp-button":
+      return { ...baseElement, props: { phoneNumber: "", message: "Halo, saya ingin bertanya...", label: "Chat via WhatsApp" }, styles: { textAlign: "center" } };
+    case "map-embed":
+      return { ...baseElement, props: { embedUrl: "" }, styles: { width: "100%", minHeight: "400px" } };
     default:
       return baseElement;
   }
