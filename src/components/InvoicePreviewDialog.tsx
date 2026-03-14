@@ -2,18 +2,18 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Download, Loader2 } from "lucide-react";
+import { Mail, Download, Loader2, Check } from "lucide-react";
 import { useInvoice } from "@/hooks/useInvoice";
-import { useInvoiceTemplate } from "@/hooks/useInvoiceTemplate";
 import DOMPurify from "dompurify";
 import html2pdf from "html2pdf.js";
+import { toast } from "sonner";
 
 interface InvoicePreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bookingId: string;
   guestName: string;
-  guestPhone: string;
+  guestEmail: string;
   bookingCode: string;
 }
 
@@ -22,30 +22,41 @@ export const InvoicePreviewDialog = ({
   onOpenChange,
   bookingId,
   guestName,
-  guestPhone,
+  guestEmail,
   bookingCode,
 }: InvoicePreviewDialogProps) => {
-  const { generateInvoice, isGenerating, invoiceData, sendWhatsApp, isSendingWhatsApp } = useInvoice();
-  const { template, replaceVariables } = useInvoiceTemplate();
+  const { generateInvoice, isGenerating } = useInvoice();
   const [invoiceHtml, setInvoiceHtml] = useState<string>("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     if (open && bookingId) {
-      generateInvoice(bookingId);
+      setInvoiceHtml("");
+      setEmailSent(false);
+      generateInvoice({ bookingId }).then((data) => {
+        if (data?.invoice_html) {
+          setInvoiceHtml(data.invoice_html);
+        }
+      });
     }
   }, [open, bookingId]);
 
-  useEffect(() => {
-    if (invoiceData?.invoice_html) {
-      setInvoiceHtml(invoiceData.invoice_html);
+  const handleSendEmail = async () => {
+    setIsSendingEmail(true);
+    try {
+      const data = await generateInvoice({ bookingId, sendEmail: true });
+      if (data?.email_sent) {
+        setEmailSent(true);
+        toast.success(`Invoice berhasil dikirim ke ${guestEmail}`);
+      } else {
+        toast.error("Gagal mengirim email. Pastikan konfigurasi email sudah benar.");
+      }
+    } catch {
+      toast.error("Gagal mengirim email invoice");
+    } finally {
+      setIsSendingEmail(false);
     }
-  }, [invoiceData]);
-
-  const handleSendWhatsApp = () => {
-    if (!template || !invoiceData?.variables) return;
-
-    const message = replaceVariables(template.whatsapp_template, invoiceData.variables);
-    sendWhatsApp({ phone: guestPhone, message });
   };
 
   const handleDownloadPDF = () => {
@@ -107,7 +118,7 @@ export const InvoicePreviewDialog = ({
 
         <div className="flex items-center justify-between pt-4 border-t">
           <div className="text-sm text-muted-foreground">
-            <p>📱 WhatsApp: {guestPhone}</p>
+            <p>📧 Email: {guestEmail}</p>
           </div>
           
           <div className="flex gap-2">
@@ -121,15 +132,17 @@ export const InvoicePreviewDialog = ({
             </Button>
             
             <Button
-              onClick={handleSendWhatsApp}
-              disabled={isSendingWhatsApp || !invoiceData}
+              onClick={handleSendEmail}
+              disabled={isSendingEmail || !invoiceHtml || emailSent}
             >
-              {isSendingWhatsApp ? (
+              {isSendingEmail ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : emailSent ? (
+                <Check className="h-4 w-4 mr-2" />
               ) : (
-                <Send className="h-4 w-4 mr-2" />
+                <Mail className="h-4 w-4 mr-2" />
               )}
-              Kirim WhatsApp
+              {emailSent ? "Terkirim" : "Kirim ke Email"}
             </Button>
           </div>
         </div>

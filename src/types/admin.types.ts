@@ -95,18 +95,6 @@ export interface SeoSettings {
   is_active: boolean;
 }
 
-// Invoice template
-export interface InvoiceTemplate {
-  id: string;
-  show_logo: boolean;
-  invoice_primary_color: string | null;
-  invoice_secondary_color: string | null;
-  footer_text: string | null;
-  custom_notes: string | null;
-  show_bank_accounts: boolean;
-  whatsapp_template: string | null;
-}
-
 // Channel manager
 export interface ChannelManager {
   id: string;

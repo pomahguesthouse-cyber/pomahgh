@@ -25,5 +25,4 @@ export type {
   SeoSettings,
   BankAccount,
   ChannelManager,
-  InvoiceTemplate,
 } from "@/types/admin.types";
