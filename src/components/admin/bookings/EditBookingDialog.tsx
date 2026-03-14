@@ -25,11 +25,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Users, Globe, UserCheck, HelpCircle } from "lucide-react";
+import { CalendarIcon, Users, Globe, UserCheck, HelpCircle, Plus, Minus, Package } from "lucide-react";
 import { Booking, SelectedRoom, Room, RoomTypeAvailability } from "./types";
 import { CustomPricingEditor } from "./CustomPricingEditor";
+import { useAllRoomAddons, RoomAddon, calculateAddonPrice, getPriceTypeLabel } from "@/hooks/useRoomAddons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+interface EditAddonItem {
+  addon_id: string;
+  name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
 
 interface EditBookingDialogProps {
   open: boolean;
