@@ -217,8 +217,8 @@ serve(async (req) => {
       <p style="font-size:13px;color:#444;line-height:1.7;margin:0;">
         <strong>${hotelSettings.hotel_name || 'Pomah Guesthouse'}</strong><br>
         ${hotelSettings.address ? `Alamat: ${hotelSettings.address}${hotelSettings.city ? `, ${hotelSettings.city}` : ''}${hotelSettings.postal_code ? `, ${hotelSettings.postal_code}` : ''}` : ''}<br>
-        Check-in: ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}<br>
-        Check-out: ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}<br>
+        <strong>Check-in: ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}</strong><br>
+        <strong>Check-out: ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}</strong><br>
         Durasi: ${booking.total_nights} malam
       </p>
     </div>
