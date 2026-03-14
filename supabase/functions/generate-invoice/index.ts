@@ -172,7 +172,7 @@ serve(async (req) => {
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:30px 40px 20px;border-left:5px solid ${primaryColor};">
       <div>
-        <h1 style="font-size:20px;font-weight:700;color:#222;margin:0 0 4px 0;">BUKTI PEMBELIAN (RECEIPT)</h1>
+        <h1 style="font-size:20px;font-weight:700;color:#222;margin:0 0 4px 0;">BUKTI PEMESANAN (RECEIPT)</h1>
         <div style="font-size:13px;color:#666;line-height:1.6;">
           Nomor &nbsp;: #${booking.booking_code}<br>
           Tanggal : ${createdAtFormatted} (${createdAtDay})
