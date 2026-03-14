@@ -11,13 +11,17 @@ import { Copy, Check, ExternalLink, RefreshCw, Loader2 } from "lucide-react";
 interface ChannelManager {
   id: string;
   name: string;
-  ota_provider: string;
-  webhook_secret: string;
-  receive_bookings: boolean;
-  push_availability: boolean;
-  booking_property_id: string;
-  is_active: boolean;
+  type: string;
+  webhook_secret: string | null;
+  webhook_url: string | null;
+  api_endpoint: string | null;
+  api_key_secret: string | null;
+  auth_type: string | null;
+  is_active: boolean | null;
   last_sync_at: string | null;
+  last_sync_status: string | null;
+  max_retries: number | null;
+  retry_delay_seconds: number | null;
 }
 
 export default function AdminBookingCom() {
