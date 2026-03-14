@@ -11,13 +11,17 @@ import { Copy, Check, ExternalLink, RefreshCw, Loader2 } from "lucide-react";
 interface ChannelManager {
   id: string;
   name: string;
-  ota_provider: string;
-  webhook_secret: string;
-  receive_bookings: boolean;
-  push_availability: boolean;
-  booking_property_id: string;
-  is_active: boolean;
+  type: string;
+  webhook_secret: string | null;
+  webhook_url: string | null;
+  api_endpoint: string | null;
+  api_key_secret: string | null;
+  auth_type: string | null;
+  is_active: boolean | null;
   last_sync_at: string | null;
+  last_sync_status: string | null;
+  max_retries: number | null;
+  retry_delay_seconds: number | null;
 }
 
 export default function AdminBookingCom() {
@@ -39,14 +43,14 @@ export default function AdminBookingCom() {
       const { data, error } = await supabase
         .from("channel_managers")
         .select("*")
-        .eq("ota_provider", "booking.com")
+        .eq("name", "Booking.com")
         .maybeSingle();
 
       if (data) {
-        setChannelManager(data);
-        setPropertyId(data.booking_property_id || "");
-        setReceiveBookings(data.receive_bookings ?? true);
-        setPushAvailability(data.push_availability ?? false);
+        setChannelManager(data as ChannelManager);
+        setPropertyId(data.api_endpoint || "");
+        setReceiveBookings(data.is_active ?? true);
+        setPushAvailability(data.is_active ?? false);
       }
     } catch (error) {
       console.error("Error fetching channel manager:", error);
@@ -68,11 +72,8 @@ export default function AdminBookingCom() {
       const configData = {
         name: "Booking.com",
         type: "webhook",
-        ota_provider: "booking.com",
         webhook_secret: webhookSecret,
-        receive_bookings: receiveBookings,
-        push_availability: pushAvailability,
-        booking_property_id: propertyId,
+        api_endpoint: propertyId || null,
         is_active: true,
         max_retries: 3,
         retry_delay_seconds: 60,
