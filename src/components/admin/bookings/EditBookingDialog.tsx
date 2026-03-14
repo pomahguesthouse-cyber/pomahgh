@@ -663,6 +663,65 @@ export function EditBookingDialog({
             />
           </div>
           
+          {/* Add-ons / Layanan Tambahan */}
+          {availableAddons && availableAddons.length > 0 && (
+            <div className="border-t pt-4 space-y-3">
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Layanan Tambahan
+              </Label>
+              <div className="space-y-2">
+                {availableAddons.filter(a => a.is_active).map((addon) => {
+                  const current = editedAddons.find(ea => ea.addon_id === addon.id);
+                  const qty = current?.quantity || 0;
+                  return (
+                    <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{addon.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Rp {addon.price.toLocaleString('id-ID')} {getPriceTypeLabel(addon.price_type)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => updateAddonQuantity(addon.id, -1)}
+                          disabled={qty === 0}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-6 text-center text-sm font-medium">{qty}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => updateAddonQuantity(addon.id, 1)}
+                          disabled={qty >= addon.max_quantity}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                        {qty > 0 && current && (
+                          <span className="text-xs font-medium text-primary ml-2">
+                            Rp {current.total_price.toLocaleString('id-ID')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {addonTotal > 0 && (
+                <p className="text-sm font-medium text-right">
+                  Total Add-ons: Rp {addonTotal.toLocaleString('id-ID')}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Custom Pricing */}
           <CustomPricingEditor
             enabled={useCustomPrice}
