@@ -172,7 +172,7 @@ serve(async (req) => {
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:30px 40px 20px;border-left:5px solid ${primaryColor};">
       <div>
-        <h1 style="font-size:20px;font-weight:700;color:#222;margin:0 0 4px 0;">BUKTI PEMBELIAN (RECEIPT)</h1>
+        <h1 style="font-size:20px;font-weight:700;color:#222;margin:0 0 4px 0;">BUKTI PEMESANAN (RECEIPT)</h1>
         <div style="font-size:13px;color:#666;line-height:1.6;">
           Nomor &nbsp;: #${booking.booking_code}<br>
           Tanggal : ${createdAtFormatted} (${createdAtDay})
@@ -190,7 +190,7 @@ serve(async (req) => {
     <div style="display:flex;justify-content:space-between;padding:16px 40px 20px;font-size:13px;color:#444;">
       <div>P.O. NUMBER: ${booking.booking_code}</div>
       <div>PEMBELIAN MELALUI: ${paymentMethodLabel}</div>
-      <div>DETAIL TRANSAKSI: <strong>${transactionStatus}</strong></div>
+      <div>DETAIL TRANSAKSI: <strong style="text-transform:uppercase;font-weight:700;">${transactionStatus.toUpperCase()}</strong></div>
     </div>
 
     <!-- Data Pemesan -->
@@ -217,8 +217,8 @@ serve(async (req) => {
       <p style="font-size:13px;color:#444;line-height:1.7;margin:0;">
         <strong>${hotelSettings.hotel_name || 'Pomah Guesthouse'}</strong><br>
         ${hotelSettings.address ? `Alamat: ${hotelSettings.address}${hotelSettings.city ? `, ${hotelSettings.city}` : ''}${hotelSettings.postal_code ? `, ${hotelSettings.postal_code}` : ''}` : ''}<br>
-        Check-in: ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}<br>
-        Check-out: ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}<br>
+        <strong>Check-in: ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}</strong><br>
+        <strong>Check-out: ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}</strong><br>
         Durasi: ${booking.total_nights} malam
       </p>
     </div>
