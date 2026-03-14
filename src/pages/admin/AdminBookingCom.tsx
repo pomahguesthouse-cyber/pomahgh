@@ -43,7 +43,7 @@ export default function AdminBookingCom() {
       const { data, error } = await supabase
         .from("channel_managers")
         .select("*")
-        .eq("ota_provider", "booking.com")
+        .eq("name", "Booking.com")
         .maybeSingle();
 
       if (data) {
