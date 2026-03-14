@@ -47,10 +47,10 @@ export default function AdminBookingCom() {
         .maybeSingle();
 
       if (data) {
-        setChannelManager(data);
-        setPropertyId(data.booking_property_id || "");
-        setReceiveBookings(data.receive_bookings ?? true);
-        setPushAvailability(data.push_availability ?? false);
+        setChannelManager(data as ChannelManager);
+        setPropertyId(data.api_endpoint || "");
+        setReceiveBookings(data.is_active ?? true);
+        setPushAvailability(data.is_active ?? false);
       }
     } catch (error) {
       console.error("Error fetching channel manager:", error);
