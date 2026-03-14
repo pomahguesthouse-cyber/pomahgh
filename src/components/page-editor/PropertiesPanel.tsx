@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { ColorPickerField } from "./ColorPickerField";
 import {
   Select,
   SelectContent,
