@@ -144,7 +144,7 @@ export default function PageEditorPage() {
       if (pageSettings.id) {
         const { error } = await supabase
           .from("landing_pages")
-          .update(pageData)
+          .update(pageData as any)
           .eq("id", pageSettings.id);
 
         if (error) throw error;
@@ -152,7 +152,7 @@ export default function PageEditorPage() {
       } else {
         const { data, error } = await supabase
           .from("landing_pages")
-          .insert([pageData])
+          .insert([pageData as any])
           .select()
           .single();
 
