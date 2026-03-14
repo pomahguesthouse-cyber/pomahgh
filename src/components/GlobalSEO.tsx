@@ -79,6 +79,23 @@ export const GlobalSEO = () => {
     }
   }, [settings]);
 
+  /* --------------------------------------------------
+   * Dynamic Favicon from hotel_settings.favicon_url
+   * -------------------------------------------------- */
+  useEffect(() => {
+    const faviconUrl = hotelSettings?.favicon_url;
+    if (!faviconUrl) return;
+
+    let link = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.href = faviconUrl;
+    link.type = faviconUrl.endsWith(".ico") ? "image/x-icon" : "image/png";
+  }, [hotelSettings?.favicon_url]);
+
   if (!settings) return null;
 
   /* --------------------
