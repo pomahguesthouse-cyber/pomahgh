@@ -253,6 +253,10 @@ export const bookingService = {
     if (paymentAmount !== undefined) {
       updateData.payment_amount = paymentAmount;
     }
+    // Auto-confirm booking when payment is paid or down_payment
+    if (paymentStatus === "paid" || paymentStatus === "partial") {
+      updateData.status = "confirmed";
+    }
 
     const { data, error } = await supabase
       .from("bookings")
