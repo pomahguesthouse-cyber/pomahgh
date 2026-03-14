@@ -206,18 +206,48 @@ export function EditBookingDialog({
     return 0;
   }, [editedRooms]);
 
-  // Calculate total price
+  // Calculate addon total
+  const addonTotal = useMemo(() => {
+    return editedAddons.reduce((sum, addon) => sum + addon.total_price, 0);
+  }, [editedAddons]);
+
+  // Calculate total price (rooms + addons)
   const calculatedTotalPrice = useMemo(() => {
+    let roomTotal = 0;
     if (useCustomPrice) {
       if (customPriceMode === "per_night") {
         const price = parseFloat(customPricePerNight) || 0;
-        return price * totalNights * editedRooms.length;
+        roomTotal = price * totalNights * editedRooms.length;
       } else {
-        return parseFloat(customTotalPrice) || 0;
+        roomTotal = parseFloat(customTotalPrice) || 0;
       }
+    } else {
+      roomTotal = normalPricePerNight * totalNights;
     }
-    return normalPricePerNight * totalNights;
-  }, [useCustomPrice, customPriceMode, customPricePerNight, customTotalPrice, normalPricePerNight, totalNights, editedRooms.length]);
+    return roomTotal + addonTotal;
+  }, [useCustomPrice, customPriceMode, customPricePerNight, customTotalPrice, normalPricePerNight, totalNights, editedRooms.length, addonTotal]);
+
+  // Add-on helpers
+  const updateAddonQuantity = (addonId: string, delta: number) => {
+    const addon = availableAddons?.find(a => a.id === addonId);
+    if (!addon) return;
+
+    setEditedAddons(prev => {
+      const existing = prev.find(a => a.addon_id === addonId);
+      if (existing) {
+        const newQty = existing.quantity + delta;
+        if (newQty <= 0) {
+          return prev.filter(a => a.addon_id !== addonId);
+        }
+        const newTotal = calculateAddonPrice(addon, newQty, totalNights, numGuests);
+        return prev.map(a => a.addon_id === addonId ? { ...a, quantity: newQty, total_price: newTotal } : a);
+      } else if (delta > 0) {
+        const newTotal = calculateAddonPrice(addon, 1, totalNights, numGuests);
+        return [...prev, { addon_id: addonId, name: addon.name, quantity: 1, unit_price: addon.price, total_price: newTotal }];
+      }
+      return prev;
+    });
+  };
 
   // Toggle room selection
   const toggleRoomSelection = (roomId: string, roomNumber: string, pricePerNight: number) => {
