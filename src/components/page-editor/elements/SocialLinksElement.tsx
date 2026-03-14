@@ -12,7 +12,8 @@ interface SocialLinksElementProps {
   isPreview?: boolean;
 }
 
-const socialIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const socialIcons: Record<string, any> = {
   facebook: Facebook,
   instagram: Instagram,
   twitter: Twitter,

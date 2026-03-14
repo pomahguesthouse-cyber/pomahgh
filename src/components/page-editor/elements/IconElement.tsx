@@ -23,8 +23,8 @@ export function IconElement({
   const { iconName = "Star", iconSize = 48, iconColor = "#0f172a" } = element.props;
   const { textAlign, marginTop, marginBottom } = element.styles;
 
-  // Dynamically get icon from lucide
-  const IconComponent = (LucideIcons as Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>>)[iconName] || LucideIcons.Star;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const IconComponent = (LucideIcons as any)[iconName] || LucideIcons.Star;
 
   const style: React.CSSProperties = { marginTop, marginBottom };
 
