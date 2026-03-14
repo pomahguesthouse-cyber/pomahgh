@@ -384,7 +384,7 @@ const AdminBookings = () => {
           onOpenChange={setInvoiceDialogOpen}
           bookingId={selectedBookingForInvoice.id}
           guestName={selectedBookingForInvoice.guest_name}
-          guestPhone={selectedBookingForInvoice.guest_phone || ""}
+          guestEmail={selectedBookingForInvoice.guest_email}
           bookingCode={selectedBookingForInvoice.booking_code}
         />
       )}

@@ -397,7 +397,7 @@ export default function MemberDashboard() {
             onOpenChange={(open) => !open && setSelectedInvoiceBooking(null)}
             bookingId={selectedInvoiceBooking.id}
             guestName={selectedInvoiceBooking.guest_name}
-            guestPhone={selectedInvoiceBooking.guest_phone || ""}
+            guestEmail={selectedInvoiceBooking.guest_email}
             bookingCode={selectedInvoiceBooking.booking_code}
           />
         )}
