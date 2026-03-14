@@ -94,9 +94,12 @@ export default function TrainingTab() {
   const {
     data: stats
   } = useTrainingStats();
+  const { data: autoLearnStats } = useAutoLearnStats();
   const addExample = useAddTrainingExample();
   const updateExample = useUpdateTrainingExample();
   const deleteExample = useDeleteTrainingExample();
+  const extractTraining = useExtractTrainingData();
+  const bulkApprove = useBulkApproveExamples();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingExample, setEditingExample] = useState<TrainingExample | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
