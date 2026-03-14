@@ -29,6 +29,9 @@ export interface EditorElement {
   props: Record<string, any>;
   styles: ElementStyles;
   children?: EditorElement[];
+  isVisible?: boolean;
+  isLocked?: boolean;
+  label?: string;
 }
 
 export interface PageSettings {
