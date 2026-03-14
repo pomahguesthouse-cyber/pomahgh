@@ -31,7 +31,7 @@ import AdminSeoSettings from "./pages/admin/AdminSeoSettings";
 import AdminLandingPages from "./pages/admin/AdminLandingPages";
 import AdminMediaLibrary from "./pages/admin/AdminMediaLibrary";
 import RoomDetail from "./pages/RoomDetail";
-import AdminInvoiceTemplate from "./pages/admin/AdminInvoiceTemplate";
+
 import AdminRoomAddons from "./pages/admin/AdminRoomAddons";
 import AdminPromotions from "./pages/admin/AdminPromotions";
 import { AdminLayout } from "./components/admin/AdminLayout";
