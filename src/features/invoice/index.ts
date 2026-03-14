@@ -8,7 +8,3 @@ export { InvoicePreviewDialog } from "@/components/InvoicePreviewDialog";
 
 // Hooks
 export { useInvoice } from "@/hooks/useInvoice";
-export { useInvoiceTemplate } from "@/hooks/useInvoiceTemplate";
-
-// Types
-export type { InvoiceTemplate } from "@/types/admin.types";

@@ -97,7 +97,7 @@ const App = () => (
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
           <Route path="/admin/landing-pages" element={<AdminLayout><AdminLandingPages /></AdminLayout>} />
           <Route path="/admin/media-library" element={<AdminLayout><AdminMediaLibrary /></AdminLayout>} />
-          <Route path="/admin/invoice-template" element={<AdminLayout><AdminInvoiceTemplate /></AdminLayout>} />
+          
           <Route path="/admin/city-attractions" element={<AdminLayout><AdminCityAttractions /></AdminLayout>} />
           <Route path="/admin/explore-hero-slides" element={<AdminLayout><AdminExploreHeroSlides /></AdminLayout>} />
           <Route path="/admin/city-events" element={<AdminLayout><AdminCityEvents /></AdminLayout>} />
