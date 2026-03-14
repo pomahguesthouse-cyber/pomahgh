@@ -9,6 +9,7 @@ export interface TrainingExample {
   category: string | null;
   is_active: boolean | null;
   display_order: number | null;
+  source: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
