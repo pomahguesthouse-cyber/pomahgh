@@ -359,6 +359,7 @@ export function EditBookingDialog({
       ota_name: bookingSource === "ota" ? otaName : null,
       other_source: bookingSource === "other" ? otherSource : null,
       editedRooms,
+      editedAddons,
     });
     
     onOpenChange(false);
