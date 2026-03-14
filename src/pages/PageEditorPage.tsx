@@ -7,6 +7,7 @@ import { PropertiesPanel } from "@/components/page-editor/PropertiesPanel";
 import { EditorToolbar } from "@/components/page-editor/EditorToolbar";
 import { PageSettingsDialog } from "@/components/page-editor/PageSettingsDialog";
 import { FloatingToolbar } from "@/components/page-editor/FloatingToolbar";
+import { LayerPanel } from "@/components/page-editor/LayerPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -28,6 +29,7 @@ export default function PageEditorPage() {
     setIsSaving,
     setHasUnsavedChanges,
     hasUnsavedChanges,
+    showLayerPanel,
   } = useEditorStore();
 
   const sensors = useSensors(
@@ -112,7 +114,7 @@ export default function PageEditorPage() {
 
     const timer = setTimeout(() => {
       // Auto-save logic could be added here
-    }, 30000); // 30 seconds
+    }, 30000);
 
     return () => clearTimeout(timer);
   }, [elements, hasUnsavedChanges]);
@@ -136,7 +138,6 @@ export default function PageEditorPage() {
       };
 
       if (pageSettings.id) {
-        // Update existing page
         const { error } = await supabase
           .from("landing_pages")
           .update(pageData)
@@ -145,7 +146,6 @@ export default function PageEditorPage() {
         if (error) throw error;
         toast.success("Page saved successfully");
       } else {
-        // Create new page
         const { data, error } = await supabase
           .from("landing_pages")
           .insert([pageData])
@@ -155,7 +155,6 @@ export default function PageEditorPage() {
         if (error) throw error;
         
         setPageSettings({ id: data.id });
-        // Update URL without navigation
         window.history.replaceState(null, "", `/editor?id=${data.id}`);
         toast.success("Page created successfully");
       }
@@ -196,6 +195,7 @@ export default function PageEditorPage() {
 
         <div className="flex-1 flex overflow-hidden">
           <ComponentLibrary />
+          {showLayerPanel && <LayerPanel />}
           <EditorCanvas />
           <PropertiesPanel />
         </div>

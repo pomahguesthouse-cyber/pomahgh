@@ -27,41 +27,68 @@ export function ElementRenderer({
   onHover,
   isPreview = false,
 }: ElementRendererProps) {
+  // Skip rendering hidden elements in preview mode
+  if (element.isVisible === false && isPreview) {
+    return null;
+  }
+
   const commonProps = {
     element,
     isSelected,
     isHovered,
-    onSelect,
+    onSelect: element.isLocked ? () => {} : onSelect,
     onHover,
     isPreview,
   };
 
+  // Wrap in dimmed container if hidden in editor mode
+  const wrapHidden = (node: React.ReactNode) => {
+    if (element.isVisible === false && !isPreview) {
+      return <div className="opacity-30 pointer-events-auto">{node}</div>;
+    }
+    return node;
+  };
+
+  let rendered: React.ReactNode;
+
   switch (element.type) {
     case "heading":
-      return <HeadingElement {...commonProps} />;
+      rendered = <HeadingElement {...commonProps} />;
+      break;
     case "paragraph":
-      return <ParagraphElement {...commonProps} />;
+      rendered = <ParagraphElement {...commonProps} />;
+      break;
     case "image":
-      return <ImageElement {...commonProps} />;
+      rendered = <ImageElement {...commonProps} />;
+      break;
     case "button":
-      return <ButtonElement {...commonProps} />;
+      rendered = <ButtonElement {...commonProps} />;
+      break;
     case "spacer":
-      return <SpacerElement {...commonProps} />;
+      rendered = <SpacerElement {...commonProps} />;
+      break;
     case "divider":
-      return <DividerElement {...commonProps} />;
+      rendered = <DividerElement {...commonProps} />;
+      break;
     case "section":
-      return <SectionElement {...commonProps} />;
+      rendered = <SectionElement {...commonProps} />;
+      break;
     case "container":
-      return <ContainerElement {...commonProps} />;
+      rendered = <ContainerElement {...commonProps} />;
+      break;
     case "gallery":
-      return <GalleryElement {...commonProps} />;
+      rendered = <GalleryElement {...commonProps} />;
+      break;
     case "html":
-      return <HtmlElement {...commonProps} />;
+      rendered = <HtmlElement {...commonProps} />;
+      break;
     default:
-      return (
+      rendered = (
         <div className="p-4 bg-destructive/10 text-destructive rounded">
           Unknown element type: {element.type}
         </div>
       );
   }
+
+  return wrapHidden(rendered);
 }

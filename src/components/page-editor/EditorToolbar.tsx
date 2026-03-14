@@ -10,6 +10,7 @@ import {
   Settings,
   ArrowLeft,
   Loader2,
+  Layers,
 } from "lucide-react";
 import { useEditorStore } from "@/stores/editorStore";
 import { useNavigate } from "react-router-dom";

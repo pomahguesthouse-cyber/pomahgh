@@ -260,8 +260,6 @@ export const useEditorStore = create<EditorState>()(
     }),
     
     toggleElementVisibility: (id) => set((state) => {
-      state.elements = updateElementById(state.elements, id, {} as any);
-      // Direct mutation via immer for visibility toggle
       const toggleVis = (els: EditorElement[]) => {
         for (const el of els) {
           if (el.id === id) { el.isVisible = el.isVisible === false ? true : false; return; }
