@@ -70,7 +70,8 @@ serve(async (req) => {
     const totalWithCode = booking.total_price + uniqueCode;
 
     // Format dates
-    const checkInDate = format(new Date(booking.check_in), "dd-MM-yyyy", { locale: idLocale });
+    const checkInDate = format(new Date(booking.check_in), "dd MMMM yyyy", { locale: idLocale });
+    const checkOutDate = format(new Date(booking.check_out), "dd MMMM yyyy", { locale: idLocale });
     const createdAtFormatted = format(new Date(booking.created_at), "d MMM yyyy, HH:mm", { locale: idLocale });
     const createdAtDay = format(new Date(booking.created_at), "EEEE", { locale: idLocale });
 
