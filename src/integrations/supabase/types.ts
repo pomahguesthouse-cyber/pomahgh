@@ -853,6 +853,7 @@ export type Database = {
       }
       chat_conversations: {
         Row: {
+          analyzed_for_training: boolean | null
           booking_created: boolean | null
           ended_at: string | null
           guest_email: string | null
@@ -862,6 +863,7 @@ export type Database = {
           started_at: string | null
         }
         Insert: {
+          analyzed_for_training?: boolean | null
           booking_created?: boolean | null
           ended_at?: string | null
           guest_email?: string | null
@@ -871,6 +873,7 @@ export type Database = {
           started_at?: string | null
         }
         Update: {
+          analyzed_for_training?: boolean | null
           booking_created?: boolean | null
           ended_at?: string | null
           guest_email?: string | null
@@ -1111,6 +1114,7 @@ export type Database = {
           is_active: boolean | null
           question: string
           response_tags: string[] | null
+          source: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1122,6 +1126,7 @@ export type Database = {
           is_active?: boolean | null
           question: string
           response_tags?: string[] | null
+          source?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1133,6 +1138,7 @@ export type Database = {
           is_active?: boolean | null
           question?: string
           response_tags?: string[] | null
+          source?: string | null
           updated_at?: string | null
         }
         Relationships: []
