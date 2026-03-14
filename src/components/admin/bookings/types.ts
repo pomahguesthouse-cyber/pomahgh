@@ -36,6 +36,16 @@ export interface Booking {
     room_number: string;
     price_per_night: number;
   }>;
+  booking_addons?: Array<{
+    id: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+    room_addons?: {
+      name: string;
+      icon_name: string;
+    };
+  }>;
 }
 
 export interface SelectedRoom {
