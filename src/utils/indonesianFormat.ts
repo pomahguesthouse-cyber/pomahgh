@@ -43,7 +43,8 @@ export const formatDateShortID = (date: Date | string): string => {
  * @returns String angka terformat
  * @example formatNumberID(1760000) // "1.760.000"
  */
-export const formatNumberID = (num: number): string => {
+export const formatNumberID = (num: number | null | undefined): string => {
+  if (num == null) return "0";
   return num.toLocaleString("id-ID");
 };
 
@@ -53,7 +54,8 @@ export const formatNumberID = (num: number): string => {
  * @returns String Rupiah terformat
  * @example formatRupiahID(1760000) // "Rp 1.760.000"
  */
-export const formatRupiahID = (amount: number): string => {
+export const formatRupiahID = (amount: number | null | undefined): string => {
+  if (amount == null) return "Rp 0";
   return `Rp ${amount.toLocaleString("id-ID")}`;
 };
 
