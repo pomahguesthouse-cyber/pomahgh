@@ -64,7 +64,6 @@ serve(async (req) => {
     const roomOnlyTotal = booking.total_price - addonTotalAmount;
     const paidAmount = booking.payment_amount || 0;
     const remainingBalance = booking.total_price - paidAmount;
-    const isFullyPaid = remainingBalance <= 0;
 
     // Generate unique code (last 3 digits for payment identification)
     const uniqueCode = Math.floor(Math.random() * 900 + 100);
