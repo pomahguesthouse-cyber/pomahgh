@@ -24,7 +24,7 @@ const getPageTitle = (pathname: string): string => {
     "/admin/room-features": "Room Features",
     "/admin/seo-settings": "SEO Settings",
     "/admin/landing-pages": "Landing Pages",
-    "/admin/invoice-template": "Invoice Template",
+    
     "/admin/city-attractions": "City Attractions",
     "/admin/facility-hero-slides": "Facility Hero",
     "/admin/developer-tools": "Developer Tools"
