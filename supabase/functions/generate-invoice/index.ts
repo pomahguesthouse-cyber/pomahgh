@@ -108,11 +108,13 @@ serve(async (req) => {
     const detailRows = roomListItems.map((room) => {
       rowIndex++;
       const subtotal = room.price_per_night * booking.total_nights;
+      // If multiple rooms, show 1 tamu per room unless total guests specified
+      const guestsPerRoom = roomListItems.length > 1 ? 1 : booking.num_guests;
       return `
         <tr>
           <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${rowIndex}.</td>
           <td style="border:1px solid #ddd;padding:10px 12px;">Akomodasi</td>
-          <td style="border:1px solid #ddd;padding:10px 12px;">${hotelSettings.hotel_name || 'Pomah Guesthouse'} ${room.room_name || ''}<br>${booking.num_guests} Tamu</td>
+          <td style="border:1px solid #ddd;padding:10px 12px;">${hotelSettings.hotel_name || 'Pomah Guesthouse'} ${room.room_name || ''}<br>${guestsPerRoom} Tamu</td>
           <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${booking.total_nights}</td>
           <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(room.price_per_night)}</td>
           <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(subtotal)}</td>
@@ -126,9 +128,9 @@ serve(async (req) => {
           return `
             <tr>
               <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${rowIndex}.</td>
-              <td style="border:1px solid #ddd;padding:10px 12px;">Add-on</td>
+              <td style="border:1px solid #ddd;padding:10px 12px;">Layanan Tambahan</td>
               <td style="border:1px solid #ddd;padding:10px 12px;">${addon.room_addons?.name || 'Add-on'}</td>
-              <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">1</td>
+              <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${addon.quantity}</td>
               <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(addon.unit_price)}</td>
               <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(addon.total_price)}</td>
             </tr>
