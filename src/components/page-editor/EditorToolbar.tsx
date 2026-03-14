@@ -164,6 +164,21 @@ export function EditorToolbar({ onSave, onPreview, onOpenSettings }: EditorToolb
 
         <div className="h-6 w-px bg-border" />
 
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={showLayerPanel ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => setShowLayerPanel(!showLayerPanel)}
+              className="gap-2"
+            >
+              <Layers className="h-4 w-4" />
+              Layers
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Toggle Layer Panel</TooltipContent>
+        </Tooltip>
+
         <Button variant="outline" size="sm" onClick={onOpenSettings} className="gap-2">
           <Settings className="h-4 w-4" />
           Settings
