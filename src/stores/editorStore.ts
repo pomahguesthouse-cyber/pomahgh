@@ -78,6 +78,10 @@ interface EditorState {
   setViewMode: (mode: 'desktop' | 'tablet' | 'mobile') => void;
   setIsDragging: (isDragging: boolean) => void;
   setIsSaving: (isSaving: boolean) => void;
+  setShowLayerPanel: (show: boolean) => void;
+  toggleElementVisibility: (id: string) => void;
+  toggleElementLock: (id: string) => void;
+  renameElement: (id: string, label: string) => void;
   setHasUnsavedChanges: (hasChanges: boolean) => void;
   
   undo: () => void;
