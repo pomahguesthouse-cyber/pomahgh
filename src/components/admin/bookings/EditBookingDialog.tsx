@@ -151,7 +151,7 @@ export function EditBookingDialog({
       if (booking.booking_addons && booking.booking_addons.length > 0) {
         setEditedAddons(
           booking.booking_addons.map((ba) => ({
-            addon_id: ba.id ? (ba as any).addon_id || ba.id : ba.id,
+            addon_id: ba.addon_id,
             name: ba.room_addons?.name || 'Add-on',
             quantity: ba.quantity,
             unit_price: ba.unit_price,
