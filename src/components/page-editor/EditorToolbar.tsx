@@ -41,6 +41,8 @@ export function EditorToolbar({ onSave, onPreview, onOpenSettings }: EditorToolb
     isSaving,
     hasUnsavedChanges,
     pageSettings,
+    showLayerPanel,
+    setShowLayerPanel,
   } = useEditorStore();
 
   const canUndo = historyIndex > 0;
