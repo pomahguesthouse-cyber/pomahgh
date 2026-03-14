@@ -233,6 +233,91 @@ export const usePromoteToExample = () => {
   });
 };
 
+// Auto-Learn: Extract training data from WhatsApp logs
+export const useExtractTrainingData = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("extract-training-data", {
+        body: {},
+      });
+      
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as { success: boolean; analyzed: number; extracted: number; message: string };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["training-examples"] });
+      queryClient.invalidateQueries({ queryKey: ["training-stats"] });
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error("Gagal mengekstrak data: " + error.message);
+    },
+  });
+};
+
+// Auto-Learn: Get draft count (auto-extracted, not yet approved)
+export const useAutoLearnStats = () => {
+  return useQuery({
+    queryKey: ["auto-learn-stats"],
+    queryFn: async () => {
+      const [draftsResult, analyzedResult] = await Promise.all([
+        supabase
+          .from("chatbot_training_examples")
+          .select("id", { count: "exact" })
+          .eq("source", "auto_whatsapp")
+          .eq("is_active", false),
+        supabase
+          .from("chat_conversations")
+          .select("id", { count: "exact" })
+          .ilike("session_id", "wa_%")
+          .eq("analyzed_for_training", true),
+      ]);
+      
+      return {
+        pendingDrafts: draftsResult.count || 0,
+        analyzedConversations: analyzedResult.count || 0,
+      };
+    },
+  });
+};
+
+// Bulk approve/reject auto-extracted examples
+export const useBulkApproveExamples = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ ids, action }: { ids: string[]; action: "approve" | "reject" }) => {
+      if (action === "approve") {
+        const { error } = await supabase
+          .from("chatbot_training_examples")
+          .update({ is_active: true })
+          .in("id", ids);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("chatbot_training_examples")
+          .delete()
+          .in("id", ids);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, { action, ids }) => {
+      queryClient.invalidateQueries({ queryKey: ["training-examples"] });
+      queryClient.invalidateQueries({ queryKey: ["training-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["auto-learn-stats"] });
+      toast.success(action === "approve" 
+        ? `${ids.length} contoh berhasil diaktifkan` 
+        : `${ids.length} contoh berhasil dihapus`);
+    },
+    onError: (error) => {
+      toast.error("Gagal: " + error.message);
+    },
+  });
+};
+
 // Training Stats
 export const useTrainingStats = () => {
   return useQuery({
