@@ -190,7 +190,7 @@ serve(async (req) => {
     <div style="display:flex;justify-content:space-between;padding:16px 40px 20px;font-size:13px;color:#444;">
       <div>P.O. NUMBER: ${booking.booking_code}</div>
       <div>PEMBELIAN MELALUI: ${paymentMethodLabel}</div>
-      <div>DETAIL TRANSAKSI: <strong>${transactionStatus}</strong></div>
+      <div>DETAIL TRANSAKSI: <strong style="text-transform:uppercase;font-weight:700;">${transactionStatus.toUpperCase()}</strong></div>
     </div>
 
     <!-- Data Pemesan -->
