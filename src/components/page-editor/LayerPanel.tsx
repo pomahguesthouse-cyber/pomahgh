@@ -21,6 +21,11 @@ import {
   LayoutGrid,
   Code,
   Rows,
+  Video,
+  Star,
+  Share2,
+  MessageCircle,
+  MapPin,
 } from "lucide-react";
 
 const typeIcons: Record<string, React.ReactNode> = {
@@ -34,6 +39,11 @@ const typeIcons: Record<string, React.ReactNode> = {
   container: <Square className="h-3.5 w-3.5" />,
   gallery: <LayoutGrid className="h-3.5 w-3.5" />,
   html: <Code className="h-3.5 w-3.5" />,
+  video: <Video className="h-3.5 w-3.5" />,
+  icon: <Star className="h-3.5 w-3.5" />,
+  "social-links": <Share2 className="h-3.5 w-3.5" />,
+  "whatsapp-button": <MessageCircle className="h-3.5 w-3.5" />,
+  "map-embed": <MapPin className="h-3.5 w-3.5" />,
 };
 
 function getElementLabel(el: EditorElement): string {
