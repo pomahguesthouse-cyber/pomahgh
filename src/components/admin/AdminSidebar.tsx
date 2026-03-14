@@ -107,10 +107,6 @@ const menuGroups: MenuGroup[] = [{
     title: "Booking.com",
     url: "/admin/booking-com",
     icon: RefreshCw
-  }, {
-    title: "Invoice Template",
-    url: "/admin/invoice-template",
-    icon: FileText
   }]
 }, {
   label: "System",

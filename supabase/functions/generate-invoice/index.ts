@@ -298,38 +298,28 @@ serve(async (req) => {
 </html>
     `;
 
-    // Send email if requested
+    // Send email if requested via transactional email queue
     let emailSent = false;
     if (send_email && booking.guest_email) {
-      const resendApiKey = Deno.env.get("RESEND_API_KEY");
-      if (resendApiKey) {
-        try {
-          const emailResponse = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${resendApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: `${hotelSettings.hotel_name || 'Pomah Guesthouse'} <invoice@${Deno.env.get("RESEND_DOMAIN") || "pomahguesthouse.com"}>`,
-              to: [booking.guest_email],
-              subject: `Invoice #${booking.booking_code} - ${hotelSettings.hotel_name || 'Pomah Guesthouse'}`,
-              html: invoiceHtml,
-            }),
-          });
-
-          if (emailResponse.ok) {
-            emailSent = true;
-            console.log("Invoice email sent successfully to:", booking.guest_email);
-          } else {
-            const errData = await emailResponse.text();
-            console.error("Failed to send email:", errData);
+      try {
+        const { error: enqueueError } = await supabase.rpc('enqueue_email', {
+          queue_name: 'transactional_emails',
+          email_payload: {
+            to: booking.guest_email,
+            subject: `Invoice #${booking.booking_code} - ${hotelSettings.hotel_name || 'Pomah Guesthouse'}`,
+            html: invoiceHtml,
+            from_name: hotelSettings.hotel_name || 'Pomah Guesthouse',
           }
-        } catch (emailError) {
-          console.error("Email sending error:", emailError);
+        });
+
+        if (enqueueError) {
+          console.error("Failed to enqueue invoice email:", enqueueError);
+        } else {
+          emailSent = true;
+          console.log("Invoice email enqueued successfully for:", booking.guest_email);
         }
-      } else {
-        console.warn("RESEND_API_KEY not configured, skipping email");
+      } catch (emailError) {
+        console.error("Email enqueue error:", emailError);
       }
     }
 
