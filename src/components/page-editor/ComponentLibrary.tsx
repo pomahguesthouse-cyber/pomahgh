@@ -14,6 +14,11 @@ import {
   Rows,
   LayoutTemplate,
   Puzzle,
+  Video,
+  Star,
+  Share2,
+  MessageCircle,
+  MapPin,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
