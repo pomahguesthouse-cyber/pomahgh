@@ -38,9 +38,11 @@ export const SessionRow = ({ session }: SessionRowProps) => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-medium">{session.phone_number}</p>
+              <p className="font-medium">
+                {session.guest_name || session.phone_number}
+              </p>
               {session.guest_name && (
-                <span className="text-sm text-muted-foreground">({session.guest_name})</span>
+                <span className="text-xs text-muted-foreground">{session.phone_number}</span>
               )}
               {session.is_takeover && (
                 <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
