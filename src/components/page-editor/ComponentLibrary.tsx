@@ -1,28 +1,9 @@
 import { useState } from "react";
-import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import {
-  Type,
-  AlignLeft,
-  Image,
-  MousePointerClick,
-  Minus,
-  Square,
-  LayoutGrid,
-  Code,
   GripVertical,
-  Rows,
-  LayoutTemplate,
-  Puzzle,
-  Video,
-  Star,
-  Share2,
-  MessageCircle,
-  MapPin,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { allTemplates, SectionTemplate } from "./section-templates/templateRegistry";
 import { useEditorStore } from "@/stores/editorStore";
 
