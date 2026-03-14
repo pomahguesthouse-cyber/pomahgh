@@ -295,28 +295,40 @@ serve(async (req) => {
 </html>
     `;
 
-    // Send email if requested
+    // Send email if requested via Resend
     let emailSent = false;
     if (send_email && booking.guest_email) {
       try {
-        const { error: enqueueError } = await supabase.rpc('enqueue_email', {
-          queue_name: 'transactional_emails',
-          email_payload: {
-            to: booking.guest_email,
-            subject: `Bukti Pemesanan #${booking.booking_code} - ${hotelSettings.hotel_name || 'Pomah Guesthouse'}`,
-            html: invoiceHtml,
-            from_name: hotelSettings.hotel_name || 'Pomah Guesthouse',
-          }
-        });
-
-        if (enqueueError) {
-          console.error("Failed to enqueue invoice email:", enqueueError);
+        const resendApiKey = Deno.env.get("RESEND_API_KEY");
+        if (!resendApiKey) {
+          console.error("RESEND_API_KEY not configured");
         } else {
-          emailSent = true;
-          console.log("Invoice email enqueued successfully for:", booking.guest_email);
+          const hotelName = hotelSettings.hotel_name || 'Pomah Guesthouse';
+          const resendResponse = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: `${hotelName} <noreply@notify.pomahguesthouse.com>`,
+              to: [booking.guest_email],
+              subject: `Bukti Pemesanan #${booking.booking_code} - ${hotelName}`,
+              html: invoiceHtml,
+            }),
+          });
+
+          const resendResult = await resendResponse.json();
+
+          if (resendResponse.ok) {
+            emailSent = true;
+            console.log("Invoice email sent via Resend to:", booking.guest_email, "ID:", resendResult.id);
+          } else {
+            console.error("Resend API error:", resendResult);
+          }
         }
       } catch (emailError) {
-        console.error("Email enqueue error:", emailError);
+        console.error("Email send error:", emailError);
       }
     }
 
