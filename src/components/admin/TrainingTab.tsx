@@ -231,7 +231,121 @@ export default function TrainingTab() {
         </Card>
       </div>
 
-      {/* Main Content */}
+      {/* Auto-Learn from WhatsApp */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="w-5 h-5" />
+                Auto-Learn dari WhatsApp
+              </CardTitle>
+              <CardDescription>
+                Gunakan AI untuk mengekstrak contoh Q&A dari log percakapan WhatsApp secara otomatis
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={() => extractTraining.mutate()} 
+              disabled={extractTraining.isPending}
+            >
+              {extractTraining.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4 mr-2" />
+              )}
+              {extractTraining.isPending ? "Menganalisis..." : "Analisis Log WhatsApp"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4 text-sm text-muted-foreground mb-4">
+            <span>📊 {autoLearnStats?.analyzedConversations || 0} percakapan sudah dianalisis</span>
+            <span>📝 {autoLearnStats?.pendingDrafts || 0} draft menunggu review</span>
+          </div>
+          
+          {/* Draft examples from auto-extraction */}
+          {(() => {
+            const drafts = examples?.filter(e => e.source === "auto_whatsapp" && !e.is_active) || [];
+            if (drafts.length === 0) return (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Belum ada draft dari auto-learn. Klik "Analisis Log WhatsApp" untuk mulai.
+              </p>
+            );
+            
+            const draftIds = drafts.map(d => d.id);
+            return (
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => bulkApprove.mutate({ ids: draftIds, action: "approve" })}
+                    disabled={bulkApprove.isPending}
+                  >
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Approve Semua ({drafts.length})
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="text-destructive"
+                    onClick={() => bulkApprove.mutate({ ids: draftIds, action: "reject" })}
+                    disabled={bulkApprove.isPending}
+                  >
+                    <XCircle className="w-3 h-3 mr-1" />
+                    Hapus Semua
+                  </Button>
+                </div>
+                {drafts.map((draft) => (
+                  <div key={draft.id} className="border rounded-lg p-3 bg-muted/30">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">Draft</Badge>
+                          <Badge variant="outline">
+                            {CATEGORIES.find(c => c.value === draft.category)?.emoji}{' '}
+                            {CATEGORIES.find(c => c.value === draft.category)?.label || draft.category}
+                          </Badge>
+                        </div>
+                        <p className="text-sm"><span className="font-medium">Q:</span> {draft.question}</p>
+                        <p className="text-sm text-muted-foreground"><span className="font-medium">A:</span> {draft.ideal_answer}</p>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-8 w-8"
+                          onClick={() => bulkApprove.mutate({ ids: [draft.id], action: "approve" })}
+                        >
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => handleEdit(draft)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-8 w-8"
+                          onClick={() => bulkApprove.mutate({ ids: [draft.id], action: "reject" })}
+                        >
+                          <XCircle className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
