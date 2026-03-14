@@ -129,7 +129,6 @@ export const useBooking = () => {
       
       // Notify managers via WhatsApp
       try {
-        // Fetch room name for notification
         const { data: roomData } = await supabase
           .from("rooms")
           .select("name")
@@ -156,9 +155,19 @@ export const useBooking = () => {
       } catch (e) {
         console.error("Failed to notify managers:", e);
       }
+
+      // Auto-generate invoice and send to guest email
+      try {
+        await supabase.functions.invoke('generate-invoice', {
+          body: { booking_id: bookingData.id, send_email: true }
+        });
+        console.log('✅ Invoice auto-generated and sent to:', bookingData.guest_email);
+      } catch (e) {
+        console.error("Failed to auto-generate invoice:", e);
+      }
       
       toast.success("Booking berhasil!", {
-        description: "Terima kasih! Kami akan mengirimkan konfirmasi ke email Anda."
+        description: "Terima kasih! Bukti pemesanan telah dikirim ke email Anda."
       });
     },
     onError: (error: Error) => {

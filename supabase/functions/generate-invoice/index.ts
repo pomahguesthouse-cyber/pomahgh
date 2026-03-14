@@ -61,7 +61,6 @@ serve(async (req) => {
 
     // Calculations
     const addonTotalAmount = bookingAddons?.reduce((sum: number, a: any) => sum + (a.total_price || 0), 0) || 0;
-    const roomOnlyTotal = booking.total_price - addonTotalAmount;
     const paidAmount = booking.payment_amount || 0;
     const remainingBalance = booking.total_price - paidAmount;
 
@@ -83,22 +82,22 @@ serve(async (req) => {
       paymentMethodLabel = `Bank Transfer (${booking.bank_code.toUpperCase()})`;
     }
 
-    // Transaction status - based on payment_status field
+    // Transaction status
     const paymentStatus = booking.payment_status || 'pending';
     let transactionStatus = 'Belum Bayar';
-    let isFullyPaid = false;
+    let showPaidStamp = false;
     
     if (paymentStatus === 'paid' || paymentStatus === 'lunas') {
-      transactionStatus = 'Lunas';
-      isFullyPaid = true;
+      transactionStatus = 'LUNAS';
+      showPaidStamp = true;
     } else if (paymentStatus === 'down_payment' || paymentStatus === 'partial') {
-      transactionStatus = 'DP';
+      transactionStatus = 'DOWN PAYMENT';
+      showPaidStamp = true;
     } else if (paymentStatus === 'pay_at_hotel') {
       transactionStatus = 'Bayar di Hotel';
     } else if (remainingBalance <= 0 && paidAmount > 0) {
-      // Fallback: if amount paid covers total, mark as paid
-      transactionStatus = 'Lunas';
-      isFullyPaid = true;
+      transactionStatus = 'LUNAS';
+      showPaidStamp = true;
     }
 
     // Room list
@@ -151,7 +150,6 @@ serve(async (req) => {
         }).join('')
       : '';
 
-    // Only show 1 guest name
     const tamuList = [`1. ${booking.guest_name}`];
 
     const primaryColor = '#4a9bd9';
@@ -172,10 +170,10 @@ serve(async (req) => {
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:30px 40px 20px;border-left:5px solid ${primaryColor};">
       <div>
-        <h1 style="font-size:20px;font-weight:700;color:#222;margin:0 0 4px 0;">BUKTI PEMESANAN (RECEIPT)</h1>
+        <h1 style="font-size:20px;font-weight:700;color:#222;margin:0 0 4px 0;">BUKTI PEMESANAN ( BOOKING ORDER )</h1>
         <div style="font-size:13px;color:#666;line-height:1.6;">
-          Nomor &nbsp;: #${booking.booking_code}<br>
-          Tanggal : ${createdAtFormatted} (${createdAtDay})
+          Booking ID &nbsp;: #${booking.booking_code}<br>
+          Tanggal &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ${createdAtFormatted} (${createdAtDay})
         </div>
       </div>
       ${logoUrl ? `
@@ -188,9 +186,9 @@ serve(async (req) => {
     <!-- Detail Pembayaran -->
     <div style="background:${secondaryColor};padding:8px 40px;font-size:13px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:0.5px;border-left:5px solid ${primaryColor};">DETAIL PEMBAYARAN</div>
     <div style="display:flex;justify-content:space-between;padding:16px 40px 20px;font-size:13px;color:#444;">
-      <div>P.O. NUMBER: ${booking.booking_code}</div>
-      <div>PEMBELIAN MELALUI: ${paymentMethodLabel}</div>
-      <div>DETAIL TRANSAKSI: <strong style="text-transform:uppercase;font-weight:700;">${transactionStatus.toUpperCase()}</strong></div>
+      <div><span style="font-size:11px;color:#888;display:block;">Booking ID</span>${booking.booking_code}</div>
+      <div><span style="font-size:11px;color:#888;display:block;">PEMBELIAN MELALUI</span>${paymentMethodLabel}</div>
+      <div><span style="font-size:11px;color:#888;display:block;">DETAIL TRANSAKSI</span><strong style="font-weight:700;">${transactionStatus}</strong></div>
     </div>
 
     <!-- Data Pemesan -->
@@ -216,15 +214,18 @@ serve(async (req) => {
     <div style="padding:16px 40px 20px;">
       <p style="font-size:13px;color:#444;line-height:1.7;margin:0;">
         <strong>${hotelSettings.hotel_name || 'Pomah Guesthouse'}</strong><br>
-        ${hotelSettings.address ? `Alamat: ${hotelSettings.address}${hotelSettings.city ? `, ${hotelSettings.city}` : ''}${hotelSettings.postal_code ? `, ${hotelSettings.postal_code}` : ''}` : ''}<br>
-        <strong>Check-in: ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}</strong><br>
-        <strong>Check-out: ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}</strong><br>
+        ${hotelSettings.address ? `Alamat: ${hotelSettings.address}${hotelSettings.city ? `, ${hotelSettings.city}` : ''}${hotelSettings.postal_code ? `, ${hotelSettings.postal_code}` : ''}` : ''}
+      </p>
+      <hr style="border:none;border-top:1px solid #ddd;margin:12px 0;">
+      <p style="font-size:13px;color:#444;line-height:1.7;margin:0;">
+        <strong>Check-in &nbsp;&nbsp;: ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}</strong><br>
+        <strong>Check-out : ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}</strong><br>
         Durasi: ${booking.total_nights} malam
       </p>
     </div>
 
-    <!-- Detail Pembelian -->
-    <div style="background:${secondaryColor};padding:8px 40px;font-size:13px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:0.5px;border-left:5px solid ${primaryColor};">DETAIL PEMBELIAN</div>
+    <!-- Detail Pemesanan -->
+    <div style="background:${secondaryColor};padding:8px 40px;font-size:13px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:0.5px;border-left:5px solid ${primaryColor};">DETAIL PEMESANAN</div>
     <div style="padding:16px 40px 20px;">
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead>
@@ -247,47 +248,32 @@ serve(async (req) => {
             <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>TOTAL</strong></td>
             <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>${formatRupiah(booking.total_price)}</strong></td>
           </tr>
-          ${!isFullyPaid ? `
-          <tr>
-            <td colspan="4" style="border:none;"></td>
-            <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">KODE UNIK</td>
-            <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(uniqueCode)}</td>
-          </tr>
           <tr>
             <td colspan="4" style="border:none;"></td>
             <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>JUMLAH PEMBAYARAN</strong></td>
-            <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>${formatRupiah(totalWithCode)}</strong></td>
+            <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>${formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)}</strong></td>
           </tr>
-          ` : `
-          <tr>
-            <td colspan="4" style="border:none;"></td>
-            <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>JUMLAH PEMBAYARAN</strong></td>
-            <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>${formatRupiah(booking.total_price)}</strong></td>
-          </tr>
-          `}
         </tfoot>
       </table>
     </div>
 
-    <!-- Paid Stamp -->
-    ${isFullyPaid ? `
-    <div style="padding:40px 40px 20px;">
-      <div style="width:130px;text-align:center;">
-        ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="max-height:40px;max-width:100px;margin-bottom:4px;" crossorigin="anonymous" onerror="this.style.display='none'">` : ''}
-        <div style="background:${primaryColor};color:white;font-size:22px;font-weight:900;padding:6px 24px;border-radius:4px;display:inline-block;letter-spacing:2px;">PAID</div>
-        <div style="color:${primaryColor};font-size:11px;font-weight:600;letter-spacing:1px;margin-top:4px;">RECEIPT</div>
+    <!-- Paid Stamp - only shows when paid or down_payment -->
+    ${showPaidStamp ? `
+    <div style="text-align:center;padding:30px 40px 10px;">
+      <div style="display:inline-block;border:4px solid #2e7d32;border-radius:8px;padding:6px 28px;transform:rotate(-5deg);opacity:0.85;">
+        <span style="font-size:36px;font-weight:900;color:#2e7d32;letter-spacing:6px;font-family:'Impact','Arial Black',sans-serif;">PAID</span>
       </div>
     </div>
     ` : ''}
 
-    <!-- Payment Instructions if not paid -->
-    ${remainingBalance > 0 && bankAccounts && bankAccounts.length > 0 ? `
+    <!-- Payment Instructions if not fully paid -->
+    ${!showPaidStamp && bankAccounts && bankAccounts.length > 0 ? `
     <div style="background:${secondaryColor};padding:8px 40px;font-size:13px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:0.5px;border-left:5px solid ${primaryColor};">INSTRUKSI PEMBAYARAN</div>
     <div style="padding:16px 40px 20px;">
       <p style="font-size:13px;color:#666;margin-bottom:12px;">Silakan transfer sebesar <strong>Rp ${totalWithCode.toLocaleString('id-ID')}</strong> ke rekening berikut:</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
         ${(bankAccounts as BankAccountItem[]).map((bank) => `
-          <div style="background:#fff;padding:12px 16px;margin-bottom:8px;border-radius:4px;border:1px solid #e0e0e0;">
+          <div style="background:#fff;padding:12px 16px;margin-bottom:8px;border-radius:4px;border-left:3px solid ${primaryColor};border:1px solid #e0e0e0;">
             <strong>${bank.bank_name}</strong><br>
             No. Rek: <strong>${bank.account_number}</strong><br>
             a.n. ${bank.account_holder_name}
@@ -309,7 +295,7 @@ serve(async (req) => {
 </html>
     `;
 
-    // Send email if requested via transactional email queue
+    // Send email if requested
     let emailSent = false;
     if (send_email && booking.guest_email) {
       try {
@@ -317,7 +303,7 @@ serve(async (req) => {
           queue_name: 'transactional_emails',
           email_payload: {
             to: booking.guest_email,
-            subject: `Invoice #${booking.booking_code} - ${hotelSettings.hotel_name || 'Pomah Guesthouse'}`,
+            subject: `Bukti Pemesanan #${booking.booking_code} - ${hotelSettings.hotel_name || 'Pomah Guesthouse'}`,
             html: invoiceHtml,
             from_name: hotelSettings.hotel_name || 'Pomah Guesthouse',
           }
