@@ -122,61 +122,37 @@ export function ComponentLibrary() {
         </h2>
       </div>
 
-      <Tabs defaultValue="elements" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="grid grid-cols-2 mx-3 mt-2 shrink-0">
-          <TabsTrigger value="elements" className="text-xs gap-1">
-            <Puzzle className="h-3 w-3" />
-            Elements
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="text-xs gap-1">
-            <LayoutTemplate className="h-3 w-3" />
-            Templates
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="elements" className="flex-1 overflow-hidden m-0">
-          <ScrollArea className="h-full p-3">
-            <p className="text-[10px] text-muted-foreground mb-2">Drag to add to page</p>
-            <div className="grid grid-cols-2 gap-2">
-              {components.map((component) => (
-                <DraggableComponent key={component.type} {...component} />
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div className="p-3 space-y-1">
+            {/* Category filter */}
+            <div className="flex gap-1 flex-wrap mb-3">
+              {["all", "hero", "content", "footer"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={cn(
+                    "text-[10px] px-2 py-1 rounded-full border transition-colors",
+                    activeCategory === cat
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card text-muted-foreground border-border hover:border-primary/50"
+                  )}
+                >
+                  {cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </button>
               ))}
             </div>
-          </ScrollArea>
-        </TabsContent>
 
-        <TabsContent value="templates" className="flex-1 overflow-hidden m-0">
-          <ScrollArea className="h-full">
-            <div className="p-3 space-y-1">
-              {/* Category filter */}
-              <div className="flex gap-1 flex-wrap mb-3">
-                {["all", "hero", "content", "footer"].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    className={cn(
-                      "text-[10px] px-2 py-1 rounded-full border transition-colors",
-                      activeCategory === cat
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-card text-muted-foreground border-border hover:border-primary/50"
-                    )}
-                  >
-                    {cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  </button>
-                ))}
-              </div>
+            <p className="text-[10px] text-muted-foreground mb-2">Click to insert section</p>
 
-              <p className="text-[10px] text-muted-foreground mb-2">Click to insert section</p>
-
-              <div className="space-y-2">
-                {filteredTemplates.map((template) => (
-                  <TemplateItem key={template.id} template={template} />
-                ))}
-              </div>
+            <div className="space-y-2">
+              {filteredTemplates.map((template) => (
+                <TemplateItem key={template.id} template={template} />
+              ))}
             </div>
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
+          </div>
+        </ScrollArea>
+      </div>
     </div>
   );
 }
