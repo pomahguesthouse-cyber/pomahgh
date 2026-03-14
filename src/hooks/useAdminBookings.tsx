@@ -83,6 +83,7 @@ export const useAdminBookings = () => {
           ),
           booking_addons (
             id,
+            addon_id,
             quantity,
             unit_price,
             total_price,
