@@ -151,13 +151,8 @@ serve(async (req) => {
         }).join('')
       : '';
 
-    // Tamu list
+    // Only show 1 guest name
     const tamuList = [`1. ${booking.guest_name}`];
-    if (booking.num_guests > 1) {
-      for (let i = 2; i <= booking.num_guests; i++) {
-        tamuList.push(`${i}. Tamu ${i}`);
-      }
-    }
 
     const primaryColor = '#4a9bd9';
     const secondaryColor = '#e8f4fd';
