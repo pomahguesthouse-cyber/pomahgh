@@ -166,6 +166,7 @@ export const useEditorStore = create<EditorState>()(
     viewMode: 'desktop',
     isSaving: false,
     hasUnsavedChanges: false,
+    showLayerPanel: false,
     
     setElements: (elements) => set((state) => {
       state.elements = elements;
