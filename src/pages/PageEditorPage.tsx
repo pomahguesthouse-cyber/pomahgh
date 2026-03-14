@@ -123,12 +123,10 @@ export default function PageEditorPage() {
     setIsSaving(true);
 
     try {
-      const pageData = {
+      const pageData: Record<string, unknown> = {
         page_title: pageSettings.title,
         slug: pageSettings.slug,
         meta_description: pageSettings.metaDescription,
-        primary_keyword: pageSettings.slug,
-        hero_headline: pageSettings.title,
         page_schema: JSON.parse(JSON.stringify(elements)),
         status: pageSettings.status,
         updated_at: new Date().toISOString(),
@@ -136,6 +134,12 @@ export default function PageEditorPage() {
           published_at: new Date().toISOString(),
         }),
       };
+
+      // Only set legacy fields for new pages (insert), not updates
+      if (!pageSettings.id) {
+        pageData.primary_keyword = pageSettings.slug;
+        pageData.hero_headline = pageSettings.title;
+      }
 
       if (pageSettings.id) {
         const { error } = await supabase
