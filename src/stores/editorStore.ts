@@ -255,6 +255,45 @@ export const useEditorStore = create<EditorState>()(
       state.hasUnsavedChanges = hasChanges;
     }),
     
+    setShowLayerPanel: (show) => set((state) => {
+      state.showLayerPanel = show;
+    }),
+    
+    toggleElementVisibility: (id) => set((state) => {
+      state.elements = updateElementById(state.elements, id, {} as any);
+      // Direct mutation via immer for visibility toggle
+      const toggleVis = (els: EditorElement[]) => {
+        for (const el of els) {
+          if (el.id === id) { el.isVisible = el.isVisible === false ? true : false; return; }
+          if (el.children) toggleVis(el.children);
+        }
+      };
+      toggleVis(state.elements);
+      state.hasUnsavedChanges = true;
+    }),
+    
+    toggleElementLock: (id) => set((state) => {
+      const toggleLk = (els: EditorElement[]) => {
+        for (const el of els) {
+          if (el.id === id) { el.isLocked = !el.isLocked; return; }
+          if (el.children) toggleLk(el.children);
+        }
+      };
+      toggleLk(state.elements);
+      state.hasUnsavedChanges = true;
+    }),
+    
+    renameElement: (id, label) => set((state) => {
+      const rename = (els: EditorElement[]) => {
+        for (const el of els) {
+          if (el.id === id) { el.label = label || undefined; return; }
+          if (el.children) rename(el.children);
+        }
+      };
+      rename(state.elements);
+      state.hasUnsavedChanges = true;
+    }),
+    
     saveToHistory: () => set((state) => {
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push(JSON.parse(JSON.stringify(state.elements)));
