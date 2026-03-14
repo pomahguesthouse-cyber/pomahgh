@@ -72,11 +72,8 @@ export default function AdminBookingCom() {
       const configData = {
         name: "Booking.com",
         type: "webhook",
-        ota_provider: "booking.com",
         webhook_secret: webhookSecret,
-        receive_bookings: receiveBookings,
-        push_availability: pushAvailability,
-        booking_property_id: propertyId,
+        api_endpoint: propertyId || null,
         is_active: true,
         max_retries: 3,
         retry_delay_seconds: 60,
