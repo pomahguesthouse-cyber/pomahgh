@@ -336,6 +336,11 @@ export function EditBookingDialog({
       }
     }
     
+    // Auto-confirm booking when payment is lunas or down_payment
+    const finalStatus = (paymentStatus === "paid" || paymentStatus === "down_payment") && status === "pending"
+      ? "confirmed"
+      : status;
+
     onSave({
       id: booking?.id,
       room_id: editedRooms[0].roomId,
@@ -352,7 +357,7 @@ export function EditBookingDialog({
       allocated_room_number: editedRooms[0].roomNumber,
       special_requests: specialRequests,
       remark,
-      status,
+      status: finalStatus,
       payment_status: paymentStatus,
       payment_amount: paymentStatus === "down_payment" ? parseFloat(paymentAmount) || 0 : null,
       booking_source: bookingSource,
