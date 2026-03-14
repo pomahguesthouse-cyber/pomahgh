@@ -419,24 +419,16 @@ function StyleProperties({
       <AccordionItem value="colors">
         <AccordionTrigger className="text-sm">Colors</AccordionTrigger>
         <AccordionContent className="space-y-3">
-          <div className="space-y-2">
-            <Label className="text-xs">Text Color</Label>
-            <Input
-              type="color"
-              value={element.styles.color || "#000000"}
-              onChange={(e) => onStyleChange("color", e.target.value)}
-              className="h-10 p-1"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs">Background Color</Label>
-            <Input
-              type="color"
-              value={element.styles.backgroundColor || "#ffffff"}
-              onChange={(e) => onStyleChange("backgroundColor", e.target.value)}
-              className="h-10 p-1"
-            />
-          </div>
+          <ColorPickerField
+            label="Text Color"
+            value={element.styles.color || "#000000"}
+            onChange={(v) => onStyleChange("color", v)}
+          />
+          <ColorPickerField
+            label="Background Color"
+            value={element.styles.backgroundColor || "#ffffff"}
+            onChange={(v) => onStyleChange("backgroundColor", v)}
+          />
         </AccordionContent>
       </AccordionItem>
 
