@@ -68,6 +68,8 @@ export function EditBookingDialog({
   onSave,
   onCheckConflict,
 }: EditBookingDialogProps) {
+  const { data: availableAddons } = useAllRoomAddons();
+
   // Guest info state
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
@@ -89,6 +91,9 @@ export function EditBookingDialog({
   
   // Room selection state
   const [editedRooms, setEditedRooms] = useState<SelectedRoom[]>([]);
+  
+  // Add-ons state
+  const [editedAddons, setEditedAddons] = useState<EditAddonItem[]>([]);
   
   // Status state
   const [status, setStatus] = useState("pending");
