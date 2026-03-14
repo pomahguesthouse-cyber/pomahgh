@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { ColorPickerField } from "./ColorPickerField";
 import {
   Select,
   SelectContent,
@@ -262,6 +263,94 @@ function ContentProperties({
         </div>
       );
 
+    case "video":
+      return (
+        <div className="space-y-2">
+          <Label>Video URL</Label>
+          <Input
+            value={element.props.videoUrl || ""}
+            onChange={(e) => onPropChange("videoUrl", e.target.value)}
+            placeholder="https://youtube.com/watch?v=..."
+          />
+          <p className="text-xs text-muted-foreground">Supports YouTube and Vimeo URLs</p>
+        </div>
+      );
+
+    case "icon":
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>Icon Name</Label>
+            <Input
+              value={element.props.iconName || "Star"}
+              onChange={(e) => onPropChange("iconName", e.target.value)}
+              placeholder="Star, Heart, Home..."
+            />
+            <p className="text-xs text-muted-foreground">Lucide icon name (e.g. Star, Heart, MapPin)</p>
+          </div>
+          <div className="space-y-2">
+            <Label>Icon Size</Label>
+            <Input
+              type="number"
+              value={element.props.iconSize || 48}
+              onChange={(e) => onPropChange("iconSize", parseInt(e.target.value) || 48)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Icon Color</Label>
+            <Input
+              type="color"
+              value={element.props.iconColor || "#0f172a"}
+              onChange={(e) => onPropChange("iconColor", e.target.value)}
+              className="h-10 p-1"
+            />
+          </div>
+        </>
+      );
+
+    case "whatsapp-button":
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>Phone Number</Label>
+            <Input
+              value={element.props.phoneNumber || ""}
+              onChange={(e) => onPropChange("phoneNumber", e.target.value)}
+              placeholder="628123456789"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Button Label</Label>
+            <Input
+              value={element.props.label || ""}
+              onChange={(e) => onPropChange("label", e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Default Message</Label>
+            <Textarea
+              value={element.props.message || ""}
+              onChange={(e) => onPropChange("message", e.target.value)}
+              rows={3}
+            />
+          </div>
+        </>
+      );
+
+    case "map-embed":
+      return (
+        <div className="space-y-2">
+          <Label>Google Maps Embed URL</Label>
+          <Textarea
+            value={element.props.embedUrl || ""}
+            onChange={(e) => onPropChange("embedUrl", e.target.value)}
+            rows={3}
+            placeholder="https://www.google.com/maps/embed?..."
+          />
+          <p className="text-xs text-muted-foreground">Get embed URL from Google Maps → Share → Embed</p>
+        </div>
+      );
+
     default:
       return (
         <p className="text-sm text-muted-foreground">
@@ -330,24 +419,16 @@ function StyleProperties({
       <AccordionItem value="colors">
         <AccordionTrigger className="text-sm">Colors</AccordionTrigger>
         <AccordionContent className="space-y-3">
-          <div className="space-y-2">
-            <Label className="text-xs">Text Color</Label>
-            <Input
-              type="color"
-              value={element.styles.color || "#000000"}
-              onChange={(e) => onStyleChange("color", e.target.value)}
-              className="h-10 p-1"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs">Background Color</Label>
-            <Input
-              type="color"
-              value={element.styles.backgroundColor || "#ffffff"}
-              onChange={(e) => onStyleChange("backgroundColor", e.target.value)}
-              className="h-10 p-1"
-            />
-          </div>
+          <ColorPickerField
+            label="Text Color"
+            value={element.styles.color || "#000000"}
+            onChange={(v) => onStyleChange("color", v)}
+          />
+          <ColorPickerField
+            label="Background Color"
+            value={element.styles.backgroundColor || "#ffffff"}
+            onChange={(v) => onStyleChange("backgroundColor", v)}
+          />
         </AccordionContent>
       </AccordionItem>
 

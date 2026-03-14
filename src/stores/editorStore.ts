@@ -24,11 +24,14 @@ export interface ElementStyles {
 
 export interface EditorElement {
   id: string;
-  type: 'section' | 'heading' | 'paragraph' | 'image' | 'button' | 'spacer' | 'divider' | 'container' | 'gallery' | 'html';
+  type: 'section' | 'heading' | 'paragraph' | 'image' | 'button' | 'spacer' | 'divider' | 'container' | 'gallery' | 'html' | 'video' | 'icon' | 'social-links' | 'whatsapp-button' | 'map-embed';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic props per element type; typed narrowing deferred
   props: Record<string, any>;
   styles: ElementStyles;
   children?: EditorElement[];
+  isVisible?: boolean;
+  isLocked?: boolean;
+  label?: string;
 }
 
 export interface PageSettings {
@@ -56,6 +59,7 @@ interface EditorState {
   // UI State
   isDragging: boolean;
   viewMode: 'desktop' | 'tablet' | 'mobile';
+  showLayerPanel: boolean;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
   
@@ -74,6 +78,10 @@ interface EditorState {
   setViewMode: (mode: 'desktop' | 'tablet' | 'mobile') => void;
   setIsDragging: (isDragging: boolean) => void;
   setIsSaving: (isSaving: boolean) => void;
+  setShowLayerPanel: (show: boolean) => void;
+  toggleElementVisibility: (id: string) => void;
+  toggleElementLock: (id: string) => void;
+  renameElement: (id: string, label: string) => void;
   setHasUnsavedChanges: (hasChanges: boolean) => void;
   
   undo: () => void;
@@ -158,6 +166,7 @@ export const useEditorStore = create<EditorState>()(
     viewMode: 'desktop',
     isSaving: false,
     hasUnsavedChanges: false,
+    showLayerPanel: false,
     
     setElements: (elements) => set((state) => {
       state.elements = elements;
@@ -244,6 +253,43 @@ export const useEditorStore = create<EditorState>()(
     
     setHasUnsavedChanges: (hasChanges) => set((state) => {
       state.hasUnsavedChanges = hasChanges;
+    }),
+    
+    setShowLayerPanel: (show) => set((state) => {
+      state.showLayerPanel = show;
+    }),
+    
+    toggleElementVisibility: (id) => set((state) => {
+      const toggleVis = (els: EditorElement[]) => {
+        for (const el of els) {
+          if (el.id === id) { el.isVisible = el.isVisible === false ? true : false; return; }
+          if (el.children) toggleVis(el.children);
+        }
+      };
+      toggleVis(state.elements);
+      state.hasUnsavedChanges = true;
+    }),
+    
+    toggleElementLock: (id) => set((state) => {
+      const toggleLk = (els: EditorElement[]) => {
+        for (const el of els) {
+          if (el.id === id) { el.isLocked = !el.isLocked; return; }
+          if (el.children) toggleLk(el.children);
+        }
+      };
+      toggleLk(state.elements);
+      state.hasUnsavedChanges = true;
+    }),
+    
+    renameElement: (id, label) => set((state) => {
+      const rename = (els: EditorElement[]) => {
+        for (const el of els) {
+          if (el.id === id) { el.label = label || undefined; return; }
+          if (el.children) rename(el.children);
+        }
+      };
+      rename(state.elements);
+      state.hasUnsavedChanges = true;
     }),
     
     saveToHistory: () => set((state) => {
