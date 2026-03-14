@@ -1,0 +1,1 @@
+ALTER TABLE public.whatsapp_sessions ADD COLUMN IF NOT EXISTS awaiting_name boolean DEFAULT false;

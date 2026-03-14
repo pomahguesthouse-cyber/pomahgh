@@ -3574,6 +3574,7 @@ export type Database = {
       }
       whatsapp_sessions: {
         Row: {
+          awaiting_name: boolean | null
           booking_data: Json | null
           context: Json | null
           conversation_id: string | null
@@ -3593,6 +3594,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          awaiting_name?: boolean | null
           booking_data?: Json | null
           context?: Json | null
           conversation_id?: string | null
@@ -3612,6 +3614,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          awaiting_name?: boolean | null
           booking_data?: Json | null
           context?: Json | null
           conversation_id?: string | null
