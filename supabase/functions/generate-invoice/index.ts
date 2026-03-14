@@ -60,6 +60,8 @@ serve(async (req) => {
       .eq("booking_id", booking_id);
 
     // Calculations
+    const addonTotalAmount = bookingAddons?.reduce((sum: number, a: any) => sum + (a.total_price || 0), 0) || 0;
+    const roomOnlyTotal = booking.total_price - addonTotalAmount;
     const paidAmount = booking.payment_amount || 0;
     const remainingBalance = booking.total_price - paidAmount;
     const isFullyPaid = remainingBalance <= 0;
