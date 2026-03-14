@@ -306,6 +306,22 @@ export function BookingAccordionItem({
             <PaymentInfo booking={booking} />
           </div>
 
+          {/* Add-ons */}
+          {booking.booking_addons && booking.booking_addons.length > 0 && (
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <span className="text-emerald-700 dark:text-emerald-400 text-xs font-semibold flex items-center gap-1">
+                <Package className="h-3 w-3" /> Layanan Tambahan:
+              </span>
+              <div className="mt-1 space-y-0.5">
+                {booking.booking_addons.map((addon) => (
+                  <p key={addon.id} className="text-sm text-emerald-800 dark:text-emerald-300">
+                    • {addon.room_addons?.name || 'Add-on'} x{addon.quantity} — {formatRupiahID(addon.total_price)}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Remark & Special Requests */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             {booking.remark && (
