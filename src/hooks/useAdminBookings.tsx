@@ -234,6 +234,34 @@ export const useAdminBookings = () => {
         }
       }
 
+      // Handle editedAddons - delete and re-insert
+      if (editedAddons && Array.isArray(editedAddons)) {
+        // Delete existing booking_addons
+        await supabase
+          .from("booking_addons")
+          .delete()
+          .eq("booking_id", booking.id);
+
+        // Insert new addons if any
+        if (editedAddons.length > 0) {
+          const addonsData = editedAddons.map(addon => ({
+            booking_id: booking.id,
+            addon_id: addon.addon_id,
+            quantity: addon.quantity,
+            unit_price: addon.unit_price,
+            total_price: addon.total_price,
+          }));
+
+          const { error: addonInsertError } = await supabase
+            .from("booking_addons")
+            .insert(addonsData);
+
+          if (addonInsertError) {
+            console.error("Error inserting booking_addons:", addonInsertError);
+          }
+        }
+      }
+
       return data;
     },
     onSuccess: () => {
