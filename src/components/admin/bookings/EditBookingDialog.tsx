@@ -100,6 +100,13 @@ export function EditBookingDialog({
   const [paymentStatus, setPaymentStatus] = useState("unpaid");
   const [paymentAmount, setPaymentAmount] = useState("");
   
+  // Auto-confirm when payment status changes to paid or down_payment
+  useEffect(() => {
+    if ((paymentStatus === "paid" || paymentStatus === "down_payment") && status === "pending") {
+      setStatus("confirmed");
+    }
+  }, [paymentStatus]);
+
   // Custom pricing state
   const [useCustomPrice, setUseCustomPrice] = useState(false);
   const [customPriceMode, setCustomPriceMode] = useState<"per_night" | "total">("per_night");
