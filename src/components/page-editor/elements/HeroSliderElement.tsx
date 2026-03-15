@@ -97,7 +97,7 @@ export function HeroSliderElement({
   if (layout === "split") {
     return (
       <ElementWrapper
-        element={element}
+        id={element.id}
         isSelected={isSelected}
         isHovered={isHovered}
         onSelect={onSelect}
@@ -192,7 +192,7 @@ export function HeroSliderElement({
 
   return (
     <ElementWrapper
-      element={element}
+      id={element.id}
       isSelected={isSelected}
       isHovered={isHovered}
       onSelect={onSelect}
@@ -284,7 +284,7 @@ export function HeroSliderElement({
         {/* Dot Indicators */}
         {showDots && slides.length > 1 && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-            {slides.map((_, index) => (
+            {slides.map((_: any, index: number) => (
               <button
                 key={index}
                 onClick={(e) => {

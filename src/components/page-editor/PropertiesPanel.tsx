@@ -38,7 +38,7 @@ export function PropertiesPanel() {
 
   const selectedElement = selectedElementId ? findElement(elements, selectedElementId) : null;
 
-  const handlePropChange = (key: string, value: string | number | boolean) => {
+  const handlePropChange = (key: string, value: any) => {
     if (!selectedElement) return;
     saveToHistory();
     updateElement(selectedElement.id, {
@@ -124,7 +124,7 @@ function ContentProperties({
   onPropChange,
 }: {
   element: EditorElement;
-  onPropChange: (key: string, value: string | number | boolean) => void;
+  onPropChange: (key: string, value: any) => void;
 }) {
   switch (element.type) {
     case "heading":
@@ -351,6 +351,9 @@ function ContentProperties({
         </div>
       );
 
+    case "gallery":
+      return <GalleryContentProperties element={element} onPropChange={onPropChange} />;
+
     case "hero-slider":
       const slides = element.props.slides || [];
       const handleAddSlide = () => {
@@ -576,6 +579,157 @@ function ContentProperties({
         </p>
       );
   }
+}
+
+function GalleryContentProperties({
+  element,
+  onPropChange,
+}: {
+  element: EditorElement;
+  onPropChange: (key: string, value: any) => void;
+}) {
+  const images = element.props.images || [];
+  const galleryMode = element.props.galleryMode || "grid";
+
+  const handleAddImage = () => {
+    onPropChange("images", [...images, { src: "", alt: "" }]);
+  };
+
+  const handleUpdateImage = (index: number, field: string, value: string) => {
+    const updated = images.map((img: any, i: number) =>
+      i === index ? { ...img, [field]: value } : img
+    );
+    onPropChange("images", updated);
+  };
+
+  const handleDeleteImage = (index: number) => {
+    onPropChange("images", images.filter((_: any, i: number) => i !== index));
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>Gallery Mode</Label>
+        <Select
+          value={galleryMode}
+          onValueChange={(v) => onPropChange("galleryMode", v)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="grid">Grid</SelectItem>
+            <SelectItem value="slider">Slider</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {galleryMode === "slider" && (
+        <>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={element.props.autoPlay !== false}
+              onChange={(e) => onPropChange("autoPlay", e.target.checked)}
+              id="galleryAutoPlay"
+            />
+            <Label htmlFor="galleryAutoPlay">Auto Play</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={element.props.showArrows !== false}
+              onChange={(e) => onPropChange("showArrows", e.target.checked)}
+              id="galleryShowArrows"
+            />
+            <Label htmlFor="galleryShowArrows">Show Arrows</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={element.props.showDots !== false}
+              onChange={(e) => onPropChange("showDots", e.target.checked)}
+              id="galleryShowDots"
+            />
+            <Label htmlFor="galleryShowDots">Show Dots</Label>
+          </div>
+        </>
+      )}
+
+      <div className="border-t border-border pt-4 mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <Label className="font-medium">Images ({images.length})</Label>
+          <Button variant="outline" size="sm" onClick={handleAddImage} className="h-7 text-xs">
+            + Add Image
+          </Button>
+        </div>
+
+        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+          {images.map((img: any, index: number) => (
+            <div key={index} className="p-3 border border-border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium">Image {index + 1}</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    className="px-2 py-1 rounded text-xs hover:bg-accent"
+                    onClick={() => {
+                      if (index <= 0) return;
+                      const updated = [...images];
+                      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+                      onPropChange("images", updated);
+                    }}
+                    disabled={index === 0}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    className="px-2 py-1 rounded text-xs hover:bg-accent"
+                    onClick={() => {
+                      if (index >= images.length - 1) return;
+                      const updated = [...images];
+                      [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
+                      onPropChange("images", updated);
+                    }}
+                    disabled={index >= images.length - 1}
+                  >
+                    ↓
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteImage(index)}
+                    className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                  >
+                    ×
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-[10px]">Image URL</Label>
+                  <Input
+                    value={img.src || ""}
+                    onChange={(e) => handleUpdateImage(index, "src", e.target.value)}
+                    placeholder="https://..."
+                    className="h-7 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Alt Text</Label>
+                  <Input
+                    value={img.alt || ""}
+                    onChange={(e) => handleUpdateImage(index, "alt", e.target.value)}
+                    placeholder="Image description"
+                    className="h-7 text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
 }
 
 function StyleProperties({
