@@ -38,7 +38,7 @@ export function PropertiesPanel() {
 
   const selectedElement = selectedElementId ? findElement(elements, selectedElementId) : null;
 
-  const handlePropChange = (key: string, value: string | number | boolean) => {
+  const handlePropChange = (key: string, value: any) => {
     if (!selectedElement) return;
     saveToHistory();
     updateElement(selectedElement.id, {
