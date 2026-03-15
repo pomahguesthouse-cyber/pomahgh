@@ -681,6 +681,7 @@ function GalleryContentProperties({
             />
             <Label htmlFor="galleryShowDots">Show Dots</Label>
           </div>
+          <TransitionEffectPicker value={element.props.transitionEffect || "fade"} onChange={(v) => onPropChange("transitionEffect", v)} />
         </>
       )}
 
