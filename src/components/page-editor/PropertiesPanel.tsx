@@ -214,9 +214,10 @@ function ContentProperties({
                 <SelectItem value="secondary">Secondary</SelectItem>
                 <SelectItem value="outline">Outline</SelectItem>
                 <SelectItem value="ghost">Ghost</SelectItem>
-              </SelectContent>
+          </SelectContent>
             </Select>
           </div>
+          <FontFamilyPicker value={element.props.fontFamily || "___default___"} onChange={(v: string) => onPropChange("fontFamily", v === "___default___" ? "" : v)} />
         </>
       );
 
