@@ -89,7 +89,7 @@ export function MapEmbedElement({
       ) : (
         <div
           className="w-full bg-muted rounded-lg flex flex-col items-center justify-center gap-2 text-muted-foreground"
-          style={{ height: minHeight, borderRadius }}
+          style={{ height: mapHeight, borderRadius }}
         >
           <MapPin className="h-8 w-8 opacity-40" />
           <span className="text-sm font-medium">Google Maps Embed</span>
