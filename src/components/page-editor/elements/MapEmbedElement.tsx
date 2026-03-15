@@ -36,6 +36,7 @@ export function MapEmbedElement({
     containerPadding = "0px",
     mapHeight = "400px",
     mapBorderRadius = "8px",
+    mapZoom = 15,
   } = element.props;
 
   const {
@@ -56,9 +57,8 @@ export function MapEmbedElement({
         .then(({ data }) => {
           if (data) {
             if (data.google_place_id) {
-              // Use Place ID for more accurate embed
               setHotelMapUrl(
-                `https://www.google.com/maps?q=place_id:${data.google_place_id}&output=embed`
+                `https://www.google.com/maps?q=place_id:${data.google_place_id}&z=${mapZoom}&output=embed`
               );
             } else if (data.latitude && data.longitude) {
               const query = encodeURIComponent(
@@ -67,13 +67,13 @@ export function MapEmbedElement({
                   : `${data.latitude},${data.longitude}`
               );
               setHotelMapUrl(
-                `https://www.google.com/maps?q=${query}&output=embed`
+                `https://www.google.com/maps?q=${query}&z=${mapZoom}&output=embed`
               );
             }
           }
         });
     }
-  }, [useHotelLocation, embedUrl]);
+  }, [useHotelLocation, embedUrl, mapZoom]);
 
   const finalUrl = embedUrl || hotelMapUrl;
   const borderRadius = mapBorderRadius;
