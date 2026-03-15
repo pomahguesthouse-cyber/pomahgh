@@ -519,6 +519,7 @@ function HeroSliderContentProperties({
 }
 
 
+function ImageContentProperties({
   element,
   onPropChange,
 }: {
