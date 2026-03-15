@@ -32,6 +32,7 @@ export function GalleryElement({
         autoPlay={autoPlay}
         showArrows={showArrows}
         showDots={showDots}
+        transitionEffect={transitionEffect}
         marginTop={marginTop}
         marginBottom={marginBottom}
         element={element}
