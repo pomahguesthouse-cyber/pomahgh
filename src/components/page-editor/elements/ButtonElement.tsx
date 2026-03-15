@@ -91,6 +91,7 @@ export function ButtonElement({
         }}
         onDoubleClick={handleDoubleClick}
         className={cn("cursor-pointer", isEditing && "ring-2 ring-primary/50")}
+        style={{ fontFamily: element.props.fontFamily || undefined }}
       >
         {isEditing ? (
           <span
