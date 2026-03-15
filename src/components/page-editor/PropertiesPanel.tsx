@@ -396,6 +396,19 @@ function ContentProperties({
           )}
 
           <div className="space-y-2">
+            <Label>Zoom Level: {element.props.mapZoom || 15}</Label>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={element.props.mapZoom || 15}
+              onChange={(e) => onPropChange("mapZoom", parseInt(e.target.value))}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">1 = Dunia, 20 = Bangunan</p>
+          </div>
+
+          <div className="space-y-2">
             <Label>Map Height</Label>
             <Select value={element.props.mapHeight || "400px"} onValueChange={(v: string) => onPropChange("mapHeight", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>

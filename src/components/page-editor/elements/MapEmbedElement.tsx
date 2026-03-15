@@ -36,6 +36,7 @@ export function MapEmbedElement({
     containerPadding = "0px",
     mapHeight = "400px",
     mapBorderRadius = "8px",
+    mapZoom = 15,
   } = element.props;
 
   const {
