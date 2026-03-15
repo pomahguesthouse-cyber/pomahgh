@@ -20,7 +20,7 @@ export function GalleryElement({
   onHover,
   isPreview = false,
 }: GalleryElementProps) {
-  const { images = [], galleryMode = "grid", autoPlay = true, showArrows = true, showDots = true } = element.props;
+  const { images = [], galleryMode = "grid", autoPlay = true, showArrows = true, showDots = true, transitionEffect = "fade" } = element.props;
   const { columns = 3, gap = "16px", marginTop, marginBottom } = element.styles;
 
   const isSlider = galleryMode === "slider";
