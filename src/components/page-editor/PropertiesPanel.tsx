@@ -325,6 +325,7 @@ function ContentProperties({
               rows={3}
             />
           </div>
+          <FontFamilyPicker value={element.props.fontFamily || "___default___"} onChange={(v: string) => onPropChange("fontFamily", v === "___default___" ? "" : v)} />
         </>
       );
 
