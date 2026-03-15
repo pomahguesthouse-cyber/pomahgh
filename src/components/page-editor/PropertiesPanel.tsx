@@ -175,24 +175,7 @@ function ContentProperties({
 
     case "image":
       return (
-        <>
-          <div className="space-y-2">
-            <Label>Image URL</Label>
-            <Input
-              value={element.props.src || ""}
-              onChange={(e) => onPropChange("src", e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Alt Text</Label>
-            <Input
-              value={element.props.alt || ""}
-              onChange={(e) => onPropChange("alt", e.target.value)}
-              placeholder="Image description"
-            />
-          </div>
-        </>
+        <ImageContentProperties element={element} onPropChange={onPropChange} />
       );
 
     case "button":
