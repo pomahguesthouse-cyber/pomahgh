@@ -247,7 +247,7 @@ export function ComponentLibrary() {
     : allTemplates;
 
   return (
-    <div className="w-72 border-r border-border bg-background flex flex-col h-full">
+    <div className="w-full flex flex-col h-full">
       <div className="p-4 border-b border-border">
         <h2 className="font-semibold text-foreground flex items-center gap-2 mb-3">
           <Plus className="h-4 w-4" />
