@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useEditorStore, EditorElement } from "@/stores/editorStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Paintbrush, Layout } from "lucide-react";
+import { Settings, Paintbrush, Layout, Image as ImageIcon } from "lucide-react";
+import { MediaPickerDialog } from "@/components/admin/MediaPickerDialog";
+import { MediaFile } from "@/hooks/useMediaLibrary";
 
 export function PropertiesPanel() {
   const { elements, selectedElementId, updateElement, saveToHistory } = useEditorStore();
@@ -172,24 +175,7 @@ function ContentProperties({
 
     case "image":
       return (
-        <>
-          <div className="space-y-2">
-            <Label>Image URL</Label>
-            <Input
-              value={element.props.src || ""}
-              onChange={(e) => onPropChange("src", e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Alt Text</Label>
-            <Input
-              value={element.props.alt || ""}
-              onChange={(e) => onPropChange("alt", e.target.value)}
-              placeholder="Image description"
-            />
-          </div>
-        </>
+        <ImageContentProperties element={element} onPropChange={onPropChange} />
       );
 
     case "button":
@@ -581,6 +567,73 @@ function ContentProperties({
   }
 }
 
+function ImageContentProperties({
+  element,
+  onPropChange,
+}: {
+  element: EditorElement;
+  onPropChange: (key: string, value: any) => void;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const handleSelect = (media: MediaFile) => {
+    onPropChange("src", media.file_url);
+    if (media.alt_text) onPropChange("alt", media.alt_text);
+    setPickerOpen(false);
+  };
+
+  return (
+    <>
+      {element.props.src ? (
+        <div className="space-y-2">
+          <Label>Image</Label>
+          <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-lg border">
+            <div
+              className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setPickerOpen(true)}
+            >
+              <img src={element.props.src} alt={element.props.alt || ""} className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} className="h-7 text-xs w-full">
+                Ganti Gambar
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => onPropChange("src", "")} className="h-7 text-xs w-full text-destructive hover:text-destructive">
+                Hapus
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Label>Image</Label>
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="w-full border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
+          >
+            <ImageIcon className="h-8 w-8 mb-2" />
+            <p className="text-xs">Pilih dari Media Library</p>
+          </button>
+        </div>
+      )}
+      <div className="space-y-2">
+        <Label>Alt Text</Label>
+        <Input
+          value={element.props.alt || ""}
+          onChange={(e) => onPropChange("alt", e.target.value)}
+          placeholder="Deskripsi gambar untuk SEO"
+        />
+      </div>
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={handleSelect}
+        fileType="image"
+      />
+    </>
+  );
+}
+
 function GalleryContentProperties({
   element,
   onPropChange,
@@ -590,20 +643,38 @@ function GalleryContentProperties({
 }) {
   const images = element.props.images || [];
   const galleryMode = element.props.galleryMode || "grid";
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const handleAddImage = () => {
-    onPropChange("images", [...images, { src: "", alt: "" }]);
+  const handlePickerSelect = (media: MediaFile) => {
+    const newImage = { src: media.file_url, alt: media.alt_text || "" };
+    if (editingIndex !== null) {
+      const updated = images.map((img: any, i: number) =>
+        i === editingIndex ? newImage : img
+      );
+      onPropChange("images", updated);
+      setEditingIndex(null);
+    } else {
+      onPropChange("images", [...images, newImage]);
+    }
+    setPickerOpen(false);
   };
 
-  const handleUpdateImage = (index: number, field: string, value: string) => {
-    const updated = images.map((img: any, i: number) =>
-      i === index ? { ...img, [field]: value } : img
-    );
-    onPropChange("images", updated);
+  const handlePickerSelectMultiple = (mediaFiles: MediaFile[]) => {
+    const newImages = mediaFiles.map((m) => ({ src: m.file_url, alt: m.alt_text || "" }));
+    onPropChange("images", [...images, ...newImages]);
+    setPickerOpen(false);
   };
 
   const handleDeleteImage = (index: number) => {
     onPropChange("images", images.filter((_: any, i: number) => i !== index));
+  };
+
+  const handleUpdateAlt = (index: number, alt: string) => {
+    const updated = images.map((img: any, i: number) =>
+      i === index ? { ...img, alt } : img
+    );
+    onPropChange("images", updated);
   };
 
   return (
@@ -659,75 +730,97 @@ function GalleryContentProperties({
       <div className="border-t border-border pt-4 mt-4">
         <div className="flex items-center justify-between mb-3">
           <Label className="font-medium">Images ({images.length})</Label>
-          <Button variant="outline" size="sm" onClick={handleAddImage} className="h-7 text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { setEditingIndex(null); setPickerOpen(true); }}
+            className="h-7 text-xs"
+          >
             + Add Image
           </Button>
         </div>
 
-        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+        <div className="space-y-2 max-h-[350px] overflow-y-auto">
           {images.map((img: any, index: number) => (
-            <div key={index} className="p-3 border border-border rounded-lg bg-muted/30">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium">Image {index + 1}</span>
-                <div className="flex items-center gap-1">
+            <div key={index} className="p-2 border border-border rounded-lg bg-muted/30">
+              <div className="flex items-start gap-2">
+                {img.src ? (
+                  <div
+                    className="w-14 h-14 rounded overflow-hidden flex-shrink-0 bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => { setEditingIndex(index); setPickerOpen(true); }}
+                  >
+                    <img src={img.src} alt={img.alt || ""} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
                   <button
-                    className="px-2 py-1 rounded text-xs hover:bg-accent"
-                    onClick={() => {
-                      if (index <= 0) return;
-                      const updated = [...images];
-                      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-                      onPropChange("images", updated);
-                    }}
-                    disabled={index === 0}
+                    onClick={() => { setEditingIndex(index); setPickerOpen(true); }}
+                    className="w-14 h-14 rounded border-2 border-dashed border-border flex items-center justify-center flex-shrink-0 hover:border-primary transition-colors"
                   >
-                    ↑
+                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
                   </button>
-                  <button
-                    className="px-2 py-1 rounded text-xs hover:bg-accent"
-                    onClick={() => {
-                      if (index >= images.length - 1) return;
-                      const updated = [...images];
-                      [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
-                      onPropChange("images", updated);
-                    }}
-                    disabled={index >= images.length - 1}
-                  >
-                    ↓
-                  </button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteImage(index)}
-                    className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                  >
-                    ×
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div>
-                  <Label className="text-[10px]">Image URL</Label>
-                  <Input
-                    value={img.src || ""}
-                    onChange={(e) => handleUpdateImage(index, "src", e.target.value)}
-                    placeholder="https://..."
-                    className="h-7 text-xs"
-                  />
-                </div>
-                <div>
-                  <Label className="text-[10px]">Alt Text</Label>
+                )}
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-muted-foreground">#{index + 1}</span>
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        className="px-1.5 py-0.5 rounded text-[10px] hover:bg-accent"
+                        onClick={() => {
+                          if (index <= 0) return;
+                          const updated = [...images];
+                          [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+                          onPropChange("images", updated);
+                        }}
+                        disabled={index === 0}
+                      >↑</button>
+                      <button
+                        className="px-1.5 py-0.5 rounded text-[10px] hover:bg-accent"
+                        onClick={() => {
+                          if (index >= images.length - 1) return;
+                          const updated = [...images];
+                          [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
+                          onPropChange("images", updated);
+                        }}
+                        disabled={index >= images.length - 1}
+                      >↓</button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteImage(index)}
+                        className="h-5 w-5 p-0 text-destructive hover:text-destructive"
+                      >×</Button>
+                    </div>
+                  </div>
                   <Input
                     value={img.alt || ""}
-                    onChange={(e) => handleUpdateImage(index, "alt", e.target.value)}
-                    placeholder="Image description"
-                    className="h-7 text-xs"
+                    onChange={(e) => handleUpdateAlt(index, e.target.value)}
+                    placeholder="Alt text..."
+                    className="h-6 text-[10px]"
                   />
                 </div>
               </div>
             </div>
           ))}
+
+          {images.length === 0 && (
+            <button
+              onClick={() => { setEditingIndex(null); setPickerOpen(true); }}
+              className="w-full border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
+            >
+              <ImageIcon className="h-6 w-6 mb-1" />
+              <p className="text-[10px]">Pilih dari Media Library</p>
+            </button>
+          )}
         </div>
       </div>
+
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={handlePickerSelect}
+        onSelectMultiple={editingIndex === null ? handlePickerSelectMultiple : undefined}
+        fileType="image"
+      />
     </>
   );
 }
