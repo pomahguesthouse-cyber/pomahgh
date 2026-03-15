@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Type, Image, MousePointer, SlidersHorizontal, Play, MapPin, Video, Code, Minus as MinusIcon, Layout, Link2, MessageCircle, Grid3X3, GalleryHorizontal, Sparkles } from "lucide-react";
+import { Plus, Search, Type, Image, MousePointer, SlidersHorizontal, Play, MapPin, Video, Code, Minus as MinusIcon, Layout, Link2, MessageCircle, Grid3X3, GalleryHorizontal, Sparkles, BedDouble, Building2, CalendarDays, Navigation } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
