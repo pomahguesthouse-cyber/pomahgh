@@ -97,7 +97,7 @@ export function HeroSliderElement({
   if (layout === "split") {
     return (
       <ElementWrapper
-        element={element}
+        id={element.id}
         isSelected={isSelected}
         isHovered={isHovered}
         onSelect={onSelect}
