@@ -124,7 +124,7 @@ function ContentProperties({
   onPropChange,
 }: {
   element: EditorElement;
-  onPropChange: (key: string, value: string | number | boolean) => void;
+  onPropChange: (key: string, value: any) => void;
 }) {
   switch (element.type) {
     case "heading":
