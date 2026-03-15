@@ -434,14 +434,41 @@ function ContentProperties({
                 <div key={slide.id} className="p-3 border border-border rounded-lg bg-muted/30">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium">Slide {index + 1}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteSlide(index)}
-                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                    >
-                      ×
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="px-2 py-1 rounded bg-white/20 text-xs"
+                        onClick={() => {
+                          if (index <= 0) return;
+                          const updated = slides.map((s: any, i: number) => (i === index - 1 ? slides[index] : i === index ? slides[index - 1] : s));
+                          onPropChange("slides", updated);
+                        }}
+                        disabled={index === 0}
+                        title="Move Up"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        className="px-2 py-1 rounded bg-white/20 text-xs"
+                        onClick={() => {
+                          if (index >= (slides.length - 1)) return;
+                          const updated = slides.map((s: any, i: number) => (i === index + 1 ? slides[index] : i === index ? slides[index + 1] : s));
+                          onPropChange("slides", updated);
+                        }}
+                        disabled={index >= slides.length - 1}
+                        title="Move Down"
+                      >
+                        ↓
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteSlide(index)}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        title="Delete Slide"
+                      >
+                        ×
+                      </Button>
+                    </div>
                   </div>
                   
                   <div className="space-y-2">

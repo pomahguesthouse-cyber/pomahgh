@@ -72,7 +72,8 @@ export function HeroSliderElement({
     setCurrentSlide((prev) => (prev + 1) % slides.length);
   };
 
-  const currentSlideData = slides[currentSlide] || slides[0];
+  // Guard against empty slides array
+  const currentSlideData = slides[currentSlide] ?? (slides[0] ?? { imageUrl: "", headline: "", subheadline: "", ctaText: "", ctaUrl: "" });
   
   const contentPosition = element.props.contentPosition || "center";
   const layout = element.props.layout || "full";
