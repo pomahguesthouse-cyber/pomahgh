@@ -56,18 +56,14 @@ export function MapEmbedElement({
         .single()
         .then(({ data }) => {
           if (data) {
-            if (data.google_place_id) {
-              setHotelMapUrl(
-                `https://www.google.com/maps?q=place_id:${data.google_place_id}&z=${mapZoom}&output=embed`
-              );
-            } else if (data.latitude && data.longitude) {
+            if (data.latitude && data.longitude) {
               const query = encodeURIComponent(
                 data.hotel_name
                   ? `${data.hotel_name}, ${data.address || ""}`
                   : `${data.latitude},${data.longitude}`
               );
               setHotelMapUrl(
-                `https://www.google.com/maps?q=${query}&z=${mapZoom}&output=embed`
+                `https://maps.google.com/maps?q=${query}&z=${mapZoom}&output=embed`
               );
             }
           }
