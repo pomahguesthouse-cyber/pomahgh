@@ -351,6 +351,9 @@ function ContentProperties({
         </div>
       );
 
+    case "gallery":
+      return <GalleryContentProperties element={element} onPropChange={onPropChange} />;
+
     case "hero-slider":
       const slides = element.props.slides || [];
       const handleAddSlide = () => {
