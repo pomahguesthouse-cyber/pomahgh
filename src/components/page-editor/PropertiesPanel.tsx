@@ -341,222 +341,7 @@ function ContentProperties({
       return <GalleryContentProperties element={element} onPropChange={onPropChange} />;
 
     case "hero-slider":
-      const slides = element.props.slides || [];
-      const handleAddSlide = () => {
-        const newSlide = {
-          id: `slide-${Date.now()}`,
-          imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920",
-          headline: "New Slide",
-          subheadline: "Add your subheadline here",
-          ctaText: "Learn More",
-          ctaUrl: "#",
-        };
-        onPropChange("slides", [...slides, newSlide]);
-      };
-      const handleUpdateSlide = (index: number, field: string, value: string) => {
-        const updatedSlides = slides.map((slide: any, i: number) => 
-          i === index ? { ...slide, [field]: value } : slide
-        );
-        onPropChange("slides", updatedSlides);
-      };
-      const handleDeleteSlide = (index: number) => {
-        const updatedSlides = slides.filter((_: any, i: number) => i !== index);
-        onPropChange("slides", updatedSlides);
-      };
-      return (
-        <>
-          <div className="space-y-2">
-            <Label>Slider Height</Label>
-            <Input
-              value={element.props.height || "500px"}
-              onChange={(e) => onPropChange("height", e.target.value)}
-              placeholder="500px"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={element.props.autoPlay !== false}
-              onChange={(e) => onPropChange("autoPlay", e.target.checked)}
-              id="autoPlay"
-            />
-            <Label htmlFor="autoPlay">Auto Play</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={element.props.showArrows !== false}
-              onChange={(e) => onPropChange("showArrows", e.target.checked)}
-              id="showArrows"
-            />
-            <Label htmlFor="showArrows">Show Arrows</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={element.props.showDots !== false}
-              onChange={(e) => onPropChange("showDots", e.target.checked)}
-              id="showDots"
-            />
-            <Label htmlFor="showDots">Show Dots</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={element.props.showCounter || false}
-              onChange={(e) => onPropChange("showCounter", e.target.checked)}
-              id="showCounter"
-            />
-            <Label htmlFor="showCounter">Show Counter</Label>
-          </div>
-          
-          <div className="border-t border-border pt-4 mt-4">
-            <div className="flex items-center justify-between mb-3">
-              <Label className="font-medium">Slides ({slides.length})</Label>
-              <Button variant="outline" size="sm" onClick={handleAddSlide} className="h-7 text-xs">
-                + Add Slide
-              </Button>
-            </div>
-            
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {slides.map((slide: any, index: number) => (
-                <div key={slide.id} className="p-3 border border-border rounded-lg bg-muted/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium">Slide {index + 1}</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        className="px-2 py-1 rounded bg-white/20 text-xs"
-                        onClick={() => {
-                          if (index <= 0) return;
-                          const updated = slides.map((s: any, i: number) => (i === index - 1 ? slides[index] : i === index ? slides[index - 1] : s));
-                          onPropChange("slides", updated);
-                        }}
-                        disabled={index === 0}
-                        title="Move Up"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        className="px-2 py-1 rounded bg-white/20 text-xs"
-                        onClick={() => {
-                          if (index >= (slides.length - 1)) return;
-                          const updated = slides.map((s: any, i: number) => (i === index + 1 ? slides[index] : i === index ? slides[index + 1] : s));
-                          onPropChange("slides", updated);
-                        }}
-                        disabled={index >= slides.length - 1}
-                        title="Move Down"
-                      >
-                        ↓
-                      </button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteSlide(index)}
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                        title="Delete Slide"
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div>
-                      <Label className="text-[10px]">Image URL</Label>
-                      <Input
-                        value={slide.imageUrl || ""}
-                        onChange={(e) => handleUpdateSlide(index, "imageUrl", e.target.value)}
-                        placeholder="https://..."
-                        className="h-7 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-[10px]">Headline</Label>
-                      <Input
-                        value={slide.headline || ""}
-                        onChange={(e) => handleUpdateSlide(index, "headline", e.target.value)}
-                        placeholder="Headline"
-                        className="h-7 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-[10px]">Subheadline</Label>
-                      <Input
-                        value={slide.subheadline || ""}
-                        onChange={(e) => handleUpdateSlide(index, "subheadline", e.target.value)}
-                        placeholder="Subheadline"
-                        className="h-7 text-xs"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-[10px]">Button Text</Label>
-                        <Input
-                          value={slide.ctaText || ""}
-                          onChange={(e) => handleUpdateSlide(index, "ctaText", e.target.value)}
-                          placeholder="Book Now"
-                          className="h-7 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px]">Button URL</Label>
-                        <Input
-                          value={slide.ctaUrl || ""}
-                          onChange={(e) => handleUpdateSlide(index, "ctaUrl", e.target.value)}
-                          placeholder="#booking"
-                          className="h-7 text-xs"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="border-t border-border pt-4 mt-4">
-            <Label className="font-medium mb-2 block">Colors</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-[10px]">Overlay</Label>
-                <Input
-                  type="color"
-                  value={element.props.overlayColor || "#000000"}
-                  onChange={(e) => onPropChange("overlayColor", e.target.value)}
-                  className="h-8 p-1"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[10px]">Heading</Label>
-                <Input
-                  type="color"
-                  value={element.props.headingColor || "#ffffff"}
-                  onChange={(e) => onPropChange("headingColor", e.target.value)}
-                  className="h-8 p-1"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[10px]">Subheading</Label>
-                <Input
-                  type="color"
-                  value={element.props.subheadingColor || "#e0e0e0"}
-                  onChange={(e) => onPropChange("subheadingColor", e.target.value)}
-                  className="h-8 p-1"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[10px]">CTA Button</Label>
-                <Input
-                  type="color"
-                  value={element.props.ctaBgColor || "#e11d48"}
-                  onChange={(e) => onPropChange("ctaBgColor", e.target.value)}
-                  className="h-8 p-1"
-                />
-              </div>
-            </div>
-          </div>
-        </>
-      );
+      return <HeroSliderContentProperties element={element} onPropChange={onPropChange} />;
 
     default:
       return (
@@ -566,6 +351,173 @@ function ContentProperties({
       );
   }
 }
+
+function HeroSliderContentProperties({
+  element,
+  onPropChange,
+}: {
+  element: EditorElement;
+  onPropChange: (key: string, value: any) => void;
+}) {
+  const slides = element.props.slides || [];
+  const [slidePickerIndex, setSlidePickerIndex] = useState<number | null>(null);
+
+  const handleAddSlide = () => {
+    const newSlide = {
+      id: `slide-${Date.now()}`,
+      imageUrl: "",
+      headline: "New Slide",
+      subheadline: "Add your subheadline here",
+      ctaText: "Learn More",
+      ctaUrl: "#",
+    };
+    onPropChange("slides", [...slides, newSlide]);
+  };
+
+  const handleUpdateSlide = (index: number, field: string, value: string) => {
+    const updatedSlides = slides.map((slide: any, i: number) =>
+      i === index ? { ...slide, [field]: value } : slide
+    );
+    onPropChange("slides", updatedSlides);
+  };
+
+  const handleDeleteSlide = (index: number) => {
+    onPropChange("slides", slides.filter((_: any, i: number) => i !== index));
+  };
+
+  const handleMediaSelect = (media: MediaFile) => {
+    if (slidePickerIndex !== null) {
+      handleUpdateSlide(slidePickerIndex, "imageUrl", media.file_url);
+      setSlidePickerIndex(null);
+    }
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>Slider Height</Label>
+        <Input
+          value={element.props.height || "500px"}
+          onChange={(e) => onPropChange("height", e.target.value)}
+          placeholder="500px"
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <input type="checkbox" checked={element.props.autoPlay !== false} onChange={(e) => onPropChange("autoPlay", e.target.checked)} id="hsAutoPlay" />
+        <Label htmlFor="hsAutoPlay">Auto Play</Label>
+      </div>
+      <div className="flex items-center gap-2">
+        <input type="checkbox" checked={element.props.showArrows !== false} onChange={(e) => onPropChange("showArrows", e.target.checked)} id="hsShowArrows" />
+        <Label htmlFor="hsShowArrows">Show Arrows</Label>
+      </div>
+      <div className="flex items-center gap-2">
+        <input type="checkbox" checked={element.props.showDots !== false} onChange={(e) => onPropChange("showDots", e.target.checked)} id="hsShowDots" />
+        <Label htmlFor="hsShowDots">Show Dots</Label>
+      </div>
+      <div className="flex items-center gap-2">
+        <input type="checkbox" checked={element.props.showCounter || false} onChange={(e) => onPropChange("showCounter", e.target.checked)} id="hsShowCounter" />
+        <Label htmlFor="hsShowCounter">Show Counter</Label>
+      </div>
+
+      <div className="border-t border-border pt-4 mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <Label className="font-medium">Slides ({slides.length})</Label>
+          <Button variant="outline" size="sm" onClick={handleAddSlide} className="h-7 text-xs">+ Add Slide</Button>
+        </div>
+
+        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+          {slides.map((slide: any, index: number) => (
+            <div key={slide.id} className="p-3 border border-border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium">Slide {index + 1}</span>
+                <div className="flex items-center gap-1">
+                  <button className="px-2 py-1 rounded text-xs hover:bg-accent" onClick={() => { if (index <= 0) return; const u = [...slides]; [u[index-1],u[index]]=[u[index],u[index-1]]; onPropChange("slides",u); }} disabled={index===0}>↑</button>
+                  <button className="px-2 py-1 rounded text-xs hover:bg-accent" onClick={() => { if (index >= slides.length-1) return; const u = [...slides]; [u[index+1],u[index]]=[u[index],u[index+1]]; onPropChange("slides",u); }} disabled={index>=slides.length-1}>↓</button>
+                  <Button variant="ghost" size="sm" onClick={() => handleDeleteSlide(index)} className="h-6 w-6 p-0 text-destructive hover:text-destructive">×</Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {/* Image picker instead of URL input */}
+                <div>
+                  <Label className="text-[10px]">Image</Label>
+                  {slide.imageUrl ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div
+                        className="w-12 h-8 rounded overflow-hidden bg-muted cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
+                        onClick={() => setSlidePickerIndex(index)}
+                      >
+                        <img src={slide.imageUrl} alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => setSlidePickerIndex(index)} className="h-6 text-[10px] flex-1">Ganti</Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleUpdateSlide(index, "imageUrl", "")} className="h-6 w-6 p-0 text-destructive hover:text-destructive">×</Button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setSlidePickerIndex(index)}
+                      className="w-full mt-1 border border-dashed rounded p-2 flex items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
+                    >
+                      <ImageIcon className="h-3.5 w-3.5" />
+                      <span className="text-[10px]">Pilih Gambar</span>
+                    </button>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-[10px]">Headline</Label>
+                  <Input value={slide.headline || ""} onChange={(e) => handleUpdateSlide(index, "headline", e.target.value)} placeholder="Headline" className="h-7 text-xs" />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Subheadline</Label>
+                  <Input value={slide.subheadline || ""} onChange={(e) => handleUpdateSlide(index, "subheadline", e.target.value)} placeholder="Subheadline" className="h-7 text-xs" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px]">Button Text</Label>
+                    <Input value={slide.ctaText || ""} onChange={(e) => handleUpdateSlide(index, "ctaText", e.target.value)} placeholder="Book Now" className="h-7 text-xs" />
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">Button URL</Label>
+                    <Input value={slide.ctaUrl || ""} onChange={(e) => handleUpdateSlide(index, "ctaUrl", e.target.value)} placeholder="#booking" className="h-7 text-xs" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-border pt-4 mt-4">
+        <Label className="font-medium mb-2 block">Colors</Label>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-[10px]">Overlay</Label>
+            <Input type="color" value={element.props.overlayColor || "#000000"} onChange={(e) => onPropChange("overlayColor", e.target.value)} className="h-8 p-1" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px]">Heading</Label>
+            <Input type="color" value={element.props.headingColor || "#ffffff"} onChange={(e) => onPropChange("headingColor", e.target.value)} className="h-8 p-1" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px]">Subheading</Label>
+            <Input type="color" value={element.props.subheadingColor || "#e0e0e0"} onChange={(e) => onPropChange("subheadingColor", e.target.value)} className="h-8 p-1" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px]">CTA Button</Label>
+            <Input type="color" value={element.props.ctaBgColor || "#e11d48"} onChange={(e) => onPropChange("ctaBgColor", e.target.value)} className="h-8 p-1" />
+          </div>
+        </div>
+      </div>
+
+      <MediaPickerDialog
+        open={slidePickerIndex !== null}
+        onOpenChange={(open) => { if (!open) setSlidePickerIndex(null); }}
+        onSelect={handleMediaSelect}
+        fileType="image"
+      />
+    </>
+  );
+}
+
 
 function ImageContentProperties({
   element,
