@@ -98,6 +98,7 @@ function SliderGallery({
   autoPlay,
   showArrows,
   showDots,
+  transitionEffect = "fade",
   marginTop,
   marginBottom,
   element,
@@ -111,6 +112,7 @@ function SliderGallery({
   autoPlay: boolean;
   showArrows: boolean;
   showDots: boolean;
+  transitionEffect?: string;
   marginTop?: string;
   marginBottom?: string;
   element: EditorElement;
@@ -121,17 +123,20 @@ function SliderGallery({
   isPreview: boolean;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [prevIndex, setPrevIndex] = useState(0);
   const count = images.length;
 
   const goNext = useCallback(() => {
     if (count === 0) return;
+    setPrevIndex(currentIndex);
     setCurrentIndex((prev) => (prev + 1) % count);
-  }, [count]);
+  }, [count, currentIndex]);
 
   const goPrev = useCallback(() => {
     if (count === 0) return;
+    setPrevIndex(currentIndex);
     setCurrentIndex((prev) => (prev - 1 + count) % count);
-  }, [count]);
+  }, [count, currentIndex]);
 
   useEffect(() => {
     if (!autoPlay || count <= 1) return;
@@ -139,16 +144,53 @@ function SliderGallery({
     return () => clearInterval(interval);
   }, [autoPlay, count, goNext]);
 
+  const getSlideStyle = (index: number): React.CSSProperties => {
+    const isActive = index === currentIndex;
+    switch (transitionEffect) {
+      case "slide":
+        return {
+          transform: `translateX(${(index - currentIndex) * 100}%)`,
+          transition: "transform 0.5s ease-in-out",
+          position: "absolute" as const,
+          inset: 0,
+        };
+      case "zoom":
+        return {
+          opacity: isActive ? 1 : 0,
+          transform: isActive ? "scale(1)" : "scale(1.15)",
+          transition: "opacity 0.6s ease-in-out, transform 0.6s ease-in-out",
+          position: "absolute" as const,
+          inset: 0,
+        };
+      case "flip":
+        return {
+          opacity: isActive ? 1 : 0,
+          transform: isActive ? "rotateY(0deg)" : "rotateY(90deg)",
+          transition: "opacity 0.5s ease-in-out, transform 0.5s ease-in-out",
+          position: "absolute" as const,
+          inset: 0,
+          backfaceVisibility: "hidden" as const,
+        };
+      case "fade":
+      default:
+        return {
+          opacity: isActive ? 1 : 0,
+          transition: "opacity 0.5s ease-in-out",
+          position: "absolute" as const,
+          inset: 0,
+        };
+    }
+  };
+
   const sliderContent = (
-    <div style={{ marginTop, marginBottom }} className="relative w-full overflow-hidden rounded-lg">
+    <div style={{ marginTop, marginBottom }} className="relative w-full overflow-hidden rounded-lg" {...(transitionEffect === "flip" ? { style: { marginTop, marginBottom, perspective: "1200px" } } : {})}>
       {count > 0 ? (
         <>
-          <div className="aspect-[16/9] relative">
+          <div className="aspect-[16/9] relative overflow-hidden">
             {images.map((img, index) => (
               <div
                 key={index}
-                className="absolute inset-0 transition-opacity duration-500"
-                style={{ opacity: index === currentIndex ? 1 : 0 }}
+                style={getSlideStyle(index)}
               >
                 <img
                   src={img.src}
