@@ -349,6 +349,133 @@ function ContentProperties({
     case "hero-slider":
       return <HeroSliderContentProperties element={element} onPropChange={onPropChange} />;
 
+    case "room-slider":
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>Section Title</Label>
+            <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Visible Cards</Label>
+            <Select value={String(element.props.visibleCards || 3)} onValueChange={(v) => onPropChange("visibleCards", parseInt(v))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="4">4</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>CTA Text</Label>
+            <Input value={element.props.ctaText || ""} onChange={(e) => onPropChange("ctaText", e.target.value)} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={element.props.autoPlay !== false} onChange={(e) => onPropChange("autoPlay", e.target.checked)} id="rsAutoPlay" />
+            <Label htmlFor="rsAutoPlay">Auto Play</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={element.props.showPrice !== false} onChange={(e) => onPropChange("showPrice", e.target.checked)} id="rsShowPrice" />
+            <Label htmlFor="rsShowPrice">Show Price</Label>
+          </div>
+        </>
+      );
+
+    case "facilities":
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>Section Title</Label>
+            <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Columns</Label>
+            <Select value={String(element.props.columns || 3)} onValueChange={(v) => onPropChange("columns", parseInt(v))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="4">4</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Layout</Label>
+            <Select value={element.props.layout || "card"} onValueChange={(v) => onPropChange("layout", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="card">Card</SelectItem>
+                <SelectItem value="icon-center">Icon Center</SelectItem>
+                <SelectItem value="minimal">Minimal</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </>
+      );
+
+    case "city-events":
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>Section Title</Label>
+            <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Visible Cards</Label>
+            <Select value={String(element.props.visibleCards || 3)} onValueChange={(v) => onPropChange("visibleCards", parseInt(v))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="4">4</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Max Items</Label>
+            <Input type="number" value={element.props.maxItems || 10} onChange={(e) => onPropChange("maxItems", parseInt(e.target.value) || 10)} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={element.props.autoPlay !== false} onChange={(e) => onPropChange("autoPlay", e.target.checked)} id="ceAutoPlay" />
+            <Label htmlFor="ceAutoPlay">Auto Play</Label>
+          </div>
+        </>
+      );
+
+    case "nearby-locations":
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>Section Title</Label>
+            <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Columns</Label>
+            <Select value={String(element.props.columns || 2)} onValueChange={(v) => onPropChange("columns", parseInt(v))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Layout</Label>
+            <Select value={element.props.layout || "list"} onValueChange={(v) => onPropChange("layout", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="list">List</SelectItem>
+                <SelectItem value="card">Card</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </>
+      );
+
     default:
       return (
         <p className="text-sm text-muted-foreground">

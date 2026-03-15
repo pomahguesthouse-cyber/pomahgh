@@ -158,6 +158,14 @@ function createElement(type: string, overrideProps?: Record<string, any>, overri
       element = { ...baseElement, props: { phoneNumber: "", message: "Halo, saya ingin bertanya...", label: "Chat via WhatsApp" }, styles: { textAlign: "center" } }; break;
     case "map-embed":
       element = { ...baseElement, props: { embedUrl: "" }, styles: { width: "100%", minHeight: "400px" } }; break;
+    case "room-slider":
+      element = { ...baseElement, props: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } }; break;
+    case "facilities":
+      element = { ...baseElement, props: { title: "Fasilitas Hotel", columns: 3, layout: "card" } }; break;
+    case "city-events":
+      element = { ...baseElement, props: { title: "Event & Agenda", visibleCards: 3, maxItems: 10, autoPlay: true } }; break;
+    case "nearby-locations":
+      element = { ...baseElement, props: { title: "Lokasi Terdekat", columns: 2, layout: "list" } }; break;
     default:
       element = baseElement;
   }
