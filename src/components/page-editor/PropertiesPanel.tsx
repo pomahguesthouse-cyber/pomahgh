@@ -422,6 +422,7 @@ function HeroSliderContentProperties({
         <input type="checkbox" checked={element.props.showCounter || false} onChange={(e) => onPropChange("showCounter", e.target.checked)} id="hsShowCounter" />
         <Label htmlFor="hsShowCounter">Show Counter</Label>
       </div>
+      <TransitionEffectPicker value={element.props.transitionEffect || "fade"} onChange={(v) => onPropChange("transitionEffect", v)} />
 
       <div className="border-t border-border pt-4 mt-4">
         <div className="flex items-center justify-between mb-3">
