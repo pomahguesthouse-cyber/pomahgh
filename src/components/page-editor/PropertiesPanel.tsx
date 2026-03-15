@@ -634,6 +634,7 @@ function ImageContentProperties({
   );
 }
 
+function GalleryContentProperties({
   element,
   onPropChange,
 }: {
