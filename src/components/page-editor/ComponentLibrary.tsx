@@ -86,6 +86,15 @@ const categories: Category[] = [
     ],
   },
   {
+    id: "data",
+    name: "Data Dinamis",
+    icon: Building2,
+    elements: [
+      { type: "facilities", name: "Fasilitas", icon: Building2, description: "Fasilitas hotel dari database", defaultProps: { title: "Fasilitas Hotel", columns: 3, layout: "card" } },
+      { type: "nearby-locations", name: "Nearby Location", icon: Navigation, description: "Lokasi terdekat dari database", defaultProps: { title: "Lokasi Terdekat", columns: 2, layout: "list" } },
+    ],
+  },
+  {
     id: "decorative",
     name: "Decorative",
     icon: Sparkles,
