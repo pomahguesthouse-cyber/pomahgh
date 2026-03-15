@@ -176,7 +176,7 @@ export function CityEventsElement({
 
   return (
     <ElementWrapper
-      element={element}
+      id={element.id}
       isSelected={isSelected}
       isHovered={isHovered}
       onSelect={onSelect}

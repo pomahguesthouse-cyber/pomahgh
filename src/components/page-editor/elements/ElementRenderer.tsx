@@ -90,6 +90,14 @@ export function ElementRenderer({
       rendered = <MapEmbedElement {...commonProps} />; break;
     case "hero-slider":
       rendered = <HeroSliderElement {...commonProps} />; break;
+    case "room-slider":
+      rendered = <RoomSliderElement {...commonProps} />; break;
+    case "facilities":
+      rendered = <FacilitiesElement {...commonProps} />; break;
+    case "city-events":
+      rendered = <CityEventsElement {...commonProps} />; break;
+    case "nearby-locations":
+      rendered = <NearbyLocationsElement {...commonProps} />; break;
     default:
       rendered = (
         <div className="p-4 bg-destructive/10 text-destructive rounded">
