@@ -59,7 +59,7 @@ export function PropertiesPanel() {
 
   if (!selectedElement) {
     return (
-      <div className="w-72 border-l border-border bg-background p-6">
+      <div className="w-full p-6">
         <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
           <Settings className="h-12 w-12 mb-4 opacity-50" />
           <p className="text-sm">Select an element to edit its properties</p>
