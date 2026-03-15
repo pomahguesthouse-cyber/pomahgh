@@ -31,15 +31,17 @@ export function MapEmbedElement({
     shadowEnabled = false,
     containerBgColor,
     containerPadding = "0px",
+    mapHeight = "400px",
+    mapBorderRadius = "8px",
   } = element.props;
 
   const {
     width = "100%",
-    minHeight = "400px",
-    borderRadius = "8px",
     marginTop,
     marginBottom,
   } = element.styles;
+
+  const borderRadius = mapBorderRadius;
 
   const containerStyle: React.CSSProperties = {
     width,
