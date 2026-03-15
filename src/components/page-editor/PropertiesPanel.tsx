@@ -331,16 +331,105 @@ function ContentProperties({
 
     case "map-embed":
       return (
-        <div className="space-y-2">
-          <Label>Google Maps Embed URL</Label>
-          <Textarea
-            value={element.props.embedUrl || ""}
-            onChange={(e) => onPropChange("embedUrl", e.target.value)}
-            rows={3}
-            placeholder="https://www.google.com/maps/embed?..."
-          />
-          <p className="text-xs text-muted-foreground">Get embed URL from Google Maps → Share → Embed</p>
-        </div>
+        <>
+          <div className="space-y-2">
+            <Label>Google Maps Embed URL</Label>
+            <Textarea
+              value={element.props.embedUrl || ""}
+              onChange={(e) => onPropChange("embedUrl", e.target.value)}
+              rows={3}
+              placeholder="https://www.google.com/maps/embed?..."
+            />
+            <p className="text-xs text-muted-foreground">Google Maps → Share → Embed a map → Copy src URL</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <input type="checkbox" checked={element.props.showTitle || false} onChange={(e) => onPropChange("showTitle", e.target.checked)} />
+              Show Title
+            </Label>
+          </div>
+
+          {element.props.showTitle && (
+            <>
+              <div className="space-y-2">
+                <Label>Title</Label>
+                <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} placeholder="Our Location" />
+              </div>
+              <div className="space-y-2">
+                <Label>Subtitle</Label>
+                <Input value={element.props.subtitle || ""} onChange={(e) => onPropChange("subtitle", e.target.value)} placeholder="Find us here" />
+              </div>
+              <div className="space-y-2">
+                <Label>Title Font</Label>
+                <FontFamilyPicker value={element.props.titleFontFamily || ""} onChange={(v: string) => onPropChange("titleFontFamily", v)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Subtitle Font</Label>
+                <FontFamilyPicker value={element.props.subtitleFontFamily || ""} onChange={(v: string) => onPropChange("subtitleFontFamily", v)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Title Color</Label>
+                <Input type="color" value={element.props.titleColor || "#000000"} onChange={(e) => onPropChange("titleColor", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Subtitle Color</Label>
+                <Input type="color" value={element.props.subtitleColor || "#666666"} onChange={(e) => onPropChange("subtitleColor", e.target.value)} />
+              </div>
+            </>
+          )}
+
+          <div className="space-y-2">
+            <Label>Map Height</Label>
+            <Select value={element.props.mapHeight || "400px"} onValueChange={(v: string) => onPropChange("mapHeight", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="250px">Small (250px)</SelectItem>
+                <SelectItem value="400px">Medium (400px)</SelectItem>
+                <SelectItem value="500px">Large (500px)</SelectItem>
+                <SelectItem value="600px">Extra Large (600px)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Border Radius</Label>
+            <Select value={element.props.mapBorderRadius || "8px"} onValueChange={(v: string) => onPropChange("mapBorderRadius", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0px">None</SelectItem>
+                <SelectItem value="8px">Small</SelectItem>
+                <SelectItem value="16px">Medium</SelectItem>
+                <SelectItem value="24px">Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Container Padding</Label>
+            <Select value={element.props.containerPadding || "0px"} onValueChange={(v: string) => onPropChange("containerPadding", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0px">None</SelectItem>
+                <SelectItem value="16px">Small</SelectItem>
+                <SelectItem value="24px">Medium</SelectItem>
+                <SelectItem value="32px">Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <input type="checkbox" checked={element.props.shadowEnabled || false} onChange={(e) => onPropChange("shadowEnabled", e.target.checked)} />
+              Shadow
+            </Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Container Background</Label>
+            <Input type="color" value={element.props.containerBgColor || "#ffffff"} onChange={(e) => onPropChange("containerBgColor", e.target.value)} />
+          </div>
+        </>
       );
 
     case "gallery":
