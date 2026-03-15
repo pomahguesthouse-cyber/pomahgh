@@ -732,6 +732,7 @@ function GalleryContentProperties({
   );
 }
 
+function StyleProperties({
   element,
   onStyleChange,
 }: {
