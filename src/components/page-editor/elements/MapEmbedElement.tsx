@@ -73,7 +73,7 @@ export function MapEmbedElement({
           }
         });
     }
-  }, [useHotelLocation, embedUrl]);
+  }, [useHotelLocation, embedUrl, mapZoom]);
 
   const finalUrl = embedUrl || hotelMapUrl;
   const borderRadius = mapBorderRadius;
