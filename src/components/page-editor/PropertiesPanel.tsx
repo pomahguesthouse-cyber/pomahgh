@@ -214,9 +214,10 @@ function ContentProperties({
                 <SelectItem value="secondary">Secondary</SelectItem>
                 <SelectItem value="outline">Outline</SelectItem>
                 <SelectItem value="ghost">Ghost</SelectItem>
-              </SelectContent>
+          </SelectContent>
             </Select>
           </div>
+          <FontFamilyPicker value={element.props.fontFamily || "___default___"} onChange={(v: string) => onPropChange("fontFamily", v === "___default___" ? "" : v)} />
         </>
       );
 
@@ -324,6 +325,7 @@ function ContentProperties({
               rows={3}
             />
           </div>
+          <FontFamilyPicker value={element.props.fontFamily || "___default___"} onChange={(v: string) => onPropChange("fontFamily", v === "___default___" ? "" : v)} />
         </>
       );
 
@@ -488,6 +490,20 @@ function HeroSliderContentProperties({
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="border-t border-border pt-4 mt-4">
+        <Label className="font-medium mb-2 block">Fonts</Label>
+        <div className="space-y-2">
+          <div>
+            <Label className="text-[10px]">Headline Font</Label>
+            <FontFamilyPicker value={element.props.headlineFont || "___default___"} onChange={(v: string) => onPropChange("headlineFont", v === "___default___" ? "" : v)} />
+          </div>
+          <div>
+            <Label className="text-[10px]">Subheadline Font</Label>
+            <FontFamilyPicker value={element.props.subheadlineFont || "___default___"} onChange={(v: string) => onPropChange("subheadlineFont", v === "___default___" ? "" : v)} />
+          </div>
         </div>
       </div>
 

@@ -114,13 +114,13 @@ export function HeroSliderElement({
           >
             <h1 
               className="text-4xl md:text-5xl font-bold mb-4"
-              style={{ color: element.props.headingColor || "#111827" }}
+              style={{ color: element.props.headingColor || "#111827", fontFamily: element.props.headlineFont || undefined }}
             >
               {currentSlideData.headline}
             </h1>
             <p 
               className="text-lg md:text-xl mb-8 max-w-md"
-              style={{ color: element.props.subheadingColor || "#4b5563" }}
+              style={{ color: element.props.subheadingColor || "#4b5563", fontFamily: element.props.subheadlineFont || undefined }}
             >
               {currentSlideData.subheadline}
             </p>
@@ -260,6 +260,7 @@ export function HeroSliderElement({
               className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4"
               style={{ 
                 color: element.props.headingColor || "#ffffff",
+                fontFamily: element.props.headlineFont || undefined,
               }}
             >
               {currentSlideData.headline}
@@ -269,6 +270,7 @@ export function HeroSliderElement({
               className="text-lg md:text-xl mb-8 max-w-2xl"
               style={{ 
                 color: element.props.subheadingColor || "#e0e0e0",
+                fontFamily: element.props.subheadlineFont || undefined,
               }}
             >
               {currentSlideData.subheadline}
