@@ -71,6 +71,8 @@ const categories: Category[] = [
     icon: SlidersHorizontal,
     elements: [
       { type: "hero-slider", name: "Hero Slider", icon: Play, description: "Full-width hero carousel" },
+      { type: "room-slider", name: "Room Slider", icon: BedDouble, description: "Slider kamar dari database", defaultProps: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } },
+      { type: "city-events", name: "City Events", icon: CalendarDays, description: "Slider event kota", defaultProps: { title: "Event & Agenda", visibleCards: 3, maxItems: 10, autoPlay: true } },
     ],
   },
   {
