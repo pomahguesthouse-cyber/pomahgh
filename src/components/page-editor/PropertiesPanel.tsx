@@ -69,7 +69,7 @@ export function PropertiesPanel() {
   }
 
   return (
-    <div className="w-72 border-l border-border bg-background flex flex-col h-full">
+    <div className="w-full flex flex-col h-full">
       <div className="p-4 border-b border-border">
         <h2 className="font-semibold capitalize text-foreground">
           {selectedElement.type} Properties
