@@ -56,8 +56,8 @@ export function FloatingToolbar() {
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-      <div className="bg-background border border-border shadow-lg rounded-lg px-2 py-1.5 flex items-center gap-1">
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+      <div className="bg-gray-900 border-0 shadow-xl rounded-full px-3 py-2 flex items-center gap-2">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -66,12 +66,12 @@ export function FloatingToolbar() {
                 size="sm"
                 onClick={handleMoveUp}
                 disabled={!canMoveUp}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
               >
                 <ArrowUp className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Move Up</TooltipContent>
+            <TooltipContent className="bg-gray-800 text-white">Move Up</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -81,15 +81,15 @@ export function FloatingToolbar() {
                 size="sm"
                 onClick={handleMoveDown}
                 disabled={!canMoveDown}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
               >
                 <ArrowDown className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Move Down</TooltipContent>
+            <TooltipContent className="bg-gray-800 text-white">Move Down</TooltipContent>
           </Tooltip>
 
-          <div className="w-px h-6 bg-border mx-1" />
+          <div className="w-px h-6 bg-white/20 mx-1" />
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -97,12 +97,12 @@ export function FloatingToolbar() {
                 variant="ghost"
                 size="sm"
                 onClick={handleDuplicate}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
               >
                 <Copy className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Duplicate</TooltipContent>
+            <TooltipContent className="bg-gray-800 text-white">Duplicate</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -111,12 +111,12 @@ export function FloatingToolbar() {
                 variant="ghost"
                 size="sm"
                 onClick={handleDelete}
-                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/20"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Delete</TooltipContent>
+            <TooltipContent className="bg-gray-800 text-white">Delete</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>

@@ -4,6 +4,57 @@ const uid = () => `el-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export const heroTemplates: SectionTemplate[] = [
   {
+    id: "hero-slider",
+    name: "Hero Slider",
+    category: "hero",
+    icon: "🎠",
+    description: "Full-screen image slider with navigation",
+    create: () => ({
+      id: uid(),
+      type: "hero-slider",
+      props: {
+        height: "500px",
+        autoPlay: true,
+        autoPlayInterval: 5000,
+        showArrows: true,
+        showDots: true,
+        overlayColor: "rgba(0,0,0,0.5)",
+        headingColor: "#ffffff",
+        subheadingColor: "#e0e0e0",
+        ctaBgColor: "#e11d48",
+        slides: [
+          {
+            id: "slide-1",
+            imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920",
+            headline: "Welcome to Our Hotel",
+            subheadline: "Experience luxury and comfort in the heart of the city",
+            ctaText: "Book Now",
+            ctaUrl: "#booking",
+          },
+          {
+            id: "slide-2",
+            imageUrl: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920",
+            headline: "Your Perfect Getaway",
+            subheadline: "Discover our collection of premium rooms",
+            ctaText: "View Rooms",
+            ctaUrl: "#rooms",
+          },
+          {
+            id: "slide-3",
+            imageUrl: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=1920",
+            headline: "Unforgettable Experience",
+            subheadline: "World-class amenities await you",
+            ctaText: "Explore",
+            ctaUrl: "#explore",
+          },
+        ],
+      },
+      styles: {
+        textAlign: "center",
+      },
+    }),
+  },
+  {
     id: "hero-image-cta",
     name: "Hero Image + CTA",
     category: "hero",

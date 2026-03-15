@@ -351,6 +351,87 @@ function ContentProperties({
         </div>
       );
 
+    case "hero-slider":
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>Slider Height</Label>
+            <Input
+              value={element.props.height || "500px"}
+              onChange={(e) => onPropChange("height", e.target.value)}
+              placeholder="500px"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Overlay Color</Label>
+            <Input
+              type="color"
+              value={element.props.overlayColor || "rgba(0,0,0,0.5)"}
+              onChange={(e) => onPropChange("overlayColor", e.target.value)}
+              className="h-10 p-1"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Heading Color</Label>
+            <Input
+              type="color"
+              value={element.props.headingColor || "#ffffff"}
+              onChange={(e) => onPropChange("headingColor", e.target.value)}
+              className="h-10 p-1"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Subheading Color</Label>
+            <Input
+              type="color"
+              value={element.props.subheadingColor || "#e0e0e0"}
+              onChange={(e) => onPropChange("subheadingColor", e.target.value)}
+              className="h-10 p-1"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>CTA Background</Label>
+            <Input
+              type="color"
+              value={element.props.ctaBgColor || "#e11d48"}
+              onChange={(e) => onPropChange("ctaBgColor", e.target.value)}
+              className="h-10 p-1"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={element.props.autoPlay !== false}
+              onChange={(e) => onPropChange("autoPlay", e.target.checked)}
+              id="autoPlay"
+            />
+            <Label htmlFor="autoPlay">Auto Play</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={element.props.showArrows !== false}
+              onChange={(e) => onPropChange("showArrows", e.target.checked)}
+              id="showArrows"
+            />
+            <Label htmlFor="showArrows">Show Arrows</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={element.props.showDots !== false}
+              onChange={(e) => onPropChange("showDots", e.target.checked)}
+              id="showDots"
+            />
+            <Label htmlFor="showDots">Show Dots</Label>
+          </div>
+          <div className="space-y-2 mt-4">
+            <Label className="font-medium">Slides</Label>
+            <p className="text-xs text-muted-foreground">Edit slides in preview mode</p>
+          </div>
+        </>
+      );
+
     default:
       return (
         <p className="text-sm text-muted-foreground">

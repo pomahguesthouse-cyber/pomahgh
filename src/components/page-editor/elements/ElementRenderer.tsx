@@ -14,6 +14,7 @@ import { IconElement } from "./IconElement";
 import { SocialLinksElement } from "./SocialLinksElement";
 import { WhatsAppButtonElement } from "./WhatsAppButtonElement";
 import { MapEmbedElement } from "./MapEmbedElement";
+import { HeroSliderElement } from "./HeroSliderElement";
 
 interface ElementRendererProps {
   element: EditorElement;
@@ -83,6 +84,8 @@ export function ElementRenderer({
       rendered = <WhatsAppButtonElement {...commonProps} />; break;
     case "map-embed":
       rendered = <MapEmbedElement {...commonProps} />; break;
+    case "hero-slider":
+      rendered = <HeroSliderElement {...commonProps} />; break;
     default:
       rendered = (
         <div className="p-4 bg-destructive/10 text-destructive rounded">

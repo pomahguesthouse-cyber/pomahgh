@@ -63,9 +63,9 @@ export function ElementWrapper({
       style={style}
       className={cn(
         "relative group transition-all",
-        isDragging && "opacity-50 z-50",
-        isSelected && "ring-2 ring-primary ring-offset-2",
-        isHovered && !isSelected && "ring-1 ring-primary/50"
+        isDragging && "opacity-40 z-50 scale-[1.02] shadow-xl",
+        isSelected && "ring-2 ring-blue-500 ring-offset-2",
+        isHovered && !isSelected && "ring-1 ring-blue-400/50"
       )}
       onClick={(e) => {
         e.stopPropagation();
@@ -74,16 +74,16 @@ export function ElementWrapper({
       onMouseEnter={() => onHover(true)}
       onMouseLeave={() => onHover(false)}
     >
-      {/* Drag Handle */}
+      {/* Drag Handle - Wix style */}
       <div
         {...attributes}
         {...listeners}
         className={cn(
-          "absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 transition-opacity cursor-grab active:cursor-grabbing z-10",
+          "absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 transition-all cursor-grab active:cursor-grabbing z-10 hover:scale-110",
           (isSelected || isHovered) && "opacity-100"
         )}
       >
-        <div className="bg-primary text-primary-foreground p-1 rounded">
+        <div className="bg-blue-500 text-white p-1.5 rounded-md shadow-lg">
           <GripVertical className="h-4 w-4" />
         </div>
       </div>
