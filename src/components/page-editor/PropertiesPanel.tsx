@@ -567,7 +567,73 @@ function ContentProperties({
   }
 }
 
-function GalleryContentProperties({
+function ImageContentProperties({
+  element,
+  onPropChange,
+}: {
+  element: EditorElement;
+  onPropChange: (key: string, value: any) => void;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const handleSelect = (media: MediaFile) => {
+    onPropChange("src", media.file_url);
+    if (media.alt_text) onPropChange("alt", media.alt_text);
+    setPickerOpen(false);
+  };
+
+  return (
+    <>
+      {element.props.src ? (
+        <div className="space-y-2">
+          <Label>Image</Label>
+          <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-lg border">
+            <div
+              className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setPickerOpen(true)}
+            >
+              <img src={element.props.src} alt={element.props.alt || ""} className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} className="h-7 text-xs w-full">
+                Ganti Gambar
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => onPropChange("src", "")} className="h-7 text-xs w-full text-destructive hover:text-destructive">
+                Hapus
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Label>Image</Label>
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="w-full border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
+          >
+            <ImageIcon className="h-8 w-8 mb-2" />
+            <p className="text-xs">Pilih dari Media Library</p>
+          </button>
+        </div>
+      )}
+      <div className="space-y-2">
+        <Label>Alt Text</Label>
+        <Input
+          value={element.props.alt || ""}
+          onChange={(e) => onPropChange("alt", e.target.value)}
+          placeholder="Deskripsi gambar untuk SEO"
+        />
+      </div>
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={handleSelect}
+        fileType="image"
+      />
+    </>
+  );
+}
+
   element,
   onPropChange,
 }: {
