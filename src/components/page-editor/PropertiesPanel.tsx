@@ -158,19 +158,23 @@ function ContentProperties({
               rows={3}
             />
           </div>
+          <FontFamilyPicker value={element.props.fontFamily || ""} onChange={(v) => onPropChange("fontFamily", v)} />
         </>
       );
 
     case "paragraph":
       return (
-        <div className="space-y-2">
-          <Label>Text Content</Label>
-          <Textarea
-            value={element.props.content || ""}
-            onChange={(e) => onPropChange("content", e.target.value)}
-            rows={6}
-          />
-        </div>
+        <>
+          <div className="space-y-2">
+            <Label>Text Content</Label>
+            <Textarea
+              value={element.props.content || ""}
+              onChange={(e) => onPropChange("content", e.target.value)}
+              rows={6}
+            />
+          </div>
+          <FontFamilyPicker value={element.props.fontFamily || ""} onChange={(v) => onPropChange("fontFamily", v)} />
+        </>
       );
 
     case "image":
