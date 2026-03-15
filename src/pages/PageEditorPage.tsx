@@ -11,6 +11,7 @@ import { LayerPanel } from "@/components/page-editor/LayerPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { cn } from "@/lib/utils";
 
 export default function PageEditorPage() {
   const navigate = useNavigate();
@@ -19,6 +20,8 @@ export default function PageEditorPage() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [mobileLeftPanel, setMobileLeftPanel] = useState(false);
+  const [mobileRightPanel, setMobileRightPanel] = useState(false);
 
   const {
     elements,
@@ -30,6 +33,7 @@ export default function PageEditorPage() {
     setHasUnsavedChanges,
     hasUnsavedChanges,
     showLayerPanel,
+    selectedElementId,
   } = useEditorStore();
 
   const sensors = useSensors(
@@ -39,6 +43,14 @@ export default function PageEditorPage() {
       },
     })
   );
+
+  // Auto-show right panel on mobile when element selected
+  useEffect(() => {
+    if (selectedElementId && window.innerWidth < 768) {
+      setMobileRightPanel(true);
+      setMobileLeftPanel(false);
+    }
+  }, [selectedElementId]);
 
   // Load existing page if editing
   useEffect(() => {
@@ -157,7 +169,7 @@ export default function PageEditorPage() {
           .single();
 
         if (error) throw error;
-        
+
         setPageSettings({ id: data.id });
         window.history.replaceState(null, "", `/editor?id=${data.id}`);
         toast.success("Page created successfully");
@@ -195,13 +207,65 @@ export default function PageEditorPage() {
           onSave={handleSave}
           onPreview={handlePreview}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          showLeftPanel={mobileLeftPanel}
+          showRightPanel={mobileRightPanel}
+          onToggleLeftPanel={() => {
+            setMobileLeftPanel(!mobileLeftPanel);
+            if (!mobileLeftPanel) setMobileRightPanel(false);
+          }}
+          onToggleRightPanel={() => {
+            setMobileRightPanel(!mobileRightPanel);
+            if (!mobileRightPanel) setMobileLeftPanel(false);
+          }}
         />
 
-        <div className="flex-1 flex overflow-hidden">
-          <ComponentLibrary />
-          {showLayerPanel && <LayerPanel />}
+        <div className="flex-1 flex overflow-hidden relative">
+          {/* Left panel - Component Library (desktop: always, mobile: overlay) */}
+          <div
+            className={cn(
+              "border-r border-border bg-background flex flex-col h-full z-20",
+              // Desktop: fixed sidebar
+              "hidden md:flex md:w-72 md:relative md:shrink-0",
+              // Mobile: overlay
+              mobileLeftPanel && "!flex w-72 absolute left-0 top-0 bottom-0 shadow-xl"
+            )}
+          >
+            <ComponentLibrary />
+          </div>
+
+          {/* Layer panel */}
+          {showLayerPanel && (
+            <div className="hidden md:flex">
+              <LayerPanel />
+            </div>
+          )}
+
+          {/* Canvas */}
           <EditorCanvas />
-          <PropertiesPanel />
+
+          {/* Right panel - Properties (desktop: always, mobile: overlay) */}
+          <div
+            className={cn(
+              "border-l border-border bg-background flex flex-col h-full z-20",
+              // Desktop: fixed sidebar
+              "hidden md:flex md:w-72 md:relative md:shrink-0",
+              // Mobile: overlay
+              mobileRightPanel && "!flex w-72 absolute right-0 top-0 bottom-0 shadow-xl"
+            )}
+          >
+            <PropertiesPanel />
+          </div>
+
+          {/* Mobile backdrop */}
+          {(mobileLeftPanel || mobileRightPanel) && (
+            <div
+              className="md:hidden fixed inset-0 bg-black/20 z-10"
+              onClick={() => {
+                setMobileLeftPanel(false);
+                setMobileRightPanel(false);
+              }}
+            />
+          )}
         </div>
 
         <FloatingToolbar />
