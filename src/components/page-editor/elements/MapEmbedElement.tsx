@@ -79,7 +79,7 @@ export function MapEmbedElement({
         <iframe
           src={embedUrl}
           width="100%"
-          height={minHeight}
+          height={mapHeight}
           style={{ border: 0, borderRadius }}
           allowFullScreen
           loading="lazy"
