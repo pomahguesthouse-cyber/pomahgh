@@ -63,7 +63,7 @@ export function MapEmbedElement({
                   : `${data.latitude},${data.longitude}`
               );
               setHotelMapUrl(
-                `https://maps.google.com/maps?q=${query}&z=${mapZoom}&output=embed`
+                `https://maps.google.com/maps?q=${query}&ll=${data.latitude},${data.longitude}&z=${mapZoom}&t=m&ie=UTF8&iwloc=&output=embed`
               );
             }
           }
