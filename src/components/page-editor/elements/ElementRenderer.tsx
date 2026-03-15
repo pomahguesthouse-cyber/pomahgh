@@ -15,6 +15,10 @@ import { SocialLinksElement } from "./SocialLinksElement";
 import { WhatsAppButtonElement } from "./WhatsAppButtonElement";
 import { MapEmbedElement } from "./MapEmbedElement";
 import { HeroSliderElement } from "./HeroSliderElement";
+import { RoomSliderElement } from "./RoomSliderElement";
+import { FacilitiesElement } from "./FacilitiesElement";
+import { CityEventsElement } from "./CityEventsElement";
+import { NearbyLocationsElement } from "./NearbyLocationsElement";
 
 interface ElementRendererProps {
   element: EditorElement;
