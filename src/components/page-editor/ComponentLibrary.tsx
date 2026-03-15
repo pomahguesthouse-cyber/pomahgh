@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Type, Image, MousePointer, SlidersHorizontal, Play, MapPin, Video, Code, Minus as MinusIcon, Layout, Link2, MessageCircle, Grid3X3, GalleryHorizontal, Sparkles } from "lucide-react";
+import { Plus, Search, Type, Image, MousePointer, SlidersHorizontal, Play, MapPin, Video, Code, Minus as MinusIcon, Layout, Link2, MessageCircle, Grid3X3, GalleryHorizontal, Sparkles, BedDouble, Building2, CalendarDays, Navigation } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -71,6 +71,8 @@ const categories: Category[] = [
     icon: SlidersHorizontal,
     elements: [
       { type: "hero-slider", name: "Hero Slider", icon: Play, description: "Full-width hero carousel" },
+      { type: "room-slider", name: "Room Slider", icon: BedDouble, description: "Slider kamar dari database", defaultProps: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } },
+      { type: "city-events", name: "City Events", icon: CalendarDays, description: "Slider event kota", defaultProps: { title: "Event & Agenda", visibleCards: 3, maxItems: 10, autoPlay: true } },
     ],
   },
   {
@@ -81,6 +83,15 @@ const categories: Category[] = [
       { type: "video", name: "Video", icon: Video, description: "Embed YouTube/Vimeo" },
       { type: "map-embed", name: "Map", icon: MapPin, description: "Google Maps embed" },
       { type: "html", name: "Custom HTML", icon: Code, description: "Raw HTML/CSS/JS" },
+    ],
+  },
+  {
+    id: "data",
+    name: "Data Dinamis",
+    icon: Building2,
+    elements: [
+      { type: "facilities", name: "Fasilitas", icon: Building2, description: "Fasilitas hotel dari database", defaultProps: { title: "Fasilitas Hotel", columns: 3, layout: "card" } },
+      { type: "nearby-locations", name: "Nearby Location", icon: Navigation, description: "Lokasi terdekat dari database", defaultProps: { title: "Lokasi Terdekat", columns: 2, layout: "list" } },
     ],
   },
   {
@@ -147,6 +158,14 @@ function createElement(type: string, overrideProps?: Record<string, any>, overri
       element = { ...baseElement, props: { phoneNumber: "", message: "Halo, saya ingin bertanya...", label: "Chat via WhatsApp" }, styles: { textAlign: "center" } }; break;
     case "map-embed":
       element = { ...baseElement, props: { embedUrl: "" }, styles: { width: "100%", minHeight: "400px" } }; break;
+    case "room-slider":
+      element = { ...baseElement, props: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } }; break;
+    case "facilities":
+      element = { ...baseElement, props: { title: "Fasilitas Hotel", columns: 3, layout: "card" } }; break;
+    case "city-events":
+      element = { ...baseElement, props: { title: "Event & Agenda", visibleCards: 3, maxItems: 10, autoPlay: true } }; break;
+    case "nearby-locations":
+      element = { ...baseElement, props: { title: "Lokasi Terdekat", columns: 2, layout: "list" } }; break;
     default:
       element = baseElement;
   }
