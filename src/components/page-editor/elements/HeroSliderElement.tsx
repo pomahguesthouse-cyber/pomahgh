@@ -47,6 +47,7 @@ export function HeroSliderElement({
   const autoPlayInterval = element.props.autoPlayInterval || 5000;
   const showArrows = element.props.showArrows !== false;
   const showDots = element.props.showDots !== false;
+  const transitionEffect = element.props.transitionEffect || "fade";
 
   useEffect(() => {
     if (!autoPlay || isPreview === false) return;
@@ -205,17 +206,45 @@ export function HeroSliderElement({
         }}
       >
         {/* Slide Background */}
-        <div
-          className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-          style={{
-            backgroundImage: `url(${currentSlideData.imageUrl})`,
-          }}
-        >
-          <div 
-            className="absolute inset-0"
-            style={{ backgroundColor: element.props.overlayColor || "rgba(0,0,0,0.5)" }}
-          />
-        </div>
+        {slides.map((slide: any, index: number) => {
+          const isActive = index === currentSlide;
+          const bgStyle: React.CSSProperties = {
+            backgroundImage: `url(${slide.imageUrl || ""})`,
+            ...(transitionEffect === "slide"
+              ? {
+                  transform: `translateX(${(index - currentSlide) * 100}%)`,
+                  transition: "transform 0.7s ease-in-out",
+                  position: "absolute",
+                  inset: 0,
+                }
+              : transitionEffect === "zoom"
+              ? {
+                  opacity: isActive ? 1 : 0,
+                  transform: isActive ? "scale(1)" : "scale(1.15)",
+                  transition: "opacity 0.7s ease-in-out, transform 0.7s ease-in-out",
+                  position: "absolute",
+                  inset: 0,
+                }
+              : {
+                  opacity: isActive ? 1 : 0,
+                  transition: "opacity 0.7s ease-in-out",
+                  position: "absolute",
+                  inset: 0,
+                }),
+          };
+          return (
+            <div
+              key={slide.id || index}
+              className="bg-cover bg-center"
+              style={bgStyle}
+            >
+              <div
+                className="absolute inset-0"
+                style={{ backgroundColor: element.props.overlayColor || "rgba(0,0,0,0.5)" }}
+              />
+            </div>
+          );
+        })}
 
         {/* Slide Content */}
         <div 

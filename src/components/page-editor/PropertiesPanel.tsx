@@ -158,19 +158,23 @@ function ContentProperties({
               rows={3}
             />
           </div>
+          <FontFamilyPicker value={element.props.fontFamily || "___default___"} onChange={(v: string) => onPropChange("fontFamily", v === "___default___" ? "" : v)} />
         </>
       );
 
     case "paragraph":
       return (
-        <div className="space-y-2">
-          <Label>Text Content</Label>
-          <Textarea
-            value={element.props.content || ""}
-            onChange={(e) => onPropChange("content", e.target.value)}
-            rows={6}
-          />
-        </div>
+        <>
+          <div className="space-y-2">
+            <Label>Text Content</Label>
+            <Textarea
+              value={element.props.content || ""}
+              onChange={(e) => onPropChange("content", e.target.value)}
+              rows={6}
+            />
+          </div>
+          <FontFamilyPicker value={element.props.fontFamily || "___default___"} onChange={(v: string) => onPropChange("fontFamily", v === "___default___" ? "" : v)} />
+        </>
       );
 
     case "image":
@@ -418,6 +422,7 @@ function HeroSliderContentProperties({
         <input type="checkbox" checked={element.props.showCounter || false} onChange={(e) => onPropChange("showCounter", e.target.checked)} id="hsShowCounter" />
         <Label htmlFor="hsShowCounter">Show Counter</Label>
       </div>
+      <TransitionEffectPicker value={element.props.transitionEffect || "fade"} onChange={(v) => onPropChange("transitionEffect", v)} />
 
       <div className="border-t border-border pt-4 mt-4">
         <div className="flex items-center justify-between mb-3">
@@ -676,6 +681,7 @@ function GalleryContentProperties({
             />
             <Label htmlFor="galleryShowDots">Show Dots</Label>
           </div>
+          <TransitionEffectPicker value={element.props.transitionEffect || "fade"} onChange={(v) => onPropChange("transitionEffect", v)} />
         </>
       )}
 
@@ -774,6 +780,72 @@ function GalleryContentProperties({
         fileType="image"
       />
     </>
+  );
+}
+
+const FONT_FAMILIES = [
+  { value: "", label: "Default (System)" },
+  { value: "'Inter', sans-serif", label: "Inter" },
+  { value: "'Playfair Display', serif", label: "Playfair Display" },
+  { value: "'Poppins', sans-serif", label: "Poppins" },
+  { value: "'Roboto', sans-serif", label: "Roboto" },
+  { value: "'Open Sans', sans-serif", label: "Open Sans" },
+  { value: "'Lato', sans-serif", label: "Lato" },
+  { value: "'Montserrat', sans-serif", label: "Montserrat" },
+  { value: "'Merriweather', serif", label: "Merriweather" },
+  { value: "'Raleway', sans-serif", label: "Raleway" },
+  { value: "'Nunito', sans-serif", label: "Nunito" },
+  { value: "'DM Sans', sans-serif", label: "DM Sans" },
+  { value: "'Lora', serif", label: "Lora" },
+  { value: "'Cormorant Garamond', serif", label: "Cormorant Garamond" },
+  { value: "'Josefin Sans', sans-serif", label: "Josefin Sans" },
+  { value: "'Crimson Text', serif", label: "Crimson Text" },
+  { value: "'Source Sans 3', sans-serif", label: "Source Sans 3" },
+  { value: "'PT Serif', serif", label: "PT Serif" },
+];
+
+function FontFamilyPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <Label>Font Family</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select font" />
+        </SelectTrigger>
+        <SelectContent className="max-h-[260px]">
+          {FONT_FAMILIES.map((f) => (
+            <SelectItem key={f.value} value={f.value || "___default___"} className="text-sm">
+              <span style={{ fontFamily: f.value || "inherit" }}>{f.label}</span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+const TRANSITION_EFFECTS = [
+  { value: "fade", label: "Fade" },
+  { value: "slide", label: "Slide" },
+  { value: "zoom", label: "Zoom" },
+  { value: "flip", label: "Flip" },
+];
+
+function TransitionEffectPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <Label>Transition Effect</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {TRANSITION_EFFECTS.map((t) => (
+            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 

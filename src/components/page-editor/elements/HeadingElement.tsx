@@ -72,6 +72,7 @@ export function HeadingElement({
     fontSize,
     fontWeight,
     color,
+    fontFamily: element.props.fontFamily || undefined,
     textAlign: textAlign as React.CSSProperties["textAlign"],
     marginTop: element.styles.marginTop,
     marginBottom: element.styles.marginBottom,
