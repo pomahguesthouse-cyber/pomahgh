@@ -47,6 +47,7 @@ export function HeroSliderElement({
   const autoPlayInterval = element.props.autoPlayInterval || 5000;
   const showArrows = element.props.showArrows !== false;
   const showDots = element.props.showDots !== false;
+  const transitionEffect = element.props.transitionEffect || "fade";
 
   useEffect(() => {
     if (!autoPlay || isPreview === false) return;
