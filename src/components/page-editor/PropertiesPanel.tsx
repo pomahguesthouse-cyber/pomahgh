@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useEditorStore, EditorElement } from "@/stores/editorStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Paintbrush, Layout } from "lucide-react";
+import { Settings, Paintbrush, Layout, Image as ImageIcon } from "lucide-react";
+import { MediaPickerDialog } from "@/components/admin/MediaPickerDialog";
+import { MediaFile } from "@/hooks/useMediaLibrary";
 
 export function PropertiesPanel() {
   const { elements, selectedElementId, updateElement, saveToHistory } = useEditorStore();
