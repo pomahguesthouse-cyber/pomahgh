@@ -343,9 +343,11 @@ function ContentProperties({
             <p className="text-xs text-muted-foreground">Google Maps → Share → Embed a map → Copy src URL</p>
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label>Show Title</Label>
-            <Switch checked={element.props.showTitle || false} onCheckedChange={(v) => onPropChange("showTitle", v)} />
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <input type="checkbox" checked={element.props.showTitle || false} onChange={(e) => onPropChange("showTitle", e.target.checked)} />
+              Show Title
+            </Label>
           </div>
 
           {element.props.showTitle && (
@@ -360,26 +362,26 @@ function ContentProperties({
               </div>
               <div className="space-y-2">
                 <Label>Title Font</Label>
-                <FontFamilyPicker value={element.props.titleFontFamily || ""} onChange={(v) => onPropChange("titleFontFamily", v)} />
+                <FontFamilyPicker value={element.props.titleFontFamily || ""} onChange={(v: string) => onPropChange("titleFontFamily", v)} />
               </div>
               <div className="space-y-2">
                 <Label>Subtitle Font</Label>
-                <FontFamilyPicker value={element.props.subtitleFontFamily || ""} onChange={(v) => onPropChange("subtitleFontFamily", v)} />
+                <FontFamilyPicker value={element.props.subtitleFontFamily || ""} onChange={(v: string) => onPropChange("subtitleFontFamily", v)} />
               </div>
               <div className="space-y-2">
                 <Label>Title Color</Label>
-                <ColorPickerWithPresets color={element.props.titleColor || "#000000"} onChange={(c) => onPropChange("titleColor", c)} />
+                <Input type="color" value={element.props.titleColor || "#000000"} onChange={(e) => onPropChange("titleColor", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Subtitle Color</Label>
-                <ColorPickerWithPresets color={element.props.subtitleColor || "#666666"} onChange={(c) => onPropChange("subtitleColor", c)} />
+                <Input type="color" value={element.props.subtitleColor || "#666666"} onChange={(e) => onPropChange("subtitleColor", e.target.value)} />
               </div>
             </>
           )}
 
           <div className="space-y-2">
             <Label>Map Height</Label>
-            <Select value={element.styles.minHeight || "400px"} onValueChange={(v) => onStyleChange("minHeight", v)}>
+            <Select value={element.props.mapHeight || "400px"} onValueChange={(v: string) => onPropChange("mapHeight", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="250px">Small (250px)</SelectItem>
@@ -392,7 +394,7 @@ function ContentProperties({
 
           <div className="space-y-2">
             <Label>Border Radius</Label>
-            <Select value={element.styles.borderRadius || "8px"} onValueChange={(v) => onStyleChange("borderRadius", v)}>
+            <Select value={element.props.mapBorderRadius || "8px"} onValueChange={(v: string) => onPropChange("mapBorderRadius", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="0px">None</SelectItem>
@@ -405,7 +407,7 @@ function ContentProperties({
 
           <div className="space-y-2">
             <Label>Container Padding</Label>
-            <Select value={element.props.containerPadding || "0px"} onValueChange={(v) => onPropChange("containerPadding", v)}>
+            <Select value={element.props.containerPadding || "0px"} onValueChange={(v: string) => onPropChange("containerPadding", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="0px">None</SelectItem>
@@ -416,14 +418,16 @@ function ContentProperties({
             </Select>
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label>Shadow</Label>
-            <Switch checked={element.props.shadowEnabled || false} onCheckedChange={(v) => onPropChange("shadowEnabled", v)} />
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <input type="checkbox" checked={element.props.shadowEnabled || false} onChange={(e) => onPropChange("shadowEnabled", e.target.checked)} />
+              Shadow
+            </Label>
           </div>
 
           <div className="space-y-2">
             <Label>Container Background</Label>
-            <ColorPickerWithPresets color={element.props.containerBgColor || "#ffffff"} onChange={(c) => onPropChange("containerBgColor", c)} />
+            <Input type="color" value={element.props.containerBgColor || "#ffffff"} onChange={(e) => onPropChange("containerBgColor", e.target.value)} />
           </div>
         </>
       );
