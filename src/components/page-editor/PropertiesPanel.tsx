@@ -333,15 +333,31 @@ function ContentProperties({
       return (
         <>
           <div className="space-y-2">
-            <Label>Google Maps Embed URL</Label>
-            <Textarea
-              value={element.props.embedUrl || ""}
-              onChange={(e) => onPropChange("embedUrl", e.target.value)}
-              rows={3}
-              placeholder="https://www.google.com/maps/embed?..."
-            />
-            <p className="text-xs text-muted-foreground">Google Maps → Share → Embed a map → Copy src URL</p>
+            <Label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={element.props.useHotelLocation !== false}
+                onChange={(e) => onPropChange("useHotelLocation", e.target.checked)}
+              />
+              Gunakan Lokasi Hotel (dari database)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Otomatis mengambil koordinat & Place ID dari pengaturan hotel
+            </p>
           </div>
+
+          {!element.props.useHotelLocation && (
+            <div className="space-y-2">
+              <Label>Google Maps Embed URL (Manual)</Label>
+              <Textarea
+                value={element.props.embedUrl || ""}
+                onChange={(e) => onPropChange("embedUrl", e.target.value)}
+                rows={3}
+                placeholder="https://www.google.com/maps/embed?..."
+              />
+              <p className="text-xs text-muted-foreground">Google Maps → Share → Embed a map → Copy src URL</p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="flex items-center gap-2">

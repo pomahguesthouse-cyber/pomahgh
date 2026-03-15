@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import { ElementWrapper } from "./ElementWrapper";
 import { EditorElement } from "@/stores/editorStore";
 import { MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MapEmbedElementProps {
   element: EditorElement;
@@ -21,6 +23,7 @@ export function MapEmbedElement({
 }: MapEmbedElementProps) {
   const {
     embedUrl = "",
+    useHotelLocation = true,
     title = "",
     subtitle = "",
     showTitle = false,
@@ -41,6 +44,38 @@ export function MapEmbedElement({
     marginBottom,
   } = element.styles;
 
+  const [hotelMapUrl, setHotelMapUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (useHotelLocation && !embedUrl) {
+      supabase
+        .from("hotel_settings")
+        .select("latitude, longitude, hotel_name, address, google_place_id")
+        .limit(1)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            if (data.google_place_id) {
+              // Use Place ID for more accurate embed
+              setHotelMapUrl(
+                `https://www.google.com/maps?q=place_id:${data.google_place_id}&output=embed`
+              );
+            } else if (data.latitude && data.longitude) {
+              const query = encodeURIComponent(
+                data.hotel_name
+                  ? `${data.hotel_name}, ${data.address || ""}`
+                  : `${data.latitude},${data.longitude}`
+              );
+              setHotelMapUrl(
+                `https://www.google.com/maps?q=${query}&output=embed`
+              );
+            }
+          }
+        });
+    }
+  }, [useHotelLocation, embedUrl]);
+
+  const finalUrl = embedUrl || hotelMapUrl;
   const borderRadius = mapBorderRadius;
 
   const containerStyle: React.CSSProperties = {
@@ -75,9 +110,9 @@ export function MapEmbedElement({
           )}
         </div>
       )}
-      {embedUrl ? (
+      {finalUrl ? (
         <iframe
-          src={embedUrl}
+          src={finalUrl}
           width="100%"
           height={mapHeight}
           style={{ border: 0, borderRadius }}
@@ -93,7 +128,9 @@ export function MapEmbedElement({
         >
           <MapPin className="h-8 w-8 opacity-40" />
           <span className="text-sm font-medium">Google Maps Embed</span>
-          <span className="text-xs opacity-60">Paste embed URL in properties panel</span>
+          <span className="text-xs opacity-60">
+            Aktifkan "Gunakan Lokasi Hotel" atau paste embed URL
+          </span>
         </div>
       )}
     </div>
