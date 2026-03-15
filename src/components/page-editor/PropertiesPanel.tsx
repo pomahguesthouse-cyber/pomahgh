@@ -352,6 +352,28 @@ function ContentProperties({
       );
 
     case "hero-slider":
+      const slides = element.props.slides || [];
+      const handleAddSlide = () => {
+        const newSlide = {
+          id: `slide-${Date.now()}`,
+          imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920",
+          headline: "New Slide",
+          subheadline: "Add your subheadline here",
+          ctaText: "Learn More",
+          ctaUrl: "#",
+        };
+        onPropChange("slides", [...slides, newSlide]);
+      };
+      const handleUpdateSlide = (index: number, field: string, value: string) => {
+        const updatedSlides = slides.map((slide: any, i: number) => 
+          i === index ? { ...slide, [field]: value } : slide
+        );
+        onPropChange("slides", updatedSlides);
+      };
+      const handleDeleteSlide = (index: number) => {
+        const updatedSlides = slides.filter((_: any, i: number) => i !== index);
+        onPropChange("slides", updatedSlides);
+      };
       return (
         <>
           <div className="space-y-2">
@@ -360,42 +382,6 @@ function ContentProperties({
               value={element.props.height || "500px"}
               onChange={(e) => onPropChange("height", e.target.value)}
               placeholder="500px"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Overlay Color</Label>
-            <Input
-              type="color"
-              value={element.props.overlayColor || "rgba(0,0,0,0.5)"}
-              onChange={(e) => onPropChange("overlayColor", e.target.value)}
-              className="h-10 p-1"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Heading Color</Label>
-            <Input
-              type="color"
-              value={element.props.headingColor || "#ffffff"}
-              onChange={(e) => onPropChange("headingColor", e.target.value)}
-              className="h-10 p-1"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Subheading Color</Label>
-            <Input
-              type="color"
-              value={element.props.subheadingColor || "#e0e0e0"}
-              onChange={(e) => onPropChange("subheadingColor", e.target.value)}
-              className="h-10 p-1"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>CTA Background</Label>
-            <Input
-              type="color"
-              value={element.props.ctaBgColor || "#e11d48"}
-              onChange={(e) => onPropChange("ctaBgColor", e.target.value)}
-              className="h-10 p-1"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -425,9 +411,133 @@ function ContentProperties({
             />
             <Label htmlFor="showDots">Show Dots</Label>
           </div>
-          <div className="space-y-2 mt-4">
-            <Label className="font-medium">Slides</Label>
-            <p className="text-xs text-muted-foreground">Edit slides in preview mode</p>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={element.props.showCounter || false}
+              onChange={(e) => onPropChange("showCounter", e.target.checked)}
+              id="showCounter"
+            />
+            <Label htmlFor="showCounter">Show Counter</Label>
+          </div>
+          
+          <div className="border-t border-border pt-4 mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <Label className="font-medium">Slides ({slides.length})</Label>
+              <Button variant="outline" size="sm" onClick={handleAddSlide} className="h-7 text-xs">
+                + Add Slide
+              </Button>
+            </div>
+            
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              {slides.map((slide: any, index: number) => (
+                <div key={slide.id} className="p-3 border border-border rounded-lg bg-muted/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium">Slide {index + 1}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteSlide(index)}
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="text-[10px]">Image URL</Label>
+                      <Input
+                        value={slide.imageUrl || ""}
+                        onChange={(e) => handleUpdateSlide(index, "imageUrl", e.target.value)}
+                        placeholder="https://..."
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Headline</Label>
+                      <Input
+                        value={slide.headline || ""}
+                        onChange={(e) => handleUpdateSlide(index, "headline", e.target.value)}
+                        placeholder="Headline"
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Subheadline</Label>
+                      <Input
+                        value={slide.subheadline || ""}
+                        onChange={(e) => handleUpdateSlide(index, "subheadline", e.target.value)}
+                        placeholder="Subheadline"
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-[10px]">Button Text</Label>
+                        <Input
+                          value={slide.ctaText || ""}
+                          onChange={(e) => handleUpdateSlide(index, "ctaText", e.target.value)}
+                          placeholder="Book Now"
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px]">Button URL</Label>
+                        <Input
+                          value={slide.ctaUrl || ""}
+                          onChange={(e) => handleUpdateSlide(index, "ctaUrl", e.target.value)}
+                          placeholder="#booking"
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="border-t border-border pt-4 mt-4">
+            <Label className="font-medium mb-2 block">Colors</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[10px]">Overlay</Label>
+                <Input
+                  type="color"
+                  value={element.props.overlayColor || "#000000"}
+                  onChange={(e) => onPropChange("overlayColor", e.target.value)}
+                  className="h-8 p-1"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px]">Heading</Label>
+                <Input
+                  type="color"
+                  value={element.props.headingColor || "#ffffff"}
+                  onChange={(e) => onPropChange("headingColor", e.target.value)}
+                  className="h-8 p-1"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px]">Subheading</Label>
+                <Input
+                  type="color"
+                  value={element.props.subheadingColor || "#e0e0e0"}
+                  onChange={(e) => onPropChange("subheadingColor", e.target.value)}
+                  className="h-8 p-1"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px]">CTA Button</Label>
+                <Input
+                  type="color"
+                  value={element.props.ctaBgColor || "#e11d48"}
+                  onChange={(e) => onPropChange("ctaBgColor", e.target.value)}
+                  className="h-8 p-1"
+                />
+              </div>
+            </div>
           </div>
         </>
       );

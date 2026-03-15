@@ -73,6 +73,121 @@ export function HeroSliderElement({
   };
 
   const currentSlideData = slides[currentSlide] || slides[0];
+  
+  const contentPosition = element.props.contentPosition || "center";
+  const layout = element.props.layout || "full";
+
+  const getAlignmentClass = () => {
+    switch (contentPosition) {
+      case "left": return "items-start text-left";
+      case "right": return "items-end text-right";
+      default: return "items-center text-center";
+    }
+  };
+
+  const getPaddingClass = () => {
+    switch (contentPosition) {
+      case "left": return "justify-start pl-8 md:pl-16";
+      case "right": return "justify-end pr-8 md:pr-16";
+      default: return "justify-center";
+    }
+  };
+
+  if (layout === "split") {
+    return (
+      <ElementWrapper
+        element={element}
+        isSelected={isSelected}
+        isHovered={isHovered}
+        onSelect={onSelect}
+        onHover={onHover}
+      >
+        <div
+          className="relative overflow-hidden grid md:grid-cols-2"
+          style={{ minHeight: element.props.height || "500px" }}
+        >
+          {/* Content Side */}
+          <div 
+            className={`relative z-10 flex flex-col justify-center px-8 md:px-16 py-16 ${getAlignmentClass()}`}
+          >
+            <h1 
+              className="text-4xl md:text-5xl font-bold mb-4"
+              style={{ color: element.props.headingColor || "#111827" }}
+            >
+              {currentSlideData.headline}
+            </h1>
+            <p 
+              className="text-lg md:text-xl mb-8 max-w-md"
+              style={{ color: element.props.subheadingColor || "#4b5563" }}
+            >
+              {currentSlideData.subheadline}
+            </p>
+            {currentSlideData.ctaText && (
+              <a
+                href={currentSlideData.ctaUrl || "#"}
+                className="inline-block px-8 py-3 rounded-lg font-semibold transition-colors w-fit"
+                style={{
+                  backgroundColor: element.props.ctaBgColor || "#059669",
+                  color: "#ffffff",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {currentSlideData.ctaText}
+              </a>
+            )}
+          </div>
+          
+          {/* Image Side */}
+          <div
+            className="relative hidden md:block bg-cover bg-center"
+            style={{ backgroundImage: `url(${currentSlideData.imageUrl})` }}
+          >
+            <div 
+              className="absolute inset-0"
+              style={{ backgroundColor: element.props.overlayColor || "rgba(0,0,0,0)" }}
+            />
+          </div>
+          
+          {/* Mobile Background */}
+          <div
+            className="absolute inset-0 md:hidden bg-cover bg-center -z-10"
+            style={{ backgroundImage: `url(${currentSlideData.imageUrl})` }}
+          >
+            <div 
+              className="absolute inset-0"
+              style={{ backgroundColor: element.props.overlayColor || "rgba(0,0,0,0.5)" }}
+            />
+          </div>
+
+          {/* Navigation */}
+          {showArrows && (
+            <>
+              <button
+                onClick={goToPrev}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center bg-white/80 hover:bg-white rounded-full shadow-lg"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-800" />
+              </button>
+              <button
+                onClick={goToNext}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center bg-white/80 hover:bg-white rounded-full shadow-lg"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-800" />
+              </button>
+            </>
+          )}
+          
+          {element.props.showCounter && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-3 py-1 bg-white/90 rounded-full text-sm shadow">
+              {currentSlide + 1} / {slides.length}
+            </div>
+          )}
+        </div>
+      </ElementWrapper>
+    );
+  }
 
   return (
     <ElementWrapper
@@ -103,45 +218,46 @@ export function HeroSliderElement({
 
         {/* Slide Content */}
         <div 
-          className="relative z-10 flex flex-col items-center justify-center text-center px-4 py-16 md:py-24"
+          className={`relative z-10 flex flex-col ${getPaddingClass()} px-4 py-16 md:py-24 h-full`}
           style={{
             minHeight: element.props.height || "500px",
             paddingTop: element.styles.paddingTop || "80px",
             paddingBottom: element.styles.paddingBottom || "80px",
           }}
         >
-          <h1 
-            className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 animate-fade-in-up"
-            style={{ 
-              color: element.props.headingColor || "#ffffff",
-              textAlign: element.styles.textAlign || "center",
-            }}
-          >
-            {currentSlideData.headline}
-          </h1>
-          
-          <p 
-            className="text-lg md:text-xl mb-8 max-w-2xl animate-fade-in-up"
-            style={{ 
-              color: element.props.subheadingColor || "#e0e0e0",
-              textAlign: element.styles.textAlign || "center",
-            }}
-          >
-            {currentSlideData.subheadline}
-          </p>
-
-          {currentSlideData.ctaText && (
-            <a
-              href={currentSlideData.ctaUrl || "#"}
-              className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors animate-fade-in-up"
-              style={{
-                backgroundColor: element.props.ctaBgColor || "#e11d48",
+          <div className={`flex flex-col ${getAlignmentClass()} max-w-4xl`}>
+            <h1 
+              className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4"
+              style={{ 
+                color: element.props.headingColor || "#ffffff",
               }}
-              onClick={(e) => e.stopPropagation()}
             >
-              {currentSlideData.ctaText}
-            </a>
-          )}
+              {currentSlideData.headline}
+            </h1>
+            
+            <p 
+              className="text-lg md:text-xl mb-8 max-w-2xl"
+              style={{ 
+                color: element.props.subheadingColor || "#e0e0e0",
+              }}
+            >
+              {currentSlideData.subheadline}
+            </p>
+
+            {currentSlideData.ctaText && (
+              <a
+                href={currentSlideData.ctaUrl || "#"}
+                className="inline-block px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                style={{
+                  backgroundColor: element.props.ctaBgColor || "#e11d48",
+                  color: "#ffffff",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {currentSlideData.ctaText}
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Navigation Arrows */}
