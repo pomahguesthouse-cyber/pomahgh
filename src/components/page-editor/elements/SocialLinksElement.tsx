@@ -43,7 +43,7 @@ export function SocialLinksElement({
   const style: React.CSSProperties = { marginTop, marginBottom };
 
   const content = (
-    <div style={style} className={cn("flex gap-4", {
+    <div style={style} className={cn("flex flex-wrap gap-3 md:gap-4", {
       "justify-start": textAlign === "left",
       "justify-center": textAlign === "center" || !textAlign,
       "justify-end": textAlign === "right",

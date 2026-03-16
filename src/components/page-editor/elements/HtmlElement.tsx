@@ -33,6 +33,7 @@ export function HtmlElement({
   const htmlContent = html ? (
     <div
       style={style}
+      className="w-full max-w-full overflow-x-auto break-words"
       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
     />
   ) : (
@@ -47,7 +48,7 @@ export function HtmlElement({
 
   if (isPreview) {
     return html ? (
-      <div style={style} dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
+      <div style={style} className="w-full max-w-full overflow-x-auto break-words" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
     ) : null;
   }
 

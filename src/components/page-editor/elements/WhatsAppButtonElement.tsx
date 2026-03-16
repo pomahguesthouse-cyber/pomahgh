@@ -44,7 +44,7 @@ export function WhatsAppButtonElement({
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => !isPreview && e.preventDefault()}
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-white font-medium transition-colors hover:opacity-90"
+        className="inline-flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 rounded-full text-white font-medium transition-colors hover:opacity-90 text-sm md:text-base"
         style={{ backgroundColor: "#25D366", fontFamily: element.props.fontFamily || undefined }}
       >
         <MessageCircle className="h-5 w-5" />

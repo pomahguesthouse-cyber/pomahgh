@@ -81,7 +81,7 @@ export function ParagraphElement({
       onKeyDown={handleKeyDown}
       style={style}
       className={cn(
-        "outline-none leading-relaxed text-sm md:text-base w-full",
+        "outline-none leading-relaxed text-sm md:text-base w-full break-words overflow-wrap-anywhere",
         isEditing && "ring-2 ring-primary/50 rounded px-1"
       )}
     >
