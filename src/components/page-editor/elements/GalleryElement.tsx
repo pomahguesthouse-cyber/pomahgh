@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ElementWrapper } from "./ElementWrapper";
 import { EditorElement } from "@/stores/editorStore";
 import { Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface GalleryElementProps {
   element: EditorElement;

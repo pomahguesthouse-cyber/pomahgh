@@ -107,16 +107,18 @@ export function MapEmbedElement({
         </div>
       )}
       {finalUrl ? (
-        <iframe
-          src={finalUrl}
-          width="100%"
-          height={mapHeight}
-          style={{ border: 0, borderRadius }}
-          allowFullScreen
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          title="Google Maps"
-        />
+        <div className="w-full" style={{ minHeight: "250px", height: mapHeight, maxHeight: "70vh" }}>
+          <iframe
+            src={finalUrl}
+            width="100%"
+            height="100%"
+            style={{ border: 0, borderRadius }}
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="Google Maps"
+          />
+        </div>
       ) : (
         <div
           className="w-full bg-muted rounded-lg flex flex-col items-center justify-center gap-2 text-muted-foreground"
