@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
-import { GripVertical, Trash2, Copy } from "lucide-react";
+import { GripVertical, Trash2, Copy, Settings, MousePointer2 } from "lucide-react";
 import { useEditorStore } from "@/stores/editorStore";
 import { Button } from "@/components/ui/button";
 
@@ -25,7 +25,7 @@ export function ElementWrapper({
   children,
   isPreview = false,
 }: ElementWrapperProps) {
-  const { removeElement, duplicateElement, saveToHistory } = useEditorStore();
+  const { removeElement, duplicateElement, saveToHistory, setShowLayerPanel } = useEditorStore();
   
   const {
     attributes,
@@ -53,6 +53,12 @@ export function ElementWrapper({
     duplicateElement(id);
   };
 
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect();
+    setShowLayerPanel(false);
+  };
+
   if (isPreview) {
     return <div className="relative">{children}</div>;
   }
@@ -74,12 +80,58 @@ export function ElementWrapper({
       onMouseEnter={() => onHover(true)}
       onMouseLeave={() => onHover(false)}
     >
-      {/* Drag Handle - Wix style with animation */}
+      {/* Wix-style Toolbar - Shows on Selection */}
+      {isSelected && (
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 z-30 animate-in slide-in-from-top-2 fade-in duration-150">
+          {/* Element Type Label */}
+          <div className="bg-blue-600 text-white px-3 py-1.5 rounded-t-lg text-sm font-medium flex items-center gap-2 shadow-lg">
+            <MousePointer2 className="h-3 w-3" />
+            <span className="capitalize">{id.replace(/-/g, ' ').split(' ').pop() || 'Element'}</span>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="bg-gray-900 text-white px-2 py-1.5 rounded-lg flex items-center gap-1 shadow-xl">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleEdit}
+              className="h-7 px-2 text-white hover:bg-white/20"
+              title="Edit Properties"
+            >
+              <Settings className="h-3.5 w-3.5" />
+            </Button>
+            <div className="w-px h-4 bg-white/20" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDuplicate}
+              className="h-7 px-2 text-white hover:bg-white/20"
+              title="Duplicate (D)"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/20"
+              title="Delete (Del)"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          
+          {/* Connection line to element */}
+          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-blue-500" />
+        </div>
+      )}
+
+      {/* Drag Handle - Shows on Hover */}
       <div
         {...attributes}
         {...listeners}
         className={cn(
-          "absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 transition-all duration-200 cursor-grab active:cursor-grabbing z-10 hover:scale-110",
+          "absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 transition-all duration-200 cursor-grab active:cursor-grabbing z-20 hover:scale-110",
           (isSelected || isHovered) && "opacity-100"
         )}
       >
@@ -88,31 +140,14 @@ export function ElementWrapper({
         </div>
       </div>
 
-      {/* Action Buttons with animation */}
+      {/* Corner indicators for selected elements */}
       {isSelected && (
-        <div className="absolute -top-10 right-0 flex items-center gap-1 z-20 animate-in slide-in-from-top-2 fade-in duration-150">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleDuplicate}
-            className="h-8 w-8 p-0 shadow-md hover:shadow-lg transition-shadow"
-          >
-            <Copy className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            className="h-8 w-8 p-0 shadow-md hover:shadow-lg transition-shadow"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
-
-      {/* Selection indicator dot */}
-      {isSelected && (
-        <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-3 h-3 bg-blue-500 rounded-full shadow-md animate-pulse" />
+        <>
+          <div className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 rounded-full shadow-md z-20" />
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full shadow-md z-20" />
+          <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 rounded-full shadow-md z-20" />
+          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full shadow-md z-20" />
+        </>
       )}
 
       {children}

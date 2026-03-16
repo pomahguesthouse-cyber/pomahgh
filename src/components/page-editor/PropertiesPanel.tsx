@@ -61,8 +61,18 @@ export function PropertiesPanel() {
     return (
       <div className="w-full p-6">
         <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-          <Settings className="h-12 w-12 mb-4 opacity-50" />
-          <p className="text-sm">Select an element to edit its properties</p>
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+            <Settings className="h-8 w-8 opacity-50" />
+          </div>
+          <p className="text-sm font-medium mb-2">Select an element to edit</p>
+          <p className="text-xs text-muted-foreground">Click on any element in the canvas to open its properties</p>
+          
+          {/* Keyboard hints */}
+          <div className="mt-6 flex flex-wrap gap-2 justify-center text-xs">
+            <span className="px-2 py-1 bg-muted rounded">Del</span>
+            <span className="px-2 py-1 bg-muted rounded">D</span>
+            <span className="px-2 py-1 bg-muted rounded">↑↓</span>
+          </div>
         </div>
       </div>);
 
@@ -70,13 +80,31 @@ export function PropertiesPanel() {
 
   return (
     <div className="w-full flex flex-col h-full">
-      <div className="p-4 border-b border-border">
-        <h2 className="font-semibold capitalize text-foreground text-sm font-sans">
-          {selectedElement.type} Properties
-        </h2>
-        <p className="text-xs text-muted-foreground mt-1 font-mono">
-          #{selectedElement.id.slice(0, 12)}
-        </p>
+      {/* Enhanced Header with Element Info */}
+      <div className="p-4 border-b border-border bg-blue-50/50">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white">
+            <Settings className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-bold capitalize text-foreground">
+              {selectedElement.type.replace(/-/g, ' ')}
+            </h2>
+            <p className="text-xs text-muted-foreground font-mono">
+              #{selectedElement.id.slice(0, 10)}...
+            </p>
+          </div>
+        </div>
+        
+        {/* Quick keyboard shortcuts bar */}
+        <div className="flex gap-2 mt-3">
+          <span className="text-xs bg-muted px-2 py-1 rounded flex items-center gap-1">
+            <kbd className="px-1 bg-background rounded text-[10px]">Del</kbd> Delete
+          </span>
+          <span className="text-xs bg-muted px-2 py-1 rounded flex items-center gap-1">
+            <kbd className="px-1 bg-background rounded text-[10px]">D</kbd> Duplicate
+          </span>
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
