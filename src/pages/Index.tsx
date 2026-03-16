@@ -43,6 +43,7 @@ const Index = () => {
       </main>
       <Footer />
       <ChatbotWidget />
+      {/* Hidden on mobile (already handled by component) */}
       <FloatingWhatsApp />
     </div>
   );
