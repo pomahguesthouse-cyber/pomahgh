@@ -37,6 +37,7 @@ export interface LandingPage {
   hero_headline: string;
   subheadline: string | null;
   page_content: string | null;
+  page_schema: any;
   cta_text: string | null;
   whatsapp_number: string | null;
   whatsapp_message_template: string | null;
@@ -134,6 +135,7 @@ export default function AdminLandingPages() {
           hero_headline: page.hero_headline,
           subheadline: page.subheadline,
           page_content: page.page_content,
+          page_schema: page.page_schema,
           cta_text: page.cta_text,
           whatsapp_number: page.whatsapp_number,
           whatsapp_message_template: page.whatsapp_message_template,
