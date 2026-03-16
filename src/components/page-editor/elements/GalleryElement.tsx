@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ElementWrapper } from "./ElementWrapper";
 import { EditorElement } from "@/stores/editorStore";
 import { Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface GalleryElementProps {
   element: EditorElement;
@@ -50,11 +51,15 @@ export function GalleryElement({
     gap,
     marginTop,
     marginBottom,
-    gridTemplateColumns: `repeat(${Math.min(columns, 2)}, 1fr)`,
   };
 
   const gridContent = (
-    <div style={style} className="grid w-full md:grid-cols-2 lg:grid-cols-3">
+    <div style={style} className={cn(
+      "grid w-full",
+      "grid-cols-1 sm:grid-cols-2",
+      columns >= 3 && "lg:grid-cols-3",
+      columns >= 4 && "xl:grid-cols-4",
+    )}>
       {images.length > 0 ? (
         images.map((img: { src: string; alt: string }, index: number) => (
           <div key={index} className="aspect-square overflow-hidden rounded-lg">

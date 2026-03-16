@@ -35,7 +35,7 @@ export function ImageElement({
       src={src}
       alt={alt}
       style={style}
-      className="object-cover"
+      className="object-cover w-full max-w-full h-auto"
     />
   ) : (
     <div

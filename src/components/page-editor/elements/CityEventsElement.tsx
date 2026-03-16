@@ -40,9 +40,24 @@ export function CityEventsElement({
   const [loading, setLoading] = useState(true);
 
   const title = element.props.title || "Event & Agenda";
-  const visibleCards = element.props.visibleCards || 3;
+  const desktopVisibleCards = element.props.visibleCards || 3;
   const maxItems = element.props.maxItems || 10;
   const autoPlay = element.props.autoPlay !== false;
+
+  // Responsive visible cards
+  const [visibleCards, setVisibleCards] = useState(desktopVisibleCards);
+
+  useEffect(() => {
+    const updateCards = () => {
+      const w = window.innerWidth;
+      if (w < 640) setVisibleCards(1);
+      else if (w < 1024) setVisibleCards(2);
+      else setVisibleCards(desktopVisibleCards);
+    };
+    updateCards();
+    window.addEventListener("resize", updateCards);
+    return () => window.removeEventListener("resize", updateCards);
+  }, [desktopVisibleCards]);
 
   useEffect(() => {
     const fetchEvents = async () => {

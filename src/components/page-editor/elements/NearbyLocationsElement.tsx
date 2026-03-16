@@ -3,6 +3,7 @@ import { EditorElement } from "@/stores/editorStore";
 import { ElementWrapper } from "./ElementWrapper";
 import { supabase } from "@/integrations/supabase/client";
 import { icons, Circle, type LucideIcon, Navigation } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface NearbyLocationsElementProps {
   element: EditorElement;
@@ -73,7 +74,7 @@ export function NearbyLocationsElement({
         )}
 
         {loading ? (
-          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="animate-pulse bg-muted rounded-lg h-16" />
             ))}
@@ -81,14 +82,19 @@ export function NearbyLocationsElement({
         ) : locations.length === 0 ? (
           <p className="text-center text-muted-foreground">Belum ada lokasi terdekat</p>
         ) : layout === "card" ? (
-          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+          <div className={cn(
+            "grid gap-3 md:gap-4",
+            "grid-cols-1 sm:grid-cols-2",
+            columns >= 3 && "lg:grid-cols-3",
+            columns >= 4 && "xl:grid-cols-4",
+          )}>
             {locations.map((loc) => {
               const IconComp = getIcon(loc.icon_name);
               return (
-                <div key={loc.id} className="bg-card rounded-xl p-5 border border-border shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-start gap-4">
-                    <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <IconComp className="h-5 w-5 text-primary" />
+                <div key={loc.id} className="bg-card rounded-xl p-4 md:p-5 border border-border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-start gap-3 md:gap-4">
+                    <div className="w-10 h-10 md:w-11 md:h-11 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <IconComp className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-sm mb-0.5">{loc.name}</h3>
@@ -110,7 +116,11 @@ export function NearbyLocationsElement({
           </div>
         ) : (
           // list layout
-          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+          <div className={cn(
+            "grid gap-2 md:gap-3",
+            "grid-cols-1 sm:grid-cols-2",
+            columns >= 3 && "lg:grid-cols-3",
+          )}>
             {locations.map((loc) => {
               const IconComp = getIcon(loc.icon_name);
               return (
