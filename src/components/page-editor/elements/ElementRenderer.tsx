@@ -19,6 +19,7 @@ import { HeroSliderElement } from "./HeroSliderElement";
 import { RoomSliderElement } from "./RoomSliderElement";
 import { FacilitiesElement } from "./FacilitiesElement";
 import { CityEventsElement } from "./CityEventsElement";
+import { NewsEventsElement } from "./NewsEventsElement";
 import { NearbyLocationsElement } from "./NearbyLocationsElement";
 
 interface ElementRendererProps {
@@ -98,6 +99,8 @@ export const ElementRenderer = memo(function ElementRenderer({
         return <FacilitiesElement {...commonProps} />;
       case "city-events":
         return <CityEventsElement {...commonProps} />;
+      case "news-events":
+        return <NewsEventsElement {...commonProps} />;
       case "nearby-locations":
         return <NearbyLocationsElement {...commonProps} />;
       default:
