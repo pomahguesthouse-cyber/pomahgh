@@ -80,6 +80,10 @@ export function HeadingElement({
     paddingBottom: element.styles.paddingBottom,
     paddingLeft: element.styles.paddingLeft,
     paddingRight: element.styles.paddingRight,
+    wordBreak: "break-word",
+    overflowWrap: "break-word",
+    whiteSpace: "normal",
+    maxWidth: "100%",
   };
 
   const headingContent = (

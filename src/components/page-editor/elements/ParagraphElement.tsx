@@ -57,7 +57,7 @@ export function ParagraphElement({
     }
   };
 
-  const style = {
+  const style: React.CSSProperties = {
     fontSize,
     fontWeight,
     color,
@@ -69,6 +69,10 @@ export function ParagraphElement({
     paddingBottom: element.styles.paddingBottom,
     paddingLeft: element.styles.paddingLeft,
     paddingRight: element.styles.paddingRight,
+    wordBreak: "break-word" as const,
+    overflowWrap: "break-word" as const,
+    whiteSpace: "normal" as const,
+    maxWidth: "100%",
   };
 
   const paragraphContent = (
