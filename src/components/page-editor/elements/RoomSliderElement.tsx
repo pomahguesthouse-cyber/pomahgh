@@ -37,11 +37,26 @@ export function RoomSliderElement({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const visibleCards = element.props.visibleCards || 3;
+  const desktopVisibleCards = element.props.visibleCards || 3;
   const autoPlay = element.props.autoPlay !== false;
   const showPrice = element.props.showPrice !== false;
   const title = element.props.title || "Pilihan Kamar";
   const ctaText = element.props.ctaText || "Lihat Detail";
+
+  // Responsive: 1 card on mobile, 2 on tablet, configured on desktop
+  const [visibleCards, setVisibleCards] = useState(desktopVisibleCards);
+
+  useEffect(() => {
+    const updateVisibleCards = () => {
+      const width = window.innerWidth;
+      if (width < 640) setVisibleCards(1);
+      else if (width < 1024) setVisibleCards(2);
+      else setVisibleCards(desktopVisibleCards);
+    };
+    updateVisibleCards();
+    window.addEventListener("resize", updateVisibleCards);
+    return () => window.removeEventListener("resize", updateVisibleCards);
+  }, [desktopVisibleCards]);
 
   useEffect(() => {
     const fetchRooms = async () => {
