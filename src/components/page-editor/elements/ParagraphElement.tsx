@@ -57,6 +57,13 @@ export function ParagraphElement({
     }
   };
 
+  const clampPadding = (value: string | undefined) => {
+    if (!value) return undefined;
+    const num = parseInt(value);
+    if (isNaN(num)) return value;
+    return `min(${num}px, 10%)`;
+  };
+
   const style: React.CSSProperties = {
     fontSize,
     fontWeight,
@@ -67,12 +74,13 @@ export function ParagraphElement({
     marginBottom: element.styles.marginBottom,
     paddingTop: element.styles.paddingTop,
     paddingBottom: element.styles.paddingBottom,
-    paddingLeft: element.styles.paddingLeft,
-    paddingRight: element.styles.paddingRight,
+    paddingLeft: clampPadding(element.styles.paddingLeft),
+    paddingRight: clampPadding(element.styles.paddingRight),
     wordBreak: "break-word" as const,
     overflowWrap: "break-word" as const,
     whiteSpace: "normal" as const,
     maxWidth: "100%",
+    boxSizing: "border-box" as const,
   };
 
   const paragraphContent = (
