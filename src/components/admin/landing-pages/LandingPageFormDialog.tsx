@@ -628,21 +628,6 @@ export function LandingPageFormDialog({ open, onOpenChange, editingPage }: Props
                   />
 
                   <div className="border-t pt-4">
-                    <p className="text-sm font-medium mb-3 text-muted-foreground">
-                      Atau gunakan single hero image (legacy):
-                    </p>
-                    
-                    <MediaPickerField
-                      label="Hero Image"
-                      value={form.watch("hero_image_url") || ""}
-                      onChange={(url) => form.setValue("hero_image_url", url)}
-                      altText={form.watch("hero_image_alt") || ""}
-                      onAltChange={(alt) => form.setValue("hero_image_alt", alt)}
-                      showAltField={true}
-                    />
-                  </div>
-
-                  <div className="border-t pt-4">
                     <MediaPickerField
                       label="OG Image (Social Media)"
                       value={form.watch("og_image_url") || ""}

@@ -225,7 +225,6 @@ export function EditorToolbar({
 
           <Button variant="outline" size="sm" onClick={onOpenSettings} className="gap-2">
             <Settings className="h-4 w-4" />
-            Settings
           </Button>
 
           <Button variant="outline" size="sm" onClick={onPreview} className="gap-2">
