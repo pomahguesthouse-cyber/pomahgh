@@ -3,6 +3,7 @@ import { EditorElement } from "@/stores/editorStore";
 import { ElementWrapper } from "./ElementWrapper";
 import { supabase } from "@/integrations/supabase/client";
 import { icons, Circle, type LucideIcon, Navigation } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface NearbyLocationsElementProps {
   element: EditorElement;
