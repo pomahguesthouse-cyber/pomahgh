@@ -60,6 +60,7 @@ interface EditorState {
   isDragging: boolean;
   viewMode: 'desktop' | 'tablet' | 'mobile';
   showLayerPanel: boolean;
+  showPropertiesPanel: boolean;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
   
@@ -79,6 +80,7 @@ interface EditorState {
   setIsDragging: (isDragging: boolean) => void;
   setIsSaving: (isSaving: boolean) => void;
   setShowLayerPanel: (show: boolean) => void;
+  setShowPropertiesPanel: (show: boolean) => void;
   toggleElementVisibility: (id: string) => void;
   toggleElementLock: (id: string) => void;
   renameElement: (id: string, label: string) => void;
@@ -167,6 +169,7 @@ export const useEditorStore = create<EditorState>()(
     isSaving: false,
     hasUnsavedChanges: false,
     showLayerPanel: false,
+    showPropertiesPanel: true,
     
     setElements: (elements) => set((state) => {
       state.elements = elements;
@@ -257,6 +260,10 @@ export const useEditorStore = create<EditorState>()(
     
     setShowLayerPanel: (show) => set((state) => {
       state.showLayerPanel = show;
+    }),
+    
+    setShowPropertiesPanel: (show: boolean) => set((state) => {
+      state.showPropertiesPanel = show;
     }),
     
     toggleElementVisibility: (id) => set((state) => {

@@ -25,7 +25,7 @@ export function ElementWrapper({
   children,
   isPreview = false,
 }: ElementWrapperProps) {
-  const { removeElement, duplicateElement, saveToHistory, setShowLayerPanel } = useEditorStore();
+  const { removeElement, duplicateElement, saveToHistory, setShowLayerPanel, setShowPropertiesPanel } = useEditorStore();
   
   const {
     attributes,
@@ -57,6 +57,7 @@ export function ElementWrapper({
     e.stopPropagation();
     onSelect();
     setShowLayerPanel(false);
+    setShowPropertiesPanel(true);
   };
 
   if (isPreview) {
