@@ -169,7 +169,7 @@ export const useEditorStore = create<EditorState>()(
     isSaving: false,
     hasUnsavedChanges: false,
     showLayerPanel: false,
-    showPropertiesPanel: true,
+    showPropertiesPanel: false,
     
     setElements: (elements) => set((state) => {
       state.elements = elements;

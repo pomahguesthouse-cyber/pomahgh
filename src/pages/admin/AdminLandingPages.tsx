@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, ExternalLink, Sparkles, PenTool, Settings } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Sparkles, Settings, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { LandingPageFormDialog } from "@/components/admin/landing-pages/LandingPageFormDialog";
@@ -198,41 +198,39 @@ export default function AdminLandingPages() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 pt-2 border-t">
+                <div className="flex items-center gap-1 pt-2 border-t">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 gap-1"
+                    className="h-8 w-8 p-0"
                     onClick={() => handleEdit(page)}
                   >
                     <Settings className="h-3 w-3" />
-                    Settings
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 gap-1"
+                    className="h-8 w-8 p-0"
                     onClick={() => navigate(`/editor?id=${page.id}`)}
                   >
-                    <PenTool className="h-3 w-3" />
-                    Visual Editor
+                    <Pencil className="h-3 w-3" />
                   </Button>
                   {page.status === "published" && (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-1"
+                      className="h-8 w-8 p-0"
                       asChild
                     >
                       <a href={`/${page.slug}`} target="_blank" rel="noopener">
-                        <ExternalLink className="h-3 w-3" />
+                        <Eye className="h-3 w-3" />
                       </a>
                     </Button>
                   )}
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-destructive hover:text-destructive"
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                     onClick={() => setDeletingPage(page)}
                   >
                     <Trash2 className="h-3 w-3" />
