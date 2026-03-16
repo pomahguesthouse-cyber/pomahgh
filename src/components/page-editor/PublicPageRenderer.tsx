@@ -9,7 +9,7 @@ export function PublicPageRenderer({ elements }: PublicPageRendererProps) {
   if (!elements || elements.length === 0) return null;
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-full overflow-x-hidden">
       {elements.map((element) => (
         <ElementRenderer
           key={element.id}
