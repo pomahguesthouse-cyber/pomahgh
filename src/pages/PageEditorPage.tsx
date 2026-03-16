@@ -34,6 +34,12 @@ export default function PageEditorPage() {
     hasUnsavedChanges,
     showLayerPanel,
     selectedElementId,
+    selectElement,
+    removeElement,
+    moveElement,
+    undo,
+    redo,
+    saveToHistory,
   } = useEditorStore();
 
   const sensors = useSensors(
@@ -96,29 +102,82 @@ export default function PageEditorPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === "z" && !e.shiftKey) {
-          e.preventDefault();
-          useEditorStore.getState().undo();
+      // Ignore if typing in input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      // Ctrl/Cmd + Z = Undo
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+
+      // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y = Redo
+      if ((e.ctrlKey || e.metaKey) && (e.key === "z" && e.shiftKey || e.key === "y")) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      // Ctrl/Cmd + S = Save
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
+        return;
+      }
+
+      // Delete or Backspace = Delete selected element
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedElementId) {
+        e.preventDefault();
+        saveToHistory();
+        removeElement(selectedElementId);
+        return;
+      }
+
+      // Escape = Deselect
+      if (e.key === "Escape") {
+        selectElement(null);
+        return;
+      }
+
+      // Arrow Up = Move element up
+      if (e.key === "ArrowUp" && selectedElementId) {
+        e.preventDefault();
+        const currentIndex = elements.findIndex(el => el.id === selectedElementId);
+        if (currentIndex > 0) {
+          saveToHistory();
+          moveElement(selectedElementId, null, currentIndex - 1);
         }
-        if (e.key === "z" && e.shiftKey) {
-          e.preventDefault();
-          useEditorStore.getState().redo();
+        return;
+      }
+
+      // Arrow Down = Move element down
+      if (e.key === "ArrowDown" && selectedElementId) {
+        e.preventDefault();
+        const currentIndex = elements.findIndex(el => el.id === selectedElementId);
+        if (currentIndex < elements.length - 1) {
+          saveToHistory();
+          moveElement(selectedElementId, null, currentIndex + 1);
         }
-        if (e.key === "y") {
-          e.preventDefault();
-          useEditorStore.getState().redo();
-        }
-        if (e.key === "s") {
-          e.preventDefault();
-          handleSave();
-        }
+        return;
+      }
+
+      // D = Duplicate element
+      if (e.key === "d" && selectedElementId && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        const { duplicateElement } = useEditorStore.getState();
+        saveToHistory();
+        duplicateElement(selectedElementId);
+        return;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [selectedElementId, elements, undo, redo, removeElement, selectElement, moveElement, saveToHistory]);
 
   // Auto-save draft
   useEffect(() => {

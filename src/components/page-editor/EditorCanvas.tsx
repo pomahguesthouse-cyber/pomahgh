@@ -217,24 +217,63 @@ export function EditorCanvas() {
       <ScrollArea className="flex-1">
         <div className="p-8 min-h-full flex justify-center">
            {/* Show PagePreview if there are no elements in the new schema */}
-           {safeElements.length === 0 ? (
-             <div 
-                className="w-full max-w-4xl min-h-[600px] bg-white rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center transition-all hover:border-primary/50"
+            {safeElements.length === 0 ? (
+              <div 
+                className="w-full max-w-4xl min-h-[600px] bg-white rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center transition-all hover:border-primary/50 relative overflow-hidden"
                 onClick={handleCanvasClick}
               >
-                <div className="text-center p-8">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Plus className="h-10 w-10 text-primary" />
+                {/* Animated background pattern */}
+                <div className="absolute inset-0 opacity-5">
+                  <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #000 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+                </div>
+                
+                <div className="text-center p-8 relative z-10">
+                  <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg transform hover:scale-110 transition-transform duration-300">
+                    <Plus className="h-12 w-12 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Start Building Your Page</h3>
-                  <p className="text-muted-foreground mb-4">Click any element from the left panel or choose a section template to get started</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">Drag & Drop</span>
-                    <span className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm">Click to Add</span>
-                    <span className="px-3 py-1 bg-accent text-accent-foreground rounded-full text-sm">Templates</span>
+                  <h3 className="text-2xl font-bold text-foreground mb-3">Start Building Your Page</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">Click any element from the left panel or choose a template to get started. Drag and drop to reorder.</p>
+                  
+                  {/* Quick action buttons */}
+                  <div className="flex flex-wrap gap-3 justify-center mb-6">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addElement(createNewElement("hero-slider"));
+                      }}
+                      className="px-4 py-2 bg-rose-500 text-white rounded-lg font-medium hover:bg-rose-600 transition-colors shadow-md hover:shadow-lg"
+                    >
+                      + Hero Slider
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addElement(createNewElement("section"));
+                      }}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors shadow-md hover:shadow-lg"
+                    >
+                      + Section
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addElement(createNewElement("map-embed"));
+                      }}
+                      className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors shadow-md hover:shadow-lg"
+                    >
+                      + Map
+                    </button>
+                  </div>
+                  
+                  {/* Keyboard shortcuts hint */}
+                  <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground">
+                    <span className="px-2 py-1 bg-muted rounded">Ctrl+Z Undo</span>
+                    <span className="px-2 py-1 bg-muted rounded">Del Delete</span>
+                    <span className="px-2 py-1 bg-muted rounded">↑↓ Move</span>
+                    <span className="px-2 py-1 bg-muted rounded">D Duplicate</span>
                   </div>
                 </div>
-             </div>
+              </div>
            ) : (
              <DndContext
                 sensors={sensors}

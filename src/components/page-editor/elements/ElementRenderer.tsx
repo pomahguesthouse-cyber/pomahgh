@@ -1,3 +1,4 @@
+import { memo, useMemo, useCallback } from "react";
 import { EditorElement } from "@/stores/editorStore";
 import { HeadingElement } from "./HeadingElement";
 import { ParagraphElement } from "./ParagraphElement";
@@ -29,7 +30,8 @@ interface ElementRendererProps {
   isPreview?: boolean;
 }
 
-export function ElementRenderer({
+// Memoized component to prevent unnecessary re-renders
+export const ElementRenderer = memo(function ElementRenderer({
   element,
   isSelected,
   isHovered,
@@ -39,72 +41,73 @@ export function ElementRenderer({
 }: ElementRendererProps) {
   if (element.isVisible === false && isPreview) return null;
 
-  const commonProps = {
+  // Memoize common props to prevent creating new objects on each render
+  const commonProps = useMemo(() => ({
     element,
     isSelected,
     isHovered,
     onSelect: element.isLocked ? () => {} : onSelect,
     onHover,
     isPreview,
-  };
+  }), [element, isSelected, isHovered, onSelect, onHover, isPreview, element.isLocked]);
 
-  const wrapHidden = (node: React.ReactNode) => {
+  const wrapHidden = useCallback((node: React.ReactNode) => {
     if (element.isVisible === false && !isPreview) {
       return <div className="opacity-30 pointer-events-auto">{node}</div>;
     }
     return node;
-  };
+  }, [element.isVisible, isPreview]);
 
-  let rendered: React.ReactNode;
-
-  switch (element.type) {
-    case "heading":
-      rendered = <HeadingElement {...commonProps} />; break;
-    case "paragraph":
-      rendered = <ParagraphElement {...commonProps} />; break;
-    case "image":
-      rendered = <ImageElement {...commonProps} />; break;
-    case "button":
-      rendered = <ButtonElement {...commonProps} />; break;
-    case "spacer":
-      rendered = <SpacerElement {...commonProps} />; break;
-    case "divider":
-      rendered = <DividerElement {...commonProps} />; break;
-    case "section":
-      rendered = <SectionElement {...commonProps} />; break;
-    case "container":
-      rendered = <ContainerElement {...commonProps} />; break;
-    case "gallery":
-      rendered = <GalleryElement {...commonProps} />; break;
-    case "html":
-      rendered = <HtmlElement {...commonProps} />; break;
-    case "video":
-      rendered = <VideoElement {...commonProps} />; break;
-    case "icon":
-      rendered = <IconElement {...commonProps} />; break;
-    case "social-links":
-      rendered = <SocialLinksElement {...commonProps} />; break;
-    case "whatsapp-button":
-      rendered = <WhatsAppButtonElement {...commonProps} />; break;
-    case "map-embed":
-      rendered = <MapEmbedElement {...commonProps} />; break;
-    case "hero-slider":
-      rendered = <HeroSliderElement {...commonProps} />; break;
-    case "room-slider":
-      rendered = <RoomSliderElement {...commonProps} />; break;
-    case "facilities":
-      rendered = <FacilitiesElement {...commonProps} />; break;
-    case "city-events":
-      rendered = <CityEventsElement {...commonProps} />; break;
-    case "nearby-locations":
-      rendered = <NearbyLocationsElement {...commonProps} />; break;
-    default:
-      rendered = (
-        <div className="p-4 bg-destructive/10 text-destructive rounded">
-          Unknown element type: {element.type}
-        </div>
-      );
-  }
+  const rendered = useMemo(() => {
+    switch (element.type) {
+      case "heading":
+        return <HeadingElement {...commonProps} />;
+      case "paragraph":
+        return <ParagraphElement {...commonProps} />;
+      case "image":
+        return <ImageElement {...commonProps} />;
+      case "button":
+        return <ButtonElement {...commonProps} />;
+      case "spacer":
+        return <SpacerElement {...commonProps} />;
+      case "divider":
+        return <DividerElement {...commonProps} />;
+      case "section":
+        return <SectionElement {...commonProps} />;
+      case "container":
+        return <ContainerElement {...commonProps} />;
+      case "gallery":
+        return <GalleryElement {...commonProps} />;
+      case "html":
+        return <HtmlElement {...commonProps} />;
+      case "video":
+        return <VideoElement {...commonProps} />;
+      case "icon":
+        return <IconElement {...commonProps} />;
+      case "social-links":
+        return <SocialLinksElement {...commonProps} />;
+      case "whatsapp-button":
+        return <WhatsAppButtonElement {...commonProps} />;
+      case "map-embed":
+        return <MapEmbedElement {...commonProps} />;
+      case "hero-slider":
+        return <HeroSliderElement {...commonProps} />;
+      case "room-slider":
+        return <RoomSliderElement {...commonProps} />;
+      case "facilities":
+        return <FacilitiesElement {...commonProps} />;
+      case "city-events":
+        return <CityEventsElement {...commonProps} />;
+      case "nearby-locations":
+        return <NearbyLocationsElement {...commonProps} />;
+      default:
+        return (
+          <div className="p-4 bg-destructive/10 text-destructive rounded">
+            Unknown element type: {element.type}
+          </div>
+        );
+    }
+  }, [element.type, commonProps]);
 
   return wrapHidden(rendered);
-}
+});
