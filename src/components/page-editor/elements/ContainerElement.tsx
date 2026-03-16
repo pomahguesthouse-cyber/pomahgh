@@ -54,8 +54,9 @@ export function ContainerElement({
     <div
       style={style}
       className={cn(
-        "flex w-full",
-        direction === "row" ? "flex-row" : "flex-col"
+        "flex flex-wrap w-full",
+        direction === "row" ? "flex-col md:flex-row md:flex-nowrap" : "flex-col",
+        direction === "row" && "md:items-center"
       )}
     >
       {children.length > 0 ? (
@@ -72,7 +73,7 @@ export function ContainerElement({
         ))
       ) : (
         !isPreview && (
-          <div className="border-2 border-dashed border-border rounded-lg p-4 text-center text-muted-foreground text-sm">
+          <div className="border-2 border-dashed border-border rounded-lg p-4 md:p-6 text-center text-muted-foreground text-sm">
             Drop components here
           </div>
         )

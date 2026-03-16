@@ -42,26 +42,28 @@ export function SectionElement({
   const children = element.children || [];
 
   const sectionContent = (
-    <section style={style} className="w-full">
-      {children.length > 0 ? (
-        children.map((child) => (
-          <ElementRenderer
-            key={child.id}
-            element={child}
-            isSelected={selectedElementId === child.id}
-            isHovered={hoveredElementId === child.id}
-            onSelect={() => selectElement(child.id)}
-            onHover={(hover) => setHoveredElement(hover ? child.id : null)}
-            isPreview={isPreview}
-          />
-        ))
-      ) : (
-        !isPreview && (
-          <div className="border-2 border-dashed border-border rounded-lg p-8 text-center text-muted-foreground">
-            Drop components here
-          </div>
-        )
-      )}
+    <section style={style} className="w-full px-4 md:px-8 lg:px-12">
+      <div className="max-w-7xl mx-auto">
+        {children.length > 0 ? (
+          children.map((child) => (
+            <ElementRenderer
+              key={child.id}
+              element={child}
+              isSelected={selectedElementId === child.id}
+              isHovered={hoveredElementId === child.id}
+              onSelect={() => selectElement(child.id)}
+              onHover={(hover) => setHoveredElement(hover ? child.id : null)}
+              isPreview={isPreview}
+            />
+          ))
+        ) : (
+          !isPreview && (
+            <div className="border-2 border-dashed border-border rounded-lg p-4 md:p-8 text-center text-muted-foreground">
+              Drop components here
+            </div>
+          )
+        )}
+      </div>
     </section>
   );
 

@@ -73,6 +73,33 @@ export function HeroSliderElement({
     setCurrentSlide((prev) => (prev + 1) % slides.length);
   };
 
+  // Touch swipe handling
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }
+    if (isRightSwipe) {
+      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    }
+  };
+
   // Guard against empty slides array
   const currentSlideData = slides[currentSlide] ?? (slides[0] ?? { imageUrl: "", headline: "", subheadline: "", ctaText: "", ctaUrl: "" });
   
@@ -200,10 +227,13 @@ export function HeroSliderElement({
       onHover={onHover}
     >
       <div
-        className="relative overflow-hidden"
+        className="relative overflow-hidden touch-manipulation"
         style={{
           minHeight: element.props.height || "500px",
         }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
         {/* Slide Background */}
         {slides.map((slide: any, index: number) => {
@@ -248,16 +278,16 @@ export function HeroSliderElement({
 
         {/* Slide Content */}
         <div 
-          className={`relative z-10 flex flex-col ${getPaddingClass()} px-4 py-16 md:py-24 h-full`}
+          className={`relative z-10 flex flex-col ${getPaddingClass()} px-4 md:px-8 lg:px-12 py-12 md:py-16 lg:py-24 h-full`}
           style={{
             minHeight: element.props.height || "500px",
             paddingTop: element.styles.paddingTop || "80px",
             paddingBottom: element.styles.paddingBottom || "80px",
           }}
         >
-          <div className={`flex flex-col ${getAlignmentClass()} max-w-4xl`}>
+          <div className={`flex flex-col ${getAlignmentClass()} max-w-4xl w-full`}>
             <h1 
-              className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4"
+              className="text-2xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-2 md:mb-4"
               style={{ 
                 color: element.props.headingColor || "#ffffff",
                 fontFamily: element.props.headlineFont || undefined,
@@ -267,7 +297,7 @@ export function HeroSliderElement({
             </h1>
             
             <p 
-              className="text-lg md:text-xl mb-8 max-w-2xl"
+              className="text-sm md:text-lg lg:text-xl mb-4 md:mb-8 max-w-2xl"
               style={{ 
                 color: element.props.subheadingColor || "#e0e0e0",
                 fontFamily: element.props.subheadlineFont || undefined,
@@ -279,7 +309,7 @@ export function HeroSliderElement({
             {currentSlideData.ctaText && (
               <a
                 href={currentSlideData.ctaUrl || "#"}
-                className="inline-block px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                className="inline-block px-6 md:px-8 py-2 md:py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity text-sm md:text-base"
                 style={{
                   backgroundColor: element.props.ctaBgColor || "#e11d48",
                   color: "#ffffff",
@@ -298,16 +328,16 @@ export function HeroSliderElement({
             <button
               onClick={goToPrev}
               onMouseDown={(e) => e.stopPropagation()}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 rounded-full text-white transition-colors backdrop-blur-sm"
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 rounded-full text-white transition-colors backdrop-blur-sm touch-manipulation"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
             </button>
             <button
               onClick={goToNext}
               onMouseDown={(e) => e.stopPropagation()}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 rounded-full text-white transition-colors backdrop-blur-sm"
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 rounded-full text-white transition-colors backdrop-blur-sm touch-manipulation"
             >
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
             </button>
           </>
         )}

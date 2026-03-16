@@ -50,11 +50,11 @@ export function GalleryElement({
     gap,
     marginTop,
     marginBottom,
-    gridTemplateColumns: `repeat(${columns}, 1fr)`,
+    gridTemplateColumns: `repeat(${Math.min(columns, 2)}, 1fr)`,
   };
 
   const gridContent = (
-    <div style={style} className="grid w-full">
+    <div style={style} className="grid w-full md:grid-cols-2 lg:grid-cols-3">
       {images.length > 0 ? (
         images.map((img: { src: string; alt: string }, index: number) => (
           <div key={index} className="aspect-square overflow-hidden rounded-lg">
@@ -66,12 +66,12 @@ export function GalleryElement({
           </div>
         ))
       ) : (
-        Array.from({ length: Number(columns) }).map((_, index) => (
+        Array.from({ length: Math.min(Number(columns), 6) }).map((_, index) => (
           <div
             key={index}
             className="aspect-square bg-muted border-2 border-dashed border-border rounded-lg flex items-center justify-center"
           >
-            <ImageIcon className="h-8 w-8 text-muted-foreground" />
+            <ImageIcon className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
           </div>
         ))
       )}
@@ -183,10 +183,10 @@ function SliderGallery({
   };
 
   const sliderContent = (
-    <div style={{ marginTop, marginBottom }} className="relative w-full overflow-hidden rounded-lg" {...(transitionEffect === "flip" ? { style: { marginTop, marginBottom, perspective: "1200px" } } : {})}>
+    <div style={{ marginTop, marginBottom, ...(transitionEffect === "flip" ? { perspective: "1200px" } : {}) }} className="relative w-full overflow-hidden rounded-lg">
       {count > 0 ? (
         <>
-          <div className="aspect-[16/9] relative overflow-hidden">
+          <div className="aspect-[4/3] md:aspect-[16/9] relative overflow-hidden">
             {images.map((img, index) => (
               <div
                 key={index}
@@ -235,9 +235,9 @@ function SliderGallery({
           )}
         </>
       ) : (
-        <div className="aspect-[16/9] bg-muted border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2">
-          <ImageIcon className="h-10 w-10 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Slider Gallery — Add images in properties</span>
+        <div className="aspect-[4/3] md:aspect-[16/9] bg-muted border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2">
+          <ImageIcon className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
+          <span className="text-xs md:text-sm text-muted-foreground">Slider Gallery — Add images in properties</span>
         </div>
       )}
     </div>

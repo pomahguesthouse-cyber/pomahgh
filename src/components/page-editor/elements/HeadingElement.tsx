@@ -94,11 +94,11 @@ export function HeadingElement({
       onKeyDown={handleKeyDown}
       style={style}
       className={cn(
-        "outline-none",
-        level === "h1" && "text-4xl font-bold",
-        level === "h2" && "text-3xl font-semibold",
-        level === "h3" && "text-2xl font-semibold",
-        level === "h4" && "text-xl font-medium",
+        "outline-none w-full",
+        level === "h1" && "text-2xl md:text-4xl font-bold",
+        level === "h2" && "text-xl md:text-3xl font-semibold",
+        level === "h3" && "text-lg md:text-2xl font-semibold",
+        level === "h4" && "text-base md:text-xl font-medium",
         isEditing && "ring-2 ring-primary/50 rounded px-1"
       )}
     >
