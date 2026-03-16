@@ -33,6 +33,7 @@ export function HtmlElement({
   const htmlContent = html ? (
     <div
       style={style}
+      className="w-full max-w-full overflow-x-auto break-words"
       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
     />
   ) : (
