@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, Sparkles, Settings, Pencil } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Sparkles, Settings, Pencil, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { LandingPageFormDialog } from "@/components/admin/landing-pages/LandingPageFormDialog";
@@ -55,6 +55,7 @@ export default function AdminLandingPages() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPage, setEditingPage] = useState<LandingPage | null>(null);
   const [deletingPage, setDeletingPage] = useState<LandingPage | null>(null);
+  const [duplicatingPage, setDuplicatingPage] = useState<LandingPage | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -92,6 +93,70 @@ export default function AdminLandingPages() {
     },
     onError: () => {
       toast.error("Gagal menghapus halaman");
+    },
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: async (page: LandingPage) => {
+      // Find existing pages to determine new title number
+      const { data: existingPages } = await supabase
+        .from("landing_pages")
+        .select("page_title")
+        .ilike("page_title", `${page.page_title}%`);
+      
+      let newTitle = page.page_title;
+      const baseTitle = page.page_title.replace(/\s*\(\d+\)\s*$/, "").trim();
+      
+      if (existingPages && existingPages.length > 0) {
+        const numbers = existingPages
+          .map(p => {
+            const match = p.page_title.match(/\((\d+)\)\s*$/);
+            return match ? parseInt(match[1]) : 1;
+          });
+        const maxNumber = Math.max(...numbers, 0);
+        newTitle = `${baseTitle} (${maxNumber + 1})`;
+      } else {
+        newTitle = `${baseTitle} (2)`;
+      }
+
+      // Generate new slug
+      const newSlug = page.slug + "-copy-" + Date.now();
+
+      // Create new page
+      const { data: newPage, error } = await supabase
+        .from("landing_pages")
+        .insert({
+          page_title: newTitle,
+          slug: newSlug,
+          meta_description: page.meta_description,
+          primary_keyword: page.primary_keyword,
+          secondary_keywords: page.secondary_keywords,
+          hero_headline: page.hero_headline,
+          subheadline: page.subheadline,
+          page_content: page.page_content,
+          cta_text: page.cta_text,
+          whatsapp_number: page.whatsapp_number,
+          whatsapp_message_template: page.whatsapp_message_template,
+          hero_image_url: page.hero_image_url,
+          hero_image_alt: page.hero_image_alt,
+          og_image_url: page.og_image_url,
+          status: "draft",
+          display_order: page.display_order + 1,
+        } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return newPage;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
+      toast.success("Halaman berhasil diduplikasi");
+      setDuplicatingPage(null);
+    },
+    onError: () => {
+      toast.error("Gagal menduplikasi halaman");
     },
   });
 
@@ -230,6 +295,15 @@ export default function AdminLandingPages() {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => setDuplicatingPage(page)}
+                    disabled={duplicateMutation.isPending}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                     onClick={() => setDeletingPage(page)}
                   >
@@ -266,6 +340,29 @@ export default function AdminLandingPages() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!duplicatingPage}
+        onOpenChange={() => setDuplicatingPage(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplikasi Halaman?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Halaman "{duplicatingPage?.page_title}" akan diduplikasi dengan nama baru.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => duplicatingPage && duplicateMutation.mutate(duplicatingPage)}
+              disabled={duplicateMutation.isPending}
+            >
+              {duplicateMutation.isPending ? "Menduplikasi..." : "Duplikasi"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
