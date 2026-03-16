@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, ExternalLink, Sparkles, PenTool } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, ExternalLink, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { LandingPageFormDialog } from "@/components/admin/landing-pages/LandingPageFormDialog";
@@ -120,13 +120,9 @@ export default function AdminLandingPages() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/editor')} className="gap-2">
-            <PenTool className="h-4 w-4" />
-            Visual Editor
-          </Button>
           <Button onClick={handleCreate} className="gap-2">
             <Plus className="h-4 w-4" />
-            Form Builder
+            Create Page
           </Button>
         </div>
       </div>
@@ -210,16 +206,7 @@ export default function AdminLandingPages() {
                     onClick={() => handleEdit(page)}
                   >
                     <Edit className="h-3 w-3" />
-                    Form
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 gap-1"
-                    onClick={() => navigate(`/editor?id=${page.id}`)}
-                  >
-                    <PenTool className="h-3 w-3" />
-                    Visual
+                    Edit
                   </Button>
                   {page.status === "published" && (
                     <Button
