@@ -179,12 +179,12 @@ export default function LandingPage() {
 
       <Footer />
 
-      {/* Sticky WhatsApp Button */}
+      {/* Sticky WhatsApp Button - Hidden on Mobile */}
       <a
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-primary hover:bg-primary/90 text-primary-foreground p-4 rounded-full shadow-xl transition-all hover:scale-110"
+        className="hidden md:flex fixed bottom-6 right-6 z-50 bg-primary hover:bg-primary/90 text-primary-foreground p-4 rounded-full shadow-xl transition-all hover:scale-110"
         aria-label="Chat via WhatsApp"
       >
         <MessageCircle className="h-5 w-5 md:h-6 md:w-6" />
