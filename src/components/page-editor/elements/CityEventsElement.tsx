@@ -3,6 +3,7 @@ import { EditorElement } from "@/stores/editorStore";
 import { ElementWrapper } from "./ElementWrapper";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, Calendar, MapPin } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
