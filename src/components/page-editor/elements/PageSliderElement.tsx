@@ -8,7 +8,7 @@ import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import useEmblaCarousel from "embla-carousel-react";
 
-interface NewsEventsElementProps {
+interface PageSliderElementProps {
   element: EditorElement;
   isSelected: boolean;
   isHovered: boolean;
@@ -17,9 +17,9 @@ interface NewsEventsElementProps {
   isPreview?: boolean;
 }
 
-interface EventData {
+interface SliderItem {
   id: string;
-  name: string;
+  title: string;
   slug: string;
   description: string | null;
   image_url: string | null;
@@ -31,10 +31,10 @@ interface EventData {
   venue: string | null;
 }
 
-const EventCard = ({ event, isPreview }: { event: EventData; isPreview?: boolean }) => {
-  const eventDate = parseISO(event.event_date);
-  const day = format(eventDate, "dd");
-  const month = format(eventDate, "MMM", { locale: localeId }).toUpperCase();
+const SliderCard = ({ item, contentType, isPreview }: { item: SliderItem; contentType: string; isPreview?: boolean }) => {
+  const eventDate = item.event_date ? parseISO(item.event_date) : null;
+  const day = eventDate ? format(eventDate, "dd") : "--";
+  const month = eventDate ? format(eventDate, "MMM", { locale: localeId }).toUpperCase() : "";
 
   const categoryLabels: Record<string, string> = {
     festival: "Festival",
@@ -45,62 +45,84 @@ const EventCard = ({ event, isPreview }: { event: EventData; isPreview?: boolean
     kuliner: "Kuliner",
     keagamaan: "Keagamaan",
     lainnya: "Lainnya",
+    berita: "Berita",
+    promo: "Promo",
+    informasi: "Informasi",
   };
+
+  const link = contentType === "events" 
+    ? `/explore-semarang/events/${item.slug}`
+    : `/explore-semarang/news/${item.slug}`;
 
   const cardContent = (
     <div className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_33.333%] xl:flex-[0_0_25%] px-2">
       <div className="bg-card rounded-lg shadow-lg overflow-hidden h-full flex flex-col transition-transform hover:scale-[1.02] duration-300">
         <div className="relative h-48 overflow-hidden">
           <img
-            src={event.image_url || "/placeholder.svg"}
-            alt={event.image_alt || event.name}
+            src={item.image_url || "/placeholder.svg"}
+            alt={item.image_alt || item.title}
             className="w-full h-full object-cover"
           />
         </div>
 
-        <div className="flex items-start gap-4 p-4 border-b border-border">
-          <div className="flex-shrink-0 text-center">
-            <div className="text-2xl font-bold text-primary">{day}</div>
-            <div className="text-xs text-muted-foreground uppercase">{month}</div>
+        {eventDate && (
+          <div className="flex items-start gap-4 p-4 border-b border-border">
+            <div className="flex-shrink-0 text-center">
+              <div className="text-2xl font-bold text-primary">{day}</div>
+              <div className="text-xs text-muted-foreground uppercase">{month}</div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-foreground line-clamp-2 mb-1">
+                {item.title}
+              </h3>
+              <span className="inline-block px-2 py-0.5 text-xs bg-primary/10 text-primary rounded">
+                {categoryLabels[item.category] || item.category}
+              </span>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
+        )}
+
+        {!eventDate && (
+          <div className="p-4 border-b border-border">
             <h3 className="font-semibold text-foreground line-clamp-2 mb-1">
-              {event.name}
+              {item.title}
             </h3>
             <span className="inline-block px-2 py-0.5 text-xs bg-primary/10 text-primary rounded">
-              {categoryLabels[event.category] || event.category}
+              {categoryLabels[item.category] || item.category}
             </span>
           </div>
-        </div>
+        )}
 
         <div className="p-4 flex-1">
           <p className="text-sm text-muted-foreground line-clamp-3">
-            {event.description || "Informasi event akan segera diupdate."}
+            {item.description || "Informasi akan segera diupdate."}
           </p>
         </div>
 
-        <div className="p-4 pt-0 space-y-2 text-sm text-muted-foreground">
-          {event.venue && (
+        {item.venue && (
+          <div className="p-4 pt-0 space-y-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-              <span className="truncate">{event.venue}</span>
+              <span className="truncate">{item.venue}</span>
             </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-            <span>
-              {format(eventDate, "EEEE, d MMMM yyyy", { locale: localeId })}
-              {event.event_time && ` • ${event.event_time}`}
-            </span>
+            {eventDate && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                <span>
+                  {format(eventDate, "EEEE, d MMMM yyyy", { locale: localeId })}
+                  {item.event_time && ` • ${item.event_time}`}
+                </span>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 
   if (isPreview) {
     return (
-      <a href={`/explore-semarang/events/${event.slug}`} target="_blank" rel="noopener noreferrer">
+      <a href={link} target="_blank" rel="noopener noreferrer">
         {cardContent}
       </a>
     );
@@ -109,23 +131,21 @@ const EventCard = ({ event, isPreview }: { event: EventData; isPreview?: boolean
   return cardContent;
 };
 
-export function NewsEventsElement({
+export function PageSliderElement({
   element,
   isSelected,
   isHovered,
   onSelect,
   onHover,
   isPreview = false,
-}: NewsEventsElementProps) {
-  const [events, setEvents] = useState<EventData[]>([]);
+}: PageSliderElementProps) {
+  const [items, setItems] = useState<SliderItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const title = element.props.title || "Agenda Seputar Semarang";
-  const subtitle = element.props.subtitle || "Temukan berbagai event menarik yang akan diselenggarakan di Semarang";
+  const title = element.props.title || "Berita & Agenda";
+  const subtitle = element.props.subtitle || "Temukan informasi terbaru";
+  const contentType = element.props.contentType || "events";
   const maxItems = element.props.maxItems || 10;
-  const showSubtitle = element.props.showSubtitle !== false;
-  const showVenue = element.props.showVenue !== false;
-  const showTime = element.props.showTime !== false;
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
@@ -162,20 +182,44 @@ export function NewsEventsElement({
   }, [emblaApi, onSelectCallback]);
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      const today = new Date().toISOString().split("T")[0];
-      const { data } = await supabase
-        .from("city_events")
-        .select("id, name, slug, description, image_url, image_alt, category, event_date, event_end_date, event_time, venue")
-        .eq("is_active", true)
-        .gte("event_date", today)
-        .order("event_date")
-        .limit(maxItems);
-      if (data) setEvents(data);
+    const fetchItems = async () => {
+      if (contentType === "events") {
+        const today = new Date().toISOString().split("T")[0];
+        const { data } = await supabase
+          .from("city_events")
+          .select("id, name, slug, description, image_url, image_alt, category, event_date, event_end_date, event_time, venue")
+          .eq("is_active", true)
+          .gte("event_date", today)
+          .order("event_date")
+          .limit(maxItems);
+        
+        if (data) {
+          setItems(data.map(item => ({
+            ...item,
+            title: item.name,
+            published_at: null
+          })));
+        }
+      } else {
+        const { data } = await supabase
+          .from("city_events")
+          .select("id, name, slug, description, image_url, image_alt, category, event_date, event_end_date, event_time, venue")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(maxItems);
+        
+        if (data) {
+          setItems(data.map((item: any) => ({
+            ...item,
+            title: item.name,
+            event_date: item.event_date || item.created_at
+          })));
+        }
+      }
       setLoading(false);
     };
-    fetchEvents();
-  }, [maxItems]);
+    fetchItems();
+  }, [contentType, maxItems]);
 
   const content = (
     <div className="py-16 px-4 bg-secondary/30">
@@ -185,11 +229,9 @@ export function NewsEventsElement({
             {title}
           </h2>
           <div className="h-1 bg-primary mx-auto mb-4 w-24" />
-          {showSubtitle && (
-            <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              {subtitle}
-            </p>
-          )}
+          <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto">
+            {subtitle}
+          </p>
         </div>
 
         {loading ? (
@@ -198,16 +240,16 @@ export function NewsEventsElement({
               <div key={i} className="h-80 bg-muted rounded-lg animate-pulse" />
             ))}
           </div>
-        ) : events.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Belum ada event yang akan datang.</p>
+            <p className="text-muted-foreground">Belum ada {contentType === "events" ? "event" : "berita"} yang tersedia.</p>
           </div>
         ) : (
           <>
             <div className="overflow-hidden" ref={emblaRef}>
               <div className="flex -mx-2">
-                {events.map((event) => (
-                  <EventCard key={event.id} event={event} isPreview={isPreview} />
+                {items.map((item) => (
+                  <SliderCard key={item.id} item={item} contentType={contentType} isPreview={isPreview} />
                 ))}
               </div>
             </div>

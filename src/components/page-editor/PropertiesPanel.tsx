@@ -579,37 +579,7 @@ function ContentProperties({
         </>);
 
 
-    case "city-events":
-      return (
-        <>
-          <div className="space-y-2">
-            <Label>Section Title</Label>
-            <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Visible Cards</Label>
-            <Select value={String(element.props.visibleCards || 3)} onValueChange={(v) => onPropChange("visibleCards", parseInt(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">1</SelectItem>
-                <SelectItem value="2">2</SelectItem>
-                <SelectItem value="3">3</SelectItem>
-                <SelectItem value="4">4</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Max Items</Label>
-            <Input type="number" value={element.props.maxItems || 10} onChange={(e) => onPropChange("maxItems", parseInt(e.target.value) || 10)} />
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" checked={element.props.autoPlay !== false} onChange={(e) => onPropChange("autoPlay", e.target.checked)} id="ceAutoPlay" />
-            <Label htmlFor="ceAutoPlay">Auto Play</Label>
-          </div>
-        </>);
-
-
-    case "news-events":
+    case "page-slider":
       return (
         <>
           <div className="space-y-2">
@@ -621,20 +591,18 @@ function ContentProperties({
             <Input value={element.props.subtitle || ""} onChange={(e) => onPropChange("subtitle", e.target.value)} />
           </div>
           <div className="space-y-2">
+            <Label>Content Type</Label>
+            <Select value={element.props.contentType || "events"} onValueChange={(v) => onPropChange("contentType", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="events">Events</SelectItem>
+                <SelectItem value="news">News</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label>Max Items</Label>
             <Input type="number" value={element.props.maxItems || 10} onChange={(e) => onPropChange("maxItems", parseInt(e.target.value) || 10)} />
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" checked={element.props.showSubtitle !== false} onChange={(e) => onPropChange("showSubtitle", e.target.checked)} id="neShowSubtitle" />
-            <Label htmlFor="neShowSubtitle">Show Subtitle</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" checked={element.props.showVenue !== false} onChange={(e) => onPropChange("showVenue", e.target.checked)} id="neShowVenue" />
-            <Label htmlFor="neShowVenue">Show Venue</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" checked={element.props.showTime !== false} onChange={(e) => onPropChange("showTime", e.target.checked)} id="neShowTime" />
-            <Label htmlFor="neShowTime">Show Time</Label>
           </div>
         </>);
 
