@@ -62,7 +62,7 @@ export function FacilitiesElement({
         )}
 
         {loading ? (
-          <div className={`grid gap-6`} style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="animate-pulse bg-muted rounded-xl h-32" />
             ))}
@@ -70,14 +70,19 @@ export function FacilitiesElement({
         ) : facilities.length === 0 ? (
           <p className="text-center text-muted-foreground">Belum ada fasilitas</p>
         ) : (
-          <div className={`grid gap-6`} style={{ gridTemplateColumns: `repeat(${Math.min(columns, facilities.length)}, 1fr)` }}>
+          <div className={cn(
+            "grid gap-4 md:gap-6",
+            "grid-cols-1 sm:grid-cols-2",
+            columns >= 3 && "lg:grid-cols-3",
+            columns >= 4 && "xl:grid-cols-4",
+          )}>
             {facilities.map((facility) => {
               const IconComp = getIcon(facility.icon_name);
               
               if (layout === "minimal") {
                 return (
                   <div key={facility.id} className="flex items-center gap-3 p-3">
-                    <IconComp className="h-6 w-6 text-primary flex-shrink-0" />
+                    <IconComp className="h-5 w-5 md:h-6 md:w-6 text-primary flex-shrink-0" />
                     <div>
                       <h3 className="font-medium text-sm">{facility.title}</h3>
                       <p className="text-xs text-muted-foreground">{facility.description}</p>
@@ -88,9 +93,9 @@ export function FacilitiesElement({
 
               if (layout === "icon-center") {
                 return (
-                  <div key={facility.id} className="flex flex-col items-center text-center p-6">
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                      <IconComp className="h-7 w-7 text-primary" />
+                  <div key={facility.id} className="flex flex-col items-center text-center p-4 md:p-6">
+                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                      <IconComp className="h-6 w-6 md:h-7 md:w-7 text-primary" />
                     </div>
                     <h3 className="font-semibold text-sm mb-1">{facility.title}</h3>
                     <p className="text-xs text-muted-foreground">{facility.description}</p>
@@ -100,12 +105,12 @@ export function FacilitiesElement({
 
               // card layout (default)
               return (
-                <div key={facility.id} className="bg-card rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                    <IconComp className="h-6 w-6 text-primary" />
+                <div key={facility.id} className="bg-card rounded-xl p-4 md:p-6 border border-border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3 md:mb-4">
+                    <IconComp className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                   </div>
-                  <h3 className="font-semibold mb-2">{facility.title}</h3>
-                  <p className="text-sm text-muted-foreground">{facility.description}</p>
+                  <h3 className="font-semibold text-sm md:text-base mb-1 md:mb-2">{facility.title}</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground">{facility.description}</p>
                 </div>
               );
             })}
