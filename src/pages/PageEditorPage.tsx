@@ -22,6 +22,7 @@ export default function PageEditorPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [mobileLeftPanel, setMobileLeftPanel] = useState(false);
   const [mobileRightPanel, setMobileRightPanel] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(true);
 
   const {
     elements,
@@ -55,6 +56,13 @@ export default function PageEditorPage() {
     if (selectedElementId && window.innerWidth < 768) {
       setMobileRightPanel(true);
       setMobileLeftPanel(false);
+    }
+  }, [selectedElementId]);
+
+  // Auto-show right panel on desktop when element selected
+  useEffect(() => {
+    if (selectedElementId && window.innerWidth >= 768) {
+      setShowRightPanel(true);
     }
   }, [selectedElementId]);
 
@@ -302,17 +310,17 @@ export default function PageEditorPage() {
           {/* Canvas */}
           <EditorCanvas />
 
-          {/* Right panel - Properties (desktop: always, mobile: overlay) */}
+          {/* Right panel - Properties (desktop: toggleable, mobile: overlay) */}
           <div
             className={cn(
               "border-l border-border bg-background flex flex-col h-full z-20",
-              // Desktop: fixed sidebar
-              "hidden md:flex md:w-72 md:relative md:shrink-0",
+              // Desktop: toggleable sidebar
+              showRightPanel ? "md:flex md:w-72" : "md:hidden",
               // Mobile: overlay
               mobileRightPanel && "!flex w-72 absolute right-0 top-0 bottom-0 shadow-xl"
             )}
           >
-            <PropertiesPanel />
+            <PropertiesPanel onClose={() => setShowRightPanel(false)} />
           </div>
 
           {/* Mobile backdrop */}

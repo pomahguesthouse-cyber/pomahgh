@@ -25,7 +25,11 @@ import { Settings, Paintbrush, Layout, Image as ImageIcon, X } from "lucide-reac
 import { MediaPickerDialog } from "@/components/admin/MediaPickerDialog";
 import { MediaFile } from "@/hooks/useMediaLibrary";
 
-export function PropertiesPanel() {
+interface PropsPanelProps {
+  onClose?: () => void;
+}
+
+export function PropertiesPanel({ onClose }: PropsPanelProps) {
   const { elements, selectedElementId, updateElement, saveToHistory, selectElement } = useEditorStore();
 
   const findElement = (elements: EditorElement[], id: string): EditorElement | null => {
@@ -96,7 +100,10 @@ export function PropertiesPanel() {
           </div>
           {/* Close Button */}
           <button
-            onClick={() => selectElement(null)}
+            onClick={() => {
+              selectElement(null);
+              onClose?.();
+            }}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-100 text-muted-foreground hover:text-red-500 transition-colors"
             title="Close (Esc)"
           >
