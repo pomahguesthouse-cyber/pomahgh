@@ -21,12 +21,12 @@ import {
   AccordionTrigger } from
 "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Paintbrush, Layout, Image as ImageIcon } from "lucide-react";
+import { Settings, Paintbrush, Layout, Image as ImageIcon, X } from "lucide-react";
 import { MediaPickerDialog } from "@/components/admin/MediaPickerDialog";
 import { MediaFile } from "@/hooks/useMediaLibrary";
 
 export function PropertiesPanel() {
-  const { elements, selectedElementId, updateElement, saveToHistory } = useEditorStore();
+  const { elements, selectedElementId, updateElement, saveToHistory, selectElement } = useEditorStore();
 
   const findElement = (elements: EditorElement[], id: string): EditorElement | null => {
     for (const el of elements) {
@@ -94,10 +94,21 @@ export function PropertiesPanel() {
               #{selectedElement.id.slice(0, 10)}...
             </p>
           </div>
+          {/* Close Button */}
+          <button
+            onClick={() => selectElement(null)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-100 text-muted-foreground hover:text-red-500 transition-colors"
+            title="Close (Esc)"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
         
         {/* Quick keyboard shortcuts bar */}
         <div className="flex gap-2 mt-3">
+          <span className="text-xs bg-muted px-2 py-1 rounded flex items-center gap-1">
+            <kbd className="px-1 bg-background rounded text-[10px]">Esc</kbd> Close
+          </span>
           <span className="text-xs bg-muted px-2 py-1 rounded flex items-center gap-1">
             <kbd className="px-1 bg-background rounded text-[10px]">Del</kbd> Delete
           </span>
