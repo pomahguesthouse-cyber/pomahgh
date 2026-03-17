@@ -579,34 +579,6 @@ function ContentProperties({
         </>);
 
 
-    case "page-slider":
-      return (
-        <>
-          <div className="space-y-2">
-            <Label>Section Title</Label>
-            <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Subtitle</Label>
-            <Input value={element.props.subtitle || ""} onChange={(e) => onPropChange("subtitle", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Content Type</Label>
-            <Select value={element.props.contentType || "events"} onValueChange={(v) => onPropChange("contentType", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="events">Events</SelectItem>
-                <SelectItem value="news">News</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Max Items</Label>
-            <Input type="number" value={element.props.maxItems || 10} onChange={(e) => onPropChange("maxItems", parseInt(e.target.value) || 10)} />
-          </div>
-        </>);
-
-
     case "nearby-locations":
       return (
         <>

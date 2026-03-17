@@ -19,7 +19,6 @@ import { HeroSliderElement } from "./HeroSliderElement";
 import { RoomSliderElement } from "./RoomSliderElement";
 import { FacilitiesElement } from "./FacilitiesElement";
 import { NearbyLocationsElement } from "./NearbyLocationsElement";
-import { PageSliderElement } from "./PageSliderElement";
 
 interface ElementRendererProps {
   element: EditorElement;
@@ -96,8 +95,6 @@ export const ElementRenderer = memo(function ElementRenderer({
         return <RoomSliderElement {...commonProps} />;
       case "facilities":
         return <FacilitiesElement {...commonProps} />;
-      case "page-slider":
-        return <PageSliderElement {...commonProps} />;
       case "nearby-locations":
         return <NearbyLocationsElement {...commonProps} />;
       default:
