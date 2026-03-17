@@ -24,6 +24,7 @@ const Header = memo(function Header() {
         .select("id, title, menu_label, route_path, sort_order, status, show_in_menu, is_homepage")
         .eq("status", "published")
         .eq("show_in_menu", true)
+        .order("is_homepage", { ascending: false })
         .order("sort_order", { ascending: true });
       if (error) throw error;
       return data || [];

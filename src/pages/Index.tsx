@@ -20,16 +20,33 @@ const Index = () => {
   const location = useLocation();
 
   const { data: homepageSchema } = useQuery({
-    queryKey: ["site-page-route", "/"],
+    queryKey: ["site-homepage-schema"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: homepageByFlag, error: homepageErr } = await supabase
         .from("site_pages")
-        .select("page_schema, status")
-        .eq("route_path", "/")
+        .select("page_schema")
         .eq("status", "published")
+        .eq("is_homepage", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (homepageErr) throw homepageErr;
+
+      let data = homepageByFlag;
+
+      if (!data) {
+        const { data: fallbackHome, error: fallbackErr } = await supabase
+          .from("site_pages")
+          .select("page_schema")
+          .eq("route_path", "/")
+          .eq("status", "published")
+          .maybeSingle();
+
+        if (fallbackErr) throw fallbackErr;
+        data = fallbackHome;
+      }
+
       if (!data) return null;
       return Array.isArray(data.page_schema) ? (data.page_schema as unknown as EditorElement[]) : null;
     },
