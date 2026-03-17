@@ -590,38 +590,129 @@ function ContentProperties({
             <Label>Subtitle</Label>
             <Input value={element.props.subtitle || ""} onChange={(e) => onPropChange("subtitle", e.target.value)} />
           </div>
-          <div className="space-y-2">
-            <Label>Content Type</Label>
-            <Select value={element.props.contentType || "all"} onValueChange={(v) => onPropChange("contentType", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="events">Events Only</SelectItem>
-                <SelectItem value="news">News Only</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={element.props.showSubtitle !== false} onChange={(e) => onPropChange("showSubtitle", e.target.checked)} id="newsShowSubtitle" />
+            <Label htmlFor="newsShowSubtitle">Show Subtitle</Label>
           </div>
-          <div className="space-y-2">
-            <Label>Layout</Label>
-            <Select value={element.props.layout || "slider"} onValueChange={(v) => onPropChange("layout", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="slider">Slider</SelectItem>
-                <SelectItem value="grid">Grid</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={element.props.autoPlay === true} onChange={(e) => onPropChange("autoPlay", e.target.checked)} id="newsAutoPlay" />
+            <Label htmlFor="newsAutoPlay">Auto Play</Label>
           </div>
-          <div className="space-y-2">
-            <Label>Max Items</Label>
-            <Input type="number" value={element.props.maxItems || 6} onChange={(e) => onPropChange("maxItems", parseInt(e.target.value) || 6)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Category (optional)</Label>
-            <Input 
-              value={element.props.category || ""} 
-              onChange={(e) => onPropChange("category", e.target.value)} 
-              placeholder="e.g. festival, konser, berita"
-            />
+
+          <div className="border-t pt-4 mt-2 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="font-medium">Items</Label>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const currentItems = Array.isArray(element.props.items) ? element.props.items : [];
+                  const newItem = {
+                    id: `ne-${Date.now()}`,
+                    type: "news",
+                    tag: "Berita",
+                    title: "Judul item baru",
+                    summary: "Deskripsi singkat item.",
+                    date: "",
+                    imageUrl: "",
+                    linkUrl: "#"
+                  };
+                  onPropChange("items", [...currentItems, newItem]);
+                }}
+              >
+                Add Item
+              </Button>
+            </div>
+
+            {(Array.isArray(element.props.items) ? element.props.items : []).map((item: any, index: number) => (
+              <div key={item.id || index} className="rounded-md border p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Item #{index + 1}</Label>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-destructive"
+                    onClick={() => {
+                      const items = Array.isArray(element.props.items) ? element.props.items : [];
+                      onPropChange("items", items.filter((_: any, i: number) => i !== index));
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+
+                <Select
+                  value={item.type || "news"}
+                  onValueChange={(v) => {
+                    const items = Array.isArray(element.props.items) ? element.props.items : [];
+                    items[index] = { ...items[index], type: v };
+                    onPropChange("items", [...items]);
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="news">News</SelectItem>
+                    <SelectItem value="event">Event</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Input
+                  value={item.tag || ""}
+                  onChange={(e) => {
+                    const items = Array.isArray(element.props.items) ? element.props.items : [];
+                    items[index] = { ...items[index], tag: e.target.value };
+                    onPropChange("items", [...items]);
+                  }}
+                  placeholder="Tag (Berita/Agenda/Event)"
+                />
+                <Input
+                  value={item.title || ""}
+                  onChange={(e) => {
+                    const items = Array.isArray(element.props.items) ? element.props.items : [];
+                    items[index] = { ...items[index], title: e.target.value };
+                    onPropChange("items", [...items]);
+                  }}
+                  placeholder="Title"
+                />
+                <Textarea
+                  value={item.summary || ""}
+                  onChange={(e) => {
+                    const items = Array.isArray(element.props.items) ? element.props.items : [];
+                    items[index] = { ...items[index], summary: e.target.value };
+                    onPropChange("items", [...items]);
+                  }}
+                  placeholder="Summary"
+                  rows={3}
+                />
+                <Input
+                  value={item.date || ""}
+                  onChange={(e) => {
+                    const items = Array.isArray(element.props.items) ? element.props.items : [];
+                    items[index] = { ...items[index], date: e.target.value };
+                    onPropChange("items", [...items]);
+                  }}
+                  placeholder="Date (YYYY-MM-DD)"
+                />
+                <Input
+                  value={item.imageUrl || ""}
+                  onChange={(e) => {
+                    const items = Array.isArray(element.props.items) ? element.props.items : [];
+                    items[index] = { ...items[index], imageUrl: e.target.value };
+                    onPropChange("items", [...items]);
+                  }}
+                  placeholder="Image URL"
+                />
+                <Input
+                  value={item.linkUrl || ""}
+                  onChange={(e) => {
+                    const items = Array.isArray(element.props.items) ? element.props.items : [];
+                    items[index] = { ...items[index], linkUrl: e.target.value };
+                    onPropChange("items", [...items]);
+                  }}
+                  placeholder="Link URL (optional)"
+                />
+              </div>
+            ))}
           </div>
         </>);
 
