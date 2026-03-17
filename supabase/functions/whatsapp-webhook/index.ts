@@ -922,7 +922,12 @@ Silakan coba lagi atau hubungi technical support.`;
 
     // === SIMPLE AI FLOW (like web chatbot) ===
     // Extract context from conversation history for booking continuation
-    const conversationContext = extractConversationContext(messages);
+    const extractedContext = extractConversationContext(messages) || {};
+    const bookingContext = await getLatestBookingContextByPhone(supabase, phone);
+    const conversationContext = {
+      ...(bookingContext || {}),
+      ...extractedContext,
+    };
     console.log("Calling chatbot function with context:", JSON.stringify(conversationContext));
     
     const chatbotResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
