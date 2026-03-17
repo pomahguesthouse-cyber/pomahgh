@@ -52,11 +52,15 @@ export const ElementRenderer = memo(function ElementRenderer({
   }), [element, isSelected, isHovered, onSelect, onHover, isPreview, element.isLocked]);
 
   const wrapHidden = useCallback((node: React.ReactNode) => {
+    const wrappedNode = element.styles.fontFamily
+      ? <div style={{ fontFamily: element.styles.fontFamily }}>{node}</div>
+      : node;
+
     if (element.isVisible === false && !isPreview) {
-      return <div className="opacity-30 pointer-events-auto">{node}</div>;
+      return <div className="opacity-30 pointer-events-auto">{wrappedNode}</div>;
     }
-    return node;
-  }, [element.isVisible, isPreview]);
+    return wrappedNode;
+  }, [element.isVisible, element.styles.fontFamily, isPreview]);
 
   const rendered = useMemo(() => {
     switch (element.type) {

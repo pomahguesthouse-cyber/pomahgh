@@ -1368,6 +1368,10 @@ function StyleProperties({
       <AccordionItem value="typography">
         <AccordionTrigger className="text-sm">Typography</AccordionTrigger>
         <AccordionContent className="space-y-3">
+          <FontFamilyPicker
+            value={element.styles.fontFamily || "___default___"}
+            onChange={(v: string) => onStyleChange("fontFamily", v === "___default___" ? "" : v)}
+          />
           <div className="space-y-2">
             <Label className="text-xs">Font Size</Label>
             <Input

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
 export interface ElementStyles {
+  fontFamily?: string;
   marginTop?: string;
   marginBottom?: string;
   marginLeft?: string;
