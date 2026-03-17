@@ -267,12 +267,38 @@ function extractConversationContext(messages: Array<{role: string, content: stri
       }
     }
     
-    // Also check user messages for room preferences
-    if (msg.role === 'user' && !context.preferred_room) {
-      const userRoomMatch = msg.content.match(/(single|deluxe|grand\s*deluxe|family\s*suite)/i);
-      if (userRoomMatch) {
-        context.preferred_room = userRoomMatch[1].replace(/\s+/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        console.log(`Found room from user message: ${userRoomMatch[0]} -> ${context.preferred_room}`);
+    // Also check user messages for booking memory and room preferences
+    if (msg.role === 'user') {
+      if (!context.last_booking_code) {
+        const userBookingCodeMatch = msg.content.match(/PMH-[A-Z0-9]{6}/i);
+        if (userBookingCodeMatch) {
+          context.last_booking_code = userBookingCodeMatch[0].toUpperCase();
+          console.log(`Found booking code from user message: ${context.last_booking_code}`);
+        }
+      }
+
+      if (!context.last_booking_guest_email) {
+        const userEmailMatch = msg.content.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+        if (userEmailMatch) {
+          context.last_booking_guest_email = userEmailMatch[0].toLowerCase();
+          console.log(`Found booking email from user message: ${context.last_booking_guest_email}`);
+        }
+      }
+
+      if (!context.last_booking_guest_phone) {
+        const userPhoneMatch = msg.content.match(/(?:\+62|62|0)\d{8,13}/);
+        if (userPhoneMatch) {
+          context.last_booking_guest_phone = normalizePhone(userPhoneMatch[0]);
+          console.log(`Found booking phone from user message: ${context.last_booking_guest_phone}`);
+        }
+      }
+
+      if (!context.preferred_room) {
+        const userRoomMatch = msg.content.match(/(single|deluxe|grand\s*deluxe|family\s*suite)/i);
+        if (userRoomMatch) {
+          context.preferred_room = userRoomMatch[1].replace(/\s+/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          console.log(`Found room from user message: ${userRoomMatch[0]} -> ${context.preferred_room}`);
+        }
       }
     }
   }
