@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { lazy, Suspense } from "react";
 import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
 import { PublicOverridesProvider } from "@/contexts/PublicOverridesContext";
 import { GlobalSEO } from "@/components/GlobalSEO";
@@ -11,48 +12,52 @@ import { SubdomainRouter } from "@/components/SubdomainRouter";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Bookings from "./pages/Bookings";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminRooms from "./pages/admin/AdminRooms";
-import AdminBookings from "./pages/admin/AdminBookings";
-import AdminHeroSlides from "./pages/admin/AdminHeroSlides";
-import AdminFacilityHeroSlides from "./pages/admin/AdminFacilityHeroSlides";
-import AdminFacilities from "./pages/admin/AdminFacilities";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminNearbyLocations from "./pages/admin/AdminNearbyLocations";
-import AdminChatbot from "./pages/admin/AdminChatbot";
-import AdminGuestChatbot from "./pages/admin/AdminGuestChatbot";
-import AdminAdminChatbot from "./pages/admin/AdminAdminChatbot";
-import AdminChannelManagers from "./pages/admin/AdminChannelManagers";
-import AdminBookingCom from "./pages/admin/AdminBookingCom";
-import AdminBankAccounts from "./pages/admin/AdminBankAccounts";
-import AdminRoomFeatures from "./pages/admin/AdminRoomFeatures";
-import AdminSeoSettings from "./pages/admin/AdminSeoSettings";
-import AdminLandingPages from "./pages/admin/AdminLandingPages";
-import AdminMediaLibrary from "./pages/admin/AdminMediaLibrary";
 import RoomDetail from "./pages/RoomDetail";
-
-import AdminRoomAddons from "./pages/admin/AdminRoomAddons";
-import AdminPromotions from "./pages/admin/AdminPromotions";
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminRooms = lazy(() => import("./pages/admin/AdminRooms"));
+const AdminBookings = lazy(() => import("./pages/admin/AdminBookings"));
+const AdminHeroSlides = lazy(() => import("./pages/admin/AdminHeroSlides"));
+const AdminFacilityHeroSlides = lazy(() => import("./pages/admin/AdminFacilityHeroSlides"));
+const AdminFacilities = lazy(() => import("./pages/admin/AdminFacilities"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminNearbyLocations = lazy(() => import("./pages/admin/AdminNearbyLocations"));
+const AdminGuestChatbot = lazy(() => import("./pages/admin/AdminGuestChatbot"));
+const AdminAdminChatbot = lazy(() => import("./pages/admin/AdminAdminChatbot"));
+const AdminChannelManagers = lazy(() => import("./pages/admin/AdminChannelManagers"));
+const AdminBookingCom = lazy(() => import("./pages/admin/AdminBookingCom"));
+const AdminBankAccounts = lazy(() => import("./pages/admin/AdminBankAccounts"));
+const AdminRoomFeatures = lazy(() => import("./pages/admin/AdminRoomFeatures"));
+const AdminSeoSettings = lazy(() => import("./pages/admin/AdminSeoSettings"));
+const AdminLandingPages = lazy(() => import("./pages/admin/AdminLandingPages"));
+const AdminMediaLibrary = lazy(() => import("./pages/admin/AdminMediaLibrary"));
+const AdminRoomAddons = lazy(() => import("./pages/admin/AdminRoomAddons"));
+const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
+const AdminCityAttractions = lazy(() => import("./pages/admin/AdminCityAttractions"));
+const AdminExploreHeroSlides = lazy(() => import("./pages/admin/AdminExploreHeroSlides"));
+const AdminCompetitorAnalysis = lazy(() => import("./pages/admin/AdminCompetitorAnalysis"));
+const AdminChat = lazy(() => import("./pages/admin/AdminChat"));
+const AdminCityEvents = lazy(() => import("./pages/admin/AdminCityEvents"));
+const ManagerCalendar = lazy(() => import("./pages/public/ManagerCalendar"));
+const Payment = lazy(() => import("./pages/public/Payment"));
+const PaymentStatus = lazy(() => import("./pages/public/PaymentStatus"));
+const PageEditorPage = lazy(() => import("./pages/PageEditorPage"));
+const MemberDashboard = lazy(() => import("./pages/user/MemberDashboard"));
 import { AdminLayout } from "./components/admin/AdminLayout";
 import NotFound from "./pages/NotFound";
 import ExploreSemarang from "./pages/ExploreSemarang";
 import LandingPage from "./pages/LandingPage";
 import AttractionDetail from "./pages/AttractionDetail";
-import AdminCityAttractions from "./pages/admin/AdminCityAttractions";
-import AdminExploreHeroSlides from "./pages/admin/AdminExploreHeroSlides";
-import AdminCompetitorAnalysis from "./pages/admin/AdminCompetitorAnalysis";
 import Chat from "./pages/Chat";
-import AdminChat from "./pages/admin/AdminChat";
-import AdminCityEvents from "./pages/admin/AdminCityEvents";
 import EventDetail from "./pages/EventDetail";
-import ManagerCalendar from "./pages/public/ManagerCalendar";
-import Payment from "./pages/public/Payment";
-import PaymentStatus from "./pages/public/PaymentStatus";
-import PageEditorPage from "./pages/PageEditorPage";
-import MemberDashboard from "./pages/user/MemberDashboard";
 
 const queryClient = new QueryClient();
+
+const RouteFallback = () => (
+  <div className="min-h-[40vh] flex items-center justify-center text-sm text-muted-foreground">
+    Loading...
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -65,6 +70,7 @@ const App = () => (
           <PublicOverridesProvider>
           <BrowserRouter>
             <SubdomainRouter>
+            <Suspense fallback={<RouteFallback />}>
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -111,6 +117,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
+            </Suspense>
             </SubdomainRouter>
         </BrowserRouter>
           </PublicOverridesProvider>

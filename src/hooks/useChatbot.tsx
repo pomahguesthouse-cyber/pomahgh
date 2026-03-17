@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import type { ChatbotSettingsFormData } from "@/types/chatbot-settings.types";
 import type { ChatMessage as Message, ConversationContext } from "@/features/chatbot/types";
 import { DEFAULT_CONTEXT, extractConversationContext } from "@/features/chatbot/services/contextExtractor";
-import { extractTrainingPairs, pickBestTrainingPairs } from "@/features/chatbot/services/trainingExampleSelector";
+import { buildAutoTrainingInserts } from "@/features/chatbot/services/trainingExampleSelector";
 import { getChatErrorMessage } from "@/features/chatbot/services/errorMessage";
 
 export const useChatbotSettings = () => {
@@ -159,19 +159,12 @@ export const useChatbot = () => {
 
       if (!chatMessages || chatMessages.length < 2) return;
 
-      const trainingExamples = extractTrainingPairs(chatMessages);
-      const toInsert = pickBestTrainingPairs(trainingExamples, 3);
-      
-      for (const example of toInsert) {
+      const inserts = buildAutoTrainingInserts(chatMessages, 3);
+
+      for (const example of inserts) {
         const { error: insertError } = await supabase
           .from("chatbot_training_examples")
-          .insert({
-            question: example.question,
-            ideal_answer: example.answer,
-            category: "auto-generated",
-            is_active: true,
-            display_order: 999
-          });
+          .insert(example);
 
         if (!insertError) {
           console.log("Auto-promoted training example:", example.question.substring(0, 30) + "...");

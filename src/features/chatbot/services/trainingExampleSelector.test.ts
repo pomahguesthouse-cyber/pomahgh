@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { extractTrainingPairs, pickBestTrainingPairs } from "./trainingExampleSelector";
+import {
+  extractTrainingPairs,
+  pickBestTrainingPairs,
+  buildAutoTrainingInserts,
+} from "./trainingExampleSelector";
 
 describe("trainingExampleSelector", () => {
   it("extracts user-assistant Q&A pairs only", () => {
@@ -34,5 +38,24 @@ describe("trainingExampleSelector", () => {
     ], 2);
 
     expect(selected).toHaveLength(2);
+  });
+
+  it("builds normalized auto-training payloads", () => {
+    const inserts = buildAutoTrainingInserts([
+      { role: "user", content: "Saya mau booking kamar deluxe untuk 2 orang weekend ini." },
+      {
+        role: "assistant",
+        content:
+          "Baik, untuk booking kamar deluxe weekend ini saya bantu cek harga dan ketersediaan terlebih dahulu.",
+      },
+    ]);
+
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0]).toMatchObject({
+      category: "auto-generated",
+      is_active: true,
+      display_order: 999,
+    });
+    expect(inserts[0].question).toContain("booking kamar deluxe");
   });
 });

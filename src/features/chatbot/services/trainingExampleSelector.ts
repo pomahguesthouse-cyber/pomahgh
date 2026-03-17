@@ -37,3 +37,27 @@ export function pickBestTrainingPairs(pairs: TrainingPair[], limit = 3): Trainin
 
   return prioritized.slice(0, limit);
 }
+
+export interface AutoTrainingInsert {
+  question: string;
+  ideal_answer: string;
+  category: string;
+  is_active: boolean;
+  display_order: number;
+}
+
+export function buildAutoTrainingInserts(
+  messages: Array<{ role: string; content: string }>,
+  limit = 3,
+): AutoTrainingInsert[] {
+  const pairs = extractTrainingPairs(messages);
+  const selected = pickBestTrainingPairs(pairs, limit);
+
+  return selected.map((pair) => ({
+    question: pair.question,
+    ideal_answer: pair.answer,
+    category: "auto-generated",
+    is_active: true,
+    display_order: 999,
+  }));
+}
