@@ -135,6 +135,16 @@ function buildContextString(ctx?: ConversationContext): { contextString: string;
   if (ctx.sentiment) parts.push(`Mood: ${ctx.sentiment}`);
   if (ctx.awaiting_guest_data) parts.push(`⚠️ MENUNGGU DATA TAMU UNTUK BOOKING`);
 
+  // Booking memory - last booking in this conversation
+  if (ctx.last_booking_code) {
+    const bookingParts = [`🔖 BOOKING TERAKHIR: ${ctx.last_booking_code}`];
+    if (ctx.last_booking_guest_name) bookingParts.push(`Nama: ${ctx.last_booking_guest_name}`);
+    if (ctx.last_booking_guest_email) bookingParts.push(`Email: ${ctx.last_booking_guest_email}`);
+    if (ctx.last_booking_guest_phone) bookingParts.push(`HP: ${ctx.last_booking_guest_phone}`);
+    if (ctx.last_booking_room) bookingParts.push(`Kamar: ${ctx.last_booking_room}`);
+    parts.push(bookingParts.join(' | '));
+  }
+
   // Include parsed relative date context
   let parsedDateContext = '';
   if (ctx.parsed_date) {
