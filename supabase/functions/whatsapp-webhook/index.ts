@@ -141,6 +141,41 @@ function extractConversationContext(messages: Array<{role: string, content: stri
     const msg = messages[i];
     
     if (msg.role === 'assistant') {
+      // Extract booking code (PMH-XXXXXX) from assistant messages
+      if (!context.last_booking_code) {
+        const bookingCodeMatch = msg.content.match(/PMH-[A-Z0-9]{6}/);
+        if (bookingCodeMatch) {
+          context.last_booking_code = bookingCodeMatch[0];
+          console.log(`Found booking code: ${bookingCodeMatch[0]}`);
+          
+          // Extract guest details from booking confirmation messages
+          const nameMatch = msg.content.match(/(?:Nama(?:\s+tamu)?|Atas nama|a\.n\.?)\s*[:\-]?\s*\*?([A-Za-z\s]+?)\*?(?:\n|$|,|\|)/i);
+          if (nameMatch) {
+            context.last_booking_guest_name = nameMatch[1].trim();
+            console.log(`Found booking guest name: ${context.last_booking_guest_name}`);
+          }
+          
+          const emailMatch = msg.content.match(/(?:Email)\s*[:\-]?\s*\*?([^\s*\n]+@[^\s*\n]+)\*?/i);
+          if (emailMatch) {
+            context.last_booking_guest_email = emailMatch[1].trim();
+            console.log(`Found booking guest email: ${context.last_booking_guest_email}`);
+          }
+          
+          const phoneMatch = msg.content.match(/(?:(?:No\.?\s*)?(?:HP|Telepon|WhatsApp|WA|Telp))\s*[:\-]?\s*\*?([0-9+\-\s]{8,})\*?/i);
+          if (phoneMatch) {
+            context.last_booking_guest_phone = phoneMatch[1].trim();
+            console.log(`Found booking guest phone: ${context.last_booking_guest_phone}`);
+          }
+          
+          // Extract room from booking confirmation
+          const bookingRoomMatch = msg.content.match(/(?:Kamar|Tipe|Room)\s*[:\-]?\s*\*?(Single|Deluxe|Grand Deluxe|Family Suite)\*?/i);
+          if (bookingRoomMatch) {
+            context.last_booking_room = bookingRoomMatch[1];
+            console.log(`Found booking room: ${context.last_booking_room}`);
+          }
+        }
+      }
+
       // Extract room name from availability responses - MORE FLEXIBLE PATTERNS
       if (!context.preferred_room) {
         const roomPatterns = [
@@ -214,13 +249,13 @@ function extractConversationContext(messages: Array<{role: string, content: stri
       // Check if AI asked for guest data - MORE FLEXIBLE PATTERNS
       if (!context.awaiting_guest_data) {
         const guestDataPatterns = [
-          /mohon\s+informasikan/i,        // "mohon informasikan:"
-          /mohon\s+info/i,                 // "mohon info"
-          /nama\s+lengkap.*anda/i,         // "Nama lengkap Anda"
-          /data\s+(untuk\s+)?booking/i,    // "data untuk booking"
-          /nama.*email.*(?:hp|nomor|telepon|whatsapp)/i,  // "nama, email, hp"
-          /silakan\s+(?:berikan|kirim).*data/i,           // "silakan berikan data"
-          /butuh.*(?:nama|data|informasi)/i,              // "butuh nama/data"
+          /mohon\s+informasikan/i,
+          /mohon\s+info/i,
+          /nama\s+lengkap.*anda/i,
+          /data\s+(untuk\s+)?booking/i,
+          /nama.*email.*(?:hp|nomor|telepon|whatsapp)/i,
+          /silakan\s+(?:berikan|kirim).*data/i,
+          /butuh.*(?:nama|data|informasi)/i,
         ];
         for (const pattern of guestDataPatterns) {
           if (pattern.test(msg.content)) {
