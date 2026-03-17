@@ -2115,13 +2115,16 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_homepage: boolean
           is_system: boolean
+          menu_label: string | null
           meta_description: string | null
           meta_title: string | null
           og_image_url: string | null
           page_kind: string
           page_schema: Json | null
           route_path: string
+          show_in_menu: boolean
           sort_order: number
           status: string
           title: string
@@ -2130,13 +2133,16 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_homepage?: boolean
           is_system?: boolean
+          menu_label?: string | null
           meta_description?: string | null
           meta_title?: string | null
           og_image_url?: string | null
           page_kind?: string
           page_schema?: Json | null
           route_path: string
+          show_in_menu?: boolean
           sort_order?: number
           status?: string
           title: string
@@ -2145,13 +2151,16 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_homepage?: boolean
           is_system?: boolean
+          menu_label?: string | null
           meta_description?: string | null
           meta_title?: string | null
           og_image_url?: string | null
           page_kind?: string
           page_schema?: Json | null
           route_path?: string
+          show_in_menu?: boolean
           sort_order?: number
           status?: string
           title?: string

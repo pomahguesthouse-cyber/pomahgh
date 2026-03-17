@@ -45,6 +45,9 @@ export interface SitePage {
   page_kind: "home" | "explore" | "landing";
   status: "draft" | "published";
   page_schema: unknown[] | null;
+  menu_label: string | null;
+  show_in_menu: boolean;
+  is_homepage: boolean;
   meta_title: string | null;
   meta_description: string | null;
   og_image_url: string | null;
@@ -109,20 +112,25 @@ export default function AdminPages() {
       // Required marketing pages
       ensureRoute("/", {
         title: "Home",
+        menu_label: "Home",
         route_path: "/",
         page_kind: "home",
         status: "draft",
         is_system: true,
+        is_homepage: true,
+        show_in_menu: true,
         sort_order: 0,
         page_schema: [],
       });
 
       ensureRoute("/explore-semarang", {
         title: "Explore Semarang",
+        menu_label: "Explore Semarang",
         route_path: "/explore-semarang",
         page_kind: "explore",
         status: "draft",
         is_system: true,
+        show_in_menu: true,
         sort_order: 1,
         page_schema: [],
       });
@@ -133,19 +141,22 @@ export default function AdminPages() {
           if (!lp.slug) continue;
           const routePath = `/${lp.slug}`;
           ensureRoute(routePath, {
-            title: lp.page_title,
-            route_path: routePath,
-            page_kind: "landing",
-            status: lp.status || "draft",
+              title: lp.page_title,
+              menu_label: lp.page_title,
+              route_path: routePath,
+              page_kind: "landing",
+              status: lp.status || "draft",
             page_schema: lp.page_schema || [],
             meta_title: lp.page_title,
             meta_description: lp.meta_description,
             og_image_url: lp.og_image_url,
-            sort_order: (lp.display_order || 0) + 100,
-            is_system: false,
-            created_at: lp.created_at,
-            updated_at: lp.updated_at,
-          });
+              sort_order: (lp.display_order || 0) + 100,
+              is_system: false,
+              show_in_menu: true,
+              is_homepage: false,
+              created_at: lp.created_at,
+              updated_at: lp.updated_at,
+            });
         }
       }
 
@@ -166,6 +177,41 @@ export default function AdminPages() {
     },
   });
 
+  const setHomepageMutation = useMutation({
+    mutationFn: async (page: SitePage) => {
+      const { error: resetErr } = await supabase
+        .from("site_pages")
+        .update({ is_homepage: false } as any)
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (resetErr) throw resetErr;
+
+      const { error } = await supabase
+        .from("site_pages")
+        .update({ is_homepage: true, show_in_menu: true } as any)
+        .eq("id", page.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      toast.success("Homepage berhasil diubah");
+    },
+    onError: () => toast.error("Gagal mengubah homepage"),
+  });
+
+  const toggleMenuMutation = useMutation({
+    mutationFn: async (page: SitePage) => {
+      const { error } = await supabase
+        .from("site_pages")
+        .update({ show_in_menu: !page.show_in_menu } as any)
+        .eq("id", page.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+    },
+    onError: () => toast.error("Gagal mengubah visibilitas menu"),
+  });
+
   const createMutation = useMutation({
     mutationFn: async () => {
       const ts = Date.now();
@@ -174,11 +220,14 @@ export default function AdminPages() {
         .from("site_pages")
         .insert({
           title: `Landing Page ${new Date().toLocaleDateString("id-ID")}`,
+          menu_label: `Landing Page ${new Date().toLocaleDateString("id-ID")}`,
           route_path: routePath,
           page_kind: "landing",
           status: "draft",
           sort_order: (pages?.length || 0) + 10,
           is_system: false,
+          is_homepage: false,
+          show_in_menu: true,
           meta_title: "",
           meta_description: "",
           page_schema: [],
@@ -226,6 +275,7 @@ export default function AdminPages() {
 
       const { error } = await supabase.from("site_pages").insert({
         title: newTitle,
+        menu_label: newTitle,
         route_path: newRoute,
         page_kind: page.page_kind,
         status: "draft",
@@ -234,6 +284,8 @@ export default function AdminPages() {
         meta_description: page.meta_description,
         og_image_url: page.og_image_url,
         is_system: false,
+        is_homepage: false,
+        show_in_menu: page.show_in_menu,
         sort_order: (page.sort_order || 0) + 1,
       } as any);
 
@@ -254,6 +306,7 @@ export default function AdminPages() {
         .from("site_pages")
         .update({
           title: payload.title,
+          menu_label: payload.title,
           route_path: normalizedRoute,
           status: payload.status,
           meta_title: payload.title,
@@ -325,15 +378,19 @@ export default function AdminPages() {
   };
 
   const setAsHomepage = (page: SitePage) => {
-    if (page.route_path === "/") {
+    if (page.is_homepage) {
       toast.info("Halaman ini sudah menjadi homepage");
       return;
     }
-    toast.info("Set as homepage akan diaktifkan pada fase berikutnya");
+    setHomepageMutation.mutate(page);
   };
 
-  const hideFromMenu = (_page: SitePage) => {
-    toast.info("Hide from menu akan diaktifkan pada fase berikutnya");
+  const hideFromMenu = (page: SitePage) => {
+    if (page.is_homepage) {
+      toast.info("Homepage tidak bisa disembunyikan dari menu");
+      return;
+    }
+    toggleMenuMutation.mutate(page);
   };
 
   return (
@@ -393,11 +450,13 @@ export default function AdminPages() {
                           <GripVertical className="h-4 w-4 text-blue-500" />
                           <KindIcon className="h-5 w-5 text-slate-600 shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-3xl font-medium text-slate-700 truncate">{page.title}</p>
+                            <p className="text-3xl font-medium text-slate-700 truncate">{page.menu_label || page.title}</p>
                             <p className="text-xs text-muted-foreground truncate">{page.route_path} • {format(new Date(page.updated_at), "d MMM yyyy HH:mm", { locale: localeId })}</p>
                           </div>
                           <Badge variant={page.status === "published" ? "default" : "secondary"}>{page.status}</Badge>
                           {page.is_system && <Badge variant="outline">system</Badge>}
+                          {page.is_homepage && <Badge className="bg-blue-600">homepage</Badge>}
+                          {!page.show_in_menu && <Badge variant="outline">hidden</Badge>}
                         </div>
 
                         <div className="flex items-center gap-1">
@@ -444,13 +503,13 @@ export default function AdminPages() {
                                 <Copy className="h-4 w-4 mr-2" />
                                 Copy
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setAsHomepage(page)}>
+                              <DropdownMenuItem onClick={() => setAsHomepage(page)} disabled={page.is_homepage}>
                                 <Home className="h-4 w-4 mr-2" />
                                 Set as homepage
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => hideFromMenu(page)}>
                                 <EyeOff className="h-4 w-4 mr-2" />
-                                Hide from menu
+                                {page.show_in_menu ? "Hide from menu" : "Show in menu"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"

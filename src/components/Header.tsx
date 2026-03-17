@@ -4,6 +4,8 @@ import { Menu, User, Home, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Header = memo(function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -13,6 +15,20 @@ const Header = memo(function Header() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { data: menuPages } = useQuery({
+    queryKey: ["public-menu-pages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_pages")
+        .select("id, title, menu_label, route_path, sort_order, status, show_in_menu, is_homepage")
+        .eq("status", "published")
+        .eq("show_in_menu", true)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 40);
@@ -45,13 +61,27 @@ const Header = memo(function Header() {
     navigate(user ? "/member" : "/auth");
   };
 
-  const menuItems = [
+  const fallbackMenuItems = [
     { label: "Home", onClick: handleHome },
     { label: "Rooms", onClick: () => handleNav("rooms") },
     { label: "Fasilitas", onClick: () => handleNav("amenities") },
     { label: "News & Events", onClick: () => handleNav("news-events") },
     { label: "Explore Semarang", onClick: () => navigate("/explore-semarang") },
   ];
+
+  const dynamicMenuItems = menuPages && menuPages.length > 0
+    ? menuPages.map((p) => ({
+        label: p.menu_label || p.title,
+        onClick: () => {
+          setIsMenuOpen(false);
+          if (p.route_path === "/" && location.pathname === "/") {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
+          navigate(p.route_path || "/");
+        },
+      }))
+    : fallbackMenuItems;
 
   return (
     <>
@@ -77,11 +107,9 @@ const Header = memo(function Header() {
             </Link>
 
             <nav className="flex items-center gap-8 text-white text-sm font-medium">
-              <button onClick={handleHome}>Home</button>
-              <button onClick={() => handleNav("rooms")}>Rooms</button>
-              <button onClick={() => handleNav("amenities")}>Facilities</button>
-              <button onClick={() => handleNav("news-events")}>News & Events</button>
-              <Link to="/explore-semarang">Explore Semarang</Link>
+              {dynamicMenuItems.map((item) => (
+                <button key={item.label} onClick={item.onClick}>{item.label}</button>
+              ))}
             </nav>
 
             <Button 
@@ -157,7 +185,7 @@ const Header = memo(function Header() {
           "
         >
           <nav className="flex flex-col items-center text-white text-sm font-medium text-center">
-            {menuItems.map((item, index) => (
+            {dynamicMenuItems.map((item, index) => (
               <div
                 key={item.label}
                 className={`
@@ -173,7 +201,7 @@ const Header = memo(function Header() {
                   {item.label}
                 </button>
 
-                {index < menuItems.length - 1 && (
+                {index < dynamicMenuItems.length - 1 && (
                   <div className="w-2/3 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
                 )}
               </div>
