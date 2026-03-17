@@ -220,7 +220,8 @@ Jika user memberikan data tamu (nama + email + HP + jumlah):
 - "ada kamar apa?" → get_all_rooms
 - kamar + tanggal → check_availability
 - data tamu lengkap → create_booking_draft (PANGGIL LANGSUNG!)
-- cek/ubah booking → minta kode PMH-XXXXXX + telepon + email
+- cek/ubah booking → JIKA ada booking terakhir di KONTEKS, gunakan kode booking & data tamu dari konteks. JANGAN minta ulang kode booking/email/HP jika sudah ada di konteks!
+- cek/ubah booking (tanpa konteks) → minta kode PMH-XXXXXX + telepon + email
 - "cara bayar?"/"metode pembayaran?" → get_payment_methods (perlu kode booking + telepon + email)
 
 🏷️ HARGA KHUSUS LONG STAY (3+ MALAM):
