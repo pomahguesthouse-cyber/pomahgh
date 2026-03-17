@@ -10,6 +10,10 @@ export interface ChatConversation {
   ended_at: string | null;
   message_count: number | null;
   booking_created: boolean | null;
+  conversation_duration_seconds: number | null;
+  fallback_count: number | null;
+  satisfaction_rating: number | null;
+  last_user_message: string | null;
 }
 
 export interface ChatMessage {
@@ -18,6 +22,9 @@ export interface ChatMessage {
   role: string;
   content: string;
   created_at: string | null;
+  ai_response: string | null;
+  tool_calls_used: string[] | null;
+  is_fallback: boolean | null;
 }
 
 export const useChatConversations = (page: number = 1, limit: number = 20) => {
@@ -97,7 +104,7 @@ export const useChatStats = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("chat_conversations")
-        .select("id, message_count, booking_created");
+        .select("id, message_count, booking_created, conversation_duration_seconds, fallback_count, satisfaction_rating, started_at");
 
       if (error) throw error;
 
@@ -107,13 +114,130 @@ export const useChatStats = () => {
       const avgMessagesPerSession = totalConversations > 0 
         ? Math.round(totalMessages / totalConversations) 
         : 0;
+      
+      // Calculate new metrics
+      const totalFallbacks = data.reduce((sum, c) => sum + (c.fallback_count || 0), 0);
+      const fallbackRate = totalConversations > 0 
+        ? Math.round((totalFallbacks / totalConversations) * 100) 
+        : 0;
+      
+      // Calculate average duration
+      const durations = data.filter(c => c.conversation_duration_seconds);
+      const avgDurationSeconds = durations.length > 0
+        ? Math.round(durations.reduce((sum, c) => sum + (c.conversation_duration_seconds || 0), 0) / durations.length)
+        : 0;
+      
+      // Calculate satisfaction rating
+      const ratings = data.filter(c => c.satisfaction_rating);
+      const avgSatisfaction = ratings.length > 0
+        ? (ratings.reduce((sum, c) => sum + (c.satisfaction_rating || 0), 0) / ratings.length).toFixed(1)
+        : null;
+
+      // Calculate peak hours (from started_at)
+      const hourCounts: Record<number, number> = {};
+      data.forEach(c => {
+        if (c.started_at) {
+          const hour = new Date(c.started_at).getHours();
+          hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+        }
+      });
+      const peakHour = Object.entries(hourCounts)
+        .sort(([,a], [,b]) => b - a)[0]?.[0] || null;
 
       return {
         totalConversations,
         totalMessages,
         conversionsToBooking,
         avgMessagesPerSession,
+        totalFallbacks,
+        fallbackRate,
+        avgDurationSeconds,
+        avgSatisfaction: avgSatisfaction ? parseFloat(avgSatisfaction) : null,
+        peakHour: peakHour ? parseInt(peakHour) : null,
       };
+    },
+  });
+};
+
+export const useUpdateConversationStats = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      conversationId, 
+      durationSeconds,
+      fallbackCount,
+      lastMessage 
+    }: { 
+      conversationId: string;
+      durationSeconds?: number;
+      fallbackCount?: number;
+      lastMessage?: string;
+    }) => {
+      const updates: Record<string, unknown> = {};
+      
+      if (durationSeconds !== undefined) {
+        updates.conversation_duration_seconds = durationSeconds;
+        updates.ended_at = new Date().toISOString();
+      }
+      if (fallbackCount !== undefined) {
+        updates.fallback_count = fallbackCount;
+      }
+      if (lastMessage !== undefined) {
+        updates.last_user_message = lastMessage;
+      }
+
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update(updates)
+        .eq("id", conversationId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["chat-stats"] });
+    },
+  });
+};
+
+export const useRateConversation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ conversationId, rating }: { conversationId: string; rating: number }) => {
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update({ satisfaction_rating: rating })
+        .eq("id", conversationId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["chat-stats"] });
+      toast.success("Rating berhasil disimpan");
+    },
+    onError: (error: Error) => {
+      toast.error("Gagal menyimpan rating", { description: error.message });
+    },
+  });
+};
+
+export const useUpdateConversationEmail = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ conversationId, email }: { conversationId: string; email: string }) => {
+      const { error } = await supabase
+        .from("chat_conversations")
+        .update({ guest_email: email })
+        .eq("id", conversationId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
     },
   });
 };

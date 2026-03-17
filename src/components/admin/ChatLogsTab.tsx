@@ -28,7 +28,10 @@ import {
   Bot,
   User,
   Star,
-  GraduationCap
+  GraduationCap,
+  Clock,
+  AlertCircle,
+  ThumbsUp
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -174,8 +177,26 @@ const ChatLogsTab = () => {
 
   return (
     <div className="space-y-4">
+      {/* Monitoring Alerts */}
+      {(stats?.fallbackRate && stats.fallbackRate > 20) || (stats?.avgSatisfaction && stats.avgSatisfaction < 3) ? (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-orange-800">Perhatian: Kualitas Chatbot</h4>
+            <ul className="text-sm text-orange-700 mt-1 space-y-1">
+              {stats?.fallbackRate && stats.fallbackRate > 20 && (
+                <li>• Fallback rate tinggi ({stats.fallbackRate}%) - pertimbangkan untuk meningkatkan training examples</li>
+              )}
+              {stats?.avgSatisfaction && stats.avgSatisfaction < 3 && (
+                <li>• Rating kepuasan rendah ({stats.avgSatisfaction}/5) - perlu evaluasi percakapan</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
@@ -197,7 +218,7 @@ const ChatLogsTab = () => {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
+              <TrendingUp className="w-4 h-4 text-green-500" />
               <span className="text-sm text-muted-foreground">Konversi Booking</span>
             </div>
             <p className="text-2xl font-bold mt-1">{stats?.conversionsToBooking || 0}</p>
@@ -206,10 +227,36 @@ const ChatLogsTab = () => {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-primary" />
-              <span className="text-sm text-muted-foreground">Rata-rata Pesan/Sesi</span>
+              <Clock className="w-4 h-4 text-blue-500" />
+              <span className="text-sm text-muted-foreground">Rata-rata Durasi</span>
             </div>
-            <p className="text-2xl font-bold mt-1">{stats?.avgMessagesPerSession || 0}</p>
+            <p className="text-2xl font-bold mt-1">
+              {stats?.avgDurationSeconds 
+                ? `${Math.floor(stats.avgDurationSeconds / 60)}m ${stats.avgDurationSeconds % 60}s`
+                : '-'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <AlertCircle className={stats?.fallbackRate && stats.fallbackRate > 20 ? "w-4 h-4 text-red-500" : "w-4 h-4 text-orange-500"} />
+              <span className="text-sm text-muted-foreground">Fallback Rate</span>
+            </div>
+            <p className={`text-2xl font-bold mt-1 ${stats?.fallbackRate && stats.fallbackRate > 20 ? 'text-red-500' : ''}`}>
+              {stats?.fallbackRate || 0}%
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <ThumbsUp className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm text-muted-foreground">Kepuasan</span>
+            </div>
+            <p className="text-2xl font-bold mt-1">
+              {stats?.avgSatisfaction ? `${stats.avgSatisfaction}/5` : '-'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -256,15 +303,32 @@ const ChatLogsTab = () => {
                         {conv.session_id.substring(0, 20)}...
                       </span>
                       {conv.booking_created && (
-                        <Badge variant="default" className="text-xs">
+                        <Badge variant="default" className="text-xs bg-green-500">
                           Booking
                         </Badge>
+                      )}
+                      {conv.fallback_count && conv.fallback_count > 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          {conv.fallback_count}x fallback
+                        </Badge>
+                      )}
+                      {conv.satisfaction_rating && (
+                        <div className="flex items-center gap-0.5">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          <span className="text-xs">{conv.satisfaction_rating}</span>
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       <span>{conv.started_at ? formatDateTimeID(new Date(conv.started_at)) : '-'}</span>
                       <span>•</span>
                       <span>{conv.message_count || 0} pesan</span>
+                      {conv.conversation_duration_seconds && (
+                        <>
+                          <span>•</span>
+                          <span>{Math.floor(conv.conversation_duration_seconds / 60)}m</span>
+                        </>
+                      )}
                       {conv.guest_email && (
                         <>
                           <span>•</span>

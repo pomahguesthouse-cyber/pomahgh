@@ -855,30 +855,42 @@ export type Database = {
         Row: {
           analyzed_for_training: boolean | null
           booking_created: boolean | null
+          conversation_duration_seconds: number | null
           ended_at: string | null
+          fallback_count: number | null
           guest_email: string | null
           id: string
+          last_user_message: string | null
           message_count: number | null
+          satisfaction_rating: number | null
           session_id: string
           started_at: string | null
         }
         Insert: {
           analyzed_for_training?: boolean | null
           booking_created?: boolean | null
+          conversation_duration_seconds?: number | null
           ended_at?: string | null
+          fallback_count?: number | null
           guest_email?: string | null
           id?: string
+          last_user_message?: string | null
           message_count?: number | null
+          satisfaction_rating?: number | null
           session_id: string
           started_at?: string | null
         }
         Update: {
           analyzed_for_training?: boolean | null
           booking_created?: boolean | null
+          conversation_duration_seconds?: number | null
           ended_at?: string | null
+          fallback_count?: number | null
           guest_email?: string | null
           id?: string
+          last_user_message?: string | null
           message_count?: number | null
+          satisfaction_rating?: number | null
           session_id?: string
           started_at?: string | null
         }
@@ -924,25 +936,34 @@ export type Database = {
       }
       chat_messages: {
         Row: {
+          ai_response: string | null
           content: string
           conversation_id: string | null
           created_at: string | null
           id: string
+          is_fallback: boolean | null
           role: string
+          tool_calls_used: string[] | null
         }
         Insert: {
+          ai_response?: string | null
           content: string
           conversation_id?: string | null
           created_at?: string | null
           id?: string
+          is_fallback?: boolean | null
           role: string
+          tool_calls_used?: string[] | null
         }
         Update: {
+          ai_response?: string | null
           content?: string
           conversation_id?: string | null
           created_at?: string | null
           id?: string
+          is_fallback?: boolean | null
           role?: string
+          tool_calls_used?: string[] | null
         }
         Relationships: [
           {

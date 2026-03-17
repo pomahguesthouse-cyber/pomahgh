@@ -82,6 +82,8 @@ export const useChatbot = () => {
   // Session management for logging
   const sessionIdRef = useRef<string>(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const conversationIdRef = useRef<string | null>(null);
+  const fallbackCountRef = useRef<number>(0);
+  const conversationStartRef = useRef<number>(Date.now());
   
   // Conversation context for continuity (reduces need to re-extract info)
   const [conversationContext, setConversationContext] = useState<ConversationContext>(DEFAULT_CONTEXT);
@@ -141,7 +143,7 @@ export const useChatbot = () => {
   };
 
   // Log a message to database
-  const logMessage = async (role: string, content: string) => {
+  const logMessage = async (role: string, content: string, isFallback: boolean = false, toolCalls: string[] = []) => {
     if (!conversationIdRef.current) return;
 
     try {
@@ -150,21 +152,35 @@ export const useChatbot = () => {
         .insert({
           conversation_id: conversationIdRef.current,
           role,
-          content
+          content,
+          is_fallback: isFallback,
+          tool_calls_used: toolCalls.length > 0 ? toolCalls : null
         });
 
       // Update message count
       const currentCount = messages.length + (role === 'assistant' ? 2 : 1);
       await supabase
         .from("chat_conversations")
-        .update({ message_count: currentCount })
+        .update({ 
+          message_count: currentCount,
+          last_user_message: role === 'user' ? content.substring(0, 200) : null
+        })
         .eq("id", conversationIdRef.current);
+
+      // Track fallback count
+      if (isFallback && role === 'assistant') {
+        fallbackCountRef.current += 1;
+        await supabase
+          .from("chat_conversations")
+          .update({ fallback_count: fallbackCountRef.current })
+          .eq("id", conversationIdRef.current);
+      }
     } catch (err) {
       console.error("Error logging message:", err);
     }
   };
 
-  // Update booking created flag
+  // Update booking created flag and auto-promote to training
   const markBookingCreated = async (guestEmail?: string) => {
     if (!conversationIdRef.current) return;
 
@@ -176,8 +192,77 @@ export const useChatbot = () => {
           guest_email: guestEmail || null
         })
         .eq("id", conversationIdRef.current);
+
+      // Auto-training: promote successful conversation to training examples
+      await autoPromoteToTraining();
     } catch (err) {
       console.error("Error marking booking created:", err);
+    }
+  };
+
+  // Auto-promote good conversations to training examples
+  const autoPromoteToTraining = async () => {
+    if (!conversationIdRef.current) return;
+
+    try {
+      // Get all messages from this conversation
+      const { data: chatMessages } = await supabase
+        .from("chat_messages")
+        .select("content, role")
+        .eq("conversation_id", conversationIdRef.current)
+        .order("created_at", { ascending: true });
+
+      if (!chatMessages || chatMessages.length < 2) return;
+
+      // Extract Q&A pairs (user question -> assistant answer)
+      const trainingExamples: { question: string; answer: string }[] = [];
+      
+      for (let i = 1; i < chatMessages.length; i++) {
+        if (chatMessages[i].role === 'assistant' && chatMessages[i-1].role === 'user') {
+          const question = chatMessages[i-1].content.trim();
+          const answer = chatMessages[i].content.trim();
+          
+          // Only add if both are substantial enough
+          if (question.length > 10 && answer.length > 20) {
+            trainingExamples.push({ question, answer });
+          }
+        }
+      }
+
+      // Insert up to 3 best examples (ones with booking-related keywords get priority)
+      const bookingKeywords = ['booking', 'reservasi', 'kamar', 'check in', 'check-out', 'harga', 'tersedia'];
+      const prioritized = [...trainingExamples].sort((a, b) => {
+        const aHasKeyword = bookingKeywords.some(k => a.answer.toLowerCase().includes(k)) ? 1 : 0;
+        const bHasKeyword = bookingKeywords.some(k => b.answer.toLowerCase().includes(k)) ? 1 : 0;
+        return bHasKeyword - aHasKeyword;
+      });
+
+      const toInsert = prioritized.slice(0, 3);
+      
+      for (const example of toInsert) {
+        const { error: insertError } = await supabase
+          .from("chatbot_training_examples")
+          .insert({
+            question: example.question,
+            ideal_answer: example.answer,
+            category: "auto-generated",
+            is_active: true,
+            display_order: 999
+          });
+
+        if (!insertError) {
+          console.log("Auto-promoted training example:", example.question.substring(0, 30) + "...");
+        }
+      }
+
+      // Mark conversation as analyzed for training
+      await supabase
+        .from("chat_conversations")
+        .update({ analyzed_for_training: true })
+        .eq("id", conversationIdRef.current);
+
+    } catch (err) {
+      console.error("Error auto-promoting to training:", err);
     }
   };
 
@@ -215,6 +300,13 @@ export const useChatbot = () => {
       });
 
       if (chatError) throw chatError;
+
+      // Check for fallback response from edge function
+      const isFallbackResponse = (chatResponse as any)?.fallback === true;
+      
+      if (isFallbackResponse) {
+        fallbackCountRef.current += 1;
+      }
 
       const aiMessage = chatResponse.choices[0].message;
 
@@ -307,12 +399,17 @@ export const useChatbot = () => {
   };
 
   const clearChat = async () => {
-    // Mark conversation as ended
+    // Mark conversation as ended with duration
     if (conversationIdRef.current) {
       try {
+        const durationSeconds = Math.round((Date.now() - conversationStartRef.current) / 1000);
         await supabase
           .from("chat_conversations")
-          .update({ ended_at: new Date().toISOString() })
+          .update({ 
+            ended_at: new Date().toISOString(),
+            conversation_duration_seconds: durationSeconds,
+            fallback_count: fallbackCountRef.current
+          })
           .eq("id", conversationIdRef.current);
       } catch (err) {
         console.error("Error ending conversation:", err);
@@ -324,6 +421,8 @@ export const useChatbot = () => {
     setConversationContext(DEFAULT_CONTEXT);
     conversationIdRef.current = null;
     sessionIdRef.current = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    fallbackCountRef.current = 0;
+    conversationStartRef.current = Date.now();
   };
 
   return {
