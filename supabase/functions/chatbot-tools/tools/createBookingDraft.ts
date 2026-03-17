@@ -208,6 +208,7 @@ export async function handleCreateBookingDraft(
   const roomsText = roomsSummary.join(", ");
   const totalRooms = bookingRoomsData.length;
 
+  // Send notification to the single hotel WhatsApp + customer
   sendBookingNotifications(hotelSettings, {
     guestName: guest_name,
     guestEmail: guest_email,
@@ -221,6 +222,30 @@ export async function handleCreateBookingDraft(
     totalPrice,
     bookingCode: booking.booking_code as string
   }, isUpdate ? 'reschedule' : 'new');
+
+  // Also notify ALL managers via notify-new-booking edge function
+  try {
+    await supabase.functions.invoke('notify-new-booking', {
+      body: {
+        booking_code: booking.booking_code,
+        guest_name,
+        guest_email,
+        guest_phone,
+        room_name: roomsText,
+        room_number: bookingRoomsData.map(r => r.room_number).join(', '),
+        check_in,
+        check_out,
+        total_nights,
+        total_price: totalPrice,
+        num_guests: num_guests || 1,
+        booking_source: 'other',
+        other_source: 'Chatbot AI',
+      }
+    });
+    console.log("✅ Manager notifications sent via notify-new-booking");
+  } catch (notifyErr) {
+    console.error("Failed to notify managers:", notifyErr);
+  }
 
   const bankInfo = `Silakan transfer ke:\n🏦 Bank BCA\n💳 No. Rek: 0095584379\n👤 a.n. Faizal Abdurachman\n\nSetelah transfer, kirimkan bukti pembayaran kepada kami.`;
 
