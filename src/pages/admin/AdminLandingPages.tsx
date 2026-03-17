@@ -89,7 +89,69 @@ export default function AdminLandingPages() {
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data || []) as SitePage[];
+
+      // Auto-bootstrap if migration data has not been seeded yet
+      if (!data || data.length === 0) {
+        const { data: legacyPages } = await supabase
+          .from("landing_pages")
+          .select("id, page_title, slug, status, page_schema, meta_description, og_image_url, display_order, created_at, updated_at")
+          .order("display_order", { ascending: true });
+
+        const seedRows: Record<string, unknown>[] = [
+          {
+            title: "Home",
+            route_path: "/",
+            page_kind: "home",
+            status: "draft",
+            is_system: true,
+            sort_order: 0,
+            page_schema: [],
+          },
+          {
+            title: "Explore Semarang",
+            route_path: "/explore-semarang",
+            page_kind: "explore",
+            status: "draft",
+            is_system: true,
+            sort_order: 1,
+            page_schema: [],
+          },
+        ];
+
+        if (legacyPages && legacyPages.length > 0) {
+          for (const lp of legacyPages) {
+            if (!lp.slug) continue;
+            seedRows.push({
+              title: lp.page_title,
+              route_path: `/${lp.slug}`,
+              page_kind: "landing",
+              status: lp.status || "draft",
+              page_schema: lp.page_schema || [],
+              meta_title: lp.page_title,
+              meta_description: lp.meta_description,
+              og_image_url: lp.og_image_url,
+              sort_order: (lp.display_order || 0) + 100,
+              is_system: false,
+              created_at: lp.created_at,
+              updated_at: lp.updated_at,
+            });
+          }
+        }
+
+        // Try to seed unified pages table
+        await supabase.from("site_pages").upsert(seedRows as any, { onConflict: "route_path" });
+
+        const { data: refreshed, error: refreshError } = await supabase
+          .from("site_pages")
+          .select("*")
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true });
+
+        if (refreshError) throw refreshError;
+        return (refreshed || []) as SitePage[];
+      }
+
+      return data as SitePage[];
     },
   });
 
