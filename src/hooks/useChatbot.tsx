@@ -3,33 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import type { ChatbotSettingsFormData } from "@/types/chatbot-settings.types";
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
-
-// Conversation context extracted from chat for continuity
-interface ConversationContext {
-  guest_name: string | null;
-  preferred_room: string | null;
-  check_in_date: string | null;
-  check_out_date: string | null;
-  guest_count: number | null;
-  phone_number: string | null;
-  email: string | null;
-}
-
-const DEFAULT_CONTEXT: ConversationContext = {
-  guest_name: null,
-  preferred_room: null,
-  check_in_date: null,
-  check_out_date: null,
-  guest_count: null,
-  phone_number: null,
-  email: null
-};
+import type { ChatMessage as Message, ConversationContext } from "@/features/chatbot/types";
+import { DEFAULT_CONTEXT, extractConversationContext } from "@/features/chatbot/services/contextExtractor";
+import { extractTrainingPairs, pickBestTrainingPairs } from "@/features/chatbot/services/trainingExampleSelector";
+import { getChatErrorMessage } from "@/features/chatbot/services/errorMessage";
 
 export const useChatbotSettings = () => {
   return useQuery({
@@ -87,38 +64,6 @@ export const useChatbot = () => {
   
   // Conversation context for continuity (reduces need to re-extract info)
   const [conversationContext, setConversationContext] = useState<ConversationContext>(DEFAULT_CONTEXT);
-
-  // Extract context from AI responses to maintain continuity
-  const extractContext = (content: string, currentContext: ConversationContext): ConversationContext => {
-    const updated = { ...currentContext };
-    
-    // Extract room preferences
-    const roomMatch = content.match(/(?:kamar|room|tipe)\s*(Single|Deluxe|Grand Deluxe|Family Suite|Villa)/i);
-    if (roomMatch) {
-      updated.preferred_room = roomMatch[1];
-    }
-    
-    // Extract dates (Indonesian format)
-    const dateMatch = content.match(/(\d{1,2})\s*(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s*(\d{4})?/gi);
-    if (dateMatch && dateMatch.length >= 1) {
-      if (!updated.check_in_date) updated.check_in_date = dateMatch[0];
-      if (dateMatch.length >= 2 && !updated.check_out_date) updated.check_out_date = dateMatch[1];
-    }
-    
-    // Extract guest count
-    const guestMatch = content.match(/(\d+)\s*(?:orang|tamu|guest)/i);
-    if (guestMatch) {
-      updated.guest_count = parseInt(guestMatch[1], 10);
-    }
-    
-    // Extract name (from booking confirmations)
-    const nameMatch = content.match(/(?:atas nama|nama tamu|nama:?)\s*([A-Za-z\s]+?)(?:\.|,|untuk|\n)/i);
-    if (nameMatch) {
-      updated.guest_name = nameMatch[1].trim();
-    }
-    
-    return updated;
-  };
 
   // Start a new conversation in database
   const startConversation = async () => {
@@ -214,30 +159,8 @@ export const useChatbot = () => {
 
       if (!chatMessages || chatMessages.length < 2) return;
 
-      // Extract Q&A pairs (user question -> assistant answer)
-      const trainingExamples: { question: string; answer: string }[] = [];
-      
-      for (let i = 1; i < chatMessages.length; i++) {
-        if (chatMessages[i].role === 'assistant' && chatMessages[i-1].role === 'user') {
-          const question = chatMessages[i-1].content.trim();
-          const answer = chatMessages[i].content.trim();
-          
-          // Only add if both are substantial enough
-          if (question.length > 10 && answer.length > 20) {
-            trainingExamples.push({ question, answer });
-          }
-        }
-      }
-
-      // Insert up to 3 best examples (ones with booking-related keywords get priority)
-      const bookingKeywords = ['booking', 'reservasi', 'kamar', 'check in', 'check-out', 'harga', 'tersedia'];
-      const prioritized = [...trainingExamples].sort((a, b) => {
-        const aHasKeyword = bookingKeywords.some(k => a.answer.toLowerCase().includes(k)) ? 1 : 0;
-        const bHasKeyword = bookingKeywords.some(k => b.answer.toLowerCase().includes(k)) ? 1 : 0;
-        return bHasKeyword - aHasKeyword;
-      });
-
-      const toInsert = prioritized.slice(0, 3);
+      const trainingExamples = extractTrainingPairs(chatMessages);
+      const toInsert = pickBestTrainingPairs(trainingExamples, 3);
       
       for (const example of toInsert) {
         const { error: insertError } = await supabase
@@ -358,7 +281,7 @@ export const useChatbot = () => {
         setMessages(prev => [...prev, finalMessage]);
         
         // Extract and update context from response
-        setConversationContext(prev => extractContext(finalContent, prev));
+        setConversationContext(prev => extractConversationContext(finalContent, prev));
         
         // Log assistant message
         await logMessage('assistant', finalContent);
@@ -374,14 +297,14 @@ export const useChatbot = () => {
         setMessages(prev => [...prev, assistantMessage]);
         
         // Extract and update context from response
-        setConversationContext(prev => extractContext(assistantContent, prev));
+        setConversationContext(prev => extractConversationContext(assistantContent, prev));
         
         // Log assistant message
         await logMessage('assistant', assistantContent);
       }
     } catch (error) {
       console.error("Chat error:", error);
-      const errorContent = 'Maaf, terjadi kesalahan. Silakan coba lagi.';
+      const errorContent = getChatErrorMessage(error);
       const errorMessage: Message = {
         role: 'assistant',
         content: errorContent,
