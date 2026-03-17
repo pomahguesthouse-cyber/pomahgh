@@ -36,34 +36,75 @@ interface LandingPageData {
   status: string;
 }
 
+interface SitePageData {
+  id: string;
+  title: string;
+  route_path: string;
+  meta_title: string | null;
+  meta_description: string | null;
+  og_image_url: string | null;
+  page_schema: EditorElement[] | null;
+  status: string;
+}
+
 export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
 
-  const { data: page, isLoading, error } = useQuery({
+  const { data: pageResult, isLoading, error } = useQuery({
     queryKey: ["landing-page", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const routePath = `/${slug!}`;
+
+      const { data: sitePage, error: siteError } = await supabase
+        .from("site_pages")
+        .select("*")
+        .eq("route_path", routePath)
+        .eq("status", "published")
+        .maybeSingle();
+
+      if (siteError) throw siteError;
+
+      if (sitePage) {
+        const schema = Array.isArray(sitePage.page_schema)
+          ? (sitePage.page_schema as unknown as EditorElement[])
+          : null;
+
+        if (schema && schema.length > 0) {
+          return {
+            mode: "site" as const,
+            page: {
+              ...sitePage,
+              page_schema: schema,
+            } as SitePageData,
+          };
+        }
+      }
+
+      const { data: legacy, error: legacyError } = await supabase
         .from("landing_pages")
         .select("*")
         .eq("slug", slug!)
         .eq("status", "published")
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      
-      const heroSlides = Array.isArray(data.hero_slides) 
-        ? (data.hero_slides as unknown as HeroSlide[])
+      if (legacyError) throw legacyError;
+      if (!legacy) return null;
+
+      const heroSlides = Array.isArray(legacy.hero_slides)
+        ? (legacy.hero_slides as unknown as HeroSlide[])
         : [];
-
-      const pageSchema = Array.isArray(data.page_schema)
-        ? (data.page_schema as unknown as EditorElement[])
+      const pageSchema = Array.isArray(legacy.page_schema)
+        ? (legacy.page_schema as unknown as EditorElement[])
         : null;
-      
+
       return {
-        ...data,
-        hero_slides: heroSlides,
-        page_schema: pageSchema,
-      } as LandingPageData;
+        mode: "legacy" as const,
+        page: {
+          ...legacy,
+          hero_slides: heroSlides,
+          page_schema: pageSchema,
+        } as LandingPageData,
+      };
     },
     enabled: !!slug,
   });
@@ -84,9 +125,25 @@ export default function LandingPage() {
     );
   }
 
-  if (error || !page) {
+  if (error || !pageResult) {
     return <NotFound />;
   }
+
+  if (pageResult.mode === "site") {
+    const sitePage = pageResult.page;
+    return (
+      <>
+        <Helmet>
+          <title>{sitePage.meta_title || sitePage.title}</title>
+          <meta name="description" content={sitePage.meta_description || ""} />
+          {sitePage.og_image_url && <meta property="og:image" content={sitePage.og_image_url} />}
+        </Helmet>
+        <PublicPageRenderer elements={sitePage.page_schema || []} />
+      </>
+    );
+  }
+
+  const page = pageResult.page;
 
   // Detect if this page was built with the visual editor
   const hasVisualSchema = page.page_schema && page.page_schema.length > 0;

@@ -1,5 +1,7 @@
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { ExploreSEO } from "@/components/explore/ExploreSEO";
 import { ExploreHeroSlider } from "@/components/explore/ExploreHeroSlider";
 import { ExploreIntro } from "@/components/explore/ExploreIntro";
@@ -12,9 +14,30 @@ import UpcomingEvents from "@/components/explore/UpcomingEvents";
 import { useCityAttractions } from "@/hooks/useCityAttractions";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PublicPageRenderer } from "@/components/page-editor/PublicPageRenderer";
+import { EditorElement } from "@/stores/editorStore";
 
 const ExploreSemarang = () => {
   const { attractions, isLoading } = useCityAttractions();
+  const { data: exploreSchema } = useQuery({
+    queryKey: ["site-page-route", "/explore-semarang"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_pages")
+        .select("page_schema, status")
+        .eq("route_path", "/explore-semarang")
+        .eq("status", "published")
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+      return Array.isArray(data.page_schema) ? (data.page_schema as unknown as EditorElement[]) : null;
+    },
+  });
+
+  if (exploreSchema && exploreSchema.length > 0) {
+    return <PublicPageRenderer elements={exploreSchema} />;
+  }
 
   return (
     <div className="min-h-screen bg-background">

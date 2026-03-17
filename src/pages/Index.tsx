@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import OptimizedHero from "@/components/OptimizedHero";
 import { Welcome } from "@/components/Welcome";
@@ -11,9 +13,27 @@ import { NewsEvents } from "@/components/NewsEvents";
 import { Footer } from "@/components/Footer";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import { PublicPageRenderer } from "@/components/page-editor/PublicPageRenderer";
+import { EditorElement } from "@/stores/editorStore";
 
 const Index = () => {
   const location = useLocation();
+
+  const { data: homepageSchema } = useQuery({
+    queryKey: ["site-page-route", "/"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_pages")
+        .select("page_schema, status")
+        .eq("route_path", "/")
+        .eq("status", "published")
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+      return Array.isArray(data.page_schema) ? (data.page_schema as unknown as EditorElement[]) : null;
+    },
+  });
 
   // Handle hash navigation from other pages
   useEffect(() => {
@@ -28,6 +48,10 @@ const Index = () => {
       }
     }
   }, [location.hash]);
+
+  if (homepageSchema && homepageSchema.length > 0) {
+    return <PublicPageRenderer elements={homepageSchema} />;
+  }
 
   return (
     <div className="min-h-screen">

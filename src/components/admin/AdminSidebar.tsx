@@ -127,7 +127,7 @@ const menuGroups: MenuGroup[] = [{
       icon: Shield
     }]
   }, {
-    title: "Landing Pages",
+    title: "Pages",
     url: "/admin/landing-pages",
     icon: FileType
   }, {

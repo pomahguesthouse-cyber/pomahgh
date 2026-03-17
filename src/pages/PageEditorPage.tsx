@@ -66,7 +66,7 @@ export default function PageEditorPage() {
       if (pageId) {
         try {
           const { data, error } = await supabase
-            .from("landing_pages")
+            .from("site_pages")
             .select("*")
             .eq("id", pageId)
             .single();
@@ -75,11 +75,12 @@ export default function PageEditorPage() {
 
           if (data) {
             const schema = Array.isArray(data.page_schema) ? data.page_schema : [];
+            const routePath = data.route_path || "/";
             loadPage(schema as unknown as EditorElement[], {
               id: data.id,
-              title: data.page_title,
-              slug: data.slug,
-              metaTitle: data.page_title,
+              title: data.title,
+              slug: routePath === "/" ? "" : routePath.replace(/^\//, ""),
+              metaTitle: data.meta_title || data.title,
               metaDescription: data.meta_description || "",
               status: data.status as "draft" | "published",
             });
@@ -197,26 +198,18 @@ export default function PageEditorPage() {
 
     try {
       const pageData: Record<string, unknown> = {
-        page_title: pageSettings.title,
-        slug: pageSettings.slug,
+        title: pageSettings.title,
+        route_path: pageSettings.slug ? `/${pageSettings.slug}` : "/",
+        meta_title: pageSettings.metaTitle || pageSettings.title,
         meta_description: pageSettings.metaDescription,
         page_schema: JSON.parse(JSON.stringify(elements)),
         status: pageSettings.status,
         updated_at: new Date().toISOString(),
-        ...(pageSettings.status === "published" && {
-          published_at: new Date().toISOString(),
-        }),
       };
-
-      // Only set legacy fields for new pages (insert), not updates
-      if (!pageSettings.id) {
-        pageData.primary_keyword = pageSettings.slug;
-        pageData.hero_headline = pageSettings.title;
-      }
 
       if (pageSettings.id) {
         const { error } = await supabase
-          .from("landing_pages")
+          .from("site_pages")
           .update(pageData as any)
           .eq("id", pageSettings.id);
 
@@ -224,7 +217,7 @@ export default function PageEditorPage() {
         toast.success("Page saved successfully");
       } else {
         const { data, error } = await supabase
-          .from("landing_pages")
+          .from("site_pages")
           .insert([pageData as any])
           .select()
           .single();
@@ -246,11 +239,7 @@ export default function PageEditorPage() {
   }, [elements, pageSettings, setIsSaving, setPageSettings, setHasUnsavedChanges]);
 
   const handlePreview = () => {
-    if (pageSettings.slug) {
-      window.open(`/${pageSettings.slug}`, "_blank");
-    } else {
-      toast.info("Save the page first to preview it");
-    }
+    window.open(pageSettings.slug ? `/${pageSettings.slug}` : "/", "_blank");
   };
 
   if (isLoading) {

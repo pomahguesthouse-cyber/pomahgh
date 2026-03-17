@@ -1,15 +1,11 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Eye, Sparkles, Settings, Pencil, Copy } from "lucide-react";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
-import { LandingPageFormDialog } from "@/components/admin/landing-pages/LandingPageFormDialog";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,319 +16,313 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2, Eye, Sparkles, Settings, Pencil, Copy, Home, Compass } from "lucide-react";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 
-export interface HeroSlide {
+export interface SitePage {
   id: string;
-  image_url: string;
-  alt_text: string;
-}
-
-export interface LandingPage {
-  id: string;
-  page_title: string;
-  slug: string;
-  meta_description: string | null;
-  primary_keyword: string;
-  secondary_keywords: string[];
-  hero_headline: string;
-  subheadline: string | null;
-  page_content: string | null;
-  page_schema: any;
-  cta_text: string | null;
-  whatsapp_number: string | null;
-  whatsapp_message_template: string | null;
-  hero_image_url: string | null;
-  hero_image_alt: string | null;
-  hero_slides: HeroSlide[] | null;
-  og_image_url: string | null;
+  title: string;
+  route_path: string;
+  page_kind: "home" | "explore" | "landing";
   status: "draft" | "published";
-  display_order: number;
+  page_schema: unknown[] | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  og_image_url: string | null;
+  sort_order: number;
+  is_system: boolean;
   created_at: string;
   updated_at: string;
-  published_at: string | null;
 }
 
+const RESERVED_NON_MARKETING_ROUTES = [
+  "/auth",
+  "/bookings",
+  "/payment",
+  "/member",
+  "/admin",
+  "/editor",
+  "/chat",
+  "/rooms",
+  "/manager",
+];
+
 export default function AdminLandingPages() {
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingPage, setEditingPage] = useState<LandingPage | null>(null);
-  const [deletingPage, setDeletingPage] = useState<LandingPage | null>(null);
-  const [duplicatingPage, setDuplicatingPage] = useState<LandingPage | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [deletingPage, setDeletingPage] = useState<SitePage | null>(null);
+  const [duplicatingPage, setDuplicatingPage] = useState<SitePage | null>(null);
+  const [editingPage, setEditingPage] = useState<SitePage | null>(null);
+
+  const [draftSettings, setDraftSettings] = useState({
+    title: "",
+    route_path: "",
+    status: "draft" as "draft" | "published",
+  });
 
   const { data: pages, isLoading } = useQuery({
-    queryKey: ["landing-pages"],
+    queryKey: ["site-pages"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("landing_pages")
+        .from("site_pages")
         .select("*")
-        .order("display_order", { ascending: true });
-
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
       if (error) throw error;
-      // Transform hero_slides from JSON to proper type
-      return (data || []).map((page) => ({
-        ...page,
-        hero_slides: Array.isArray(page.hero_slides) 
-          ? (page.hero_slides as unknown as HeroSlide[]) 
-          : [],
-      })) as LandingPage[];
+      return (data || []) as SitePage[];
     },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const ts = Date.now();
+      const routePath = `/landing-page-${ts}`;
+      const { data, error } = await supabase
+        .from("site_pages")
+        .insert({
+          title: `Landing Page ${new Date().toLocaleDateString("id-ID")}`,
+          route_path: routePath,
+          page_kind: "landing",
+          status: "draft",
+          sort_order: (pages?.length || 0) + 10,
+          is_system: false,
+          meta_title: "",
+          meta_description: "",
+          page_schema: [],
+        } as any)
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      toast.success("Halaman berhasil dibuat");
+      navigate(`/editor?id=${data.id}`);
+    },
+    onError: () => toast.error("Gagal membuat halaman"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("landing_pages")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("site_pages").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
+      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
       toast.success("Halaman berhasil dihapus");
       setDeletingPage(null);
     },
-    onError: () => {
-      toast.error("Gagal menghapus halaman");
-    },
+    onError: () => toast.error("Gagal menghapus halaman"),
   });
 
   const duplicateMutation = useMutation({
-    mutationFn: async (page: LandingPage) => {
-      // Find existing pages to determine new title number
-      const { data: existingPages } = await supabase
-        .from("landing_pages")
-        .select("page_title")
-        .ilike("page_title", `${page.page_title}%`);
-      
-      let newTitle = page.page_title;
-      const baseTitle = page.page_title.replace(/\s*\(\d+\)\s*$/, "").trim();
-      
-      if (existingPages && existingPages.length > 0) {
-        const numbers = existingPages
-          .map(p => {
-            const match = p.page_title.match(/\((\d+)\)\s*$/);
-            return match ? parseInt(match[1]) : 1;
-          });
-        const maxNumber = Math.max(...numbers, 0);
-        newTitle = `${baseTitle} (${maxNumber + 1})`;
-      } else {
-        newTitle = `${baseTitle} (2)`;
-      }
+    mutationFn: async (page: SitePage) => {
+      const similar = (pages || []).filter((p) => p.title.startsWith(page.title.replace(/\s*\(\d+\)\s*$/, "")));
+      const nextNumber = Math.max(
+        1,
+        ...similar.map((p) => {
+          const m = p.title.match(/\((\d+)\)$/);
+          return m ? parseInt(m[1], 10) : 1;
+        }),
+      ) + 1;
 
-      // Generate new slug
-      const newSlug = page.slug + "-copy-" + Date.now();
+      const baseTitle = page.title.replace(/\s*\(\d+\)\s*$/, "").trim();
+      const newTitle = `${baseTitle} (${nextNumber})`;
+      const newRoute = `${page.route_path.replace(/\/+$/, "")}-copy-${Date.now()}`;
 
-      // Create new page
-      const { data: newPage, error } = await supabase
-        .from("landing_pages")
-        .insert({
-          page_title: newTitle,
-          slug: newSlug,
-          meta_description: page.meta_description,
-          primary_keyword: page.primary_keyword,
-          secondary_keywords: page.secondary_keywords,
-          hero_headline: page.hero_headline,
-          subheadline: page.subheadline,
-          page_content: page.page_content,
-          page_schema: page.page_schema,
-          cta_text: page.cta_text,
-          whatsapp_number: page.whatsapp_number,
-          whatsapp_message_template: page.whatsapp_message_template,
-          hero_image_url: page.hero_image_url,
-          hero_image_alt: page.hero_image_alt,
-          og_image_url: page.og_image_url,
-          status: "draft",
-          display_order: page.display_order + 1,
-        } as any)
-        .select()
-        .single();
+      const { error } = await supabase.from("site_pages").insert({
+        title: newTitle,
+        route_path: newRoute,
+        page_kind: page.page_kind,
+        status: "draft",
+        page_schema: page.page_schema as any,
+        meta_title: page.meta_title,
+        meta_description: page.meta_description,
+        og_image_url: page.og_image_url,
+        is_system: false,
+        sort_order: (page.sort_order || 0) + 1,
+      } as any);
 
       if (error) throw error;
-
-      return newPage;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["landing-pages"] });
+      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
       toast.success("Halaman berhasil diduplikasi");
       setDuplicatingPage(null);
     },
-    onError: () => {
-      toast.error("Gagal menduplikasi halaman");
-    },
+    onError: () => toast.error("Gagal menduplikasi halaman"),
   });
 
-  const handleEdit = (page: LandingPage) => {
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (payload: { id: string; title: string; route_path: string; status: "draft" | "published" }) => {
+      const normalizedRoute = payload.route_path.startsWith("/") ? payload.route_path : `/${payload.route_path}`;
+      const { error } = await supabase
+        .from("site_pages")
+        .update({
+          title: payload.title,
+          route_path: normalizedRoute,
+          status: payload.status,
+          meta_title: payload.title,
+        } as any)
+        .eq("id", payload.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      toast.success("Pengaturan halaman tersimpan");
+      setEditingPage(null);
+    },
+    onError: (error) => toast.error(error.message || "Gagal menyimpan pengaturan"),
+  });
+
+  const openSettings = (page: SitePage) => {
     setEditingPage(page);
-    setIsFormOpen(true);
+    setDraftSettings({
+      title: page.title,
+      route_path: page.route_path,
+      status: page.status,
+    });
   };
 
-  const handleCreate = () => {
-    setEditingPage(null);
-    setIsFormOpen(true);
+  const saveSettings = () => {
+    if (!editingPage) return;
+    const routePath = draftSettings.route_path.trim();
+    if (!routePath) {
+      toast.error("Route path wajib diisi");
+      return;
+    }
+    if (!routePath.startsWith("/")) {
+      toast.error("Route path harus diawali / ");
+      return;
+    }
+    if (!editingPage.is_system && RESERVED_NON_MARKETING_ROUTES.some((prefix) => routePath === prefix || routePath.startsWith(`${prefix}/`))) {
+      toast.error("Route path bentrok dengan halaman operasional");
+      return;
+    }
+
+    const normalized = routePath.toLowerCase();
+    const routeExists = (pages || []).some((p) => p.id !== editingPage.id && p.route_path.toLowerCase() === normalized);
+    if (routeExists) {
+      toast.error("Route path sudah digunakan halaman lain");
+      return;
+    }
+
+    updateSettingsMutation.mutate({
+      id: editingPage.id,
+      title: draftSettings.title.trim() || "Untitled Page",
+      route_path: routePath,
+      status: draftSettings.status,
+    });
   };
 
-  const handleFormClose = () => {
-    setIsFormOpen(false);
-    setEditingPage(null);
+  const iconForKind = (kind: SitePage["page_kind"]) => {
+    if (kind === "home") return Home;
+    if (kind === "explore") return Compass;
+    return Sparkles;
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Landing Pages</h2>
-          <p className="text-muted-foreground">
-            Buat halaman SEO untuk keyword lokal dan konversi WhatsApp
-          </p>
+          <h2 className="text-2xl font-bold text-foreground">Pages</h2>
+          <p className="text-muted-foreground">Kelola semua halaman marketing: Home, Explore, dan Landing pages.</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleCreate} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Page
-          </Button>
-        </div>
+        <Button onClick={() => createMutation.mutate()} className="gap-2" disabled={createMutation.isPending}>
+          <Plus className="h-4 w-4" />
+          Create Page
+        </Button>
       </div>
 
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="space-y-2">
-                <div className="h-5 bg-muted rounded w-3/4" />
-                <div className="h-4 bg-muted rounded w-1/2" />
-              </CardHeader>
-              <CardContent>
-                <div className="h-4 bg-muted rounded w-full mb-2" />
-                <div className="h-4 bg-muted rounded w-2/3" />
-              </CardContent>
-            </Card>
+            <Card key={i} className="animate-pulse"><CardContent className="h-36" /></Card>
           ))}
         </div>
-      ) : pages?.length === 0 ? (
+      ) : !pages || pages.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Belum ada halaman</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Mulai buat halaman landing untuk meningkatkan SEO lokal
-            </p>
-            <Button onClick={handleCreate} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Buat Halaman Pertama
-            </Button>
+            <Button onClick={() => createMutation.mutate()} className="gap-2"><Plus className="h-4 w-4" />Buat Halaman</Button>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {pages?.map((page) => (
-            <Card key={page.id} className="group">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <CardTitle className="text-lg line-clamp-2">
-                      {page.page_title}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground font-mono">
-                      /{page.slug}
-                    </p>
+          {pages.map((page) => {
+            const KindIcon = iconForKind(page.page_kind);
+            return (
+              <Card key={page.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <CardTitle className="text-lg line-clamp-2 flex items-center gap-2">
+                        <KindIcon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{page.title}</span>
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground font-mono truncate">{page.route_path}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant={page.status === "published" ? "default" : "secondary"}>
+                        {page.status === "published" ? "Published" : "Draft"}
+                      </Badge>
+                      {page.is_system && <Badge variant="outline">System</Badge>}
+                    </div>
                   </div>
-                  <Badge
-                    variant={page.status === "published" ? "default" : "secondary"}
-                  >
-                    {page.status === "published" ? "Published" : "Draft"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground">Keyword:</span>
-                    <Badge variant="outline" className="font-normal">
-                      {page.primary_keyword}
-                    </Badge>
-                  </div>
-                  {page.meta_description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {page.meta_description}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Diperbarui:{" "}
-                    {format(new Date(page.updated_at), "dd MMM yyyy HH:mm", {
-                      locale: localeId,
-                    })}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-1 pt-2 border-t">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => handleEdit(page)}
-                  >
-                    <Settings className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => navigate(`/editor?id=${page.id}`)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  {page.status === "published" && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      asChild
-                    >
-                      <a href={`/${page.slug}`} target="_blank" rel="noopener">
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-xs text-muted-foreground">Diperbarui: {format(new Date(page.updated_at), "d MMM yyyy HH:mm", { locale: localeId })}</p>
+                  <div className="flex items-center gap-1 pt-1 border-t">
+                    <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => openSettings(page)}>
+                      <Settings className="h-3 w-3" />
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(`/editor?id=${page.id}`)}>
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
+                      <a href={page.route_path} target="_blank" rel="noopener noreferrer">
                         <Eye className="h-3 w-3" />
                       </a>
                     </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => setDuplicatingPage(page)}
-                    disabled={duplicateMutation.isPending}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                    onClick={() => setDeletingPage(page)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => setDuplicatingPage(page)} disabled={duplicateMutation.isPending}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      onClick={() => setDeletingPage(page)}
+                      disabled={page.is_system}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      <LandingPageFormDialog
-        open={isFormOpen}
-        onOpenChange={handleFormClose}
-        editingPage={editingPage}
-      />
-
-      <AlertDialog
-        open={!!deletingPage}
-        onOpenChange={() => setDeletingPage(null)}
-      >
+      <AlertDialog open={!!deletingPage} onOpenChange={() => setDeletingPage(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Halaman?</AlertDialogTitle>
+            <AlertDialogTitle>Hapus halaman?</AlertDialogTitle>
             <AlertDialogDescription>
-              Halaman "{deletingPage?.page_title}" akan dihapus permanen.
+              Halaman "{deletingPage?.title}" akan dihapus permanen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -347,28 +337,65 @@ export default function AdminLandingPages() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog
-        open={!!duplicatingPage}
-        onOpenChange={() => setDuplicatingPage(null)}
-      >
+      <AlertDialog open={!!duplicatingPage} onOpenChange={() => setDuplicatingPage(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Duplikasi Halaman?</AlertDialogTitle>
+            <AlertDialogTitle>Duplikasi halaman?</AlertDialogTitle>
             <AlertDialogDescription>
-              Halaman "{duplicatingPage?.page_title}" akan diduplikasi dengan nama baru.
+              Halaman "{duplicatingPage?.title}" akan diduplikasi sebagai draft.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => duplicatingPage && duplicateMutation.mutate(duplicatingPage)}
-              disabled={duplicateMutation.isPending}
-            >
-              {duplicateMutation.isPending ? "Menduplikasi..." : "Duplikasi"}
+            <AlertDialogAction onClick={() => duplicatingPage && duplicateMutation.mutate(duplicatingPage)}>
+              Duplikasi
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editingPage} onOpenChange={() => setEditingPage(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Page Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input value={draftSettings.title} onChange={(e) => setDraftSettings((s) => ({ ...s, title: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Route Path</Label>
+              <Input
+                value={draftSettings.route_path}
+                onChange={(e) => setDraftSettings((s) => ({ ...s, route_path: e.target.value }))}
+                disabled={editingPage?.is_system}
+              />
+              {!editingPage?.is_system ? (
+                <p className="text-xs text-muted-foreground">Contoh: `/promo-keluarga`, `/guesthouse-semarang`</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Halaman system route tidak boleh diubah.</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={draftSettings.status} onValueChange={(v: "draft" | "published") => setDraftSettings((s) => ({ ...s, status: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPage(null)}>Cancel</Button>
+            <Button onClick={saveSettings} disabled={updateSettingsMutation.isPending}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

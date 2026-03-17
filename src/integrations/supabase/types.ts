@@ -2111,6 +2111,54 @@ export type Database = {
         }
         Relationships: []
       }
+      site_pages: {
+        Row: {
+          created_at: string
+          id: string
+          is_system: boolean
+          meta_description: string | null
+          meta_title: string | null
+          og_image_url: string | null
+          page_kind: string
+          page_schema: Json | null
+          route_path: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image_url?: string | null
+          page_kind?: string
+          page_schema?: Json | null
+          route_path: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image_url?: string | null
+          page_kind?: string
+          page_schema?: Json | null
+          route_path?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       manager_access_tokens: {
         Row: {
           created_at: string
