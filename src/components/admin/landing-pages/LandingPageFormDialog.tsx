@@ -34,10 +34,30 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, X, Sparkles, AlertCircle } from "lucide-react";
-import { LandingPage } from "@/pages/admin/AdminLandingPages";
 import { LandingPageAIAssist } from "./LandingPageAIAssist";
 import { HeroSliderManager, HeroSlide } from "./HeroSliderManager";
 import { MediaPickerField } from "./MediaPickerField";
+
+interface LandingPage {
+  id: string;
+  page_title: string;
+  slug: string;
+  meta_description: string | null;
+  primary_keyword: string;
+  secondary_keywords: string[];
+  hero_headline: string;
+  subheadline: string | null;
+  page_content: string | null;
+  cta_text: string | null;
+  whatsapp_number: string | null;
+  whatsapp_message_template: string | null;
+  hero_image_url: string | null;
+  hero_image_alt: string | null;
+  hero_slides: HeroSlide[] | null;
+  og_image_url: string | null;
+  status: "draft" | "published";
+  published_at: string | null;
+}
 
 const formSchema = z.object({
   page_title: z

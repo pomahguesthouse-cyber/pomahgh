@@ -23,6 +23,7 @@ const getPageTitle = (pathname: string): string => {
     "/admin/booking-com": "Booking.com Integration",
     "/admin/room-features": "Room Features",
     "/admin/seo-settings": "SEO Settings",
+    "/admin/pages": "Pages",
     "/admin/landing-pages": "Pages",
     
     "/admin/city-attractions": "City Attractions",

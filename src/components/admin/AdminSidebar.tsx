@@ -93,7 +93,7 @@ const menuGroups: MenuGroup[] = [{
   label: "Pages",
   items: [{
     title: "Pages",
-    url: "/admin/landing-pages",
+    url: "/admin/pages",
     icon: FileType
   }]
 }, {

@@ -66,7 +66,7 @@ const RESERVED_NON_MARKETING_ROUTES = [
   "/manager",
 ];
 
-export default function AdminLandingPages() {
+export default function AdminPages() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [deletingPage, setDeletingPage] = useState<SitePage | null>(null);
