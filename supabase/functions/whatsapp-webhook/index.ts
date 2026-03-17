@@ -1195,6 +1195,42 @@ Silakan coba lagi atau hubungi technical support.`;
   }
 });
 
+async function getLatestBookingContextByPhone(supabase: SupabaseClient, phone: string): Promise<Record<string, unknown> | null> {
+  const localPhone = phone.startsWith('62') ? `0${phone.slice(2)}` : phone;
+
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select(`
+      booking_code,
+      guest_name,
+      guest_email,
+      guest_phone,
+      rooms:room_id (name)
+    `)
+    .or(`guest_phone.eq.${phone},guest_phone.eq.${localPhone}`)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!booking?.booking_code) return null;
+
+  const roomsData = booking.rooms as unknown;
+  const roomName = Array.isArray(roomsData)
+    ? (roomsData[0] as { name: string } | undefined)?.name
+    : (roomsData as { name: string } | null)?.name;
+
+  const ctx: Record<string, unknown> = {
+    last_booking_code: booking.booking_code,
+    last_booking_guest_name: booking.guest_name || undefined,
+    last_booking_guest_email: booking.guest_email || undefined,
+    last_booking_guest_phone: booking.guest_phone ? normalizePhone(booking.guest_phone) : undefined,
+    last_booking_room: roomName || undefined,
+  };
+
+  console.log(`Found latest booking from DB for ${phone}: ${booking.booking_code}`);
+  return ctx;
+}
+
 // Helper: Ensure conversation exists
 async function ensureConversation(supabase: SupabaseClient, session: { conversation_id?: string } | null, phone: string): Promise<string> {
   if (session?.conversation_id) return session.conversation_id;
