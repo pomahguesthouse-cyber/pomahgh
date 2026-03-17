@@ -580,141 +580,7 @@ function ContentProperties({
 
 
     case "news-events":
-      return (
-        <>
-          <div className="space-y-2">
-            <Label>Section Title</Label>
-            <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Subtitle</Label>
-            <Input value={element.props.subtitle || ""} onChange={(e) => onPropChange("subtitle", e.target.value)} />
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" checked={element.props.showSubtitle !== false} onChange={(e) => onPropChange("showSubtitle", e.target.checked)} id="newsShowSubtitle" />
-            <Label htmlFor="newsShowSubtitle">Show Subtitle</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" checked={element.props.autoPlay === true} onChange={(e) => onPropChange("autoPlay", e.target.checked)} id="newsAutoPlay" />
-            <Label htmlFor="newsAutoPlay">Auto Play</Label>
-          </div>
-
-          <div className="border-t pt-4 mt-2 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="font-medium">Items</Label>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const currentItems = Array.isArray(element.props.items) ? element.props.items : [];
-                  const newItem = {
-                    id: `ne-${Date.now()}`,
-                    type: "news",
-                    tag: "Berita",
-                    title: "Judul item baru",
-                    summary: "Deskripsi singkat item.",
-                    date: "",
-                    imageUrl: "",
-                    linkUrl: "#"
-                  };
-                  onPropChange("items", [...currentItems, newItem]);
-                }}
-              >
-                Add Item
-              </Button>
-            </div>
-
-            {(Array.isArray(element.props.items) ? element.props.items : []).map((item: any, index: number) => (
-              <div key={item.id || index} className="rounded-md border p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Item #{index + 1}</Label>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2 text-destructive"
-                    onClick={() => {
-                      const items = Array.isArray(element.props.items) ? element.props.items : [];
-                      onPropChange("items", items.filter((_: any, i: number) => i !== index));
-                    }}
-                  >
-                    Remove
-                  </Button>
-                </div>
-
-                <Select
-                  value={item.type || "news"}
-                  onValueChange={(v) => {
-                    const items = Array.isArray(element.props.items) ? element.props.items : [];
-                    items[index] = { ...items[index], type: v };
-                    onPropChange("items", [...items]);
-                  }}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="news">News</SelectItem>
-                    <SelectItem value="event">Event</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Input
-                  value={item.tag || ""}
-                  onChange={(e) => {
-                    const items = Array.isArray(element.props.items) ? element.props.items : [];
-                    items[index] = { ...items[index], tag: e.target.value };
-                    onPropChange("items", [...items]);
-                  }}
-                  placeholder="Tag (Berita/Agenda/Event)"
-                />
-                <Input
-                  value={item.title || ""}
-                  onChange={(e) => {
-                    const items = Array.isArray(element.props.items) ? element.props.items : [];
-                    items[index] = { ...items[index], title: e.target.value };
-                    onPropChange("items", [...items]);
-                  }}
-                  placeholder="Title"
-                />
-                <Textarea
-                  value={item.summary || ""}
-                  onChange={(e) => {
-                    const items = Array.isArray(element.props.items) ? element.props.items : [];
-                    items[index] = { ...items[index], summary: e.target.value };
-                    onPropChange("items", [...items]);
-                  }}
-                  placeholder="Summary"
-                  rows={3}
-                />
-                <Input
-                  value={item.date || ""}
-                  onChange={(e) => {
-                    const items = Array.isArray(element.props.items) ? element.props.items : [];
-                    items[index] = { ...items[index], date: e.target.value };
-                    onPropChange("items", [...items]);
-                  }}
-                  placeholder="Date (YYYY-MM-DD)"
-                />
-                <Input
-                  value={item.imageUrl || ""}
-                  onChange={(e) => {
-                    const items = Array.isArray(element.props.items) ? element.props.items : [];
-                    items[index] = { ...items[index], imageUrl: e.target.value };
-                    onPropChange("items", [...items]);
-                  }}
-                  placeholder="Image URL"
-                />
-                <Input
-                  value={item.linkUrl || ""}
-                  onChange={(e) => {
-                    const items = Array.isArray(element.props.items) ? element.props.items : [];
-                    items[index] = { ...items[index], linkUrl: e.target.value };
-                    onPropChange("items", [...items]);
-                  }}
-                  placeholder="Link URL (optional)"
-                />
-              </div>
-            ))}
-          </div>
-        </>);
+      return <NewsEventsContentProperties element={element} onPropChange={onPropChange} />;
 
 
     case "nearby-locations":
@@ -755,6 +621,131 @@ function ContentProperties({
         </p>);
 
   }
+}
+
+function NewsEventsContentProperties({
+  element,
+  onPropChange,
+}: { element: EditorElement; onPropChange: (key: string, value: any) => void }) {
+  const items = Array.isArray(element.props.items) ? element.props.items : [];
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
+
+  const patchItem = (index: number, patch: Record<string, any>) => {
+    const nextItems = items.map((item: any, i: number) =>
+      i === index ? { ...item, ...patch } : item,
+    );
+    onPropChange("items", nextItems);
+  };
+
+  const addItem = () => {
+    const newItem = {
+      id: `ne-${Date.now()}`,
+      type: "news",
+      tag: "Berita",
+      title: "Judul item baru",
+      summary: "Deskripsi singkat item.",
+      date: "",
+      imageUrl: "",
+      linkUrl: "#",
+    };
+    onPropChange("items", [...items, newItem]);
+  };
+
+  const removeItem = (index: number) => {
+    onPropChange("items", items.filter((_: any, i: number) => i !== index));
+    if (pickerIndex === index) setPickerIndex(null);
+  };
+
+  const handleMediaSelect = (media: MediaFile) => {
+    if (pickerIndex === null) return;
+    patchItem(pickerIndex, { imageUrl: media.file_url });
+    setPickerIndex(null);
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>Section Title</Label>
+        <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label>Subtitle</Label>
+        <Input value={element.props.subtitle || ""} onChange={(e) => onPropChange("subtitle", e.target.value)} />
+      </div>
+      <div className="flex items-center gap-2">
+        <input type="checkbox" checked={element.props.showSubtitle !== false} onChange={(e) => onPropChange("showSubtitle", e.target.checked)} id="newsShowSubtitle" />
+        <Label htmlFor="newsShowSubtitle">Show Subtitle</Label>
+      </div>
+      <div className="flex items-center gap-2">
+        <input type="checkbox" checked={element.props.autoPlay === true} onChange={(e) => onPropChange("autoPlay", e.target.checked)} id="newsAutoPlay" />
+        <Label htmlFor="newsAutoPlay">Auto Play</Label>
+      </div>
+
+      <div className="border-t pt-4 mt-2 space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="font-medium">Items</Label>
+          <Button size="sm" variant="outline" onClick={addItem}>Add Item</Button>
+        </div>
+
+        {items.map((item: any, index: number) => (
+          <div key={item.id || index} className="rounded-md border p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Item #{index + 1}</Label>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" onClick={() => removeItem(index)}>
+                Remove
+              </Button>
+            </div>
+
+            <Select value={item.type || "news"} onValueChange={(v) => patchItem(index, { type: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="news">News</SelectItem>
+                <SelectItem value="event">Event</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Input value={item.tag || ""} onChange={(e) => patchItem(index, { tag: e.target.value })} placeholder="Tag (Berita/Agenda/Event)" />
+            <Input value={item.title || ""} onChange={(e) => patchItem(index, { title: e.target.value })} placeholder="Title" />
+            <Textarea value={item.summary || ""} onChange={(e) => patchItem(index, { summary: e.target.value })} placeholder="Summary" rows={3} />
+            <Input value={item.date || ""} onChange={(e) => patchItem(index, { date: e.target.value })} placeholder="Date (YYYY-MM-DD)" />
+
+            <div className="space-y-2">
+              <Label className="text-xs">Image</Label>
+              {item.imageUrl ? (
+                <div className="rounded border p-2 space-y-2">
+                  <button type="button" className="w-full h-24 rounded overflow-hidden border" onClick={() => setPickerIndex(index)}>
+                    <img src={item.imageUrl} alt="news-item" className="w-full h-full object-cover" />
+                  </button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => setPickerIndex(index)}>
+                      Ganti Gambar
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => patchItem(index, { imageUrl: "" })}>
+                      Hapus
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" className="h-8 text-xs w-full" onClick={() => setPickerIndex(index)}>
+                  Pilih dari Media Library
+                </Button>
+              )}
+
+              <Input value={item.imageUrl || ""} onChange={(e) => patchItem(index, { imageUrl: e.target.value })} placeholder="...atau isi URL manual" />
+            </div>
+
+            <Input value={item.linkUrl || ""} onChange={(e) => patchItem(index, { linkUrl: e.target.value })} placeholder="Link URL (optional)" />
+          </div>
+        ))}
+      </div>
+
+      <MediaPickerDialog
+        open={pickerIndex !== null}
+        onOpenChange={(open) => { if (!open) setPickerIndex(null); }}
+        onSelect={handleMediaSelect}
+      />
+    </>
+  );
 }
 
 function HeroSliderContentProperties({
