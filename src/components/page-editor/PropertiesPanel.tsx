@@ -579,6 +579,53 @@ function ContentProperties({
         </>);
 
 
+    case "news-events":
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>Section Title</Label>
+            <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Subtitle</Label>
+            <Input value={element.props.subtitle || ""} onChange={(e) => onPropChange("subtitle", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Content Type</Label>
+            <Select value={element.props.contentType || "all"} onValueChange={(v) => onPropChange("contentType", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="events">Events Only</SelectItem>
+                <SelectItem value="news">News Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Layout</Label>
+            <Select value={element.props.layout || "slider"} onValueChange={(v) => onPropChange("layout", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="slider">Slider</SelectItem>
+                <SelectItem value="grid">Grid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Max Items</Label>
+            <Input type="number" value={element.props.maxItems || 6} onChange={(e) => onPropChange("maxItems", parseInt(e.target.value) || 6)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Category (optional)</Label>
+            <Input 
+              value={element.props.category || ""} 
+              onChange={(e) => onPropChange("category", e.target.value)} 
+              placeholder="e.g. festival, konser, berita"
+            />
+          </div>
+        </>);
+
+
     case "nearby-locations":
       return (
         <>
