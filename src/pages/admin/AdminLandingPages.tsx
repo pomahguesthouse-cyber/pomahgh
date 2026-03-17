@@ -24,7 +24,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Eye, Sparkles, Settings, Pencil, Copy, Home, Compass, GripVertical, MoreHorizontal, HelpCircle, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, Trash2, Sparkles, Settings, Pencil, Copy, Home, Compass, GripVertical, MoreHorizontal, HelpCircle, X, Search, Share2, Paintbrush2, Type, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -235,6 +242,27 @@ export default function AdminLandingPages() {
     return Sparkles;
   };
 
+  const copyPagePath = async (path: string) => {
+    try {
+      await navigator.clipboard.writeText(path);
+      toast.success("Path berhasil disalin");
+    } catch {
+      toast.error("Gagal menyalin path");
+    }
+  };
+
+  const setAsHomepage = (page: SitePage) => {
+    if (page.route_path === "/") {
+      toast.info("Halaman ini sudah menjadi homepage");
+      return;
+    }
+    toast.info("Set as homepage akan diaktifkan pada fase berikutnya");
+  };
+
+  const hideFromMenu = (_page: SitePage) => {
+    toast.info("Hide from menu akan diaktifkan pada fase berikutnya");
+  };
+
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden border border-border/80">
@@ -300,26 +328,67 @@ export default function AdminLandingPages() {
                         </div>
 
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); openSettings(page); }}>
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); navigate(`/editor?id=${page.id}`); }}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
-                            <a href={page.route_path} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                              <Eye className="h-4 w-4" />
-                            </a>
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); setDuplicatingPage(page); }}>
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); setDeletingPage(page); }} disabled={page.is_system}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                          <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={(e) => e.stopPropagation()}>
-                            <MoreHorizontal className="h-5 w-5 text-blue-600" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant={active ? "default" : "outline"}
+                                size="icon"
+                                className={cn("h-10 w-10 rounded-full", active && "bg-blue-600 hover:bg-blue-600/90")}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreHorizontal className="h-5 w-5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem onClick={() => openSettings(page)}>
+                                <Settings className="h-4 w-4 mr-2" />
+                                Settings
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openSettings(page)}>
+                                <Search className="h-4 w-4 mr-2" />
+                                SEO basics
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openSettings(page)}>
+                                <Share2 className="h-4 w-4 mr-2" />
+                                Social share
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/editor?id=${page.id}`)}>
+                                <Paintbrush2 className="h-4 w-4 mr-2" />
+                                Page background
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem onClick={() => openSettings(page)}>
+                                <Type className="h-4 w-4 mr-2" />
+                                Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDuplicatingPage(page)}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Duplicate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => copyPagePath(page.route_path)}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Copy
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setAsHomepage(page)}>
+                                <Home className="h-4 w-4 mr-2" />
+                                Set as homepage
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => hideFromMenu(page)}>
+                                <EyeOff className="h-4 w-4 mr-2" />
+                                Hide from menu
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                disabled={page.is_system}
+                                onClick={() => setDeletingPage(page)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
