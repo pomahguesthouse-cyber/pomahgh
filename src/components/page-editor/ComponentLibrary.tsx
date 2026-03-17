@@ -71,8 +71,7 @@ const categories: Category[] = [
   icon: SlidersHorizontal,
   elements: [
   { type: "hero-slider", name: "Hero Slider", icon: Play, description: "Full-width hero carousel" },
-  { type: "room-slider", name: "Room Slider", icon: BedDouble, description: "Slider kamar dari database", defaultProps: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } },
-  { type: "page-slider", name: "Page Slider", icon: CalendarDays, description: "Slider berita & agenda untuk halaman ini", defaultProps: { title: "Berita & Agenda", subtitle: "Temukan informasi terbaru", contentType: "events", maxItems: 10 } }]
+  { type: "room-slider", name: "Room Slider", icon: BedDouble, description: "Slider kamar dari database", defaultProps: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } }]
 
 },
 {
