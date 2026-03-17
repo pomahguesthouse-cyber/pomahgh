@@ -90,6 +90,13 @@ const menuGroups: MenuGroup[] = [{
     icon: Calendar
   }]
 }, {
+  label: "Pages",
+  items: [{
+    title: "Pages",
+    url: "/admin/landing-pages",
+    icon: FileType
+  }]
+}, {
   label: "Operations",
   items: [{
     title: "Analisis Harga",
@@ -126,10 +133,6 @@ const menuGroups: MenuGroup[] = [{
       url: "/admin/chatbot/admin",
       icon: Shield
     }]
-  }, {
-    title: "Pages",
-    url: "/admin/landing-pages",
-    icon: FileType
   }, {
     title: "SEO Settings",
     url: "/admin/seo-settings",
