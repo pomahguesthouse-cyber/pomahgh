@@ -267,12 +267,38 @@ function extractConversationContext(messages: Array<{role: string, content: stri
       }
     }
     
-    // Also check user messages for room preferences
-    if (msg.role === 'user' && !context.preferred_room) {
-      const userRoomMatch = msg.content.match(/(single|deluxe|grand\s*deluxe|family\s*suite)/i);
-      if (userRoomMatch) {
-        context.preferred_room = userRoomMatch[1].replace(/\s+/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        console.log(`Found room from user message: ${userRoomMatch[0]} -> ${context.preferred_room}`);
+    // Also check user messages for booking memory and room preferences
+    if (msg.role === 'user') {
+      if (!context.last_booking_code) {
+        const userBookingCodeMatch = msg.content.match(/PMH-[A-Z0-9]{6}/i);
+        if (userBookingCodeMatch) {
+          context.last_booking_code = userBookingCodeMatch[0].toUpperCase();
+          console.log(`Found booking code from user message: ${context.last_booking_code}`);
+        }
+      }
+
+      if (!context.last_booking_guest_email) {
+        const userEmailMatch = msg.content.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+        if (userEmailMatch) {
+          context.last_booking_guest_email = userEmailMatch[0].toLowerCase();
+          console.log(`Found booking email from user message: ${context.last_booking_guest_email}`);
+        }
+      }
+
+      if (!context.last_booking_guest_phone) {
+        const userPhoneMatch = msg.content.match(/(?:\+62|62|0)\d{8,13}/);
+        if (userPhoneMatch) {
+          context.last_booking_guest_phone = normalizePhone(userPhoneMatch[0]);
+          console.log(`Found booking phone from user message: ${context.last_booking_guest_phone}`);
+        }
+      }
+
+      if (!context.preferred_room) {
+        const userRoomMatch = msg.content.match(/(single|deluxe|grand\s*deluxe|family\s*suite)/i);
+        if (userRoomMatch) {
+          context.preferred_room = userRoomMatch[1].replace(/\s+/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          console.log(`Found room from user message: ${userRoomMatch[0]} -> ${context.preferred_room}`);
+        }
       }
     }
   }
@@ -896,7 +922,12 @@ Silakan coba lagi atau hubungi technical support.`;
 
     // === SIMPLE AI FLOW (like web chatbot) ===
     // Extract context from conversation history for booking continuation
-    const conversationContext = extractConversationContext(messages);
+    const extractedContext = extractConversationContext(messages) || {};
+    const bookingContext = await getLatestBookingContextByPhone(supabase, phone);
+    const conversationContext = {
+      ...(bookingContext || {}),
+      ...extractedContext,
+    };
     console.log("Calling chatbot function with context:", JSON.stringify(conversationContext));
     
     const chatbotResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
@@ -1163,6 +1194,42 @@ Silakan coba lagi atau hubungi technical support.`;
     });
   }
 });
+
+async function getLatestBookingContextByPhone(supabase: SupabaseClient, phone: string): Promise<Record<string, unknown> | null> {
+  const localPhone = phone.startsWith('62') ? `0${phone.slice(2)}` : phone;
+
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select(`
+      booking_code,
+      guest_name,
+      guest_email,
+      guest_phone,
+      rooms:room_id (name)
+    `)
+    .or(`guest_phone.eq.${phone},guest_phone.eq.${localPhone}`)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!booking?.booking_code) return null;
+
+  const roomsData = booking.rooms as unknown;
+  const roomName = Array.isArray(roomsData)
+    ? (roomsData[0] as { name: string } | undefined)?.name
+    : (roomsData as { name: string } | null)?.name;
+
+  const ctx: Record<string, unknown> = {
+    last_booking_code: booking.booking_code,
+    last_booking_guest_name: booking.guest_name || undefined,
+    last_booking_guest_email: booking.guest_email || undefined,
+    last_booking_guest_phone: booking.guest_phone ? normalizePhone(booking.guest_phone) : undefined,
+    last_booking_room: roomName || undefined,
+  };
+
+  console.log(`Found latest booking from DB for ${phone}: ${booking.booking_code}`);
+  return ctx;
+}
 
 // Helper: Ensure conversation exists
 async function ensureConversation(supabase: SupabaseClient, session: { conversation_id?: string } | null, phone: string): Promise<string> {

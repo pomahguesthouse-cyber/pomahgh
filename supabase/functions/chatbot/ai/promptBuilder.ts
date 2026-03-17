@@ -156,7 +156,7 @@ function buildContextString(ctx?: ConversationContext): { contextString: string;
     ? `\n📋 KONTEKS:\n${parts.join(' | ')}${parsedDateContext}`
     : '';
 
-  // Build explicit tool instruction when awaiting guest data
+  // Build explicit tool instruction when awaiting guest data or existing booking is known
   let explicitToolInstruction = '';
   if (ctx.awaiting_guest_data && ctx.preferred_room && ctx.check_in_date && ctx.check_out_date) {
     explicitToolInstruction = `
@@ -187,6 +187,21 @@ JIKA USER MEMBERIKAN DATA TAMU (nama/email/HP/jumlah tamu):
 ⚠️ JIKA KAMU MERESPONS DENGAN TEXT TANPA MEMANGGIL TOOL = GAGAL!
 ✅ BENAR: Langsung panggil create_booking_draft
 ❌ SALAH: Balas dulu baru nanti panggil tool`;
+  }
+
+  if (ctx.last_booking_code) {
+    explicitToolInstruction += `
+
+🔐 BOOKING SUDAH DIKENALI DI KONTEKS:
+- booking_code: ${ctx.last_booking_code}
+${ctx.last_booking_guest_email ? `- guest_email: ${ctx.last_booking_guest_email}
+` : ''}${ctx.last_booking_guest_phone ? `- guest_phone: ${ctx.last_booking_guest_phone}
+` : ''}
+ATURAN WAJIB:
+1. Jika user ingin cek / ubah / pindah kamar / revisi booking yang sedang dibahas, GUNAKAN booking di konteks ini.
+2. JANGAN meminta ulang kode booking, email, atau nomor telepon JIKA sudah ada di konteks.
+3. Hanya minta ulang field yang memang BELUM ada di konteks.
+4. Jika user ingin modifikasi booking yang sama, langsung lanjutkan alur bantuan perubahan booking dengan booking_code di atas.`;
   }
 
   return { contextString, explicitToolInstruction };
