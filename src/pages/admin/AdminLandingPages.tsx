@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,11 +24,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Eye, Sparkles, Settings, Pencil, Copy, Home, Compass } from "lucide-react";
+import { Plus, Trash2, Eye, Sparkles, Settings, Pencil, Copy, Home, Compass, GripVertical, MoreHorizontal, HelpCircle, X } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 export interface SitePage {
   id: string;
@@ -64,6 +65,7 @@ export default function AdminLandingPages() {
   const [deletingPage, setDeletingPage] = useState<SitePage | null>(null);
   const [duplicatingPage, setDuplicatingPage] = useState<SitePage | null>(null);
   const [editingPage, setEditingPage] = useState<SitePage | null>(null);
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
   const [draftSettings, setDraftSettings] = useState({
     title: "",
@@ -235,87 +237,99 @@ export default function AdminLandingPages() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Pages</h2>
-          <p className="text-muted-foreground">Kelola semua halaman marketing: Home, Explore, dan Landing pages.</p>
+      <Card className="overflow-hidden border border-border/80">
+        <div className="border-b px-6 py-4 flex items-center justify-between bg-background">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">Site Pages and Menu</h2>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8"><HelpCircle className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8"><X className="h-5 w-5" /></Button>
+          </div>
         </div>
-        <Button onClick={() => createMutation.mutate()} className="gap-2" disabled={createMutation.isPending}>
-          <Plus className="h-4 w-4" />
-          Create Page
-        </Button>
-      </div>
 
-      {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse"><CardContent className="h-36" /></Card>
-          ))}
-        </div>
-      ) : !pages || pages.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Belum ada halaman</h3>
-            <Button onClick={() => createMutation.mutate()} className="gap-2"><Plus className="h-4 w-4" />Buat Halaman</Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {pages.map((page) => {
-            const KindIcon = iconForKind(page.page_kind);
-            return (
-              <Card key={page.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <CardTitle className="text-lg line-clamp-2 flex items-center gap-2">
-                        <KindIcon className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{page.title}</span>
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground font-mono truncate">{page.route_path}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge variant={page.status === "published" ? "default" : "secondary"}>
-                        {page.status === "published" ? "Published" : "Draft"}
-                      </Badge>
-                      {page.is_system && <Badge variant="outline">System</Badge>}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-xs text-muted-foreground">Diperbarui: {format(new Date(page.updated_at), "d MMM yyyy HH:mm", { locale: localeId })}</p>
-                  <div className="flex items-center gap-1 pt-1 border-t">
-                    <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => openSettings(page)}>
-                      <Settings className="h-3 w-3" />
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(`/editor?id=${page.id}`)}>
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
-                      <a href={page.route_path} target="_blank" rel="noopener noreferrer">
-                        <Eye className="h-3 w-3" />
-                      </a>
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => setDuplicatingPage(page)} disabled={duplicateMutation.isPending}>
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      onClick={() => setDeletingPage(page)}
-                      disabled={page.is_system}
+        <div className="grid grid-cols-[220px_1fr] min-h-[640px]">
+          <div className="border-r bg-muted/30 p-4">
+            <Button variant="secondary" className="w-full justify-start rounded-full h-12 text-lg font-medium">
+              Site Menu
+            </Button>
+          </div>
+
+          <div className="p-6">
+            <div className="flex items-center justify-between border-b pb-3 mb-5">
+              <h3 className="text-3xl font-medium text-foreground">Site Menu</h3>
+              <Button variant="ghost" className="text-blue-600 hover:text-blue-700" onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+                <Plus className="h-5 w-5 mr-1" /> Add Page
+              </Button>
+            </div>
+
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-20 rounded-xl border bg-muted animate-pulse" />
+                ))}
+              </div>
+            ) : !pages || pages.length === 0 ? (
+              <div className="rounded-xl border border-dashed p-10 text-center">
+                <Sparkles className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                <p className="font-medium">Belum ada halaman</p>
+                <Button onClick={() => createMutation.mutate()} className="mt-4">Create Page</Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pages.map((page) => {
+                  const KindIcon = iconForKind(page.page_kind);
+                  const active = selectedPageId ? selectedPageId === page.id : page.page_kind === "home";
+                  return (
+                    <div
+                      key={page.id}
+                      className={cn(
+                        "rounded-xl border p-4 transition-colors",
+                        active ? "bg-blue-50 border-blue-300" : "bg-background",
+                      )}
+                      onClick={() => setSelectedPageId(page.id)}
                     >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <GripVertical className="h-4 w-4 text-blue-500" />
+                          <KindIcon className="h-5 w-5 text-slate-600 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-3xl font-medium text-slate-700 truncate">{page.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">{page.route_path} • {format(new Date(page.updated_at), "d MMM yyyy HH:mm", { locale: localeId })}</p>
+                          </div>
+                          <Badge variant={page.status === "published" ? "default" : "secondary"}>{page.status}</Badge>
+                          {page.is_system && <Badge variant="outline">system</Badge>}
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); openSettings(page); }}>
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); navigate(`/editor?id=${page.id}`); }}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
+                            <a href={page.route_path} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                              <Eye className="h-4 w-4" />
+                            </a>
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); setDuplicatingPage(page); }}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); setDeletingPage(page); }} disabled={page.is_system}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                          <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={(e) => e.stopPropagation()}>
+                            <MoreHorizontal className="h-5 w-5 text-blue-600" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </Card>
 
       <AlertDialog open={!!deletingPage} onOpenChange={() => setDeletingPage(null)}>
         <AlertDialogContent>
