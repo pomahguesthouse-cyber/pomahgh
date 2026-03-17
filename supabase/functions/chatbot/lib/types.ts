@@ -91,6 +91,11 @@ export interface ConversationContext {
   sentiment?: string;
   awaiting_guest_data?: boolean;
   parsed_date?: ParsedDate;
+  last_booking_code?: string;
+  last_booking_guest_name?: string;
+  last_booking_guest_email?: string;
+  last_booking_guest_phone?: string;
+  last_booking_room?: string;
 }
 
 export interface PromptConfig {
