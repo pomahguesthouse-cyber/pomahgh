@@ -24,7 +24,7 @@ export interface ElementStyles {
 
 export interface EditorElement {
   id: string;
-  type: 'section' | 'heading' | 'paragraph' | 'image' | 'button' | 'spacer' | 'divider' | 'container' | 'gallery' | 'html' | 'video' | 'icon' | 'social-links' | 'whatsapp-button' | 'map-embed' | 'hero-slider' | 'room-slider' | 'facilities' | 'page-slider' | 'nearby-locations';
+  type: 'section' | 'heading' | 'paragraph' | 'image' | 'button' | 'spacer' | 'divider' | 'container' | 'gallery' | 'html' | 'video' | 'icon' | 'social-links' | 'whatsapp-button' | 'map-embed' | 'hero-slider' | 'room-slider' | 'facilities' | 'nearby-locations';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic props per element type; typed narrowing deferred
   props: Record<string, any>;
   styles: ElementStyles;
