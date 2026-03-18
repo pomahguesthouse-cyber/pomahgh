@@ -85,7 +85,7 @@ export function PageSettingsEditDialog({ open, onOpenChange, page }: PageSetting
           status: formData.status,
           og_image_url: formData.og_image_url || null,
         })
-        .eq("id", page?.id);
+        .eq("id", page?.id ?? "");
 
       if (error) throw error;
     },
