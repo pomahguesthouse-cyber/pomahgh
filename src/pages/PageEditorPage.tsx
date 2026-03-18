@@ -43,6 +43,9 @@ export default function PageEditorPage() {
     saveToHistory,
   } = useEditorStore();
 
+  // Auto-hide properties panel when no element is selected
+  const propertiesPanelVisible = selectedElementId !== null;
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -50,13 +53,6 @@ export default function PageEditorPage() {
       },
     })
   );
-
-  // Auto-show right panel when element selected
-  useEffect(() => {
-    if (selectedElementId) {
-      setShowPropertiesPanel(true);
-    }
-  }, [selectedElementId, setShowPropertiesPanel]);
 
   // Load existing page if editing
   useEffect(() => {
@@ -276,15 +272,15 @@ export default function PageEditorPage() {
           {/* Canvas */}
           <BuilderCanvas />
 
-          {/* Right Panel - Properties */}
+          {/* Right Panel - Properties (auto-hide when no element selected) */}
           <div
             className={cn(
-              "border-l border-border bg-background flex flex-col shrink-0 transition-all",
-              showPropertiesPanel ? "w-80" : "w-0 overflow-hidden"
+              "border-l border-border bg-background flex flex-col shrink-0 transition-all duration-200 ease-out",
+              propertiesPanelVisible ? "w-80 opacity-100" : "w-0 opacity-0 overflow-hidden"
             )}
           >
-            {showPropertiesPanel && (
-              <PropertiesPanel onClose={() => setShowPropertiesPanel(false)} />
+            {propertiesPanelVisible && (
+              <PropertiesPanel onClose={() => selectElement(null)} />
             )}
           </div>
         </div>
