@@ -11,6 +11,9 @@ export type EventCategory =
   | "budaya"
   | "kuliner"
   | "keagamaan"
+  | "berita"
+  | "promo"
+  | "informasi"
   | "lainnya";
 
 // City event
@@ -53,5 +56,8 @@ export const eventCategories = [
   { value: "budaya", label: "Budaya" },
   { value: "kuliner", label: "Kuliner" },
   { value: "keagamaan", label: "Keagamaan" },
+  { value: "berita", label: "Berita" },
+  { value: "promo", label: "Promo" },
+  { value: "informasi", label: "Informasi" },
   { value: "lainnya", label: "Lainnya" },
 ] as const;

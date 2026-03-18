@@ -19,7 +19,7 @@ import { HeroSliderElement } from "./HeroSliderElement";
 import { RoomSliderElement } from "./RoomSliderElement";
 import { FacilitiesElement } from "./FacilitiesElement";
 import { NearbyLocationsElement } from "./NearbyLocationsElement";
-import { NewsEventsSliderElement } from "./NewsEventsSliderElement";
+import { NewsEventsElement } from "./NewsEventsElement";
 
 interface ElementRendererProps {
   element: EditorElement;
@@ -96,10 +96,10 @@ export const ElementRenderer = memo(function ElementRenderer({
         return <RoomSliderElement {...commonProps} />;
       case "facilities":
         return <FacilitiesElement {...commonProps} />;
-      case "news-events":
-        return <NewsEventsSliderElement {...commonProps} />;
       case "nearby-locations":
         return <NearbyLocationsElement {...commonProps} />;
+      case "news-events":
+        return <NewsEventsElement {...commonProps} />;
       default:
         return (
           <div className="p-4 bg-destructive/10 text-destructive rounded">

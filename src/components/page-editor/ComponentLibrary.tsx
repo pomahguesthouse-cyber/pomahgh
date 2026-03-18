@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Type, Image, MousePointer, SlidersHorizontal, Play, MapPin, Video, Code, Minus as MinusIcon, Layout, Link2, MessageCircle, Grid3X3, GalleryHorizontal, Sparkles, BedDouble, Building2, CalendarDays, Navigation } from "lucide-react";
+import { Plus, Search, Type, Image, MousePointer, SlidersHorizontal, Play, MapPin, Video, Code, Minus as MinusIcon, Layout, Link2, MessageCircle, Grid3X3, GalleryHorizontal, Sparkles, BedDouble, Building2, CalendarDays, Navigation, Newspaper } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -72,7 +72,7 @@ const categories: Category[] = [
   elements: [
   { type: "hero-slider", name: "Hero Slider", icon: Play, description: "Full-width hero carousel" },
   { type: "room-slider", name: "Room Slider", icon: BedDouble, description: "Slider kamar dari database", defaultProps: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } },
-  { type: "news-events", name: "News & Events", icon: CalendarDays, description: "Slider berita & agenda untuk halaman", defaultProps: { title: "Berita & Agenda", subtitle: "Temukan informasi terbaru menarik", contentType: "all", layout: "slider", maxItems: 6 } }]
+  { type: "news-events", name: "News & Events", icon: Newspaper, description: "Slider berita & agenda", defaultProps: { title: "Berita & Agenda", subtitle: "", sourceType: "all", selectedEventIds: [], category: "", layout: "slider", maxItems: 6 } }]
 
 },
 {
@@ -162,10 +162,10 @@ function createElement(type: string, overrideProps?: Record<string, any>, overri
       element = { ...baseElement, props: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } };break;
     case "facilities":
       element = { ...baseElement, props: { title: "Fasilitas Hotel", columns: 3, layout: "card" } };break;
-    case "city-events":
-      element = { ...baseElement, props: { title: "Event & Agenda", visibleCards: 3, maxItems: 10, autoPlay: true } };break;
     case "nearby-locations":
       element = { ...baseElement, props: { title: "Lokasi Terdekat", columns: 2, layout: "list" } };break;
+    case "news-events":
+      element = { ...baseElement, props: { title: "Berita & Agenda", subtitle: "", sourceType: "all", selectedEventIds: [], category: "", layout: "slider", maxItems: 6 } };break;
     default:
       element = baseElement;
   }

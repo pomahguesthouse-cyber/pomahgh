@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ColorPickerField } from "./ColorPickerField";
+import { NewsEventsManualSelector } from "./NewsEventsManualSelector";
 import {
   Select,
   SelectContent,
@@ -591,17 +592,6 @@ function ContentProperties({
             <Input value={element.props.subtitle || ""} onChange={(e) => onPropChange("subtitle", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Content Type</Label>
-            <Select value={element.props.contentType || "all"} onValueChange={(v) => onPropChange("contentType", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="events">Events Only</SelectItem>
-                <SelectItem value="news">News Only</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
             <Label>Layout</Label>
             <Select value={element.props.layout || "slider"} onValueChange={(v) => onPropChange("layout", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -612,16 +602,47 @@ function ContentProperties({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Max Items</Label>
-            <Input type="number" value={element.props.maxItems || 6} onChange={(e) => onPropChange("maxItems", parseInt(e.target.value) || 6)} />
+            <Label>Content Source</Label>
+            <Select value={element.props.sourceType || "all"} onValueChange={(v) => onPropChange("sourceType", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Events</SelectItem>
+                <SelectItem value="featured">Featured Only</SelectItem>
+                <SelectItem value="category">By Category</SelectItem>
+                <SelectItem value="manual">Manual Selection</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Category (optional)</Label>
-            <Input 
-              value={element.props.category || ""} 
-              onChange={(e) => onPropChange("category", e.target.value)} 
-              placeholder="e.g. festival, konser, berita"
+          {element.props.sourceType === "category" && (
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select value={element.props.category || ""} onValueChange={(v) => onPropChange("category", v)}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="festival">Festival</SelectItem>
+                  <SelectItem value="konser">Konser</SelectItem>
+                  <SelectItem value="pameran">Pameran</SelectItem>
+                  <SelectItem value="olahraga">Olahraga</SelectItem>
+                  <SelectItem value="budaya">Budaya</SelectItem>
+                  <SelectItem value="kuliner">Kuliner</SelectItem>
+                  <SelectItem value="keagamaan">Keagamaan</SelectItem>
+                  <SelectItem value="berita">Berita</SelectItem>
+                  <SelectItem value="promo">Promo</SelectItem>
+                  <SelectItem value="informasi">Informasi</SelectItem>
+                  <SelectItem value="lainnya">Lainnya</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {element.props.sourceType === "manual" && (
+            <NewsEventsManualSelector
+              selectedIds={element.props.selectedEventIds || []}
+              onChange={(ids) => onPropChange("selectedEventIds", ids)}
             />
+          )}
+          <div className="space-y-2">
+            <Label>Max Items</Label>
+            <Input type="number" value={element.props.maxItems || 6} onChange={(e) => onPropChange("maxItems", parseInt(e.target.value) || 6)} min={1} max={20} />
           </div>
         </>);
 
