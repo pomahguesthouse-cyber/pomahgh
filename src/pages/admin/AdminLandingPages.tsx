@@ -139,7 +139,7 @@ export default function AdminLandingPages() {
           primary_keyword: page.primary_keyword,
           page_schema: [],
           status: "draft",
-          display_order: page.display_order + 1
+          display_order: (page.display_order ?? 0) + 1
         } as any)
         .select()
         .single();
