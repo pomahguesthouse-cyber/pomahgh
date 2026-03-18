@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, memo, useCallback } from "react";
 import { Plus, Search, Type, Image, MousePointer, SlidersHorizontal, Play, MapPin, Video, Code, Minus as MinusIcon, Layout, Link2, MessageCircle, Grid3X3, GalleryHorizontal, Sparkles, BedDouble, Building2, CalendarDays, Navigation, Newspaper } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { allTemplates, SectionTemplate } from "./section-templates/templateRegistry";
 import { useEditorStore } from "@/stores/editorStore";
+import { createElement } from "@/utils/elementFactory";
 import {
   Accordion,
   AccordionContent,
@@ -116,72 +117,13 @@ const categories: Category[] = [
 }];
 
 
-function createElement(type: string, overrideProps?: Record<string, any>, overrideStyles?: Record<string, any>) {
-  const id = `${type}-${Date.now()}`;
-  const baseElement = {
-    id,
-    type: type as any,
-    props: {} as Record<string, any>,
-    styles: {} as Record<string, any>
-  };
-
-  let element: any;
-
-  switch (type) {
-    case "heading":
-      element = { ...baseElement, props: { level: "h2", content: "New Heading" } };break;
-    case "paragraph":
-      element = { ...baseElement, props: { content: "Add your text here..." } };break;
-    case "image":
-      element = { ...baseElement, props: { src: "", alt: "Image" }, styles: { width: "100%" } };break;
-    case "button":
-      element = { ...baseElement, props: { label: "Click Me", url: "#", variant: "default" } };break;
-    case "spacer":
-      element = { ...baseElement, styles: { minHeight: "40px" } };break;
-    case "divider":
-      element = { ...baseElement, styles: { marginTop: "16px", marginBottom: "16px" } };break;
-    case "section":
-      element = { ...baseElement, children: [], styles: { paddingTop: "40px", paddingBottom: "40px" } };break;
-    case "container":
-      element = { ...baseElement, children: [], props: { direction: "column" }, styles: { gap: "16px" } };break;
-    case "gallery":
-      element = { ...baseElement, props: { images: [], galleryMode: "grid" }, styles: { columns: 3, gap: "16px" } };break;
-    case "html":
-      element = { ...baseElement, props: { html: "" } };break;
-    case "video":
-      element = { ...baseElement, props: { videoUrl: "" }, styles: { width: "100%" } };break;
-    case "icon":
-      element = { ...baseElement, props: { iconName: "Star", iconSize: 48, iconColor: "#0f172a" }, styles: { textAlign: "center" } };break;
-    case "social-links":
-      element = { ...baseElement, props: { links: [{ platform: "instagram", url: "#" }, { platform: "facebook", url: "#" }, { platform: "twitter", url: "#" }], iconSize: 24, iconColor: "#64748b" }, styles: { textAlign: "center" } };break;
-    case "whatsapp-button":
-      element = { ...baseElement, props: { phoneNumber: "", message: "Halo, saya ingin bertanya...", label: "Chat via WhatsApp" }, styles: { textAlign: "center" } };break;
-    case "map-embed":
-      element = { ...baseElement, props: { embedUrl: "" }, styles: { width: "100%", minHeight: "400px" } };break;
-    case "room-slider":
-      element = { ...baseElement, props: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } };break;
-    case "facilities":
-      element = { ...baseElement, props: { title: "Fasilitas Hotel", columns: 3, layout: "card" } };break;
-    case "nearby-locations":
-      element = { ...baseElement, props: { title: "Lokasi Terdekat", columns: 2, layout: "list" } };break;
-    case "news-events":
-      element = { ...baseElement, props: { title: "Berita & Agenda", subtitle: "", sourceType: "all", selectedEventIds: [], category: "", layout: "slider", maxItems: 6 } };break;
-    default:
-      element = baseElement;
-  }
-
-  // Apply overrides
-  if (overrideProps) {
-    element.props = { ...element.props, ...overrideProps };
-  }
-  if (overrideStyles) {
-    element.styles = { ...element.styles, ...overrideStyles };
-  }
-
-  return element;
-}
-
-function ElementItem({ item, onClick }: {item: ElementDef;onClick: () => void;}) {
+const MemoizedElementItem = memo(function ElementItem({ 
+  item, 
+  onClick 
+}: { 
+  item: ElementDef; 
+  onClick: () => void; 
+}) {
   return (
     <button
       onClick={onClick}
@@ -194,11 +136,17 @@ function ElementItem({ item, onClick }: {item: ElementDef;onClick: () => void;})
         <span className="text-xs font-medium text-foreground block">{item.name}</span>
         <span className="text-[10px] text-muted-foreground block truncate">{item.description}</span>
       </div>
-    </button>);
+    </button>
+  );
+});
 
-}
-
-function TemplateItem({ template, onClick }: {template: SectionTemplate;onClick: () => void;}) {
+const MemoizedTemplateItem = memo(function TemplateItem({ 
+  template, 
+  onClick 
+}: { 
+  template: SectionTemplate; 
+  onClick: () => void; 
+}) {
   return (
     <button
       onClick={onClick}
@@ -209,9 +157,9 @@ function TemplateItem({ template, onClick }: {template: SectionTemplate;onClick:
         <span className="text-xs font-medium text-foreground">{template.name}</span>
       </div>
       <p className="text-[10px] text-muted-foreground leading-tight">{template.description}</p>
-    </button>);
-
-}
+    </button>
+  );
+});
 
 export function ComponentLibrary() {
   const [activeTab, setActiveTab] = useState<"elements" | "sections">("elements");
@@ -219,11 +167,14 @@ export function ComponentLibrary() {
 
   const { addElement, saveToHistory } = useEditorStore();
 
-  const handleElementClick = (item: ElementDef) => {
+  const handleElementClick = useCallback((item: ElementDef) => {
     saveToHistory();
-    const element = createElement(item.type, item.defaultProps, item.defaultStyles);
+    const element = createElement(item.type, {
+      overrideProps: item.defaultProps,
+      overrideStyles: item.defaultStyles,
+    });
     addElement(element);
-  };
+  }, [addElement, saveToHistory]);
 
   const filteredCategories = categories.
   map((cat) => ({
@@ -306,7 +257,7 @@ export function ComponentLibrary() {
                     <AccordionContent className="pb-1 pt-0">
                       <div className="space-y-0.5">
                         {cat.elements.map((item, idx) =>
-                    <ElementItem
+                    <MemoizedElementItem
                       key={`${item.type}-${idx}`}
                       item={item}
                       onClick={() => handleElementClick(item)} />
@@ -324,7 +275,7 @@ export function ComponentLibrary() {
                 </p>
                 <div className="space-y-2">
                   {filteredTemplates.map((template) =>
-                <TemplateItem
+                <MemoizedTemplateItem
                   key={template.id}
                   template={template}
                   onClick={() => {

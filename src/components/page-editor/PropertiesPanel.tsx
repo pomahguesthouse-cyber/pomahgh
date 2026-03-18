@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useEditorStore, EditorElement } from "@/stores/editorStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -30,37 +30,40 @@ interface PropsPanelProps {
   onClose?: () => void;
 }
 
+const findElement = (elements: EditorElement[], id: string): EditorElement | null => {
+  for (const el of elements) {
+    if (el.id === id) return el;
+    if (el.children) {
+      const found = findElement(el.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 export function PropertiesPanel({ onClose }: PropsPanelProps) {
   const { elements, selectedElementId, updateElement, saveToHistory, selectElement } = useEditorStore();
 
-  const findElement = (elements: EditorElement[], id: string): EditorElement | null => {
-    for (const el of elements) {
-      if (el.id === id) return el;
-      if (el.children) {
-        const found = findElement(el.children, id);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
+  const selectedElement = useMemo(() => {
+    if (!selectedElementId) return null;
+    return findElement(elements, selectedElementId);
+  }, [elements, selectedElementId]);
 
-  const selectedElement = selectedElementId ? findElement(elements, selectedElementId) : null;
-
-  const handlePropChange = (key: string, value: any) => {
+  const handlePropChange = useCallback((key: string, value: unknown) => {
     if (!selectedElement) return;
     saveToHistory();
     updateElement(selectedElement.id, {
       props: { ...selectedElement.props, [key]: value }
     });
-  };
+  }, [selectedElement, saveToHistory, updateElement]);
 
-  const handleStyleChange = (key: string, value: string | number) => {
+  const handleStyleChange = useCallback((key: string, value: string | number) => {
     if (!selectedElement) return;
     saveToHistory();
     updateElement(selectedElement.id, {
       styles: { ...selectedElement.styles, [key]: value }
     });
-  };
+  }, [selectedElement, saveToHistory, updateElement]);
 
   if (!selectedElement) {
     return (

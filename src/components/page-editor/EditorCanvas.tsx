@@ -17,91 +17,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useState } from "react";
-import { useEditorStore, EditorElement } from "@/stores/editorStore";
+import { useEditorStore } from "@/stores/editorStore";
 import { ElementRenderer } from "./elements/ElementRenderer";
 import { PagePreview } from "./PagePreview";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, GripVertical } from "lucide-react";
-
-function createNewElement(type: string): EditorElement {
-  const id = `${type}-${Date.now()}`;
-  const baseElement: EditorElement = {
-    id,
-    type: type as EditorElement["type"],
-    props: {},
-    styles: {},
-  };
-
-  switch (type) {
-    case "heading":
-      return { ...baseElement, props: { level: "h2", content: "New Heading" } };
-    case "paragraph":
-      return { ...baseElement, props: { content: "Add your text here..." } };
-    case "image":
-      return { ...baseElement, props: { src: "", alt: "Image" }, styles: { width: "100%" } };
-    case "button":
-      return { ...baseElement, props: { label: "Click Me", url: "#", variant: "default" } };
-    case "spacer":
-      return { ...baseElement, styles: { minHeight: "40px" } };
-    case "divider":
-      return { ...baseElement, styles: { marginTop: "16px", marginBottom: "16px" } };
-    case "section":
-      return { ...baseElement, children: [], styles: { paddingTop: "40px", paddingBottom: "40px" } };
-    case "container":
-      return { ...baseElement, children: [], props: { direction: "column" }, styles: { gap: "16px" } };
-    case "gallery":
-      return { ...baseElement, props: { images: [] }, styles: { columns: 3, gap: "16px" } };
-    case "html":
-      return { ...baseElement, props: { html: "" } };
-    case "video":
-      return { ...baseElement, props: { videoUrl: "" }, styles: { width: "100%" } };
-    case "icon":
-      return { ...baseElement, props: { iconName: "Star", iconSize: 48, iconColor: "#0f172a" }, styles: { textAlign: "center" } };
-    case "social-links":
-      return { ...baseElement, props: { links: [{ platform: "instagram", url: "#" }, { platform: "facebook", url: "#" }, { platform: "twitter", url: "#" }], iconSize: 24, iconColor: "#64748b" }, styles: { textAlign: "center" } };
-    case "whatsapp-button":
-      return { ...baseElement, props: { phoneNumber: "", message: "Halo, saya ingin bertanya...", label: "Chat via WhatsApp" }, styles: { textAlign: "center" } };
-    case "map-embed":
-      return { ...baseElement, props: { embedUrl: "" }, styles: { width: "100%", minHeight: "400px" } };
-    case "hero-slider":
-      return {
-        ...baseElement,
-        props: {
-          height: "500px",
-          autoPlay: true,
-          autoPlayInterval: 5000,
-          showArrows: true,
-          showDots: true,
-          overlayColor: "rgba(0,0,0,0.5)",
-          headingColor: "#ffffff",
-          subheadingColor: "#e0e0e0",
-          ctaBgColor: "#e11d48",
-          slides: [
-            {
-              id: "slide-1",
-              imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920",
-              headline: "Welcome to Our Hotel",
-              subheadline: "Experience luxury and comfort",
-              ctaText: "Book Now",
-              ctaUrl: "#booking",
-            },
-            {
-              id: "slide-2",
-              imageUrl: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920",
-              headline: "Your Perfect Getaway",
-              subheadline: "Discover paradise",
-              ctaText: "View Rooms",
-              ctaUrl: "#rooms",
-            },
-          ],
-        },
-        styles: { textAlign: "center" },
-      };
-    default:
-      return baseElement;
-  }
-}
+import { createElement } from "@/utils/elementFactory";
 
 export function EditorCanvas() {
   const {
@@ -160,7 +82,7 @@ export function EditorCanvas() {
     // New element from library
     if (String(active.id).startsWith("library-")) {
       const type = active.data.current?.type;
-      const newElement = createNewElement(type);
+      const newElement = createElement(type);
       
       saveToHistory();
       
@@ -239,7 +161,7 @@ export function EditorCanvas() {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        addElement(createNewElement("hero-slider"));
+                        addElement(createElement("hero-slider"));
                       }}
                       className="px-4 py-2 bg-rose-500 text-white rounded-lg font-medium hover:bg-rose-600 transition-colors shadow-md hover:shadow-lg"
                     >
@@ -248,7 +170,7 @@ export function EditorCanvas() {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        addElement(createNewElement("section"));
+                        addElement(createElement("section"));
                       }}
                       className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors shadow-md hover:shadow-lg"
                     >
@@ -257,7 +179,7 @@ export function EditorCanvas() {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        addElement(createNewElement("map-embed"));
+                        addElement(createElement("map-embed"));
                       }}
                       className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors shadow-md hover:shadow-lg"
                     >

@@ -1,7 +1,7 @@
+import { useCallback, memo } from "react";
 import { useEditorStore } from "@/stores/editorStore";
 import { Button } from "@/components/ui/button";
 import { Trash2, Copy, ArrowUp, ArrowDown, MousePointer2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export function FloatingToolbar() {
+const FloatingToolbar = memo(function FloatingToolbar() {
   const {
     elements,
     selectedElementId,
@@ -28,40 +28,31 @@ export function FloatingToolbar() {
   const selectedElement = elements.find(el => el.id === selectedElementId);
   const elementType = selectedElement?.type || 'element';
 
-  const handleMoveUp = () => {
-    if (!canMoveUp) return;
+  const handleMoveUp = useCallback(() => {
+    if (!canMoveUp || currentIndex === -1) return;
     saveToHistory();
-    const newElements = [...elements];
-    const temp = newElements[currentIndex - 1];
-    newElements[currentIndex - 1] = newElements[currentIndex];
-    newElements[currentIndex] = temp;
-    useEditorStore.getState().setElements(newElements);
-  };
+    moveElement(currentIndex, currentIndex - 1);
+  }, [canMoveUp, currentIndex, moveElement, saveToHistory]);
 
-  const handleMoveDown = () => {
-    if (!canMoveDown) return;
+  const handleMoveDown = useCallback(() => {
+    if (!canMoveDown || currentIndex === -1) return;
     saveToHistory();
-    const newElements = [...elements];
-    const temp = newElements[currentIndex + 1];
-    newElements[currentIndex + 1] = newElements[currentIndex];
-    newElements[currentIndex] = temp;
-    useEditorStore.getState().setElements(newElements);
-  };
+    moveElement(currentIndex, currentIndex + 1);
+  }, [canMoveDown, currentIndex, moveElement, saveToHistory]);
 
-  const handleDuplicate = () => {
+  const handleDuplicate = useCallback(() => {
     saveToHistory();
     duplicateElement(selectedElementId);
-  };
+  }, [duplicateElement, saveToHistory, selectedElementId]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     saveToHistory();
     removeElement(selectedElementId);
-  };
+  }, [removeElement, saveToHistory, selectedElementId]);
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
       <div className="bg-gray-900 border-0 shadow-2xl rounded-2xl px-4 py-2 flex items-center gap-3">
-        {/* Element type indicator */}
         <div className="flex items-center gap-2 pr-3 border-r border-white/20">
           <MousePointer2 className="h-4 w-4 text-blue-400" />
           <span className="text-white/90 text-sm font-medium capitalize">{elementType.replace('-', ' ')}</span>
@@ -131,4 +122,6 @@ export function FloatingToolbar() {
       </div>
     </div>
   );
-}
+});
+
+export { FloatingToolbar };
