@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEditorStore } from "@/stores/editorStore";
 import { BuilderSidebar } from "@/components/page-editor/BuilderSidebar";
-import { FreeformCanvas } from "@/components/page-editor/FreeformCanvas";
+import { EditorCanvas } from "@/components/page-editor/EditorCanvas";
 import { PropertiesPanel } from "@/components/page-editor/PropertiesPanel";
 import { TopBar } from "@/components/page-editor/TopBar";
 import { PageSettingsDialog } from "@/components/page-editor/PageSettingsDialog";
@@ -334,7 +334,7 @@ export default function PageEditorPage() {
           </div>
 
           {/* Canvas */}
-          <FreeformCanvas />
+          <EditorCanvas />
 
           {/* Right Panel - Properties (auto-hide when no element selected) */}
           <div
