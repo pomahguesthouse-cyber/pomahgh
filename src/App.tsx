@@ -9,10 +9,10 @@ import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
 import { PublicOverridesProvider } from "@/contexts/PublicOverridesContext";
 import { GlobalSEO } from "@/components/GlobalSEO";
 import { SubdomainRouter } from "@/components/SubdomainRouter";
-const Index = lazy(() => import("./pages/Index"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Bookings = lazy(() => import("./pages/Bookings"));
-const RoomDetail = lazy(() => import("./pages/RoomDetail"));
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Bookings from "./pages/Bookings";
+import RoomDetail from "./pages/RoomDetail";
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminRooms = lazy(() => import("./pages/admin/AdminRooms"));
@@ -29,7 +29,7 @@ const AdminBookingCom = lazy(() => import("./pages/admin/AdminBookingCom"));
 const AdminBankAccounts = lazy(() => import("./pages/admin/AdminBankAccounts"));
 const AdminRoomFeatures = lazy(() => import("./pages/admin/AdminRoomFeatures"));
 const AdminSeoSettings = lazy(() => import("./pages/admin/AdminSeoSettings"));
-const AdminPages = lazy(() => import("./pages/admin/AdminPages"));
+const AdminLandingPages = lazy(() => import("./pages/admin/AdminLandingPages"));
 const AdminMediaLibrary = lazy(() => import("./pages/admin/AdminMediaLibrary"));
 const AdminRoomAddons = lazy(() => import("./pages/admin/AdminRoomAddons"));
 const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
@@ -43,24 +43,15 @@ const Payment = lazy(() => import("./pages/public/Payment"));
 const PaymentStatus = lazy(() => import("./pages/public/PaymentStatus"));
 const PageEditorPage = lazy(() => import("./pages/PageEditorPage"));
 const MemberDashboard = lazy(() => import("./pages/user/MemberDashboard"));
-const AdminLayout = lazy(() => import("./components/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const ExploreSemarang = lazy(() => import("./pages/ExploreSemarang"));
-const LandingPage = lazy(() => import("./pages/LandingPage"));
-const AttractionDetail = lazy(() => import("./pages/AttractionDetail"));
-const Chat = lazy(() => import("./pages/Chat"));
-const EventDetail = lazy(() => import("./pages/EventDetail"));
+import { AdminLayout } from "./components/admin/AdminLayout";
+import NotFound from "./pages/NotFound";
+import ExploreSemarang from "./pages/ExploreSemarang";
+import LandingPage from "./pages/LandingPage";
+import AttractionDetail from "./pages/AttractionDetail";
+import Chat from "./pages/Chat";
+import EventDetail from "./pages/EventDetail";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      gcTime: 5 * 60_000,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const RouteFallback = () => (
   <div className="min-h-[40vh] flex items-center justify-center text-sm text-muted-foreground">
@@ -110,8 +101,7 @@ const App = () => (
           <Route path="/admin/booking-com" element={<AdminLayout><AdminBookingCom /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
-          <Route path="/admin/pages" element={<AdminLayout><AdminPages /></AdminLayout>} />
-          <Route path="/admin/landing-pages" element={<AdminLayout><AdminPages /></AdminLayout>} />
+          <Route path="/admin/landing-pages" element={<AdminLayout><AdminLandingPages /></AdminLayout>} />
           <Route path="/admin/media-library" element={<AdminLayout><AdminMediaLibrary /></AdminLayout>} />
           
           <Route path="/admin/city-attractions" element={<AdminLayout><AdminCityAttractions /></AdminLayout>} />

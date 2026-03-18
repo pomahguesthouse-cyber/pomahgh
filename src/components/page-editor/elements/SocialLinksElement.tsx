@@ -1,6 +1,6 @@
 import { ElementWrapper } from "./ElementWrapper";
 import { EditorElement } from "@/stores/editorStore";
-import { Facebook, Instagram, Twitter, Youtube, MessageCircle, type LucideIcon } from "lucide-react";
+import { Facebook, Instagram, Twitter, Youtube, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SocialLinksElementProps {
@@ -12,7 +12,8 @@ interface SocialLinksElementProps {
   isPreview?: boolean;
 }
 
-const socialIcons: Record<string, LucideIcon> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const socialIcons: Record<string, any> = {
   facebook: Facebook,
   instagram: Instagram,
   twitter: Twitter,
