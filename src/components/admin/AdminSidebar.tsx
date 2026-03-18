@@ -128,7 +128,7 @@ const menuGroups: MenuGroup[] = [{
     }]
   }, {
     title: "Page Editor",
-    url: "/admin/landing-pages",
+    url: "/admin/page-editor",
     icon: FileType
   }, {
     title: "SEO Settings",

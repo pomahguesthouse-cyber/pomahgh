@@ -37,6 +37,7 @@ const AdminExploreHeroSlides = lazy(() => import("./pages/admin/AdminExploreHero
 const AdminCompetitorAnalysis = lazy(() => import("./pages/admin/AdminCompetitorAnalysis"));
 const AdminChat = lazy(() => import("./pages/admin/AdminChat"));
 const AdminCityEvents = lazy(() => import("./pages/admin/AdminCityEvents"));
+const AdminLandingPages = lazy(() => import("./pages/admin/AdminLandingPages"));
 const ManagerCalendar = lazy(() => import("./pages/public/ManagerCalendar"));
 const Payment = lazy(() => import("./pages/public/Payment"));
 const PaymentStatus = lazy(() => import("./pages/public/PaymentStatus"));
@@ -109,7 +110,7 @@ const App = () => (
           <Route path="/admin/booking-com" element={<AdminLayout><AdminBookingCom /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
-          <Route path="/admin/page-editor" element={<AdminLayout><PageEditorPage /></AdminLayout>} />
+          <Route path="/admin/page-editor" element={<AdminLayout><AdminLandingPages /></AdminLayout>} />
           <Route path="/admin/media-library" element={<AdminLayout><AdminMediaLibrary /></AdminLayout>} />
           
           <Route path="/admin/city-attractions" element={<AdminLayout><AdminCityAttractions /></AdminLayout>} />
