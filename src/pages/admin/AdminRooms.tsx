@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, lazy, Suspense } from "react";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -20,15 +20,17 @@ import { Plus, Edit, Trash2, Upload, X, Calendar as CalendarIcon, Loader2, Rotat
 import { Room } from "@/hooks/useRooms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { RoomAvailabilityCalendar } from "@/components/admin/RoomAvailabilityCalendar";
-import { PanoramaManager } from "@/components/admin/PanoramaManager";
-import { FloorPlanEditor } from "@/components/admin/FloorPlanEditor";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminRoomPanoramas } from "@/hooks/useRoomPanoramas";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+const RoomAvailabilityCalendar = lazy(() => import("@/components/admin/RoomAvailabilityCalendar").then(m => ({ default: m.RoomAvailabilityCalendar })));
+const PanoramaManager = lazy(() => import("@/components/admin/PanoramaManager").then(m => ({ default: m.PanoramaManager })));
+const FloorPlanEditor = lazy(() => import("@/components/admin/FloorPlanEditor").then(m => ({ default: m.FloorPlanEditor })));
 
 // Pricing card config
 const PRICING_CARD_CONFIG: Record<string, { title: string; description: string; borderClass: string; bgClass: string; badgeClass: string }> = {
@@ -54,6 +56,32 @@ const PRICING_CARD_CONFIG: Record<string, { title: string; description: string; 
     badgeClass: "bg-blue-500 text-white",
   },
 };
+
+function CalendarSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-6 w-48" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="grid grid-cols-7 gap-2">
+            {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map((day) => (
+              <Skeleton key={day} className="h-8" />
+            ))}
+          </div>
+          {[...Array(5)].map((_, week) => (
+            <div key={week} className="grid grid-cols-7 gap-2">
+              {[...Array(7)].map((_, day) => (
+                <Skeleton key={day} className="h-20" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 interface SortablePricingCardProps {
   id: string;
@@ -725,7 +753,9 @@ const AdminRooms = () => {
           <Button variant="outline" onClick={() => setViewingCalendar(null)} className="mb-4">
             ← Back to Room List
           </Button>
-          <RoomAvailabilityCalendar roomId={viewingCalendar.id} roomName={viewingCalendar.name} totalRooms={viewingCalendar.room_count} />
+          <Suspense fallback={<CalendarSkeleton />}>
+            <RoomAvailabilityCalendar roomId={viewingCalendar.id} roomName={viewingCalendar.name} totalRooms={viewingCalendar.room_count} />
+          </Suspense>
         </div>}
 
       {!viewingCalendar && <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -795,7 +825,9 @@ const AdminRooms = () => {
                 Manage Panorama - {selectedRoomForPanorama.name}
               </DialogTitle>
             </DialogHeader>
-            <PanoramaManager roomId={selectedRoomForPanorama.id} roomName={selectedRoomForPanorama.name} onEditHotspots={() => {}} />
+            <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+              <PanoramaManager roomId={selectedRoomForPanorama.id} roomName={selectedRoomForPanorama.name} onEditHotspots={() => {}} />
+            </Suspense>
           </DialogContent>
         </Dialog>}
 
@@ -825,7 +857,9 @@ const FloorPlanEditorDialog = ({
             Floor Plan - {room.name}
           </DialogTitle>
         </DialogHeader>
-        <FloorPlanEditor roomId={room.id} floorPlanUrl={room.floor_plan_url || undefined} floorPlanEnabled={room.floor_plan_enabled || false} panoramas={panoramas || []} />
+        <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+          <FloorPlanEditor roomId={room.id} floorPlanUrl={room.floor_plan_url || undefined} floorPlanEnabled={room.floor_plan_enabled || false} panoramas={panoramas || []} />
+        </Suspense>
       </DialogContent>
     </Dialog>;
 };

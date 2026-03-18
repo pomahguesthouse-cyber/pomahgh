@@ -104,6 +104,8 @@ export const useHotelSettings = () => {
         whatsapp_manager_numbers: (data.whatsapp_manager_numbers as unknown as WhatsAppManager[]) || [],
       } as HotelSettings;
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 
   const updateSettings = useMutation({
