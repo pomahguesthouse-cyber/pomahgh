@@ -1,16 +1,16 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEditorStore, EditorElement } from "@/stores/editorStore";
-import { ComponentLibrary } from "@/components/page-editor/ComponentLibrary";
-import { EditorCanvas } from "@/components/page-editor/EditorCanvas";
+import { useEditorStore } from "@/stores/editorStore";
+import { BuilderSidebar } from "@/components/page-editor/BuilderSidebar";
+import { BuilderCanvas } from "@/components/page-editor/BuilderCanvas";
 import { PropertiesPanel } from "@/components/page-editor/PropertiesPanel";
-import { EditorToolbar } from "@/components/page-editor/EditorToolbar";
+import { TopBar } from "@/components/page-editor/TopBar";
 import { PageSettingsDialog } from "@/components/page-editor/PageSettingsDialog";
 import { FloatingToolbar } from "@/components/page-editor/FloatingToolbar";
 import { LayerPanel } from "@/components/page-editor/LayerPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 
 export default function PageEditorPage() {
@@ -20,8 +20,7 @@ export default function PageEditorPage() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [mobileLeftPanel, setMobileLeftPanel] = useState(false);
-  const [mobileRightPanel, setMobileRightPanel] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(true);
 
   const {
     elements,
@@ -52,13 +51,12 @@ export default function PageEditorPage() {
     })
   );
 
-  // Auto-show right panel on mobile when element selected
+  // Auto-show right panel when element selected
   useEffect(() => {
-    if (selectedElementId && window.innerWidth < 768) {
-      setMobileRightPanel(true);
-      setMobileLeftPanel(false);
+    if (selectedElementId) {
+      setShowPropertiesPanel(true);
     }
-  }, [selectedElementId]);
+  }, [selectedElementId, setShowPropertiesPanel]);
 
   // Load existing page if editing
   useEffect(() => {
@@ -75,7 +73,7 @@ export default function PageEditorPage() {
 
           if (data) {
             const schema = Array.isArray(data.page_schema) ? data.page_schema : [];
-            loadPage(schema as unknown as EditorElement[], {
+            loadPage(schema as unknown as import("@/stores/editorStore").EditorElement[], {
               id: data.id,
               title: data.page_title,
               slug: data.slug,
@@ -104,34 +102,29 @@ export default function PageEditorPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in input/textarea
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
         return;
       }
 
-      // Ctrl/Cmd + Z = Undo
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         undo();
         return;
       }
 
-      // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y = Redo
       if ((e.ctrlKey || e.metaKey) && (e.key === "z" && e.shiftKey || e.key === "y")) {
         e.preventDefault();
         redo();
         return;
       }
 
-      // Ctrl/Cmd + S = Save
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         handleSave();
         return;
       }
 
-      // Delete or Backspace = Delete selected element
       if ((e.key === "Delete" || e.key === "Backspace") && selectedElementId) {
         e.preventDefault();
         saveToHistory();
@@ -139,13 +132,11 @@ export default function PageEditorPage() {
         return;
       }
 
-      // Escape = Deselect
       if (e.key === "Escape") {
         selectElement(null);
         return;
       }
 
-      // Arrow Up = Move element up
       if (e.key === "ArrowUp" && selectedElementId) {
         e.preventDefault();
         const currentIndex = elements.findIndex(el => el.id === selectedElementId);
@@ -156,7 +147,6 @@ export default function PageEditorPage() {
         return;
       }
 
-      // Arrow Down = Move element down
       if (e.key === "ArrowDown" && selectedElementId) {
         e.preventDefault();
         const currentIndex = elements.findIndex(el => el.id === selectedElementId);
@@ -167,7 +157,6 @@ export default function PageEditorPage() {
         return;
       }
 
-      // D = Duplicate element
       if (e.key === "d" && selectedElementId && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         const { duplicateElement } = useEditorStore.getState();
@@ -208,7 +197,6 @@ export default function PageEditorPage() {
         }),
       };
 
-      // Only set legacy fields for new pages (insert), not updates
       if (!pageSettings.id) {
         pageData.primary_keyword = pageSettings.slug;
         pageData.hero_headline = pageSettings.title;
@@ -217,7 +205,7 @@ export default function PageEditorPage() {
       if (pageSettings.id) {
         const { error } = await supabase
           .from("landing_pages")
-          .update(pageData as any)
+          .update(pageData as Record<string, unknown>)
           .eq("id", pageSettings.id);
 
         if (error) throw error;
@@ -225,7 +213,7 @@ export default function PageEditorPage() {
       } else {
         const { data, error } = await supabase
           .from("landing_pages")
-          .insert([pageData as any])
+          .insert([pageData as Record<string, unknown>])
           .select()
           .single();
 
@@ -264,73 +252,47 @@ export default function PageEditorPage() {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter}>
       <div className="h-screen flex flex-col bg-background overflow-hidden">
-        <EditorToolbar
+        {/* Top Bar */}
+        <TopBar
           onSave={handleSave}
           onPreview={handlePreview}
           onOpenSettings={() => setIsSettingsOpen(true)}
-          showLeftPanel={mobileLeftPanel}
-          showRightPanel={mobileRightPanel}
-          onToggleLeftPanel={() => {
-            setMobileLeftPanel(!mobileLeftPanel);
-            if (!mobileLeftPanel) setMobileRightPanel(false);
-          }}
-          onToggleRightPanel={() => {
-            setMobileRightPanel(!mobileRightPanel);
-            if (!mobileRightPanel) setMobileLeftPanel(false);
-          }}
         />
 
+        {/* Main Content Area */}
         <div className="flex-1 flex overflow-hidden relative">
-          {/* Left panel - Component Library (desktop: always, mobile: overlay) */}
-          <div
-            className={cn(
-              "border-r border-border bg-background flex flex-col h-full z-20",
-              // Desktop: fixed sidebar
-              "hidden md:flex md:w-72 md:relative md:shrink-0",
-              // Mobile: overlay
-              mobileLeftPanel && "!flex w-72 absolute left-0 top-0 bottom-0 shadow-xl"
-            )}
-          >
-            <ComponentLibrary />
-          </div>
+          {/* Left Sidebar with BuilderSidebar (icon toolbar) */}
+          <div className="relative flex shrink-0">
+            <BuilderSidebar />
 
-          {/* Layer panel */}
-          {showLayerPanel && (
-            <div className="hidden md:flex">
-              <LayerPanel />
-            </div>
-          )}
+            {/* Layer panel overlay */}
+            {showLayerPanel && (
+              <div className="absolute left-[56px] top-0 bottom-0 w-64 bg-background border-r border-border shadow-xl z-30">
+                <LayerPanel />
+              </div>
+            )}
+          </div>
 
           {/* Canvas */}
-          <EditorCanvas />
+          <BuilderCanvas />
 
-          {/* Right panel - Properties (desktop: toggleable, mobile: overlay) */}
+          {/* Right Panel - Properties */}
           <div
             className={cn(
-              "border-l border-border bg-background flex flex-col h-full z-20",
-              // Desktop: toggleable sidebar
-              showPropertiesPanel ? "md:flex md:w-72" : "md:hidden",
-              // Mobile: overlay
-              mobileRightPanel && "!flex w-72 absolute right-0 top-0 bottom-0 shadow-xl"
+              "border-l border-border bg-background flex flex-col shrink-0 transition-all",
+              showPropertiesPanel ? "w-80" : "w-0 overflow-hidden"
             )}
           >
-            <PropertiesPanel onClose={() => setShowPropertiesPanel(false)} />
+            {showPropertiesPanel && (
+              <PropertiesPanel onClose={() => setShowPropertiesPanel(false)} />
+            )}
           </div>
-
-          {/* Mobile backdrop */}
-          {(mobileLeftPanel || mobileRightPanel) && (
-            <div
-              className="md:hidden fixed inset-0 bg-black/20 z-10"
-              onClick={() => {
-                setMobileLeftPanel(false);
-                setMobileRightPanel(false);
-              }}
-            />
-          )}
         </div>
 
+        {/* Floating Toolbar */}
         <FloatingToolbar />
 
+        {/* Page Settings Dialog */}
         <PageSettingsDialog
           open={isSettingsOpen}
           onOpenChange={setIsSettingsOpen}
