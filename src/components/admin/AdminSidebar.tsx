@@ -27,6 +27,10 @@ interface MenuGroup {
 const menuGroups: MenuGroup[] = [{
   label: "Overview",
   items: [{
+    title: "Page Editor",
+    url: "/admin/page-editor",
+    icon: FileType
+  }, {
     title: "Dashboard",
     url: "/admin/dashboard",
     icon: LayoutDashboard
@@ -126,10 +130,6 @@ const menuGroups: MenuGroup[] = [{
       url: "/admin/chatbot/admin",
       icon: Shield
     }]
-  }, {
-    title: "Page Editor",
-    url: "/admin/page-editor",
-    icon: FileType
   }, {
     title: "SEO Settings",
     url: "/admin/seo-settings",
