@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw } from "lucide-react";
+import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
@@ -80,19 +80,18 @@ const defaultMenuGroups: MenuGroup[] = [
     ]
   },
   {
+    id: "virtual-assistant",
+    label: "Virtual Assistant",
+    items: [
+      { id: "web-chatbot", title: "Web Chatbot", url: "/admin/chat", icon: Bot },
+      { id: "guest-chatbot", title: "Guest Chatbot", url: "/admin/chatbot/guest", icon: Users },
+      { id: "admin-chatbot", title: "Admin Chatbot", url: "/admin/chatbot/admin", icon: Shield }
+    ]
+  },
+  {
     id: "system",
     label: "System",
     items: [
-      {
-        id: "virtual-assistant",
-        title: "Virtual Assistant",
-        icon: MessageCircle,
-        submenu: [
-          { title: "Web Chatbot", url: "/admin/chat", icon: Bot },
-          { title: "Guest Chatbot", url: "/admin/chatbot/guest", icon: Users },
-          { title: "Admin Chatbot", url: "/admin/chatbot/admin", icon: Shield }
-        ]
-      },
       { id: "seo-settings", title: "SEO Settings", url: "/admin/seo-settings", icon: Search },
       { id: "settings", title: "Settings", url: "/admin/settings", icon: Settings }
     ]
@@ -126,9 +125,8 @@ export function AdminSidebar() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [dragItem, setDragItem] = useState<{ groupId: string; itemId: string } | null>(null);
+  const [dragGroup, setDragGroup] = useState<string | null>(null);
   const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
-
-  const isVirtualAssistantActive = location.pathname.startsWith("/admin/chatbot") || location.pathname === "/admin/chat";
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -144,24 +142,21 @@ export function AdminSidebar() {
     }));
   };
 
-  const handleDragStart = (e: React.DragEvent, groupId: string, itemId: string) => {
+  // Drag handlers for items within groups
+  const handleItemDragStart = (e: React.DragEvent, groupId: string, itemId: string) => {
     if (!isEditMode) return;
     setDragItem({ groupId, itemId });
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (e: React.DragEvent, groupId: string) => {
+  const handleItemDragOver = (e: React.DragEvent, groupId: string) => {
     if (!isEditMode || !dragItem) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     setDragOverGroup(groupId);
   };
 
-  const handleDragLeave = () => {
-    setDragOverGroup(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, targetGroupId: string) => {
+  const handleItemDrop = (e: React.DragEvent, targetGroupId: string) => {
     if (!isEditMode || !dragItem) return;
     e.preventDefault();
     
@@ -200,8 +195,50 @@ export function AdminSidebar() {
     setDragOverGroup(null);
   };
 
+  // Drag handlers for groups reordering
+  const handleGroupDragStart = (e: React.DragEvent, groupId: string) => {
+    if (!isEditMode) return;
+    setDragGroup(groupId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleGroupDragOver = (e: React.DragEvent, groupId: string) => {
+    if (!isEditMode || !dragGroup) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverGroup(groupId);
+  };
+
+  const handleGroupDrop = (e: React.DragEvent, targetGroupId: string) => {
+    if (!isEditMode || !dragGroup) return;
+    e.preventDefault();
+    
+    if (dragGroup === targetGroupId) {
+      setDragGroup(null);
+      setDragOverGroup(null);
+      return;
+    }
+
+    setMenuGroups(prev => {
+      const newGroups = [...prev];
+      const sourceIndex = newGroups.findIndex(g => g.id === dragGroup);
+      const targetIndex = newGroups.findIndex(g => g.id === targetGroupId);
+      
+      if (sourceIndex === -1 || targetIndex === -1) return prev;
+      
+      const [movedGroup] = newGroups.splice(sourceIndex, 1);
+      newGroups.splice(targetIndex, 0, movedGroup);
+      
+      return newGroups;
+    });
+
+    setDragGroup(null);
+    setDragOverGroup(null);
+  };
+
   const handleDragEnd = () => {
     setDragItem(null);
+    setDragGroup(null);
     setDragOverGroup(null);
   };
 
@@ -270,10 +307,9 @@ export function AdminSidebar() {
       <SidebarMenuItem 
         key={itemKey}
         draggable={isEditMode}
-        onDragStart={(e) => handleDragStart(e, groupId, item.id)}
-        onDragOver={(e) => handleDragOver(e, groupId)}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => handleDrop(e, groupId)}
+        onDragStart={(e) => handleItemDragStart(e, groupId, item.id)}
+        onDragOver={(e) => handleItemDragOver(e, groupId)}
+        onDrop={(e) => handleItemDrop(e, groupId)}
         onDragEnd={handleDragEnd}
         className={cn(
           isEditMode && dragItem?.itemId === item.id && "opacity-50",
@@ -368,36 +404,51 @@ export function AdminSidebar() {
       <SidebarContent className="px-2 overflow-y-auto flex-1">
         {menuGroups.map((group) => {
           const isGroupCollapsed = collapsedGroups[group.id] || false;
+          const isDraggingGroup = dragGroup === group.id;
           
           return (
             <SidebarGroup 
-              key={group.id} 
+              key={group.id}
+              draggable={isEditMode}
+              onDragStart={(e) => handleGroupDragStart(e, group.id)}
+              onDragOver={(e) => handleGroupDragOver(e, group.id)}
+              onDrop={(e) => handleGroupDrop(e, group.id)}
+              onDragEnd={handleDragEnd}
               className={cn(
                 "py-[2px] transition-colors",
-                isEditMode && dragOverGroup === group.id && "bg-primary/5 border-2 border-dashed border-primary/30 rounded-md"
+                isEditMode && isDraggingGroup && "opacity-50",
+                isEditMode && dragOverGroup === group.id && dragGroup !== group.id && "bg-primary/10 border-2 border-dashed border-primary/30 rounded-md"
               )}
             >
               <Collapsible 
                 defaultOpen={!isGroupCollapsed}
                 open={!isGroupCollapsed}
               >
-                <CollapsibleTrigger asChild>
-                  <button 
-                    className="flex items-center gap-2 cursor-pointer group mb-1 px-2 w-full text-left"
-                    onClick={() => toggleGroupCollapse(group.id)}
-                  >
-                    <SidebarGroupLabel className="text-[12px] uppercase tracking-wider text-muted-foreground/60 font-semibold flex-1">
-                      {group.label}
-                    </SidebarGroupLabel>
-                    {!isCollapsed && (
-                      isGroupCollapsed ? (
-                        <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      ) : (
-                        <ChevronDown className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      )
-                    )}
-                  </button>
-                </CollapsibleTrigger>
+                <div className="flex items-center gap-1">
+                  {isEditMode && (
+                    <GripVertical 
+                      className="h-3 w-3 text-muted-foreground cursor-grab ml-1" 
+                      onMouseDown={(e) => e.stopPropagation()}
+                    />
+                  )}
+                  <CollapsibleTrigger asChild>
+                    <button 
+                      className="flex items-center gap-2 cursor-pointer group mb-1 px-1 flex-1 text-left"
+                      onClick={() => toggleGroupCollapse(group.id)}
+                    >
+                      <SidebarGroupLabel className="text-[12px] uppercase tracking-wider text-muted-foreground/60 font-semibold flex-1">
+                        {group.label}
+                      </SidebarGroupLabel>
+                      {!isCollapsed && (
+                        isGroupCollapsed ? (
+                          <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+                </div>
                 
                 <CollapsibleContent>
                   <SidebarGroupContent>
