@@ -1,6 +1,6 @@
 import { RoomPanorama } from "@/hooks/useRoomPanoramas";
-import { MapPin, type LucideIcon } from "lucide-react";
-import { getIconComponent } from "@/lib/icons";
+import * as LucideIcons from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
 interface FloorPlanViewerProps {
   floorPlanUrl: string;
@@ -15,10 +15,10 @@ export const FloorPlanViewer = ({
   currentPanoramaId,
   onPanoramaClick,
 }: FloorPlanViewerProps) => {
-  const getIcon = (iconName?: string): LucideIcon => {
-    if (!iconName) return MapPin;
-    const Icon = getIconComponent(iconName);
-    return Icon as LucideIcon || MapPin;
+  const getIconComponent = (iconName?: string): LucideIcon => {
+    if (!iconName) return LucideIcons.MapPin;
+    const Icon = LucideIcons[iconName as keyof typeof LucideIcons];
+    return typeof Icon === "function" ? (Icon as LucideIcon) : LucideIcons.MapPin;
   };
 
   const visiblePanoramas = panoramas.filter(
@@ -37,7 +37,7 @@ export const FloorPlanViewer = ({
       {/* Panorama markers */}
       {visiblePanoramas.map((pano) => {
         const isCurrent = pano.id === currentPanoramaId;
-        const IconComponent = getIcon(pano.floor_plan_icon);
+        const IconComponent = getIconComponent(pano.floor_plan_icon);
 
         return (
           <button

@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, GripVertical, Circle } from "lucide-react";
-import { getIconComponent } from "@/lib/icons";
+import { Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import * as Icons from "lucide-react";
 import {
   useAdminRoomFeatures,
   useCreateRoomFeature,
@@ -99,8 +99,9 @@ export default function AdminRoomFeatures() {
     }
   };
 
-  const getIcon = (iconName: string) => {
-    return getIconComponent(iconName) || Circle;
+  const getIconComponent = (iconName: string) => {
+    const icons = Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
+    return icons[iconName] || Icons.Circle;
   };
 
   if (isLoading) {
@@ -162,7 +163,7 @@ export default function AdminRoomFeatures() {
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {AVAILABLE_ICONS.map((iconName) => {
-                      const Icon = getIcon(iconName);
+                      const Icon = getIconComponent(iconName);
                       return (
                         <SelectItem key={iconName} value={iconName}>
                           <div className="flex items-center gap-2">
@@ -213,7 +214,7 @@ export default function AdminRoomFeatures() {
       {/* Features List */}
       <div className="grid gap-4">
         {features?.map((feature) => {
-          const Icon = getIcon(feature.icon_name);
+          const Icon = getIconComponent(feature.icon_name);
           return (
             <Card key={feature.id}>
               <CardContent className="pt-6">

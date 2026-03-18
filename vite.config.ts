@@ -54,14 +54,8 @@ export default defineConfig(({ mode }) => ({
             if (id.includes("@tanstack/react-query") || id.includes("zustand") || id.includes("immer")) {
               return "vendor-state";
             }
-            if (id.includes("xlsx")) {
-              return "vendor-xlsx";
-            }
-            if (id.includes("html2pdf.js") || id.includes("html2canvas")) {
-              return "vendor-pdf";
-            }
-            if (id.includes("recharts")) {
-              return "vendor-charts";
+            if (id.includes("recharts") || id.includes("xlsx") || id.includes("html2pdf.js")) {
+              return "vendor-reports";
             }
             if (id.includes("@dnd-kit") || id.includes("fabric")) {
               return "vendor-editor";

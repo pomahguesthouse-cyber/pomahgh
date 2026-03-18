@@ -29,6 +29,7 @@ const AdminBookingCom = lazy(() => import("./pages/admin/AdminBookingCom"));
 const AdminBankAccounts = lazy(() => import("./pages/admin/AdminBankAccounts"));
 const AdminRoomFeatures = lazy(() => import("./pages/admin/AdminRoomFeatures"));
 const AdminSeoSettings = lazy(() => import("./pages/admin/AdminSeoSettings"));
+const AdminPages = lazy(() => import("./pages/admin/AdminPages"));
 const AdminMediaLibrary = lazy(() => import("./pages/admin/AdminMediaLibrary"));
 const AdminRoomAddons = lazy(() => import("./pages/admin/AdminRoomAddons"));
 const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
@@ -109,6 +110,8 @@ const App = () => (
           <Route path="/admin/booking-com" element={<AdminLayout><AdminBookingCom /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
+          <Route path="/admin/pages" element={<AdminLayout><AdminPages /></AdminLayout>} />
+          <Route path="/admin/landing-pages" element={<AdminLayout><AdminPages /></AdminLayout>} />
           <Route path="/admin/media-library" element={<AdminLayout><AdminMediaLibrary /></AdminLayout>} />
           
           <Route path="/admin/city-attractions" element={<AdminLayout><AdminCityAttractions /></AdminLayout>} />
