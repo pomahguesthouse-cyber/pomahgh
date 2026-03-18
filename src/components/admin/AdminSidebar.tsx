@@ -1,16 +1,12 @@
 import { useState } from "react";
-import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw } from "lucide-react";
-import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent, useDroppable } from "@dnd-kit/core";
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 interface MenuItem {
   id: string;
@@ -117,176 +113,6 @@ function getStoredMenuOrder(): MenuGroup[] | null {
   return null;
 }
 
-function getAllItemIds(groups: MenuGroup[]): string[] {
-  return groups.flatMap(group => group.items.map(item => `${group.id}-${item.id}`));
-}
-
-function getItemGroup(groups: MenuGroup[], itemId: string): { group: MenuGroup; item: MenuItem } | null {
-  for (const group of groups) {
-    for (const item of group.items) {
-      if (`${group.id}-${item.id}` === itemId) {
-        return { group, item };
-      }
-    }
-  }
-  return null;
-}
-
-function SortableMenuItem({ 
-  item, 
-  isActive, 
-  isEditMode,
-  groupId,
-  onClick
-}: { 
-  item: MenuItem; 
-  isActive: boolean; 
-  isEditMode: boolean;
-  groupId: string;
-  onClick: () => void;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ 
-    id: `${groupId}-${item.id}`,
-    disabled: !isEditMode
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  if (item.submenu) {
-    return (
-      <div ref={setNodeRef} style={style} className={cn(isDragging && "opacity-50")}>
-        <Collapsible defaultOpen>
-          <SidebarMenuItem>
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton 
-                className={cn(
-                  "flex items-center gap-3 rounded-lg transition-colors w-full",
-                  isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                )}
-              >
-                {isEditMode && (
-                  <button
-                    {...attributes}
-                    {...listeners}
-                    className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <GripVertical className="h-3 w-3 text-muted-foreground" />
-                  </button>
-                )}
-                <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
-                <span className="truncate flex-1">{item.title}</span>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarMenu className="ml-4 mt-1 border-l border-border pl-2">
-                {item.submenu.map((sub, idx) => {
-                  const isSubActive = location.pathname === sub.url;
-                  return (
-                    <SidebarMenuItem key={idx}>
-                      <SidebarMenuButton 
-                        asChild 
-                        isActive={isSubActive}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg transition-colors",
-                          isSubActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                        )}
-                      >
-                        <div 
-                          className="flex items-center gap-3 w-full cursor-pointer"
-                          onClick={() => sub.url && (window.location.href = sub.url)}
-                        >
-                          <sub.icon className={cn("h-4 w-4 shrink-0", isSubActive && "text-primary")} />
-                          <span className="truncate text-sm">{sub.title}</span>
-                        </div>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </CollapsibleContent>
-          </SidebarMenuItem>
-        </Collapsible>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={setNodeRef} style={style} className={cn(isDragging && "opacity-50")}>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          asChild 
-          isActive={isActive}
-          className={cn(
-            "flex items-center gap-3 rounded-md transition-colors text-sm",
-            isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"
-          )}
-        >
-          <div className="flex items-center gap-3 w-full">
-            {isEditMode && (
-              <button
-                {...attributes}
-                {...listeners}
-                className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <GripVertical className="h-3 w-3 text-muted-foreground" />
-              </button>
-            )}
-            <NavLink 
-              to={item.url || "#"} 
-              end 
-              className="flex items-center gap-3 flex-1"
-              onClick={onClick}
-            >
-              <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
-              <span className="truncate text-sm">{item.title}</span>
-            </NavLink>
-          </div>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    </div>
-  );
-}
-
-function DroppableGroup({ 
-  group, 
-  children, 
-  isEditMode 
-}: { 
-  group: MenuGroup; 
-  children: React.ReactNode;
-  isEditMode: boolean;
-}) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `group-${group.id}`,
-    disabled: !isEditMode
-  });
-
-  return (
-    <div 
-      ref={setNodeRef} 
-      className={cn(
-        "min-h-[50px] transition-colors rounded-md",
-        isEditMode && isOver && "bg-primary/10 border-2 border-dashed border-primary"
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-
 export function AdminSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const location = useLocation();
@@ -299,14 +125,10 @@ export function AdminSidebar() {
   });
   const [isEditMode, setIsEditMode] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [dragItem, setDragItem] = useState<{ groupId: string; itemId: string } | null>(null);
+  const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const allItemIds = getAllItemIds(menuGroups);
+  const isVirtualAssistantActive = location.pathname.startsWith("/admin/chatbot") || location.pathname === "/admin/chat";
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -315,70 +137,72 @@ export function AdminSidebar() {
   };
 
   const toggleGroupCollapse = (groupId: string) => {
+    if (isEditMode) return;
     setCollapsedGroups(prev => ({
       ...prev,
       [groupId]: !prev[groupId]
     }));
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+  const handleDragStart = (e: React.DragEvent, groupId: string, itemId: string) => {
+    if (!isEditMode) return;
+    setDragItem({ groupId, itemId });
+    e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
+  const handleDragOver = (e: React.DragEvent, groupId: string) => {
+    if (!isEditMode || !dragItem) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverGroup(groupId);
+  };
 
-    if (!over || active.id === over.id) return;
+  const handleDragLeave = () => {
+    setDragOverGroup(null);
+  };
 
-    const activeItemId = active.id as string;
-    const overItemId = over.id as string;
-
-    const activeInfo = getItemGroup(menuGroups, activeItemId);
-    const overInfo = getItemGroup(menuGroups, overItemId);
-
-    if (!activeInfo || !overInfo) return;
-
-    const { group: activeGroup, item: activeItem } = activeInfo;
-    const { group: overGroup } = overInfo;
+  const handleDrop = (e: React.DragEvent, targetGroupId: string) => {
+    if (!isEditMode || !dragItem) return;
+    e.preventDefault();
+    
+    const sourceGroupId = dragItem.groupId;
+    const sourceItemId = dragItem.itemId;
+    
+    if (sourceGroupId === targetGroupId) {
+      setDragItem(null);
+      setDragOverGroup(null);
+      return;
+    }
 
     setMenuGroups(prev => {
       const newGroups = [...prev];
-      const activeGroupIndex = newGroups.findIndex(g => g.id === activeGroup.id);
-      const overGroupIndex = newGroups.findIndex(g => g.id === overGroup.id);
-
-      if (activeGroupIndex === -1 || overGroupIndex === -1) return prev;
-
-      const activeGroupCopy = { ...newGroups[activeGroupIndex] };
-      const activeItems = [...activeGroupCopy.items];
-      const activeItemIndex = activeItems.findIndex(item => `${activeGroup.id}-${item.id}` === activeItemId);
-
-      if (activeItemIndex === -1) return prev;
-
-      if (activeGroup.id === overGroup.id) {
-        // Same group - reorder
-        const overItemIndex = activeItems.findIndex(item => `${activeGroup.id}-${item.id}` === overItemId);
-        const newItems = arrayMove(activeItems, activeItemIndex, overItemIndex);
-        activeGroupCopy.items = newItems;
-        newGroups[activeGroupIndex] = activeGroupCopy;
-      } else {
-        // Different groups - move item
-        const overGroupCopy = { ...newGroups[overGroupIndex] };
-        const overItems = [...overGroupCopy.items];
-        const overItemIndex = overItems.findIndex(item => `${overGroup.id}-${item.id}` === overItemId);
-
-        const [movedItem] = activeItems.splice(activeItemIndex, 1);
-        overItems.splice(overItemIndex >= 0 ? overItemIndex : overItems.length, 0, movedItem);
-
-        activeGroupCopy.items = activeItems;
-        overGroupCopy.items = overItems;
-
-        newGroups[activeGroupIndex] = activeGroupCopy;
-        newGroups[overGroupIndex] = overGroupCopy;
-      }
-
+      const sourceIndex = newGroups.findIndex(g => g.id === sourceGroupId);
+      const targetIndex = newGroups.findIndex(g => g.id === targetGroupId);
+      
+      if (sourceIndex === -1 || targetIndex === -1) return prev;
+      
+      const sourceGroup = { ...newGroups[sourceIndex] };
+      const targetGroup = { ...newGroups[targetIndex] };
+      
+      const sourceItemIndex = sourceGroup.items.findIndex(item => item.id === sourceItemId);
+      if (sourceItemIndex === -1) return prev;
+      
+      const [movedItem] = sourceGroup.items.splice(sourceItemIndex, 1);
+      targetGroup.items = [...targetGroup.items, movedItem];
+      
+      newGroups[sourceIndex] = sourceGroup;
+      newGroups[targetIndex] = targetGroup;
+      
       return newGroups;
     });
+
+    setDragItem(null);
+    setDragOverGroup(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragItem(null);
+    setDragOverGroup(null);
   };
 
   const saveMenuOrder = () => {
@@ -392,7 +216,89 @@ export function AdminSidebar() {
     setIsEditMode(false);
   };
 
-  const activeItem = activeId ? getItemGroup(menuGroups, activeId) : null;
+  const renderMenuItem = (item: MenuItem, groupId: string) => {
+    const isActive = location.pathname === item.url;
+    const itemKey = `${groupId}-${item.id}`;
+    
+    if (item.submenu) {
+      const isAnySubActive = item.submenu.some(sub => location.pathname === sub.url);
+      return (
+        <Collapsible key={itemKey} defaultOpen>
+          <SidebarMenuItem>
+            <CollapsibleTrigger asChild>
+              <button 
+                className={cn(
+                  "flex items-center gap-3 rounded-lg transition-colors w-full text-left px-2 py-1.5",
+                  isAnySubActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                )}
+              >
+                <item.icon className={cn("h-4 w-4 shrink-0", isAnySubActive && "text-primary")} />
+                <span className="truncate flex-1 text-sm">{item.title}</span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarMenu className="ml-4 mt-1 border-l border-border pl-2">
+                {item.submenu.map((sub, idx) => {
+                  const isSubActive = location.pathname === sub.url;
+                  return (
+                    <SidebarMenuItem key={idx}>
+                      <SidebarMenuButton asChild isActive={isSubActive}>
+                        <Link 
+                          to={sub.url} 
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg transition-colors text-sm",
+                            isSubActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                          )}
+                          onClick={handleNavClick}
+                        >
+                          <sub.icon className={cn("h-4 w-4 shrink-0", isSubActive && "text-primary")} />
+                          <span className="truncate">{sub.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </CollapsibleContent>
+          </SidebarMenuItem>
+        </Collapsible>
+      );
+    }
+
+    return (
+      <SidebarMenuItem 
+        key={itemKey}
+        draggable={isEditMode}
+        onDragStart={(e) => handleDragStart(e, groupId, item.id)}
+        onDragOver={(e) => handleDragOver(e, groupId)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, groupId)}
+        onDragEnd={handleDragEnd}
+        className={cn(
+          isEditMode && dragItem?.itemId === item.id && "opacity-50",
+          isEditMode && dragOverGroup === groupId && dragItem?.groupId !== groupId && "bg-primary/10"
+        )}
+      >
+        <SidebarMenuButton asChild isActive={isActive}>
+          <Link 
+            to={item.url || "#"} 
+            className={cn(
+              "flex items-center gap-3 rounded-md transition-colors text-sm",
+              isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
+            onClick={handleNavClick}
+          >
+            {isEditMode && (
+              <GripVertical className="h-3 w-3 text-muted-foreground cursor-grab" />
+            )}
+            <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
+            <span className="truncate text-sm">{item.title}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
 
   return (
     <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
@@ -460,91 +366,64 @@ export function AdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-2 overflow-y-auto flex-1">
-        <DndContext 
-          sensors={sensors} 
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-          onDragStart={handleDragStart}
-        >
-          <SortableContext 
-            items={allItemIds}
-            strategy={verticalListSortingStrategy}
-          >
-            {menuGroups.map((group) => (
-              <SidebarGroup key={group.id} className="py-[2px]">
-                <Collapsible 
-                  defaultOpen={!collapsedGroups[group.id]}
-                  open={!collapsedGroups[group.id]}
-                >
-                  <CollapsibleTrigger asChild>
-                    <div 
-                      className="flex items-center gap-2 cursor-pointer group mb-1 px-2"
-                      onClick={() => toggleGroupCollapse(group.id)}
-                    >
-                      <SidebarGroupLabel className="text-[12px] uppercase tracking-wider text-muted-foreground/60 font-semibold flex-1 text-left">
-                        {group.label}
-                      </SidebarGroupLabel>
-                      {!isCollapsed && (
-                        collapsedGroups[group.id] ? (
-                          <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                        )
-                      )}
-                    </div>
-                  </CollapsibleTrigger>
-                  
-                  <CollapsibleContent>
-                    <DroppableGroup group={group} isEditMode={isEditMode}>
-                      <SidebarGroupContent>
-                        <SidebarMenu>
-                          {group.items.map((item) => {
-                            const isActive = location.pathname === item.url;
-                            return (
-                              <SortableMenuItem
-                                key={`${group.id}-${item.id}`}
-                                item={item}
-                                isActive={isActive}
-                                onClick={handleNavClick}
-                                isEditMode={isEditMode}
-                                groupId={group.id}
-                              />
-                            );
-                          })}
-                        </SidebarMenu>
-                      </SidebarGroupContent>
-                    </DroppableGroup>
-                  </CollapsibleContent>
-                </Collapsible>
-              </SidebarGroup>
-            ))}
-          </SortableContext>
-
-          <DragOverlay>
-            {activeItem && (
-              <div className="opacity-80 bg-background border-2 border-primary rounded-md p-2 shadow-lg">
-                <div className="flex items-center gap-2">
-                  <GripVertical className="h-4 w-4" />
-                  <span className="text-sm font-medium">{activeItem.item.title}</span>
-                </div>
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
+        {menuGroups.map((group) => {
+          const isGroupCollapsed = collapsedGroups[group.id] || false;
+          
+          return (
+            <SidebarGroup 
+              key={group.id} 
+              className={cn(
+                "py-[2px] transition-colors",
+                isEditMode && dragOverGroup === group.id && "bg-primary/5 border-2 border-dashed border-primary/30 rounded-md"
+              )}
+            >
+              <Collapsible 
+                defaultOpen={!isGroupCollapsed}
+                open={!isGroupCollapsed}
+              >
+                <CollapsibleTrigger asChild>
+                  <button 
+                    className="flex items-center gap-2 cursor-pointer group mb-1 px-2 w-full text-left"
+                    onClick={() => toggleGroupCollapse(group.id)}
+                  >
+                    <SidebarGroupLabel className="text-[12px] uppercase tracking-wider text-muted-foreground/60 font-semibold flex-1">
+                      {group.label}
+                    </SidebarGroupLabel>
+                    {!isCollapsed && (
+                      isGroupCollapsed ? (
+                        <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )
+                    )}
+                  </button>
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {group.items.map(item => renderMenuItem(item, group.id))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border mt-auto shrink-0">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Back to Site">
-              <NavLink 
+            <SidebarMenuButton asChild>
+              <Link 
                 to="/" 
                 className="flex items-center gap-3 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg" 
                 onClick={handleNavClick}
               >
                 <Home className="h-4 w-4 shrink-0" />
                 <span>Back to Site</span>
-              </NavLink>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
