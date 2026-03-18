@@ -100,11 +100,32 @@ const defaultMenuGroups: MenuGroup[] = [
 
 const STORAGE_KEY = "admin-menu-order";
 
+// Build a flat map of item id -> icon from defaults
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {};
+defaultMenuGroups.forEach(g => g.items.forEach(item => {
+  iconMap[item.id] = item.icon;
+  item.submenu?.forEach(sub => {
+    iconMap[sub.url] = sub.icon;
+  });
+}));
+
 function getStoredMenuOrder(): MenuGroup[] | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored) as MenuGroup[];
+      // Restore icon references from defaults since they can't be serialized
+      return parsed.map(group => ({
+        ...group,
+        items: group.items.map(item => ({
+          ...item,
+          icon: iconMap[item.id] || Settings,
+          submenu: item.submenu?.map(sub => ({
+            ...sub,
+            icon: iconMap[sub.url] || Settings,
+          })),
+        })),
+      }));
     }
   } catch (e) {
     console.error("Failed to load menu order:", e);

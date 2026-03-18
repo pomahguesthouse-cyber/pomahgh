@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
@@ -8,7 +8,6 @@ export const useAdminCheck = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const hasChecked = useRef(false);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -32,14 +31,9 @@ export const useAdminCheck = () => {
         if (error) {
           console.error("Error checking admin status:", error);
           setIsAdmin(false);
-          setIsLoading(false);
           navigate("/admin");
-          return;
-        }
-
-        if (data) {
+        } else if (data) {
           setIsAdmin(true);
-          hasChecked.current = true;
         } else {
           setIsAdmin(false);
           navigate("/");
@@ -51,13 +45,6 @@ export const useAdminCheck = () => {
 
       setIsLoading(false);
     };
-
-    // Don't re-check if already verified admin in this session
-    if (hasChecked.current && user) {
-      setIsAdmin(true);
-      setIsLoading(false);
-      return;
-    }
 
     checkAdminStatus();
   }, [user, authLoading, navigate]);
