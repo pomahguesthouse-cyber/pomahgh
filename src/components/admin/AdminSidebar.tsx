@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw } from "lucide-react";
+import { Home, Calendar, CalendarDays, Building2, ImageIcon, Boxes, Settings, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
@@ -42,6 +42,7 @@ const defaultMenuGroups: MenuGroup[] = [
     label: "Overview",
     items: [
       { id: "dashboard", title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
+      { id: "booking-calendar", title: "Kalender Booking", url: "/admin/booking-calendar", icon: CalendarDays },
       { id: "bookings", title: "Bookings", url: "/admin/bookings", icon: Calendar }
     ]
   },

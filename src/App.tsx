@@ -32,6 +32,7 @@ const Bookings = lazy(() => import("./pages/Bookings"));
 const RoomDetail = lazy(() => import("./pages/RoomDetail"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminBookingCalendarPage = lazy(() => import("./pages/admin/AdminBookingCalendarPage"));
 const AdminRooms = lazy(() => import("./pages/admin/AdminRooms"));
 const AdminBookings = lazy(() => import("./pages/admin/AdminBookings"));
 const AdminHeroSlides = lazy(() => import("./pages/admin/AdminHeroSlides"));
@@ -109,6 +110,7 @@ const App = () => (
             <Route path="/member" element={<MemberDashboard />} />
             <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+          <Route path="/admin/booking-calendar" element={<AdminLayout><AdminBookingCalendarPage /></AdminLayout>} />
           <Route path="/admin/rooms" element={<AdminLayout><AdminRooms /></AdminLayout>} />
           <Route path="/admin/bookings" element={<AdminLayout><AdminBookings /></AdminLayout>} />
           <Route path="/admin/hero-slides" element={<AdminLayout><AdminHeroSlides /></AdminLayout>} />
