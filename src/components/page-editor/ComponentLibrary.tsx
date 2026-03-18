@@ -298,7 +298,7 @@ export function ComponentLibrary() {
                 {filteredCategories.map((cat) =>
               <AccordionItem key={cat.id} value={cat.id} className="border-b-0">
                     <AccordionTrigger className="py-2.5 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:no-underline">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 font-sans">
                         <cat.icon className="h-3.5 w-3.5" />
                         {cat.name}
                       </div>
