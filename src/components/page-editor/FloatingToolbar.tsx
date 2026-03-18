@@ -31,14 +31,14 @@ const FloatingToolbar = memo(function FloatingToolbar() {
   const handleMoveUp = useCallback(() => {
     if (!canMoveUp || currentIndex === -1) return;
     saveToHistory();
-    moveElement(currentIndex, currentIndex - 1);
-  }, [canMoveUp, currentIndex, moveElement, saveToHistory]);
+    moveElement(selectedElementId, null, currentIndex - 1);
+  }, [canMoveUp, currentIndex, selectedElementId, moveElement, saveToHistory]);
 
   const handleMoveDown = useCallback(() => {
     if (!canMoveDown || currentIndex === -1) return;
     saveToHistory();
-    moveElement(currentIndex, currentIndex + 1);
-  }, [canMoveDown, currentIndex, moveElement, saveToHistory]);
+    moveElement(selectedElementId, null, currentIndex + 1);
+  }, [canMoveDown, currentIndex, selectedElementId, moveElement, saveToHistory]);
 
   const handleDuplicate = useCallback(() => {
     saveToHistory();

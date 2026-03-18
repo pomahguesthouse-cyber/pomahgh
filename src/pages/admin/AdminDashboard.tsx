@@ -5,14 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DaysAvailabilityCalendar } from "@/components/admin/DaysAvailabilityCalendar";
 import { ArrivingDepartingWidgets } from "@/components/admin/ArrivingDepartingWidgets";
 import { DollarSign, Calendar, TrendingUp, Building2, Percent, Sun, Sunset, Moon, Users } from "lucide-react";
-import { differenceInDays, subMonths, format, isSameMonth } from "date-fns";
+import { differenceInDays, subMonths, format, isSameMonth, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { formatRupiahID } from "@/utils/indonesianFormat";
 import { getWIBNow, formatWIBDate } from "@/utils/wibTimezone";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const BookingCalendar = lazy(() => import("@/components/admin/booking-calendar/BookingCalendar"));
-const MonthlyRevenueChart = lazy(() => import("@/components/admin/MonthlyRevenueChart"));
+const BookingCalendar = lazy(() => import("@/components/admin/booking-calendar/BookingCalendar").then(m => ({ default: m.BookingCalendar })));
+const MonthlyRevenueChart = lazy(() => import("@/components/admin/MonthlyRevenueChart").then(m => ({ default: m.MonthlyRevenueChart })));
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -70,27 +70,30 @@ export default function AdminDashboard() {
   const greeting = getGreeting();
   const GreetingIcon = greeting.icon;
   const [calendarView, setCalendarView] = useState<"booking" | "availability">("availability");
+  const now = getWIBNow();
   
   const { bookings } = useAdminBookings();
   const { rooms } = useAdminRooms();
 
   const stats = useMemo(() => {
-    const now = getWIBNow();
     const today = format(now, "yyyy-MM-dd");
-    const todayBookings = bookings.filter(b => b.check_in_date === today);
-    const todayCheckouts = bookings.filter(b => b.check_out_date === today);
+    const safeBookings = bookings || [];
+    const safeRooms = rooms || [];
+
+    const todayBookings = safeBookings.filter(b => b.check_in === today);
+    const todayCheckouts = safeBookings.filter(b => b.check_out === today);
     
-    const monthlyBookings = bookings.filter(b => {
-      const checkIn = parseISO(b.check_in_date);
+    const monthlyBookings = safeBookings.filter(b => {
+      const checkIn = parseISO(b.check_in);
       return isSameMonth(checkIn, now);
     });
 
     const monthlyRevenue = monthlyBookings
       .filter(b => b.payment_status === "paid")
-      .reduce((sum, b) => sum + (b.total_amount || 0), 0);
+      .reduce((sum, b) => sum + (b.total_price || 0), 0);
 
-    const avgOccupancy = rooms.length > 0
-      ? Math.round((bookings.filter(b => b.check_in_date <= today && b.check_out_date > today).length / rooms.length) * 100)
+    const avgOccupancy = safeRooms.length > 0
+      ? Math.round((safeBookings.filter(b => b.check_in <= today && b.check_out > today).length / safeRooms.length) * 100)
       : 0;
 
     return {
@@ -99,10 +102,25 @@ export default function AdminDashboard() {
       monthlyBookings: monthlyBookings.length,
       monthlyRevenue,
       avgOccupancy,
-      totalRooms: rooms.length,
-      availableRooms: rooms.filter(r => r.is_available).length,
+      totalRooms: safeRooms.length,
+      availableRooms: safeRooms.length,
     };
-  }, [bookings, rooms]);
+  }, [bookings, rooms, now]);
+
+  // Build monthly revenue data for chart
+  const monthlyRevenueData = useMemo(() => {
+    const safeBookings = bookings || [];
+    const months: { month: string; revenue: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = subMonths(now, i);
+      const monthStr = format(monthDate, "MMM yyyy", { locale: localeId });
+      const revenue = safeBookings
+        .filter(b => b.payment_status === "paid" && isSameMonth(parseISO(b.check_in), monthDate))
+        .reduce((sum, b) => sum + (b.total_price || 0), 0);
+      months.push({ month: monthStr, revenue });
+    }
+    return months;
+  }, [bookings, now]);
 
   return (
     <div className="space-y-6 p-6">
@@ -190,17 +208,12 @@ export default function AdminDashboard() {
           </Suspense>
         </div>
         <div className="space-y-6">
-          <ArrivingDepartingWidgets 
-            bookings={bookings} 
-            rooms={rooms}
-          />
+          <ArrivingDepartingWidgets />
           <Suspense fallback={<ChartSkeleton />}>
-            <MonthlyRevenueChart />
+            <MonthlyRevenueChart data={monthlyRevenueData} />
           </Suspense>
         </div>
       </div>
     </div>
   );
 }
-
-const now = getWIBNow();
