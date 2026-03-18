@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PageSettingsEditDialog } from "@/components/admin/landing-pages/PageSettingsEditDialog";
 
-interface LandingPage {
+export interface LandingPage {
   id: string;
   page_title: string;
   slug: string;
