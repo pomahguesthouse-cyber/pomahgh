@@ -28,12 +28,23 @@ export interface LandingPage {
   slug: string;
   meta_description: string | null;
   primary_keyword: string;
+  secondary_keywords: string[] | null;
+  hero_headline: string;
+  subheadline: string | null;
+  page_content: string | null;
   page_schema: any;
+  hero_slides: any | null;
+  hero_image_url: string | null;
+  hero_image_alt: string | null;
+  cta_text: string | null;
+  whatsapp_number: string | null;
+  whatsapp_message_template: string | null;
+  og_image_url: string | null;
   status: "draft" | "published";
-  display_order: number;
+  published_at: string | null;
+  display_order: number | null;
   created_at: string;
   updated_at: string;
-  og_image_url?: string | null;
 }
 
 export default function AdminLandingPages() {
