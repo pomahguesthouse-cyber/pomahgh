@@ -59,6 +59,11 @@ interface EditorState {
   history: EditorElement[][];
   historyIndex: number;
   
+  // Canvas Settings
+  zoom: number;
+  showGrid: boolean;
+  showRulers: boolean;
+  
   // UI State
   isDragging: boolean;
   viewMode: 'desktop' | 'tablet' | 'mobile';
@@ -80,6 +85,9 @@ interface EditorState {
   
   setPageSettings: (settings: Partial<PageSettings>) => void;
   setViewMode: (mode: 'desktop' | 'tablet' | 'mobile') => void;
+  setZoom: (zoom: number) => void;
+  setShowGrid: (show: boolean) => void;
+  setShowRulers: (show: boolean) => void;
   setIsDragging: (isDragging: boolean) => void;
   setIsSaving: (isSaving: boolean) => void;
   setShowLayerPanel: (show: boolean) => void;
@@ -172,6 +180,9 @@ export const useEditorStore = create<EditorState>()(
     historyIndex: 0,
     isDragging: false,
     viewMode: 'desktop',
+    zoom: 100,
+    showGrid: true,
+    showRulers: true,
     isSaving: false,
     hasUnsavedChanges: false,
     showLayerPanel: false,
@@ -250,6 +261,18 @@ export const useEditorStore = create<EditorState>()(
     
     setViewMode: (mode) => set((state) => {
       state.viewMode = mode;
+    }),
+    
+    setZoom: (zoom) => set((state) => {
+      state.zoom = zoom;
+    }),
+    
+    setShowGrid: (show) => set((state) => {
+      state.showGrid = show;
+    }),
+    
+    setShowRulers: (show) => set((state) => {
+      state.showRulers = show;
     }),
     
     setIsDragging: (isDragging) => set((state) => {
