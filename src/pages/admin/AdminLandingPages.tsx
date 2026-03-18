@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Edit, Trash2, Eye, Sparkles, MoreHorizontal, Copy, Home, EyeOff, Pencil } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Sparkles, MoreHorizontal, Copy, Home, EyeOff, Pencil, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
+import { PageSettingsEditDialog } from "@/components/admin/landing-pages/PageSettingsEditDialog";
 
 interface LandingPage {
   id: string;
@@ -27,10 +28,12 @@ interface LandingPage {
   slug: string;
   meta_description: string | null;
   primary_keyword: string;
+  page_schema: any;
   status: "draft" | "published";
   display_order: number;
   created_at: string;
   updated_at: string;
+  og_image_url?: string | null;
 }
 
 export default function AdminLandingPages() {
@@ -38,6 +41,8 @@ export default function AdminLandingPages() {
   const [duplicatingPage, setDuplicatingPage] = useState<LandingPage | null>(null);
   const [settingHomepage, setSettingHomepage] = useState<string | null>(null);
   const [togglingMenu, setTogglingMenu] = useState<string | null>(null);
+  const [editingPage, setEditingPage] = useState<LandingPage | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -287,6 +292,10 @@ export default function AdminLandingPages() {
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { setEditingPage(page); setIsSettingsOpen(true); }}>
+                                <Settings className="h-4 w-4 mr-2" />
+                                Settings
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setDuplicatingPage(page)}>
                                 <Copy className="h-4 w-4 mr-2" />
                                 Duplicate
@@ -381,6 +390,12 @@ export default function AdminLandingPages() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PageSettingsEditDialog
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        page={editingPage}
+      />
     </div>
   );
 }

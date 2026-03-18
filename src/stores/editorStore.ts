@@ -41,6 +41,9 @@ export interface PageSettings {
   metaTitle: string;
   metaDescription: string;
   status: 'draft' | 'published';
+  ogImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
 }
 
 interface EditorState {
@@ -100,6 +103,9 @@ const initialPageSettings: PageSettings = {
   metaTitle: '',
   metaDescription: '',
   status: 'draft',
+  ogImage: '',
+  ogTitle: '',
+  ogDescription: '',
 };
 
 const findElementById = (elements: EditorElement[], id: string): EditorElement | null => {
