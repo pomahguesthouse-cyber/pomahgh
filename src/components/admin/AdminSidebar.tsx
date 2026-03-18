@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Home, Calendar, Building2, ImageIcon, Boxes, Settings, MessageCircle, MapPin, CreditCard, Tags, RefreshCw, LayoutDashboard, Search, FileText, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent, useDroppable } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -28,7 +28,6 @@ interface MenuGroup {
   id: string;
   label: string;
   items: MenuItem[];
-  collapsed?: boolean;
 }
 
 const defaultMenuGroups: MenuGroup[] = [
@@ -118,18 +117,33 @@ function getStoredMenuOrder(): MenuGroup[] | null {
   return null;
 }
 
+function getAllItemIds(groups: MenuGroup[]): string[] {
+  return groups.flatMap(group => group.items.map(item => `${group.id}-${item.id}`));
+}
+
+function getItemGroup(groups: MenuGroup[], itemId: string): { group: MenuGroup; item: MenuItem } | null {
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (`${group.id}-${item.id}` === itemId) {
+        return { group, item };
+      }
+    }
+  }
+  return null;
+}
+
 function SortableMenuItem({ 
   item, 
   isActive, 
-  onClick,
   isEditMode,
-  groupId
+  groupId,
+  onClick
 }: { 
   item: MenuItem; 
   isActive: boolean; 
-  onClick: () => void;
   isEditMode: boolean;
   groupId: string;
+  onClick: () => void;
 }) {
   const {
     attributes,
@@ -146,13 +160,6 @@ function SortableMenuItem({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  };
-
-  const handleSubmenuClick = (e: React.MouseEvent, subUrl?: string) => {
-    e.stopPropagation();
-    if (subUrl) {
-      window.location.href = subUrl;
-    }
   };
 
   if (item.submenu) {
@@ -198,7 +205,7 @@ function SortableMenuItem({
                       >
                         <div 
                           className="flex items-center gap-3 w-full cursor-pointer"
-                          onClick={(e) => handleSubmenuClick(e, sub.url)}
+                          onClick={() => sub.url && (window.location.href = sub.url)}
                         >
                           <sub.icon className={cn("h-4 w-4 shrink-0", isSubActive && "text-primary")} />
                           <span className="truncate text-sm">{sub.title}</span>
@@ -237,11 +244,45 @@ function SortableMenuItem({
                 <GripVertical className="h-3 w-3 text-muted-foreground" />
               </button>
             )}
-            <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
-            <span className="truncate text-sm">{item.title}</span>
+            <NavLink 
+              to={item.url || "#"} 
+              end 
+              className="flex items-center gap-3 flex-1"
+              onClick={onClick}
+            >
+              <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
+              <span className="truncate text-sm">{item.title}</span>
+            </NavLink>
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>
+    </div>
+  );
+}
+
+function DroppableGroup({ 
+  group, 
+  children, 
+  isEditMode 
+}: { 
+  group: MenuGroup; 
+  children: React.ReactNode;
+  isEditMode: boolean;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `group-${group.id}`,
+    disabled: !isEditMode
+  });
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      className={cn(
+        "min-h-[50px] transition-colors rounded-md",
+        isEditMode && isOver && "bg-primary/10 border-2 border-dashed border-primary"
+      )}
+    >
+      {children}
     </div>
   );
 }
@@ -258,13 +299,14 @@ export function AdminSidebar() {
   });
   const [isEditMode, setIsEditMode] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const isVirtualAssistantActive = location.pathname.startsWith("/admin/chatbot") || location.pathname === "/admin/chat";
+  const allItemIds = getAllItemIds(menuGroups);
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -279,60 +321,62 @@ export function AdminSidebar() {
     }));
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
+
     if (!over || active.id === over.id) return;
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
+    const activeItemId = active.id as string;
+    const overItemId = over.id as string;
 
-    // Find the groups and items
-    let activeGroupIndex = -1;
-    let activeItemIndex = -1;
-    let overGroupIndex = -1;
-    let overItemIndex = -1;
+    const activeInfo = getItemGroup(menuGroups, activeItemId);
+    const overInfo = getItemGroup(menuGroups, overItemId);
 
-    menuGroups.forEach((group, gi) => {
-      group.items.forEach((item, ii) => {
-        const itemId = `${group.id}-${item.id}`;
-        if (itemId === activeId) {
-          activeGroupIndex = gi;
-          activeItemIndex = ii;
-        }
-        if (itemId === overId) {
-          overGroupIndex = gi;
-          overItemIndex = ii;
-        }
-      });
-    });
+    if (!activeInfo || !overInfo) return;
 
-    if (activeGroupIndex === -1 || overGroupIndex === -1) return;
+    const { group: activeGroup, item: activeItem } = activeInfo;
+    const { group: overGroup } = overInfo;
 
     setMenuGroups(prev => {
       const newGroups = [...prev];
-      const activeGroup = { ...newGroups[activeGroupIndex] };
-      const activeItems = [...activeGroup.items];
-      
-      if (activeGroupIndex === overGroupIndex) {
-        // Reorder within same group
+      const activeGroupIndex = newGroups.findIndex(g => g.id === activeGroup.id);
+      const overGroupIndex = newGroups.findIndex(g => g.id === overGroup.id);
+
+      if (activeGroupIndex === -1 || overGroupIndex === -1) return prev;
+
+      const activeGroupCopy = { ...newGroups[activeGroupIndex] };
+      const activeItems = [...activeGroupCopy.items];
+      const activeItemIndex = activeItems.findIndex(item => `${activeGroup.id}-${item.id}` === activeItemId);
+
+      if (activeItemIndex === -1) return prev;
+
+      if (activeGroup.id === overGroup.id) {
+        // Same group - reorder
+        const overItemIndex = activeItems.findIndex(item => `${activeGroup.id}-${item.id}` === overItemId);
         const newItems = arrayMove(activeItems, activeItemIndex, overItemIndex);
-        activeGroup.items = newItems;
-        newGroups[activeGroupIndex] = activeGroup;
+        activeGroupCopy.items = newItems;
+        newGroups[activeGroupIndex] = activeGroupCopy;
       } else {
-        // Move between groups
-        const overGroup = { ...newGroups[overGroupIndex] };
-        const overItems = [...overGroup.items];
-        
+        // Different groups - move item
+        const overGroupCopy = { ...newGroups[overGroupIndex] };
+        const overItems = [...overGroupCopy.items];
+        const overItemIndex = overItems.findIndex(item => `${overGroup.id}-${item.id}` === overItemId);
+
         const [movedItem] = activeItems.splice(activeItemIndex, 1);
-        overItems.splice(overItemIndex, 0, movedItem);
-        
-        activeGroup.items = activeItems;
-        overGroup.items = overItems;
-        
-        newGroups[activeGroupIndex] = activeGroup;
-        newGroups[overGroupIndex] = overGroup;
+        overItems.splice(overItemIndex >= 0 ? overItemIndex : overItems.length, 0, movedItem);
+
+        activeGroupCopy.items = activeItems;
+        overGroupCopy.items = overItems;
+
+        newGroups[activeGroupIndex] = activeGroupCopy;
+        newGroups[overGroupIndex] = overGroupCopy;
       }
-      
+
       return newGroups;
     });
   };
@@ -348,9 +392,10 @@ export function AdminSidebar() {
     setIsEditMode(false);
   };
 
+  const activeItem = activeId ? getItemGroup(menuGroups, activeId) : null;
+
   return (
     <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
-      {/* Header */}
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center justify-between gap-2 px-2 py-1">
           <div className="flex items-center gap-3">
@@ -391,7 +436,6 @@ export function AdminSidebar() {
           )}
         </div>
         
-        {/* Edit Mode Controls */}
         {isEditMode && !isCollapsed && (
           <div className="flex items-center gap-2 px-2 pb-2">
             <Button 
@@ -415,68 +459,80 @@ export function AdminSidebar() {
         )}
       </SidebarHeader>
 
-      {/* Menu Groups */}
       <SidebarContent className="px-2 overflow-y-auto flex-1">
         <DndContext 
           sensors={sensors} 
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
+          onDragStart={handleDragStart}
         >
-          {menuGroups.map((group) => (
-            <SidebarGroup key={group.id} className="py-[2px]">
-              <Collapsible 
-                defaultOpen={!collapsedGroups[group.id]}
-                open={!collapsedGroups[group.id]}
-              >
-                <CollapsibleTrigger asChild>
-                  <div 
-                    className="flex items-center gap-2 cursor-pointer group mb-1 px-2"
-                    onClick={() => toggleGroupCollapse(group.id)}
-                  >
-                    <SidebarGroupLabel className="text-[12px] uppercase tracking-wider text-muted-foreground/60 font-semibold flex-1 text-left">
-                      {group.label}
-                    </SidebarGroupLabel>
-                    {!isCollapsed && (
-                      collapsedGroups[group.id] ? (
-                        <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      ) : (
-                        <ChevronDown className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      )
-                    )}
-                  </div>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent>
-                  <SidebarGroupContent>
-                    <SortableContext 
-                      items={group.items.map(item => `${group.id}-${item.id}`)}
-                      strategy={verticalListSortingStrategy}
+          <SortableContext 
+            items={allItemIds}
+            strategy={verticalListSortingStrategy}
+          >
+            {menuGroups.map((group) => (
+              <SidebarGroup key={group.id} className="py-[2px]">
+                <Collapsible 
+                  defaultOpen={!collapsedGroups[group.id]}
+                  open={!collapsedGroups[group.id]}
+                >
+                  <CollapsibleTrigger asChild>
+                    <div 
+                      className="flex items-center gap-2 cursor-pointer group mb-1 px-2"
+                      onClick={() => toggleGroupCollapse(group.id)}
                     >
-                      <SidebarMenu>
-                        {group.items.map((item) => {
-                          const isActive = location.pathname === item.url;
-                          return (
-                            <SortableMenuItem
-                              key={`${group.id}-${item.id}`}
-                              item={item}
-                              isActive={isActive}
-                              onClick={handleNavClick}
-                              isEditMode={isEditMode}
-                              groupId={group.id}
-                            />
-                          );
-                        })}
-                      </SidebarMenu>
-                    </SortableContext>
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarGroup>
-          ))}
+                      <SidebarGroupLabel className="text-[12px] uppercase tracking-wider text-muted-foreground/60 font-semibold flex-1 text-left">
+                        {group.label}
+                      </SidebarGroupLabel>
+                      {!isCollapsed && (
+                        collapsedGroups[group.id] ? (
+                          <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )
+                      )}
+                    </div>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <DroppableGroup group={group} isEditMode={isEditMode}>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {group.items.map((item) => {
+                            const isActive = location.pathname === item.url;
+                            return (
+                              <SortableMenuItem
+                                key={`${group.id}-${item.id}`}
+                                item={item}
+                                isActive={isActive}
+                                onClick={handleNavClick}
+                                isEditMode={isEditMode}
+                                groupId={group.id}
+                              />
+                            );
+                          })}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </DroppableGroup>
+                  </CollapsibleContent>
+                </Collapsible>
+              </SidebarGroup>
+            ))}
+          </SortableContext>
+
+          <DragOverlay>
+            {activeItem && (
+              <div className="opacity-80 bg-background border-2 border-primary rounded-md p-2 shadow-lg">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="h-4 w-4" />
+                  <span className="text-sm font-medium">{activeItem.item.title}</span>
+                </div>
+              </div>
+            )}
+          </DragOverlay>
         </DndContext>
       </SidebarContent>
 
-      {/* Footer */}
       <SidebarFooter className="border-t border-sidebar-border mt-auto shrink-0">
         <SidebarMenu>
           <SidebarMenuItem>
