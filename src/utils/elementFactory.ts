@@ -1,9 +1,8 @@
-import { EditorElement, ElementPosition } from "@/stores/editorStore";
+import { EditorElement } from "@/stores/editorStore";
 
 export interface ElementFactoryOptions {
   overrideProps?: Record<string, unknown>;
   overrideStyles?: Record<string, unknown>;
-  position?: Partial<ElementPosition>;
 }
 
 const HERO_SLIDES_DEFAULT = [
@@ -154,15 +153,6 @@ export function createElement(
     type: type as EditorElement["type"],
     props: { ...defaultProps, ...options?.overrideProps },
     styles: { ...defaultStyles, ...options?.overrideStyles },
-    position: {
-      x: 0,
-      y: 0,
-      width: 200,
-      height: 50,
-      rotation: 0,
-      zIndex: 0,
-      ...options?.position,
-    },
   };
 
   if (children) {

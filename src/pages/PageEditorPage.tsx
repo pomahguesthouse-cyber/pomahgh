@@ -1,16 +1,16 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEditorStore } from "@/stores/editorStore";
-import { BuilderSidebar } from "@/components/page-editor/BuilderSidebar";
+import { useEditorStore, EditorElement } from "@/stores/editorStore";
+import { ComponentLibrary } from "@/components/page-editor/ComponentLibrary";
 import { EditorCanvas } from "@/components/page-editor/EditorCanvas";
 import { PropertiesPanel } from "@/components/page-editor/PropertiesPanel";
-import { TopBar } from "@/components/page-editor/TopBar";
+import { EditorToolbar } from "@/components/page-editor/EditorToolbar";
 import { PageSettingsDialog } from "@/components/page-editor/PageSettingsDialog";
 import { FloatingToolbar } from "@/components/page-editor/FloatingToolbar";
 import { LayerPanel } from "@/components/page-editor/LayerPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 
 export default function PageEditorPage() {
@@ -20,7 +20,8 @@ export default function PageEditorPage() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showRightPanel, setShowRightPanel] = useState(true);
+  const [mobileLeftPanel, setMobileLeftPanel] = useState(false);
+  const [mobileRightPanel, setMobileRightPanel] = useState(false);
 
   const {
     elements,
@@ -41,13 +42,7 @@ export default function PageEditorPage() {
     undo,
     redo,
     saveToHistory,
-    layoutMode,
-    updateElementPosition,
-    duplicateElement,
   } = useEditorStore();
-
-  // Auto-hide properties panel when no element is selected
-  const propertiesPanelVisible = selectedElementId !== null;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -56,6 +51,14 @@ export default function PageEditorPage() {
       },
     })
   );
+
+  // Auto-show right panel on mobile when element selected
+  useEffect(() => {
+    if (selectedElementId && window.innerWidth < 768) {
+      setMobileRightPanel(true);
+      setMobileLeftPanel(false);
+    }
+  }, [selectedElementId]);
 
   // Load existing page if editing
   useEffect(() => {
@@ -72,7 +75,7 @@ export default function PageEditorPage() {
 
           if (data) {
             const schema = Array.isArray(data.page_schema) ? data.page_schema : [];
-            loadPage(schema as unknown as import("@/stores/editorStore").EditorElement[], {
+            loadPage(schema as unknown as EditorElement[], {
               id: data.id,
               title: data.page_title,
               slug: data.slug,
@@ -101,6 +104,7 @@ export default function PageEditorPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in input/textarea
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
         return;
@@ -141,94 +145,41 @@ export default function PageEditorPage() {
         return;
       }
 
-      // D = Duplicate element
-      if (e.key === "d" && selectedElementId && !e.ctrlKey && !e.metaKey) {
+      // Arrow Up = Move element up
+      if (e.key === "ArrowUp" && selectedElementId) {
         e.preventDefault();
-        saveToHistory();
-        duplicateElement(selectedElementId);
+        const currentIndex = elements.findIndex(el => el.id === selectedElementId);
+        if (currentIndex > 0) {
+          saveToHistory();
+          moveElement(selectedElementId, null, currentIndex - 1);
+        }
         return;
       }
 
-      // Arrow keys for moving elements (Free mode)
-      if (selectedElementId && layoutMode === "free") {
-        const step = e.shiftKey ? 10 : 1;
-        
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          const element = elements.find(el => el.id === selectedElementId);
-          if (element) {
-            saveToHistory();
-            updateElementPosition(selectedElementId, {
-              y: (element.position?.y || 0) - step
-            });
-          }
-          return;
+      // Arrow Down = Move element down
+      if (e.key === "ArrowDown" && selectedElementId) {
+        e.preventDefault();
+        const currentIndex = elements.findIndex(el => el.id === selectedElementId);
+        if (currentIndex < elements.length - 1) {
+          saveToHistory();
+          moveElement(selectedElementId, null, currentIndex + 1);
         }
-        
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          const element = elements.find(el => el.id === selectedElementId);
-          if (element) {
-            saveToHistory();
-            updateElementPosition(selectedElementId, {
-              y: (element.position?.y || 0) + step
-            });
-          }
-          return;
-        }
-        
-        if (e.key === "ArrowLeft") {
-          e.preventDefault();
-          const element = elements.find(el => el.id === selectedElementId);
-          if (element) {
-            saveToHistory();
-            updateElementPosition(selectedElementId, {
-              x: (element.position?.x || 0) - step
-            });
-          }
-          return;
-        }
-        
-        if (e.key === "ArrowRight") {
-          e.preventDefault();
-          const element = elements.find(el => el.id === selectedElementId);
-          if (element) {
-            saveToHistory();
-            updateElementPosition(selectedElementId, {
-              x: (element.position?.x || 0) + step
-            });
-          }
-          return;
-        }
+        return;
       }
 
-      // Arrow keys for reordering (Structured mode)
-      if (selectedElementId && layoutMode === "structured") {
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          const currentIndex = elements.findIndex(el => el.id === selectedElementId);
-          if (currentIndex > 0) {
-            saveToHistory();
-            moveElement(selectedElementId, null, currentIndex - 1);
-          }
-          return;
-        }
-
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          const currentIndex = elements.findIndex(el => el.id === selectedElementId);
-          if (currentIndex < elements.length - 1) {
-            saveToHistory();
-            moveElement(selectedElementId, null, currentIndex + 1);
-          }
-          return;
-        }
+      // D = Duplicate element
+      if (e.key === "d" && selectedElementId && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        const { duplicateElement } = useEditorStore.getState();
+        saveToHistory();
+        duplicateElement(selectedElementId);
+        return;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedElementId, elements, undo, redo, removeElement, selectElement, moveElement, saveToHistory, layoutMode, updateElementPosition, duplicateElement]);
+  }, [selectedElementId, elements, undo, redo, removeElement, selectElement, moveElement, saveToHistory]);
 
   // Auto-save draft
   useEffect(() => {
@@ -257,6 +208,7 @@ export default function PageEditorPage() {
         }),
       };
 
+      // Only set legacy fields for new pages (insert), not updates
       if (!pageSettings.id) {
         pageData.primary_keyword = pageSettings.slug;
         pageData.hero_headline = pageSettings.title;
@@ -265,7 +217,7 @@ export default function PageEditorPage() {
       if (pageSettings.id) {
         const { error } = await supabase
           .from("landing_pages")
-          .update(pageData as Record<string, unknown>)
+          .update(pageData as any)
           .eq("id", pageSettings.id);
 
         if (error) throw error;
@@ -273,7 +225,7 @@ export default function PageEditorPage() {
       } else {
         const { data, error } = await supabase
           .from("landing_pages")
-          .insert([pageData as Record<string, unknown>])
+          .insert([pageData as any])
           .select()
           .single();
 
@@ -312,47 +264,73 @@ export default function PageEditorPage() {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter}>
       <div className="h-screen flex flex-col bg-background overflow-hidden">
-        {/* Top Bar */}
-        <TopBar
+        <EditorToolbar
           onSave={handleSave}
           onPreview={handlePreview}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          showLeftPanel={mobileLeftPanel}
+          showRightPanel={mobileRightPanel}
+          onToggleLeftPanel={() => {
+            setMobileLeftPanel(!mobileLeftPanel);
+            if (!mobileLeftPanel) setMobileRightPanel(false);
+          }}
+          onToggleRightPanel={() => {
+            setMobileRightPanel(!mobileRightPanel);
+            if (!mobileRightPanel) setMobileLeftPanel(false);
+          }}
         />
 
-        {/* Main Content Area */}
         <div className="flex-1 flex overflow-hidden relative">
-          {/* Left Sidebar with BuilderSidebar (icon toolbar) */}
-          <div className="relative flex shrink-0">
-            <BuilderSidebar />
-
-            {/* Layer panel overlay */}
-            {showLayerPanel && (
-              <div className="absolute left-[56px] top-0 bottom-0 w-64 bg-background border-r border-border shadow-xl z-30">
-                <LayerPanel />
-              </div>
+          {/* Left panel - Component Library (desktop: always, mobile: overlay) */}
+          <div
+            className={cn(
+              "border-r border-border bg-background flex flex-col h-full z-20",
+              // Desktop: fixed sidebar
+              "hidden md:flex md:w-72 md:relative md:shrink-0",
+              // Mobile: overlay
+              mobileLeftPanel && "!flex w-72 absolute left-0 top-0 bottom-0 shadow-xl"
             )}
+          >
+            <ComponentLibrary />
           </div>
+
+          {/* Layer panel */}
+          {showLayerPanel && (
+            <div className="hidden md:flex">
+              <LayerPanel />
+            </div>
+          )}
 
           {/* Canvas */}
           <EditorCanvas />
 
-          {/* Right Panel - Properties (auto-hide when no element selected) */}
+          {/* Right panel - Properties (desktop: toggleable, mobile: overlay) */}
           <div
             className={cn(
-              "border-l border-border bg-background flex flex-col shrink-0 transition-all duration-200 ease-out",
-              propertiesPanelVisible ? "w-80 opacity-100" : "w-0 opacity-0 overflow-hidden"
+              "border-l border-border bg-background flex flex-col h-full z-20",
+              // Desktop: toggleable sidebar
+              showPropertiesPanel ? "md:flex md:w-72" : "md:hidden",
+              // Mobile: overlay
+              mobileRightPanel && "!flex w-72 absolute right-0 top-0 bottom-0 shadow-xl"
             )}
           >
-            {propertiesPanelVisible && (
-              <PropertiesPanel onClose={() => selectElement(null)} />
-            )}
+            <PropertiesPanel onClose={() => setShowPropertiesPanel(false)} />
           </div>
+
+          {/* Mobile backdrop */}
+          {(mobileLeftPanel || mobileRightPanel) && (
+            <div
+              className="md:hidden fixed inset-0 bg-black/20 z-10"
+              onClick={() => {
+                setMobileLeftPanel(false);
+                setMobileRightPanel(false);
+              }}
+            />
+          )}
         </div>
 
-        {/* Floating Toolbar */}
         <FloatingToolbar />
 
-        {/* Page Settings Dialog */}
         <PageSettingsDialog
           open={isSettingsOpen}
           onOpenChange={setIsSettingsOpen}

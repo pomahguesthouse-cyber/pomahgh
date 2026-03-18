@@ -42,7 +42,7 @@ const findElement = (elements: EditorElement[], id: string): EditorElement | nul
 };
 
 export function PropertiesPanel({ onClose }: PropsPanelProps) {
-  const { elements, selectedElementId, updateElement, updateElementPosition, saveToHistory, selectElement, layoutMode } = useEditorStore();
+  const { elements, selectedElementId, updateElement, saveToHistory, selectElement } = useEditorStore();
 
   const selectedElement = useMemo(() => {
     if (!selectedElementId) return null;
@@ -64,12 +64,6 @@ export function PropertiesPanel({ onClose }: PropsPanelProps) {
       styles: { ...selectedElement.styles, [key]: value }
     });
   }, [selectedElement, saveToHistory, updateElement]);
-
-  const handlePositionChange = useCallback((key: string, value: number) => {
-    if (!selectedElement) return;
-    saveToHistory();
-    updateElementPosition(selectedElement.id, { [key]: value });
-  }, [selectedElement, saveToHistory, updateElementPosition]);
 
   if (!selectedElement) {
     return (
@@ -169,9 +163,7 @@ export function PropertiesPanel({ onClose }: PropsPanelProps) {
           <TabsContent value="layout" className="p-4 space-y-4">
             <LayoutProperties
               element={selectedElement}
-              onStyleChange={handleStyleChange}
-              onPositionChange={handlePositionChange}
-              layoutMode={layoutMode} />
+              onStyleChange={handleStyleChange} />
             
           </TabsContent>
         </Tabs>
@@ -1296,85 +1288,13 @@ function StyleProperties({
 
 function LayoutProperties({
   element,
-  onStyleChange,
-  onPositionChange,
-  layoutMode
+  onStyleChange
 
 
-}: {element: EditorElement;onStyleChange: (key: string, value: string | number) => void;onPositionChange?: (key: string, value: number) => void;layoutMode?: string;}) {
-  const position = element.position || { x: 0, y: 0, width: 200, height: 50, rotation: 0, zIndex: 0 };
-  
+
+}: {element: EditorElement;onStyleChange: (key: string, value: string | number) => void;}) {
   return (
-    <Accordion type="multiple" defaultValue={layoutMode === "free" ? ["position"] : ["spacing", "size"]}>
-      {/* Position controls - only show in free mode */}
-      {layoutMode === "free" && (
-        <AccordionItem value="position">
-          <AccordionTrigger className="text-sm">Position & Size</AccordionTrigger>
-          <AccordionContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">X Position</Label>
-                <Input
-                  type="number"
-                  value={Math.round(position.x || 0)}
-                  onChange={(e) => onPositionChange?.("x", parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Y Position</Label>
-                <Input
-                  type="number"
-                  value={Math.round(position.y || 0)}
-                  onChange={(e) => onPositionChange?.("y", parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Width</Label>
-                <Input
-                  type="number"
-                  value={Math.round(position.width || 200)}
-                  onChange={(e) => onPositionChange?.("width", Math.max(50, parseInt(e.target.value) || 200))}
-                  placeholder="200"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Height</Label>
-                <Input
-                  type="number"
-                  value={Math.round(position.height || 50)}
-                  onChange={(e) => onPositionChange?.("height", Math.max(30, parseInt(e.target.value) || 50))}
-                  placeholder="50"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Rotation (deg)</Label>
-                <Input
-                  type="number"
-                  value={Math.round(position.rotation || 0)}
-                  onChange={(e) => onPositionChange?.("rotation", parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Z-Index</Label>
-                <Input
-                  type="number"
-                  value={Math.round(position.zIndex || 0)}
-                  onChange={(e) => onPositionChange?.("zIndex", Math.max(0, parseInt(e.target.value) || 0))}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      )}
-
+    <Accordion type="multiple" defaultValue={["spacing", "size"]}>
       <AccordionItem value="spacing">
         <AccordionTrigger className="text-sm">Spacing</AccordionTrigger>
         <AccordionContent className="space-y-3">
@@ -1385,7 +1305,7 @@ function LayoutProperties({
                 value={element.styles.marginTop || ""}
                 onChange={(e) => onStyleChange("marginTop", e.target.value)}
                 placeholder="0px" />
-            
+              
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Margin Bottom</Label>
@@ -1393,7 +1313,7 @@ function LayoutProperties({
                 value={element.styles.marginBottom || ""}
                 onChange={(e) => onStyleChange("marginBottom", e.target.value)}
                 placeholder="0px" />
-            
+              
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -1403,7 +1323,7 @@ function LayoutProperties({
                 value={element.styles.paddingTop || ""}
                 onChange={(e) => onStyleChange("paddingTop", e.target.value)}
                 placeholder="0px" />
-            
+              
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Padding Bottom</Label>
@@ -1411,7 +1331,7 @@ function LayoutProperties({
                 value={element.styles.paddingBottom || ""}
                 onChange={(e) => onStyleChange("paddingBottom", e.target.value)}
                 placeholder="0px" />
-            
+              
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -1421,7 +1341,7 @@ function LayoutProperties({
                 value={element.styles.paddingLeft || ""}
                 onChange={(e) => onStyleChange("paddingLeft", e.target.value)}
                 placeholder="0px" />
-            
+              
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Padding Right</Label>
@@ -1429,7 +1349,7 @@ function LayoutProperties({
                 value={element.styles.paddingRight || ""}
                 onChange={(e) => onStyleChange("paddingRight", e.target.value)}
                 placeholder="0px" />
-            
+              
             </div>
           </div>
         </AccordionContent>
@@ -1444,7 +1364,7 @@ function LayoutProperties({
               value={element.styles.width || ""}
               onChange={(e) => onStyleChange("width", e.target.value)}
               placeholder="100%" />
-          
+            
           </div>
           <div className="space-y-2">
             <Label className="text-xs">Min Height</Label>
@@ -1452,7 +1372,7 @@ function LayoutProperties({
               value={element.styles.minHeight || ""}
               onChange={(e) => onStyleChange("minHeight", e.target.value)}
               placeholder="auto" />
-          
+            
           </div>
           {(element.type === "container" || element.type === "section" || element.type === "gallery") &&
           <div className="space-y-2">
@@ -1467,4 +1387,5 @@ function LayoutProperties({
         </AccordionContent>
       </AccordionItem>
     </Accordion>);
+
 }
