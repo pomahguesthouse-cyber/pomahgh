@@ -22,6 +22,15 @@ export interface ElementStyles {
   gap?: string;
 }
 
+export interface ElementPosition {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  zIndex: number;
+}
+
 export interface EditorElement {
   id: string;
   type: 'section' | 'heading' | 'paragraph' | 'image' | 'button' | 'spacer' | 'divider' | 'container' | 'gallery' | 'html' | 'video' | 'icon' | 'social-links' | 'whatsapp-button' | 'map-embed' | 'hero-slider' | 'room-slider' | 'facilities' | 'news-events' | 'nearby-locations';
@@ -32,6 +41,7 @@ export interface EditorElement {
   isVisible?: boolean;
   isLocked?: boolean;
   label?: string;
+  position?: Partial<ElementPosition>;
 }
 
 export interface PageSettings {
@@ -54,6 +64,7 @@ interface EditorState {
   // Selection
   selectedElementId: string | null;
   hoveredElementId: string | null;
+  selectedElementIds: string[];
   
   // History
   history: EditorElement[][];
@@ -63,6 +74,9 @@ interface EditorState {
   zoom: number;
   showGrid: boolean;
   showRulers: boolean;
+  snapToGrid: boolean;
+  snapToElements: boolean;
+  layoutMode: 'free' | 'structured';
   
   // UI State
   isDragging: boolean;
@@ -76,11 +90,16 @@ interface EditorState {
   setElements: (elements: EditorElement[]) => void;
   addElement: (element: EditorElement, parentId?: string, index?: number) => void;
   updateElement: (id: string, updates: Partial<EditorElement>) => void;
+  updateElementPosition: (id: string, position: Partial<ElementPosition>) => void;
   removeElement: (id: string) => void;
   moveElement: (id: string, newParentId: string | null, newIndex: number) => void;
   duplicateElement: (id: string) => void;
   
   selectElement: (id: string | null) => void;
+  selectMultipleElements: (ids: string[]) => void;
+  addToSelection: (id: string) => void;
+  removeFromSelection: (id: string) => void;
+  clearSelection: () => void;
   setHoveredElement: (id: string | null) => void;
   
   setPageSettings: (settings: Partial<PageSettings>) => void;
@@ -88,6 +107,9 @@ interface EditorState {
   setZoom: (zoom: number) => void;
   setShowGrid: (show: boolean) => void;
   setShowRulers: (show: boolean) => void;
+  setSnapToGrid: (snap: boolean) => void;
+  setSnapToElements: (snap: boolean) => void;
+  setLayoutMode: (mode: 'free' | 'structured') => void;
   setIsDragging: (isDragging: boolean) => void;
   setIsSaving: (isSaving: boolean) => void;
   setShowLayerPanel: (show: boolean) => void;
@@ -96,6 +118,11 @@ interface EditorState {
   toggleElementLock: (id: string) => void;
   renameElement: (id: string, label: string) => void;
   setHasUnsavedChanges: (hasChanges: boolean) => void;
+  
+  bringForward: (id: string) => void;
+  sendBackward: (id: string) => void;
+  bringToFront: (id: string) => void;
+  sendToBack: (id: string) => void;
   
   undo: () => void;
   redo: () => void;
@@ -176,6 +203,7 @@ export const useEditorStore = create<EditorState>()(
     pageSettings: initialPageSettings,
     selectedElementId: null as string | null,
     hoveredElementId: null as string | null,
+    selectedElementIds: [] as string[],
     history: [[]] as EditorElement[][],
     historyIndex: 0,
     isDragging: false,
@@ -183,6 +211,9 @@ export const useEditorStore = create<EditorState>()(
     zoom: 100,
     showGrid: true,
     showRulers: true,
+    snapToGrid: true,
+    snapToElements: true,
+    layoutMode: 'free',
     isSaving: false,
     hasUnsavedChanges: false,
     showLayerPanel: false,
@@ -209,11 +240,17 @@ export const useEditorStore = create<EditorState>()(
       state.hasUnsavedChanges = true;
     }),
     
+    updateElementPosition: (id, position) => set((state) => {
+      state.elements = updateElementById(state.elements, id, { position });
+      state.hasUnsavedChanges = true;
+    }),
+    
     removeElement: (id) => set((state) => {
       state.elements = removeElementById(state.elements, id);
       if (state.selectedElementId === id) {
         state.selectedElementId = null;
       }
+      state.selectedElementIds = state.selectedElementIds.filter(elId => elId !== id);
       state.hasUnsavedChanges = true;
     }),
     
@@ -233,9 +270,13 @@ export const useEditorStore = create<EditorState>()(
       const duplicate: EditorElement = {
         ...JSON.parse(JSON.stringify(element)),
         id: `${element.type}-${Date.now()}`,
+        position: element.position ? {
+          ...element.position,
+          x: (element.position.x || 0) + 20,
+          y: (element.position.y || 0) + 20,
+        } : undefined,
       };
       
-      // Find index and add after
       const index = state.elements.findIndex(el => el.id === id);
       if (index !== -1) {
         state.elements.splice(index + 1, 0, duplicate);
@@ -248,6 +289,29 @@ export const useEditorStore = create<EditorState>()(
     
     selectElement: (id) => set((state) => {
       state.selectedElementId = id;
+      state.selectedElementIds = id ? [id] : [];
+    }),
+    
+    selectMultipleElements: (ids) => set((state) => {
+      state.selectedElementIds = ids;
+      state.selectedElementId = ids.length === 1 ? ids[0] : null;
+    }),
+    
+    addToSelection: (id) => set((state) => {
+      if (!state.selectedElementIds.includes(id)) {
+        state.selectedElementIds.push(id);
+        state.selectedElementId = id;
+      }
+    }),
+    
+    removeFromSelection: (id) => set((state) => {
+      state.selectedElementIds = state.selectedElementIds.filter(elId => elId !== id);
+      state.selectedElementId = state.selectedElementIds.length === 1 ? state.selectedElementIds[0] : null;
+    }),
+    
+    clearSelection: () => set((state) => {
+      state.selectedElementIds = [];
+      state.selectedElementId = null;
     }),
     
     setHoveredElement: (id) => set((state) => {
@@ -273,6 +337,18 @@ export const useEditorStore = create<EditorState>()(
     
     setShowRulers: (show) => set((state) => {
       state.showRulers = show;
+    }),
+    
+    setSnapToGrid: (snap) => set((state) => {
+      state.snapToGrid = snap;
+    }),
+    
+    setSnapToElements: (snap) => set((state) => {
+      state.snapToElements = snap;
+    }),
+    
+    setLayoutMode: (mode) => set((state) => {
+      state.layoutMode = mode;
     }),
     
     setIsDragging: (isDragging) => set((state) => {
@@ -328,11 +404,57 @@ export const useEditorStore = create<EditorState>()(
       state.hasUnsavedChanges = true;
     }),
     
-    saveToHistory: () => set((state) => {
-      const newHistory = state.history.slice(0, state.historyIndex + 1);
-      newHistory.push(JSON.parse(JSON.stringify(state.elements)));
-      state.history = newHistory.slice(-50); // Keep last 50 states
-      state.historyIndex = state.history.length - 1;
+    bringForward: (id) => set((state) => {
+      const elements = state.elements;
+      const idx = elements.findIndex(el => el.id === id);
+      if (idx === -1) return;
+      
+      const maxZ = Math.max(...elements.map(el => el.position?.zIndex || 0));
+      const currentZ = elements[idx].position?.zIndex || 0;
+      
+      state.elements = updateElementById(elements, id, {
+        position: { ...elements[idx].position, zIndex: Math.min(currentZ + 1, maxZ + 1) }
+      });
+      state.hasUnsavedChanges = true;
+    }),
+    
+    sendBackward: (id) => set((state) => {
+      const elements = state.elements;
+      const idx = elements.findIndex(el => el.id === id);
+      if (idx === -1) return;
+      
+      const currentZ = elements[idx].position?.zIndex || 0;
+      
+      state.elements = updateElementById(elements, id, {
+        position: { ...elements[idx].position, zIndex: Math.max(currentZ - 1, 0) }
+      });
+      state.hasUnsavedChanges = true;
+    }),
+    
+    bringToFront: (id) => set((state) => {
+      const elements = state.elements;
+      const idx = elements.findIndex(el => el.id === id);
+      if (idx === -1) return;
+      
+      const maxZ = Math.max(...elements.map(el => el.position?.zIndex || 0));
+      
+      state.elements = updateElementById(elements, id, {
+        position: { ...elements[idx].position, zIndex: maxZ + 1 }
+      });
+      state.hasUnsavedChanges = true;
+    }),
+    
+    sendToBack: (id) => set((state) => {
+      const elements = state.elements;
+      const idx = elements.findIndex(el => el.id === id);
+      if (idx === -1) return;
+      
+      const minZ = Math.min(...elements.map(el => el.position?.zIndex || 0));
+      
+      state.elements = updateElementById(elements, id, {
+        position: { ...elements[idx].position, zIndex: Math.max(minZ - 1, 0) }
+      });
+      state.hasUnsavedChanges = true;
     }),
     
     undo: () => set((state) => {

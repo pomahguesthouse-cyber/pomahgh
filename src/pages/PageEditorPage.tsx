@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEditorStore } from "@/stores/editorStore";
 import { BuilderSidebar } from "@/components/page-editor/BuilderSidebar";
-import { BuilderCanvas } from "@/components/page-editor/BuilderCanvas";
+import { FreeformCanvas } from "@/components/page-editor/FreeformCanvas";
 import { PropertiesPanel } from "@/components/page-editor/PropertiesPanel";
 import { TopBar } from "@/components/page-editor/TopBar";
 import { PageSettingsDialog } from "@/components/page-editor/PageSettingsDialog";
@@ -41,6 +41,9 @@ export default function PageEditorPage() {
     undo,
     redo,
     saveToHistory,
+    layoutMode,
+    updateElementPosition,
+    duplicateElement,
   } = useEditorStore();
 
   // Auto-hide properties panel when no element is selected
@@ -103,24 +106,28 @@ export default function PageEditorPage() {
         return;
       }
 
+      // Ctrl/Cmd + Z = Undo
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         undo();
         return;
       }
 
+      // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y = Redo
       if ((e.ctrlKey || e.metaKey) && (e.key === "z" && e.shiftKey || e.key === "y")) {
         e.preventDefault();
         redo();
         return;
       }
 
+      // Ctrl/Cmd + S = Save
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         handleSave();
         return;
       }
 
+      // Delete or Backspace = Delete selected element
       if ((e.key === "Delete" || e.key === "Backspace") && selectedElementId) {
         e.preventDefault();
         saveToHistory();
@@ -128,43 +135,100 @@ export default function PageEditorPage() {
         return;
       }
 
+      // Escape = Deselect
       if (e.key === "Escape") {
         selectElement(null);
         return;
       }
 
-      if (e.key === "ArrowUp" && selectedElementId) {
-        e.preventDefault();
-        const currentIndex = elements.findIndex(el => el.id === selectedElementId);
-        if (currentIndex > 0) {
-          saveToHistory();
-          moveElement(selectedElementId, null, currentIndex - 1);
-        }
-        return;
-      }
-
-      if (e.key === "ArrowDown" && selectedElementId) {
-        e.preventDefault();
-        const currentIndex = elements.findIndex(el => el.id === selectedElementId);
-        if (currentIndex < elements.length - 1) {
-          saveToHistory();
-          moveElement(selectedElementId, null, currentIndex + 1);
-        }
-        return;
-      }
-
+      // D = Duplicate element
       if (e.key === "d" && selectedElementId && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
-        const { duplicateElement } = useEditorStore.getState();
         saveToHistory();
         duplicateElement(selectedElementId);
         return;
+      }
+
+      // Arrow keys for moving elements (Free mode)
+      if (selectedElementId && layoutMode === "free") {
+        const step = e.shiftKey ? 10 : 1;
+        
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          const element = elements.find(el => el.id === selectedElementId);
+          if (element) {
+            saveToHistory();
+            updateElementPosition(selectedElementId, {
+              y: (element.position?.y || 0) - step
+            });
+          }
+          return;
+        }
+        
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const element = elements.find(el => el.id === selectedElementId);
+          if (element) {
+            saveToHistory();
+            updateElementPosition(selectedElementId, {
+              y: (element.position?.y || 0) + step
+            });
+          }
+          return;
+        }
+        
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          const element = elements.find(el => el.id === selectedElementId);
+          if (element) {
+            saveToHistory();
+            updateElementPosition(selectedElementId, {
+              x: (element.position?.x || 0) - step
+            });
+          }
+          return;
+        }
+        
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          const element = elements.find(el => el.id === selectedElementId);
+          if (element) {
+            saveToHistory();
+            updateElementPosition(selectedElementId, {
+              x: (element.position?.x || 0) + step
+            });
+          }
+          return;
+        }
+      }
+
+      // Arrow keys for reordering (Structured mode)
+      if (selectedElementId && layoutMode === "structured") {
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          const currentIndex = elements.findIndex(el => el.id === selectedElementId);
+          if (currentIndex > 0) {
+            saveToHistory();
+            moveElement(selectedElementId, null, currentIndex - 1);
+          }
+          return;
+        }
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const currentIndex = elements.findIndex(el => el.id === selectedElementId);
+          if (currentIndex < elements.length - 1) {
+            saveToHistory();
+            moveElement(selectedElementId, null, currentIndex + 1);
+          }
+          return;
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedElementId, elements, undo, redo, removeElement, selectElement, moveElement, saveToHistory]);
+  }, [selectedElementId, elements, undo, redo, removeElement, selectElement, moveElement, saveToHistory, layoutMode, updateElementPosition, duplicateElement]);
 
   // Auto-save draft
   useEffect(() => {
@@ -270,7 +334,7 @@ export default function PageEditorPage() {
           </div>
 
           {/* Canvas */}
-          <BuilderCanvas />
+          <FreeformCanvas />
 
           {/* Right Panel - Properties (auto-hide when no element selected) */}
           <div
