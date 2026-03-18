@@ -1809,6 +1809,8 @@ export type Database = {
           header_blur: number | null
           header_show_logo: boolean | null
           header_text_color: string | null
+          hidden_page_slugs: string[] | null
+          homepage_slug: string | null
           hotel_name: string
           hotel_policies_enabled: boolean | null
           hotel_policies_text: string | null
@@ -1879,6 +1881,8 @@ export type Database = {
           header_blur?: number | null
           header_show_logo?: boolean | null
           header_text_color?: string | null
+          hidden_page_slugs?: string[] | null
+          homepage_slug?: string | null
           hotel_name?: string
           hotel_policies_enabled?: boolean | null
           hotel_policies_text?: string | null
@@ -1949,6 +1953,8 @@ export type Database = {
           header_blur?: number | null
           header_show_logo?: boolean | null
           header_text_color?: string | null
+          hidden_page_slugs?: string[] | null
+          homepage_slug?: string | null
           hotel_name?: string
           hotel_policies_enabled?: boolean | null
           hotel_policies_text?: string | null

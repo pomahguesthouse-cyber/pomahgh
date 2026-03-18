@@ -128,6 +128,7 @@ export function PageSettingsDialog({ open, onOpenChange }: PageSettingsDialogPro
                 Image shown when shared on social media (1200x630 recommended)
               </p>
               <MediaPickerField
+                label="OG Image"
                 value={pageSettings.ogImage || ""}
                 onChange={(url) => setPageSettings({ ogImage: url })}
               />

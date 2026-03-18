@@ -24,19 +24,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MediaPickerField } from "@/components/admin/landing-pages/MediaPickerField";
 import { Loader2 } from "lucide-react";
 
-interface LandingPage {
-  id: string;
-  page_title: string;
-  slug: string;
-  meta_description: string | null;
-  primary_keyword: string;
-  page_schema: any;
-  status: "draft" | "published";
-  display_order: number;
-  created_at: string;
-  updated_at: string;
-  og_image_url?: string | null;
-}
+// Using LandingPage from AdminLandingPages
+import type { LandingPage } from "@/pages/admin/AdminLandingPages";
 
 interface PageSettingsEditDialogProps {
   open: boolean;
@@ -85,7 +74,7 @@ export function PageSettingsEditDialog({ open, onOpenChange, page }: PageSetting
           status: formData.status,
           og_image_url: formData.og_image_url || null,
         })
-        .eq("id", page?.id);
+        .eq("id", page?.id ?? "");
 
       if (error) throw error;
     },
@@ -208,6 +197,7 @@ export function PageSettingsEditDialog({ open, onOpenChange, page }: PageSetting
                 Gambar yang ditampilkan saat dibagikan di sosial media (1200x630 disarankan)
               </p>
               <MediaPickerField
+                label="OG Image"
                 value={formData.og_image_url}
                 onChange={(url) => setFormData({ ...formData, og_image_url: url })}
               />
