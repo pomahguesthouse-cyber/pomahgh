@@ -25,12 +25,15 @@ interface MenuGroup {
   items: MenuItem[];
 }
 const menuGroups: MenuGroup[] = [{
-  label: "Overview",
+  label: "Page Editor",
   items: [{
     title: "Page Editor",
     url: "/admin/page-editor",
     icon: FileType
-  }, {
+  }]
+}, {
+  label: "Overview",
+  items: [{
     title: "Dashboard",
     url: "/admin/dashboard",
     icon: LayoutDashboard
