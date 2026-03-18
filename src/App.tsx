@@ -9,7 +9,24 @@ import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
 import { PublicOverridesProvider } from "@/contexts/PublicOverridesContext";
 import { GlobalSEO } from "@/components/GlobalSEO";
 import { SubdomainRouter } from "@/components/SubdomainRouter";
-const Index = lazy(() => import("./pages/Index"));
+
+// Auto-reload on chunk load failure (stale cache after deploy)
+function lazyRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+) {
+  return lazy(() =>
+    factory().catch((err) => {
+      const key = "chunk_reload";
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        window.location.reload();
+      }
+      throw err;
+    })
+  );
+}
+
+const Index = lazyRetry(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Bookings = lazy(() => import("./pages/Bookings"));
 const RoomDetail = lazy(() => import("./pages/RoomDetail"));

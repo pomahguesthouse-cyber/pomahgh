@@ -19,36 +19,38 @@ const FloatingToolbar = memo(function FloatingToolbar() {
     saveToHistory,
   } = useEditorStore();
 
-  if (!selectedElementId) return null;
-
-  const currentIndex = elements.findIndex((el) => el.id === selectedElementId);
+  const currentIndex = selectedElementId ? elements.findIndex((el) => el.id === selectedElementId) : -1;
   const canMoveUp = currentIndex > 0;
   const canMoveDown = currentIndex < elements.length - 1 && currentIndex !== -1;
   
-  const selectedElement = elements.find(el => el.id === selectedElementId);
+  const selectedElement = selectedElementId ? elements.find(el => el.id === selectedElementId) : undefined;
   const elementType = selectedElement?.type || 'element';
 
   const handleMoveUp = useCallback(() => {
-    if (!canMoveUp || currentIndex === -1) return;
+    if (!canMoveUp || currentIndex === -1 || !selectedElementId) return;
     saveToHistory();
-    moveElement(currentIndex, currentIndex - 1);
-  }, [canMoveUp, currentIndex, moveElement, saveToHistory]);
+    moveElement(selectedElementId, null, currentIndex - 1);
+  }, [canMoveUp, currentIndex, selectedElementId, moveElement, saveToHistory]);
 
   const handleMoveDown = useCallback(() => {
-    if (!canMoveDown || currentIndex === -1) return;
+    if (!canMoveDown || currentIndex === -1 || !selectedElementId) return;
     saveToHistory();
-    moveElement(currentIndex, currentIndex + 1);
-  }, [canMoveDown, currentIndex, moveElement, saveToHistory]);
+    moveElement(selectedElementId, null, currentIndex + 1);
+  }, [canMoveDown, currentIndex, selectedElementId, moveElement, saveToHistory]);
 
   const handleDuplicate = useCallback(() => {
+    if (!selectedElementId) return;
     saveToHistory();
     duplicateElement(selectedElementId);
   }, [duplicateElement, saveToHistory, selectedElementId]);
 
   const handleDelete = useCallback(() => {
+    if (!selectedElementId) return;
     saveToHistory();
     removeElement(selectedElementId);
   }, [removeElement, saveToHistory, selectedElementId]);
+
+  if (!selectedElementId) return null;
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
