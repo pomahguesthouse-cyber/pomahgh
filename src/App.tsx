@@ -29,7 +29,6 @@ const AdminBookingCom = lazy(() => import("./pages/admin/AdminBookingCom"));
 const AdminBankAccounts = lazy(() => import("./pages/admin/AdminBankAccounts"));
 const AdminRoomFeatures = lazy(() => import("./pages/admin/AdminRoomFeatures"));
 const AdminSeoSettings = lazy(() => import("./pages/admin/AdminSeoSettings"));
-const AdminPages = lazy(() => import("./pages/admin/AdminPages"));
 const AdminMediaLibrary = lazy(() => import("./pages/admin/AdminMediaLibrary"));
 const AdminRoomAddons = lazy(() => import("./pages/admin/AdminRoomAddons"));
 const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
