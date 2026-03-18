@@ -1,4 +1,4 @@
-import { useEffect, useState, memo, useCallback } from "react";
+import { useEffect, useMemo, useState, memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, User, Home, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ const Header = memo(function Header() {
 
   const { data: menuPages } = useQuery({
     queryKey: ["public-menu-pages"],
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("site_pages")
@@ -37,16 +39,16 @@ const Header = memo(function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const handleNav = (id: string) => {
+  const handleNav = useCallback((id: string) => {
     setIsMenuOpen(false);
     if (location.pathname === "/") {
       document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     } else {
       navigate(`/#${id}`);
     }
-  };
+  }, [location.pathname, navigate]);
 
-  const handleHome = () => {
+  const handleHome = useCallback(() => {
     setIsMenuOpen(false);
     if (location.pathname === "/") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -56,33 +58,41 @@ const Header = memo(function Header() {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }, 100);
     }
-  };
+  }, [location.pathname, navigate]);
 
   const handleUserClick = () => {
     navigate(user ? "/member" : "/auth");
   };
 
-  const fallbackMenuItems = [
-    { label: "Home", onClick: handleHome },
-    { label: "Rooms", onClick: () => handleNav("rooms") },
-    { label: "Fasilitas", onClick: () => handleNav("amenities") },
-    { label: "News & Events", onClick: () => handleNav("news-events") },
-    { label: "Explore Semarang", onClick: () => navigate("/explore-semarang") },
-  ];
+  const fallbackMenuItems = useMemo(
+    () => [
+      { label: "Home", onClick: handleHome },
+      { label: "Rooms", onClick: () => handleNav("rooms") },
+      { label: "Fasilitas", onClick: () => handleNav("amenities") },
+      { label: "News & Events", onClick: () => handleNav("news-events") },
+      { label: "Explore Semarang", onClick: () => navigate("/explore-semarang") },
+    ],
+    [handleHome, handleNav, navigate]
+  );
 
-  const dynamicMenuItems = menuPages && menuPages.length > 0
-    ? menuPages.map((p) => ({
-        label: p.menu_label || p.title,
-        onClick: () => {
-          setIsMenuOpen(false);
-          if (p.route_path === "/" && location.pathname === "/") {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-            return;
-          }
-          navigate(p.route_path || "/");
-        },
-      }))
-    : fallbackMenuItems;
+  const dynamicMenuItems = useMemo(
+    () =>
+      menuPages && menuPages.length > 0
+        ? menuPages.map((p) => ({
+            key: p.route_path || p.id,
+            label: p.menu_label || p.title,
+            onClick: () => {
+              setIsMenuOpen(false);
+              if (p.route_path === "/" && location.pathname === "/") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                return;
+              }
+              navigate(p.route_path || "/");
+            },
+          }))
+        : fallbackMenuItems.map((item) => ({ ...item, key: item.label })),
+    [fallbackMenuItems, menuPages, location.pathname, navigate]
+  );
 
   return (
     <>
@@ -109,7 +119,7 @@ const Header = memo(function Header() {
 
             <nav className="flex items-center gap-8 text-white text-sm font-medium">
               {dynamicMenuItems.map((item) => (
-                <button key={item.label} onClick={item.onClick}>{item.label}</button>
+                <button key={item.key} onClick={item.onClick}>{item.label}</button>
               ))}
             </nav>
 
@@ -188,7 +198,7 @@ const Header = memo(function Header() {
           <nav className="flex flex-col items-center text-white text-sm font-medium text-center">
             {dynamicMenuItems.map((item, index) => (
               <div
-                key={item.label}
+                key={item.key}
                 className={`
                   w-full flex flex-col items-center
                   transition-all duration-300 ease-out

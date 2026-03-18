@@ -21,6 +21,8 @@ const Index = () => {
 
   const { data: homepageSchema } = useQuery({
     queryKey: ["site-homepage-schema"],
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data: homepageByFlag, error: homepageErr } = await supabase
         .from("site_pages")

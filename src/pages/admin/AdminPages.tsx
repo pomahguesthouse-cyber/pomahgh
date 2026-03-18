@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Trash2, Sparkles, Settings, Pencil, Copy, Home, Compass, GripVertical, MoreHorizontal, HelpCircle, X, Search, Share2, Paintbrush2, Type, EyeOff } from "lucide-react";
+import { Plus, Trash2, Sparkles, Settings, Copy, Home, Compass, GripVertical, MoreHorizontal, HelpCircle, X, Search, Share2, Paintbrush2, Type, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -85,6 +85,8 @@ export default function AdminPages() {
 
   const { data: pages, isLoading } = useQuery({
     queryKey: ["site-pages"],
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("site_pages")
@@ -182,7 +184,8 @@ export default function AdminPages() {
       const { error: resetErr } = await supabase
         .from("site_pages")
         .update({ is_homepage: false } as any)
-        .neq("id", "00000000-0000-0000-0000-000000000000");
+        .eq("is_homepage", true)
+        .neq("id", page.id);
       if (resetErr) throw resetErr;
 
       const { error } = await supabase

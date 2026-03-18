@@ -39,7 +39,7 @@ export const ElementRenderer = memo(function ElementRenderer({
   onHover,
   isPreview = false,
 }: ElementRendererProps) {
-  if (element.isVisible === false && isPreview) return null;
+  const isHiddenInPreview = element.isVisible === false && isPreview;
 
   // Memoize common props to prevent creating new objects on each render
   const commonProps = useMemo(() => ({
@@ -49,7 +49,7 @@ export const ElementRenderer = memo(function ElementRenderer({
     onSelect: element.isLocked ? () => {} : onSelect,
     onHover,
     isPreview,
-  }), [element, isSelected, isHovered, onSelect, onHover, isPreview, element.isLocked]);
+  }), [element, isSelected, isHovered, onSelect, onHover, isPreview]);
 
   const wrapHidden = useCallback((node: React.ReactNode) => {
     const wrappedNode = element.styles.fontFamily
@@ -112,6 +112,8 @@ export const ElementRenderer = memo(function ElementRenderer({
         );
     }
   }, [element.type, commonProps]);
+
+  if (isHiddenInPreview) return null;
 
   return wrapHidden(rendered);
 });
