@@ -1,10 +1,9 @@
+import React from "react";
 import { ElementWrapper } from "./ElementWrapper";
 import { EditorElement } from "@/stores/editorStore";
-import * as LucideIcons from "lucide-react";
+import { Star } from "lucide-react";
+import { getIconComponent } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-
-type IconComponentType = React.ComponentType<React.SVGProps<SVGSVGElement>>;
-const iconRegistry = LucideIcons as unknown as Record<string, IconComponentType>;
 
 interface IconElementProps {
   element: EditorElement;
@@ -26,7 +25,7 @@ export function IconElement({
   const { iconName = "Star", iconSize = 48, iconColor = "#0f172a" } = element.props;
   const { textAlign, marginTop, marginBottom } = element.styles;
 
-  const IconComponent = iconRegistry[String(iconName)] || LucideIcons.Star;
+  const IconComponent = getIconComponent(String(iconName)) || Star;
 
   const style: React.CSSProperties = { marginTop, marginBottom };
 
@@ -36,7 +35,7 @@ export function IconElement({
       "justify-center": textAlign === "center" || !textAlign,
       "justify-end": textAlign === "right",
     })}>
-      <IconComponent style={{ width: iconSize, height: iconSize, color: iconColor }} />
+      {IconComponent && React.createElement(IconComponent as React.ComponentType<{ className?: string; style?: React.CSSProperties }>, { style: { width: iconSize, height: iconSize, color: iconColor } })}
     </div>
   );
 

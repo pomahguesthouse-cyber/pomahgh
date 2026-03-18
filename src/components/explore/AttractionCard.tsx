@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { MapPin, Clock, Star } from "lucide-react";
-import * as Icons from "lucide-react";
+import { getIconComponent } from "@/lib/icons";
 import { CityAttraction } from "@/hooks/useCityAttractions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,7 @@ const categoryLabels: Record<string, string> = {
 };
 
 export const AttractionCard = ({ attraction, index = 0, featured = false }: AttractionCardProps) => {
-  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[attraction.icon_name] || Icons.MapPin;
+  const IconComponent = getIconComponent(attraction.icon_name) || MapPin;
   
   const defaultImages: Record<string, string> = {
     wisata: "https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=800&q=80",

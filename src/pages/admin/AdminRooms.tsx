@@ -5,7 +5,8 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import { useAdminRoomFeatures } from "@/hooks/useRoomFeatures";
 import { use360Upload } from "@/hooks/use360Upload";
-import * as Icons from "lucide-react";
+import { Circle } from "lucide-react";
+import { getIconComponent } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -208,11 +209,8 @@ const AdminRooms = () => {
       return { ...prev, pricing_priority: arrayMove(prev.pricing_priority, oldIndex, newIndex) };
     });
   }, []);
-  const getIconComponent = (iconName: string) => {
-    const icons = Icons as unknown as Record<string, React.ComponentType<{
-      className?: string;
-    }>>;
-    return icons[iconName] || Icons.Circle;
+  const getIcon = (iconName: string) => {
+    return getIconComponent(iconName) || Circle;
   };
   const resetForm = () => {
     setFormData({
@@ -622,7 +620,7 @@ const AdminRooms = () => {
                             <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
                           </div> : <div className="grid grid-cols-3 gap-4">
                             {roomFeatures?.map(feature => {
-                          const IconComponent = getIconComponent(feature.icon_name);
+                          const IconComponent = getIcon(feature.icon_name);
                           const isSelected = formData.features.includes(feature.feature_key);
                           return <label key={feature.feature_key} className={cn("flex flex-col items-center gap-3 p-6 rounded-xl border-2 cursor-pointer transition-all duration-200", isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm")}>
                                   <div className={cn("p-3 rounded-full transition-colors", isSelected ? "bg-primary text-white" : "bg-slate-100 text-slate-400")}>

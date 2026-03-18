@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Panorama360Viewer } from "@/components/Panorama360Viewer";
+import { LazyPanoramaViewer } from "@/components/LazyPanoramaViewer";
 import { RotateCw, Maximize2 } from "lucide-react";
 import type { RoomVirtualTourProps } from "./types";
 export const RoomVirtualTour = ({
@@ -36,7 +36,7 @@ export const RoomVirtualTour = ({
       
       {/* Embedded 360 Viewer Preview */}
       <div className="rounded-lg overflow-hidden border border-border">
-        <Panorama360Viewer imageUrl={currentPanorama.image_url} roomName={currentPanorama.title} height="400px" autoLoad showControls hotspots={hotspots} onHotspotClick={onHotspotClick} />
+        <LazyPanoramaViewer imageUrl={currentPanorama.image_url} roomName={currentPanorama.title} height="400px" autoLoad showControls hotspots={hotspots} onHotspotClick={onHotspotClick} />
       </div>
       
       <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-4">
