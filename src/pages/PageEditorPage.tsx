@@ -9,9 +9,13 @@ import { PageSettingsDialog } from "@/components/page-editor/PageSettingsDialog"
 import { FloatingToolbar } from "@/components/page-editor/FloatingToolbar";
 import { LayerPanel } from "@/components/page-editor/LayerPanel";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
+
+type SitePageInsert = Database["public"]["Tables"]["site_pages"]["Insert"];
+type SitePageUpdate = Database["public"]["Tables"]["site_pages"]["Update"];
 
 export default function PageEditorPage() {
   const navigate = useNavigate();
@@ -197,7 +201,7 @@ export default function PageEditorPage() {
     setIsSaving(true);
 
     try {
-      const pageData: Record<string, unknown> = {
+      const pageData: SitePageUpdate = {
         title: pageSettings.title,
         route_path: pageSettings.slug ? `/${pageSettings.slug}` : "/",
         meta_title: pageSettings.metaTitle || pageSettings.title,
@@ -210,15 +214,24 @@ export default function PageEditorPage() {
       if (pageSettings.id) {
         const { error } = await supabase
           .from("site_pages")
-          .update(pageData as any)
+          .update(pageData)
           .eq("id", pageSettings.id);
 
         if (error) throw error;
         toast.success("Page saved successfully");
       } else {
+        const insertPayload: SitePageInsert = {
+          title: pageSettings.title,
+          route_path: pageSettings.slug ? `/${pageSettings.slug}` : "/",
+          meta_title: pageSettings.metaTitle || pageSettings.title,
+          meta_description: pageSettings.metaDescription,
+          page_schema: pageData.page_schema,
+          status: pageSettings.status,
+        };
+
         const { data, error } = await supabase
           .from("site_pages")
-          .insert([pageData as any])
+          .insert(insertPayload)
           .select()
           .single();
 

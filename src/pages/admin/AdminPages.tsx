@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,10 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { queryKeys, queryPresets } from "@/lib/query";
+
+type SitePageInsert = Database["public"]["Tables"]["site_pages"]["Insert"];
+type SitePageUpdate = Database["public"]["Tables"]["site_pages"]["Update"];
 
 export interface SitePage {
   id: string;
@@ -72,6 +77,7 @@ const RESERVED_NON_MARKETING_ROUTES = [
 export default function AdminPages() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const invalidateSitePages = () => queryClient.invalidateQueries({ queryKey: queryKeys.sitePages.all });
   const [deletingPage, setDeletingPage] = useState<SitePage | null>(null);
   const [duplicatingPage, setDuplicatingPage] = useState<SitePage | null>(null);
   const [editingPage, setEditingPage] = useState<SitePage | null>(null);
@@ -84,9 +90,8 @@ export default function AdminPages() {
   });
 
   const { data: pages, isLoading } = useQuery({
-    queryKey: ["site-pages"],
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
+    queryKey: queryKeys.sitePages.all,
+    ...queryPresets.adminList,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("site_pages")
@@ -101,10 +106,10 @@ export default function AdminPages() {
         .select("page_title, slug, status, page_schema, meta_description, og_image_url, display_order, created_at, updated_at")
         .order("display_order", { ascending: true });
 
-      const existingRoutes = new Set((data || []).map((p: any) => String(p.route_path).toLowerCase()));
-      const rowsToInsert: Record<string, unknown>[] = [];
+      const existingRoutes = new Set((data || []).map((p) => String(p.route_path).toLowerCase()));
+      const rowsToInsert: SitePageInsert[] = [];
 
-      const ensureRoute = (routePath: string, row: Record<string, unknown>) => {
+      const ensureRoute = (routePath: string, row: SitePageInsert) => {
         if (!existingRoutes.has(routePath.toLowerCase())) {
           rowsToInsert.push(row);
           existingRoutes.add(routePath.toLowerCase());
@@ -163,7 +168,7 @@ export default function AdminPages() {
       }
 
       if (rowsToInsert.length > 0) {
-        const { error: seedError } = await supabase.from("site_pages").insert(rowsToInsert as any);
+        const { error: seedError } = await supabase.from("site_pages").insert(rowsToInsert);
         if (seedError) throw seedError;
 
         const { data: refreshed, error: refreshError } = await supabase
@@ -183,19 +188,19 @@ export default function AdminPages() {
     mutationFn: async (page: SitePage) => {
       const { error: resetErr } = await supabase
         .from("site_pages")
-        .update({ is_homepage: false } as any)
+        .update({ is_homepage: false })
         .eq("is_homepage", true)
         .neq("id", page.id);
       if (resetErr) throw resetErr;
 
       const { error } = await supabase
         .from("site_pages")
-        .update({ is_homepage: true, show_in_menu: true } as any)
+        .update({ is_homepage: true, show_in_menu: true })
         .eq("id", page.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      invalidateSitePages();
       toast.success("Homepage berhasil diubah");
     },
     onError: () => toast.error("Gagal mengubah homepage"),
@@ -205,12 +210,12 @@ export default function AdminPages() {
     mutationFn: async (page: SitePage) => {
       const { error } = await supabase
         .from("site_pages")
-        .update({ show_in_menu: !page.show_in_menu } as any)
+        .update({ show_in_menu: !page.show_in_menu })
         .eq("id", page.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      invalidateSitePages();
     },
     onError: () => toast.error("Gagal mengubah visibilitas menu"),
   });
@@ -219,29 +224,31 @@ export default function AdminPages() {
     mutationFn: async () => {
       const ts = Date.now();
       const routePath = `/landing-page-${ts}`;
+      const payload: SitePageInsert = {
+        title: `Landing Page ${new Date().toLocaleDateString("id-ID")}`,
+        menu_label: `Landing Page ${new Date().toLocaleDateString("id-ID")}`,
+        route_path: routePath,
+        page_kind: "landing",
+        status: "draft",
+        sort_order: (pages?.length || 0) + 10,
+        is_system: false,
+        is_homepage: false,
+        show_in_menu: true,
+        meta_title: "",
+        meta_description: "",
+        page_schema: [],
+      };
+
       const { data, error } = await supabase
         .from("site_pages")
-        .insert({
-          title: `Landing Page ${new Date().toLocaleDateString("id-ID")}`,
-          menu_label: `Landing Page ${new Date().toLocaleDateString("id-ID")}`,
-          route_path: routePath,
-          page_kind: "landing",
-          status: "draft",
-          sort_order: (pages?.length || 0) + 10,
-          is_system: false,
-          is_homepage: false,
-          show_in_menu: true,
-          meta_title: "",
-          meta_description: "",
-          page_schema: [],
-        } as any)
+        .insert(payload)
         .select("id")
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      invalidateSitePages();
       toast.success("Halaman berhasil dibuat");
       navigate(`/editor?id=${data.id}`);
     },
@@ -254,7 +261,7 @@ export default function AdminPages() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      invalidateSitePages();
       toast.success("Halaman berhasil dihapus");
       setDeletingPage(null);
     },
@@ -275,14 +282,13 @@ export default function AdminPages() {
       const baseTitle = page.title.replace(/\s*\(\d+\)\s*$/, "").trim();
       const newTitle = `${baseTitle} (${nextNumber})`;
       const newRoute = `${page.route_path.replace(/\/+$/, "")}-copy-${Date.now()}`;
-
-      const { error } = await supabase.from("site_pages").insert({
+      const payload: SitePageInsert = {
         title: newTitle,
         menu_label: newTitle,
         route_path: newRoute,
         page_kind: page.page_kind,
         status: "draft",
-        page_schema: page.page_schema as any,
+        page_schema: JSON.parse(JSON.stringify(page.page_schema ?? [])),
         meta_title: page.meta_title,
         meta_description: page.meta_description,
         og_image_url: page.og_image_url,
@@ -290,12 +296,14 @@ export default function AdminPages() {
         is_homepage: false,
         show_in_menu: page.show_in_menu,
         sort_order: (page.sort_order || 0) + 1,
-      } as any);
+      };
+
+      const { error } = await supabase.from("site_pages").insert(payload);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      invalidateSitePages();
       toast.success("Halaman berhasil diduplikasi");
       setDuplicatingPage(null);
     },
@@ -305,20 +313,22 @@ export default function AdminPages() {
   const updateSettingsMutation = useMutation({
     mutationFn: async (payload: { id: string; title: string; route_path: string; status: "draft" | "published" }) => {
       const normalizedRoute = payload.route_path.startsWith("/") ? payload.route_path : `/${payload.route_path}`;
+      const updatePayload: SitePageUpdate = {
+        title: payload.title,
+        menu_label: payload.title,
+        route_path: normalizedRoute,
+        status: payload.status,
+        meta_title: payload.title,
+      };
+
       const { error } = await supabase
         .from("site_pages")
-        .update({
-          title: payload.title,
-          menu_label: payload.title,
-          route_path: normalizedRoute,
-          status: payload.status,
-          meta_title: payload.title,
-        } as any)
+        .update(updatePayload)
         .eq("id", payload.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["site-pages"] });
+      invalidateSitePages();
       toast.success("Pengaturan halaman tersimpan");
       setEditingPage(null);
     },

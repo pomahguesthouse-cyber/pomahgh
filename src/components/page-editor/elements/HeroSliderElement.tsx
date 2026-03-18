@@ -13,6 +13,15 @@ interface HeroSliderElementProps {
   isPreview?: boolean;
 }
 
+interface HeroSlideItem {
+  id?: string;
+  imageUrl?: string;
+  headline?: string;
+  subheadline?: string;
+  ctaText?: string;
+  ctaUrl?: string;
+}
+
 export function HeroSliderElement({
   element,
   isSelected,
@@ -24,7 +33,8 @@ export function HeroSliderElement({
   const { updateElement } = useEditorStore();
   const [currentSlide, setCurrentSlide] = useState(0);
   
-  const slides = element.props.slides || [
+  const slides = (Array.isArray(element.props.slides) ? element.props.slides : null) as HeroSlideItem[] | null;
+  const safeSlides = slides || [
     {
       id: "slide-1",
       imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920",
@@ -53,11 +63,11 @@ export function HeroSliderElement({
     if (!autoPlay || isPreview === false) return;
     
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setCurrentSlide((prev) => (prev + 1) % safeSlides.length);
     }, autoPlayInterval);
     
     return () => clearInterval(interval);
-  }, [autoPlay, autoPlayInterval, slides.length, isPreview]);
+  }, [autoPlay, autoPlayInterval, safeSlides.length, isPreview]);
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
@@ -65,12 +75,12 @@ export function HeroSliderElement({
 
   const goToPrev = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    setCurrentSlide((prev) => (prev - 1 + safeSlides.length) % safeSlides.length);
   };
 
   const goToNext = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
+    setCurrentSlide((prev) => (prev + 1) % safeSlides.length);
   };
 
   // Touch swipe handling
@@ -93,15 +103,15 @@ export function HeroSliderElement({
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
     if (isLeftSwipe) {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setCurrentSlide((prev) => (prev + 1) % safeSlides.length);
     }
     if (isRightSwipe) {
-      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+      setCurrentSlide((prev) => (prev - 1 + safeSlides.length) % safeSlides.length);
     }
   };
 
   // Guard against empty slides array
-  const currentSlideData = slides[currentSlide] ?? (slides[0] ?? { imageUrl: "", headline: "", subheadline: "", ctaText: "", ctaUrl: "" });
+  const currentSlideData = safeSlides[currentSlide] ?? (safeSlides[0] ?? { imageUrl: "", headline: "", subheadline: "", ctaText: "", ctaUrl: "" });
   
   const contentPosition = element.props.contentPosition || "center";
   const layout = element.props.layout || "full";
@@ -210,7 +220,7 @@ export function HeroSliderElement({
           
           {element.props.showCounter && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-3 py-1 bg-white/90 rounded-full text-sm shadow">
-              {currentSlide + 1} / {slides.length}
+              {currentSlide + 1} / {safeSlides.length}
             </div>
           )}
         </div>
@@ -236,7 +246,7 @@ export function HeroSliderElement({
         onTouchEnd={onTouchEnd}
       >
         {/* Slide Background */}
-        {slides.map((slide: any, index: number) => {
+        {safeSlides.map((slide, index) => {
           const isActive = index === currentSlide;
           const bgStyle: React.CSSProperties = {
             backgroundImage: `url(${slide.imageUrl || ""})`,
@@ -343,9 +353,9 @@ export function HeroSliderElement({
         )}
 
         {/* Dot Indicators */}
-        {showDots && slides.length > 1 && (
+        {showDots && safeSlides.length > 1 && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-            {slides.map((_: any, index: number) => (
+            {safeSlides.map((_, index: number) => (
               <button
                 key={index}
                 onClick={(e) => {
@@ -367,7 +377,7 @@ export function HeroSliderElement({
         {/* Slide Counter */}
         {element.props.showCounter && (
           <div className="absolute top-4 right-4 z-20 px-3 py-1 bg-black/50 rounded-full text-white text-sm backdrop-blur-sm">
-            {currentSlide + 1} / {slides.length}
+            {currentSlide + 1} / {safeSlides.length}
           </div>
         )}
       </div>

@@ -48,6 +48,33 @@ interface PropsPanelProps {
   onClose?: () => void;
 }
 
+type PropChangeHandler = (key: string, value: unknown) => void;
+
+interface NewsEventItem {
+  id?: string;
+  type?: "news" | "event";
+  tag?: string;
+  title?: string;
+  summary?: string;
+  date?: string;
+  imageUrl?: string;
+  linkUrl?: string;
+}
+
+interface HeroSlideForm {
+  id: string;
+  imageUrl?: string;
+  headline?: string;
+  subheadline?: string;
+  ctaText?: string;
+  ctaUrl?: string;
+}
+
+interface GalleryImageItem {
+  src?: string;
+  alt?: string;
+}
+
 export function PropertiesPanel({ onClose }: PropsPanelProps) {
   const { elements, selectedElementId, updateElement, saveToHistory, selectElement } = useEditorStore();
 
@@ -64,7 +91,7 @@ export function PropertiesPanel({ onClose }: PropsPanelProps) {
 
   const selectedElement = selectedElementId ? findElement(elements, selectedElementId) : null;
 
-  const handlePropChange = (key: string, value: any) => {
+  const handlePropChange: PropChangeHandler = (key, value) => {
     if (!selectedElement) return;
     saveToHistory();
     updateElement(selectedElement.id, {
@@ -193,7 +220,7 @@ function ContentProperties({
 
 
 
-}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
+}: {element: EditorElement;onPropChange: PropChangeHandler;}) {
   switch (element.type) {
     case "heading":
       return (
@@ -645,9 +672,9 @@ function ContentProperties({
 function NewsEventsContentProperties({
   element,
   onPropChange,
-}: { element: EditorElement; onPropChange: (key: string, value: any) => void }) {
-  const items = Array.isArray(element.props.items) ? element.props.items : [];
-  const itemIds = items.map((item: any, index: number) => String(item.id || `idx-${index}`));
+}: { element: EditorElement; onPropChange: PropChangeHandler }) {
+  const items: NewsEventItem[] = Array.isArray(element.props.items) ? (element.props.items as NewsEventItem[]) : [];
+  const itemIds = items.map((item, index) => String(item.id || `idx-${index}`));
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
   const [datePickerIndex, setDatePickerIndex] = useState<number | null>(null);
   const [landingSlugs, setLandingSlugs] = useState<string[]>([]);
@@ -658,13 +685,13 @@ function NewsEventsContentProperties({
   useEffect(() => {
     const loadSlugs = async () => {
       const { data } = await supabase.from("landing_pages").select("slug").order("slug", { ascending: true }).limit(200);
-      if (data) setLandingSlugs(data.map((x: any) => x.slug).filter(Boolean));
+      if (data) setLandingSlugs(data.map((x) => x.slug).filter(Boolean));
     };
     loadSlugs();
   }, []);
 
-  const patchItem = (index: number, patch: Record<string, any>) => {
-    onPropChange("items", items.map((item: any, i: number) => (i === index ? { ...item, ...patch } : item)));
+  const patchItem = (index: number, patch: Partial<NewsEventItem>) => {
+    onPropChange("items", items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   };
 
   const addItem = () => {
@@ -672,7 +699,7 @@ function NewsEventsContentProperties({
   };
 
   const removeItem = (index: number) => {
-    onPropChange("items", items.filter((_: any, i: number) => i !== index));
+    onPropChange("items", items.filter((_, i) => i !== index));
     if (pickerIndex === index) setPickerIndex(null);
     if (datePickerIndex === index) setDatePickerIndex(null);
   };
@@ -696,7 +723,7 @@ function NewsEventsContentProperties({
     onPropChange("items", arrayMove(items, oldIndex, newIndex));
   };
 
-  function SortableNewsItem({ item, index }: { item: any; index: number }) {
+  function SortableNewsItem({ item, index }: { item: NewsEventItem; index: number }) {
     const id = String(item.id || `idx-${index}`);
     const { setNodeRef, transform, transition, attributes, listeners, isDragging } = useSortable({ id });
     const style = { transform: CSS.Transform.toString(transform), transition };
@@ -721,7 +748,7 @@ function NewsEventsContentProperties({
           <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" onClick={() => removeItem(index)}>Remove</Button>
         </div>
 
-        <Select value={item.type || "news"} onValueChange={(v) => patchItem(index, { type: v })}>
+        <Select value={item.type || "news"} onValueChange={(v) => patchItem(index, { type: v as NewsEventItem["type"] })}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="news">News</SelectItem>
@@ -821,7 +848,7 @@ function NewsEventsContentProperties({
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
           <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
             <div className="space-y-3">
-              {items.map((item: any, index: number) => (
+              {items.map((item, index) => (
                 <SortableNewsItem key={String(item.id || `idx-${index}`)} item={item} index={index} />
               ))}
             </div>
@@ -855,8 +882,8 @@ function HeroSliderContentProperties({
 
 
 
-}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
-  const slides = element.props.slides || [];
+}: {element: EditorElement;onPropChange: PropChangeHandler;}) {
+  const slides: HeroSlideForm[] = Array.isArray(element.props.slides) ? (element.props.slides as HeroSlideForm[]) : [];
   const [slidePickerIndex, setSlidePickerIndex] = useState<number | null>(null);
 
   const handleAddSlide = () => {
@@ -872,14 +899,14 @@ function HeroSliderContentProperties({
   };
 
   const handleUpdateSlide = (index: number, field: string, value: string) => {
-    const updatedSlides = slides.map((slide: any, i: number) =>
+    const updatedSlides = slides.map((slide, i: number) =>
     i === index ? { ...slide, [field]: value } : slide
     );
     onPropChange("slides", updatedSlides);
   };
 
   const handleDeleteSlide = (index: number) => {
-    onPropChange("slides", slides.filter((_: any, i: number) => i !== index));
+    onPropChange("slides", slides.filter((_, i: number) => i !== index));
   };
 
   const handleMediaSelect = (media: MediaFile) => {
@@ -924,7 +951,7 @@ function HeroSliderContentProperties({
         </div>
 
         <div className="space-y-3 max-h-[300px] overflow-y-auto">
-          {slides.map((slide: any, index: number) =>
+          {slides.map((slide, index: number) =>
           <div key={slide.id} className="p-3 border border-border rounded-lg bg-muted/30">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium">Slide {index + 1}</span>
@@ -1037,7 +1064,7 @@ function ImageContentProperties({
 
 
 
-}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
+}: {element: EditorElement;onPropChange: PropChangeHandler;}) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const handleSelect = (media: MediaFile) => {
@@ -1104,8 +1131,8 @@ function GalleryContentProperties({
 
 
 
-}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
-  const images = element.props.images || [];
+}: {element: EditorElement;onPropChange: PropChangeHandler;}) {
+  const images: GalleryImageItem[] = Array.isArray(element.props.images) ? (element.props.images as GalleryImageItem[]) : [];
   const galleryMode = element.props.galleryMode || "grid";
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -1113,7 +1140,7 @@ function GalleryContentProperties({
   const handlePickerSelect = (media: MediaFile) => {
     const newImage = { src: media.file_url, alt: media.alt_text || "" };
     if (editingIndex !== null) {
-      const updated = images.map((img: any, i: number) =>
+      const updated = images.map((img, i: number) =>
       i === editingIndex ? newImage : img
       );
       onPropChange("images", updated);
@@ -1131,11 +1158,11 @@ function GalleryContentProperties({
   };
 
   const handleDeleteImage = (index: number) => {
-    onPropChange("images", images.filter((_: any, i: number) => i !== index));
+    onPropChange("images", images.filter((_, i: number) => i !== index));
   };
 
   const handleUpdateAlt = (index: number, alt: string) => {
-    const updated = images.map((img: any, i: number) =>
+    const updated = images.map((img, i: number) =>
     i === index ? { ...img, alt } : img
     );
     onPropChange("images", updated);
@@ -1206,7 +1233,7 @@ function GalleryContentProperties({
         </div>
 
         <div className="space-y-2 max-h-[350px] overflow-y-auto">
-          {images.map((img: any, index: number) =>
+          {images.map((img, index: number) =>
           <div key={index} className="p-2 border border-border rounded-lg bg-muted/30">
               <div className="flex items-start gap-2">
                 {img.src ?

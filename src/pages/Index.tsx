@@ -15,14 +15,14 @@ import ChatbotWidget from "@/components/ChatbotWidget";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { PublicPageRenderer } from "@/components/page-editor/PublicPageRenderer";
 import { EditorElement } from "@/stores/editorStore";
+import { queryKeys, queryPresets } from "@/lib/query";
 
 const Index = () => {
   const location = useLocation();
 
   const { data: homepageSchema } = useQuery({
-    queryKey: ["site-homepage-schema"],
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
+    queryKey: queryKeys.sitePages.homepage,
+    ...queryPresets.publicPage,
     queryFn: async () => {
       const { data: homepageByFlag, error: homepageErr } = await supabase
         .from("site_pages")

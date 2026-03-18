@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { allTemplates, SectionTemplate } from "./section-templates/templateRegistry";
-import { useEditorStore } from "@/stores/editorStore";
+import { ElementStyles, EditorElement, useEditorStore } from "@/stores/editorStore";
 import {
   Accordion,
   AccordionContent,
@@ -21,12 +21,12 @@ function StarIcon({ className }: {className?: string;}) {
 }
 
 interface ElementDef {
-  type: string;
+  type: EditorElement["type"];
   name: string;
   icon: React.ComponentType<{className?: string;}>;
   description: string;
-  defaultProps?: Record<string, any>;
-  defaultStyles?: Record<string, any>;
+  defaultProps?: Record<string, unknown>;
+  defaultStyles?: Partial<ElementStyles>;
 }
 
 interface Category {
@@ -116,16 +116,20 @@ const categories: Category[] = [
 }];
 
 
-function createElement(type: string, overrideProps?: Record<string, any>, overrideStyles?: Record<string, any>) {
+function createElement(
+  type: EditorElement["type"],
+  overrideProps?: Record<string, unknown>,
+  overrideStyles?: Partial<ElementStyles>
+): EditorElement {
   const id = `${type}-${Date.now()}`;
-  const baseElement = {
+  const baseElement: EditorElement = {
     id,
-    type: type as any,
-    props: {} as Record<string, any>,
-    styles: {} as Record<string, any>
+    type,
+    props: {},
+    styles: {}
   };
 
-  let element: any;
+  let element: EditorElement;
 
   switch (type) {
     case "heading":

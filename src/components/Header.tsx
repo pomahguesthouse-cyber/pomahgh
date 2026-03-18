@@ -6,6 +6,7 @@ import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { queryKeys, queryPresets } from "@/lib/query";
 
 const Header = memo(function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -17,9 +18,8 @@ const Header = memo(function Header() {
   const location = useLocation();
 
   const { data: menuPages } = useQuery({
-    queryKey: ["public-menu-pages"],
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
+    queryKey: queryKeys.sitePages.menu,
+    ...queryPresets.publicPage,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("site_pages")

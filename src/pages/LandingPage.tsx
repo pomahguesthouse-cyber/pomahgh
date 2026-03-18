@@ -14,6 +14,7 @@ import { Rooms } from "@/components/Rooms/Rooms";
 import { Location } from "@/components/Location";
 import { PublicPageRenderer } from "@/components/page-editor/PublicPageRenderer";
 import { EditorElement } from "@/stores/editorStore";
+import { queryKeys, queryPresets } from "@/lib/query";
 
 interface LandingPageData {
   id: string;
@@ -51,7 +52,8 @@ export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
 
   const { data: pageResult, isLoading, error } = useQuery({
-    queryKey: ["landing-page", slug],
+    queryKey: queryKeys.landingPage(slug),
+    ...queryPresets.publicPage,
     queryFn: async () => {
       const routePath = `/${slug!}`;
 
@@ -110,7 +112,8 @@ export default function LandingPage() {
   });
 
   const { data: hotelSettings } = useQuery({
-    queryKey: ["hotel-settings-landing"],
+    queryKey: queryKeys.hotelSettingsLanding,
+    ...queryPresets.publicPage,
     queryFn: async () => {
       const { data } = await supabase.rpc("get_public_hotel_settings");
       return data as Record<string, unknown> | null;

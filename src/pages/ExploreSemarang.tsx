@@ -16,11 +16,13 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PublicPageRenderer } from "@/components/page-editor/PublicPageRenderer";
 import { EditorElement } from "@/stores/editorStore";
+import { queryKeys, queryPresets } from "@/lib/query";
 
 const ExploreSemarang = () => {
   const { attractions, isLoading } = useCityAttractions();
   const { data: exploreSchema } = useQuery({
-    queryKey: ["site-page-route", "/explore-semarang"],
+    queryKey: queryKeys.sitePages.byRoute("/explore-semarang"),
+    ...queryPresets.publicPage,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("site_pages")
