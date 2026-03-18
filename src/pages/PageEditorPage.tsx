@@ -9,13 +9,9 @@ import { PageSettingsDialog } from "@/components/page-editor/PageSettingsDialog"
 import { FloatingToolbar } from "@/components/page-editor/FloatingToolbar";
 import { LayerPanel } from "@/components/page-editor/LayerPanel";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
-
-type SitePageInsert = Database["public"]["Tables"]["site_pages"]["Insert"];
-type SitePageUpdate = Database["public"]["Tables"]["site_pages"]["Update"];
 
 export default function PageEditorPage() {
   const navigate = useNavigate();
@@ -70,7 +66,7 @@ export default function PageEditorPage() {
       if (pageId) {
         try {
           const { data, error } = await supabase
-            .from("site_pages")
+            .from("landing_pages")
             .select("*")
             .eq("id", pageId)
             .single();
@@ -79,12 +75,11 @@ export default function PageEditorPage() {
 
           if (data) {
             const schema = Array.isArray(data.page_schema) ? data.page_schema : [];
-            const routePath = data.route_path || "/";
             loadPage(schema as unknown as EditorElement[], {
               id: data.id,
-              title: data.title,
-              slug: routePath === "/" ? "" : routePath.replace(/^\//, ""),
-              metaTitle: data.meta_title || data.title,
+              title: data.page_title,
+              slug: data.slug,
+              metaTitle: data.page_title,
               metaDescription: data.meta_description || "",
               status: data.status as "draft" | "published",
             });
@@ -201,37 +196,36 @@ export default function PageEditorPage() {
     setIsSaving(true);
 
     try {
-      const pageData: SitePageUpdate = {
-        title: pageSettings.title,
-        route_path: pageSettings.slug ? `/${pageSettings.slug}` : "/",
-        meta_title: pageSettings.metaTitle || pageSettings.title,
+      const pageData: Record<string, unknown> = {
+        page_title: pageSettings.title,
+        slug: pageSettings.slug,
         meta_description: pageSettings.metaDescription,
         page_schema: JSON.parse(JSON.stringify(elements)),
         status: pageSettings.status,
         updated_at: new Date().toISOString(),
+        ...(pageSettings.status === "published" && {
+          published_at: new Date().toISOString(),
+        }),
       };
+
+      // Only set legacy fields for new pages (insert), not updates
+      if (!pageSettings.id) {
+        pageData.primary_keyword = pageSettings.slug;
+        pageData.hero_headline = pageSettings.title;
+      }
 
       if (pageSettings.id) {
         const { error } = await supabase
-          .from("site_pages")
-          .update(pageData)
+          .from("landing_pages")
+          .update(pageData as any)
           .eq("id", pageSettings.id);
 
         if (error) throw error;
         toast.success("Page saved successfully");
       } else {
-        const insertPayload: SitePageInsert = {
-          title: pageSettings.title,
-          route_path: pageSettings.slug ? `/${pageSettings.slug}` : "/",
-          meta_title: pageSettings.metaTitle || pageSettings.title,
-          meta_description: pageSettings.metaDescription,
-          page_schema: pageData.page_schema,
-          status: pageSettings.status,
-        };
-
         const { data, error } = await supabase
-          .from("site_pages")
-          .insert(insertPayload)
+          .from("landing_pages")
+          .insert([pageData as any])
           .select()
           .single();
 
@@ -252,7 +246,11 @@ export default function PageEditorPage() {
   }, [elements, pageSettings, setIsSaving, setPageSettings, setHasUnsavedChanges]);
 
   const handlePreview = () => {
-    window.open(pageSettings.slug ? `/${pageSettings.slug}` : "/", "_blank");
+    if (pageSettings.slug) {
+      window.open(`/${pageSettings.slug}`, "_blank");
+    } else {
+      toast.info("Save the page first to preview it");
+    }
   };
 
   if (isLoading) {

@@ -39,7 +39,7 @@ export const ElementRenderer = memo(function ElementRenderer({
   onHover,
   isPreview = false,
 }: ElementRendererProps) {
-  const isHiddenInPreview = element.isVisible === false && isPreview;
+  if (element.isVisible === false && isPreview) return null;
 
   // Memoize common props to prevent creating new objects on each render
   const commonProps = useMemo(() => ({
@@ -49,18 +49,14 @@ export const ElementRenderer = memo(function ElementRenderer({
     onSelect: element.isLocked ? () => {} : onSelect,
     onHover,
     isPreview,
-  }), [element, isSelected, isHovered, onSelect, onHover, isPreview]);
+  }), [element, isSelected, isHovered, onSelect, onHover, isPreview, element.isLocked]);
 
   const wrapHidden = useCallback((node: React.ReactNode) => {
-    const wrappedNode = element.styles.fontFamily
-      ? <div style={{ fontFamily: element.styles.fontFamily }}>{node}</div>
-      : node;
-
     if (element.isVisible === false && !isPreview) {
-      return <div className="opacity-30 pointer-events-auto">{wrappedNode}</div>;
+      return <div className="opacity-30 pointer-events-auto">{node}</div>;
     }
-    return wrappedNode;
-  }, [element.isVisible, element.styles.fontFamily, isPreview]);
+    return node;
+  }, [element.isVisible, isPreview]);
 
   const rendered = useMemo(() => {
     switch (element.type) {
@@ -112,8 +108,6 @@ export const ElementRenderer = memo(function ElementRenderer({
         );
     }
   }, [element.type, commonProps]);
-
-  if (isHiddenInPreview) return null;
 
   return wrapHidden(rendered);
 });

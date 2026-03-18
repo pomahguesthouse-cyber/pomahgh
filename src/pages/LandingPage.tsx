@@ -14,7 +14,6 @@ import { Rooms } from "@/components/Rooms/Rooms";
 import { Location } from "@/components/Location";
 import { PublicPageRenderer } from "@/components/page-editor/PublicPageRenderer";
 import { EditorElement } from "@/stores/editorStore";
-import { queryKeys, queryPresets } from "@/lib/query";
 
 interface LandingPageData {
   id: string;
@@ -37,83 +36,40 @@ interface LandingPageData {
   status: string;
 }
 
-interface SitePageData {
-  id: string;
-  title: string;
-  route_path: string;
-  meta_title: string | null;
-  meta_description: string | null;
-  og_image_url: string | null;
-  page_schema: EditorElement[] | null;
-  status: string;
-}
-
 export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
 
-  const { data: pageResult, isLoading, error } = useQuery({
-    queryKey: queryKeys.landingPage(slug),
-    ...queryPresets.publicPage,
+  const { data: page, isLoading, error } = useQuery({
+    queryKey: ["landing-page", slug],
     queryFn: async () => {
-      const routePath = `/${slug!}`;
-
-      const { data: sitePage, error: siteError } = await supabase
-        .from("site_pages")
-        .select("*")
-        .eq("route_path", routePath)
-        .eq("status", "published")
-        .maybeSingle();
-
-      if (siteError) throw siteError;
-
-      if (sitePage) {
-        const schema = Array.isArray(sitePage.page_schema)
-          ? (sitePage.page_schema as unknown as EditorElement[])
-          : null;
-
-        if (schema && schema.length > 0) {
-          return {
-            mode: "site" as const,
-            page: {
-              ...sitePage,
-              page_schema: schema,
-            } as SitePageData,
-          };
-        }
-      }
-
-      const { data: legacy, error: legacyError } = await supabase
+      const { data, error } = await supabase
         .from("landing_pages")
         .select("*")
         .eq("slug", slug!)
         .eq("status", "published")
-        .maybeSingle();
+        .single();
 
-      if (legacyError) throw legacyError;
-      if (!legacy) return null;
-
-      const heroSlides = Array.isArray(legacy.hero_slides)
-        ? (legacy.hero_slides as unknown as HeroSlide[])
+      if (error) throw error;
+      
+      const heroSlides = Array.isArray(data.hero_slides) 
+        ? (data.hero_slides as unknown as HeroSlide[])
         : [];
-      const pageSchema = Array.isArray(legacy.page_schema)
-        ? (legacy.page_schema as unknown as EditorElement[])
-        : null;
 
+      const pageSchema = Array.isArray(data.page_schema)
+        ? (data.page_schema as unknown as EditorElement[])
+        : null;
+      
       return {
-        mode: "legacy" as const,
-        page: {
-          ...legacy,
-          hero_slides: heroSlides,
-          page_schema: pageSchema,
-        } as LandingPageData,
-      };
+        ...data,
+        hero_slides: heroSlides,
+        page_schema: pageSchema,
+      } as LandingPageData;
     },
     enabled: !!slug,
   });
 
   const { data: hotelSettings } = useQuery({
-    queryKey: queryKeys.hotelSettingsLanding,
-    ...queryPresets.publicPage,
+    queryKey: ["hotel-settings-landing"],
     queryFn: async () => {
       const { data } = await supabase.rpc("get_public_hotel_settings");
       return data as Record<string, unknown> | null;
@@ -128,25 +84,9 @@ export default function LandingPage() {
     );
   }
 
-  if (error || !pageResult) {
+  if (error || !page) {
     return <NotFound />;
   }
-
-  if (pageResult.mode === "site") {
-    const sitePage = pageResult.page;
-    return (
-      <>
-        <Helmet>
-          <title>{sitePage.meta_title || sitePage.title}</title>
-          <meta name="description" content={sitePage.meta_description || ""} />
-          {sitePage.og_image_url && <meta property="og:image" content={sitePage.og_image_url} />}
-        </Helmet>
-        <PublicPageRenderer elements={sitePage.page_schema || []} />
-      </>
-    );
-  }
-
-  const page = pageResult.page;
 
   // Detect if this page was built with the visual editor
   const hasVisualSchema = page.page_schema && page.page_schema.length > 0;

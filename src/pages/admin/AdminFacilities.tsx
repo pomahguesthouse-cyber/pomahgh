@@ -20,9 +20,9 @@ import {
   useDeleteFacility,
   Facility,
 } from "@/hooks/useFacilities";
-import { Loader2, Pencil, Trash2, Circle } from "lucide-react";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { getIconComponent } from "@/lib/icons";
+import * as Icons from "lucide-react";
 
 const AdminFacilities = () => {
   const { data: facilities, isLoading } = useAdminFacilities();
@@ -89,8 +89,9 @@ const AdminFacilities = () => {
     setEditingId(null);
   };
 
-  const getIcon = (iconName: string) => {
-    return getIconComponent(iconName) || Circle;
+  const getIconComponent = (iconName: string) => {
+    const IconComponent = Icons[iconName as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+    return IconComponent || Icons.Circle;
   };
 
   if (isLoading) {
@@ -121,7 +122,7 @@ const AdminFacilities = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {availableIcons.map((icon) => {
-                      const IconComp = getIcon(icon);
+                      const IconComp = getIconComponent(icon);
                       return (
                         <SelectItem key={icon} value={icon}>
                           <div className="flex items-center gap-2">
@@ -195,7 +196,7 @@ const AdminFacilities = () => {
 
       <div className="grid gap-4">
         {facilities?.map((facility) => {
-          const IconComp = getIcon(facility.icon_name);
+          const IconComp = getIconComponent(facility.icon_name);
           return (
             <Card key={facility.id}>
               <CardContent className="p-4">

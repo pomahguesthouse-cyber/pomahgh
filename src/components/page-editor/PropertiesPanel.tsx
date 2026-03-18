@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useEditorStore, EditorElement } from "@/stores/editorStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -21,58 +21,12 @@ import {
   AccordionTrigger } from
 "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Paintbrush, Layout, Image as ImageIcon, X, CalendarIcon, GripVertical } from "lucide-react";
+import { Settings, Paintbrush, Layout, Image as ImageIcon, X } from "lucide-react";
 import { MediaPickerDialog } from "@/components/admin/MediaPickerDialog";
 import { MediaFile } from "@/hooks/useMediaLibrary";
-import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO, isValid } from "date-fns";
-import { id as localeId } from "date-fns/locale";
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragOverEvent,
-  DragStartEvent,
-} from "@dnd-kit/core";
-import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 interface PropsPanelProps {
   onClose?: () => void;
-}
-
-type PropChangeHandler = (key: string, value: unknown) => void;
-
-interface NewsEventItem {
-  id?: string;
-  type?: "news" | "event";
-  tag?: string;
-  title?: string;
-  summary?: string;
-  date?: string;
-  imageUrl?: string;
-  linkUrl?: string;
-}
-
-interface HeroSlideForm {
-  id: string;
-  imageUrl?: string;
-  headline?: string;
-  subheadline?: string;
-  ctaText?: string;
-  ctaUrl?: string;
-}
-
-interface GalleryImageItem {
-  src?: string;
-  alt?: string;
 }
 
 export function PropertiesPanel({ onClose }: PropsPanelProps) {
@@ -91,7 +45,7 @@ export function PropertiesPanel({ onClose }: PropsPanelProps) {
 
   const selectedElement = selectedElementId ? findElement(elements, selectedElementId) : null;
 
-  const handlePropChange: PropChangeHandler = (key, value) => {
+  const handlePropChange = (key: string, value: any) => {
     if (!selectedElement) return;
     saveToHistory();
     updateElement(selectedElement.id, {
@@ -220,7 +174,7 @@ function ContentProperties({
 
 
 
-}: {element: EditorElement;onPropChange: PropChangeHandler;}) {
+}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
   switch (element.type) {
     case "heading":
       return (
@@ -626,7 +580,50 @@ function ContentProperties({
 
 
     case "news-events":
-      return <NewsEventsContentProperties element={element} onPropChange={onPropChange} />;
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>Section Title</Label>
+            <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Subtitle</Label>
+            <Input value={element.props.subtitle || ""} onChange={(e) => onPropChange("subtitle", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Content Type</Label>
+            <Select value={element.props.contentType || "all"} onValueChange={(v) => onPropChange("contentType", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="events">Events Only</SelectItem>
+                <SelectItem value="news">News Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Layout</Label>
+            <Select value={element.props.layout || "slider"} onValueChange={(v) => onPropChange("layout", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="slider">Slider</SelectItem>
+                <SelectItem value="grid">Grid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Max Items</Label>
+            <Input type="number" value={element.props.maxItems || 6} onChange={(e) => onPropChange("maxItems", parseInt(e.target.value) || 6)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Category (optional)</Label>
+            <Input 
+              value={element.props.category || ""} 
+              onChange={(e) => onPropChange("category", e.target.value)} 
+              placeholder="e.g. festival, konser, berita"
+            />
+          </div>
+        </>);
 
 
     case "nearby-locations":
@@ -669,221 +666,14 @@ function ContentProperties({
   }
 }
 
-function NewsEventsContentProperties({
-  element,
-  onPropChange,
-}: { element: EditorElement; onPropChange: PropChangeHandler }) {
-  const items: NewsEventItem[] = Array.isArray(element.props.items) ? (element.props.items as NewsEventItem[]) : [];
-  const itemIds = items.map((item, index) => String(item.id || `idx-${index}`));
-  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
-  const [datePickerIndex, setDatePickerIndex] = useState<number | null>(null);
-  const [landingSlugs, setLandingSlugs] = useState<string[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [overId, setOverId] = useState<string | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-
-  useEffect(() => {
-    const loadSlugs = async () => {
-      const { data } = await supabase.from("landing_pages").select("slug").order("slug", { ascending: true }).limit(200);
-      if (data) setLandingSlugs(data.map((x) => x.slug).filter(Boolean));
-    };
-    loadSlugs();
-  }, []);
-
-  const patchItem = (index: number, patch: Partial<NewsEventItem>) => {
-    onPropChange("items", items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
-  };
-
-  const addItem = () => {
-    onPropChange("items", [...items, { id: `ne-${Date.now()}`, type: "news", tag: "Berita", title: "Judul item baru", summary: "Deskripsi singkat item.", date: "", imageUrl: "", linkUrl: "#" }]);
-  };
-
-  const removeItem = (index: number) => {
-    onPropChange("items", items.filter((_, i) => i !== index));
-    if (pickerIndex === index) setPickerIndex(null);
-    if (datePickerIndex === index) setDatePickerIndex(null);
-  };
-
-  const handleMediaSelect = (media: MediaFile) => {
-    if (pickerIndex === null) return;
-    patchItem(pickerIndex, { imageUrl: media.file_url });
-    setPickerIndex(null);
-  };
-
-  const onDragStart = (event: DragStartEvent) => setActiveId(String(event.active.id));
-  const onDragOver = (event: DragOverEvent) => setOverId(event.over ? String(event.over.id) : null);
-  const onDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-    setOverId(null);
-    if (!over || active.id === over.id) return;
-    const oldIndex = itemIds.indexOf(String(active.id));
-    const newIndex = itemIds.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
-    onPropChange("items", arrayMove(items, oldIndex, newIndex));
-  };
-
-  function SortableNewsItem({ item, index }: { item: NewsEventItem; index: number }) {
-    const id = String(item.id || `idx-${index}`);
-    const { setNodeRef, transform, transition, attributes, listeners, isDragging } = useSortable({ id });
-    const style = { transform: CSS.Transform.toString(transform), transition };
-
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className={cn(
-          "rounded-md border p-3 space-y-2 bg-background",
-          overId === id && activeId !== id && "ring-2 ring-primary/40 border-primary/50",
-          isDragging && "opacity-70 shadow-lg",
-        )}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button type="button" className="h-7 w-7 rounded border flex items-center justify-center text-muted-foreground hover:text-foreground cursor-grab" title="Drag to reorder" {...attributes} {...listeners}>
-              <GripVertical className="h-4 w-4" />
-            </button>
-            <Label className="text-xs">Item #{index + 1}</Label>
-          </div>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" onClick={() => removeItem(index)}>Remove</Button>
-        </div>
-
-        <Select value={item.type || "news"} onValueChange={(v) => patchItem(index, { type: v as NewsEventItem["type"] })}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="news">News</SelectItem>
-            <SelectItem value="event">Event</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Input value={item.tag || ""} onChange={(e) => patchItem(index, { tag: e.target.value })} placeholder="Tag (Berita/Agenda/Event)" />
-        <Input value={item.title || ""} onChange={(e) => patchItem(index, { title: e.target.value })} placeholder="Title" />
-        <Textarea value={item.summary || ""} onChange={(e) => patchItem(index, { summary: e.target.value })} placeholder="Summary" rows={3} />
-
-        <div className="space-y-1">
-          <Label className="text-xs">Date</Label>
-          <Popover open={datePickerIndex === index} onOpenChange={(open) => setDatePickerIndex(open ? index : null)}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="h-8 w-full justify-start text-xs font-normal">
-                <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                {(() => {
-                  if (!item.date) return "Pilih tanggal";
-                  const parsed = parseISO(item.date);
-                  return isValid(parsed) ? format(parsed, "PPP", { locale: localeId }) : item.date;
-                })()}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={item.date ? parseISO(item.date) : undefined}
-                onSelect={(date) => {
-                  if (!date) return;
-                  patchItem(index, { date: format(date, "yyyy-MM-dd") });
-                  setDatePickerIndex(null);
-                }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs">Image</Label>
-          {item.imageUrl ? (
-            <div className="rounded border p-2 space-y-2">
-              <button type="button" className="w-full h-24 rounded overflow-hidden border" onClick={() => setPickerIndex(index)}>
-                <img src={item.imageUrl} alt="news-item" className="w-full h-full object-cover" />
-              </button>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => setPickerIndex(index)}>Ganti Gambar</Button>
-                <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => patchItem(index, { imageUrl: "" })}>Hapus</Button>
-              </div>
-            </div>
-          ) : (
-            <Button variant="outline" size="sm" className="h-8 text-xs w-full" onClick={() => setPickerIndex(index)}>Pilih dari Media Library</Button>
-          )}
-          <Input value={item.imageUrl || ""} onChange={(e) => patchItem(index, { imageUrl: e.target.value })} placeholder="...atau isi URL manual" />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Internal Link (slug)</Label>
-          <Input list={`landing-slugs-${index}`} value={item.linkUrl || ""} onChange={(e) => patchItem(index, { linkUrl: e.target.value })} placeholder="/slug-halaman" />
-          <datalist id={`landing-slugs-${index}`}>
-            {landingSlugs.map((slug) => (
-              <option key={slug} value={`/${slug}`} />
-            ))}
-          </datalist>
-          <p className="text-[10px] text-muted-foreground">Autocomplete dari slug landing page untuk mencegah typo.</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="space-y-2">
-        <Label>Section Title</Label>
-        <Input value={element.props.title || ""} onChange={(e) => onPropChange("title", e.target.value)} />
-      </div>
-      <div className="space-y-2">
-        <Label>Subtitle</Label>
-        <Input value={element.props.subtitle || ""} onChange={(e) => onPropChange("subtitle", e.target.value)} />
-      </div>
-      <div className="flex items-center gap-2">
-        <input type="checkbox" checked={element.props.showSubtitle !== false} onChange={(e) => onPropChange("showSubtitle", e.target.checked)} id="newsShowSubtitle" />
-        <Label htmlFor="newsShowSubtitle">Show Subtitle</Label>
-      </div>
-      <div className="flex items-center gap-2">
-        <input type="checkbox" checked={element.props.autoPlay === true} onChange={(e) => onPropChange("autoPlay", e.target.checked)} id="newsAutoPlay" />
-        <Label htmlFor="newsAutoPlay">Auto Play</Label>
-      </div>
-
-      <div className="border-t pt-4 mt-2 space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="font-medium">Items</Label>
-          <Button size="sm" variant="outline" onClick={addItem}>Add Item</Button>
-        </div>
-
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
-          <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-            <div className="space-y-3">
-              {items.map((item, index) => (
-                <SortableNewsItem key={String(item.id || `idx-${index}`)} item={item} index={index} />
-              ))}
-            </div>
-          </SortableContext>
-
-          <DragOverlay>
-            {activeId ? (
-              <div className="rounded-md border p-3 bg-background shadow-xl w-full max-w-[320px] opacity-95">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <GripVertical className="h-4 w-4" />
-                  <span>Moving item...</span>
-                </div>
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      </div>
-
-      <MediaPickerDialog
-        open={pickerIndex !== null}
-        onOpenChange={(open) => { if (!open) setPickerIndex(null); }}
-        onSelect={handleMediaSelect}
-      />
-    </>
-  );
-}
-
 function HeroSliderContentProperties({
   element,
   onPropChange
 
 
 
-}: {element: EditorElement;onPropChange: PropChangeHandler;}) {
-  const slides: HeroSlideForm[] = Array.isArray(element.props.slides) ? (element.props.slides as HeroSlideForm[]) : [];
+}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
+  const slides = element.props.slides || [];
   const [slidePickerIndex, setSlidePickerIndex] = useState<number | null>(null);
 
   const handleAddSlide = () => {
@@ -899,14 +689,14 @@ function HeroSliderContentProperties({
   };
 
   const handleUpdateSlide = (index: number, field: string, value: string) => {
-    const updatedSlides = slides.map((slide, i: number) =>
+    const updatedSlides = slides.map((slide: any, i: number) =>
     i === index ? { ...slide, [field]: value } : slide
     );
     onPropChange("slides", updatedSlides);
   };
 
   const handleDeleteSlide = (index: number) => {
-    onPropChange("slides", slides.filter((_, i: number) => i !== index));
+    onPropChange("slides", slides.filter((_: any, i: number) => i !== index));
   };
 
   const handleMediaSelect = (media: MediaFile) => {
@@ -951,7 +741,7 @@ function HeroSliderContentProperties({
         </div>
 
         <div className="space-y-3 max-h-[300px] overflow-y-auto">
-          {slides.map((slide, index: number) =>
+          {slides.map((slide: any, index: number) =>
           <div key={slide.id} className="p-3 border border-border rounded-lg bg-muted/30">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium">Slide {index + 1}</span>
@@ -1064,7 +854,7 @@ function ImageContentProperties({
 
 
 
-}: {element: EditorElement;onPropChange: PropChangeHandler;}) {
+}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const handleSelect = (media: MediaFile) => {
@@ -1131,8 +921,8 @@ function GalleryContentProperties({
 
 
 
-}: {element: EditorElement;onPropChange: PropChangeHandler;}) {
-  const images: GalleryImageItem[] = Array.isArray(element.props.images) ? (element.props.images as GalleryImageItem[]) : [];
+}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
+  const images = element.props.images || [];
   const galleryMode = element.props.galleryMode || "grid";
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -1140,7 +930,7 @@ function GalleryContentProperties({
   const handlePickerSelect = (media: MediaFile) => {
     const newImage = { src: media.file_url, alt: media.alt_text || "" };
     if (editingIndex !== null) {
-      const updated = images.map((img, i: number) =>
+      const updated = images.map((img: any, i: number) =>
       i === editingIndex ? newImage : img
       );
       onPropChange("images", updated);
@@ -1158,11 +948,11 @@ function GalleryContentProperties({
   };
 
   const handleDeleteImage = (index: number) => {
-    onPropChange("images", images.filter((_, i: number) => i !== index));
+    onPropChange("images", images.filter((_: any, i: number) => i !== index));
   };
 
   const handleUpdateAlt = (index: number, alt: string) => {
-    const updated = images.map((img, i: number) =>
+    const updated = images.map((img: any, i: number) =>
     i === index ? { ...img, alt } : img
     );
     onPropChange("images", updated);
@@ -1233,7 +1023,7 @@ function GalleryContentProperties({
         </div>
 
         <div className="space-y-2 max-h-[350px] overflow-y-auto">
-          {images.map((img, index: number) =>
+          {images.map((img: any, index: number) =>
           <div key={index} className="p-2 border border-border rounded-lg bg-muted/30">
               <div className="flex items-start gap-2">
                 {img.src ?
@@ -1395,10 +1185,6 @@ function StyleProperties({
       <AccordionItem value="typography">
         <AccordionTrigger className="text-sm">Typography</AccordionTrigger>
         <AccordionContent className="space-y-3">
-          <FontFamilyPicker
-            value={element.styles.fontFamily || "___default___"}
-            onChange={(v: string) => onStyleChange("fontFamily", v === "___default___" ? "" : v)}
-          />
           <div className="space-y-2">
             <Label className="text-xs">Font Size</Label>
             <Input

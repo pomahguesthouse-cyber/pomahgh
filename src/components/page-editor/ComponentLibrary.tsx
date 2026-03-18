@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { allTemplates, SectionTemplate } from "./section-templates/templateRegistry";
-import { ElementStyles, EditorElement, useEditorStore } from "@/stores/editorStore";
+import { useEditorStore } from "@/stores/editorStore";
 import {
   Accordion,
   AccordionContent,
@@ -21,12 +21,12 @@ function StarIcon({ className }: {className?: string;}) {
 }
 
 interface ElementDef {
-  type: EditorElement["type"];
+  type: string;
   name: string;
   icon: React.ComponentType<{className?: string;}>;
   description: string;
-  defaultProps?: Record<string, unknown>;
-  defaultStyles?: Partial<ElementStyles>;
+  defaultProps?: Record<string, any>;
+  defaultStyles?: Record<string, any>;
 }
 
 interface Category {
@@ -72,7 +72,7 @@ const categories: Category[] = [
   elements: [
   { type: "hero-slider", name: "Hero Slider", icon: Play, description: "Full-width hero carousel" },
   { type: "room-slider", name: "Room Slider", icon: BedDouble, description: "Slider kamar dari database", defaultProps: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } },
-  { type: "news-events", name: "News & Events", icon: CalendarDays, description: "Slider custom berita & agenda halaman ini", defaultProps: { title: "News & Events", subtitle: "Update terbaru dan agenda spesial untuk halaman ini", showSubtitle: true, autoPlay: false, items: [{ id: "ne-1", type: "news", tag: "Berita", title: "Renovasi Area Lobi Sudah Selesai", summary: "Area lobi kini lebih luas dan nyaman untuk tamu.", date: "2026-03-01", imageUrl: "", linkUrl: "#" }, { id: "ne-2", type: "event", tag: "Agenda", title: "Paket Long Weekend Maret", summary: "Promo menginap 3 malam + sarapan gratis untuk 2 orang.", date: "2026-03-20", imageUrl: "", linkUrl: "#" }] } }]
+  { type: "news-events", name: "News & Events", icon: CalendarDays, description: "Slider berita & agenda untuk halaman", defaultProps: { title: "Berita & Agenda", subtitle: "Temukan informasi terbaru menarik", contentType: "all", layout: "slider", maxItems: 6 } }]
 
 },
 {
@@ -116,20 +116,16 @@ const categories: Category[] = [
 }];
 
 
-function createElement(
-  type: EditorElement["type"],
-  overrideProps?: Record<string, unknown>,
-  overrideStyles?: Partial<ElementStyles>
-): EditorElement {
+function createElement(type: string, overrideProps?: Record<string, any>, overrideStyles?: Record<string, any>) {
   const id = `${type}-${Date.now()}`;
-  const baseElement: EditorElement = {
+  const baseElement = {
     id,
-    type,
-    props: {},
-    styles: {}
+    type: type as any,
+    props: {} as Record<string, any>,
+    styles: {} as Record<string, any>
   };
 
-  let element: EditorElement;
+  let element: any;
 
   switch (type) {
     case "heading":
@@ -166,8 +162,8 @@ function createElement(
       element = { ...baseElement, props: { title: "Pilihan Kamar", visibleCards: 3, autoPlay: true, showPrice: true, ctaText: "Lihat Detail" } };break;
     case "facilities":
       element = { ...baseElement, props: { title: "Fasilitas Hotel", columns: 3, layout: "card" } };break;
-    case "news-events":
-      element = { ...baseElement, props: { title: "News & Events", subtitle: "Update terbaru dan agenda spesial untuk halaman ini", showSubtitle: true, autoPlay: false, items: [{ id: "ne-1", type: "news", tag: "Berita", title: "Renovasi Area Lobi Sudah Selesai", summary: "Area lobi kini lebih luas dan nyaman untuk tamu.", date: "2026-03-01", imageUrl: "", linkUrl: "#" }, { id: "ne-2", type: "event", tag: "Agenda", title: "Paket Long Weekend Maret", summary: "Promo menginap 3 malam + sarapan gratis untuk 2 orang.", date: "2026-03-20", imageUrl: "", linkUrl: "#" }] } };break;
+    case "city-events":
+      element = { ...baseElement, props: { title: "Event & Agenda", visibleCards: 3, maxItems: 10, autoPlay: true } };break;
     case "nearby-locations":
       element = { ...baseElement, props: { title: "Lokasi Terdekat", columns: 2, layout: "list" } };break;
     default:

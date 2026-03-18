@@ -77,7 +77,7 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/admin/pages")}
+          onClick={() => navigate("/admin/landing-pages")}
           className="h-8 w-8 p-0 md:w-auto md:px-3 md:gap-2 shrink-0"
         >
           <ArrowLeft className="h-4 w-4" />

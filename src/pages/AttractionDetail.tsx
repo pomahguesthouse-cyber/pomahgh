@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { MapPin, Clock, ArrowLeft, Lightbulb, Calendar, DollarSign, Share2 } from "lucide-react";
-import { getIconComponent } from "@/lib/icons";
+import * as Icons from "lucide-react";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -94,7 +94,7 @@ const AttractionDetail = () => {
     );
   }
 
-  const IconComponent = getIconComponent(attraction.icon_name) || MapPin;
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[attraction.icon_name] || Icons.MapPin;
   const imageUrl = attraction.image_url || defaultImages[attraction.category] || defaultImages.wisata;
 
   const attractionSchema = {

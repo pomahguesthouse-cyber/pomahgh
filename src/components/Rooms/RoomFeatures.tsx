@@ -1,10 +1,10 @@
-import { Circle } from "lucide-react";
-import { getIconComponent } from "@/lib/icons";
+import * as Icons from "lucide-react";
 import type { RoomFeaturesProps } from "./types";
 
 export const RoomFeatures = ({ features, roomFeatures, layout = "default" }: RoomFeaturesProps) => {
-  const getIcon = (iconName: string) => {
-    return getIconComponent(iconName) || Circle;
+  const getIconComponent = (iconName: string) => {
+    const icons = Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
+    return icons[iconName] || Icons.Circle;
   };
 
   return (
@@ -13,7 +13,7 @@ export const RoomFeatures = ({ features, roomFeatures, layout = "default" }: Roo
         const feature = roomFeatures?.find((f) => f.feature_key === featureId);
         if (!feature) return null;
 
-        const IconComponent = getIcon(feature.icon_name);
+        const IconComponent = getIconComponent(feature.icon_name);
 
         return (
           <div
