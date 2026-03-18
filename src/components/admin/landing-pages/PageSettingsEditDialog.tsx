@@ -208,6 +208,7 @@ export function PageSettingsEditDialog({ open, onOpenChange, page }: PageSetting
                 Gambar yang ditampilkan saat dibagikan di sosial media (1200x630 disarankan)
               </p>
               <MediaPickerField
+                label="OG Image"
                 value={formData.og_image_url}
                 onChange={(url) => setFormData({ ...formData, og_image_url: url })}
               />

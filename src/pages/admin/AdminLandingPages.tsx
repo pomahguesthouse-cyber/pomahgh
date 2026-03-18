@@ -64,11 +64,11 @@ export default function AdminLandingPages() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("hotel_settings")
-        .select("homepage_slug, hidden_page_slugs")
+        .select("id, homepage_slug, hidden_page_slugs")
         .limit(1)
         .single();
       if (error) return null;
-      return data;
+      return data as { id: string; homepage_slug: string | null; hidden_page_slugs: string[] | null } | null;
     }
   });
 
