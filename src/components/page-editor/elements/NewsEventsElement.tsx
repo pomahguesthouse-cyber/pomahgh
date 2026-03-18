@@ -126,7 +126,7 @@ export function NewsEventsElement({
         const { data, error } = await query.limit(maxItems);
 
         if (error) throw error;
-        setEvents(data || []);
+        setEvents((data as unknown as CityEvent[]) || []);
       } catch (error) {
         console.error("Error fetching events:", error);
         setEvents([]);
