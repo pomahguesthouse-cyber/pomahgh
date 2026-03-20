@@ -907,10 +907,19 @@ Silakan coba lagi atau hubungi technical support.`;
       .limit(20);
 
     // Build messages array - reverse to get chronological order (oldest to newest)
-    let messages = (history || []).reverse().map(m => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-    }));
+    // Handle [Admin] and [System] tagged messages for takeover context
+    let messages = (history || []).reverse().map(m => {
+      const content = m.content;
+      // System transition messages become system context
+      if (content.startsWith('[System]')) {
+        return { role: 'system' as const, content: content.replace('[System] ', '') };
+      }
+      // Admin messages: keep content with marker so AI knows admin handled it
+      if (content.startsWith('[Admin]')) {
+        return { role: 'assistant' as const, content: `(Pesan dari admin/pengelola hotel): ${content.replace('[Admin] ', '')}` };
+      }
+      return { role: m.role as 'user' | 'assistant', content };
+    });
     
     // If history is empty or last message doesn't match current, add it
     const lastMsg = messages[messages.length - 1];
