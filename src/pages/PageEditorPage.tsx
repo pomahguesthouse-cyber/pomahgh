@@ -213,7 +213,7 @@ export default function PageEditorPage() {
       } else {
         const { data, error } = await supabase
           .from("landing_pages")
-          .insert([pageData as Record<string, unknown>])
+          .insert(pageData as any)
           .select()
           .single();
 
