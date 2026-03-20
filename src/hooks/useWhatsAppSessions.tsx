@@ -210,6 +210,22 @@ export const useReleaseSession = () => {
 
   return useMutation({
     mutationFn: async (sessionId: string) => {
+      // Get session info to find conversation_id
+      const { data: session } = await supabase
+        .from('whatsapp_sessions')
+        .select('conversation_id')
+        .eq('id', sessionId)
+        .single();
+
+      // Insert transition note so AI knows admin handled part of the conversation
+      if (session?.conversation_id) {
+        await supabase.from('chat_messages').insert({
+          conversation_id: session.conversation_id,
+          role: 'assistant',
+          content: '[System] Percakapan dikembalikan ke AI. Lanjutkan membantu tamu berdasarkan konteks percakapan sebelumnya termasuk balasan dari admin.',
+        });
+      }
+
       const { error } = await supabase
         .from('whatsapp_sessions')
         .update({ 
