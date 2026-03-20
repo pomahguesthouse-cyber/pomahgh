@@ -252,12 +252,12 @@ export const useSendAdminMessage = () => {
 
       if (error) throw error;
 
-      // Log message to chat_messages
+      // Log message to chat_messages with admin marker
       if (conversationId) {
         await supabase.from('chat_messages').insert({
           conversation_id: conversationId,
           role: 'assistant',
-          content: message,
+          content: `[Admin] ${message}`,
         });
       }
 
