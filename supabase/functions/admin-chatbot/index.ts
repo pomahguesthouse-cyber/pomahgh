@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
         ADMIN_CACHE_KEYS.CHATBOT_SETTINGS,
         async () => {
           const { data } = await supabase.from('chatbot_settings')
-            .select('admin_persona_name, admin_persona_role, admin_persona_traits, admin_communication_style, admin_language_formality, admin_emoji_usage, admin_custom_instructions, admin_greeting_template').single();
+            .select('admin_persona_name, admin_persona_role, admin_persona_traits, admin_communication_style, admin_language_formality, admin_emoji_usage, admin_custom_instructions, admin_greeting_template, ai_model_admin').single();
           return data;
         },
         ADMIN_CACHE_TTL.CHATBOT_SETTINGS,
@@ -213,7 +213,7 @@ Deno.serve(async (req: Request) => {
           },
           body: JSON.stringify({
             messages: currentMessages,
-            model: "google/gemini-3-flash-preview",
+            model: chatbotSettingsData?.ai_model_admin || "google/gemini-2.5-flash",
             tools: filteredTools,
             tool_choice: "auto"
           })

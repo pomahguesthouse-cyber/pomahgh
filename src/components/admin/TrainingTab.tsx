@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { BookOpen, Star, Plus, Pencil, Trash2, GraduationCap, MessageSquare, TrendingUp, Loader2, ChevronUp, ChevronDown, Zap, CheckCircle, XCircle, Bot } from "lucide-react";
 import { useTrainingExamples, useAddTrainingExample, useUpdateTrainingExample, useDeleteTrainingExample, useTrainingStats, useExtractTrainingData, useAutoLearnStats, useBulkApproveExamples, TrainingExample } from "@/hooks/useTrainingExamples";
+import { AITrainerCoachPanel } from "@/components/admin/AITrainerCoachPanel";
+import { useGenerateForCategory, useAnalyzeGaps, usePendingGeneratedExamples, useApproveGeneratedExample } from "@/hooks/useAITrainingGenerator";
 const CATEGORIES = [{
   value: "general",
   label: "Umum",
@@ -100,6 +102,15 @@ export default function TrainingTab() {
   const deleteExample = useDeleteTrainingExample();
   const extractTraining = useExtractTrainingData();
   const bulkApprove = useBulkApproveExamples();
+
+  // AI Generator hooks
+  const [aiCategory, setAICategory] = useState("booking");
+  const [aiCount, setAICount] = useState(5);
+  const generateForCat = useGenerateForCategory();
+  const gapAnalyzer = useAnalyzeGaps('guest');
+  const { data: pendingAIExamples } = usePendingGeneratedExamples('guest');
+  const approveAIExample = useApproveGeneratedExample();
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingExample, setEditingExample] = useState<TrainingExample | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -181,7 +192,16 @@ export default function TrainingTab() {
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>;
   }
-  return <div className="space-y-6">
+  return <div className="space-y-4">
+    <Tabs defaultValue="contoh">
+      <TabsList className="grid w-full grid-cols-3 mb-2">
+        <TabsTrigger value="contoh">📚 Contoh Training</TabsTrigger>
+        <TabsTrigger value="ai-generator">🤖 AI Generator</TabsTrigger>
+        <TabsTrigger value="ai-coach">💬 AI Coach</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="contoh">
+      <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
@@ -534,5 +554,190 @@ export default function TrainingTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
+      </TabsContent>
+
+      {/* ── AI Generator Tab ── */}
+      <TabsContent value="ai-generator" className="space-y-6">
+
+        {/* Gap Analysis */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="w-4 h-4" />
+              Analisis Gap Training
+            </CardTitle>
+            <CardDescription>
+              AI akan menganalisis data training yang ada dan menemukan topik yang kurang terwakili
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={() => gapAnalyzer.mutate()}
+              disabled={gapAnalyzer.isPending}
+              variant="outline"
+            >
+              {gapAnalyzer.isPending
+                ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                : <Zap className="w-4 h-4 mr-2" />
+              }
+              Analisis Gap Sekarang
+            </Button>
+
+            {gapAnalyzer.result && (
+              <div className="space-y-3">
+                {(gapAnalyzer.result.underrepresented_categories || []).length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-1">Kategori kurang:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {gapAnalyzer.result.underrepresented_categories!.map((c) => (
+                        <Badge key={c} variant="outline">{c}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(gapAnalyzer.result.priority_gaps || []).length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Prioritas yang perlu ditambah:</p>
+                    <div className="space-y-1">
+                      {gapAnalyzer.result.priority_gaps!.map((g, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm border rounded p-2">
+                          <span className="text-primary font-medium">{g.topic}</span>
+                          <span className="text-muted-foreground">— {g.reason}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="ml-auto h-6 text-xs"
+                            onClick={() => {
+                              setAICategory(g.topic);
+                              setAICount(g.suggested_count);
+                            }}
+                          >
+                            Gunakan
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(gapAnalyzer.result.recommendations || []).length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-1">Saran:</p>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                      {gapAnalyzer.result.recommendations!.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Generate by category */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bot className="w-4 h-4" />
+              Generate Contoh per Kategori
+            </CardTitle>
+            <CardDescription>
+              AI akan membuat contoh Q&amp;A baru. Hasilnya perlu direview sebelum diaktifkan.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="space-y-1 flex-1 min-w-[180px]">
+                <Label>Kategori</Label>
+                <Select value={aiCategory} onValueChange={setAICategory}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.emoji} {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Jumlah ({aiCount})</Label>
+                <input
+                  type="range" min={1} max={15} value={aiCount}
+                  onChange={(e) => setAICount(Number(e.target.value))}
+                  className="w-32 accent-primary"
+                />
+              </div>
+              <Button
+                onClick={() => generateForCat.mutate({ category: aiCategory, count: aiCount, target: 'guest' })}
+                disabled={generateForCat.isPending}
+              >
+                {generateForCat.isPending
+                  ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  : <Plus className="w-4 h-4 mr-2" />
+                }
+                Generate {aiCount} Contoh
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending AI-generated examples review */}
+        {pendingAIExamples && pendingAIExamples.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CheckCircle className="w-4 h-4 text-yellow-500" />
+                Review Hasil AI ({pendingAIExamples.length})
+              </CardTitle>
+              <CardDescription>
+                Contoh yang digenerate AI — aktifkan yang berkualitas, hapus yang kurang tepat
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pendingAIExamples.map((ex: TrainingExample) => (
+                <div key={ex.id} className="border rounded-lg p-3 bg-muted/20">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 space-y-1">
+                      <Badge variant="outline" className="text-xs">
+                        {CATEGORIES.find(c => c.value === ex.category)?.emoji}{' '}
+                        {CATEGORIES.find(c => c.value === ex.category)?.label || ex.category}
+                      </Badge>
+                      <p className="text-sm"><span className="font-medium">Q:</span> {ex.question}</p>
+                      <p className="text-sm text-muted-foreground"><span className="font-medium">A:</span> {ex.ideal_answer}</p>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        size="icon" variant="ghost" className="h-8 w-8"
+                        onClick={() => approveAIExample.mutate({ id: ex.id, table: 'chatbot_training_examples' })}
+                        title="Aktifkan"
+                      >
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      </Button>
+                      <Button
+                        size="icon" variant="ghost" className="h-8 w-8"
+                        onClick={() => handleEdit(ex)}
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+      </TabsContent>
+
+      {/* ── AI Coach Tab ── */}
+      <TabsContent value="ai-coach">
+        <AITrainerCoachPanel />
+      </TabsContent>
+
+    </Tabs>
     </div>;
 }
