@@ -19,6 +19,7 @@ interface RoomData {
   name: string;
   description: string;
   price_per_night: number;
+  final_price: number | null;
   max_guests: number;
   image_url: string;
   size_sqm: number | null;

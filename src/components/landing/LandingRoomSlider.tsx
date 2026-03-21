@@ -13,6 +13,7 @@
    name: string;
    slug: string;
    price_per_night: number | null;
+   final_price: number | null;
    image_url: string | null;
    description: string | null;
    max_guests: number | null;
