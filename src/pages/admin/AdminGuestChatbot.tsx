@@ -10,7 +10,6 @@ import { useHotelSettings, WhatsAppContact } from '@/hooks/useHotelSettings';
 import { Bot, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
-import ChatLogsTab from '@/components/admin/ChatLogsTab';
 import TrainingTab from '@/components/admin/TrainingTab';
 import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
 import PersonaSettingsTab from '@/components/admin/PersonaSettingsTab';
@@ -60,7 +59,7 @@ const AdminGuestChatbot = () => {
       </div>
       
       <Tabs defaultValue="personality" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="personality">
             <Bot className="w-4 h-4 mr-2" />
             Kepribadian
@@ -76,10 +75,6 @@ const AdminGuestChatbot = () => {
           <TabsTrigger value="training">
             <GraduationCap className="w-4 h-4 mr-2" />
             Training
-          </TabsTrigger>
-          <TabsTrigger value="logs">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            Log Percakapan
           </TabsTrigger>
           <TabsTrigger value="whatsapp">
             <Phone className="w-4 h-4 mr-2" />
@@ -197,10 +192,6 @@ const AdminGuestChatbot = () => {
 
         <TabsContent value="training" className="space-y-4">
           <TrainingTab />
-        </TabsContent>
-
-        <TabsContent value="logs" className="space-y-4">
-          <ChatLogsTab />
         </TabsContent>
 
         <TabsContent value="whatsapp" className="space-y-4">

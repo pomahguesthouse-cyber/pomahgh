@@ -12,7 +12,6 @@ export { default as KnowledgeBaseTab } from "@/components/admin/KnowledgeBaseTab
 export { default as PersonaSettingsTab } from "@/components/admin/PersonaSettingsTab";
 export { default as TrainingTab } from "@/components/admin/TrainingTab";
 export { default as WhatsAppSessionsTab } from "@/components/admin/WhatsAppSessionsTab";
-export { default as ChatLogsTab } from "@/components/admin/ChatLogsTab";
 
 // Admin-specific tab components (default exports)
 export { default as AdminKnowledgeBaseTab } from "@/components/admin/AdminKnowledgeBaseTab";

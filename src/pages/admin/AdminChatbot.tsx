@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import AdminPersonaSettingsTab from '@/components/admin/AdminPersonaSettingsTab';
 import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
-import ChatLogsTab from '@/components/admin/ChatLogsTab';
 import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
 import PersonaSettingsTab from '@/components/admin/PersonaSettingsTab';
 import MessageTemplatesTab from '@/components/admin/chatbot/MessageTemplatesTab';
@@ -60,7 +59,7 @@ const AdminChatbot = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="personality" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="personality">
             <Bot className="w-4 h-4 mr-2" />
             Kepribadian
@@ -84,10 +83,6 @@ const AdminChatbot = () => {
           <TabsTrigger value="knowledge">
             <BookOpen className="w-4 h-4 mr-2" />
             Knowledge Base
-          </TabsTrigger>
-          <TabsTrigger value="logs">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            Log Percakapan
           </TabsTrigger>
           <TabsTrigger value="whatsapp">
             <Phone className="w-4 h-4 mr-2" />
@@ -283,10 +278,6 @@ const AdminChatbot = () => {
           <KnowledgeBaseTab />
         </TabsContent>
 
-
-        <TabsContent value="logs" className="space-y-4">
-          <ChatLogsTab />
-        </TabsContent>
 
         <TabsContent value="whatsapp" className="space-y-4">
           {/* Session Timeout */}
