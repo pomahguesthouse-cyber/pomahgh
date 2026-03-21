@@ -43,6 +43,9 @@ serve(async (req) => {
     }
 
     const CHATBOT_TOOLS_INTERNAL_SECRET = Deno.env.get("CHATBOT_TOOLS_INTERNAL_SECRET");
+    if (!CHATBOT_TOOLS_INTERNAL_SECRET) {
+      throw new Error("CHATBOT_TOOLS_INTERNAL_SECRET is not configured");
+    }
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
@@ -152,10 +155,6 @@ serve(async (req) => {
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
-      }
-
-      if (!CHATBOT_TOOLS_INTERNAL_SECRET) {
-        throw new Error("CHATBOT_TOOLS_INTERNAL_SECRET is not configured");
       }
 
       const toolResults: ChatCompletionMessage[] = [];
