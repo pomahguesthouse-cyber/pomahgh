@@ -259,5 +259,36 @@ export const TOOLS: ToolDefinition[] = [
       description: "Dapatkan daftar semua pengelola/manager yang terdaftar beserta nomor teleponnya. Gunakan saat manager minta: 'kirim ke semua pengelola', 'broadcast ke pengelola', 'daftar pengelola'",
       parameters: { type: "object", properties: {} }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_room_price",
+      description: "Update/ganti harga kamar. Gunakan saat manager minta: 'ganti harga deluxe jadi 250rb', 'update harga weekend family suite', 'set harga promo single'. Jenis harga: main (utama), weekday (senin-jumat), weekend (sabtu-minggu), monday-sunday (per hari), promo.",
+      parameters: {
+        type: "object",
+        properties: {
+          room_name: { type: "string", description: "Nama tipe kamar (contoh: Deluxe, Single, Family Suite)" },
+          price_type: { type: "string", enum: ["main", "weekday", "weekend", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "promo"], description: "Jenis harga yang diubah" },
+          new_price: { type: "number", description: "Harga baru dalam Rupiah (angka saja)" },
+          promo_start_date: { type: "string", description: "Tanggal mulai promo (YYYY-MM-DD, hanya untuk price_type=promo)" },
+          promo_end_date: { type: "string", description: "Tanggal akhir promo (YYYY-MM-DD, hanya untuk price_type=promo)" }
+        },
+        required: ["room_name", "price_type", "new_price"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_room_prices",
+      description: "Lihat daftar harga semua kamar atau kamar tertentu. Gunakan saat manager minta: 'lihat harga kamar', 'berapa harga deluxe', 'cek harga semua kamar'",
+      parameters: {
+        type: "object",
+        properties: {
+          room_name: { type: "string", description: "Nama kamar spesifik (opsional, kosongkan untuk semua kamar)" }
+        }
+      }
+    }
   }
 ];
