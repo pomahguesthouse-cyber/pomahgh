@@ -63,7 +63,7 @@ export function RoomSliderElement({
     const fetchRooms = async () => {
       const { data } = await supabase
         .from("rooms")
-        .select("id, name, description, price_per_night, max_guests, image_url, size_sqm, slug")
+        .select("id, name, description, price_per_night, final_price, max_guests, image_url, size_sqm, slug")
         .eq("available", true)
         .order("price_per_night");
       if (data) setRooms(data);
