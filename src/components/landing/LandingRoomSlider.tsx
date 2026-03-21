@@ -27,7 +27,7 @@
     queryFn: async (): Promise<RoomData[]> => {
        const { data, error } = await supabase
          .from("rooms")
-         .select("id, name, slug, price_per_night, image_url, description, max_guests")
+         .select("id, name, slug, price_per_night, final_price, image_url, description, max_guests")
          .eq("available", true)
          .order("name")
          .limit(6);
