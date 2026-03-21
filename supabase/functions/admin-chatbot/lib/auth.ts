@@ -13,8 +13,34 @@ export async function validateAuth(
   const whatsappPhone = req.headers.get("X-WhatsApp-Phone");
   const managerName = req.headers.get("X-Manager-Name") || "Manager";
   const managerRole = (req.headers.get("X-Manager-Role") || "super_admin") as ManagerRole;
+  const expectedInternalSecret = Deno.env.get("WHATSAPP_INTERNAL_SECRET");
+  const providedInternalSecret = req.headers.get("X-Internal-Secret");
 
   if (isWhatsAppSource && whatsappPhone) {
+    if (!expectedInternalSecret) {
+      return {
+        isAuthorized: false,
+        adminId: null,
+        adminEmail: null,
+        managerName,
+        managerRole: 'viewer',
+        error: "WHATSAPP_INTERNAL_SECRET not configured",
+        status: 500
+      };
+    }
+
+    if (!providedInternalSecret || providedInternalSecret !== expectedInternalSecret) {
+      return {
+        isAuthorized: false,
+        adminId: null,
+        adminEmail: null,
+        managerName,
+        managerRole: 'viewer',
+        error: "Invalid internal WhatsApp secret",
+        status: 403
+      };
+    }
+
     // WhatsApp source - validate phone is in manager list
     console.log(`WhatsApp source request from phone: ${whatsappPhone}, manager: ${managerName}`);
     

@@ -325,6 +325,30 @@ serve(async (req) => {
     });
   }
 
+  // Reject unauthenticated webhook calls.
+  const expectedWebhookToken = Deno.env.get("WHATSAPP_WEBHOOK_TOKEN");
+  if (!expectedWebhookToken) {
+    console.error("WHATSAPP_WEBHOOK_TOKEN not configured");
+    return new Response(JSON.stringify({ status: "error", reason: "webhook token not configured" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const reqUrl = new URL(req.url);
+  const providedWebhookToken =
+    req.headers.get("x-webhook-token") ||
+    req.headers.get("X-Webhook-Token") ||
+    reqUrl.searchParams.get("token");
+
+  if (!providedWebhookToken || providedWebhookToken !== expectedWebhookToken) {
+    console.warn("Unauthorized webhook request: invalid token");
+    return new Response(JSON.stringify({ status: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -664,6 +688,15 @@ Silakan coba lagi atau hubungi technical support.`;
     // Continue with manager mode routing if not an approval response
     if (isManager) {
       console.log(`📱 MANAGER MODE - routing to admin-chatbot for ${phone} (${managerInfo?.name})`);
+      const internalSecret = Deno.env.get("WHATSAPP_INTERNAL_SECRET");
+
+      if (!internalSecret) {
+        console.error("WHATSAPP_INTERNAL_SECRET not configured");
+        return new Response(JSON.stringify({ status: "error", reason: "internal secret not configured" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       
       // Ensure conversation exists
       const convId = await ensureConversation(supabase, session, phone);
@@ -700,6 +733,7 @@ Silakan coba lagi atau hubungi technical support.`;
             'X-WhatsApp-Phone': phone,
             'X-Manager-Name': managerInfo?.name || 'Manager',
             'X-Manager-Role': managerInfo?.role || 'super_admin',
+            'X-Internal-Secret': internalSecret,
           },
           body: JSON.stringify({ messages }),
         });

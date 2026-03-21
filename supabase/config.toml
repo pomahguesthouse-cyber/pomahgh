@@ -97,7 +97,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.admin-chatbot]
-verify_jwt = false
+verify_jwt = true
 
 [functions.scrape-competitor-prices]
 verify_jwt = false
