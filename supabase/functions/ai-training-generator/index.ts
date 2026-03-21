@@ -344,17 +344,19 @@ Berikan output JSON:
     // Mode: analyze_logs
     // ============================================================
     if (mode === "analyze_logs") {
-      // Get recent conversations that haven't been analyzed for training
+      // Get un-analyzed WhatsApp conversations, prioritize by message count
       const { data: conversations } = await supabase
         .from("chat_conversations")
-        .select("id, guest_name, messages, created_at")
+        .select("id, session_id, message_count")
+        .ilike("session_id", "wa_%")
         .eq("analyzed_for_training", false)
-        .order("created_at", { ascending: false })
-        .limit(10);
+        .order("message_count", { ascending: false })
+        .order("started_at", { ascending: false })
+        .limit(15);
 
       if (!conversations || conversations.length === 0) {
         return new Response(
-          JSON.stringify({ success: true, message: "Tidak ada percakapan baru untuk dianalisis", analyzed: 0 }),
+          JSON.stringify({ success: true, message: "Tidak ada percakapan baru untuk dianalisis", analyzed: 0, total_saved: 0 }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -362,11 +364,15 @@ Berikan output JSON:
       const results: Array<{ conversation_id: string; examples_generated: number; saved: number }> = [];
 
       for (const conv of conversations) {
-        const messagesArr: Array<{ role: string; content: string }> =
-          Array.isArray(conv.messages) ? conv.messages : [];
+        // Fetch messages from chat_messages table
+        const { data: msgData, error: msgErr } = await supabase
+          .from("chat_messages")
+          .select("role, content, created_at")
+          .eq("conversation_id", conv.id)
+          .order("created_at", { ascending: true });
 
-        // Only process conversations with enough messages
-        if (messagesArr.length < 4) {
+        if (msgErr || !msgData || msgData.length < 4) {
+          // Too short — mark analyzed, skip
           await supabase
             .from("chat_conversations")
             .update({ analyzed_for_training: true })
@@ -374,41 +380,60 @@ Berikan output JSON:
           continue;
         }
 
-        const transcript = messagesArr
-          .map((m) => `${m.role === "user" ? "Tamu" : "Chatbot"}: ${m.content}`)
+        const transcript = msgData
+          .map((m: { role: string; content: string }) => `${m.role === "user" ? "Tamu" : "Bot"}: ${m.content}`)
           .join("\n");
 
-        const aiResult = await callAI(
-          LOVABLE_API_KEY,
-          model,
-          [
-            {
-              role: "system",
-              content: `Analisis percakapan chatbot hotel ini dan ekstrak contoh Q&A terbaik untuk melatih AI.
+        let aiResult;
+        try {
+          aiResult = await callAI(
+            LOVABLE_API_KEY,
+            model,
+            [
+              {
+                role: "system",
+                content: `Kamu adalah analis percakapan hotel. Tugas: ekstrak pasangan Q&A berkualitas tinggi dari log percakapan WhatsApp antara tamu dan chatbot hotel.
+
 ${hotelContext}
-Pilih hanya pertanyaan-jawaban yang bernilai tinggi untuk training data.`,
-            },
-            {
-              role: "user",
-              content: `Percakapan:
+
+Kriteria Q&A yang baik:
+- Pertanyaan yang sering ditanyakan tamu (FAQ)
+- Jawaban yang informatif, akurat, dan ramah
+- Hindari pertanyaan yang terlalu spesifik ke satu tamu tertentu (nama, tanggal spesifik)
+- Generalisasi pertanyaan agar bisa dipakai sebagai template
+- Kategori: general, greeting, booking, availability, facilities, promo, payment, location, complaint, reschedule, cancel, special_request`,
+              },
+              {
+                role: "user",
+                content: `Analisis percakapan WhatsApp berikut dan ekstrak 2-5 pasangan Q&A terbaik dalam format JSON array:
+
 ${transcript}
 
-Ekstrak 2-4 contoh Q&A training terbaik dalam format JSON array:
+Format output JSON array:
 [
   {
-    "question": "pertanyaan tamu yang natural",
-    "answer": "jawaban chatbot yang ideal",
-    "category": "booking/harga/fasilitas/lokasi/umum/lainnya"
+    "question": "pertanyaan umum dari tamu (digeneralisasi)",
+    "answer": "jawaban ideal dari bot",
+    "category": "booking/availability/facilities/promo/payment/location/complaint/general"
   }
 ]
 
 Jika tidak ada nilai training yang baik, kembalikan array kosong [].`,
-            },
-          ],
-          { max_tokens: 1200, temperature: 0.3 }
-        );
+              },
+            ],
+            { max_tokens: 1200, temperature: 0.3 }
+          );
+        } catch (aiErr) {
+          // AI call failed — DON'T mark as analyzed so it can be retried
+          console.error(`[analyze_logs] AI error for conv ${conv.id}:`, aiErr);
+          continue;
+        }
 
-        if (aiResult.rateLimited) break;
+        if (aiResult.rateLimited) {
+          // Stop processing but don't mark remaining as analyzed
+          console.warn("[analyze_logs] Rate limited, stopping batch");
+          break;
+        }
 
         const rawContent = aiResult.data.choices[0]?.message?.content || "[]";
         let examples: Array<{ question?: string; answer?: string; category?: string }> = [];
@@ -419,15 +444,25 @@ Jika tidak ada nilai training yang baik, kembalikan array kosong [].`,
           examples = [];
         }
 
+        // Get max display_order for proper ordering
+        const { data: maxOrderData } = await supabase
+          .from("chatbot_training_examples")
+          .select("display_order")
+          .order("display_order", { ascending: false })
+          .limit(1);
+
+        let maxOrder = maxOrderData?.[0]?.display_order || 0;
+
         const toInsert = examples
           .filter((e) => e.question && e.answer)
-          .map((e, idx) => ({
+          .map((e) => ({
             question: e.question,
-            answer: e.answer,
-            category: e.category || "umum",
+            ideal_answer: e.answer,
+            category: e.category || "general",
             is_active: false,
+            source: "auto_whatsapp",
             auto_generated: true,
-            display_order: 9500 + idx,
+            display_order: ++maxOrder,
           }));
 
         let saved = 0;
@@ -436,9 +471,10 @@ Jika tidak ada nilai training yang baik, kembalikan array kosong [].`,
             .from("chatbot_training_examples")
             .insert(toInsert);
           if (!insertErr) saved = toInsert.length;
+          else console.error("[analyze_logs] Insert error:", insertErr);
         }
 
-        // Mark conversation as analyzed
+        // Only mark as analyzed AFTER successful processing
         await supabase
           .from("chat_conversations")
           .update({ analyzed_for_training: true })
@@ -457,8 +493,10 @@ Jika tidak ada nilai training yang baik, kembalikan array kosong [].`,
         JSON.stringify({
           success: true,
           analyzed: results.length,
+          extracted: totalSaved,
           total_saved: totalSaved,
           pending_review: totalSaved,
+          message: `Berhasil menganalisis ${results.length} percakapan, mengekstrak ${totalSaved} contoh training`,
           results,
           model,
         }),

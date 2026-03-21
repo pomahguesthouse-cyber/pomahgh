@@ -285,7 +285,7 @@ export default function TrainingTab() {
           
           {/* Draft examples from auto-extraction */}
           {(() => {
-            const drafts = examples?.filter(e => e.source === "auto_whatsapp" && !e.is_active) || [];
+            const drafts = examples?.filter(e => (e.source === "auto_whatsapp" || (e as any).auto_generated === true) && !e.is_active) || [];
             if (drafts.length === 0) return (
               <p className="text-sm text-muted-foreground text-center py-4">
                 Belum ada draft dari auto-learn. Klik "Analisis Log WhatsApp" untuk mulai.

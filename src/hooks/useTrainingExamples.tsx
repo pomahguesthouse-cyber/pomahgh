@@ -240,17 +240,19 @@ export const useExtractTrainingData = () => {
   
   return useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("extract-training-data", {
-        body: {},
+      const { data, error } = await supabase.functions.invoke("ai-training-generator", {
+        body: { mode: "analyze_logs" },
       });
       
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      return data as { success: boolean; analyzed: number; extracted: number; message: string };
+      return data as { success: boolean; analyzed: number; extracted: number; total_saved: number; message: string };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["training-examples"] });
       queryClient.invalidateQueries({ queryKey: ["training-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["auto-learn-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["pendingGeneratedExamples"] });
       toast.success(data.message);
     },
     onError: (error) => {
@@ -268,8 +270,8 @@ export const useAutoLearnStats = () => {
         supabase
           .from("chatbot_training_examples")
           .select("id", { count: "exact" })
-          .eq("source", "auto_whatsapp")
-          .eq("is_active", false),
+          .eq("is_active", false)
+          .or("source.eq.auto_whatsapp,auto_generated.eq.true"),
         supabase
           .from("chat_conversations")
           .select("id", { count: "exact" })
