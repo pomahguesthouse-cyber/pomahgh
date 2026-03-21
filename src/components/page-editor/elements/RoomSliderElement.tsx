@@ -167,7 +167,7 @@ export function RoomSliderElement({
                           {showPrice && (
                             <div className="min-w-0">
                               <span className="text-sm md:text-lg font-bold text-primary">
-                                Rp {room.price_per_night.toLocaleString("id-ID")}
+                                Rp {(room.final_price || room.price_per_night).toLocaleString("id-ID")}
                               </span>
                               <span className="text-[10px] md:text-xs text-muted-foreground">/malam</span>
                             </div>

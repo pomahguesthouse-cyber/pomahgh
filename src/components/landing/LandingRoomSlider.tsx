@@ -84,7 +84,7 @@
                      {/* Price Badge */}
                      <div className="absolute top-4 right-4">
                        <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg">
-                         Rp {room.price_per_night?.toLocaleString("id-ID")}
+                         Rp {(room.final_price || room.price_per_night)?.toLocaleString("id-ID")}
                          <span className="text-xs font-normal opacity-80">/mlm</span>
                        </div>
                      </div>
