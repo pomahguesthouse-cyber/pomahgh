@@ -40,17 +40,9 @@ export const SessionRow = ({ session }: SessionRowProps) => {
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <p className="font-medium text-sm sm:text-base truncate">
-                {session.guest_name || session.phone_number}
+              <p className="font-bold text-sm sm:text-base">
+                {session.phone_number}
               </p>
-              {session.guest_name && (
-                <span className="text-xs text-muted-foreground">{session.phone_number}</span>
-              )}
-              {!session.guest_name && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-gray-100 text-gray-500 border-gray-300">
-                  Tanpa Nama
-                </Badge>
-              )}
               {session.is_takeover && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-100 text-yellow-800 border-yellow-300">
                   <Hand className="w-3 h-3 mr-0.5" />
