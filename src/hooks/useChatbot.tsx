@@ -224,77 +224,30 @@ export const useChatbot = () => {
         fallbackCountRef.current += 1;
       }
 
-      const aiMessage = chatResponse.choices[0].message;
+      const assistantContent = chatResponse?.choices?.[0]?.message?.content || "Maaf, saya tidak bisa memproses permintaan ini saat ini.";
+      const bookingCreated = Boolean((chatResponse as any)?.meta?.booking_created);
+      const bookingGuestEmail = (chatResponse as any)?.meta?.booking_guest_email as string | undefined;
+      const toolCallsUsed = Array.isArray((chatResponse as any)?.meta?.tool_calls_used)
+        ? ((chatResponse as any).meta.tool_calls_used as string[])
+        : [];
 
-      // Check if AI wants to call a tool
-      if (aiMessage.tool_calls && aiMessage.tool_calls.length > 0) {
-        const toolCall = aiMessage.tool_calls[0];
-        
-        // Execute the tool
-        const { data: toolResult, error: toolError } = await supabase.functions.invoke('chatbot-tools', {
-          body: {
-            tool_name: toolCall.function.name,
-            parameters: JSON.parse(toolCall.function.arguments)
-          }
-        });
-
-        if (toolError) throw toolError;
-
-        // Check if a booking was created
-        if (toolCall.function.name === 'create_booking_draft' && toolResult?.success) {
-          await markBookingCreated(toolResult.booking?.guest_email);
-        }
-
-        // Send tool result back to AI for final response
-        const { data: finalResponse, error: finalError } = await supabase.functions.invoke('chatbot', {
-          body: {
-            messages: [
-              ...messages.map(m => ({ role: m.role, content: m.content })),
-              { role: 'user', content: userMessage },
-              aiMessage,
-              {
-                role: 'tool',
-                content: JSON.stringify(toolResult),
-                tool_call_id: toolCall.id
-              }
-            ],
-            chatbotSettings: settings
-          }
-        });
-
-        if (finalError) throw finalError;
-
-        const finalContent = finalResponse.choices[0].message.content;
-        const finalMessage: Message = {
-          role: 'assistant',
-          content: finalContent,
-          timestamp: new Date()
-        };
-
-        setMessages(prev => [...prev, finalMessage]);
-        
-        // Extract and update context from response
-        setConversationContext(prev => extractConversationContext(finalContent, prev));
-        
-        // Log assistant message
-        await logMessage('assistant', finalContent);
-      } else {
-        // Direct response without tool
-        const assistantContent = aiMessage.content;
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: assistantContent,
-          timestamp: new Date()
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-        
-        // Extract and update context from response
-        setConversationContext(prev => extractConversationContext(assistantContent, prev));
-        
-        // Log assistant message
-        await logMessage('assistant', assistantContent);
+      if (bookingCreated) {
+        await markBookingCreated(bookingGuestEmail);
       }
+
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: assistantContent,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      
+      // Extract and update context from response
+      setConversationContext(prev => extractConversationContext(assistantContent, prev));
+      
+      // Log assistant message
+      await logMessage('assistant', assistantContent, isFallbackResponse, toolCallsUsed);
     } catch (error) {
       console.error("Chat error:", error);
       const errorContent = getChatErrorMessage(error);
