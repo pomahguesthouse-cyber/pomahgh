@@ -59,32 +59,31 @@ const AdminGuestChatbot = () => {
       </div>
       
       <Tabs defaultValue="personality" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="personality">
-            <Bot className="w-4 h-4 mr-2" />
-            Kepribadian
+        <TabsList className="flex w-full overflow-x-auto no-scrollbar">
+          <TabsTrigger value="personality" className="flex-shrink-0">
+            <Bot className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Kepribadian</span>
           </TabsTrigger>
-          <TabsTrigger value="behavior">
-            <Zap className="w-4 h-4 mr-2" />
-            Perilaku
+          <TabsTrigger value="behavior" className="flex-shrink-0">
+            <Zap className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Perilaku</span>
           </TabsTrigger>
-          <TabsTrigger value="knowledge">
-            <BookOpen className="w-4 h-4 mr-2" />
-            Knowledge Base
+          <TabsTrigger value="knowledge" className="flex-shrink-0">
+            <BookOpen className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Knowledge Base</span>
           </TabsTrigger>
-          <TabsTrigger value="training">
-            <GraduationCap className="w-4 h-4 mr-2" />
-            Training
+          <TabsTrigger value="training" className="flex-shrink-0">
+            <GraduationCap className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Training</span>
           </TabsTrigger>
-          <TabsTrigger value="whatsapp">
-            <Phone className="w-4 h-4 mr-2" />
-            WhatsApp
+          <TabsTrigger value="whatsapp" className="flex-shrink-0">
+            <Phone className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">WhatsApp</span>
           </TabsTrigger>
-          <TabsTrigger value="advanced">
-            <Settings className="w-4 h-4 mr-2" />
-            Lanjutan
+          <TabsTrigger value="advanced" className="flex-shrink-0">
+            <Settings className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Lanjutan</span>
           </TabsTrigger>
-
         </TabsList>
 
         <TabsContent value="personality" className="space-y-4">
@@ -239,7 +238,7 @@ const AdminGuestChatbot = () => {
               <CardDescription>Nomor-nomor kontak yang bisa dihubungi tamu</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   placeholder="Nomor (e.g. 628123456789)"
                   value={newContactNumber}
@@ -254,6 +253,7 @@ const AdminGuestChatbot = () => {
                 />
                 <Button
                   type="button"
+                  className="sm:w-auto w-full"
                   onClick={() => {
                     if (!newContactNumber || !newContactLabel) {
                       toast({ title: "Error", description: "Isi nomor dan label", variant: "destructive" });
@@ -309,7 +309,7 @@ const AdminGuestChatbot = () => {
               <CardDescription>Nomor-nomor yang TIDAK akan dilayani oleh AI (hanya admin yang merespon)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   placeholder="Nomor (e.g. 628123456789)"
                   value={newWhitelistNumber}
@@ -318,6 +318,7 @@ const AdminGuestChatbot = () => {
                 />
                 <Button
                   type="button"
+                  className="sm:w-auto w-full"
                   onClick={() => {
                     if (!newWhitelistNumber) {
                       toast({ title: "Error", description: "Isi nomor", variant: "destructive" });

@@ -8,6 +8,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide scrollbar for horizontal tab scroll on mobile */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* Image loading animations */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
