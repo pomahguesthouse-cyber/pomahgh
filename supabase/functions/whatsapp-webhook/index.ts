@@ -97,6 +97,26 @@ function formatForWhatsApp(text: string): string {
   return text.trim();
 }
 
+// Heuristic to decide whether a message is likely a person's name.
+function isLikelyPersonName(rawMessage: string): boolean {
+  const text = rawMessage.trim();
+  if (!text) return false;
+  if (text.length < 2 || text.length > 40) return false;
+
+  // Reject obvious non-name content.
+  if (/\d/.test(text)) return false;
+  if (/[?@#%&_=+\/\\]/.test(text)) return false;
+  if (/\b(harga|kamar|booking|check.?in|check.?out|berapa|promo|fasilitas|alamat|lokasi|wifi|bayar|transfer|cancel|batal|tolong|mohon|skip|nanti\s+aja|ga\s+usah|tidak\s+usah)\b/i.test(text)) {
+    return false;
+  }
+
+  // A name usually consists of letters, spaces, apostrophes, dots, or hyphens.
+  if (!/^[A-Za-z .'-]+$/.test(text)) return false;
+
+  const words = text.split(/\s+/).filter(Boolean);
+  return words.length >= 1 && words.length <= 4;
+}
+
 // Helper: Convert Indonesian month to number
 function indonesianMonthToNumber(month: string): number {
   const months: Record<string, number> = {
@@ -879,16 +899,15 @@ Silakan coba lagi atau hubungi technical support.`;
       });
     }
 
-    // If session is awaiting name, capture it — but allow bypass if message looks like a question
+    // If session is awaiting name, capture it only when reply is likely a real name.
     if (session?.awaiting_name) {
       console.log(`📝 Awaiting name for ${phone}: "${message}"`);
-      
-      // Detect if user is bypassing name and asking a question directly
-      const questionPatterns = /\b(harga|kamar|info|biaya|booking|pesan|berapa|tersedia|available|check.?in|check.?out|malam|tanggal|tarif|promo|diskon|fasilitas|alamat|lokasi|parkir|wifi|breakfast|sarapan|bayar|transfer|cancel|batal|minta|mohon|tolong)\b/i;
-      const isQuestion = questionPatterns.test(normalizedMessage);
-      
-      if (isQuestion) {
-        console.log(`⏭️ Guest bypassed name question - proceeding to AI with question`);
+
+      const guestNameCandidate = String(message).trim();
+      const shouldBypassNamePrompt = !isLikelyPersonName(guestNameCandidate);
+
+      if (shouldBypassNamePrompt) {
+        console.log(`⏭️ Guest did not provide a valid name - bypassing name prompt and proceeding to AI`);
         // Clear awaiting_name, set generic name
         const genericName = `Tamu WA ${phone.slice(-4)}`;
         await supabase
@@ -906,12 +925,12 @@ Silakan coba lagi atau hubungi technical support.`;
             .update({ guest_email: `${genericName} (WA: ${phone})` })
             .eq('id', conversationId);
         }
-        
-        // Don't return - fall through to AI processing below
-        await logMessage(supabase, conversationId, 'user', normalizedMessage);
+
+        // Don't return - fall through to AI processing below.
+        // User message will be logged once in the common guest flow section.
       } else {
         // Use original message (not normalized) as the name
-        const guestName = String(message).trim();
+        const guestName = guestNameCandidate;
 
         // Update session with guest_name and clear awaiting_name
         await supabase
