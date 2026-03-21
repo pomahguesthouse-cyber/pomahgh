@@ -1,5 +1,5 @@
 /**
- * Shared AI Provider Helper
+ * Shared AI Helper
  * Wraps calls to Lovable Gateway (ai.gateway.lovable.dev)
  * which supports multiple providers by model name prefix:
  *   google/...     → Google Gemini
@@ -48,52 +48,7 @@ export interface AICallResult {
 }
 
 /**
- * Map of user-friendly model names to gateway model IDs
- */
-export const AI_MODELS: Record<string, { id: string; displayName: string; provider: string; tier: string }> = {
-  "google/gemini-2.5-flash": {
-    id: "google/gemini-2.5-flash",
-    displayName: "Gemini 2.5 Flash",
-    provider: "Google",
-    tier: "fast",
-  },
-  "google/gemini-2.5-pro": {
-    id: "google/gemini-2.5-pro",
-    displayName: "Gemini 2.5 Pro",
-    provider: "Google",
-    tier: "smart",
-  },
-  "openai/gpt-4o-mini": {
-    id: "openai/gpt-4o-mini",
-    displayName: "GPT-4o Mini",
-    provider: "OpenAI",
-    tier: "fast",
-  },
-  "openai/gpt-4o": {
-    id: "openai/gpt-4o",
-    displayName: "GPT-4o",
-    provider: "OpenAI",
-    tier: "smart",
-  },
-  "anthropic/claude-3-5-haiku": {
-    id: "anthropic/claude-3-5-haiku",
-    displayName: "Claude 3.5 Haiku",
-    provider: "Anthropic",
-    tier: "fast",
-  },
-  "anthropic/claude-3-5-sonnet": {
-    id: "anthropic/claude-3-5-sonnet",
-    displayName: "Claude 3.5 Sonnet",
-    provider: "Anthropic",
-    tier: "smart",
-  },
-};
-
-export const DEFAULT_MODEL = "google/gemini-2.5-flash";
-
-/**
- * Call AI via Lovable Gateway with any supported provider model.
- * Throws on non-retryable errors; returns { rateLimited: true } on 429.
+ * Call AI via Lovable Gateway. Throws on non-retryable errors; returns { rateLimited: true } on 429.
  */
 export async function callAI(
   apiKey: string,
@@ -101,11 +56,8 @@ export async function callAI(
   messages: AIMessage[],
   options: AICallOptions = {}
 ): Promise<{ rateLimited: false; data: AICallResult } | { rateLimited: true; data: null }> {
-  // Validate model, fall back to default if unknown
-  const resolvedModel = AI_MODELS[model]?.id ?? DEFAULT_MODEL;
-
   const body: Record<string, unknown> = {
-    model: resolvedModel,
+    model,
     messages,
     temperature: options.temperature ?? 0.4,
     max_tokens: options.max_tokens ?? 700,
@@ -134,7 +86,7 @@ export async function callAI(
       return { rateLimited: true, data: null };
     }
     const errorText = await response.text();
-    console.error(`[aiProvider] Gateway error ${response.status} (model: ${resolvedModel}):`, errorText);
+    console.error(`[aiProvider] Gateway error ${response.status} (model: ${model}):`, errorText);
     throw new Error(`AI gateway error: ${response.status}`);
   }
 
@@ -151,10 +103,8 @@ export async function callAIStream(
   messages: AIMessage[],
   options: Omit<AICallOptions, "stream"> = {}
 ): Promise<{ rateLimited: false; response: Response } | { rateLimited: true }> {
-  const resolvedModel = AI_MODELS[model]?.id ?? DEFAULT_MODEL;
-
   const body: Record<string, unknown> = {
-    model: resolvedModel,
+    model,
     messages,
     temperature: options.temperature ?? 0.4,
     max_tokens: options.max_tokens ?? 700,

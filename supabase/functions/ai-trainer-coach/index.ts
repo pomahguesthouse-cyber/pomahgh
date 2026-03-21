@@ -13,7 +13,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { callAIStream, DEFAULT_MODEL } from "../_shared/aiProvider.ts";
+import { callAIStream } from "../_shared/aiProvider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
         supabase
           .from("chatbot_settings")
           .select(
-            "ai_model_training, persona_name, persona_role"
+            "persona_name, persona_role"
           )
           .single(),
         supabase
@@ -117,7 +117,7 @@ Deno.serve(async (req: Request) => {
           .limit(20),
       ]);
 
-    const model: string = settingsRes.data?.ai_model_training || DEFAULT_MODEL;
+    const model = "google/gemini-2.5-flash";
     const hotelName: string = hotelRes.data?.hotel_name || "Hotel";
 
     const guestExamples = guestExamplesRes.data || [];

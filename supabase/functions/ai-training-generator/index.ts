@@ -9,7 +9,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { callAI, DEFAULT_MODEL } from "../_shared/aiProvider.ts";
+import { callAI } from "../_shared/aiProvider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
     // Load settings for model + hotel context
     const { data: chatbotSettings } = await supabase
       .from("chatbot_settings")
-      .select("ai_model_training, persona_name, persona_role")
+      .select("persona_name, persona_role")
       .single();
 
     const { data: hotelSettings } = await supabase
@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
       .select("hotel_name, address, check_in_time, check_out_time")
       .single();
 
-    const model: string = chatbotSettings?.ai_model_training || DEFAULT_MODEL;
+    const model = "google/gemini-2.5-flash";
     const hotelName: string = hotelSettings?.hotel_name || "Hotel";
     const checkIn: string = hotelSettings?.check_in_time || "14:00";
     const checkOut: string = hotelSettings?.check_out_time || "12:00";

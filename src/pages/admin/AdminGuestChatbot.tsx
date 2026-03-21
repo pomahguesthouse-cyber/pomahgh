@@ -7,14 +7,13 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
 import { useHotelSettings, WhatsAppContact } from '@/hooks/useHotelSettings';
-import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban, Cpu } from 'lucide-react';
+import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import ChatLogsTab from '@/components/admin/ChatLogsTab';
 import TrainingTab from '@/components/admin/TrainingTab';
 import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
 import PersonaSettingsTab from '@/components/admin/PersonaSettingsTab';
-import { AIProviderTab } from '@/components/admin/AIProviderTab';
 import { useState, useEffect } from 'react';
 import { ChatbotSettingsFormData, DEFAULT_CHATBOT_FORM_DATA } from '@/types/chatbot-settings.types';
 
@@ -61,7 +60,7 @@ const AdminGuestChatbot = () => {
       </div>
       
       <Tabs defaultValue="personality" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="personality">
             <Bot className="w-4 h-4 mr-2" />
             Kepribadian
@@ -94,10 +93,7 @@ const AdminGuestChatbot = () => {
             <Settings className="w-4 h-4 mr-2" />
             Lanjutan
           </TabsTrigger>
-          <TabsTrigger value="ai-provider">
-            <Cpu className="w-4 h-4 mr-2" />
-            AI Provider
-          </TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="personality" className="space-y-4">
@@ -505,9 +501,7 @@ const AdminGuestChatbot = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="ai-provider" className="space-y-4">
-          <AIProviderTab />
-        </TabsContent>
+
       </Tabs>
     </div>
   );

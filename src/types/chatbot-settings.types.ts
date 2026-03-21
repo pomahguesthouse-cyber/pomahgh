@@ -34,10 +34,6 @@ export interface ChatbotSettingsFormData {
   admin_language_formality?: string;
   admin_custom_instructions?: string;
   admin_greeting_template?: string;
-  // AI Provider Model Settings
-  ai_model_guest?: string;
-  ai_model_admin?: string;
-  ai_model_training?: string;
 }
 
 export const DEFAULT_CHATBOT_FORM_DATA: ChatbotSettingsFormData = {

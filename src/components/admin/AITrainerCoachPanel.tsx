@@ -1,10 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAITrainerCoach } from '@/hooks/useAITrainerCoach';
-import { useChatbotSettings } from '@/hooks/useChatbot';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Bot, Send, Square, RotateCcw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -43,15 +41,9 @@ function MessageBubble({ role, content }: { role: 'user' | 'assistant'; content:
 
 export function AITrainerCoachPanel() {
   const { messages, isLoading, sendMessage, reset, stop } = useAITrainerCoach();
-  const { data: settings } = useChatbotSettings();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const currentModel =
-    settings?.ai_model_training || 'google/gemini-2.5-flash';
-
-  const modelLabel = currentModel.split('/').pop() || currentModel;
 
   // Auto-scroll
   useEffect(() => {
@@ -85,9 +77,7 @@ export function AITrainerCoachPanel() {
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
           <span className="font-semibold text-sm">AI Trainer Coach</span>
-          <Badge variant="outline" className="text-xs font-mono hidden sm:inline-flex">
-            {modelLabel}
-          </Badge>
+
         </div>
         <Button
           variant="ghost"
