@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
 import { useHotelSettings, WhatsAppContact } from '@/hooks/useHotelSettings';
-import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban } from 'lucide-react';
+import { Bot, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import ChatLogsTab from '@/components/admin/ChatLogsTab';
@@ -60,14 +60,10 @@ const AdminGuestChatbot = () => {
       </div>
       
       <Tabs defaultValue="personality" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="personality">
             <Bot className="w-4 h-4 mr-2" />
             Kepribadian
-          </TabsTrigger>
-          <TabsTrigger value="appearance">
-            <Palette className="w-4 h-4 mr-2" />
-            Tampilan
           </TabsTrigger>
           <TabsTrigger value="behavior">
             <Zap className="w-4 h-4 mr-2" />
@@ -98,79 +94,6 @@ const AdminGuestChatbot = () => {
 
         <TabsContent value="personality" className="space-y-4">
           <PersonaSettingsTab />
-        </TabsContent>
-
-        <TabsContent value="appearance" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base font-medium">Tampilan Widget</CardTitle>
-              <CardDescription>
-                Sesuaikan tampilan chatbot widget
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="avatar_url">URL Avatar Bot</Label>
-                <Input
-                  id="avatar_url"
-                  value={formData.bot_avatar_url || ''}
-                  onChange={(e) => setFormData({ ...formData, bot_avatar_url: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="avatar_style">Bentuk Avatar</Label>
-                <Select
-                  value={formData.bot_avatar_style}
-                  onValueChange={(value) => setFormData({ ...formData, bot_avatar_style: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="circle">Lingkaran</SelectItem>
-                    <SelectItem value="rounded">Rounded</SelectItem>
-                    <SelectItem value="square">Kotak</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="primary_color">Warna Utama</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="primary_color"
-                    type="color"
-                    value={formData.primary_color}
-                    onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                    className="w-20 h-10"
-                  />
-                  <Input
-                    value={formData.primary_color}
-                    onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                    placeholder="#8B4513"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="position">Posisi Widget</Label>
-                <Select
-                  value={formData.widget_position}
-                  onValueChange={(value) => setFormData({ ...formData, widget_position: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bottom-right">Kanan Bawah</SelectItem>
-                    <SelectItem value="bottom-left">Kiri Bawah</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="behavior" className="space-y-4">
