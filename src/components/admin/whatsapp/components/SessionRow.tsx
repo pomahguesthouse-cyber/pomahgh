@@ -44,6 +44,11 @@ export const SessionRow = ({ session }: SessionRowProps) => {
               {session.guest_name && (
                 <span className="text-xs text-muted-foreground">{session.phone_number}</span>
               )}
+              {!session.guest_name && (
+                <Badge variant="outline" className="text-xs bg-gray-100 text-gray-500 border-gray-300">
+                  Tanpa Nama
+                </Badge>
+              )}
               {session.is_takeover && (
                 <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
                   <Hand className="w-3 h-3 mr-1" />
