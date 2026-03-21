@@ -70,7 +70,7 @@ backend = "postgres"
 verify_jwt = false
 
 [functions.chatbot-tools]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-whatsapp]
 verify_jwt = true

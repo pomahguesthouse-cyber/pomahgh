@@ -352,10 +352,15 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const chatbotToolsInternalSecret = Deno.env.get("CHATBOT_TOOLS_INTERNAL_SECRET")!;
     const FONNTE_API_KEY = Deno.env.get("FONNTE_API_KEY");
 
     if (!FONNTE_API_KEY) {
       throw new Error("FONNTE_API_KEY not configured");
+    }
+
+    if (!chatbotToolsInternalSecret) {
+      throw new Error("CHATBOT_TOOLS_INTERNAL_SECRET not configured");
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -1041,6 +1046,7 @@ Silakan coba lagi atau hubungi technical support.`;
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${supabaseServiceKey}`,
+              'X-Internal-Secret': chatbotToolsInternalSecret,
             },
             body: JSON.stringify({
               tool_name: toolCall.function.name,
@@ -1144,6 +1150,7 @@ Silakan coba lagi atau hubungi technical support.`;
                 headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${supabaseServiceKey}`,
+                  'X-Internal-Secret': chatbotToolsInternalSecret,
                 },
                 body: JSON.stringify({
                   tool_name: toolCall.function.name,

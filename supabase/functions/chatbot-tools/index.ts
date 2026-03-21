@@ -24,6 +24,22 @@ import { handleGetPaymentMethods } from "./tools/getPaymentMethods.ts";
 import { handleNotifyLongstayInquiry } from "./tools/notifyLongstayInquiry.ts";
 import { handleNotifyPaymentProof } from "./tools/notifyPaymentProof.ts";
 
+function getRoleFromAuthorization(authHeader: string | null): string | null {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+
+  const token = authHeader.slice("Bearer ".length).trim();
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+
+  try {
+    const payloadJson = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(payloadJson) as { role?: string };
+    return payload.role || null;
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -31,6 +47,26 @@ serve(async (req) => {
   }
 
   try {
+    const expectedInternalSecret = Deno.env.get("CHATBOT_TOOLS_INTERNAL_SECRET");
+    if (!expectedInternalSecret) {
+      return new Response(JSON.stringify({ error: "CHATBOT_TOOLS_INTERNAL_SECRET not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const providedInternalSecret = req.headers.get("x-internal-secret");
+    const tokenRole = getRoleFromAuthorization(req.headers.get("authorization"));
+    const isTrustedInternal = providedInternalSecret === expectedInternalSecret;
+    const isPrivilegedJwt = tokenRole === "service_role" || tokenRole === "authenticated";
+
+    if (!isTrustedInternal && !isPrivilegedJwt) {
+      return new Response(JSON.stringify({ error: "Unauthorized tool execution" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { tool_name, parameters } = await req.json();
     
     // Create Supabase client with service role for admin operations
