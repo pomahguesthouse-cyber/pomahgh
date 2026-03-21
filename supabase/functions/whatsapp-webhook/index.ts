@@ -874,48 +874,76 @@ Silakan coba lagi atau hubungi technical support.`;
       });
     }
 
-    // If session is awaiting name, capture it
+    // If session is awaiting name, capture it — but allow bypass if message looks like a question
     if (session?.awaiting_name) {
-      console.log(`📝 Capturing guest name for ${phone}: "${message}"`);
+      console.log(`📝 Awaiting name for ${phone}: "${message}"`);
       
-      // Use original message (not normalized) as the name
-      const guestName = String(message).trim();
-
-      // Update session with guest_name and clear awaiting_name
-      await supabase
-        .from('whatsapp_sessions')
-        .update({
-          guest_name: guestName,
-          awaiting_name: false,
-          last_message_at: new Date().toISOString(),
-        })
-        .eq('phone_number', phone);
-
-      // Also update chat_conversations guest_email with name info
-      if (conversationId) {
+      // Detect if user is bypassing name and asking a question directly
+      const questionPatterns = /\b(harga|kamar|info|biaya|booking|pesan|berapa|tersedia|available|check.?in|check.?out|malam|tanggal|tarif|promo|diskon|fasilitas|alamat|lokasi|parkir|wifi|breakfast|sarapan|bayar|transfer|cancel|batal|minta|mohon|tolong)\b/i;
+      const isQuestion = questionPatterns.test(normalizedMessage);
+      
+      if (isQuestion) {
+        console.log(`⏭️ Guest bypassed name question - proceeding to AI with question`);
+        // Clear awaiting_name, set generic name
+        const genericName = `Tamu WA ${phone.slice(-4)}`;
         await supabase
-          .from('chat_conversations')
-          .update({ guest_email: `${guestName} (WA: ${phone})` })
-          .eq('id', conversationId);
+          .from('whatsapp_sessions')
+          .update({
+            guest_name: genericName,
+            awaiting_name: false,
+            last_message_at: new Date().toISOString(),
+          })
+          .eq('phone_number', phone);
+        
+        if (conversationId) {
+          await supabase
+            .from('chat_conversations')
+            .update({ guest_email: `${genericName} (WA: ${phone})` })
+            .eq('id', conversationId);
+        }
+        
+        // Don't return - fall through to AI processing below
+        await logMessage(supabase, conversationId, 'user', normalizedMessage);
+      } else {
+        // Use original message (not normalized) as the name
+        const guestName = String(message).trim();
+
+        // Update session with guest_name and clear awaiting_name
+        await supabase
+          .from('whatsapp_sessions')
+          .update({
+            guest_name: guestName,
+            awaiting_name: false,
+            last_message_at: new Date().toISOString(),
+          })
+          .eq('phone_number', phone);
+
+        // Also update chat_conversations guest_email with name info
+        if (conversationId) {
+          await supabase
+            .from('chat_conversations')
+            .update({ guest_email: `${guestName} (WA: ${phone})` })
+            .eq('id', conversationId);
+        }
+
+        // Log name message and confirmation
+        await logMessage(supabase, conversationId, 'user', guestName);
+        const confirmMsg = `Terima kasih, Kak ${guestName}! 😊 Ada yang bisa saya bantu hari ini?`;
+        await logMessage(supabase, conversationId, 'assistant', confirmMsg);
+
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': FONNTE_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ target: phone, message: confirmMsg }),
+        });
+
+        return new Response(JSON.stringify({ status: "name_captured", guest_name: guestName, conversation_id: conversationId }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-
-      // Log name message and confirmation
-      await logMessage(supabase, conversationId, 'user', guestName);
-      const confirmMsg = `Terima kasih, Kak ${guestName}! 😊 Ada yang bisa saya bantu hari ini?`;
-      await logMessage(supabase, conversationId, 'assistant', confirmMsg);
-
-      await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': FONNTE_API_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ target: phone, message: confirmMsg }),
-      });
-
-      return new Response(JSON.stringify({ status: "name_captured", guest_name: guestName, conversation_id: conversationId }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     // Update session with session_type = 'guest' for regular users
@@ -941,10 +969,19 @@ Silakan coba lagi atau hubungi technical support.`;
       .limit(20);
 
     // Build messages array - reverse to get chronological order (oldest to newest)
-    let messages = (history || []).reverse().map(m => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-    }));
+    // Handle [Admin] and [System] tagged messages for takeover context
+    let messages = (history || []).reverse().map(m => {
+      const content = m.content;
+      // System transition messages become system context
+      if (content.startsWith('[System]')) {
+        return { role: 'system' as const, content: content.replace('[System] ', '') };
+      }
+      // Admin messages: keep content with marker so AI knows admin handled it
+      if (content.startsWith('[Admin]')) {
+        return { role: 'assistant' as const, content: `(Pesan dari admin/pengelola hotel): ${content.replace('[Admin] ', '')}` };
+      }
+      return { role: m.role as 'user' | 'assistant', content };
+    });
     
     // If history is empty or last message doesn't match current, add it
     const lastMsg = messages[messages.length - 1];

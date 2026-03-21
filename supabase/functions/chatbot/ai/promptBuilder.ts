@@ -239,12 +239,11 @@ Jika user memberikan data tamu (nama + email + HP + jumlah):
 - cek/ubah booking (tanpa konteks) → minta kode PMH-XXXXXX + telepon + email
 - "cara bayar?"/"metode pembayaran?" → get_payment_methods (perlu kode booking + telepon + email)
 
-🏷️ HARGA KHUSUS LONG STAY (3+ MALAM):
-- Jika tamu menanyakan DISKON/HARGA KHUSUS untuk menginap 3 malam atau LEBIH:
-  1. LANGSUNG panggil notify_longstay_inquiry dengan info yang sudah diketahui
-  2. Setelah tool berhasil, beritahu tamu: "Terima kasih atas minatnya! Untuk menginap 3 malam atau lebih, kami memiliki penawaran harga khusus. Tim kami akan segera menghubungi Anda melalui WhatsApp untuk memberikan penawaran terbaik. Mohon ditunggu sebentar ya! 🙏"
-  3. JANGAN berikan harga sendiri untuk long stay - SELALU eskalasi ke admin
-- Tanda tamu minta long stay: "diskon", "harga khusus", "long stay", "menginap lama", "X malam" (X≥3) + bertanya soal potongan harga
+🏷️ HARGA KHUSUS LONG STAY:
+- PENTING: Jika tamu hanya bertanya HARGA NORMAL atau KETERSEDIAAN untuk 3+ malam, JAWAB SEPERTI BIASA menggunakan check_availability dan berikan harga standar. JANGAN eskalasi ke admin!
+- HANYA panggil notify_longstay_inquiry jika tamu SECARA EKSPLISIT meminta DISKON, POTONGAN HARGA, atau HARGA KHUSUS untuk menginap lama (contoh: "ada diskon untuk 5 malam?", "harga khusus long stay", "bisa dapat potongan?")
+- Tanda tamu minta long stay DISCOUNT (BUKAN sekedar tanya harga): kata "diskon", "potongan", "harga khusus", "nego", "long stay discount"
+- Jika hanya bertanya "berapa harga 3 malam?" atau "info biaya 5 malam" → INI BUKAN long stay inquiry, jawab dengan harga normal!
 
 💳 PEMBAYARAN:
 - JANGAN berikan link pembayaran online kepada tamu (sedang tahap sandbox)

@@ -208,7 +208,7 @@ export default function AdminDashboard() {
                         {booking.guest_name || "Tamu"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {booking.room_name || "Kamar"}
+                        Kamar
                       </p>
                     </div>
                     <div className="text-right">
