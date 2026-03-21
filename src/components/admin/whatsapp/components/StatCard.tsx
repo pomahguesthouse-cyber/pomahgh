@@ -11,14 +11,14 @@ const variantClasses = {
 export const StatCard = ({ title, value, icon: Icon, variant = 'default' }: StatCardProps) => {
   return (
     <Card className={variantClasses[variant]}>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-background">
-            <Icon className="w-5 h-5 text-muted-foreground" />
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 rounded-lg bg-background">
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
           </div>
-          <div>
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs text-muted-foreground">{title}</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold truncate">{value}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{title}</p>
           </div>
         </div>
       </CardContent>
