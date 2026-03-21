@@ -73,24 +73,27 @@ export const useRooms = () => {
     queryKey: ["rooms"],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
-      
-      const { data: rooms, error: roomsError } = await supabase
-        .from("rooms")
-        .select("*")
-        .eq("available", true)
-        .order("price_per_night", { ascending: true });
+
+      // Fetch rooms and active promotions in parallel
+      const [
+        { data: rooms, error: roomsError },
+        { data: promotions, error: promosError },
+      ] = await Promise.all([
+        supabase
+          .from("rooms")
+          .select("*")
+          .eq("available", true)
+          .order("price_per_night", { ascending: true }),
+        supabase
+          .from("room_promotions")
+          .select("*")
+          .eq("is_active", true)
+          .lte("start_date", today)
+          .gte("end_date", today)
+          .order("priority", { ascending: false }),
+      ]);
 
       if (roomsError) throw roomsError;
-      
-      // Fetch active promotions
-      const { data: promotions, error: promosError } = await supabase
-        .from("room_promotions")
-        .select("*")
-        .eq("is_active", true)
-        .lte("start_date", today)
-        .gte("end_date", today)
-        .order("priority", { ascending: false });
-
       if (promosError) throw promosError;
 
       const promosByRoom = new Map<string, RoomPromotion>();

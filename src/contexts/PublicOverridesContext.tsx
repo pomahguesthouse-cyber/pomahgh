@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useMemo, ReactNode } from 'react';
 
 interface PublicOverridesContextType {
   overrides: Record<string, unknown>;
@@ -10,12 +10,16 @@ const PublicOverridesContext = createContext<PublicOverridesContextType | undefi
 
 export function PublicOverridesProvider({ children }: { children: ReactNode }) {
   // Simplified - no overrides functionality
-  const getElementStyles = (_elementId: string): React.CSSProperties => {
-    return {};
-  };
+  const getElementStyles = (_elementId: string): React.CSSProperties => ({});
+
+  const value = useMemo(
+    () => ({ overrides: {} as Record<string, unknown>, isLoading: false, getElementStyles }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   return (
-    <PublicOverridesContext.Provider value={{ overrides: {}, isLoading: false, getElementStyles }}>
+    <PublicOverridesContext.Provider value={value}>
       {children}
     </PublicOverridesContext.Provider>
   );

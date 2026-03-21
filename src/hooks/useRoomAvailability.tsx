@@ -20,11 +20,14 @@ export const useRoomAvailability = (roomId?: string) => {
   const { data: unavailableDates, isLoading } = useQuery({
     queryKey: ["room-unavailable-dates", roomId || "all"],
     queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
       let query = supabase
         .from("room_unavailable_dates")
         .select("*")
-        .order("unavailable_date");
-      
+        .gte("unavailable_date", today) // only fetch future/current dates
+        .order("unavailable_date")
+        .limit(365); // at most 1 year ahead
+
       // If roomId provided, filter by specific room
       // Otherwise, fetch ALL unavailable dates for calendar view
       if (roomId) {

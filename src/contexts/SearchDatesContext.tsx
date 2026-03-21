@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useMemo, ReactNode } from "react";
 
 interface SearchDatesContextType {
   checkIn: Date | undefined;
@@ -13,8 +13,13 @@ export const SearchDatesProvider = ({ children }: { children: ReactNode }) => {
   const [checkIn, setCheckIn] = useState<Date | undefined>();
   const [checkOut, setCheckOut] = useState<Date | undefined>();
 
+  const value = useMemo(
+    () => ({ checkIn, checkOut, setCheckIn, setCheckOut }),
+    [checkIn, checkOut]
+  );
+
   return (
-    <SearchDatesContext.Provider value={{ checkIn, checkOut, setCheckIn, setCheckOut }}>
+    <SearchDatesContext.Provider value={value}>
       {children}
     </SearchDatesContext.Provider>
   );

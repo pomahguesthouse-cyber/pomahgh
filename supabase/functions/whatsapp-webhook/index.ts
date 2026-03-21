@@ -13,6 +13,14 @@ const RATE_LIMIT_WINDOW = 60 * 1000;
 
 function checkRateLimit(phone: string): boolean {
   const now = Date.now();
+
+  // Periodic eviction of expired entries to prevent unbounded memory growth
+  if (rateLimitMap.size > 500) {
+    for (const [k, v] of rateLimitMap) {
+      if (now > v.resetAt) rateLimitMap.delete(k);
+    }
+  }
+
   const entry = rateLimitMap.get(phone);
   
   if (!entry || now > entry.resetAt) {
@@ -41,44 +49,43 @@ function normalizePhone(phone: string): string {
 }
 
 // Indonesian slang normalizer for better AI understanding
+// Pre-compiled at module level to avoid creating RegExp objects on every call
+const SLANG_PATTERNS: Array<[RegExp, string]> = Object.entries({
+  'dlx': 'deluxe', 'delux': 'deluxe', 'dluxe': 'deluxe',
+  'grnd': 'grand', 'grd': 'grand',
+  'fam': 'family', 'fmly': 'family',
+  'sgl': 'single', 'sngl': 'single',
+  'kmr': 'kamar', 'kmar': 'kamar',
+  'brp': 'berapa', 'brapa': 'berapa',
+  'bs': 'bisa', 'bsa': 'bisa', 'bza': 'bisa',
+  'gk': 'tidak', 'ga': 'tidak', 'ngga': 'tidak', 'gak': 'tidak', 'nggak': 'tidak',
+  'sy': 'saya', 'aku': 'saya', 'ak': 'saya', 'gw': 'saya', 'gue': 'saya',
+  'mlm': 'malam', 'malem': 'malam',
+  'org': 'orang', 'orng': 'orang',
+  'tgl': 'tanggal', 'tggl': 'tanggal',
+  'kpn': 'kapan', 'kapn': 'kapan',
+  'bsk': 'besok', 'besuk': 'besok',
+  'lsa': 'lusa',
+  'gmn': 'bagaimana', 'gimana': 'bagaimana', 'gmna': 'bagaimana',
+  'udh': 'sudah', 'udah': 'sudah', 'sdh': 'sudah',
+  'blm': 'belum', 'blum': 'belum',
+  'yg': 'yang', 'yng': 'yang',
+  'dg': 'dengan', 'dgn': 'dengan',
+  'utk': 'untuk', 'utuk': 'untuk', 'buat': 'untuk',
+  'krn': 'karena', 'krna': 'karena',
+  'lg': 'lagi', 'lgi': 'lagi',
+  'msh': 'masih', 'msih': 'masih',
+  'jg': 'juga', 'jga': 'juga',
+  'tp': 'tapi', 'tpi': 'tapi',
+  'sm': 'sama', 'ama': 'sama',
+  'trims': 'terima kasih', 'tq': 'terima kasih', 'makasih': 'terima kasih', 'mksh': 'terima kasih',
+}).map(([slang, replacement]) => [new RegExp(`\\b${slang}\\b`, 'gi'), replacement]);
+
 function normalizeIndonesianMessage(msg: string): string {
-  const slangMap: Record<string, string> = {
-    'dlx': 'deluxe', 'delux': 'deluxe', 'dluxe': 'deluxe',
-    'grnd': 'grand', 'grd': 'grand',
-    'fam': 'family', 'fmly': 'family',
-    'sgl': 'single', 'sngl': 'single',
-    'kmr': 'kamar', 'kmar': 'kamar',
-    'brp': 'berapa', 'brapa': 'berapa',
-    'bs': 'bisa', 'bsa': 'bisa', 'bza': 'bisa',
-    'gk': 'tidak', 'ga': 'tidak', 'ngga': 'tidak', 'gak': 'tidak', 'nggak': 'tidak',
-    'sy': 'saya', 'aku': 'saya', 'ak': 'saya', 'gw': 'saya', 'gue': 'saya',
-    'mlm': 'malam', 'malem': 'malam',
-    'org': 'orang', 'orng': 'orang',
-    'tgl': 'tanggal', 'tggl': 'tanggal',
-    'kpn': 'kapan', 'kapn': 'kapan',
-    'bsk': 'besok', 'besuk': 'besok',
-    'lsa': 'lusa',
-    'gmn': 'bagaimana', 'gimana': 'bagaimana', 'gmna': 'bagaimana',
-    'udh': 'sudah', 'udah': 'sudah', 'sdh': 'sudah',
-    'blm': 'belum', 'blum': 'belum',
-    'yg': 'yang', 'yng': 'yang',
-    'dg': 'dengan', 'dgn': 'dengan',
-    'utk': 'untuk', 'utuk': 'untuk', 'buat': 'untuk',
-    'krn': 'karena', 'krna': 'karena',
-    'lg': 'lagi', 'lgi': 'lagi',
-    'msh': 'masih', 'msih': 'masih',
-    'jg': 'juga', 'jga': 'juga',
-    'tp': 'tapi', 'tpi': 'tapi',
-    'sm': 'sama', 'ama': 'sama',
-    'trims': 'terima kasih', 'tq': 'terima kasih', 'makasih': 'terima kasih', 'mksh': 'terima kasih',
-  };
-  
   let normalized = msg.toLowerCase();
-  for (const [slang, replacement] of Object.entries(slangMap)) {
-    const regex = new RegExp(`\\b${slang}\\b`, 'gi');
-    normalized = normalized.replace(regex, replacement);
+  for (const [re, replacement] of SLANG_PATTERNS) {
+    normalized = normalized.replace(re, replacement);
   }
-  
   return normalized;
 }
 
@@ -327,6 +334,69 @@ function extractConversationContext(messages: Array<{role: string, content: stri
   return Object.keys(context).length > 0 ? context : null;
 }
 
+// Module-level TTL cache for hotel_settings (changes rarely, no need to fetch per-request)
+interface HotelSettingsCache {
+  data: {
+    whatsapp_session_timeout_minutes: number | null;
+    whatsapp_ai_whitelist: string[] | null;
+    whatsapp_response_mode: string | null;
+    whatsapp_manager_numbers: Array<{phone: string; name: string; role?: string}> | null;
+  } | null;
+  expiresAt: number;
+}
+let hotelSettingsCache: HotelSettingsCache = { data: null, expiresAt: 0 };
+const HOTEL_SETTINGS_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getCachedHotelSettings(supabase: SupabaseClient) {
+  const now = Date.now();
+  if (hotelSettingsCache.data && now < hotelSettingsCache.expiresAt) {
+    return hotelSettingsCache.data;
+  }
+  const { data } = await supabase
+    .from('hotel_settings')
+    .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_response_mode, whatsapp_manager_numbers')
+    .single();
+  hotelSettingsCache = { data, expiresAt: now + HOTEL_SETTINGS_TTL };
+  return data;
+}
+
+// Helper: Execute tool calls in parallel and return tool result messages
+type ToolCall = { id: string; function: { name: string; arguments: string } };
+async function executeToolCalls(
+  toolCalls: ToolCall[],
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  chatbotToolsInternalSecret: string,
+  label = ''
+): Promise<Array<{ role: string; content: string; tool_call_id: string }>> {
+  const prefix = label ? `[${label}] ` : '';
+  return Promise.all(
+    toolCalls.map(async (toolCall) => {
+      console.log(`${prefix}Executing tool: ${toolCall.function.name}`);
+      try {
+        const toolResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'X-Internal-Secret': chatbotToolsInternalSecret,
+          },
+          body: JSON.stringify({
+            tool_name: toolCall.function.name,
+            parameters: JSON.parse(toolCall.function.arguments || '{}'),
+          }),
+        });
+        const toolResult = await toolResponse.json();
+        console.log(`${prefix}Tool ${toolCall.function.name} result:`, JSON.stringify(toolResult).substring(0, 200));
+        return { role: 'tool', content: JSON.stringify(toolResult), tool_call_id: toolCall.id };
+      } catch (toolError) {
+        console.error(`${prefix}Tool ${toolCall.function.name} error:`, toolError);
+        return { role: 'tool', content: JSON.stringify({ error: 'Tool execution failed' }), tool_call_id: toolCall.id };
+      }
+    })
+  );
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -444,25 +514,21 @@ serve(async (req) => {
       });
     }
 
-    // Get hotel settings
-    const { data: hotelSettings } = await supabase
-      .from('hotel_settings')
-      .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_response_mode, whatsapp_manager_numbers')
-      .single();
-    
+    // Get hotel settings (TTL-cached) and existing session in parallel
+    const [hotelSettings, { data: session }] = await Promise.all([
+      getCachedHotelSettings(supabase),
+      supabase
+        .from('whatsapp_sessions')
+        .select('*')
+        .eq('phone_number', phone)
+        .single(),
+    ]);
+
     const sessionTimeoutMinutes = hotelSettings?.whatsapp_session_timeout_minutes || 15;
     const aiWhitelist: string[] = hotelSettings?.whatsapp_ai_whitelist || [];
     const responseMode = hotelSettings?.whatsapp_response_mode || 'ai';
     const managerNumbers: Array<{phone: string; name: string; role?: string}> = hotelSettings?.whatsapp_manager_numbers || [];
-    
     console.log(`Session timeout: ${sessionTimeoutMinutes}min, Response mode: ${responseMode}, Managers: ${managerNumbers.length}`);
-
-    // Get existing session
-    const { data: session } = await supabase
-      .from('whatsapp_sessions')
-      .select('*')
-      .eq('phone_number', phone)
-      .single();
 
     // Check if blocked
     if (session?.is_blocked) {
@@ -1054,42 +1120,13 @@ Silakan coba lagi atau hubungi technical support.`;
     // Handle tool calls (like web chatbot)
     if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {
       console.log(`Tool calls detected: ${aiMessage.tool_calls.length}`);
-      
-      const toolResults: Array<{ role: string; content: string; tool_call_id: string }> = [];
-      for (const toolCall of aiMessage.tool_calls) {
-        console.log(`Executing tool: ${toolCall.function.name}`);
-        
-        try {
-          const toolResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'X-Internal-Secret': chatbotToolsInternalSecret,
-            },
-            body: JSON.stringify({
-              tool_name: toolCall.function.name,
-              parameters: JSON.parse(toolCall.function.arguments || '{}'),
-            }),
-          });
 
-          const toolResult = await toolResponse.json();
-          console.log(`Tool ${toolCall.function.name} result:`, JSON.stringify(toolResult).substring(0, 200));
-
-          toolResults.push({
-            role: 'tool',
-            content: JSON.stringify(toolResult),
-            tool_call_id: toolCall.id,
-          });
-        } catch (toolError) {
-          console.error(`Tool ${toolCall.function.name} error:`, toolError);
-          toolResults.push({
-            role: 'tool',
-            content: JSON.stringify({ error: "Tool execution failed" }),
-            tool_call_id: toolCall.id,
-          });
-        }
-      }
+      const toolResults = await executeToolCalls(
+        aiMessage.tool_calls,
+        supabaseUrl,
+        supabaseServiceKey,
+        chatbotToolsInternalSecret
+      );
 
       // Get final response from AI with tool results
       console.log("Sending tool results back to chatbot...");
@@ -1159,39 +1196,14 @@ Silakan coba lagi atau hubungi technical support.`;
         // If retry has tool calls, execute them
         if (retryMessage?.tool_calls && retryMessage.tool_calls.length > 0) {
           console.log(`✅ Retry triggered ${retryMessage.tool_calls.length} tool call(s)`);
-          
-          const retryToolResults: Array<{ role: string; content: string; tool_call_id: string }> = [];
-          for (const toolCall of retryMessage.tool_calls) {
-            console.log(`Executing retry tool: ${toolCall.function.name}`);
-            try {
-              const toolResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot-tools`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${supabaseServiceKey}`,
-                  'X-Internal-Secret': chatbotToolsInternalSecret,
-                },
-                body: JSON.stringify({
-                  tool_name: toolCall.function.name,
-                  parameters: JSON.parse(toolCall.function.arguments || '{}'),
-                }),
-              });
-              const toolResult = await toolResponse.json();
-              console.log(`Retry tool ${toolCall.function.name} result:`, JSON.stringify(toolResult).substring(0, 200));
-              retryToolResults.push({
-                role: 'tool',
-                content: JSON.stringify(toolResult),
-                tool_call_id: toolCall.id,
-              });
-            } catch (toolError) {
-              console.error(`Retry tool error:`, toolError);
-              retryToolResults.push({
-                role: 'tool',
-                content: JSON.stringify({ error: "Tool execution failed" }),
-                tool_call_id: toolCall.id,
-              });
-            }
-          }
+
+          const retryToolResults = await executeToolCalls(
+            retryMessage.tool_calls,
+            supabaseUrl,
+            supabaseServiceKey,
+            chatbotToolsInternalSecret,
+            'retry'
+          );
           
           // Get final response with retry tool results
           const finalRetryResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
@@ -1341,26 +1353,18 @@ async function ensureConversation(supabase: SupabaseClient, session: { conversat
 }
 
 // Helper: Log message to database
+// Optimized: parallel insert + atomic increment (no SELECT round-trip)
 async function logMessage(supabase: SupabaseClient, conversationId: string, role: string, content: string) {
   if (!conversationId) return;
-  
-  await supabase.from('chat_messages').insert({
-    conversation_id: conversationId,
-    role,
-    content,
-  });
-  
-  // Update message count
-  const { data: conv } = await supabase
-    .from('chat_conversations')
-    .select('message_count')
-    .eq('id', conversationId)
-    .single();
-  
-  await supabase
-    .from('chat_conversations')
-    .update({ message_count: (conv?.message_count || 0) + 1 })
-    .eq('id', conversationId);
+
+  await Promise.all([
+    supabase.from('chat_messages').insert({
+      conversation_id: conversationId,
+      role,
+      content,
+    }),
+    supabase.rpc('increment_conversation_message_count', { conv_id: conversationId }),
+  ]);
 }
 
 // Helper: Update session with session_type

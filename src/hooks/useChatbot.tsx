@@ -8,6 +8,16 @@ import { DEFAULT_CONTEXT, extractConversationContext } from "@/features/chatbot/
 import { buildAutoTrainingInserts } from "@/features/chatbot/services/trainingExampleSelector";
 import { getChatErrorMessage } from "@/features/chatbot/services/errorMessage";
 
+interface ChatbotResponse {
+  choices: Array<{ message: { role: string; content: string; tool_calls?: unknown[] } }>;
+  meta?: {
+    booking_created: boolean;
+    booking_guest_email: string | null;
+    tool_calls_used: string[];
+  };
+  fallback?: boolean;
+}
+
 export const useChatbotSettings = () => {
   return useQuery({
     queryKey: ["chatbot-settings"],
@@ -204,7 +214,7 @@ export const useChatbot = () => {
 
     try {
       // First, call the main chatbot function with conversation context
-      const { data: chatResponse, error: chatError } = await supabase.functions.invoke('chatbot', {
+      const { data: rawChatResponse, error: chatError } = await supabase.functions.invoke('chatbot', {
         body: {
           messages: [...messages, newUserMessage].map(m => ({
             role: m.role,
@@ -217,19 +227,19 @@ export const useChatbot = () => {
 
       if (chatError) throw chatError;
 
+      const chatResponse = rawChatResponse as ChatbotResponse;
+
       // Check for fallback response from edge function
-      const isFallbackResponse = (chatResponse as any)?.fallback === true;
+      const isFallbackResponse = chatResponse?.fallback === true;
       
       if (isFallbackResponse) {
         fallbackCountRef.current += 1;
       }
 
       const assistantContent = chatResponse?.choices?.[0]?.message?.content || "Maaf, saya tidak bisa memproses permintaan ini saat ini.";
-      const bookingCreated = Boolean((chatResponse as any)?.meta?.booking_created);
-      const bookingGuestEmail = (chatResponse as any)?.meta?.booking_guest_email as string | undefined;
-      const toolCallsUsed = Array.isArray((chatResponse as any)?.meta?.tool_calls_used)
-        ? ((chatResponse as any).meta.tool_calls_used as string[])
-        : [];
+      const bookingCreated = Boolean(chatResponse?.meta?.booking_created);
+      const bookingGuestEmail = chatResponse?.meta?.booking_guest_email ?? undefined;
+      const toolCallsUsed = chatResponse?.meta?.tool_calls_used ?? [];
 
       if (bookingCreated) {
         await markBookingCreated(bookingGuestEmail);

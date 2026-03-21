@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, Component, ReactNode } from "react";
 import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
 import { PublicOverridesProvider } from "@/contexts/PublicOverridesContext";
 import { GlobalSEO } from "@/components/GlobalSEO";
@@ -24,6 +24,30 @@ function lazyRetry<T extends React.ComponentType<any>>(
       throw err;
     })
   );
+}
+
+// Simple error boundary to prevent full-page crashes from route errors
+class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center text-center p-8">
+          <div>
+            <p className="text-lg font-semibold mb-2">Terjadi kesalahan.</p>
+            <a href="/" className="text-blue-600 underline text-sm">Kembali ke beranda</a>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 const Index = lazyRetry(() => import("./pages/Index"));
@@ -97,6 +121,7 @@ const App = () => (
           <PublicOverridesProvider>
           <BrowserRouter>
             <SubdomainRouter>
+            <AppErrorBoundary>
             <Suspense fallback={<RouteFallback />}>
             <Routes>
             <Route path="/" element={<Index />} />
@@ -146,6 +171,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
           </Routes>
             </Suspense>
+            </AppErrorBoundary>
             </SubdomainRouter>
         </BrowserRouter>
           </PublicOverridesProvider>

@@ -23,8 +23,9 @@ export function IconElement({
   const { iconName = "Star", iconSize = 48, iconColor = "#0f172a" } = element.props;
   const { textAlign, marginTop, marginBottom } = element.styles;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const IconComponent = (LucideIcons as any)[iconName] || LucideIcons.Star;
+  const IconComponent =
+    (LucideIcons as Record<string, React.FC<React.SVGProps<SVGSVGElement>>>)[iconName] ??
+    LucideIcons.Star;
 
   const style: React.CSSProperties = { marginTop, marginBottom };
 
