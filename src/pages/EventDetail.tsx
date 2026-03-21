@@ -124,6 +124,10 @@ const EventDetail = () => {
               <img
                 src={event.image_url}
                 alt={event.image_alt || event.name}
+                loading="eager"
+                fetchPriority="high"
+                width={1200}
+                height={514}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -196,6 +200,9 @@ const EventDetail = () => {
                         <img
                           src={url}
                           alt={`${event.name} - Foto ${index + 1}`}
+                          loading="lazy"
+                          width={400}
+                          height={300}
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                         />
                       </div>

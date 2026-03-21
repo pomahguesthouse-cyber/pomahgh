@@ -1,8 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { MapPin, Clock, ArrowLeft, Lightbulb, Calendar, DollarSign, Share2 } from "lucide-react";
-import * as Icons from "lucide-react";
+import { MapPin, Clock, ArrowLeft, Lightbulb, Calendar, DollarSign, Share2, Utensils, Mountain, ShoppingBag, Landmark } from "lucide-react";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -10,9 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCityAttractions } from "@/hooks/useCityAttractions";
+import { useAttractionBySlug } from "@/hooks/useAttractionBySlug";
 import { useSeoSettings } from "@/hooks/useSeoSettings";
 import { AttractionCard } from "@/components/explore/AttractionCard";
+import { useCityAttractions } from "@/hooks/useCityAttractions";
 import { toast } from "@/hooks/use-toast";
 
 const categoryLabels: Record<string, string> = {
@@ -23,15 +23,25 @@ const categoryLabels: Record<string, string> = {
   budaya: "Budaya",
 };
 
+const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  wisata: MapPin,
+  kuliner: Utensils,
+  alam: Mountain,
+  belanja: ShoppingBag,
+  budaya: Landmark,
+};
+
 const AttractionDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { attractions, isLoading } = useCityAttractions();
+  const { data: attraction, isLoading } = useAttractionBySlug(slug);
+  const { data: allAttractions = [] } = useCityAttractions();
   const { settings: seoSettings } = useSeoSettings();
   
-  const attraction = attractions.find((a) => a.slug === slug);
-  const relatedAttractions = attractions
-    .filter((a) => a.category === attraction?.category && a.id !== attraction?.id)
-    .slice(0, 3);
+  const relatedAttractions = attraction
+    ? allAttractions
+        .filter((a) => a.category === attraction.category && a.id !== attraction.id)
+        .slice(0, 3)
+    : [];
   
   const baseUrl = seoSettings?.canonical_url || "https://pomahguesthouse.com";
   
@@ -94,7 +104,7 @@ const AttractionDetail = () => {
     );
   }
 
-  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[attraction.icon_name] || Icons.MapPin;
+  const IconComponent = categoryIcons[attraction.category] || MapPin;
   const imageUrl = attraction.image_url || defaultImages[attraction.category] || defaultImages.wisata;
 
   const attractionSchema = {
@@ -136,6 +146,10 @@ const AttractionDetail = () => {
             src={imageUrl}
             alt={attraction.name}
             className="w-full h-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+            width={1200}
+            height={600}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
           

@@ -72,6 +72,8 @@ const Header = memo(function Header() {
               <img
                 src={settings?.logo_url || "/logo.png"}
                 alt="Pomah Guesthouse"
+                width={44}
+                height={44}
                 className={`${isScrolled ? "h-9" : "h-11"} transition-all`}
               />
             </Link>
@@ -115,7 +117,7 @@ const Header = memo(function Header() {
           `}
         >
           <div className="h-full flex items-center justify-between">
-            <img src={settings?.logo_url || "/logo.png"} alt="Pomah Guesthouse" className="h-8" />
+            <img src={settings?.logo_url || "/logo.png"} alt="Pomah Guesthouse" width={32} height={32} className="h-8" />
             <Button size="icon" onClick={handleUserClick} className="rounded-full bg-white/20 text-white">
               {user ? <User size={18} /> : <LogIn size={18} />}
             </Button>

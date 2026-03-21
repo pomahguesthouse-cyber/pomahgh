@@ -10,6 +10,7 @@ import { Location } from "@/components/Location";
 import { Footer } from "@/components/Footer";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import { LazySection } from "@/components/LazySection";
 
 const Index = () => {
   const location = useLocation();
@@ -35,9 +36,15 @@ const Index = () => {
         <OptimizedHero />
         <Welcome />
         <GoogleRating />
-        <Rooms />
-        <Amenities />
-        <Location />
+        <LazySection>
+          <Rooms />
+        </LazySection>
+        <LazySection>
+          <Amenities />
+        </LazySection>
+        <LazySection>
+          <Location />
+        </LazySection>
       </main>
       <Footer />
       <ChatbotWidget />

@@ -1,12 +1,13 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet-async";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Phone, MapPin, Star, CheckCircle, Sparkles } from "lucide-react";
-import Markdown from "react-markdown";
+const Markdown = lazy(() => import("react-markdown"));
 import NotFound from "./NotFound";
 import { LandingPageHeroSlider, HeroSlide } from "@/components/landing/LandingPageHeroSlider";
 import { LandingFacilities } from "@/components/landing/LandingFacilities";
@@ -264,7 +265,9 @@ function LegacyLandingPageContent({ page, whatsappUrl }: { page: LandingPageData
               prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/30 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-foreground/80
               prose-img:rounded-xl prose-img:shadow-lg
             ">
-              <Markdown>{page.page_content}</Markdown>
+              <Suspense fallback={<div className="animate-pulse bg-muted h-96 rounded-lg" />}>
+                <Markdown>{page.page_content}</Markdown>
+              </Suspense>
             </article>
           </div>
         </section>

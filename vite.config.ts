@@ -33,7 +33,23 @@ export default defineConfig(({ mode }) => ({
       "@tanstack/react-query",
       "zustand",
       "immer",
+      "framer-motion",
+      "date-fns",
+      "lucide-react",
     ],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks for better caching
+          'vendor-ui': ['framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-popover', '@radix-ui/react-tabs'],
+          'vendor-charts': ['recharts'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+        },
+      },
+    },
   },
 }));
 

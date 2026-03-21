@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { formatRupiahID, formatDateTimeID } from '@/utils/indonesianFormat';
 
@@ -111,11 +110,14 @@ export const useBookingExport = () => {
     });
   };
 
-  const exportToExcel = (
+  const exportToExcel = async (
     bookings: BookingExportData[],
     filter?: ExportFilter,
     filename: string = 'booking-calendar'
   ) => {
+    // Dynamically import XLSX only when needed
+    const XLSX = await import('xlsx');
+    
     const exportData = prepareExportData(bookings, filter);
     
     // Create worksheet

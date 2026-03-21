@@ -53,7 +53,7 @@ export function ReviewSlider({
             {/* Author Info */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {reviews[currentIndex].authorPhoto ? <img src={reviews[currentIndex].authorPhoto} alt={reviews[currentIndex].authorName} className="h-10 w-10 rounded-full object-cover" referrerPolicy="no-referrer" /> : <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                {reviews[currentIndex].authorPhoto ? <img src={reviews[currentIndex].authorPhoto} alt={reviews[currentIndex].authorName} width={40} height={40} className="h-10 w-10 rounded-full object-cover" referrerPolicy="no-referrer" /> : <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                     <User className="h-5 w-5 text-muted-foreground" />
                   </div>}
                 <div>

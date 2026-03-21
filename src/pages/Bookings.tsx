@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,11 +27,9 @@ interface Booking {
 const Bookings = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   // ===============================
-  // Auth check
+  // Auth check (single effect)
   // ===============================
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,31 +58,26 @@ const Bookings = () => {
   }, [navigate]);
 
   // ===============================
-  // Fetch bookings
+  // Fetch bookings with useQuery (no waterfall)
   // ===============================
-  useEffect(() => {
-    if (user) fetchBookings();
-  }, [user]);
-
   const fetchBookings = async () => {
-    setIsLoading(true);
-
     const { data, error } = await supabase.from("bookings").select("*").order("created_at", { ascending: false });
-
-    if (error) {
-      toast.error("Failed to load bookings", {
-        description: error.message,
-      });
-    } else {
-      setBookings(data || []);
-    }
-
-    setIsLoading(false);
+    if (error) throw error;
+    return data || [];
   };
 
+  const { data: bookings = [], isLoading } = useQuery({
+    queryKey: ["bookings", user?.id],
+    queryFn: fetchBookings,
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   // ===============================
-  // Cancel booking
+  // Cancel booking with cache invalidation
   // ===============================
+  const queryClient = useQueryClient();
+
   const handleCancelBooking = async (bookingId: string) => {
     const { error } = await supabase.from("bookings").delete().eq("id", bookingId);
 
@@ -95,7 +89,7 @@ const Bookings = () => {
       toast.success("Booking cancelled", {
         description: "Your booking has been cancelled successfully.",
       });
-      fetchBookings();
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
     }
   };
 

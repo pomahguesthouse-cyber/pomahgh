@@ -62,9 +62,10 @@ interface HeroSlideProps {
   checkOut: Date | undefined;
   setCheckIn: (d: Date | undefined) => void;
   setCheckOut: (d: Date | undefined) => void;
+  isPrimary?: boolean;
 }
 
-const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, checkOut, setCheckIn, setCheckOut }: HeroSlideProps) => {
+const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, checkOut, setCheckIn, setCheckOut, isPrimary }: HeroSlideProps) => {
   const titleAnim = getTextAnimation(slide.title_animation, slide.title_animation_loop || false);
   const subtitleAnim = getTextAnimation(slide.subtitle_animation, slide.subtitle_animation_loop || false);
   const align = alignMap[(slide.text_align as keyof typeof alignMap) || "center"];
@@ -72,7 +73,7 @@ const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, c
 
   return (
     <CarouselItem className="h-screen relative">
-      {/* Background - use loading="eager" for first slide */}
+      {/* Background - use loading="eager" for first slide only */}
       {slide.media_type === "video" && slide.video_url ? (
         <div className="absolute inset-0">
           <video
@@ -98,9 +99,9 @@ const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, c
           <img
             src={slide.image_url || HERO_PLACEHOLDER}
             alt={slide.overlay_text || "Hero image"}
-            loading="eager"
+            loading={isPrimary ? "eager" : "lazy"}
             decoding="async"
-            fetchPriority="high"
+            fetchPriority={isPrimary ? "high" : undefined}
             className="absolute inset-0 w-full h-full object-cover"
           />
           {(slide.show_overlay ?? true) && (
@@ -310,7 +311,7 @@ export default function OptimizedHero() {
     >
       <Carousel opts={carouselRootOpts} plugins={autoplayRef.current ? [autoplayRef.current] : undefined} className="w-full h-full">
         <CarouselContent className="h-screen">
-          {heroSlides.map((slide) => (
+          {heroSlides.map((slide, index) => (
             <HeroSlide
               key={slide.id}
               slide={slide}
@@ -320,6 +321,7 @@ export default function OptimizedHero() {
               checkOut={checkOut}
               setCheckIn={setCheckIn}
               setCheckOut={setCheckOut}
+              isPrimary={index === 0}
             />
           ))}
         </CarouselContent>

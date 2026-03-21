@@ -5,7 +5,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Mail, Download, Loader2, Check } from "lucide-react";
 import { useInvoice } from "@/hooks/useInvoice";
 import DOMPurify from "dompurify";
-import html2pdf from "html2pdf.js";
 import { toast } from "sonner";
 
 interface InvoicePreviewDialogProps {
@@ -59,8 +58,11 @@ export const InvoicePreviewDialog = ({
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!invoiceHtml) return;
+
+    // Dynamically import html2pdf only when user clicks download
+    const html2pdf = await import("html2pdf.js");
 
     const element = document.createElement('div');
     element.innerHTML = DOMPurify.sanitize(invoiceHtml, {
@@ -77,7 +79,7 @@ export const InvoicePreviewDialog = ({
       jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as const }
     };
 
-    html2pdf().set(opt).from(element).save();
+    html2pdf.default().set(opt).from(element).save();
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { useRoomDetail } from "@/hooks/useRoomDetail";
 import NotFound from "./NotFound";
@@ -12,7 +12,7 @@ import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { BookingDialog } from "@/components/BookingDialog";
-import { VirtualTourViewer } from "@/components/VirtualTourViewer";
+const VirtualTourViewer = lazy(() => import("@/components/VirtualTourViewer").then(m => ({ default: m.VirtualTourViewer })));
 import { Loader2 } from "lucide-react";
 import type { Room } from "@/hooks/useRooms";
 import {
@@ -156,12 +156,14 @@ const RoomDetail = () => {
         initialNumGuests={initialNumGuests}
       />
 
-      <VirtualTourViewer
-        tourUrl={room.virtual_tour_url}
-        roomName={room.name}
-        open={tourOpen}
-        onOpenChange={setTourOpen}
-      />
+      <Suspense fallback={null}>
+        <VirtualTourViewer
+          tourUrl={room.virtual_tour_url}
+          roomName={room.name}
+          open={tourOpen}
+          onOpenChange={setTourOpen}
+        />
+      </Suspense>
     </>
   );
 };
