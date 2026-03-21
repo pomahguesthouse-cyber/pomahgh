@@ -19,6 +19,7 @@ interface RoomData {
   name: string;
   description: string;
   price_per_night: number;
+  final_price: number | null;
   max_guests: number;
   image_url: string;
   size_sqm: number | null;
@@ -62,7 +63,7 @@ export function RoomSliderElement({
     const fetchRooms = async () => {
       const { data } = await supabase
         .from("rooms")
-        .select("id, name, description, price_per_night, max_guests, image_url, size_sqm, slug")
+        .select("id, name, description, price_per_night, final_price, max_guests, image_url, size_sqm, slug")
         .eq("available", true)
         .order("price_per_night");
       if (data) setRooms(data);
@@ -166,7 +167,7 @@ export function RoomSliderElement({
                           {showPrice && (
                             <div className="min-w-0">
                               <span className="text-sm md:text-lg font-bold text-primary">
-                                Rp {room.price_per_night.toLocaleString("id-ID")}
+                                Rp {(room.final_price || room.price_per_night).toLocaleString("id-ID")}
                               </span>
                               <span className="text-[10px] md:text-xs text-muted-foreground">/malam</span>
                             </div>

@@ -13,6 +13,7 @@
    name: string;
    slug: string;
    price_per_night: number | null;
+   final_price: number | null;
    image_url: string | null;
    description: string | null;
    max_guests: number | null;
@@ -26,7 +27,7 @@
     queryFn: async (): Promise<RoomData[]> => {
        const { data, error } = await supabase
          .from("rooms")
-         .select("id, name, slug, price_per_night, image_url, description, max_guests")
+         .select("id, name, slug, price_per_night, final_price, image_url, description, max_guests")
          .eq("available", true)
          .order("name")
          .limit(6);
@@ -83,7 +84,7 @@
                      {/* Price Badge */}
                      <div className="absolute top-4 right-4">
                        <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg">
-                         Rp {room.price_per_night?.toLocaleString("id-ID")}
+                         Rp {(room.final_price || room.price_per_night)?.toLocaleString("id-ID")}
                          <span className="text-xs font-normal opacity-80">/mlm</span>
                        </div>
                      </div>
