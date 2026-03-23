@@ -426,13 +426,33 @@ serve(async (req) => {
   }
 
   const reqUrl = new URL(req.url);
-  const providedWebhookToken =
-    req.headers.get("x-webhook-token") ||
-    req.headers.get("X-Webhook-Token") ||
-    reqUrl.searchParams.get("token");
+  const authorizationHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+  const bearerToken = authorizationHeader?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+  const rawAuthorizationToken = authorizationHeader && !bearerToken ? authorizationHeader.trim() : null;
+  const providedWebhookToken = [
+    req.headers.get("x-webhook-token"),
+    req.headers.get("X-Webhook-Token"),
+    req.headers.get("x-fonnte-token"),
+    req.headers.get("X-Fonnte-Token"),
+    req.headers.get("apikey"),
+    req.headers.get("ApiKey"),
+    bearerToken,
+    rawAuthorizationToken,
+    reqUrl.searchParams.get("token"),
+    reqUrl.searchParams.get("apikey"),
+  ].find((value): value is string => Boolean(value && value.trim()));
 
   if (!providedWebhookToken || providedWebhookToken !== expectedWebhookToken) {
-    console.warn("Unauthorized webhook request: invalid token");
+    console.warn(
+      "Unauthorized webhook request: invalid token",
+      JSON.stringify({
+        hasAuthorization: Boolean(authorizationHeader),
+        hasXWebhookToken: Boolean(req.headers.get("x-webhook-token") || req.headers.get("X-Webhook-Token")),
+        hasXFonnteToken: Boolean(req.headers.get("x-fonnte-token") || req.headers.get("X-Fonnte-Token")),
+        hasApiKeyHeader: Boolean(req.headers.get("apikey") || req.headers.get("ApiKey")),
+        hasQueryToken: Boolean(reqUrl.searchParams.get("token") || reqUrl.searchParams.get("apikey")),
+      })
+    );
     return new Response(JSON.stringify({ status: "unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
