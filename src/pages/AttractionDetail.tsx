@@ -155,7 +155,7 @@ const AttractionDetail = () => {
           
           <div className="absolute bottom-0 left-0 right-0 p-8">
             <div className="max-w-4xl mx-auto">
-              <Badge className="mb-4">{categoryLabels[attraction.category]}</Badge>
+              <Badge className="mb-4">{categoryLabels[attraction.category ?? '']}</Badge>
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 {attraction.name}
               </h1>
