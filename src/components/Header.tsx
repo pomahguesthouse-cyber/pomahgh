@@ -72,9 +72,9 @@ const Header = memo(function Header() {
               <img
                 src={settings?.logo_url || "/logo.png"}
                 alt="Pomah Guesthouse"
-                width={44}
-                height={44}
-                className={`${isScrolled ? "h-9" : "h-11"} transition-all`}
+                width={80}
+                height={80}
+                className={`${isScrolled ? "h-14" : "h-20"} transition-all`}
               />
             </Link>
 
