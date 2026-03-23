@@ -426,10 +426,16 @@ serve(async (req) => {
   }
 
   const reqUrl = new URL(req.url);
+  const authHeader = req.headers.get("authorization") || "";
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
   const providedWebhookToken =
     req.headers.get("x-webhook-token") ||
     req.headers.get("X-Webhook-Token") ||
-    reqUrl.searchParams.get("token");
+    req.headers.get("x-fonnte-token") ||
+    req.headers.get("apikey") ||
+    bearerToken ||
+    reqUrl.searchParams.get("token") ||
+    reqUrl.searchParams.get("apikey");
 
   if (!providedWebhookToken || providedWebhookToken !== expectedWebhookToken) {
     console.warn("Unauthorized webhook request: invalid token");
