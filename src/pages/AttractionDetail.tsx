@@ -34,12 +34,12 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
 const AttractionDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: attraction, isLoading } = useAttractionBySlug(slug);
-  const { data: allAttractions = [] } = useCityAttractions();
+  const { attractions: allAttractions, isLoading: isLoadingAll } = useCityAttractions();
   const { settings: seoSettings } = useSeoSettings();
   
   const relatedAttractions = attraction
     ? allAttractions
-        .filter((a) => a.category === attraction.category && a.id !== attraction.id)
+        .filter((a: CityAttraction) => a.category === attraction.category && a.id !== attraction.id)
         .slice(0, 3)
     : [];
   
