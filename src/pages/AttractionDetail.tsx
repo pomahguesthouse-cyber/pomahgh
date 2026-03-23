@@ -208,9 +208,9 @@ const AttractionDetail = () => {
               {attraction.description}
             </p>
             
-            {attraction.long_description && (
+            {(attraction as Record<string, unknown>).long_description && (
               <div className="mt-8 text-foreground">
-                {attraction.long_description.split('\n').map((paragraph, index) => (
+                {String((attraction as Record<string, unknown>).long_description).split('\n').map((paragraph: string, index: number) => (
                   <p key={index}>{paragraph}</p>
                 ))}
               </div>
