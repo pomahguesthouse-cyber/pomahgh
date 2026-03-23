@@ -1129,12 +1129,12 @@ Silakan coba lagi atau hubungi technical support.`;
       console.log(`Created new conversation: ${conversationId}`);
     }
 
-    // === NAME COLLECTION FLOW ===
-    // If this is a new/stale session, ask for the guest's name first
+    // === NEW SESSION SETUP (no name question - langsung proses) ===
     if (isNewSession) {
-      console.log(`🆕 New session for ${phone} - asking for name`);
+      console.log(`🆕 New session for ${phone} - proceeding directly to AI`);
       
-      // Create/update session with awaiting_name flag
+      const genericName = `Tamu WA ${phone.slice(-4)}`;
+      
       await supabase
         .from('whatsapp_sessions')
         .upsert({
@@ -1143,100 +1143,30 @@ Silakan coba lagi atau hubungi technical support.`;
           last_message_at: new Date().toISOString(),
           is_active: true,
           session_type: 'guest',
-          awaiting_name: true,
-          guest_name: null, // Reset name for new session
+          awaiting_name: false,
+          guest_name: genericName,
         }, { onConflict: 'phone_number' });
 
-      // Log the user's initial message
-      await logMessage(supabase, conversationId, 'user', normalizedMessage);
-
-      // Send greeting + ask name
-      const greetingMsg = `Halo! 👋 Selamat datang di Pomah Guesthouse. Boleh saya tahu nama Anda?`;
-      await logMessage(supabase, conversationId, 'assistant', greetingMsg);
-
-      await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': FONNTE_API_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ target: phone, message: greetingMsg }),
-      });
-
-      return new Response(JSON.stringify({ status: "awaiting_name", conversation_id: conversationId }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (conversationId) {
+        await supabase
+          .from('chat_conversations')
+          .update({ guest_email: `${genericName} (WA: ${phone})` })
+          .eq('id', conversationId);
+      }
+      // Fall through to AI processing below
     }
 
-    // If session is awaiting name, capture it only when reply is likely a real name.
+    // If session was still awaiting_name from old flow, clear it
     if (session?.awaiting_name) {
-      console.log(`📝 Awaiting name for ${phone}: "${message}"`);
-
-      const guestNameCandidate = String(message).trim();
-      const shouldBypassNamePrompt = !isLikelyPersonName(guestNameCandidate);
-
-      if (shouldBypassNamePrompt) {
-        console.log(`⏭️ Guest did not provide a valid name - bypassing name prompt and proceeding to AI`);
-        // Clear awaiting_name, set generic name
-        const genericName = `Tamu WA ${phone.slice(-4)}`;
-        await supabase
-          .from('whatsapp_sessions')
-          .update({
-            guest_name: genericName,
-            awaiting_name: false,
-            last_message_at: new Date().toISOString(),
-          })
-          .eq('phone_number', phone);
-        
-        if (conversationId) {
-          await supabase
-            .from('chat_conversations')
-            .update({ guest_email: `${genericName} (WA: ${phone})` })
-            .eq('id', conversationId);
-        }
-
-        // Don't return - fall through to AI processing below.
-        // User message will be logged once in the common guest flow section.
-      } else {
-        // Use original message (not normalized) as the name
-        const guestName = guestNameCandidate;
-
-        // Update session with guest_name and clear awaiting_name
-        await supabase
-          .from('whatsapp_sessions')
-          .update({
-            guest_name: guestName,
-            awaiting_name: false,
-            last_message_at: new Date().toISOString(),
-          })
-          .eq('phone_number', phone);
-
-        // Also update chat_conversations guest_email with name info
-        if (conversationId) {
-          await supabase
-            .from('chat_conversations')
-            .update({ guest_email: `${guestName} (WA: ${phone})` })
-            .eq('id', conversationId);
-        }
-
-        // Log name message and confirmation
-        await logMessage(supabase, conversationId, 'user', guestName);
-        const confirmMsg = `Terima kasih, Kak ${guestName}! 😊 Ada yang bisa saya bantu hari ini?`;
-        await logMessage(supabase, conversationId, 'assistant', confirmMsg);
-
-        await fetch('https://api.fonnte.com/send', {
-          method: 'POST',
-          headers: {
-            'Authorization': FONNTE_API_KEY,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ target: phone, message: confirmMsg }),
-        });
-
-        return new Response(JSON.stringify({ status: "name_captured", guest_name: guestName, conversation_id: conversationId }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      const genericName = `Tamu WA ${phone.slice(-4)}`;
+      await supabase
+        .from('whatsapp_sessions')
+        .update({
+          guest_name: genericName,
+          awaiting_name: false,
+          last_message_at: new Date().toISOString(),
+        })
+        .eq('phone_number', phone);
     }
 
     // Update session with session_type = 'guest' for regular users
