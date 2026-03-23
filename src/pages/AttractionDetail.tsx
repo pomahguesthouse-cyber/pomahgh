@@ -34,7 +34,7 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
 const AttractionDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: attraction, isLoading } = useAttractionBySlug(slug);
-  const { data: allAttractions = [] } = useCityAttractions();
+  const { attractions: allAttractions = [] } = useCityAttractions();
   const { settings: seoSettings } = useSeoSettings();
   
   const relatedAttractions = attraction
