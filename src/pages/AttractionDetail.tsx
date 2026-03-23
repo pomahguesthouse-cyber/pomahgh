@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAttractionBySlug } from "@/hooks/useAttractionBySlug";
 import { useSeoSettings } from "@/hooks/useSeoSettings";
 import { AttractionCard } from "@/components/explore/AttractionCard";
-import { useCityAttractions } from "@/hooks/useCityAttractions";
+import { useCityAttractions, CityAttraction } from "@/hooks/useCityAttractions";
 import { toast } from "@/hooks/use-toast";
 
 const categoryLabels: Record<string, string> = {
