@@ -776,8 +776,197 @@ Silakan coba lagi atau hubungi technical support.`;
       }
     }
     
-    // Continue with manager mode routing if not an approval response
+    // Handle TAKEOVER command from manager
+    const takeoverPattern = /^takeover\s+(628\d+|08\d+)/i;
+    const takeoverMatch = message.match(takeoverPattern);
+
+    if (takeoverMatch && isManager) {
+      if (managerInfo?.role !== 'super_admin') {
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: phone, message: '❌ Hanya Super Admin yang dapat melakukan takeover.' }),
+        });
+        return new Response(JSON.stringify({ status: "forbidden", reason: "not_super_admin" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const targetPhone = normalizePhone(takeoverMatch[1]);
+      console.log(`🔄 TAKEOVER command from ${phone} for ${targetPhone}`);
+
+      // Find target session
+      const { data: targetSession } = await supabase
+        .from('whatsapp_sessions')
+        .select('*')
+        .eq('phone_number', targetPhone)
+        .single();
+
+      if (!targetSession) {
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: phone, message: `❌ Sesi tidak ditemukan untuk nomor ${targetPhone}` }),
+        });
+        return new Response(JSON.stringify({ status: "takeover_not_found", target: targetPhone }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (targetSession.is_takeover && targetSession.takeover_manager_phone === phone) {
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: phone, message: `⚠️ Anda sudah mengambil alih percakapan dengan ${targetPhone}` }),
+        });
+        return new Response(JSON.stringify({ status: "already_takeover", target: targetPhone }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Set takeover flags
+      await supabase
+        .from('whatsapp_sessions')
+        .update({
+          is_takeover: true,
+          takeover_at: new Date().toISOString(),
+          takeover_manager_phone: phone,
+        })
+        .eq('phone_number', targetPhone);
+
+      // Log system message
+      if (targetSession.conversation_id) {
+        await logMessage(supabase, targetSession.conversation_id, 'assistant',
+          `[System] Admin ${managerInfo?.name || phone} mengambil alih percakapan.`);
+      }
+
+      // Confirm to manager
+      await fetch('https://api.fonnte.com/send', {
+        method: 'POST',
+        headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target: phone,
+          message: `✅ *TAKEOVER AKTIF*\n\n📱 Nomor: ${targetPhone}\n👤 Tamu: ${targetSession.guest_name || 'Tanpa Nama'}\n\nBalas langsung ke nomor ini untuk chat sebagai Admin.\nKetik *release ${takeoverMatch[1]}* untuk mengakhiri.`,
+        }),
+      });
+
+      // Notify guest
+      await fetch('https://api.fonnte.com/send', {
+        method: 'POST',
+        headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target: targetPhone,
+          message: `Halo! Admin kami akan melayani Anda secara langsung. Silakan sampaikan pertanyaan Anda 🙏`,
+        }),
+      });
+
+      return new Response(JSON.stringify({ status: "takeover_activated", target: targetPhone, by: managerInfo?.name }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Handle RELEASE command from manager
+    const releasePattern = /^release\s+(628\d+|08\d+)/i;
+    const releaseMatch = message.match(releasePattern);
+
+    if (releaseMatch && isManager) {
+      if (managerInfo?.role !== 'super_admin') {
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: phone, message: '❌ Hanya Super Admin yang dapat melakukan release.' }),
+        });
+        return new Response(JSON.stringify({ status: "forbidden", reason: "not_super_admin" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const targetPhone = normalizePhone(releaseMatch[1]);
+      console.log(`🔓 RELEASE command from ${phone} for ${targetPhone}`);
+
+      const { data: targetSession } = await supabase
+        .from('whatsapp_sessions')
+        .select('*')
+        .eq('phone_number', targetPhone)
+        .single();
+
+      if (!targetSession || !targetSession.is_takeover) {
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: phone, message: `⚠️ Tidak ada takeover aktif untuk ${targetPhone}` }),
+        });
+        return new Response(JSON.stringify({ status: "no_active_takeover", target: targetPhone }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Reset takeover flags
+      await supabase
+        .from('whatsapp_sessions')
+        .update({
+          is_takeover: false,
+          takeover_at: null,
+          takeover_manager_phone: null,
+        })
+        .eq('phone_number', targetPhone);
+
+      // Log system message
+      if (targetSession.conversation_id) {
+        await logMessage(supabase, targetSession.conversation_id, 'assistant',
+          `[System] Admin ${managerInfo?.name || phone} mengakhiri takeover. AI kembali aktif.`);
+      }
+
+      // Confirm to manager
+      await fetch('https://api.fonnte.com/send', {
+        method: 'POST',
+        headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target: phone,
+          message: `🔓 *TAKEOVER DIAKHIRI*\n\n📱 Nomor: ${targetPhone}\n✅ AI chatbot kembali aktif untuk tamu ini.`,
+        }),
+      });
+
+      return new Response(JSON.stringify({ status: "takeover_released", target: targetPhone, by: managerInfo?.name }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Continue with manager mode routing if not an approval/takeover/release response
     if (isManager) {
+      // Check if manager has active takeover - forward message to guest
+      const { data: activeOverride } = await supabase
+        .from('whatsapp_sessions')
+        .select('phone_number, conversation_id, guest_name')
+        .eq('takeover_manager_phone', phone)
+        .eq('is_takeover', true)
+        .limit(1)
+        .single();
+
+      if (activeOverride) {
+        console.log(`📨 Manager ${phone} replying to takeover target ${activeOverride.phone_number}`);
+
+        // Log admin message in target conversation
+        if (activeOverride.conversation_id) {
+          await logMessage(supabase, activeOverride.conversation_id, 'assistant', `[Admin] ${message}`);
+        }
+
+        // Forward to guest
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: activeOverride.phone_number, message }),
+        });
+
+        return new Response(JSON.stringify({
+          status: "takeover_reply",
+          target: activeOverride.phone_number,
+          manager: managerInfo?.name,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       console.log(`📱 MANAGER MODE - routing to admin-chatbot for ${phone} (${managerInfo?.name})`);
       const internalSecret = Deno.env.get("WHATSAPP_INTERNAL_SECRET");
 
@@ -897,12 +1086,26 @@ Silakan coba lagi atau hubungi technical support.`;
       }
     }
 
-    // Handle takeover mode - skip AI
+    // Handle takeover mode - forward guest message to manager
     if (session?.is_takeover) {
-      console.log(`Session ${phone} in takeover mode - logging only`);
+      console.log(`Session ${phone} in takeover mode - forwarding to manager`);
       const convId = await ensureConversation(supabase, session, phone);
       await logMessage(supabase, convId, 'user', message);
       await supabase.from('whatsapp_sessions').update({ last_message_at: new Date().toISOString() }).eq('phone_number', phone);
+
+      // Forward message to takeover manager
+      if (session.takeover_manager_phone) {
+        const guestLabel = session.guest_name || phone;
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            target: session.takeover_manager_phone,
+            message: `📩 *Dari ${guestLabel} (${phone}):*\n${message}`,
+          }),
+        });
+      }
+
       return new Response(JSON.stringify({ status: "takeover_mode", conversation_id: convId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
