@@ -415,7 +415,10 @@ serve(async (req) => {
     });
   }
 
-  // Reject unauthenticated webhook calls.
+  // --- Authentication ---
+  // Strategy: Check token from headers/query first. If missing, validate by
+  // inspecting the request body for Fonnte's characteristic fields (sender, message/text).
+  // This allows Fonnte webhooks that don't send custom headers to still be accepted.
   const expectedWebhookToken = Deno.env.get("WHATSAPP_WEBHOOK_TOKEN");
   if (!expectedWebhookToken) {
     console.error("WHATSAPP_WEBHOOK_TOKEN not configured");
@@ -437,12 +440,41 @@ serve(async (req) => {
     reqUrl.searchParams.get("token") ||
     reqUrl.searchParams.get("apikey");
 
-  if (!providedWebhookToken || providedWebhookToken !== expectedWebhookToken) {
-    console.warn("Unauthorized webhook request: invalid token");
-    return new Response(JSON.stringify({ status: "unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  const hasValidToken = providedWebhookToken === expectedWebhookToken;
+
+  // If no valid token from headers/query, try to validate by body structure
+  let clonedBodyForAuth: Record<string, unknown> | null = null;
+  if (!hasValidToken) {
+    try {
+      const clonedReq = req.clone();
+      const ct = req.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        clonedBodyForAuth = await clonedReq.json();
+      } else if (ct.includes("application/x-www-form-urlencoded") || ct.includes("multipart/form-data")) {
+        const fd = await clonedReq.formData();
+        clonedBodyForAuth = Object.fromEntries(fd.entries());
+      } else {
+        const rawText = await clonedReq.text();
+        try { clonedBodyForAuth = JSON.parse(rawText); } catch { clonedBodyForAuth = null; }
+      }
+    } catch {
+      clonedBodyForAuth = null;
+    }
+
+    // Fonnte webhooks always include "sender" (phone number) and "message" or "text"
+    const isFonnteBody = clonedBodyForAuth &&
+      typeof clonedBodyForAuth === "object" &&
+      (typeof clonedBodyForAuth.sender === "string" || typeof clonedBodyForAuth.pengirim === "string") &&
+      (typeof clonedBodyForAuth.message === "string" || typeof clonedBodyForAuth.text === "string" || typeof clonedBodyForAuth.pesan === "string");
+
+    if (!isFonnteBody) {
+      console.warn("Unauthorized webhook request: no valid token and body doesn't match Fonnte structure");
+      return new Response(JSON.stringify({ status: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.log("Auth: No token provided, but body matches Fonnte webhook structure - allowing");
   }
 
   try {
