@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { BookOpen, Star, Plus, Pencil, Trash2, GraduationCap, MessageSquare, TrendingUp, Loader2, ChevronUp, ChevronDown, Zap, CheckCircle, XCircle, Bot } from "lucide-react";
 import { useTrainingExamples, useAddTrainingExample, useUpdateTrainingExample, useDeleteTrainingExample, useTrainingStats, useExtractTrainingData, useAutoLearnStats, useBulkApproveExamples, TrainingExample } from "@/hooks/useTrainingExamples";
 import { AITrainerCoachPanel } from "@/components/admin/AITrainerCoachPanel";
-import { useGenerateForCategory, useAnalyzeGaps, usePendingGeneratedExamples, useApproveGeneratedExample } from "@/hooks/useAITrainingGenerator";
+import { GeneratedExample, useGenerateForCategory, useAnalyzeGaps, usePendingGeneratedExamples, useApproveGeneratedExample } from "@/hooks/useAITrainingGenerator";
 const CATEGORIES = [{
   value: "general",
   label: "Umum",
