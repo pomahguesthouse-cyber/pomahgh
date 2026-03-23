@@ -46,12 +46,12 @@ const Header = memo(function Header() {
   };
 
   const menuItems = [
-    { label: "Home", onClick: handleHome },
-    { label: "Rooms", onClick: () => handleNav("rooms") },
-    { label: "Fasilitas", onClick: () => handleNav("amenities") },
-    { label: "News & Events", onClick: () => handleNav("news-events") },
-    { label: "Explore Semarang", onClick: () => navigate("/explore-semarang") },
-  ];
+  { label: "Home", onClick: handleHome },
+  { label: "Rooms", onClick: () => handleNav("rooms") },
+  { label: "Fasilitas", onClick: () => handleNav("amenities") },
+  { label: "News & Events", onClick: () => handleNav("news-events") },
+  { label: "Explore Semarang", onClick: () => navigate("/explore-semarang") }];
+
 
   return (
     <>
@@ -65,17 +65,17 @@ const Header = memo(function Header() {
             shadow-[0_14px_32px_rgba(0,0,0,0.18)]
             transition-all duration-300
             ${isScrolled ? "h-16" : "h-20"}
-          `}
-        >
+          `}>
+          
           <div className="h-full flex items-center justify-between">
             <Link to="/" onClick={handleHome} className="flex items-center">
               <img
                 src={settings?.logo_url || "/logo.png"}
                 alt="Pomah Guesthouse"
                 width={44}
-                height={44}
-                className={`${isScrolled ? "h-9" : "h-11"} transition-all`}
-              />
+                height={44} className="" />
+
+              
             </Link>
 
             <nav className="flex items-center gap-8 text-white text-sm font-medium">
@@ -86,19 +86,19 @@ const Header = memo(function Header() {
               <Link to="/explore-semarang">Explore Semarang</Link>
             </nav>
 
-            <Button 
-              size="sm" 
-              onClick={handleUserClick} 
-              className="rounded-full bg-white/20 text-white hover:bg-white/30 gap-2"
-            >
+            <Button
+              size="sm"
+              onClick={handleUserClick}
+              className="rounded-full bg-white/20 text-white hover:bg-white/30 gap-2">
+              
               <User size={16} />
-              {user ? (
-                <span className="text-xs max-w-[100px] truncate">
+              {user ?
+              <span className="text-xs max-w-[100px] truncate">
                   {user.user_metadata?.full_name || "Akun Saya"}
-                </span>
-              ) : (
-                <span className="text-xs">Masuk</span>
-              )}
+                </span> :
+
+              <span className="text-xs">Masuk</span>
+              }
             </Button>
           </div>
         </div>
@@ -114,8 +114,8 @@ const Header = memo(function Header() {
             shadow-[0_12px_30px_rgba(0,0,0,0.2)]
             transition-all duration-300
             ${isScrolled ? "h-14" : "h-16"}
-          `}
-        >
+          `}>
+          
           <div className="h-full flex items-center justify-between">
             <img src={settings?.logo_url || "/logo.png"} alt="Pomah Guesthouse" width={32} height={32} className="h-8" />
             <Button size="icon" onClick={handleUserClick} className="rounded-full bg-white/20 text-white">
@@ -131,13 +131,13 @@ const Header = memo(function Header() {
           md:hidden fixed inset-0 z-40
           transition-all duration-300
           ${
-            isMenuOpen
-              ? "opacity-100 backdrop-blur-md bg-black/30 pointer-events-auto"
-              : "opacity-0 pointer-events-none"
-          }
-        `}
-        onClick={() => setIsMenuOpen(false)}
-      />
+        isMenuOpen ?
+        "opacity-100 backdrop-blur-md bg-black/30 pointer-events-auto" :
+        "opacity-0 pointer-events-none"}
+        `
+        }
+        onClick={() => setIsMenuOpen(false)} />
+      
 
       {/* ================= DROP-UP MENU (FADE + SCALE) ================= */}
       <div
@@ -146,8 +146,8 @@ const Header = memo(function Header() {
           flex justify-center
           transition-all duration-300 ease-out
           ${isMenuOpen ? "bottom-[72px] opacity-100 scale-100" : "bottom-[72px] opacity-0 scale-95 pointer-events-none"}
-        `}
-      >
+        `}>
+        
         <div
           onClick={(e) => e.stopPropagation()}
           className="
@@ -156,30 +156,30 @@ const Header = memo(function Header() {
             rounded-2xl
             shadow-[0_20px_40px_rgba(0,0,0,0.35)]
             py-4
-          "
-        >
+          ">
+          
           <nav className="flex flex-col items-center text-white text-sm font-medium text-center">
-            {menuItems.map((item, index) => (
-              <div
-                key={item.label}
-                className={`
+            {menuItems.map((item, index) =>
+            <div
+              key={item.label}
+              className={`
                   w-full flex flex-col items-center
                   transition-all duration-300 ease-out
                   ${isMenuOpen ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-2 scale-95"}
                 `}
-                style={{
-                  transitionDelay: `${index * 60}ms`,
-                }}
-              >
+              style={{
+                transitionDelay: `${index * 60}ms`
+              }}>
+              
                 <button onClick={item.onClick} className="py-2">
                   {item.label}
                 </button>
 
-                {index < menuItems.length - 1 && (
-                  <div className="w-2/3 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-                )}
+                {index < menuItems.length - 1 &&
+              <div className="w-2/3 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+              }
               </div>
-            ))}
+            )}
           </nav>
         </div>
       </div>
@@ -195,8 +195,8 @@ const Header = memo(function Header() {
               flex justify-between items-center
               px-10 py-4
               text-white
-            "
-          >
+            ">
+            
             <button onClick={handleHome}>
               <Home size={22} />
             </button>
@@ -213,8 +213,8 @@ const Header = memo(function Header() {
           </div>
         </div>
       </div>
-    </>
-  );
+    </>);
+
 });
 
 export default Header;
