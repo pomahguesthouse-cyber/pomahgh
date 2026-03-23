@@ -41,12 +41,39 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunks for better caching
-          'vendor-ui': ['framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-popover', '@radix-ui/react-tabs'],
-          'vendor-charts': ['recharts'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+
+          // Heavy libraries — already dynamic-imported, ensure separate chunks
+          if (id.includes('html2pdf')) return 'vendor-pdf';
+          if (id.includes('/xlsx')) return 'vendor-xlsx';
+
+          // Charts + D3 deps
+          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+
+          // Animation (separate from Radix primitives)
+          if (id.includes('framer-motion')) return 'vendor-animation';
+
+          // Radix UI primitives (all packages grouped)
+          if (id.includes('@radix-ui')) return 'vendor-radix';
+
+          // Form handling
+          if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('/zod')) return 'vendor-forms';
+
+          // Date utilities
+          if (id.includes('date-fns')) return 'vendor-date';
+
+          // Supabase client
+          if (id.includes('@supabase')) return 'vendor-supabase';
+
+          // Drag & drop
+          if (id.includes('@dnd-kit')) return 'vendor-dnd';
+
+          // Carousel
+          if (id.includes('embla-carousel')) return 'vendor-carousel';
+
+          // DOMPurify (shared sanitizer)
+          if (id.includes('dompurify')) return 'vendor-sanitize';
         },
       },
     },
