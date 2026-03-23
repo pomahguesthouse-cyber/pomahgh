@@ -698,7 +698,8 @@ export default function TrainingTab() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {pendingAIExamples.map((ex: GeneratedExample & { id?: string; ideal_answer?: string }) => (
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {pendingAIExamples.map((ex: any) => (
                 <div key={ex.id || ex.question} className="border rounded-lg p-3 bg-muted/20">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 space-y-1">
@@ -719,7 +720,7 @@ export default function TrainingTab() {
                       </Button>
                       <Button
                         size="icon" variant="ghost" className="h-8 w-8"
-                        onClick={() => handleEdit(ex)}
+                        onClick={() => handleEdit(ex as TrainingExample)}
                         title="Edit"
                       >
                         <Pencil className="w-4 h-4" />
