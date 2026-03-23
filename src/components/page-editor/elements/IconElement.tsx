@@ -24,7 +24,7 @@ export function IconElement({
   const { textAlign, marginTop, marginBottom } = element.styles;
 
   const IconComponent =
-    (LucideIcons as Record<string, React.FC<React.SVGProps<SVGSVGElement>>>)[iconName] ??
+    (LucideIcons as unknown as Record<string, React.FC<React.SVGProps<SVGSVGElement>>>)[iconName] ??
     LucideIcons.Star;
 
   const style: React.CSSProperties = { marginTop, marginBottom };

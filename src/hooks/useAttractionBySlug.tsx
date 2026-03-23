@@ -1,27 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-interface CityAttraction {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  image_url: string | null;
-  city: string | null;
-  category: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  google_maps_link: string | null;
-  operational_hours: string | null;
-  contact_info: string | null;
-  working_days: string | null;
-  is_featured: boolean;
-  distance_from_hotel: string | null;
-  travel_time: string | null;
-  ticket_price: string | null;
-  rating: number | null;
-  review_count: string | null;
-}
+import { CityAttraction } from "@/hooks/useCityAttractions";
 
 export const useAttractionBySlug = (slug: string | undefined) => {
   return useQuery({
@@ -36,9 +15,9 @@ export const useAttractionBySlug = (slug: string | undefined) => {
         .single();
 
       if (error) throw error;
-      return data as CityAttraction;
+      return data as unknown as CityAttraction;
     },
     enabled: !!slug,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 };

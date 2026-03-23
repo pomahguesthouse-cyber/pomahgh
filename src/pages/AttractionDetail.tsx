@@ -292,10 +292,10 @@ const AttractionDetail = () => {
           {relatedAttractions.length > 0 && (
             <section className="mt-16">
               <h2 className="text-2xl font-bold text-foreground mb-6">
-                Destinasi {categoryLabels[attraction.category]} Lainnya
+                Destinasi {categoryLabels[attraction.category ?? '']} Lainnya
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {relatedAttractions.map((related, index) => (
+                {relatedAttractions.map((related: CityAttraction, index: number) => (
                   <AttractionCard key={related.id} attraction={related} index={index} />
                 ))}
               </div>
