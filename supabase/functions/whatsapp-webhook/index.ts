@@ -493,37 +493,41 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse incoming webhook
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Fonnte webhook payload shape is dynamic
+    // Parse incoming webhook - reuse body from auth check if available
     let body: Record<string, unknown>;
-    const contentType = req.headers.get('content-type') || '';
-    console.log("Request content-type:", contentType);
+    if (clonedBodyForAuth) {
+      body = clonedBodyForAuth;
+      console.log("Reusing body from auth validation");
+    } else {
+      const contentType = req.headers.get('content-type') || '';
+      console.log("Request content-type:", contentType);
 
-    try {
-      if (contentType.includes('application/json')) {
-        body = await req.json();
-      } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
-        const formData = await req.formData();
-        body = Object.fromEntries(formData.entries());
-      } else {
-        const text = await req.text();
-        if (!text || text.trim() === '') {
-          return new Response(JSON.stringify({ status: "skipped", reason: "empty body" }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+      try {
+        if (contentType.includes('application/json')) {
+          body = await req.json();
+        } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+          const formData = await req.formData();
+          body = Object.fromEntries(formData.entries());
+        } else {
+          const text = await req.text();
+          if (!text || text.trim() === '') {
+            return new Response(JSON.stringify({ status: "skipped", reason: "empty body" }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          try {
+            body = JSON.parse(text);
+          } catch {
+            const params = new URLSearchParams(text);
+            body = Object.fromEntries(params.entries());
+          }
         }
-        try {
-          body = JSON.parse(text);
-        } catch {
-          const params = new URLSearchParams(text);
-          body = Object.fromEntries(params.entries());
-        }
+      } catch (parseError) {
+        console.error("Body parse error:", parseError);
+        return new Response(JSON.stringify({ status: "error", reason: "invalid body format" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-    } catch (parseError) {
-      console.error("Body parse error:", parseError);
-      return new Response(JSON.stringify({ status: "error", reason: "invalid body format" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     console.log("Parsed webhook body:", JSON.stringify(body));
