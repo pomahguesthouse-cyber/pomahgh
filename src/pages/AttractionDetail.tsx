@@ -104,8 +104,8 @@ const AttractionDetail = () => {
     );
   }
 
-  const IconComponent = categoryIcons[attraction.category] || MapPin;
-  const imageUrl = attraction.image_url || defaultImages[attraction.category] || defaultImages.wisata;
+  const IconComponent = categoryIcons[attraction.category ?? ''] || MapPin;
+  const imageUrl = attraction.image_url || defaultImages[attraction.category ?? ''] || defaultImages.wisata;
 
   const attractionSchema = {
     "@context": "https://schema.org",
