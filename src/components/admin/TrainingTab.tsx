@@ -698,8 +698,8 @@ export default function TrainingTab() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {pendingAIExamples.map((ex: TrainingExample) => (
-                <div key={ex.id} className="border rounded-lg p-3 bg-muted/20">
+              {pendingAIExamples.map((ex: GeneratedExample & { id?: string; ideal_answer?: string }) => (
+                <div key={ex.id || ex.question} className="border rounded-lg p-3 bg-muted/20">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 space-y-1">
                       <Badge variant="outline" className="text-xs">
@@ -707,7 +707,7 @@ export default function TrainingTab() {
                         {CATEGORIES.find(c => c.value === ex.category)?.label || ex.category}
                       </Badge>
                       <p className="text-sm"><span className="font-medium">Q:</span> {ex.question}</p>
-                      <p className="text-sm text-muted-foreground"><span className="font-medium">A:</span> {ex.ideal_answer}</p>
+                      <p className="text-sm text-muted-foreground"><span className="font-medium">A:</span> {ex.ideal_answer || ex.answer}</p>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
                       <Button
