@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAttractionBySlug } from "@/hooks/useAttractionBySlug";
 import { useSeoSettings } from "@/hooks/useSeoSettings";
 import { AttractionCard } from "@/components/explore/AttractionCard";
-import { useCityAttractions, CityAttraction } from "@/hooks/useCityAttractions";
+import { useCityAttractions } from "@/hooks/useCityAttractions";
 import { toast } from "@/hooks/use-toast";
 
 const categoryLabels: Record<string, string> = {
@@ -34,12 +34,12 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
 const AttractionDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: attraction, isLoading } = useAttractionBySlug(slug);
-  const { attractions: allAttractions, isLoading: isLoadingAll } = useCityAttractions();
+  const { data: allAttractions = [] } = useCityAttractions();
   const { settings: seoSettings } = useSeoSettings();
   
   const relatedAttractions = attraction
     ? allAttractions
-        .filter((a: CityAttraction) => a.category === attraction.category && a.id !== attraction.id)
+        .filter((a) => a.category === attraction.category && a.id !== attraction.id)
         .slice(0, 3)
     : [];
   
@@ -104,8 +104,8 @@ const AttractionDetail = () => {
     );
   }
 
-  const IconComponent = categoryIcons[attraction.category ?? ''] || MapPin;
-  const imageUrl = attraction.image_url || defaultImages[attraction.category ?? ''] || defaultImages.wisata;
+  const IconComponent = categoryIcons[attraction.category] || MapPin;
+  const imageUrl = attraction.image_url || defaultImages[attraction.category] || defaultImages.wisata;
 
   const attractionSchema = {
     "@context": "https://schema.org",
@@ -155,7 +155,7 @@ const AttractionDetail = () => {
           
           <div className="absolute bottom-0 left-0 right-0 p-8">
             <div className="max-w-4xl mx-auto">
-              <Badge className="mb-4">{categoryLabels[attraction.category ?? '']}</Badge>
+              <Badge className="mb-4">{categoryLabels[attraction.category]}</Badge>
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 {attraction.name}
               </h1>
@@ -208,11 +208,9 @@ const AttractionDetail = () => {
               {attraction.description}
             </p>
             
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {(attraction as any).long_description && (
+            {attraction.long_description && (
               <div className="mt-8 text-foreground">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {String((attraction as any).long_description).split('\n').map((paragraph: string, index: number) => (
+                {attraction.long_description.split('\n').map((paragraph, index) => (
                   <p key={index}>{paragraph}</p>
                 ))}
               </div>
@@ -294,10 +292,10 @@ const AttractionDetail = () => {
           {relatedAttractions.length > 0 && (
             <section className="mt-16">
               <h2 className="text-2xl font-bold text-foreground mb-6">
-                Destinasi {categoryLabels[attraction.category ?? '']} Lainnya
+                Destinasi {categoryLabels[attraction.category]} Lainnya
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {relatedAttractions.map((related: CityAttraction, index: number) => (
+                {relatedAttractions.map((related, index) => (
                   <AttractionCard key={related.id} attraction={related} index={index} />
                 ))}
               </div>

@@ -426,33 +426,13 @@ serve(async (req) => {
   }
 
   const reqUrl = new URL(req.url);
-  const authorizationHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  const bearerToken = authorizationHeader?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-  const rawAuthorizationToken = authorizationHeader && !bearerToken ? authorizationHeader.trim() : null;
-  const providedWebhookToken = [
-    req.headers.get("x-webhook-token"),
-    req.headers.get("X-Webhook-Token"),
-    req.headers.get("x-fonnte-token"),
-    req.headers.get("X-Fonnte-Token"),
-    req.headers.get("apikey"),
-    req.headers.get("ApiKey"),
-    bearerToken,
-    rawAuthorizationToken,
-    reqUrl.searchParams.get("token"),
-    reqUrl.searchParams.get("apikey"),
-  ].find((value): value is string => Boolean(value && value.trim()));
+  const providedWebhookToken =
+    req.headers.get("x-webhook-token") ||
+    req.headers.get("X-Webhook-Token") ||
+    reqUrl.searchParams.get("token");
 
   if (!providedWebhookToken || providedWebhookToken !== expectedWebhookToken) {
-    console.warn(
-      "Unauthorized webhook request: invalid token",
-      JSON.stringify({
-        hasAuthorization: Boolean(authorizationHeader),
-        hasXWebhookToken: Boolean(req.headers.get("x-webhook-token") || req.headers.get("X-Webhook-Token")),
-        hasXFonnteToken: Boolean(req.headers.get("x-fonnte-token") || req.headers.get("X-Fonnte-Token")),
-        hasApiKeyHeader: Boolean(req.headers.get("apikey") || req.headers.get("ApiKey")),
-        hasQueryToken: Boolean(reqUrl.searchParams.get("token") || reqUrl.searchParams.get("apikey")),
-      })
-    );
+    console.warn("Unauthorized webhook request: invalid token");
     return new Response(JSON.stringify({ status: "unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -796,197 +776,8 @@ Silakan coba lagi atau hubungi technical support.`;
       }
     }
     
-    // Handle TAKEOVER command from manager
-    const takeoverPattern = /^takeover\s+(628\d+|08\d+)/i;
-    const takeoverMatch = message.match(takeoverPattern);
-
-    if (takeoverMatch && isManager) {
-      if (managerInfo?.role !== 'super_admin') {
-        await fetch('https://api.fonnte.com/send', {
-          method: 'POST',
-          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target: phone, message: '❌ Hanya Super Admin yang dapat melakukan takeover.' }),
-        });
-        return new Response(JSON.stringify({ status: "forbidden", reason: "not_super_admin" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const targetPhone = normalizePhone(takeoverMatch[1]);
-      console.log(`🔄 TAKEOVER command from ${phone} for ${targetPhone}`);
-
-      // Find target session
-      const { data: targetSession } = await supabase
-        .from('whatsapp_sessions')
-        .select('*')
-        .eq('phone_number', targetPhone)
-        .single();
-
-      if (!targetSession) {
-        await fetch('https://api.fonnte.com/send', {
-          method: 'POST',
-          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target: phone, message: `❌ Sesi tidak ditemukan untuk nomor ${targetPhone}` }),
-        });
-        return new Response(JSON.stringify({ status: "takeover_not_found", target: targetPhone }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      if (targetSession.is_takeover && targetSession.takeover_manager_phone === phone) {
-        await fetch('https://api.fonnte.com/send', {
-          method: 'POST',
-          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target: phone, message: `⚠️ Anda sudah mengambil alih percakapan dengan ${targetPhone}` }),
-        });
-        return new Response(JSON.stringify({ status: "already_takeover", target: targetPhone }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Set takeover flags
-      await supabase
-        .from('whatsapp_sessions')
-        .update({
-          is_takeover: true,
-          takeover_at: new Date().toISOString(),
-          takeover_manager_phone: phone,
-        })
-        .eq('phone_number', targetPhone);
-
-      // Log system message
-      if (targetSession.conversation_id) {
-        await logMessage(supabase, targetSession.conversation_id, 'assistant',
-          `[System] Admin ${managerInfo?.name || phone} mengambil alih percakapan.`);
-      }
-
-      // Confirm to manager
-      await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          target: phone,
-          message: `✅ *TAKEOVER AKTIF*\n\n📱 Nomor: ${targetPhone}\n👤 Tamu: ${targetSession.guest_name || 'Tanpa Nama'}\n\nBalas langsung ke nomor ini untuk chat sebagai Admin.\nKetik *release ${takeoverMatch[1]}* untuk mengakhiri.`,
-        }),
-      });
-
-      // Notify guest
-      await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          target: targetPhone,
-          message: `Halo! Admin kami akan melayani Anda secara langsung. Silakan sampaikan pertanyaan Anda 🙏`,
-        }),
-      });
-
-      return new Response(JSON.stringify({ status: "takeover_activated", target: targetPhone, by: managerInfo?.name }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Handle RELEASE command from manager
-    const releasePattern = /^release\s+(628\d+|08\d+)/i;
-    const releaseMatch = message.match(releasePattern);
-
-    if (releaseMatch && isManager) {
-      if (managerInfo?.role !== 'super_admin') {
-        await fetch('https://api.fonnte.com/send', {
-          method: 'POST',
-          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target: phone, message: '❌ Hanya Super Admin yang dapat melakukan release.' }),
-        });
-        return new Response(JSON.stringify({ status: "forbidden", reason: "not_super_admin" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const targetPhone = normalizePhone(releaseMatch[1]);
-      console.log(`🔓 RELEASE command from ${phone} for ${targetPhone}`);
-
-      const { data: targetSession } = await supabase
-        .from('whatsapp_sessions')
-        .select('*')
-        .eq('phone_number', targetPhone)
-        .single();
-
-      if (!targetSession || !targetSession.is_takeover) {
-        await fetch('https://api.fonnte.com/send', {
-          method: 'POST',
-          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target: phone, message: `⚠️ Tidak ada takeover aktif untuk ${targetPhone}` }),
-        });
-        return new Response(JSON.stringify({ status: "no_active_takeover", target: targetPhone }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Reset takeover flags
-      await supabase
-        .from('whatsapp_sessions')
-        .update({
-          is_takeover: false,
-          takeover_at: null,
-          takeover_manager_phone: null,
-        })
-        .eq('phone_number', targetPhone);
-
-      // Log system message
-      if (targetSession.conversation_id) {
-        await logMessage(supabase, targetSession.conversation_id, 'assistant',
-          `[System] Admin ${managerInfo?.name || phone} mengakhiri takeover. AI kembali aktif.`);
-      }
-
-      // Confirm to manager
-      await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          target: phone,
-          message: `🔓 *TAKEOVER DIAKHIRI*\n\n📱 Nomor: ${targetPhone}\n✅ AI chatbot kembali aktif untuk tamu ini.`,
-        }),
-      });
-
-      return new Response(JSON.stringify({ status: "takeover_released", target: targetPhone, by: managerInfo?.name }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Continue with manager mode routing if not an approval/takeover/release response
+    // Continue with manager mode routing if not an approval response
     if (isManager) {
-      // Check if manager has active takeover - forward message to guest
-      const { data: activeOverride } = await supabase
-        .from('whatsapp_sessions')
-        .select('phone_number, conversation_id, guest_name')
-        .eq('takeover_manager_phone', phone)
-        .eq('is_takeover', true)
-        .limit(1)
-        .single();
-
-      if (activeOverride) {
-        console.log(`📨 Manager ${phone} replying to takeover target ${activeOverride.phone_number}`);
-
-        // Log admin message in target conversation
-        if (activeOverride.conversation_id) {
-          await logMessage(supabase, activeOverride.conversation_id, 'assistant', `[Admin] ${message}`);
-        }
-
-        // Forward to guest
-        await fetch('https://api.fonnte.com/send', {
-          method: 'POST',
-          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target: activeOverride.phone_number, message }),
-        });
-
-        return new Response(JSON.stringify({
-          status: "takeover_reply",
-          target: activeOverride.phone_number,
-          manager: managerInfo?.name,
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       console.log(`📱 MANAGER MODE - routing to admin-chatbot for ${phone} (${managerInfo?.name})`);
       const internalSecret = Deno.env.get("WHATSAPP_INTERNAL_SECRET");
 
@@ -1106,26 +897,12 @@ Silakan coba lagi atau hubungi technical support.`;
       }
     }
 
-    // Handle takeover mode - forward guest message to manager
+    // Handle takeover mode - skip AI
     if (session?.is_takeover) {
-      console.log(`Session ${phone} in takeover mode - forwarding to manager`);
+      console.log(`Session ${phone} in takeover mode - logging only`);
       const convId = await ensureConversation(supabase, session, phone);
       await logMessage(supabase, convId, 'user', message);
       await supabase.from('whatsapp_sessions').update({ last_message_at: new Date().toISOString() }).eq('phone_number', phone);
-
-      // Forward message to takeover manager
-      if (session.takeover_manager_phone) {
-        const guestLabel = session.guest_name || phone;
-        await fetch('https://api.fonnte.com/send', {
-          method: 'POST',
-          headers: { 'Authorization': FONNTE_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            target: session.takeover_manager_phone,
-            message: `📩 *Dari ${guestLabel} (${phone}):*\n${message}`,
-          }),
-        });
-      }
-
       return new Response(JSON.stringify({ status: "takeover_mode", conversation_id: convId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -1149,12 +926,12 @@ Silakan coba lagi atau hubungi technical support.`;
       console.log(`Created new conversation: ${conversationId}`);
     }
 
-    // === NEW SESSION SETUP (no name question - langsung proses) ===
+    // === NAME COLLECTION FLOW ===
+    // If this is a new/stale session, ask for the guest's name first
     if (isNewSession) {
-      console.log(`🆕 New session for ${phone} - proceeding directly to AI`);
+      console.log(`🆕 New session for ${phone} - asking for name`);
       
-      const genericName = `Tamu WA ${phone.slice(-4)}`;
-      
+      // Create/update session with awaiting_name flag
       await supabase
         .from('whatsapp_sessions')
         .upsert({
@@ -1163,30 +940,100 @@ Silakan coba lagi atau hubungi technical support.`;
           last_message_at: new Date().toISOString(),
           is_active: true,
           session_type: 'guest',
-          awaiting_name: false,
-          guest_name: genericName,
+          awaiting_name: true,
+          guest_name: null, // Reset name for new session
         }, { onConflict: 'phone_number' });
 
-      if (conversationId) {
-        await supabase
-          .from('chat_conversations')
-          .update({ guest_email: `${genericName} (WA: ${phone})` })
-          .eq('id', conversationId);
-      }
-      // Fall through to AI processing below
+      // Log the user's initial message
+      await logMessage(supabase, conversationId, 'user', normalizedMessage);
+
+      // Send greeting + ask name
+      const greetingMsg = `Halo! 👋 Selamat datang di Pomah Guesthouse. Boleh saya tahu nama Anda?`;
+      await logMessage(supabase, conversationId, 'assistant', greetingMsg);
+
+      await fetch('https://api.fonnte.com/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': FONNTE_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ target: phone, message: greetingMsg }),
+      });
+
+      return new Response(JSON.stringify({ status: "awaiting_name", conversation_id: conversationId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // If session was still awaiting_name from old flow, clear it
+    // If session is awaiting name, capture it only when reply is likely a real name.
     if (session?.awaiting_name) {
-      const genericName = `Tamu WA ${phone.slice(-4)}`;
-      await supabase
-        .from('whatsapp_sessions')
-        .update({
-          guest_name: genericName,
-          awaiting_name: false,
-          last_message_at: new Date().toISOString(),
-        })
-        .eq('phone_number', phone);
+      console.log(`📝 Awaiting name for ${phone}: "${message}"`);
+
+      const guestNameCandidate = String(message).trim();
+      const shouldBypassNamePrompt = !isLikelyPersonName(guestNameCandidate);
+
+      if (shouldBypassNamePrompt) {
+        console.log(`⏭️ Guest did not provide a valid name - bypassing name prompt and proceeding to AI`);
+        // Clear awaiting_name, set generic name
+        const genericName = `Tamu WA ${phone.slice(-4)}`;
+        await supabase
+          .from('whatsapp_sessions')
+          .update({
+            guest_name: genericName,
+            awaiting_name: false,
+            last_message_at: new Date().toISOString(),
+          })
+          .eq('phone_number', phone);
+        
+        if (conversationId) {
+          await supabase
+            .from('chat_conversations')
+            .update({ guest_email: `${genericName} (WA: ${phone})` })
+            .eq('id', conversationId);
+        }
+
+        // Don't return - fall through to AI processing below.
+        // User message will be logged once in the common guest flow section.
+      } else {
+        // Use original message (not normalized) as the name
+        const guestName = guestNameCandidate;
+
+        // Update session with guest_name and clear awaiting_name
+        await supabase
+          .from('whatsapp_sessions')
+          .update({
+            guest_name: guestName,
+            awaiting_name: false,
+            last_message_at: new Date().toISOString(),
+          })
+          .eq('phone_number', phone);
+
+        // Also update chat_conversations guest_email with name info
+        if (conversationId) {
+          await supabase
+            .from('chat_conversations')
+            .update({ guest_email: `${guestName} (WA: ${phone})` })
+            .eq('id', conversationId);
+        }
+
+        // Log name message and confirmation
+        await logMessage(supabase, conversationId, 'user', guestName);
+        const confirmMsg = `Terima kasih, Kak ${guestName}! 😊 Ada yang bisa saya bantu hari ini?`;
+        await logMessage(supabase, conversationId, 'assistant', confirmMsg);
+
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': FONNTE_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ target: phone, message: confirmMsg }),
+        });
+
+        return new Response(JSON.stringify({ status: "name_captured", guest_name: guestName, conversation_id: conversationId }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Update session with session_type = 'guest' for regular users
