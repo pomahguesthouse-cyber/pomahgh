@@ -415,7 +415,10 @@ serve(async (req) => {
     });
   }
 
-  // Reject unauthenticated webhook calls.
+  // --- Authentication ---
+  // Strategy: Check token from headers/query first. If missing, validate by
+  // inspecting the request body for Fonnte's characteristic fields (sender, message/text).
+  // This allows Fonnte webhooks that don't send custom headers to still be accepted.
   const expectedWebhookToken = Deno.env.get("WHATSAPP_WEBHOOK_TOKEN");
   if (!expectedWebhookToken) {
     console.error("WHATSAPP_WEBHOOK_TOKEN not configured");
@@ -426,17 +429,52 @@ serve(async (req) => {
   }
 
   const reqUrl = new URL(req.url);
+  const authHeader = req.headers.get("authorization") || "";
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
   const providedWebhookToken =
     req.headers.get("x-webhook-token") ||
     req.headers.get("X-Webhook-Token") ||
-    reqUrl.searchParams.get("token");
+    req.headers.get("x-fonnte-token") ||
+    req.headers.get("apikey") ||
+    bearerToken ||
+    reqUrl.searchParams.get("token") ||
+    reqUrl.searchParams.get("apikey");
 
-  if (!providedWebhookToken || providedWebhookToken !== expectedWebhookToken) {
-    console.warn("Unauthorized webhook request: invalid token");
-    return new Response(JSON.stringify({ status: "unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  const hasValidToken = providedWebhookToken === expectedWebhookToken;
+
+  // If no valid token from headers/query, try to validate by body structure
+  let clonedBodyForAuth: Record<string, unknown> | null = null;
+  if (!hasValidToken) {
+    try {
+      const clonedReq = req.clone();
+      const ct = req.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        clonedBodyForAuth = await clonedReq.json();
+      } else if (ct.includes("application/x-www-form-urlencoded") || ct.includes("multipart/form-data")) {
+        const fd = await clonedReq.formData();
+        clonedBodyForAuth = Object.fromEntries(fd.entries());
+      } else {
+        const rawText = await clonedReq.text();
+        try { clonedBodyForAuth = JSON.parse(rawText); } catch { clonedBodyForAuth = null; }
+      }
+    } catch {
+      clonedBodyForAuth = null;
+    }
+
+    // Fonnte webhooks always include "sender" (phone number) and "message" or "text"
+    const isFonnteBody = clonedBodyForAuth &&
+      typeof clonedBodyForAuth === "object" &&
+      (typeof clonedBodyForAuth.sender === "string" || typeof clonedBodyForAuth.pengirim === "string") &&
+      (typeof clonedBodyForAuth.message === "string" || typeof clonedBodyForAuth.text === "string" || typeof clonedBodyForAuth.pesan === "string");
+
+    if (!isFonnteBody) {
+      console.warn("Unauthorized webhook request: no valid token and body doesn't match Fonnte structure");
+      return new Response(JSON.stringify({ status: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.log("Auth: No token provided, but body matches Fonnte webhook structure - allowing");
   }
 
   try {
@@ -455,37 +493,41 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse incoming webhook
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Fonnte webhook payload shape is dynamic
+    // Parse incoming webhook - reuse body from auth check if available
     let body: Record<string, unknown>;
-    const contentType = req.headers.get('content-type') || '';
-    console.log("Request content-type:", contentType);
+    if (clonedBodyForAuth) {
+      body = clonedBodyForAuth;
+      console.log("Reusing body from auth validation");
+    } else {
+      const contentType = req.headers.get('content-type') || '';
+      console.log("Request content-type:", contentType);
 
-    try {
-      if (contentType.includes('application/json')) {
-        body = await req.json();
-      } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
-        const formData = await req.formData();
-        body = Object.fromEntries(formData.entries());
-      } else {
-        const text = await req.text();
-        if (!text || text.trim() === '') {
-          return new Response(JSON.stringify({ status: "skipped", reason: "empty body" }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+      try {
+        if (contentType.includes('application/json')) {
+          body = await req.json();
+        } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+          const formData = await req.formData();
+          body = Object.fromEntries(formData.entries());
+        } else {
+          const text = await req.text();
+          if (!text || text.trim() === '') {
+            return new Response(JSON.stringify({ status: "skipped", reason: "empty body" }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          try {
+            body = JSON.parse(text);
+          } catch {
+            const params = new URLSearchParams(text);
+            body = Object.fromEntries(params.entries());
+          }
         }
-        try {
-          body = JSON.parse(text);
-        } catch {
-          const params = new URLSearchParams(text);
-          body = Object.fromEntries(params.entries());
-        }
+      } catch (parseError) {
+        console.error("Body parse error:", parseError);
+        return new Response(JSON.stringify({ status: "error", reason: "invalid body format" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-    } catch (parseError) {
-      console.error("Body parse error:", parseError);
-      return new Response(JSON.stringify({ status: "error", reason: "invalid body format" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     console.log("Parsed webhook body:", JSON.stringify(body));
