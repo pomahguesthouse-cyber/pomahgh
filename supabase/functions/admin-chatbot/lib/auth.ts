@@ -13,7 +13,7 @@ export async function validateAuth(
   const whatsappPhone = req.headers.get("X-WhatsApp-Phone");
   const managerName = req.headers.get("X-Manager-Name") || "Manager";
   const managerRole = (req.headers.get("X-Manager-Role") || "super_admin") as ManagerRole;
-  const expectedInternalSecret = Deno.env.get("WHATSAPP_INTERNAL_SECRET");
+  const expectedInternalSecret = Deno.env.get("WHATSAPP_INTERNAL_SECRET") || Deno.env.get("CHATBOT_TOOLS_INTERNAL_SECRET");
   const providedInternalSecret = req.headers.get("X-Internal-Secret");
 
   if (isWhatsAppSource && whatsappPhone) {
@@ -24,7 +24,7 @@ export async function validateAuth(
         adminEmail: null,
         managerName,
         managerRole: 'viewer',
-        error: "WHATSAPP_INTERNAL_SECRET not configured",
+        error: "Internal WhatsApp/admin secret not configured",
         status: 500
       };
     }

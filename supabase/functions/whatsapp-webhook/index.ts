@@ -821,10 +821,10 @@ Silakan coba lagi atau hubungi technical support.`;
     // Continue with manager mode routing if not an approval response
     if (isManager) {
       console.log(`📱 MANAGER MODE - routing to admin-chatbot for ${phone} (${managerInfo?.name})`);
-      const internalSecret = Deno.env.get("WHATSAPP_INTERNAL_SECRET");
+      const internalSecret = Deno.env.get("WHATSAPP_INTERNAL_SECRET") || Deno.env.get("CHATBOT_TOOLS_INTERNAL_SECRET");
 
       if (!internalSecret) {
-        console.error("WHATSAPP_INTERNAL_SECRET not configured");
+        console.error("Missing internal WhatsApp/admin secret (WHATSAPP_INTERNAL_SECRET or CHATBOT_TOOLS_INTERNAL_SECRET)");
         return new Response(JSON.stringify({ status: "error", reason: "internal secret not configured" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
