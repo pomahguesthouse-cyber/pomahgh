@@ -94,7 +94,7 @@ export function usePendingGeneratedExamples(target: 'guest' | 'admin' = 'guest')
         .order('display_order', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data as GeneratedExample[];
+      return data as unknown as GeneratedExample[];
     },
   });
 }

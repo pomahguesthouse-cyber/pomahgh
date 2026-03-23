@@ -698,7 +698,7 @@ export default function TrainingTab() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {pendingAIExamples.map((ex: TrainingExample) => (
+              {pendingAIExamples.map((ex: any) => (
                 <div key={ex.id} className="border rounded-lg p-3 bg-muted/20">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 space-y-1">
