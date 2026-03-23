@@ -73,7 +73,7 @@ const Header = memo(function Header() {
                 src={settings?.logo_url || "/logo.png"}
                 alt="Pomah Guesthouse"
                 width={44}
-                height={44} className="" />
+                height={44} className="object-fill" />
 
               
             </Link>
