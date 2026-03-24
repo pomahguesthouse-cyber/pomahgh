@@ -53,6 +53,7 @@ function buildDateContext(): string {
   return `📅 REFERENSI TANGGAL (WIB):
 - Hari ini: ${formatDateIndonesian(wibTime)} (${today})
 - Tanggal SEKARANG: ${todayDate} ${currentMonth} ${currentYear}
+- TAHUN SEKARANG: ${currentYear}
 - Besok: ${tomorrow}
 - Lusa: ${lusa}
 - Weekend ini: ${weekend}
@@ -61,7 +62,11 @@ function buildDateContext(): string {
 🚨 ATURAN TANGGAL (KRITIS!):
 - ❌ DILARANG bilang "tanggal sudah lewat" TANPA panggil check_availability!
 - ✅ WAJIB panggil check_availability untuk SEMUA tanggal yang user sebutkan!
-- Jika user sebut tanggal TANPA tahun → pilih tahun yang membuat tanggal di MASA DEPAN
+- 🔴 ATURAN TAHUN (SANGAT PENTING):
+  * Jika user sebut bulan yang BELUM lewat di tahun ${currentYear} → GUNAKAN TAHUN ${currentYear}
+  * Contoh: sekarang ${currentMonth} ${currentYear}, user bilang "April" → gunakan April ${currentYear} (BUKAN ${currentYear + 1}!)
+  * Contoh: sekarang ${currentMonth} ${currentYear}, user bilang "Februari" → gunakan Februari ${currentYear + 1} (karena sudah lewat)
+  * JANGAN menambah tahun jika bulan tersebut masih di DEPAN bulan sekarang!
 
 ⚠️ KONVERSI OTOMATIS:
 - "malam ini"/"hari ini" → check-in ${today}
