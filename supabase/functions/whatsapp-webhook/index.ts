@@ -969,42 +969,72 @@ Silakan coba lagi atau hubungi technical support.`;
     }
 
     // === NAME COLLECTION FLOW ===
-    // If this is a new/stale session, ask for the guest's name first
+    // If this is a new/stale session, check if the first message is a question
+    // If so, bypass name prompt and go straight to AI
     if (isNewSession) {
-      console.log(`🆕 New session for ${phone} - asking for name`);
+      console.log(`🆕 New session for ${phone}`);
       
-      // Create/update session with awaiting_name flag
-      await supabase
-        .from('whatsapp_sessions')
-        .upsert({
-          phone_number: phone,
-          conversation_id: conversationId,
-          last_message_at: new Date().toISOString(),
-          is_active: true,
-          session_type: 'guest',
-          awaiting_name: true,
-          guest_name: null, // Reset name for new session
-        }, { onConflict: 'phone_number' });
+      // Detect if first message is a question or contains actionable content
+      const questionPatterns = /[?？]|berapa|harga|kamar|booking|check.?in|check.?out|tersedia|available|promo|fasilitas|alamat|lokasi|wifi|bayar|transfer|cancel|batal|kapan|bagaimana|gimana|apakah|bisa|boleh|ada|mau|ingin|cari|pesan|sewa|tarif|biaya|diskon|info|informasi/i;
+      const isQuestion = questionPatterns.test(normalizedMessage);
+      
+      if (isQuestion) {
+        // Guest asked a question directly - bypass name, assign generic name, process immediately
+        console.log(`⏭️ First message is a question - bypassing name prompt`);
+        const genericName = `Tamu WA ${phone.slice(-4)}`;
+        
+        await supabase
+          .from('whatsapp_sessions')
+          .upsert({
+            phone_number: phone,
+            conversation_id: conversationId,
+            last_message_at: new Date().toISOString(),
+            is_active: true,
+            session_type: 'guest',
+            awaiting_name: false,
+            guest_name: genericName,
+          }, { onConflict: 'phone_number' });
+        
+        if (conversationId) {
+          await supabase
+            .from('chat_conversations')
+            .update({ guest_email: `${genericName} (WA: ${phone})` })
+            .eq('id', conversationId);
+        }
+        
+        // Don't return - fall through to AI processing below
+      } else {
+        // Simple greeting or name-like message - ask for name
+        await supabase
+          .from('whatsapp_sessions')
+          .upsert({
+            phone_number: phone,
+            conversation_id: conversationId,
+            last_message_at: new Date().toISOString(),
+            is_active: true,
+            session_type: 'guest',
+            awaiting_name: true,
+            guest_name: null,
+          }, { onConflict: 'phone_number' });
 
-      // Log the user's initial message
-      await logMessage(supabase, conversationId, 'user', normalizedMessage);
+        await logMessage(supabase, conversationId, 'user', normalizedMessage);
 
-      // Send greeting + ask name
-      const greetingMsg = `Halo! 👋 Selamat datang di Pomah Guesthouse. Boleh saya tahu nama Anda?`;
-      await logMessage(supabase, conversationId, 'assistant', greetingMsg);
+        const greetingMsg = `Halo! 👋 Selamat datang di Pomah Guesthouse. Boleh saya tahu nama Anda?`;
+        await logMessage(supabase, conversationId, 'assistant', greetingMsg);
 
-      await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': FONNTE_API_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ target: phone, message: greetingMsg }),
-      });
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': FONNTE_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ target: phone, message: greetingMsg }),
+        });
 
-      return new Response(JSON.stringify({ status: "awaiting_name", conversation_id: conversationId }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        return new Response(JSON.stringify({ status: "awaiting_name", conversation_id: conversationId }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // If session is awaiting name, capture it only when reply is likely a real name.
