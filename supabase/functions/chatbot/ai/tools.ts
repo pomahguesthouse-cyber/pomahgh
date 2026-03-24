@@ -14,7 +14,7 @@ export const tools = [
     type: "function",
     function: {
       name: "check_availability",
-      description: "Cek ketersediaan kamar untuk tanggal tertentu. Bisa untuk tahun ini atau tahun depan.",
+      description: "Cek ketersediaan kamar untuk tanggal tertentu. PENTING: Gunakan tahun SAAT INI jika bulan belum lewat. Jangan default ke tahun depan!",
       parameters: {
         type: "object",
         properties: {

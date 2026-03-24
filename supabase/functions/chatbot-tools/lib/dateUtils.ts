@@ -39,11 +39,17 @@ export function calculateNights(checkIn: string, checkOut: string): number {
  */
 export function validateAndFixDate(dateStr: string, fieldName: string): DateValidationResult {
   const date = new Date(dateStr);
+  
+  // Use WIB (UTC+7) for accurate comparison
   const now = new Date();
+  const wibOffset = 7 * 60 * 60 * 1000;
+  const wibNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + wibOffset);
   
   // Strip time for accurate date comparison
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const today = new Date(wibNow.getFullYear(), wibNow.getMonth(), wibNow.getDate());
   const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  console.log(`📅 validateAndFixDate: ${fieldName}=${dateStr}, today(WIB)=${today.toISOString().split('T')[0]}, target=${targetDate.toISOString().split('T')[0]}`);
   
   // CRITICAL: If date is in the PAST, add 1 year
   if (targetDate < today) {
@@ -52,7 +58,7 @@ export function validateAndFixDate(dateStr: string, fieldName: string): DateVali
     const day = String(date.getDate()).padStart(2, '0');
     const fixedDate = `${newYear}-${month}-${day}`;
     
-    console.warn(`⚠️ ${fieldName}: Date ${dateStr} is in the past, correcting to ${newYear}`);
+    console.warn(`⚠️ ${fieldName}: Date ${dateStr} is in the past (WIB), correcting to ${fixedDate}`);
     
     return {
       date: fixedDate,
