@@ -84,12 +84,8 @@ export const RoomAvailabilityCalendar = ({
         }
       )
       .subscribe();
-        }
-      });
 
-    // Cleanup subscription on unmount
     return () => {
-      
       supabase.removeChannel(channel);
     };
   }, [roomId, queryClient]);
