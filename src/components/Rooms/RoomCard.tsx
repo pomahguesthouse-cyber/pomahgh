@@ -20,7 +20,7 @@ export const RoomCard = memo(function RoomCard({
   isBestPrice,
   hasDateRange,
   onBookRoom,
-}: RoomCardProps) => {
+}: RoomCardProps) {
   const isUnavailable = isAvailabilityLoaded && availability !== undefined && availability === 0;
   const [isHovered, setIsHovered] = useState(false);
 
