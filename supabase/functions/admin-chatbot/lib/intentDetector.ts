@@ -13,6 +13,7 @@ export type DetectedIntent =
   | 'booking_detail'
   | 'room_inventory'
   | 'room_prices'
+  | 'update_room_price'
   | 'send_reminder'
   | 'calendar_link'
   | 'reschedule'
