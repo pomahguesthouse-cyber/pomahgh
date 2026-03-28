@@ -86,7 +86,7 @@ const MobileAdminApp = () => {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between shadow-sm">
-        <h1 className="font-semibold text-lg">Pomah Admin</h1>
+        <h1 className="font-semibold text-lg font-sans">Pomah Admin</h1>
         <button onClick={handleLogout} className="p-2 rounded-full hover:bg-primary/80 transition-colors">
           <LogOut className="h-5 w-5" />
         </button>
