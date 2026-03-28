@@ -135,6 +135,8 @@ const App = () => (
             <Route path="/events/:slug" element={<EventDetail />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/member" element={<MemberDashboard />} />
+            <Route path="/app" element={<MobileAdminApp />} />
+            <Route path="/app/login" element={<MobileLoginPage />} />
             <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
           <Route path="/admin/booking-calendar" element={<AdminLayout><AdminBookingCalendarPage /></AdminLayout>} />
