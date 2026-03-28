@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
-import { Search, User, CalendarDays, Phone } from "lucide-react";
+import { Search, User, CalendarDays, Phone, Edit2 } from "lucide-react";
+import { MobileBookingEditDialog } from "./MobileBookingEditDialog";
 
 const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   confirmed: { label: "Confirmed", variant: "default" },
@@ -19,8 +22,23 @@ const FILTER_TABS = ["semua", "confirmed", "pending", "pending_payment", "checke
 
 export const MobileBookingsTab = () => {
   const { bookings, isLoading } = useAdminBookings();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("semua");
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+
+  const { data: rooms = [] } = useQuery({
+    queryKey: ["mobile-rooms"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rooms")
+        .select("id, name, room_numbers, price_per_night")
+        .eq("is_active", true)
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const filtered = (bookings || []).filter((b) => {
     const matchSearch =
@@ -32,6 +50,17 @@ export const MobileBookingsTab = () => {
     const matchStatus = statusFilter === "semua" || b.status === statusFilter;
     return matchSearch && matchStatus;
   });
+
+  const handleSaveBooking = async (updates: Record<string, any>) => {
+    if (!selectedBooking) return;
+    const { error } = await supabase
+      .from("bookings")
+      .update(updates)
+      .eq("id", selectedBooking.id);
+    if (error) throw error;
+    await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+    await queryClient.invalidateQueries({ queryKey: ["mobile-calendar-bookings"] });
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -75,7 +104,11 @@ export const MobileBookingsTab = () => {
           filtered.slice(0, 50).map((booking) => {
             const badge = STATUS_BADGE[booking.status] || { label: booking.status, variant: "outline" as const };
             return (
-              <div key={booking.id} className="bg-card rounded-lg border border-border p-3 space-y-2">
+              <button
+                key={booking.id}
+                onClick={() => setSelectedBooking(booking)}
+                className="w-full text-left bg-card rounded-lg border border-border p-3 space-y-2 active:bg-muted/50 transition-colors"
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -89,9 +122,12 @@ export const MobileBookingsTab = () => {
                       {booking.guest_name}
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-primary whitespace-nowrap">
-                    Rp {booking.total_price.toLocaleString("id-ID")}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-semibold text-primary whitespace-nowrap">
+                      Rp {booking.total_price.toLocaleString("id-ID")}
+                    </span>
+                    <Edit2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -107,21 +143,25 @@ export const MobileBookingsTab = () => {
                 </div>
 
                 {booking.guest_phone && (
-                  <a
-                    href={`https://wa.me/${booking.guest_phone.replace(/\D/g, "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-green-600 hover:underline"
-                  >
+                  <span className="inline-flex items-center gap-1 text-xs text-green-600">
                     <Phone className="h-3 w-3" />
                     {booking.guest_phone}
-                  </a>
+                  </span>
                 )}
-              </div>
+              </button>
             );
           })
         )}
       </div>
+
+      {/* Edit Dialog */}
+      <MobileBookingEditDialog
+        booking={selectedBooking}
+        open={!!selectedBooking}
+        onOpenChange={(open) => !open && setSelectedBooking(null)}
+        onSave={handleSaveBooking}
+        rooms={rooms}
+      />
     </div>
   );
 };
