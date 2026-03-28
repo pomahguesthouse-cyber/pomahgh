@@ -20,9 +20,9 @@ import {
   useDeleteFacility,
   Facility,
 } from "@/hooks/useFacilities";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Trash2, Circle } from "lucide-react";
 import { toast } from "sonner";
-import * as Icons from "lucide-react";
+import { getIconByName } from "@/utils/DynamicIcon";
 
 const AdminFacilities = () => {
   const { data: facilities, isLoading } = useAdminFacilities();
@@ -90,8 +90,7 @@ const AdminFacilities = () => {
   };
 
   const getIconComponent = (iconName: string) => {
-    const IconComponent = Icons[iconName as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
-    return IconComponent || Icons.Circle;
+    return getIconByName(iconName, Circle);
   };
 
   if (isLoading) {

@@ -1,6 +1,6 @@
 import { RoomPanorama } from "@/hooks/useRoomPanoramas";
-import * as LucideIcons from "lucide-react";
-import { LucideIcon } from "lucide-react";
+import { MapPin, LucideIcon } from "lucide-react";
+import { getIconByName } from "@/utils/DynamicIcon";
 
 interface FloorPlanViewerProps {
   floorPlanUrl: string;
@@ -15,10 +15,9 @@ export const FloorPlanViewer = ({
   currentPanoramaId,
   onPanoramaClick,
 }: FloorPlanViewerProps) => {
-  const getIconComponent = (iconName?: string): LucideIcon => {
-    if (!iconName) return LucideIcons.MapPin;
-    const Icon = LucideIcons[iconName as keyof typeof LucideIcons];
-    return typeof Icon === "function" ? (Icon as LucideIcon) : LucideIcons.MapPin;
+  const getIconComponent = (iconName?: string) => {
+    if (!iconName) return MapPin;
+    return getIconByName(iconName, MapPin);
   };
 
   const visiblePanoramas = panoramas.filter(

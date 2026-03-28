@@ -1,6 +1,7 @@
 import { ElementWrapper } from "./ElementWrapper";
 import { EditorElement } from "@/stores/editorStore";
-import * as LucideIcons from "lucide-react";
+import { getIconByName } from "@/utils/DynamicIcon";
+import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface IconElementProps {
@@ -23,9 +24,7 @@ export function IconElement({
   const { iconName = "Star", iconSize = 48, iconColor = "#0f172a" } = element.props;
   const { textAlign, marginTop, marginBottom } = element.styles;
 
-  const IconComponent =
-    (LucideIcons as unknown as Record<string, React.FC<React.SVGProps<SVGSVGElement>>>)[iconName] ??
-    LucideIcons.Star;
+  const IconComponent = getIconByName(iconName, Star);
 
   const style: React.CSSProperties = { marginTop, marginBottom };
 
