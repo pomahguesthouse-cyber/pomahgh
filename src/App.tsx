@@ -89,6 +89,8 @@ const AdminLayout = lazyRetry(() => import("./components/admin/AdminLayout").the
 const NotFound = lazyRetry(() => import("./pages/NotFound"));
 const ExploreSemarang = lazyRetry(() => import("./pages/ExploreSemarang"));
 const LandingPage = lazyRetry(() => import("./pages/LandingPage"));
+const MobileAdminApp = lazyRetry(() => import("./pages/app/MobileAdminApp"));
+const MobileLoginPage = lazyRetry(() => import("./pages/app/MobileLoginPage"));
 const AttractionDetail = lazyRetry(() => import("./pages/AttractionDetail"));
 const Chat = lazyRetry(() => import("./pages/Chat"));
 const EventDetail = lazyRetry(() => import("./pages/EventDetail"));
@@ -133,6 +135,8 @@ const App = () => (
             <Route path="/events/:slug" element={<EventDetail />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/member" element={<MemberDashboard />} />
+            <Route path="/app" element={<MobileAdminApp />} />
+            <Route path="/app/login" element={<MobileLoginPage />} />
             <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
           <Route path="/admin/booking-calendar" element={<AdminLayout><AdminBookingCalendarPage /></AdminLayout>} />
