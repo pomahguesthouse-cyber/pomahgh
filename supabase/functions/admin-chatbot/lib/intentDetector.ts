@@ -165,11 +165,14 @@ const INTENT_PATTERNS: { intent: DetectedIntent; patterns: RegExp[]; tool: strin
   {
     intent: 'room_prices',
     patterns: [
-      /harga\s*kamar/i,
+      // Only match read-only price queries, NOT update commands
+      /(?<!(ubah|ganti|set|buat|jadikan|update|rubah|naikkan|turunkan|naik|turun)\s.{0,20})harga\s*kamar/i,
       /room\s*prices?/i,
-      /tarif/i,
-      /rate/i,
+      /tarif(?!\s*(jadi|ke|menjadi|=))/i,
+      /rate(?!\s*(jadi|ke|menjadi|=))/i,
       /berapa\s*harga/i,
+      /lihat\s*harga/i,
+      /cek\s*harga/i,
     ],
     tool: 'get_room_prices'
   },
