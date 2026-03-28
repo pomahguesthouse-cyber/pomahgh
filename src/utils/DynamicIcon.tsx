@@ -1,5 +1,5 @@
-import { lazy, Suspense } from "react";
-import { icons, LucideIcon } from "lucide-react";
+import { icons } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 /**
  * Get a Lucide icon component by name string.
@@ -9,7 +9,7 @@ import { icons, LucideIcon } from "lucide-react";
 export const getIconByName = (
   iconName: string,
   fallback: LucideIcon = icons.Circle as unknown as LucideIcon
-): React.ComponentType<{ className?: string; size?: number; color?: string }> => {
+): LucideIcon => {
   const Icon = icons[iconName as keyof typeof icons];
-  return (Icon as unknown as React.ComponentType<{ className?: string; size?: number; color?: string }>) || fallback;
+  return (Icon as unknown as LucideIcon) || fallback;
 };
