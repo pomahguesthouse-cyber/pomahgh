@@ -57,8 +57,8 @@ export const MobileCalendarTab = () => {
       const { data, error } = await supabase
         .from("rooms")
         .select("id, name, allotment, room_numbers, price_per_night")
-        .eq("is_active", true)
-        .order("display_order");
+        .eq("available", true)
+        .order("name");
       if (error) throw error;
       return data;
     },
