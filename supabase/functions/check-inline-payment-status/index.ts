@@ -166,7 +166,7 @@ serve(async (req) => {
         is_expired: remainingMs <= 0,
         paid_at: status === "paid" ? new Date().toISOString() : null,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" } }
     );
   } catch (error: unknown) {
     log("error", "Error checking status", { requestId, error: (error as Error).message });

@@ -50,7 +50,7 @@ serve(async (req) => {
     // Skip if already final
     if (["paid", "refunded", "failed"].includes(txn.status)) {
       return new Response(JSON.stringify({ success: true, status: txn.status, amount: txn.amount }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
       });
     }
 
@@ -94,7 +94,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ success: true, status, amount: midtransData.gross_amount || txn.amount }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   } catch (error) {
     const err = error as Error;

@@ -113,7 +113,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify(availability),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'private, max-age=30' } }
     )
 
   } catch (error) {
