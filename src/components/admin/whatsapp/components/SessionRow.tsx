@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -17,7 +17,7 @@ interface SessionRowProps {
   session: WhatsAppSessionWithMessages;
 }
 
-export const SessionRow = ({ session }: SessionRowProps) => {
+export const SessionRow = memo(function SessionRow({ session }: SessionRowProps) {
   const toggleBlock = useToggleBlockSession();
   const deleteSession = useDeleteWhatsAppSession();
   const takeoverSession = useTakeoverSession();
@@ -135,4 +135,4 @@ export const SessionRow = ({ session }: SessionRowProps) => {
       />
     </>
   );
-};
+});

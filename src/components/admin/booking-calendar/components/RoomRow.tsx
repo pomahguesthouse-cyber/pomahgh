@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { Booking, RoomInfo } from "../types";
 import { RoomCell } from "./RoomCell";
 
@@ -18,7 +18,7 @@ interface RoomRowProps {
   activeBooking?: Booking | null;
 }
 
-export const RoomRow = ({
+export const RoomRow = memo(function RoomRow({
   room,
   dates,
   getBookingForCell,
@@ -32,7 +32,7 @@ export const RoomRow = ({
   getResizePreview,
   isResizing,
   activeBooking,
-}: RoomRowProps) => {
+}: RoomRowProps) {
   const firstVisibleDate = dates[0];
 
   return (
@@ -71,4 +71,4 @@ export const RoomRow = ({
       })}
     </tr>
   );
-};
+});

@@ -6,7 +6,7 @@ import { useRooms } from "@/hooks/useRooms";
 import { useRoomFeatures } from "@/hooks/useRoomFeatures";
 import { useRoomHotspots } from "@/hooks/useRoomHotspots";
 import { useRoomPanoramas } from "@/hooks/useRoomPanoramas";
-import { useSearchDates } from "@/contexts/SearchDatesContext";
+import { useSearchDatesValue } from "@/contexts/SearchDatesContext";
 import { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -42,7 +42,7 @@ const RoomDetail = () => {
   const [initialRoomQuantity, setInitialRoomQuantity] = useState(1);
   const [initialNumGuests, setInitialNumGuests] = useState(1);
 
-  const { checkIn, checkOut } = useSearchDates();
+  const { checkIn, checkOut } = useSearchDatesValue();
   const { data: availability, isLoading: isCheckingAvailability } = useRoomAvailabilityCheck(checkIn, checkOut);
 
   const roomAvailability = room ? availability?.[room.id] : undefined;

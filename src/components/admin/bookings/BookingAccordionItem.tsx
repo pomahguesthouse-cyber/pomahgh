@@ -1,6 +1,6 @@
 import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import {
   AccordionContent,
   AccordionItem,
@@ -70,7 +70,7 @@ interface BookingAccordionItemProps {
   isDeleting?: boolean;
 }
 
-export function BookingAccordionItem({
+export const BookingAccordionItem = memo(function BookingAccordionItem({
   booking,
   index,
   rooms,
@@ -419,4 +419,4 @@ export function BookingAccordionItem({
       </AccordionContent>
     </AccordionItem>
   );
-}
+})

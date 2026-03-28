@@ -7,9 +7,9 @@ import { RoomCardPrice } from "./RoomCardPrice";
 import { RoomFeatures } from "./RoomFeatures";
 import type { RoomCardProps } from "./types";
 import familyChoiceIcon from "@/assets/family-choice-icon.png";
-import { useState } from "react";
+import { memo, useState } from "react";
 
-export const RoomCard = ({
+export const RoomCard = memo(function RoomCard({
   room,
   hasPromo,
   displayPrice,
@@ -111,4 +111,4 @@ export const RoomCard = ({
       </Card>
     </Link>
   );
-};
+});

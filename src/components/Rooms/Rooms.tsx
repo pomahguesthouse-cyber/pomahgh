@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRooms } from "@/hooks/useRooms";
 import { useRoomFeatures } from "@/hooks/useRoomFeatures";
-import { useSearchDates } from "@/contexts/SearchDatesContext";
+import { useSearchDatesValue } from "@/contexts/SearchDatesContext";
 import { useRoomAvailabilityCheck } from "@/hooks/useRoomAvailabilityCheck";
 import { usePriceAnalysis } from "@/hooks/usePriceAnalysis";
 
@@ -18,7 +18,7 @@ import type { CarouselApi } from "@/components/ui/carousel";
 export const Rooms = () => {
   const { data: rooms, isLoading } = useRooms();
   const { data: roomFeatures } = useRoomFeatures();
-  const { checkIn, checkOut } = useSearchDates();
+  const { checkIn, checkOut } = useSearchDatesValue();
 
   const { data: availability, isLoading: isCheckingAvailability } = useRoomAvailabilityCheck(checkIn, checkOut);
   const { analysis: priceAnalysis } = usePriceAnalysis();

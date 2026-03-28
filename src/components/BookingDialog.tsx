@@ -23,7 +23,7 @@ import { AddonSelector } from "./booking/AddonSelector";
 import { BookingAddon } from "@/hooks/useRoomAddons";
 import { z } from "zod";
 import { toast } from "sonner";
-import { useSearchDates } from "@/contexts/SearchDatesContext";
+import { useSearchDatesValue } from "@/contexts/SearchDatesContext";
 
 interface BookingDialogProps {
   room: Room | null;
@@ -52,7 +52,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
   const { user } = useAuth();
   const navigate = useNavigate();
   const { settings } = usePublicHotelSettings();
-  const { checkIn: searchCheckIn, checkOut: searchCheckOut } = useSearchDates();
+  const { checkIn: searchCheckIn, checkOut: searchCheckOut } = useSearchDatesValue();
   
   // Set default dates: use search dates if available, otherwise today and tomorrow (WIB)
   const getDefaultCheckIn = () => {

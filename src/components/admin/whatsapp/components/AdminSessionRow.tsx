@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -16,7 +16,7 @@ interface AdminSessionRowProps {
   session: WhatsAppSessionWithMessages;
 }
 
-export const AdminSessionRow = ({ session }: AdminSessionRowProps) => {
+export const AdminSessionRow = memo(function AdminSessionRow({ session }: AdminSessionRowProps) {
   const toggleBlock = useToggleBlockSession();
   const deleteSession = useDeleteWhatsAppSession();
   const [chatOpen, setChatOpen] = useState(false);
@@ -116,4 +116,4 @@ export const AdminSessionRow = ({ session }: AdminSessionRowProps) => {
       />
     </>
   );
-};
+});

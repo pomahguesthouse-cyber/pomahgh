@@ -33,4 +33,4 @@ export { useGoogleRating } from "@/hooks/useGoogleRating";
 export { useHeroSlides } from "@/hooks/useHeroSlides";
 
 // Context
-export { SearchDatesProvider, useSearchDates } from "@/contexts/SearchDatesContext";
+export { SearchDatesProvider, useSearchDates, useSearchDatesValue, useSearchDatesDispatch } from "@/contexts/SearchDatesContext";
