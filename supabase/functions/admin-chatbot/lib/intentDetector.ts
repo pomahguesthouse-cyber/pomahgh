@@ -13,6 +13,7 @@ export type DetectedIntent =
   | 'booking_detail'
   | 'room_inventory'
   | 'room_prices'
+  | 'update_room_price'
   | 'send_reminder'
   | 'calendar_link'
   | 'reschedule'
@@ -163,13 +164,28 @@ const INTENT_PATTERNS: { intent: DetectedIntent; patterns: RegExp[]; tool: strin
     tool: 'get_room_inventory'
   },
   {
+    intent: 'update_room_price',
+    patterns: [
+      /(ubah|ganti|set|buat|untuk|jadikan|update|rubah|naikkan|turunkan)\s*.{0,30}harga.{0,30}(jadi|ke|menjadi|=|\d)/i,
+      /(ubah|ganti|set|buat|untuk|jadikan|update|rubah|naikkan|turunkan)\s*.{0,10}harga/i,
+      /harga\s*.{0,20}(jadi|ke|menjadi|=)\s*/i,
+      /(naik|turun)(kan)?\s*harga/i,
+      /update\s*room\s*price/i,
+      /change\s*price/i,
+    ],
+    tool: 'update_room_price'
+  },
+  {
     intent: 'room_prices',
     patterns: [
-      /harga\s*kamar/i,
+      // Only match read-only price queries, NOT update commands
+      /^(?!.*(ubah|ganti|set|buat|untuk|jadikan|update|rubah|naikkan|turunkan|naik|turun).{0,30}harga).*harga\s*kamar/i,
       /room\s*prices?/i,
-      /tarif/i,
-      /rate/i,
+      /tarif(?!\s*(jadi|ke|menjadi|=))/i,
+      /rate(?!\s*(jadi|ke|menjadi|=))/i,
       /berapa\s*harga/i,
+      /lihat\s*harga/i,
+      /cek\s*harga/i,
     ],
     tool: 'get_room_prices'
   },
