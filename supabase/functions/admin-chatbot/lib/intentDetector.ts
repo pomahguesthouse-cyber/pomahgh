@@ -164,6 +164,17 @@ const INTENT_PATTERNS: { intent: DetectedIntent; patterns: RegExp[]; tool: strin
     tool: 'get_room_inventory'
   },
   {
+    intent: 'update_room_price',
+    patterns: [
+      /(ubah|ganti|set|buat|jadikan|update|rubah|naikkan|turunkan)\s*.{0,30}harga/i,
+      /harga\s*.{0,20}(jadi|ke|menjadi|=)\s*/i,
+      /(naik|turun)(kan)?\s*harga/i,
+      /update\s*room\s*price/i,
+      /change\s*price/i,
+    ],
+    tool: 'update_room_price'
+  },
+  {
     intent: 'room_prices',
     patterns: [
       // Only match read-only price queries, NOT update commands
