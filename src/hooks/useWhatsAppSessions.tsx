@@ -45,7 +45,7 @@ export const useWhatsAppSessions = (sessionType?: 'guest' | 'admin' | 'all') => 
           table: 'whatsapp_sessions'
         },
         () => {
-          console.log('🔄 WhatsApp session updated');
+          // Session updated
           queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions', sessionType] });
           queryClient.invalidateQueries({ queryKey: ['whatsapp-stats', sessionType] });
         }
@@ -63,7 +63,7 @@ export const useWhatsAppSessions = (sessionType?: 'guest' | 'admin' | 'all') => 
           table: 'chat_messages'
         },
         (payload) => {
-          console.log('💬 New message received:', payload);
+          // New message received
           // Invalidate the specific conversation's messages
           if (payload.new && typeof payload.new === 'object' && 'conversation_id' in payload.new) {
             queryClient.invalidateQueries({ 

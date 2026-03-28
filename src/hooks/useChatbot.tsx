@@ -177,7 +177,7 @@ export const useChatbot = () => {
           .insert(example);
 
         if (!insertError) {
-          console.log("Auto-promoted training example:", example.question.substring(0, 30) + "...");
+          // Training example auto-promoted
         }
       }
 

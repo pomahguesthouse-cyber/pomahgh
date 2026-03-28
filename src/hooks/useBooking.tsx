@@ -151,7 +151,7 @@ export const useBooking = () => {
             other_source: bookingData.other_source || 'Website'
           }
         });
-        console.log('✅ Manager notification sent');
+        // Manager notification sent
       } catch (e) {
         console.error("Failed to notify managers:", e);
       }
@@ -161,7 +161,7 @@ export const useBooking = () => {
         await supabase.functions.invoke('generate-invoice', {
           body: { booking_id: bookingData.id, send_email: true }
         });
-        console.log('✅ Invoice auto-generated and sent to:', bookingData.guest_email);
+        // Invoice auto-generated
       } catch (e) {
         console.error("Failed to auto-generate invoice:", e);
       }

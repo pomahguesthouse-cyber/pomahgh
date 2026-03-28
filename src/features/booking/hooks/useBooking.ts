@@ -167,7 +167,7 @@ export const useBooking = () => {
             other_source: bookingData.other_source || 'Website'
           }
         });
-        console.log('✅ Manager notification sent');
+        // Manager notification sent
       } catch (e) {
         console.error("Failed to notify managers:", e);
       }

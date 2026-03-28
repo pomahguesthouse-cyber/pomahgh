@@ -49,7 +49,7 @@ export const RoomAvailabilityCalendar = ({
 
   // Set up real-time subscription for booking changes
   useEffect(() => {
-    console.log("Setting up real-time subscription for room:", roomId);
+    
 
     const channel = supabase
       .channel(`room-bookings-${roomId}`)
@@ -62,7 +62,7 @@ export const RoomAvailabilityCalendar = ({
           filter: `room_id=eq.${roomId}`
         },
         (payload) => {
-          console.log("Real-time booking change detected:", payload);
+          
           
           // Show toast notification based on event type
           if (payload.eventType === 'INSERT') {
@@ -83,16 +83,13 @@ export const RoomAvailabilityCalendar = ({
           queryClient.invalidateQueries({ queryKey: ["room-bookings", roomId] });
         }
       )
-      .subscribe((status) => {
-        console.log("Subscription status:", status);
-        if (status === 'SUBSCRIBED') {
-          console.log("Successfully subscribed to real-time updates");
+      .subscribe();
         }
       });
 
     // Cleanup subscription on unmount
     return () => {
-      console.log("Cleaning up real-time subscription");
+      
       supabase.removeChannel(channel);
     };
   }, [roomId, queryClient]);
