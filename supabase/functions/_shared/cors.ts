@@ -32,18 +32,3 @@ export function withCors(response: Response): Response {
     headers: newHeaders,
   });
 }
-
-/**
- * Build JSON response headers with CORS and optional Cache-Control.
- * @param cacheControl - e.g. 'public, max-age=3600' or 'no-store'
- */
-export function jsonHeaders(cacheControl?: string): Record<string, string> {
-  const headers: Record<string, string> = {
-    ...corsHeaders,
-    'Content-Type': 'application/json',
-  };
-  if (cacheControl) {
-    headers['Cache-Control'] = cacheControl;
-  }
-  return headers;
-}

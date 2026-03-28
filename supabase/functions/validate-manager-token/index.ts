@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
           dateRange: { start: defaultStart, end: defaultEnd },
         },
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "private, max-age=60" } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
