@@ -221,7 +221,7 @@ export const AnalysisDashboardTab = () => {
         // If pricing-processor not found, fallback to auto-pricing
         if (processorError.message?.includes('Edge Function') || 
             processorError.message?.includes('404')) {
-          console.log('Pricing processor not deployed, using auto-pricing fallback');
+          // Pricing processor not deployed, using fallback
           usedFallback = true;
           
           const fallbackResult = await supabase.functions.invoke('auto-pricing', {

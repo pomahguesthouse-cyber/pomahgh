@@ -33,7 +33,7 @@ const playNotificationSound = () => {
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.3);
   } catch (error) {
-    console.log('Could not play notification sound:', error);
+    // Audio not available
   }
 };
 
@@ -74,7 +74,7 @@ export const useAdminNotifications = () => {
           filter: 'success=eq.false'
         },
         (payload) => {
-          console.log('Failed sync detected:', payload);
+          // Failed sync detected
           toast.error("Sync Failed", {
             description: `Channel manager sync failed: ${payload.new.error_message || 'Unknown error'}`,
             icon: <AlertCircle className="h-4 w-4" />,
@@ -96,7 +96,7 @@ export const useAdminNotifications = () => {
           table: 'bookings'
         },
         (payload) => {
-          console.log('New booking detected:', payload);
+          // New booking detected
           toast.success("New Booking!", {
             description: `${payload.new.guest_name} - ${payload.new.room_id}`,
             icon: <Bell className="h-4 w-4" />,
@@ -119,7 +119,7 @@ export const useAdminNotifications = () => {
           filter: 'role=eq.user'
         },
         async (payload) => {
-          console.log('New chat message detected:', payload);
+          // New chat message
           
           // Check if this message is from a WhatsApp session
           const conversationId = payload.new.conversation_id;

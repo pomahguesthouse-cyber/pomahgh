@@ -5,7 +5,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import { useAdminRoomFeatures } from "@/hooks/useRoomFeatures";
 import { use360Upload } from "@/hooks/use360Upload";
-import * as Icons from "lucide-react";
+import { getIconByName } from "@/utils/DynamicIcon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -237,10 +237,7 @@ const AdminRooms = () => {
     });
   }, []);
   const getIconComponent = (iconName: string) => {
-    const icons = Icons as unknown as Record<string, React.ComponentType<{
-      className?: string;
-    }>>;
-    return icons[iconName] || Icons.Circle;
+    return getIconByName(iconName);
   };
   const resetForm = () => {
     setFormData({

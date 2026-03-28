@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, GripVertical } from "lucide-react";
-import * as Icons from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, Circle } from "lucide-react";
+import { getIconByName } from "@/utils/DynamicIcon";
 import {
   useAdminRoomFeatures,
   useCreateRoomFeature,
@@ -100,8 +100,7 @@ export default function AdminRoomFeatures() {
   };
 
   const getIconComponent = (iconName: string) => {
-    const icons = Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
-    return icons[iconName] || Icons.Circle;
+    return getIconByName(iconName, Circle);
   };
 
   if (isLoading) {

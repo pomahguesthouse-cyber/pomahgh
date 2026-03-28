@@ -2,16 +2,11 @@ import { MapPin, Clock, Navigation } from "lucide-react";
 import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { useNearbyLocations } from "@/hooks/useNearbyLocations";
 import { Card, CardContent } from "@/components/ui/card";
-import * as LucideIcons from "lucide-react";
+import { getIconByName } from "@/utils/DynamicIcon";
 
 export const Location = () => {
   const { settings: hotelSettings, isLoading } = usePublicHotelSettings();
   const { locations, isLoading: locationsLoading } = useNearbyLocations();
-
-  const getIcon = (iconName: string) => {
-    const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
-    return icons[iconName] || MapPin;
-  };
 
   const title = "Lokasi Kami";
   const subtitle = "Temukan kami di lokasi strategis yang mudah diakses";
@@ -89,7 +84,7 @@ export const Location = () => {
               ) : locations && locations.length > 0 ? (
                 <div className="space-y-3">
                   {locations.map(location => {
-                    const Icon = getIcon(location.icon_name);
+                    const Icon = getIconByName(location.icon_name);
                     return (
                       <div key={location.id} className="flex items-center gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
                         <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center">

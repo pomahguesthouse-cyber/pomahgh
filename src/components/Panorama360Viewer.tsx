@@ -60,7 +60,7 @@ export const Panorama360Viewer = ({
         keyboardZoom
         draggable
         compass
-        onLoad={() => console.log("360° panorama loaded")}
+        onLoad={() => {}}
         onMouseup={(event: unknown) => {
           if (editMode && onAddHotspot) {
             const e = event as { pitch: number; yaw: number };

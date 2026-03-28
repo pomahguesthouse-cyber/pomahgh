@@ -1,19 +1,15 @@
-import * as Icons from "lucide-react";
+import { getIconByName } from "@/utils/DynamicIcon";
+import { Circle } from "lucide-react";
 import type { RoomFeaturesProps } from "./types";
 
 export const RoomFeatures = ({ features, roomFeatures, layout = "default" }: RoomFeaturesProps) => {
-  const getIconComponent = (iconName: string) => {
-    const icons = Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
-    return icons[iconName] || Icons.Circle;
-  };
-
   return (
     <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
       {features.map((featureId, index) => {
         const feature = roomFeatures?.find((f) => f.feature_key === featureId);
         if (!feature) return null;
 
-        const IconComponent = getIconComponent(feature.icon_name);
+        const IconComponent = getIconByName(feature.icon_name, Circle);
 
         return (
           <div
