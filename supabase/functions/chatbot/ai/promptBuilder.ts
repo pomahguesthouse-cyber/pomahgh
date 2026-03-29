@@ -62,11 +62,19 @@ function buildDateContext(): string {
 🚨 ATURAN TANGGAL (KRITIS!):
 - ❌ DILARANG bilang "tanggal sudah lewat" TANPA panggil check_availability!
 - ✅ WAJIB panggil check_availability untuk SEMUA tanggal yang user sebutkan!
-- 🔴 ATURAN TAHUN (SANGAT PENTING):
+
+- 🔴 ATURAN TANGGAL TANPA BULAN (SANGAT PENTING):
+  * Jika user hanya sebut ANGKA tanggal tanpa bulan (misal "17-18"), dan tanggal itu SUDAH LEWAT di bulan ${currentMonth}:
+    → Asumsikan BULAN DEPAN, TAHUN ${currentYear}!
+  * Contoh: sekarang ${todayDate} ${currentMonth} ${currentYear}, user bilang "17-18" → gunakan 17-18 ${INDONESIAN_MONTHS[(wibTime.getMonth() + 1) % 12]} ${currentYear}
+  * ❌ JANGAN PERNAH loncat ke tahun depan jika hanya tanggal yang sudah lewat!
+
+- 🔴 ATURAN BULAN & TAHUN (SANGAT PENTING):
   * Jika user sebut bulan yang BELUM lewat di tahun ${currentYear} → GUNAKAN TAHUN ${currentYear}
+  * Jika user sebut bulan yang SUDAH lewat di tahun ${currentYear} → GUNAKAN TAHUN ${currentYear + 1}
   * Contoh: sekarang ${currentMonth} ${currentYear}, user bilang "April" → gunakan April ${currentYear} (BUKAN ${currentYear + 1}!)
   * Contoh: sekarang ${currentMonth} ${currentYear}, user bilang "Februari" → gunakan Februari ${currentYear + 1} (karena sudah lewat)
-  * JANGAN menambah tahun jika bulan tersebut masih di DEPAN bulan sekarang!
+  * JANGAN menambah tahun jika bulan tersebut masih di DEPAN atau SAMA dengan bulan sekarang!
 
 ⚠️ KONVERSI OTOMATIS:
 - "malam ini"/"hari ini" → check-in ${today}
