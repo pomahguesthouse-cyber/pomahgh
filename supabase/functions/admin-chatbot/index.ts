@@ -175,15 +175,30 @@ Deno.serve(async (req: Request) => {
     console.log(`📝 Intent detected: ${intentMatch.intent} (${intentMatch.confidence}) → ${intentMatch.suggestedTool || 'none'}`);
 
     // 4. Build system prompt with intent hint
-    const knowledgeContext = buildKnowledgeContext(knowledgeData || []);
-    const trainingContext = buildTrainingContext(trainingData || []);
+    // Combine admin KB + guest KB for comprehensive knowledge
+    const allKnowledge = [...(knowledgeData || []), ...(guestKBData || [])];
+    const knowledgeContext = buildKnowledgeContext(allKnowledge);
+    // Combine admin training + guest training
+    const allTraining = [...(trainingData || []), ...(guestTrainingData || [])];
+    const trainingContext = buildTrainingContext(allTraining, 10, 300);
+
+    // Build facilities and nearby locations context
+    const facilities = (facilitiesData || []) as Array<{title: string; description: string}>;
+    const facilitiesContext = facilities.length > 0
+      ? `\n\n✨ FASILITAS HOTEL:\n${facilities.map(f => `- ${f.title}: ${f.description}`).join('\n')}`
+      : '';
+    
+    const nearby = (nearbyData || []) as Array<{name: string; category: string; distance_km: number; travel_time_minutes: number}>;
+    const nearbyContext = nearby.length > 0
+      ? `\n\n🗺️ LOKASI SEKITAR:\n${nearby.map(l => `- ${l.name} (${l.category}): ${l.distance_km} km, ~${l.travel_time_minutes} menit`).join('\n')}`
+      : '';
 
     const systemPrompt = buildSystemPrompt({
       managerName: auth.managerName,
       managerRole: auth.managerRole,
       hotelSettings,
       personaSettings,
-      knowledgeContext,
+      knowledgeContext: knowledgeContext + facilitiesContext + nearbyContext,
       trainingContext,
       isFirstMessage: chatMessages.length <= 1,
       intentHint
