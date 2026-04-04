@@ -36,6 +36,7 @@ const Index = () => {
       <main>
         <OptimizedHero />
         <DateSearchBar />
+        <Welcome />
         <GoogleRating />
         <LazySection>
           <Rooms />
