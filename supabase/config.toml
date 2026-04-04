@@ -90,6 +90,9 @@ verify_jwt = false
 [functions.parse-knowledge]
 verify_jwt = true
 
+[functions.whatsapp-learning-agent]
+verify_jwt = true
+
 [functions.whatsapp-webhook]
 verify_jwt = false
 
