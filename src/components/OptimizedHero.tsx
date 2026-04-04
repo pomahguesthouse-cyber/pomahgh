@@ -4,14 +4,6 @@ import { useHeroSlides, type HeroSlide as HeroSlideType } from "@/hooks/useHeroS
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { useSearchDates } from "@/contexts/SearchDatesContext";
-import { toast } from "sonner";
 
 // Preload hero image - use smaller optimized version
 const HERO_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Crect fill='%230F766E' width='1920' height='1080'/%3E%3C/svg%3E";

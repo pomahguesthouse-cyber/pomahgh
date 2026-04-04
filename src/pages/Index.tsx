@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import OptimizedHero from "@/components/OptimizedHero";
+import DateSearchBar from "@/components/DateSearchBar";
 import { Welcome } from "@/components/Welcome";
 import { GoogleRating } from "@/components/GoogleRating";
 import { Rooms } from "@/components/Rooms";
