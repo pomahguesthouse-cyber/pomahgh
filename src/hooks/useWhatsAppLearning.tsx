@@ -225,7 +225,7 @@ export const useLearningMetrics = (days = 7) => {
         .from("whatsapp_learning_metrics" as any)
         .select("*")
         .order("run_date", { ascending: false })
-        .limit(days);
+        .limit(days) as any);
       if (error) throw error;
       return (data as unknown) as LearningMetric[];
     },
