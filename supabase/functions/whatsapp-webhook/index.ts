@@ -556,15 +556,22 @@ serve(async (req) => {
       });
     }
 
-    // Get hotel settings (TTL-cached) and existing session in parallel
-    const [hotelSettings, { data: session }] = await Promise.all([
+    // Get hotel settings, chatbot settings (for persona), and existing session in parallel
+    const [hotelSettings, { data: chatbotSettingsRow }, { data: session }] = await Promise.all([
       getCachedHotelSettings(supabase),
+      supabase
+        .from('chatbot_settings')
+        .select('persona_name, greeting_message')
+        .single(),
       supabase
         .from('whatsapp_sessions')
         .select('*')
         .eq('phone_number', phone)
         .single(),
     ]);
+
+    const personaName = chatbotSettingsRow?.persona_name || 'Rani';
+    const greetingMessage = chatbotSettingsRow?.greeting_message || '';
 
     const sessionTimeoutMinutes = hotelSettings?.whatsapp_session_timeout_minutes || 15;
     const aiWhitelist: string[] = hotelSettings?.whatsapp_ai_whitelist || [];
