@@ -9,13 +9,14 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
 import { useHotelSettings, WhatsAppContact, WhatsAppManager } from '@/hooks/useHotelSettings';
-import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, Phone, Plus, Trash2, Ban, UserCog, Shield, FileText } from 'lucide-react';
+import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, Phone, Plus, Trash2, Ban, UserCog, Shield, FileText, Brain } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import AdminPersonaSettingsTab from '@/components/admin/AdminPersonaSettingsTab';
 import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
 import PersonaSettingsTab from '@/components/admin/PersonaSettingsTab';
+import WhatsAppLearningTab from '@/components/admin/WhatsAppLearningTab';
 import MessageTemplatesTab from '@/components/admin/chatbot/MessageTemplatesTab';
 import { ChatbotSettingsFormData, DEFAULT_CHATBOT_FORM_DATA } from '@/types/chatbot-settings.types';
 
@@ -87,6 +88,10 @@ const AdminChatbot = () => {
           <TabsTrigger value="whatsapp">
             <Phone className="w-4 h-4 mr-2" />
             WhatsApp
+          </TabsTrigger>
+          <TabsTrigger value="learning">
+            <Brain className="w-4 h-4 mr-2" />
+            Learning
           </TabsTrigger>
           <TabsTrigger value="advanced">
             <Settings className="w-4 h-4 mr-2" />
@@ -559,6 +564,10 @@ const AdminChatbot = () => {
 
           {/* WhatsApp Sessions */}
           <WhatsAppSessionsTab />
+        </TabsContent>
+
+        <TabsContent value="learning" className="space-y-4">
+          <WhatsAppLearningTab />
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-4">

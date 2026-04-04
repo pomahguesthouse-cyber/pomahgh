@@ -7,12 +7,13 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
 import { useHotelSettings, WhatsAppContact } from '@/hooks/useHotelSettings';
-import { Bot, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban } from 'lucide-react';
+import { Bot, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus, Trash2, Ban, Brain } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import TrainingTab from '@/components/admin/TrainingTab';
 import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
 import PersonaSettingsTab from '@/components/admin/PersonaSettingsTab';
+import WhatsAppLearningTab from '@/components/admin/WhatsAppLearningTab';
 import { useState, useEffect } from 'react';
 import { ChatbotSettingsFormData, DEFAULT_CHATBOT_FORM_DATA } from '@/types/chatbot-settings.types';
 
@@ -79,6 +80,10 @@ const AdminGuestChatbot = () => {
           <TabsTrigger value="whatsapp" className="flex-shrink-0">
             <Phone className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">WhatsApp</span>
+          </TabsTrigger>
+          <TabsTrigger value="learning" className="flex-shrink-0">
+            <Brain className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Learning</span>
           </TabsTrigger>
           <TabsTrigger value="advanced" className="flex-shrink-0">
             <Settings className="w-4 h-4 sm:mr-2" />
@@ -370,6 +375,10 @@ const AdminGuestChatbot = () => {
 
           {/* WhatsApp Sessions */}
           <WhatsAppSessionsTab />
+        </TabsContent>
+
+        <TabsContent value="learning" className="space-y-4">
+          <WhatsAppLearningTab />
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-4">

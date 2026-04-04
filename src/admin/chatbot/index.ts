@@ -18,12 +18,23 @@ export { default as AdminKnowledgeBaseTab } from "@/components/admin/AdminKnowle
 export { default as AdminPersonaSettingsTab } from "@/components/admin/AdminPersonaSettingsTab";
 export { default as AdminTrainingTab } from "@/components/admin/AdminTrainingTab";
 export { default as AdminWhatsAppSessionsTab } from "@/components/admin/AdminWhatsAppSessionsTab";
+export { default as WhatsAppLearningTab } from "@/components/admin/WhatsAppLearningTab";
 
 // Hooks
 export { useAdminChatbot } from "@/hooks/useAdminChatbot";
 export { useAdminKnowledgeBase } from "@/hooks/useAdminKnowledgeBase";
 export { useAdminTrainingExamples } from "@/hooks/useAdminTrainingExamples";
 export { useWhatsAppSessions } from "@/hooks/useWhatsAppSessions";
+export {
+  useDeepAnalyze,
+  useDetectFAQ,
+  useDetectSlang,
+  usePromoteFAQ,
+  useConversationInsights,
+  useFAQPatterns,
+  useLearningMetrics,
+  useLearningReport,
+} from "@/hooks/useWhatsAppLearning";
 
 // Types
 export type {
