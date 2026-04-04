@@ -1026,7 +1026,7 @@ Silakan coba lagi atau hubungi technical support.`;
 
         await logMessage(supabase, conversationId, 'user', normalizedMessage);
 
-        const greetingMsg = `Halo! 👋 Selamat datang di Pomah Guesthouse. Boleh saya tahu nama Anda?`;
+        const greetingMsg = `Halo! 👋 Saya ${personaName} dari Pomah Guesthouse. Boleh saya tahu nama Anda?`;
         await logMessage(supabase, conversationId, 'assistant', greetingMsg);
 
         await fetch('https://api.fonnte.com/send', {
