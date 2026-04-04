@@ -2,7 +2,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { corsHeaders, LOVABLE_API_URL } from "./lib/constants.ts";
-import { getQuickGreeting } from "./services/greetingService.ts";
 import { loadChatbotSettings } from "./services/settingsLoader.ts";
 import { loadHotelData } from "./services/dataLoader.ts";
 import { buildSystemPrompt } from "./ai/promptBuilder.ts";
