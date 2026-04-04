@@ -312,7 +312,7 @@ Jika user bertanya di luar topik:
  */
 export function buildSystemPrompt(config: PromptConfig): string {
   const { settings, hotelData, conversationContext, lastUserMessage } = config;
-  const { settings: hotel, facilities, knowledgeBase, trainingExamples, faqPatterns, learningInsights } = hotelData;
+  const { settings: hotel, facilities, knowledgeBase, trainingExamples, faqPatterns, learningInsights, nearbyLocations } = hotelData;
 
   const wibTime = getWIBTime();
   const timeGreeting = getTimeGreeting(wibTime.getHours());
@@ -348,6 +348,13 @@ export function buildSystemPrompt(config: PromptConfig): string {
     : knowledgeBase.slice(0, 3);
   const knowledgeInfo = formatKnowledge(relevantKB);
 
+  // Nearby locations
+  const nearbyInfo = (nearbyLocations || []).length > 0
+    ? (nearbyLocations || []).map(loc => 
+        `- ${loc.name} (${loc.category}): ${loc.distance_km} km, ~${loc.travel_time_minutes} menit`
+      ).join('\n')
+    : '';
+
   // Facilities
   const facilitiesInfo = facilities.map(f => f.title).join(', ') || '';
 
@@ -372,6 +379,7 @@ ${roomsInfo}
 ${addonsInfo}
 
 ✨ FASILITAS: ${facilitiesInfo}
+${nearbyInfo ? `\n🗺️ LOKASI SEKITAR (gunakan untuk menjawab pertanyaan jarak/lokasi/akses):\n${nearbyInfo}` : ''}
 
 ${trainingExamplesInfo ? `🎯 CONTOH RESPONS:\n${trainingExamplesInfo}` : ''}
 ${faqPatternsInfo ? `\n❓ FAQ TAMU (referensi dari percakapan WhatsApp nyata — JANGAN copy-paste, sampaikan dengan gayamu sendiri):\n${faqPatternsInfo}` : ''}

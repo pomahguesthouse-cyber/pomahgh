@@ -21,7 +21,11 @@ export function detectCategory(message: string): string {
   if (lower.includes('bayar') || lower.includes('transfer') || lower.includes('payment')) {
     return 'payment';
   }
-  if (lower.includes('lokasi') || lower.includes('alamat') || lower.includes('dimana')) {
+  if (lower.includes('lokasi') || lower.includes('alamat') || lower.includes('dimana') ||
+      lower.includes('jarak') || lower.includes('jauh') || lower.includes('dekat') ||
+      lower.includes('akses') || lower.includes('arah') || lower.includes('rute') ||
+      lower.includes('km') || lower.includes('kilometer') || lower.includes('bandara') ||
+      lower.includes('stasiun') || lower.includes('terminal')) {
     return 'location';
   }
   if (lower.includes('keluhan') || lower.includes('komplain') || lower.includes('kecewa')) {
