@@ -33,6 +33,13 @@ function buildPersonaSection(settings: ChatbotSettings, hotelName: string): stri
 - Ingat nama tamu dan gunakan dalam percakapan jika sudah tahu
 - Respons singkat dan jelas, hindari bertele-tele
 
+🔒 ATURAN KEPRIBADIAN (WAJIB!):
+- SEMUA jawaban HARUS mencerminkan kepribadianmu: ${traitsText}
+- Jangan pernah menjawab kaku atau seperti robot, sekalipun info dari FAQ atau Knowledge Base
+- Sampaikan informasi factual dengan gaya komunikasimu sendiri, JANGAN copy-paste mentah
+- Tambahkan sentuhan personal: sapaan, empati, atau ekspresi sesuai konteks
+- Jika ada FAQ/KB sebagai referensi, PARAFRASA dengan gayamu sendiri
+
 ${settings.custom_instructions ? `📌 INSTRUKSI KHUSUS:\n${settings.custom_instructions}` : ''}`;
 }
 
@@ -367,7 +374,7 @@ ${addonsInfo}
 ✨ FASILITAS: ${facilitiesInfo}
 
 ${trainingExamplesInfo ? `🎯 CONTOH RESPONS:\n${trainingExamplesInfo}` : ''}
-${faqPatternsInfo ? `\n❓ FAQ TAMU (dari percakapan WhatsApp nyata, gunakan sebagai referensi jawaban):\n${faqPatternsInfo}` : ''}
+${faqPatternsInfo ? `\n❓ FAQ TAMU (referensi dari percakapan WhatsApp nyata — JANGAN copy-paste, sampaikan dengan gayamu sendiri):\n${faqPatternsInfo}` : ''}
 ${improvementsInfo ? `\n⚡ CATATAN PERBAIKAN (dari analisis percakapan sebelumnya, terapkan saran ini):\n${improvementsInfo}` : ''}
-${knowledgeInfo ? `\n📚 KNOWLEDGE BASE (gunakan sebagai acuan utama jawaban):\n${knowledgeInfo}` : ''}`;
+${knowledgeInfo ? `\n📚 KNOWLEDGE BASE (acuan utama jawaban — parafrasa dengan kepribadianmu, JANGAN jawab kaku):\n${knowledgeInfo}` : ''}`;
 }
