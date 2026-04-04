@@ -3509,6 +3509,39 @@ export type Database = {
         }
         Relationships: []
       }
+      training_sessions: {
+        Row: {
+          conversation: Json
+          created_at: string
+          evaluation: Json | null
+          id: string
+          scenario: Json
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          conversation?: Json
+          created_at?: string
+          evaluation?: Json | null
+          id?: string
+          scenario?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          conversation?: Json
+          created_at?: string
+          evaluation?: Json | null
+          id?: string
+          scenario?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           created_at: string | null
