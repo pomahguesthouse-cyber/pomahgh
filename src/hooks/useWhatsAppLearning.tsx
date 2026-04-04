@@ -209,7 +209,7 @@ export const useFAQPatterns = () => {
       const { data, error } = await (supabase
         .from("whatsapp_faq_patterns" as any)
         .select("*")
-        .order("occurrence_count", { ascending: false });
+        .order("occurrence_count", { ascending: false }) as any);
       if (error) throw error;
       return (data as unknown) as FAQPattern[];
     },
