@@ -166,6 +166,7 @@ const App = () => (
           <Route path="/admin/explore-hero-slides" element={<AdminLayout><AdminExploreHeroSlides /></AdminLayout>} />
           <Route path="/admin/city-events" element={<AdminLayout><AdminCityEvents /></AdminLayout>} />
           <Route path="/admin/competitor-analysis" element={<AdminCompetitorAnalysis />} />
+          <Route path="/admin/ai-trainer" element={<AdminLayout><AiTrainer /></AdminLayout>} />
           <Route path="/editor" element={<PageEditorPage />} />
           <Route path="/payment/:bookingId" element={<Payment />} />
           <Route path="/payment/:bookingId/status" element={<PaymentStatus />} />
