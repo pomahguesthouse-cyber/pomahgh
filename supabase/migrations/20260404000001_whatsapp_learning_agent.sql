@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_conversation_insights (
   
   -- Quality metrics
   resolution_status TEXT CHECK (resolution_status IN ('resolved', 'unresolved', 'escalated', 'abandoned')),
-  bot_accuracy_score NUMERIC(3,2),           -- 0.00 - 1.00
+  bot_accuracy_score NUMERIC(3,2) CHECK (bot_accuracy_score >= 0 AND bot_accuracy_score <= 1),  -- 0.00 - 1.00
   guest_satisfaction_signal TEXT,             -- 'happy', 'frustrated', 'neutral'
   
   -- Extracted patterns
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_faq_patterns (
   
   -- Best response tracking
   best_response TEXT,                        -- Best bot response for this pattern
-  response_quality_score NUMERIC(3,2),       -- How good the best response is (0-1)
+  response_quality_score NUMERIC(3,2) CHECK (response_quality_score >= 0 AND response_quality_score <= 1),  -- How good the best response is (0-1)
   
   -- Status
   is_promoted_to_training BOOLEAN DEFAULT false,

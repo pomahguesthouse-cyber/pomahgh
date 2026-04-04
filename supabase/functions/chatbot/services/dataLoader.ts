@@ -82,7 +82,8 @@ export async function loadHotelData(
       .limit(10)
   ]);
 
-  // Extract unique high-priority improvement suggestions
+  // Extract unique high-priority improvement suggestions (keep highest priority per area)
+  const priorityRank: Record<string, number> = { high: 3, medium: 2, low: 1 };
   const improvementMap = new Map<string, { area: string; suggestion: string; priority: string }>();
   for (const insight of (insightsRaw || [])) {
     const improvements = insight.suggested_improvements as Array<{ area: string; suggestion: string; priority: string }>;
@@ -90,7 +91,8 @@ export async function loadHotelData(
       for (const imp of improvements) {
         if (imp.area && imp.suggestion && (imp.priority === 'high' || imp.priority === 'medium')) {
           const key = imp.area.toLowerCase();
-          if (!improvementMap.has(key)) {
+          const existing = improvementMap.get(key);
+          if (!existing || (priorityRank[imp.priority] || 0) > (priorityRank[existing.priority] || 0)) {
             improvementMap.set(key, imp);
           }
         }

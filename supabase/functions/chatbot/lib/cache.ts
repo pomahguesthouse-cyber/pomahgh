@@ -176,7 +176,7 @@ export const CACHE_KEYS = {
 
 // TTL configurations (in milliseconds)
 export const CACHE_TTL = {
-  HOTEL_DATA: 10 * 60 * 1000,       // 10 minutes - rooms, settings change infrequently
+  HOTEL_DATA: 5 * 60 * 1000,        // 5 minutes - includes FAQ patterns from learning agent
   CHATBOT_SETTINGS: 5 * 60 * 1000,  // 5 minutes - persona settings
   KNOWLEDGE_BASE: 15 * 60 * 1000,   // 15 minutes - rarely changes
   TRAINING_EXAMPLES: 15 * 60 * 1000, // 15 minutes - rarely changes

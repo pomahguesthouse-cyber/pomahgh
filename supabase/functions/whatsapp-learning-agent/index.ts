@@ -133,7 +133,6 @@ async function deepAnalyze(
     .from("chat_conversations")
     .select("id, session_id, message_count, started_at, booking_created")
     .ilike("session_id", "wa_%")
-    .order("message_count", { ascending: false })
     .order("started_at", { ascending: false })
     .limit(limit);
 
@@ -168,16 +167,69 @@ async function deepAnalyze(
       .eq("conversation_id", conv.id)
       .order("created_at", { ascending: true });
 
-    if (!messages || messages.length < 3) {
-      // Too short, mark it with minimal insight
+    if (!messages || messages.length === 0) {
       await supabase.from("whatsapp_conversation_insights").insert({
         conversation_id: conv.id,
         session_id: conv.session_id,
-        summary: "Percakapan terlalu singkat untuk analisis mendalam",
+        summary: "Percakapan kosong",
         topics: [],
         sentiment: "neutral",
         resolution_status: "abandoned",
-        message_count: messages?.length || 0,
+        message_count: 0,
+        model_used: MODEL,
+      });
+      results.push({ conversation_id: conv.id, success: true, topics: [] });
+      continue;
+    }
+
+    if (messages.length < 3) {
+      // Light analysis for short conversations
+      const shortTranscript = messages.map(m => `[${m.role === "user" ? "TAMU" : "BOT"}] ${m.content}`).join("\n");
+      const userMsgs = messages.filter(m => m.role === "user").map(m => m.content);
+      const topic = userMsgs.length > 0 ? userMsgs[0].substring(0, 100) : "";
+
+      try {
+        const shortResult = await callAIWithRetry(apiKey, MODEL, [
+          {
+            role: "system",
+            content: `Analisis singkat percakapan hotel pendek ini. Kembalikan JSON: {"summary":"...","topics":[],"sentiment":"positive|neutral|negative|mixed","resolution_status":"resolved|unresolved|escalated|abandoned","bot_accuracy_score":0.0-1.0,"common_questions":[{"question":"...","category":"..."}]}\nHANYA JSON, tanpa teks lain.`
+          },
+          { role: "user", content: shortTranscript }
+        ], { max_tokens: 500, temperature: 0.2 });
+
+        if (!shortResult.rateLimited) {
+          const shortAnalysis = parseJsonFromAI(shortResult.data.choices[0]?.message?.content || "{}");
+          if (shortAnalysis) {
+            await supabase.from("whatsapp_conversation_insights").insert({
+              conversation_id: conv.id,
+              session_id: conv.session_id,
+              summary: (shortAnalysis.summary as string) || `Percakapan singkat: ${topic}`,
+              topics: (shortAnalysis.topics as string[]) || [],
+              sentiment: validateEnum(shortAnalysis.sentiment, ["positive", "neutral", "negative", "mixed"], "neutral"),
+              resolution_status: validateEnum(shortAnalysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "abandoned"),
+              bot_accuracy_score: clampScore(shortAnalysis.bot_accuracy_score),
+              common_questions: shortAnalysis.common_questions || [],
+              message_count: messages.length,
+              model_used: MODEL,
+            });
+            totalInsights++;
+            results.push({ conversation_id: conv.id, success: true, topics: (shortAnalysis.topics as string[]) || [] });
+            continue;
+          }
+        }
+      } catch (e) {
+        console.warn(`[deep_analyze] Light analysis failed for ${conv.id}:`, e);
+      }
+
+      // Fallback if light analysis fails
+      await supabase.from("whatsapp_conversation_insights").insert({
+        conversation_id: conv.id,
+        session_id: conv.session_id,
+        summary: `Percakapan singkat (${messages.length} pesan)`,
+        topics: [],
+        sentiment: "neutral",
+        resolution_status: "abandoned",
+        message_count: messages.length,
         model_used: MODEL,
       });
       results.push({ conversation_id: conv.id, success: true, topics: [] });
@@ -201,8 +253,9 @@ async function deepAnalyze(
       ], { max_tokens: 2000, temperature: 0.2 });
 
       if (aiResult.rateLimited) {
-        console.warn("[deep_analyze] Rate limited, stopping batch");
-        break;
+        console.warn(`[deep_analyze] Rate limited after retries, skipping conversation ${conv.id}`);
+        results.push({ conversation_id: conv.id, success: false });
+        continue;
       }
 
       const rawContent = aiResult.data.choices[0]?.message?.content || "{}";
@@ -234,7 +287,7 @@ async function deepAnalyze(
         accuracyScores.push(score);
         const resolution = validateEnum(analysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "unresolved");
         if (resolution === "resolved") resolvedCount++;
-        results.push({ conversation_id: conv.id, success: true, topics: analysis.topics });
+        results.push({ conversation_id: conv.id, success: true, topics: analysis.topics as string[] });
       } else {
         results.push({ conversation_id: conv.id, success: false });
       }
@@ -339,36 +392,41 @@ Kembalikan JSON array. Prioritaskan pertanyaan yang paling sering muncul.`
   let savedCount = 0;
 
   for (const pattern of patterns) {
-    if (!pattern.canonical_question) continue;
+    const canonicalQ = String(pattern.canonical_question || '');
+    if (!canonicalQ) continue;
 
-    // Check if similar pattern already exists
-    const { data: existing } = await supabase
+    // Check if similar pattern already exists using normalized comparison
+    const normalizedQ = normalizeForComparison(canonicalQ);
+    const { data: existingPatterns } = await supabase
       .from("whatsapp_faq_patterns")
-      .select("id, occurrence_count")
-      .ilike("canonical_question", `%${pattern.canonical_question.substring(0, 30)}%`)
-      .limit(1);
+      .select("id, occurrence_count, canonical_question")
+      .eq("category", pattern.category || "general")
+      .limit(50);
 
-    if (existing && existing.length > 0) {
-      // Update occurrence count
+    // Find best match by word overlap similarity
+    const existing = findBestMatch(normalizedQ, existingPatterns || []);
+
+    if (existing) {
+      // Update occurrence count of matched pattern
       await supabase.from("whatsapp_faq_patterns")
         .update({
-          occurrence_count: (existing[0].occurrence_count || 0) + (pattern.occurrence_count || 1),
+          occurrence_count: (existing.occurrence_count || 0) + (Number(pattern.occurrence_count) || 1),
           last_seen_at: new Date().toISOString(),
           best_response: pattern.best_response || undefined,
         })
-        .eq("id", existing[0].id);
+        .eq("id", existing.id);
     } else {
       // Insert new pattern
       const convIds = allQuestions
-        .filter(q => q.question.toLowerCase().includes(pattern.canonical_question?.toLowerCase()?.substring(0, 20) || ""))
+        .filter(q => q.question.toLowerCase().includes(canonicalQ.toLowerCase().substring(0, 20) || ""))
         .map(q => q.conv_id)
         .filter((v, i, a) => a.indexOf(v) === i);
 
       await supabase.from("whatsapp_faq_patterns").insert({
-        pattern_text: pattern.pattern_text || pattern.canonical_question,
-        canonical_question: pattern.canonical_question,
+        pattern_text: pattern.pattern_text || canonicalQ,
+        canonical_question: canonicalQ,
         category: pattern.category || "general",
-        occurrence_count: pattern.occurrence_count || 1,
+        occurrence_count: Number(pattern.occurrence_count) || 1,
         best_response: pattern.best_response || null,
         response_quality_score: pattern.best_response ? 0.7 : null,
         conversation_ids: convIds,
@@ -845,18 +903,18 @@ ${roomList || "- Data tidak tersedia"}`;
 
 function parseJsonFromAI(raw: string): Record<string, unknown> | null {
   try {
-    // Try direct parse
     return JSON.parse(raw);
   } catch {
-    // Try extracting JSON from markdown code block
     const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/\{[\s\S]*\}/);
     if (match) {
       try {
         return JSON.parse(match[1] || match[0]);
-      } catch {
+      } catch (e) {
+        console.error('[parseJsonFromAI] Failed to parse extracted JSON:', (e as Error).message, '\nRaw (first 500 chars):', raw.substring(0, 500));
         return null;
       }
     }
+    console.error('[parseJsonFromAI] No JSON structure found in AI response. Raw (first 500 chars):', raw.substring(0, 500));
     return null;
   }
 }
@@ -870,10 +928,12 @@ function parseJsonArrayFromAI(raw: string): Array<Record<string, unknown>> {
     if (match) {
       try {
         return JSON.parse(match[0]);
-      } catch {
+      } catch (e) {
+        console.error('[parseJsonArrayFromAI] Failed to parse extracted array:', (e as Error).message, '\nRaw (first 500 chars):', raw.substring(0, 500));
         return [];
       }
     }
+    console.error('[parseJsonArrayFromAI] No JSON array found in AI response. Raw (first 500 chars):', raw.substring(0, 500));
     return [];
   }
 }
@@ -926,13 +986,54 @@ async function recordMetrics(
     };
     if (data.avg_bot_accuracy != null) updatePayload.avg_bot_accuracy = data.avg_bot_accuracy;
     if (data.avg_resolution_rate != null) updatePayload.avg_resolution_rate = data.avg_resolution_rate;
-    await supabase.from("whatsapp_learning_metrics").update(updatePayload).eq("id", existing.id);
+    const { error: updateErr } = await supabase.from("whatsapp_learning_metrics").update(updatePayload).eq("id", existing.id);
+    if (updateErr) console.error('[recordMetrics] Failed to update:', updateErr.message);
   } else {
-    await supabase.from("whatsapp_learning_metrics").insert({
+    const { error: insertErr } = await supabase.from("whatsapp_learning_metrics").insert({
       run_date: today,
       ...data,
     });
+    if (insertErr) console.error('[recordMetrics] Failed to insert:', insertErr.message);
   }
+}
+
+function normalizeForComparison(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function findBestMatch(
+  normalizedQuery: string,
+  patterns: Array<{ id: string; occurrence_count: number; canonical_question: string }>
+): { id: string; occurrence_count: number } | null {
+  const queryWords = new Set(normalizedQuery.split(' ').filter(w => w.length > 2));
+  if (queryWords.size === 0) return null;
+
+  let bestMatch: { id: string; occurrence_count: number } | null = null;
+  let bestScore = 0;
+
+  for (const p of patterns) {
+    const pWords = new Set(normalizeForComparison(p.canonical_question).split(' ').filter(w => w.length > 2));
+    if (pWords.size === 0) continue;
+
+    // Jaccard similarity
+    let intersection = 0;
+    for (const w of queryWords) {
+      if (pWords.has(w)) intersection++;
+    }
+    const union = new Set([...queryWords, ...pWords]).size;
+    const score = union > 0 ? intersection / union : 0;
+
+    if (score > 0.5 && score > bestScore) {
+      bestScore = score;
+      bestMatch = { id: p.id, occurrence_count: p.occurrence_count };
+    }
+  }
+
+  return bestMatch;
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
