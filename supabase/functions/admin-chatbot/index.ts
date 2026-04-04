@@ -58,12 +58,12 @@ Deno.serve(async (req: Request) => {
     const chatMessages = Array.isArray(messages) ? messages : [];
 
     // 2. Fetch context data with caching
-    const [hotelSettingsData, chatbotSettingsData, knowledgeData, trainingData] = await Promise.all([
+    const [hotelSettingsData, chatbotSettingsData, knowledgeData, trainingData, facilitiesData, nearbyData, guestKBData, guestTrainingData] = await Promise.all([
       getOrLoadAdmin(
         ADMIN_CACHE_KEYS.HOTEL_SETTINGS,
         async () => {
           const { data } = await supabase.from('hotel_settings')
-            .select('hotel_name, check_in_time, check_out_time').single();
+            .select('hotel_name, check_in_time, check_out_time, address, whatsapp_number, phone_primary').single();
           return data;
         },
         ADMIN_CACHE_TTL.HOTEL_SETTINGS,
@@ -99,9 +99,54 @@ Deno.serve(async (req: Request) => {
         },
         ADMIN_CACHE_TTL.TRAINING_EXAMPLES,
         forceRefresh
-      )
+      ),
+      // NEW: Load facilities
+      getOrLoadAdmin(
+        'admin_facilities',
+        async () => {
+          const { data } = await supabase.from('facilities')
+            .select('title, description').eq('is_active', true).order('display_order');
+          return data || [];
+        },
+        ADMIN_CACHE_TTL.HOTEL_SETTINGS,
+        forceRefresh
+      ),
+      // NEW: Load nearby locations
+      getOrLoadAdmin(
+        'admin_nearby_locations',
+        async () => {
+          const { data } = await supabase.from('nearby_locations')
+            .select('name, category, distance_km, travel_time_minutes')
+            .eq('is_active', true).order('distance_km').limit(10);
+          return data || [];
+        },
+        ADMIN_CACHE_TTL.HOTEL_SETTINGS,
+        forceRefresh
+      ),
+      // NEW: Load guest chatbot knowledge base (hotel info)
+      getOrLoadAdmin(
+        'admin_guest_kb',
+        async () => {
+          const { data } = await supabase.from('chatbot_knowledge_base')
+            .select('title, content, category, summary').eq('is_active', true).order('category');
+          return data || [];
+        },
+        ADMIN_CACHE_TTL.KNOWLEDGE_BASE,
+        forceRefresh
+      ),
+      // NEW: Load guest chatbot training examples
+      getOrLoadAdmin(
+        'admin_guest_training',
+        async () => {
+          const { data } = await supabase.from('chatbot_training_examples')
+            .select('question, ideal_answer, category').eq('is_active', true)
+            .order('display_order', { ascending: true }).limit(20);
+          return data || [];
+        },
+        ADMIN_CACHE_TTL.TRAINING_EXAMPLES,
+        forceRefresh
+      ),
     ]);
-
     const hotelSettings: HotelSettings = {
       hotel_name: hotelSettingsData?.hotel_name || 'Hotel',
       check_in_time: hotelSettingsData?.check_in_time || '14:00',
@@ -130,15 +175,30 @@ Deno.serve(async (req: Request) => {
     console.log(`📝 Intent detected: ${intentMatch.intent} (${intentMatch.confidence}) → ${intentMatch.suggestedTool || 'none'}`);
 
     // 4. Build system prompt with intent hint
-    const knowledgeContext = buildKnowledgeContext(knowledgeData || []);
-    const trainingContext = buildTrainingContext(trainingData || []);
+    // Combine admin KB + guest KB for comprehensive knowledge
+    const allKnowledge = [...(knowledgeData || []), ...(guestKBData || [])];
+    const knowledgeContext = buildKnowledgeContext(allKnowledge);
+    // Combine admin training + guest training
+    const allTraining = [...(trainingData || []), ...(guestTrainingData || [])];
+    const trainingContext = buildTrainingContext(allTraining, 10, 300);
+
+    // Build facilities and nearby locations context
+    const facilities = (facilitiesData || []) as Array<{title: string; description: string}>;
+    const facilitiesContext = facilities.length > 0
+      ? `\n\n✨ FASILITAS HOTEL:\n${facilities.map(f => `- ${f.title}: ${f.description}`).join('\n')}`
+      : '';
+    
+    const nearby = (nearbyData || []) as Array<{name: string; category: string; distance_km: number; travel_time_minutes: number}>;
+    const nearbyContext = nearby.length > 0
+      ? `\n\n🗺️ LOKASI SEKITAR:\n${nearby.map(l => `- ${l.name} (${l.category}): ${l.distance_km} km, ~${l.travel_time_minutes} menit`).join('\n')}`
+      : '';
 
     const systemPrompt = buildSystemPrompt({
       managerName: auth.managerName,
       managerRole: auth.managerRole,
       hotelSettings,
       personaSettings,
-      knowledgeContext,
+      knowledgeContext: knowledgeContext + facilitiesContext + nearbyContext,
       trainingContext,
       isFirstMessage: chatMessages.length <= 1,
       intentHint
