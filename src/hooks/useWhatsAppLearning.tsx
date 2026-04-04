@@ -206,8 +206,8 @@ export const useFAQPatterns = () => {
   return useQuery({
     queryKey: ["faq-patterns"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("whatsapp_faq_patterns")
+      const { data, error } = await (supabase
+        .from("whatsapp_faq_patterns" as any)
         .select("*")
         .order("occurrence_count", { ascending: false });
       if (error) throw error;
