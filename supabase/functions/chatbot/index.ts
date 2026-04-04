@@ -60,16 +60,9 @@ serve(async (req) => {
     // Get last user message
     const lastUserMessage = messages?.filter((m: { role: string; content: string }) => m.role === "user").pop()?.content || "";
 
-    // Fast path: quick greeting bypass (skip AI for simple greetings)
-    const greeting = getQuickGreeting(lastUserMessage, settings.persona_name);
-    if (greeting) {
-      console.log("Quick greeting response triggered for:", lastUserMessage);
-      return new Response(JSON.stringify({
-        choices: [{ message: { role: "assistant", content: greeting } }]
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // NOTE: Quick greeting bypass removed intentionally.
+    // All messages now go through full AI pipeline with persona, KB, and training.
+    // This ensures consistent personality and knowledge-aware responses.
 
     // Load hotel data (parallel fetch for efficiency)
     const hotelData = await loadHotelData(supabase);
