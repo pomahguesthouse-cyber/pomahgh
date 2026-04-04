@@ -245,7 +245,7 @@ export const useDeleteFAQPattern = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("whatsapp_faq_patterns")
         .delete()
         .eq("id", id);
