@@ -1196,45 +1196,8 @@ Silakan coba lagi atau hubungi technical support.`;
     let aiMessage = chatbotData.choices?.[0]?.message;
     let aiResponse = aiMessage?.content || "";
 
-    // Handle tool calls (like web chatbot)
-    if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {
-      console.log(`Tool calls detected: ${aiMessage.tool_calls.length}`);
-
-      const toolResults = await executeToolCalls(
-        aiMessage.tool_calls,
-        supabaseUrl,
-        supabaseServiceKey,
-        chatbotToolsInternalSecret
-      );
-
-      // Get final response from AI with tool results
-      console.log("Sending tool results back to chatbot...");
-      const finalResponse = await fetch(`${supabaseUrl}/functions/v1/chatbot`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
-          messages: [
-            ...messages,
-            { role: 'assistant', content: aiMessage.content, tool_calls: aiMessage.tool_calls },
-            ...toolResults,
-          ],
-          session_id: `wa_${phone}`,
-          channel: 'whatsapp',
-          conversationContext,
-        }),
-      });
-
-      if (finalResponse.ok) {
-        const finalData = await finalResponse.json();
-        console.log("Final response:", JSON.stringify(finalData).substring(0, 300));
-        aiResponse = finalData.choices?.[0]?.message?.content || aiResponse;
-      } else {
-        console.error("Final response error:", await finalResponse.text());
-      }
-    }
+    // NOTE: Tool calls are handled internally by the chatbot function (up to 4 iterations).
+    // The response here should always be final text. External tool handling removed to prevent duplication.
 
     // 🛡️ STUCK RESPONSE DETECTOR: AI said "mohon tunggu" / "akan cek" but didn't call a tool
     const stuckPatterns = /mohon\s+tunggu|akan\s+(saya\s+)?bantu\s+cek|saya\s+cek(kan)?\s+dulu|sebentar\s+ya/i;
