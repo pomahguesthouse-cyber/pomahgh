@@ -190,8 +190,8 @@ export const useConversationInsights = (limit = 50) => {
   return useQuery({
     queryKey: ["conversation-insights", limit],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("whatsapp_conversation_insights")
+      const { data, error } = await (supabase
+        .from("whatsapp_conversation_insights" as any)
         .select("*")
         .order("analyzed_at", { ascending: false })
         .limit(limit);
