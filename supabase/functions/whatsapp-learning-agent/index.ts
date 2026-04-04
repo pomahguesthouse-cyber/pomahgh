@@ -27,6 +27,24 @@ const corsHeaders = {
 };
 
 const MODEL = "google/gemini-2.5-flash";
+const MAX_AI_RETRIES = 2;
+const RETRY_DELAY_MS = 3000;
+
+async function callAIWithRetry(
+  apiKey: string,
+  model: string,
+  messages: AIMessage[],
+  options: { max_tokens?: number; temperature?: number },
+  retries = MAX_AI_RETRIES,
+): Promise<ReturnType<typeof callAI>> {
+  const result = await callAI(apiKey, model, messages, options);
+  if (result.rateLimited && retries > 0) {
+    console.warn(`[AI] Rate limited, retrying in ${RETRY_DELAY_MS}ms (${retries} left)`);
+    await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+    return callAIWithRetry(apiKey, model, messages, options, retries - 1);
+  }
+  return result;
+}
 
 // ============================================================
 // Main Handler
@@ -139,6 +157,9 @@ async function deepAnalyze(
 
   const results: Array<{ conversation_id: string; success: boolean; topics?: string[] }> = [];
   let totalInsights = 0;
+  const accuracyScores: number[] = [];
+  let resolvedCount = 0;
+  let totalAnalyzed = 0;
 
   for (const conv of toAnalyze) {
     const { data: messages } = await supabase
@@ -168,7 +189,7 @@ async function deepAnalyze(
       .join("\n");
 
     try {
-      const aiResult = await callAI(apiKey, MODEL, [
+      const aiResult = await callAIWithRetry(apiKey, MODEL, [
         {
           role: "system",
           content: buildAnalysisPrompt(hotelContext),
@@ -208,6 +229,11 @@ async function deepAnalyze(
         });
 
         totalInsights++;
+        totalAnalyzed++;
+        const score = clampScore(analysis.bot_accuracy_score);
+        accuracyScores.push(score);
+        const resolution = validateEnum(analysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "unresolved");
+        if (resolution === "resolved") resolvedCount++;
         results.push({ conversation_id: conv.id, success: true, topics: analysis.topics });
       } else {
         results.push({ conversation_id: conv.id, success: false });
@@ -219,10 +245,19 @@ async function deepAnalyze(
   }
 
   // Record metrics
+  const avgAccuracy = accuracyScores.length > 0
+    ? accuracyScores.reduce((a, b) => a + b, 0) / accuracyScores.length
+    : undefined;
+  const avgResolution = totalAnalyzed > 0
+    ? resolvedCount / totalAnalyzed
+    : undefined;
+
   await recordMetrics(supabase, {
     conversations_analyzed: results.filter(r => r.success).length,
     messages_processed: toAnalyze.reduce((sum, c) => sum + (c.message_count || 0), 0),
     insights_generated: totalInsights,
+    avg_bot_accuracy: avgAccuracy,
+    avg_resolution_rate: avgResolution,
   });
 
   return jsonResponse({
@@ -273,7 +308,7 @@ async function detectFAQPatterns(
   }
 
   // Use AI to cluster similar questions into FAQ patterns
-  const aiResult = await callAI(apiKey, MODEL, [
+  const aiResult = await callAIWithRetry(apiKey, MODEL, [
     {
       role: "system",
       content: `Kamu adalah analis FAQ hotel. Tugasmu mengelompokkan pertanyaan-pertanyaan serupa dari tamu WhatsApp menjadi pola FAQ yang jelas.
@@ -400,7 +435,7 @@ async function detectNewSlang(
     "sm", "ama", "trims", "tq", "makasih", "mksh"
   ];
 
-  const aiResult = await callAI(apiKey, MODEL, [
+  const aiResult = await callAIWithRetry(apiKey, MODEL, [
     {
       role: "system",
       content: `Kamu adalah ahli bahasa Indonesia dan slang/singkatan digital. Tugas: deteksi singkatan dan slang BARU yang belum ada dalam daftar yang dikenal.
@@ -472,7 +507,7 @@ async function promoteFAQToTraining(
   }
 
   // Use AI to polish the Q&A pairs before promoting
-  const aiResult = await callAI(apiKey, MODEL, [
+  const aiResult = await callAIWithRetry(apiKey, MODEL, [
     {
       role: "system",
       content: `Kamu adalah quality checker untuk training data chatbot hotel. Tugas: poles dan perbaiki pasangan Q&A dari data FAQ.
@@ -577,12 +612,12 @@ async function generateLearningReport(supabase: SupabaseClient): Promise<Respons
     .order("run_date", { ascending: false })
     .limit(7);
 
-  const { data: trainingCount } = await supabase
+  const { count: trainingCount } = await supabase
     .from("chatbot_training_examples")
     .select("id", { count: "exact", head: true })
     .eq("source", "auto_whatsapp");
 
-  const { data: pendingCount } = await supabase
+  const { count: pendingCount } = await supabase
     .from("chatbot_training_examples")
     .select("id", { count: "exact", head: true })
     .eq("source", "auto_whatsapp")
@@ -686,7 +721,7 @@ async function analyzeSingleConversation(
     .map(m => `[${m.role === "user" ? "TAMU" : "BOT"}] ${m.content}`)
     .join("\n");
 
-  const aiResult = await callAI(apiKey, MODEL, [
+  const aiResult = await callAIWithRetry(apiKey, MODEL, [
     {
       role: "system",
       content: buildAnalysisPrompt(hotelContext),
@@ -863,6 +898,8 @@ async function recordMetrics(
     training_examples_created: number;
     slang_patterns_detected: number;
     improvements_suggested: number;
+    avg_bot_accuracy: number;
+    avg_resolution_rate: number;
   }>
 ): Promise<void> {
   const today = new Date().toISOString().slice(0, 10);
@@ -875,7 +912,7 @@ async function recordMetrics(
     .maybeSingle();
 
   if (existing) {
-    await supabase.from("whatsapp_learning_metrics").update({
+    const updatePayload: Record<string, unknown> = {
       conversations_analyzed: (existing.conversations_analyzed || 0) + (data.conversations_analyzed || 0),
       messages_processed: (existing.messages_processed || 0) + (data.messages_processed || 0),
       insights_generated: (existing.insights_generated || 0) + (data.insights_generated || 0),
@@ -883,7 +920,10 @@ async function recordMetrics(
       training_examples_created: (existing.training_examples_created || 0) + (data.training_examples_created || 0),
       slang_patterns_detected: (existing.slang_patterns_detected || 0) + (data.slang_patterns_detected || 0),
       improvements_suggested: (existing.improvements_suggested || 0) + (data.improvements_suggested || 0),
-    }).eq("id", existing.id);
+    };
+    if (data.avg_bot_accuracy != null) updatePayload.avg_bot_accuracy = data.avg_bot_accuracy;
+    if (data.avg_resolution_rate != null) updatePayload.avg_resolution_rate = data.avg_resolution_rate;
+    await supabase.from("whatsapp_learning_metrics").update(updatePayload).eq("id", existing.id);
   } else {
     await supabase.from("whatsapp_learning_metrics").insert({
       run_date: today,

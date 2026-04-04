@@ -3736,6 +3736,184 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_conversation_insights: {
+        Row: {
+          id: string
+          conversation_id: string | null
+          session_id: string | null
+          summary: string | null
+          topics: string[]
+          sentiment: string | null
+          intent_flow: string[]
+          resolution_status: string | null
+          bot_accuracy_score: number | null
+          guest_satisfaction_signal: string | null
+          common_questions: Json
+          failed_responses: Json
+          successful_patterns: Json
+          suggested_improvements: Json
+          new_slang_detected: Json
+          message_count: number
+          analyzed_at: string
+          model_used: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id?: string | null
+          session_id?: string | null
+          summary?: string | null
+          topics?: string[]
+          sentiment?: string | null
+          intent_flow?: string[]
+          resolution_status?: string | null
+          bot_accuracy_score?: number | null
+          guest_satisfaction_signal?: string | null
+          common_questions?: Json
+          failed_responses?: Json
+          successful_patterns?: Json
+          suggested_improvements?: Json
+          new_slang_detected?: Json
+          message_count?: number
+          analyzed_at?: string
+          model_used?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string | null
+          session_id?: string | null
+          summary?: string | null
+          topics?: string[]
+          sentiment?: string | null
+          intent_flow?: string[]
+          resolution_status?: string | null
+          bot_accuracy_score?: number | null
+          guest_satisfaction_signal?: string | null
+          common_questions?: Json
+          failed_responses?: Json
+          successful_patterns?: Json
+          suggested_improvements?: Json
+          new_slang_detected?: Json
+          message_count?: number
+          analyzed_at?: string
+          model_used?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversation_insights_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_faq_patterns: {
+        Row: {
+          id: string
+          pattern_text: string
+          canonical_question: string
+          category: string
+          occurrence_count: number
+          last_seen_at: string
+          conversation_ids: string[]
+          best_response: string | null
+          response_quality_score: number | null
+          is_promoted_to_training: boolean
+          training_example_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          pattern_text: string
+          canonical_question: string
+          category?: string
+          occurrence_count?: number
+          last_seen_at?: string
+          conversation_ids?: string[]
+          best_response?: string | null
+          response_quality_score?: number | null
+          is_promoted_to_training?: boolean
+          training_example_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          pattern_text?: string
+          canonical_question?: string
+          category?: string
+          occurrence_count?: number
+          last_seen_at?: string
+          conversation_ids?: string[]
+          best_response?: string | null
+          response_quality_score?: number | null
+          is_promoted_to_training?: boolean
+          training_example_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_faq_patterns_training_example_id_fkey"
+            columns: ["training_example_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_training_examples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_learning_metrics: {
+        Row: {
+          id: string
+          run_date: string
+          conversations_analyzed: number
+          messages_processed: number
+          insights_generated: number
+          faq_patterns_found: number
+          training_examples_created: number
+          slang_patterns_detected: number
+          improvements_suggested: number
+          avg_bot_accuracy: number | null
+          avg_resolution_rate: number | null
+          top_unresolved_topics: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          run_date?: string
+          conversations_analyzed?: number
+          messages_processed?: number
+          insights_generated?: number
+          faq_patterns_found?: number
+          training_examples_created?: number
+          slang_patterns_detected?: number
+          improvements_suggested?: number
+          avg_bot_accuracy?: number | null
+          avg_resolution_rate?: number | null
+          top_unresolved_topics?: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          run_date?: string
+          conversations_analyzed?: number
+          messages_processed?: number
+          insights_generated?: number
+          faq_patterns_found?: number
+          training_examples_created?: number
+          slang_patterns_detected?: number
+          improvements_suggested?: number
+          avg_bot_accuracy?: number | null
+          avg_resolution_rate?: number | null
+          top_unresolved_topics?: string[]
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

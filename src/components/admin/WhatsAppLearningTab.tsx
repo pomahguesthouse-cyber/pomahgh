@@ -47,8 +47,8 @@ export default function WhatsAppLearningTab() {
   const deleteFAQ = useDeleteFAQPattern();
 
   // Data queries
-  const { data: insights, isLoading: loadingInsights } = useConversationInsights(30);
-  const { data: faqPatterns, isLoading: loadingFAQ } = useFAQPatterns();
+  const { data: insights, isLoading: loadingInsights, error: insightsError } = useConversationInsights(30);
+  const { data: faqPatterns, isLoading: loadingFAQ, error: faqError } = useFAQPatterns();
   const { data: metrics } = useLearningMetrics(7);
 
   const handleGenerateReport = async () => {
@@ -307,6 +307,13 @@ export default function WhatsAppLearningTab() {
             <div className="flex justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
+          ) : insightsError ? (
+            <Card>
+              <CardContent className="py-10 text-center text-red-500">
+                <AlertTriangle className="h-5 w-5 inline mr-2" />
+                Gagal memuat insights: {insightsError.message}
+              </CardContent>
+            </Card>
           ) : insights && insights.length > 0 ? (
             insights.map((insight) => (
               <InsightCard key={insight.id} insight={insight} />
@@ -326,6 +333,13 @@ export default function WhatsAppLearningTab() {
             <div className="flex justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
+          ) : faqError ? (
+            <Card>
+              <CardContent className="py-10 text-center text-red-500">
+                <AlertTriangle className="h-5 w-5 inline mr-2" />
+                Gagal memuat FAQ patterns: {faqError.message}
+              </CardContent>
+            </Card>
           ) : faqPatterns && faqPatterns.length > 0 ? (
             faqPatterns.map((pattern) => (
               <FAQCard

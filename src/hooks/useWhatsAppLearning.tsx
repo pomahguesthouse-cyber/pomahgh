@@ -190,13 +190,13 @@ export const useConversationInsights = (limit = 50) => {
   return useQuery({
     queryKey: ["conversation-insights", limit],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("whatsapp_conversation_insights")
         .select("*")
         .order("analyzed_at", { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return (data as unknown) as ConversationInsight[];
+      return data as unknown as ConversationInsight[];
     },
   });
 };
@@ -206,12 +206,12 @@ export const useFAQPatterns = () => {
   return useQuery({
     queryKey: ["faq-patterns"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("whatsapp_faq_patterns")
         .select("*")
         .order("occurrence_count", { ascending: false });
       if (error) throw error;
-      return (data as unknown) as FAQPattern[];
+      return data as unknown as FAQPattern[];
     },
   });
 };
@@ -221,13 +221,13 @@ export const useLearningMetrics = (days = 7) => {
   return useQuery({
     queryKey: ["learning-metrics", days],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("whatsapp_learning_metrics")
         .select("*")
         .order("run_date", { ascending: false })
         .limit(days);
       if (error) throw error;
-      return (data as unknown) as LearningMetric[];
+      return data as unknown as LearningMetric[];
     },
   });
 };
@@ -245,7 +245,7 @@ export const useDeleteFAQPattern = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("whatsapp_faq_patterns")
         .delete()
         .eq("id", id);
