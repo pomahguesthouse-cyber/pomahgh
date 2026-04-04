@@ -1,0 +1,1 @@
+ALTER TABLE public.chatbot_training_examples ADD COLUMN IF NOT EXISTS auto_generated boolean DEFAULT false;

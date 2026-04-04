@@ -1127,6 +1127,7 @@ export type Database = {
       }
       chatbot_training_examples: {
         Row: {
+          auto_generated: boolean | null
           category: string | null
           created_at: string | null
           display_order: number | null
@@ -1139,6 +1140,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          auto_generated?: boolean | null
           category?: string | null
           created_at?: string | null
           display_order?: number | null
@@ -1151,6 +1153,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          auto_generated?: boolean | null
           category?: string | null
           created_at?: string | null
           display_order?: number | null
