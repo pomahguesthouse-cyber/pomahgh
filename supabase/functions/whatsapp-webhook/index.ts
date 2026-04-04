@@ -1097,7 +1097,7 @@ Silakan coba lagi atau hubungi technical support.`;
 
         // Log name message and confirmation
         await logMessage(supabase, conversationId, 'user', guestName);
-        const confirmMsg = `Terima kasih, Kak ${guestName}! 😊 Ada yang bisa saya bantu hari ini?`;
+        const confirmMsg = `Terima kasih, Kak ${guestName}! 😊 Saya ${personaName} dari Pomah Guesthouse. Ada yang bisa saya bantu hari ini?`;
         await logMessage(supabase, conversationId, 'assistant', confirmMsg);
 
         await fetch('https://api.fonnte.com/send', {
