@@ -1,22 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState, memo, lazy, Suspense } from "react";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useMemo, useRef, memo } from "react";
 import { useHeroSlides, type HeroSlide as HeroSlideType } from "@/hooks/useHeroSlides";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { motion, AnimatePresence } from "framer-motion";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { useSearchDates } from "@/contexts/SearchDatesContext";
-import { toast } from "sonner";
+import { motion } from "framer-motion";
 
-// Preload hero image - use smaller optimized version
 const HERO_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Crect fill='%230F766E' width='1920' height='1080'/%3E%3C/svg%3E";
 
-// Text animations - memoized
 const getTextAnimation = (animation: string | null | undefined, isLoop = false) => {
   const base = {
     initial: { opacity: 0, y: 20 },
@@ -53,19 +42,12 @@ const alignMap = {
   right: { text: "text-right", items: "items-end justify-end", contentPadding: "pr-6 lg:pr-12" },
 } as const;
 
-// Memoized slide component
 interface HeroSlideProps {
   slide: HeroSlideType | typeof DEFAULT_SLIDE;
-  showDatePickers: boolean;
-  setShowDatePickers: (v: boolean) => void;
-  checkIn: Date | undefined;
-  checkOut: Date | undefined;
-  setCheckIn: (d: Date | undefined) => void;
-  setCheckOut: (d: Date | undefined) => void;
   isPrimary?: boolean;
 }
 
-const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, checkOut, setCheckIn, setCheckOut, isPrimary }: HeroSlideProps) => {
+const HeroSlide = memo(({ slide, isPrimary }: HeroSlideProps) => {
   const titleAnim = getTextAnimation(slide.title_animation, slide.title_animation_loop || false);
   const subtitleAnim = getTextAnimation(slide.subtitle_animation, slide.subtitle_animation_loop || false);
   const align = alignMap[(slide.text_align as keyof typeof alignMap) || "center"];
@@ -73,25 +55,13 @@ const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, c
 
   return (
     <CarouselItem className="h-screen relative">
-      {/* Background - use loading="eager" for first slide only */}
       {slide.media_type === "video" && slide.video_url ? (
         <div className="absolute inset-0">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="metadata"
-            className="absolute inset-0 w-full h-full object-cover"
-          >
+          <video autoPlay loop muted playsInline preload="metadata" className="absolute inset-0 w-full h-full object-cover">
             <source src={slide.video_url} type="video/mp4" />
           </video>
           {(slide.show_overlay ?? true) && (
-            <div
-              className="absolute inset-0"
-              style={{ background: overlayGradient, opacity: slide.overlay_opacity ?? 0.5 }}
-              aria-hidden
-            />
+            <div className="absolute inset-0" style={{ background: overlayGradient, opacity: slide.overlay_opacity ?? 0.5 }} aria-hidden />
           )}
         </div>
       ) : (
@@ -105,16 +75,11 @@ const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, c
             className="absolute inset-0 w-full h-full object-cover"
           />
           {(slide.show_overlay ?? true) && (
-            <div
-              className="absolute inset-0"
-              style={{ background: overlayGradient, opacity: slide.overlay_opacity ?? 0.5 }}
-              aria-hidden
-            />
+            <div className="absolute inset-0" style={{ background: overlayGradient, opacity: slide.overlay_opacity ?? 0.5 }} aria-hidden />
           )}
         </div>
       )}
 
-      {/* Content */}
       <div className={`relative z-10 ${align.items} flex flex-col h-full ${align.contentPadding}`}>
         <div className={`w-full max-w-4xl mx-auto ${align.text} text-white`}>
           <motion.h1
@@ -137,38 +102,6 @@ const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, c
               {slide.overlay_subtext}
             </motion.p>
           )}
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
-            className={`flex flex-col sm:flex-row items-center gap-3 px-2 ${slide.text_align === "center" ? "justify-center" : slide.text_align === "right" ? "justify-end" : "justify-start"}`}
-          >
-            <AnimatePresence>
-              {showDatePickers && (
-                <DatePickerSection checkIn={checkIn} checkOut={checkOut} setCheckIn={setCheckIn} setCheckOut={setCheckOut} />
-              )}
-            </AnimatePresence>
-
-            <Button
-              variant="hero"
-              size="lg"
-              className="text-white text-sm sm:text-base md:text-lg"
-              onClick={() => {
-                if (!showDatePickers) {
-                  setShowDatePickers(true);
-                  return;
-                }
-                if (!checkIn || !checkOut) {
-                  toast.error("Pilih tanggal check-in dan check-out");
-                  return;
-                }
-                document.getElementById("rooms")?.scrollIntoView({ behavior: "smooth" });
-              }}
-            >
-              {showDatePickers ? "Cari Kamar" : "Pilih Tanggal"}
-            </Button>
-          </motion.div>
         </div>
       </div>
     </CarouselItem>
@@ -177,79 +110,6 @@ const HeroSlide = memo(({ slide, showDatePickers, setShowDatePickers, checkIn, c
 
 HeroSlide.displayName = "HeroSlide";
 
-// Separate date picker section
-interface DatePickerSectionProps {
-  checkIn: Date | undefined;
-  checkOut: Date | undefined;
-  setCheckIn: (d: Date | undefined) => void;
-  setCheckOut: (d: Date | undefined) => void;
-}
-
-const DatePickerSection = memo(({ checkIn, checkOut, setCheckIn, setCheckOut }: DatePickerSectionProps) => (
-  <motion.div
-    initial={{ opacity: 0, height: 0 }}
-    animate={{ opacity: 1, height: "auto" }}
-    exit={{ opacity: 0, height: 0 }}
-    transition={{ duration: 0.25, ease: "easeInOut" }}
-    className="flex flex-col sm:flex-row gap-3 overflow-hidden"
-  >
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "w-full sm:w-auto justify-start text-left font-normal bg-background/80 backdrop-blur",
-            !checkIn && "text-muted-foreground",
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {checkIn ? format(checkIn, "dd MMM", { locale: localeId }) : "Check-in"}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start" sideOffset={8}>
-        <Calendar
-          mode="single"
-          selected={checkIn}
-          onSelect={setCheckIn}
-          disabled={(date: Date) => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            return date < today;
-          }}
-          initialFocus
-        />
-      </PopoverContent>
-    </Popover>
-
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "w-full sm:w-auto justify-start text-left font-normal bg-background/80 backdrop-blur",
-            !checkOut && "text-muted-foreground",
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {checkOut ? format(checkOut, "dd MMM", { locale: localeId }) : "Check-out"}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start" sideOffset={8}>
-        <Calendar
-          mode="single"
-          selected={checkOut}
-          onSelect={setCheckOut}
-          disabled={(date: Date) => !checkIn || date <= checkIn}
-          initialFocus
-        />
-      </PopoverContent>
-    </Popover>
-  </motion.div>
-));
-
-DatePickerSection.displayName = "DatePickerSection";
-
-// Default slide for immediate render
 const DEFAULT_SLIDE = {
   id: "default",
   media_type: "image",
@@ -278,14 +138,12 @@ const DEFAULT_SLIDE = {
 };
 
 export default function OptimizedHero() {
-  const { data: slidesFromDb, isLoading } = useHeroSlides();
-  const { checkIn, checkOut, setCheckIn, setCheckOut } = useSearchDates();
-  const [showDatePickers, setShowDatePickers] = useState(false);
+  const { data: slidesFromDb } = useHeroSlides();
 
   const autoplayRef = useRef(Autoplay({ delay: 5000, stopOnInteraction: false }));
   const carouselRootOpts = useMemo(() => ({ align: "start" as const, loop: true }), []);
 
-  const heroSlides = useMemo(() => 
+  const heroSlides = useMemo(() =>
     slidesFromDb && slidesFromDb.length > 0 ? slidesFromDb : [DEFAULT_SLIDE],
     [slidesFromDb]
   );
@@ -303,37 +161,21 @@ export default function OptimizedHero() {
     };
   }, [heroSlides]);
 
-  // Show placeholder immediately, no loading skeleton
   return (
-    <section
-      id="home"
-      className="relative h-screen flex items-center justify-center overflow-hidden bg-primary"
-    >
+    <section id="home" className="relative h-screen flex items-center justify-center overflow-hidden bg-primary">
       <Carousel opts={carouselRootOpts} plugins={autoplayRef.current ? [autoplayRef.current] : undefined} className="w-full h-full">
         <CarouselContent className="h-screen">
           {heroSlides.map((slide, index) => (
-            <HeroSlide
-              key={slide.id}
-              slide={slide}
-              showDatePickers={showDatePickers}
-              setShowDatePickers={setShowDatePickers}
-              checkIn={checkIn}
-              checkOut={checkOut}
-              setCheckIn={setCheckIn}
-              setCheckOut={setCheckOut}
-              isPrimary={index === 0}
-            />
+            <HeroSlide key={slide.id} slide={slide} isPrimary={index === 0} />
           ))}
         </CarouselContent>
       </Carousel>
 
-      {!showDatePickers && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce z-20" aria-hidden>
-          <div className="w-6 h-10 border-2 border-card/50 rounded-full flex items-start justify-center p-2">
-            <div className="w-1 h-3 bg-card/50 rounded-full" />
-          </div>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce z-20" aria-hidden>
+        <div className="w-6 h-10 border-2 border-card/50 rounded-full flex items-start justify-center p-2">
+          <div className="w-1 h-3 bg-card/50 rounded-full" />
         </div>
-      )}
+      </div>
     </section>
   );
 }
