@@ -194,7 +194,7 @@ export const useConversationInsights = (limit = 50) => {
         .from("whatsapp_conversation_insights" as any)
         .select("*")
         .order("analyzed_at", { ascending: false })
-        .limit(limit);
+        .limit(limit) as any);
       if (error) throw error;
       return (data as unknown) as ConversationInsight[];
     },
