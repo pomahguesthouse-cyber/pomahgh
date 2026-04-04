@@ -94,6 +94,7 @@ const MobileLoginPage = lazyRetry(() => import("./pages/app/MobileLoginPage"));
 const AttractionDetail = lazyRetry(() => import("./pages/AttractionDetail"));
 const Chat = lazyRetry(() => import("./pages/Chat"));
 const EventDetail = lazyRetry(() => import("./pages/EventDetail"));
+const AiTrainer = lazyRetry(() => import("./pages/admin/AiTrainer"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
