@@ -221,8 +221,8 @@ export const useLearningMetrics = (days = 7) => {
   return useQuery({
     queryKey: ["learning-metrics", days],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("whatsapp_learning_metrics")
+      const { data, error } = await (supabase
+        .from("whatsapp_learning_metrics" as any)
         .select("*")
         .order("run_date", { ascending: false })
         .limit(days);
