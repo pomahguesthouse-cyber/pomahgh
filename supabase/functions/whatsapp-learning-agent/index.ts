@@ -536,6 +536,7 @@ Format output JSON array:
   const rawContent = aiResult.data.choices[0]?.message?.content || "[]";
   const polished = parseJsonArrayFromAI(rawContent);
   let promoted = 0;
+  let autoApproved = 0;
 
   // Get max display_order
   const { data: maxOrderData } = await supabase
@@ -557,7 +558,7 @@ Format output JSON array:
         question: p.question,
         ideal_answer: p.ideal_answer,
         category: p.category || pattern.category || "general",
-        is_active: false,  // Needs admin approval
+        is_active: pattern.occurrence_count >= 5,  // Auto-approve if seen 5+ times
         source: "auto_whatsapp",
         auto_generated: true,
         response_tags: p.response_tags || [],
@@ -575,6 +576,7 @@ Format output JSON array:
         })
         .eq("id", pattern.id);
       promoted++;
+      if (pattern.occurrence_count >= 5) autoApproved++;
     }
   }
 
@@ -583,8 +585,9 @@ Format output JSON array:
   return jsonResponse({
     success: true,
     promoted,
+    auto_approved: autoApproved,
     total_candidates: patterns.length,
-    message: `${promoted} FAQ pattern dipromosikan ke training (menunggu approval admin)`,
+    message: `${promoted} FAQ dipromosikan ke training (${autoApproved} otomatis aktif, ${promoted - autoApproved} menunggu approval)`,
   });
 }
 

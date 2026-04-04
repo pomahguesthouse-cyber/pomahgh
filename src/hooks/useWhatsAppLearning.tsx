@@ -153,7 +153,10 @@ export const usePromoteFAQ = () => {
   return useMutation({
     mutationFn: () => invokeAgent("promote_faq"),
     onSuccess: (data) => {
-      toast.success(`${data.promoted} FAQ dipromosikan ke training`);
+      const msg = data.auto_approved > 0
+        ? `${data.promoted} FAQ dipromosikan (${data.auto_approved} otomatis aktif)`
+        : `${data.promoted} FAQ dipromosikan ke training`;
+      toast.success(msg);
       queryClient.invalidateQueries({ queryKey: ["faq-patterns"] });
       queryClient.invalidateQueries({ queryKey: ["training-examples"] });
       queryClient.invalidateQueries({ queryKey: ["learning-metrics"] });

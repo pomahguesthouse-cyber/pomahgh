@@ -7,7 +7,7 @@ import {
   INDONESIAN_MONTHS
 } from '../lib/constants.ts';
 import { getWIBTime, formatDateIndonesian, formatDateISO, addDays, getNextSaturday, getTimeGreeting } from '../utils/time.ts';
-import { selectRelevantExamples, formatTrainingExamples } from '../services/exampleSelector.ts';
+import { selectRelevantExamples, formatTrainingExamples, selectRelevantFAQPatterns, formatFAQPatterns } from '../services/exampleSelector.ts';
 import type { PromptConfig, ConversationContext, ChatbotSettings, HotelData } from '../lib/types.ts';
 
 /**
@@ -305,7 +305,7 @@ Jika user bertanya di luar topik:
  */
 export function buildSystemPrompt(config: PromptConfig): string {
   const { settings, hotelData, conversationContext, lastUserMessage } = config;
-  const { settings: hotel, facilities, knowledgeBase, trainingExamples } = hotelData;
+  const { settings: hotel, facilities, knowledgeBase, trainingExamples, faqPatterns, learningInsights } = hotelData;
 
   const wibTime = getWIBTime();
   const timeGreeting = getTimeGreeting(wibTime.getHours());
@@ -323,6 +323,17 @@ export function buildSystemPrompt(config: PromptConfig): string {
     ? selectRelevantExamples(lastUserMessage, trainingExamples)
     : [];
   const trainingExamplesInfo = formatTrainingExamples(relevantExamples);
+
+  // FAQ patterns from WhatsApp learning
+  const relevantFAQ = lastUserMessage
+    ? selectRelevantFAQPatterns(lastUserMessage, faqPatterns || [])
+    : [];
+  const faqPatternsInfo = formatFAQPatterns(relevantFAQ);
+
+  // Learning improvement suggestions
+  const improvementsInfo = (learningInsights || []).length > 0
+    ? (learningInsights || []).map(imp => `- [${imp.priority?.toUpperCase()}] ${imp.area}: ${imp.suggestion}`).join('\n')
+    : '';
 
   // Knowledge base (truncated)
   const knowledgeInfo = knowledgeBase.slice(0, 3).map(kb => 
@@ -355,5 +366,7 @@ ${addonsInfo}
 ✨ FASILITAS: ${facilitiesInfo}
 
 ${trainingExamplesInfo ? `🎯 CONTOH RESPONS:\n${trainingExamplesInfo}` : ''}
+${faqPatternsInfo ? `\n❓ FAQ TAMU (dari percakapan WhatsApp nyata, gunakan sebagai referensi jawaban):\n${faqPatternsInfo}` : ''}
+${improvementsInfo ? `\n⚡ CATATAN PERBAIKAN (dari analisis percakapan sebelumnya, terapkan saran ini):\n${improvementsInfo}` : ''}
 ${knowledgeInfo ? `\n📚 INFO TAMBAHAN:\n${knowledgeInfo}` : ''}`;
 }

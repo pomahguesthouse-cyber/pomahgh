@@ -37,7 +37,9 @@ export async function loadHotelData(
     { data: facilities },
     { data: nearbyLocations },
     { data: knowledgeBase },
-    { data: trainingExamples }
+    { data: trainingExamples },
+    { data: faqPatternsRaw },
+    { data: insightsRaw }
   ] = await Promise.all([
     supabase.from("hotel_settings").select("*").single(),
     supabase.from("rooms")
@@ -63,8 +65,38 @@ export async function loadHotelData(
     supabase.from("chatbot_training_examples")
       .select("question, ideal_answer, category")
       .eq("is_active", true)
-      .order("display_order")
+      .order("display_order"),
+    // FAQ patterns from WhatsApp learning (top patterns with responses)
+    supabase.from("whatsapp_faq_patterns")
+      .select("canonical_question, best_response, category, occurrence_count")
+      .not("best_response", "is", null)
+      .eq("is_promoted_to_training", false)
+      .gte("occurrence_count", 2)
+      .order("occurrence_count", { ascending: false })
+      .limit(10),
+    // Top improvement suggestions from recent conversation insights
+    supabase.from("whatsapp_conversation_insights")
+      .select("suggested_improvements")
+      .not("suggested_improvements", "eq", "[]")
+      .order("analyzed_at", { ascending: false })
+      .limit(10)
   ]);
+
+  // Extract unique high-priority improvement suggestions
+  const improvementMap = new Map<string, { area: string; suggestion: string; priority: string }>();
+  for (const insight of (insightsRaw || [])) {
+    const improvements = insight.suggested_improvements as Array<{ area: string; suggestion: string; priority: string }>;
+    if (Array.isArray(improvements)) {
+      for (const imp of improvements) {
+        if (imp.area && imp.suggestion && (imp.priority === 'high' || imp.priority === 'medium')) {
+          const key = imp.area.toLowerCase();
+          if (!improvementMap.has(key)) {
+            improvementMap.set(key, imp);
+          }
+        }
+      }
+    }
+  }
 
   const hotelData: HotelData = {
     settings: settings || DEFAULT_HOTEL_SETTINGS,
@@ -73,7 +105,9 @@ export async function loadHotelData(
     facilities: facilities || [],
     nearbyLocations: nearbyLocations || [],
     knowledgeBase: knowledgeBase || [],
-    trainingExamples: trainingExamples || []
+    trainingExamples: trainingExamples || [],
+    faqPatterns: (faqPatternsRaw || []).filter((p: { best_response: string | null }) => p.best_response),
+    learningInsights: Array.from(improvementMap.values()).slice(0, 5),
   };
 
   // Cache the result

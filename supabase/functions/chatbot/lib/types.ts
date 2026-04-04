@@ -65,6 +65,19 @@ export interface TrainingExample {
   category?: string;
 }
 
+export interface FAQPattern {
+  canonical_question: string;
+  best_response: string;
+  category: string;
+  occurrence_count: number;
+}
+
+export interface LearningInsight {
+  area: string;
+  suggestion: string;
+  priority: string;
+}
+
 export interface HotelData {
   settings: HotelSettings;
   rooms: Room[];
@@ -73,6 +86,8 @@ export interface HotelData {
   nearbyLocations: NearbyLocation[];
   knowledgeBase: KnowledgeItem[];
   trainingExamples: TrainingExample[];
+  faqPatterns: FAQPattern[];
+  learningInsights: LearningInsight[];
 }
 
 export interface ParsedDate {
