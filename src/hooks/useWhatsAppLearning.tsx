@@ -190,7 +190,7 @@ export const useConversationInsights = (limit = 50) => {
   return useQuery({
     queryKey: ["conversation-insights", limit],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("whatsapp_conversation_insights")
         .select("*")
         .order("analyzed_at", { ascending: false })
@@ -206,7 +206,7 @@ export const useFAQPatterns = () => {
   return useQuery({
     queryKey: ["faq-patterns"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("whatsapp_faq_patterns")
         .select("*")
         .order("occurrence_count", { ascending: false });
@@ -221,7 +221,7 @@ export const useLearningMetrics = (days = 7) => {
   return useQuery({
     queryKey: ["learning-metrics", days],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("whatsapp_learning_metrics")
         .select("*")
         .order("run_date", { ascending: false })
@@ -245,7 +245,7 @@ export const useDeleteFAQPattern = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("whatsapp_faq_patterns")
         .delete()
         .eq("id", id);
