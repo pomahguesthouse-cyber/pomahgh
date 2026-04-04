@@ -58,12 +58,12 @@ Deno.serve(async (req: Request) => {
     const chatMessages = Array.isArray(messages) ? messages : [];
 
     // 2. Fetch context data with caching
-    const [hotelSettingsData, chatbotSettingsData, knowledgeData, trainingData] = await Promise.all([
+    const [hotelSettingsData, chatbotSettingsData, knowledgeData, trainingData, facilitiesData, nearbyData, guestKBData, guestTrainingData] = await Promise.all([
       getOrLoadAdmin(
         ADMIN_CACHE_KEYS.HOTEL_SETTINGS,
         async () => {
           const { data } = await supabase.from('hotel_settings')
-            .select('hotel_name, check_in_time, check_out_time').single();
+            .select('hotel_name, check_in_time, check_out_time, address, whatsapp_number, phone_primary').single();
           return data;
         },
         ADMIN_CACHE_TTL.HOTEL_SETTINGS,
@@ -99,9 +99,54 @@ Deno.serve(async (req: Request) => {
         },
         ADMIN_CACHE_TTL.TRAINING_EXAMPLES,
         forceRefresh
-      )
+      ),
+      // NEW: Load facilities
+      getOrLoadAdmin(
+        'admin_facilities',
+        async () => {
+          const { data } = await supabase.from('facilities')
+            .select('title, description').eq('is_active', true).order('display_order');
+          return data || [];
+        },
+        ADMIN_CACHE_TTL.HOTEL_SETTINGS,
+        forceRefresh
+      ),
+      // NEW: Load nearby locations
+      getOrLoadAdmin(
+        'admin_nearby_locations',
+        async () => {
+          const { data } = await supabase.from('nearby_locations')
+            .select('name, category, distance_km, travel_time_minutes')
+            .eq('is_active', true).order('distance_km').limit(10);
+          return data || [];
+        },
+        ADMIN_CACHE_TTL.HOTEL_SETTINGS,
+        forceRefresh
+      ),
+      // NEW: Load guest chatbot knowledge base (hotel info)
+      getOrLoadAdmin(
+        'admin_guest_kb',
+        async () => {
+          const { data } = await supabase.from('chatbot_knowledge_base')
+            .select('title, content, category, summary').eq('is_active', true).order('category');
+          return data || [];
+        },
+        ADMIN_CACHE_TTL.KNOWLEDGE_BASE,
+        forceRefresh
+      ),
+      // NEW: Load guest chatbot training examples
+      getOrLoadAdmin(
+        'admin_guest_training',
+        async () => {
+          const { data } = await supabase.from('chatbot_training_examples')
+            .select('question, ideal_answer, category').eq('is_active', true)
+            .order('display_order', { ascending: true }).limit(20);
+          return data || [];
+        },
+        ADMIN_CACHE_TTL.TRAINING_EXAMPLES,
+        forceRefresh
+      ),
     ]);
-
     const hotelSettings: HotelSettings = {
       hotel_name: hotelSettingsData?.hotel_name || 'Hotel',
       check_in_time: hotelSettingsData?.check_in_time || '14:00',
