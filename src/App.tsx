@@ -94,7 +94,6 @@ const MobileLoginPage = lazyRetry(() => import("./pages/app/MobileLoginPage"));
 const AttractionDetail = lazyRetry(() => import("./pages/AttractionDetail"));
 const Chat = lazyRetry(() => import("./pages/Chat"));
 const EventDetail = lazyRetry(() => import("./pages/EventDetail"));
-const AiTrainer = lazyRetry(() => import("./pages/admin/AiTrainer"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -166,7 +165,6 @@ const App = () => (
           <Route path="/admin/explore-hero-slides" element={<AdminLayout><AdminExploreHeroSlides /></AdminLayout>} />
           <Route path="/admin/city-events" element={<AdminLayout><AdminCityEvents /></AdminLayout>} />
           <Route path="/admin/competitor-analysis" element={<AdminCompetitorAnalysis />} />
-          <Route path="/admin/ai-trainer" element={<AdminLayout><AiTrainer /></AdminLayout>} />
           <Route path="/editor" element={<PageEditorPage />} />
           <Route path="/payment/:bookingId" element={<Payment />} />
           <Route path="/payment/:bookingId/status" element={<PaymentStatus />} />
