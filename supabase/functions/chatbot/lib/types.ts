@@ -57,6 +57,7 @@ export interface KnowledgeItem {
   title: string;
   content: string;
   category?: string;
+  summary?: string;
 }
 
 export interface TrainingExample {

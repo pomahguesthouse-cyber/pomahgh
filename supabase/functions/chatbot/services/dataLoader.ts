@@ -59,7 +59,7 @@ export async function loadHotelData(
       .order("distance_km")
       .limit(10),
     supabase.from("chatbot_knowledge_base")
-      .select("title, content, category")
+      .select("title, content, category, summary")
       .eq("is_active", true)
       .order("category"),
     supabase.from("chatbot_training_examples")

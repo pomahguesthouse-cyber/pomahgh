@@ -1,4 +1,4 @@
-import type { TrainingExample, FAQPattern } from '../lib/types.ts';
+import type { TrainingExample, FAQPattern, KnowledgeItem } from '../lib/types.ts';
 
 /**
  * Detect category from user message content
@@ -99,4 +99,60 @@ export function formatFAQPatterns(patterns: FAQPattern[]): string {
   return patterns.map(p =>
     `Q: "${p.canonical_question}" (${p.occurrence_count}x ditanya)\nA: "${p.best_response}"`
   ).join('\n\n');
+}
+
+/**
+ * Select relevant knowledge base items based on user message and keyword matching
+ */
+export function selectRelevantKnowledge(
+  userMessage: string,
+  items: KnowledgeItem[]
+): KnowledgeItem[] {
+  if (!items || items.length === 0) return [];
+
+  const detectedCategory = detectCategory(userMessage);
+  const lower = userMessage.toLowerCase();
+
+  // Score each KB item by relevance
+  const scored = items.map(kb => {
+    let score = 0;
+    const kbCategory = (kb.category || 'general').toLowerCase();
+    const kbTitle = (kb.title || '').toLowerCase();
+    const kbContent = (kb.content || '').toLowerCase();
+
+    // Category match
+    if (kbCategory === detectedCategory) score += 10;
+
+    // Title keyword match
+    const words = lower.split(/\s+/).filter(w => w.length > 2);
+    for (const word of words) {
+      if (kbTitle.includes(word)) score += 5;
+      if (kbContent.includes(word)) score += 2;
+    }
+
+    return { item: kb, score };
+  });
+
+  // Sort by score desc, take top items with score > 0, fallback to general
+  scored.sort((a, b) => b.score - a.score);
+  const relevant = scored.filter(s => s.score > 0).slice(0, 5).map(s => s.item);
+
+  if (relevant.length > 0) return relevant;
+
+  // Fallback: return first 3 general items
+  return items.filter(kb => (kb.category || 'general').toLowerCase() === 'general').slice(0, 3);
+}
+
+/**
+ * Format knowledge base items for system prompt
+ */
+export function formatKnowledge(items: KnowledgeItem[]): string {
+  if (!items || items.length === 0) return '';
+
+  return items.map(kb => {
+    const cat = kb.category?.toUpperCase() || 'INFO';
+    // Use summary if available, otherwise use content (up to 600 chars)
+    const body = kb.summary || (kb.content.length > 600 ? kb.content.substring(0, 600) + '...' : kb.content);
+    return `[${cat}] ${kb.title}:\n${body}`;
+  }).join('\n\n');
 }

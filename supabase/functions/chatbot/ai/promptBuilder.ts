@@ -7,7 +7,7 @@ import {
   INDONESIAN_MONTHS
 } from '../lib/constants.ts';
 import { getWIBTime, formatDateIndonesian, formatDateISO, addDays, getNextSaturday, getTimeGreeting } from '../utils/time.ts';
-import { selectRelevantExamples, formatTrainingExamples, selectRelevantFAQPatterns, formatFAQPatterns } from '../services/exampleSelector.ts';
+import { selectRelevantExamples, formatTrainingExamples, selectRelevantFAQPatterns, formatFAQPatterns, selectRelevantKnowledge, formatKnowledge } from '../services/exampleSelector.ts';
 import type { PromptConfig, ConversationContext, ChatbotSettings, HotelData } from '../lib/types.ts';
 
 /**
@@ -335,10 +335,11 @@ export function buildSystemPrompt(config: PromptConfig): string {
     ? (learningInsights || []).map(imp => `- [${imp.priority?.toUpperCase()}] ${imp.area}: ${imp.suggestion}`).join('\n')
     : '';
 
-  // Knowledge base (truncated)
-  const knowledgeInfo = knowledgeBase.slice(0, 3).map(kb => 
-    `[${kb.category?.toUpperCase() || 'INFO'}] ${kb.title}: ${kb.content.substring(0, 300)}...`
-  ).join('\n\n');
+  // Knowledge base (relevance-based selection)
+  const relevantKB = lastUserMessage
+    ? selectRelevantKnowledge(lastUserMessage, knowledgeBase)
+    : knowledgeBase.slice(0, 3);
+  const knowledgeInfo = formatKnowledge(relevantKB);
 
   // Facilities
   const facilitiesInfo = facilities.map(f => f.title).join(', ') || '';
@@ -368,5 +369,5 @@ ${addonsInfo}
 ${trainingExamplesInfo ? `🎯 CONTOH RESPONS:\n${trainingExamplesInfo}` : ''}
 ${faqPatternsInfo ? `\n❓ FAQ TAMU (dari percakapan WhatsApp nyata, gunakan sebagai referensi jawaban):\n${faqPatternsInfo}` : ''}
 ${improvementsInfo ? `\n⚡ CATATAN PERBAIKAN (dari analisis percakapan sebelumnya, terapkan saran ini):\n${improvementsInfo}` : ''}
-${knowledgeInfo ? `\n📚 INFO TAMBAHAN:\n${knowledgeInfo}` : ''}`;
+${knowledgeInfo ? `\n📚 KNOWLEDGE BASE (gunakan sebagai acuan utama jawaban):\n${knowledgeInfo}` : ''}`;
 }
