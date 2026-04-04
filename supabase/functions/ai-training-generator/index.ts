@@ -244,15 +244,21 @@ Pastikan setiap contoh unik dan berbeda gaya.`,
 
       const toInsert = (examples as Array<{ question?: string; answer?: string; category?: string; tags?: string[] }>)
         .filter((e) => e.question && e.answer)
-        .map((e, idx) => ({
-          question: e.question,
-          answer: e.answer,
-          category: e.category || category,
-          tags: e.tags || [],
-          is_active: false,
-          auto_generated: true,
-          display_order: 9000 + idx,
-        }));
+        .map((e, idx) => {
+          const base: Record<string, unknown> = {
+            question: e.question,
+            ideal_answer: e.answer,
+            category: e.category || category,
+            is_active: false,
+            display_order: 9000 + idx,
+          };
+          if (tableName === "chatbot_training_examples") {
+            base.auto_generated = true;
+            base.source = "ai_generated";
+            if (e.tags && e.tags.length > 0) base.response_tags = e.tags;
+          }
+          return base;
+        });
 
       let saved = 0;
       if (toInsert.length > 0) {

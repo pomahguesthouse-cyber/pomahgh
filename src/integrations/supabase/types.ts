@@ -1127,6 +1127,7 @@ export type Database = {
       }
       chatbot_training_examples: {
         Row: {
+          auto_generated: boolean | null
           category: string | null
           created_at: string | null
           display_order: number | null
@@ -1139,6 +1140,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          auto_generated?: boolean | null
           category?: string | null
           created_at?: string | null
           display_order?: number | null
@@ -1151,6 +1153,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          auto_generated?: boolean | null
           category?: string | null
           created_at?: string | null
           display_order?: number | null
@@ -3506,6 +3509,39 @@ export type Database = {
           name?: string
           section_padding?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      training_sessions: {
+        Row: {
+          conversation: Json
+          created_at: string
+          evaluation: Json | null
+          id: string
+          scenario: Json
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          conversation?: Json
+          created_at?: string
+          evaluation?: Json | null
+          id?: string
+          scenario?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          conversation?: Json
+          created_at?: string
+          evaluation?: Json | null
+          id?: string
+          scenario?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
