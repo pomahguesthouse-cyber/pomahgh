@@ -350,9 +350,6 @@ Berikan output JSON:
     // Mode: analyze_logs
     // ============================================================
     if (mode === "analyze_logs") {
-      const startTime = Date.now();
-      const MAX_DURATION_MS = 45_000; // 45s guard — stop before edge function timeout
-
       // Get un-analyzed WhatsApp conversations, prioritize by message count
       const { data: conversations } = await supabase
         .from("chat_conversations")
@@ -361,7 +358,7 @@ Berikan output JSON:
         .eq("analyzed_for_training", false)
         .order("message_count", { ascending: false })
         .order("started_at", { ascending: false })
-        .limit(5); // Reduced from 15 to prevent timeout
+        .limit(15);
 
       if (!conversations || conversations.length === 0) {
         return new Response(
@@ -373,11 +370,6 @@ Berikan output JSON:
       const results: Array<{ conversation_id: string; examples_generated: number; saved: number }> = [];
 
       for (const conv of conversations) {
-        // Time guard: stop if we're running low on time
-        if (Date.now() - startTime > MAX_DURATION_MS) {
-          console.warn("[analyze_logs] Time guard triggered, stopping batch");
-          break;
-        }
         // Fetch messages from chat_messages table
         const { data: msgData, error: msgErr } = await supabase
           .from("chat_messages")

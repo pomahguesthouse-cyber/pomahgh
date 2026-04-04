@@ -3736,6 +3736,184 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_conversation_insights: {
+        Row: {
+          id: string
+          conversation_id: string | null
+          session_id: string | null
+          summary: string | null
+          topics: string[]
+          sentiment: string | null
+          intent_flow: string[]
+          resolution_status: string | null
+          bot_accuracy_score: number | null
+          guest_satisfaction_signal: string | null
+          common_questions: Json
+          failed_responses: Json
+          successful_patterns: Json
+          suggested_improvements: Json
+          new_slang_detected: Json
+          message_count: number | null
+          analyzed_at: string | null
+          model_used: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          conversation_id?: string | null
+          session_id?: string | null
+          summary?: string | null
+          topics?: string[]
+          sentiment?: string | null
+          intent_flow?: string[]
+          resolution_status?: string | null
+          bot_accuracy_score?: number | null
+          guest_satisfaction_signal?: string | null
+          common_questions?: Json
+          failed_responses?: Json
+          successful_patterns?: Json
+          suggested_improvements?: Json
+          new_slang_detected?: Json
+          message_count?: number | null
+          analyzed_at?: string | null
+          model_used?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          conversation_id?: string | null
+          session_id?: string | null
+          summary?: string | null
+          topics?: string[]
+          sentiment?: string | null
+          intent_flow?: string[]
+          resolution_status?: string | null
+          bot_accuracy_score?: number | null
+          guest_satisfaction_signal?: string | null
+          common_questions?: Json
+          failed_responses?: Json
+          successful_patterns?: Json
+          suggested_improvements?: Json
+          new_slang_detected?: Json
+          message_count?: number | null
+          analyzed_at?: string | null
+          model_used?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversation_insights_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_faq_patterns: {
+        Row: {
+          id: string
+          pattern_text: string
+          canonical_question: string
+          category: string | null
+          occurrence_count: number | null
+          last_seen_at: string | null
+          conversation_ids: string[]
+          best_response: string | null
+          response_quality_score: number | null
+          is_promoted_to_training: boolean | null
+          training_example_id: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          pattern_text: string
+          canonical_question: string
+          category?: string | null
+          occurrence_count?: number | null
+          last_seen_at?: string | null
+          conversation_ids?: string[]
+          best_response?: string | null
+          response_quality_score?: number | null
+          is_promoted_to_training?: boolean | null
+          training_example_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          pattern_text?: string
+          canonical_question?: string
+          category?: string | null
+          occurrence_count?: number | null
+          last_seen_at?: string | null
+          conversation_ids?: string[]
+          best_response?: string | null
+          response_quality_score?: number | null
+          is_promoted_to_training?: boolean | null
+          training_example_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_faq_patterns_training_example_id_fkey"
+            columns: ["training_example_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_training_examples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_learning_metrics: {
+        Row: {
+          id: string
+          run_date: string | null
+          conversations_analyzed: number | null
+          messages_processed: number | null
+          insights_generated: number | null
+          faq_patterns_found: number | null
+          training_examples_created: number | null
+          slang_patterns_detected: number | null
+          improvements_suggested: number | null
+          avg_bot_accuracy: number | null
+          avg_resolution_rate: number | null
+          top_unresolved_topics: string[]
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          run_date?: string | null
+          conversations_analyzed?: number | null
+          messages_processed?: number | null
+          insights_generated?: number | null
+          faq_patterns_found?: number | null
+          training_examples_created?: number | null
+          slang_patterns_detected?: number | null
+          improvements_suggested?: number | null
+          avg_bot_accuracy?: number | null
+          avg_resolution_rate?: number | null
+          top_unresolved_topics?: string[]
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          run_date?: string | null
+          conversations_analyzed?: number | null
+          messages_processed?: number | null
+          insights_generated?: number | null
+          faq_patterns_found?: number | null
+          training_examples_created?: number | null
+          slang_patterns_detected?: number | null
+          improvements_suggested?: number | null
+          avg_bot_accuracy?: number | null
+          avg_resolution_rate?: number | null
+          top_unresolved_topics?: string[]
+          created_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
