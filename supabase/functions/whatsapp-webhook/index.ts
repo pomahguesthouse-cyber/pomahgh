@@ -1326,7 +1326,7 @@ Silakan coba lagi atau hubungi technical support.`;
       console.log("⚠️ Empty AI response - checking for greeting fallback");
       const greetingPattern = /^(p|pagi|siang|sore|malam|halo|hai|hi|hello|hallo|selamat|tes|test)/i;
       if (greetingPattern.test(normalizedMessage)) {
-        aiResponse = "Halo! 👋 Saya Rani dari Pomah Guesthouse. Ada yang bisa saya bantu?\n\nMau cek ketersediaan kamar atau ada pertanyaan lain? 🏨";
+        aiResponse = `Halo! 👋 Saya ${personaName} dari Pomah Guesthouse. Ada yang bisa saya bantu?\n\nMau cek ketersediaan kamar atau ada pertanyaan lain? 🏨`;
       } else {
         aiResponse = "Maaf, saya tidak bisa memproses permintaan Anda saat ini. Silakan coba lagi atau hubungi admin. 🙏";
       }
