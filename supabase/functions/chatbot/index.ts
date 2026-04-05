@@ -85,37 +85,61 @@ serve(async (req) => {
       tool_calls_used: []
     };
 
-    const callAi = async (chatMessages: ChatCompletionMessage[]) => {
-      const response = await fetch(LOVABLE_API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...chatMessages
-          ],
-          tools,
-          tool_choice: "auto",
-          temperature: 0.4,
-          max_tokens: maxTokens
-        }),
-      });
+    const callAi = async (chatMessages: ChatCompletionMessage[], retries = 1) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
+      
+      try {
+        const response = await fetch(LOVABLE_API_URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: systemPrompt },
+              ...chatMessages
+            ],
+            tools,
+            tool_choice: "auto",
+            temperature: 0.4,
+            max_tokens: maxTokens
+          }),
+          signal: controller.signal,
+        });
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          return { rateLimited: true, data: null };
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          if (response.status === 429) {
+            return { rateLimited: true, data: null };
+          }
+          // Retry once on 5xx
+          if (response.status >= 500 && retries > 0) {
+            console.warn(`AI gateway ${response.status}, retrying...`);
+            await new Promise(r => setTimeout(r, 2000));
+            return callAi(chatMessages, retries - 1);
+          }
+          const errorText = await response.text();
+          console.error("AI gateway error:", response.status, errorText);
+          throw new Error("AI gateway error");
         }
-        const errorText = await response.text();
-        console.error("AI gateway error:", response.status, errorText);
-        throw new Error("AI gateway error");
-      }
 
-      const data = await response.json();
-      return { rateLimited: false, data };
+        const data = await response.json();
+        return { rateLimited: false, data };
+      } catch (err) {
+        clearTimeout(timeout);
+        if ((err as Error).name === 'AbortError') {
+          if (retries > 0) {
+            console.warn("AI gateway timeout, retrying...");
+            return callAi(chatMessages, retries - 1);
+          }
+          throw new Error("AI gateway timeout");
+        }
+        throw err;
+      }
     };
 
     let workingMessages: ChatCompletionMessage[] = Array.isArray(messages) ? messages : [];
@@ -149,11 +173,10 @@ serve(async (req) => {
         });
       }
 
-      const toolResults: ChatCompletionMessage[] = [];
-
-      for (const toolCall of toolCalls) {
+      // Execute tools in parallel
+      const toolResultPromises = toolCalls.map(async (toolCall) => {
         const toolName = toolCall.function?.name;
-        if (!toolName) continue;
+        if (!toolName) return null;
 
         meta.tool_calls_used.push(toolName);
 
@@ -161,10 +184,14 @@ serve(async (req) => {
         try {
           parameters = JSON.parse(toolCall.function?.arguments || "{}");
         } catch {
+          console.warn(`Tool ${toolName}: failed to parse arguments`);
           parameters = {};
         }
 
         try {
+          const toolController = new AbortController();
+          const toolTimeout = setTimeout(() => toolController.abort(), 15000); // 15s per tool
+          
           const toolResponse = await fetch(`${SUPABASE_URL}/functions/v1/chatbot-tools`, {
             method: "POST",
             headers: {
@@ -176,12 +203,16 @@ serve(async (req) => {
               tool_name: toolName,
               parameters,
             }),
+            signal: toolController.signal,
           });
+
+          clearTimeout(toolTimeout);
 
           let toolResult: unknown;
           if (!toolResponse.ok) {
             const errorText = await toolResponse.text();
-            toolResult = { error: `Tool execution failed: ${errorText || toolResponse.status}` };
+            toolResult = { error: `Tool ${toolName} failed: ${toolResponse.status}` };
+            console.error(`Tool ${toolName} error: ${errorText}`);
           } else {
             toolResult = await toolResponse.json();
           }
@@ -195,20 +226,31 @@ serve(async (req) => {
               (toolResult as { booking?: { guest_email?: string } })?.booking?.guest_email || null;
           }
 
-          toolResults.push({
-            role: "tool",
-            content: JSON.stringify(toolResult),
+          // Trim large tool results to reduce token growth
+          const resultStr = JSON.stringify(toolResult);
+          const trimmedResult = resultStr.length > 2000 
+            ? resultStr.substring(0, 2000) + '..."}'
+            : resultStr;
+
+          return {
+            role: "tool" as const,
+            content: trimmedResult,
             tool_call_id: toolCall.id,
-          });
+          };
         } catch (toolError) {
-          console.error(`Tool ${toolName} error:`, toolError);
-          toolResults.push({
-            role: "tool",
-            content: JSON.stringify({ error: "Tool execution failed" }),
+          const errMsg = (toolError as Error).name === 'AbortError' 
+            ? `Tool ${toolName} timeout (15s)` 
+            : `Tool ${toolName} failed`;
+          console.error(errMsg, toolError);
+          return {
+            role: "tool" as const,
+            content: JSON.stringify({ error: errMsg }),
             tool_call_id: toolCall.id,
-          });
+          };
         }
-      }
+      });
+
+      const toolResults = (await Promise.all(toolResultPromises)).filter(Boolean) as ChatCompletionMessage[];
 
       workingMessages = [
         ...workingMessages,

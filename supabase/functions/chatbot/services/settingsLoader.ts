@@ -1,9 +1,13 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { ChatbotSettings } from '../lib/types.ts';
 import { DEFAULT_CHATBOT_SETTINGS } from '../lib/types.ts';
+import { cache, CACHE_TTL } from '../lib/cache.ts';
+
+const SETTINGS_CACHE_KEY = 'chatbot_settings';
 
 /**
  * Load chatbot settings from database or use provided/default settings
+ * Uses in-memory cache to avoid repeated DB queries
  */
 export async function loadChatbotSettings(
   supabase: SupabaseClient,
@@ -17,8 +21,13 @@ export async function loadChatbotSettings(
     } as ChatbotSettings;
   }
 
+  // Check cache first
+  const cached = cache.get<ChatbotSettings>(SETTINGS_CACHE_KEY);
+  if (cached) {
+    return cached;
+  }
+
   // Fetch from database
-  console.log("Fetching chatbot settings from database...");
   const { data: dbSettings, error } = await supabase
     .from("chatbot_settings")
     .select("*")
@@ -29,8 +38,11 @@ export async function loadChatbotSettings(
     return DEFAULT_CHATBOT_SETTINGS;
   }
 
-  return {
+  const settings = {
     ...DEFAULT_CHATBOT_SETTINGS,
     ...dbSettings
   } as ChatbotSettings;
+
+  cache.set(SETTINGS_CACHE_KEY, settings, CACHE_TTL.CHATBOT_SETTINGS);
+  return settings;
 }

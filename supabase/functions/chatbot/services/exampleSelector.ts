@@ -117,7 +117,10 @@ export function selectRelevantKnowledge(
   const detectedCategory = detectCategory(userMessage);
   const lower = userMessage.toLowerCase();
 
-  // Score each KB item by relevance
+  // Common Indonesian stop words to skip
+  const stopWords = new Set(['yang', 'dan', 'ini', 'itu', 'ada', 'untuk', 'dari', 'dengan', 'apa', 'bisa', 'saya', 'mau', 'kami', 'tidak', 'juga', 'akan', 'sudah', 'tapi', 'kalau', 'kalau', 'nya', 'kah', 'lah', 'pun']);
+
+  // Score each KB item by relevance using word boundary matching
   const scored = items.map(kb => {
     let score = 0;
     const kbCategory = (kb.category || 'general').toLowerCase();
@@ -127,11 +130,13 @@ export function selectRelevantKnowledge(
     // Category match
     if (kbCategory === detectedCategory) score += 10;
 
-    // Title keyword match
-    const words = lower.split(/\s+/).filter(w => w.length > 2);
+    // Word boundary matching (avoid partial substring matches)
+    const words = lower.split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
     for (const word of words) {
-      if (kbTitle.includes(word)) score += 5;
-      if (kbContent.includes(word)) score += 2;
+      // Use word boundary: check if word appears as a separate token
+      const wordRegex = new RegExp(`(?:^|\\s|[^a-z])${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\s|[^a-z])`, 'i');
+      if (wordRegex.test(kbTitle)) score += 5;
+      if (wordRegex.test(kbContent)) score += 2;
     }
 
     return { item: kb, score };

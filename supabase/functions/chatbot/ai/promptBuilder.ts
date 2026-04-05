@@ -53,42 +53,17 @@ function buildDateContext(): string {
   const lusa = formatDateISO(addDays(wibTime, 2));
   const nextWeek = formatDateISO(addDays(wibTime, 7));
   const weekend = formatDateISO(getNextSaturday(wibTime));
-  const todayDate = wibTime.getDate();
-  const currentMonth = INDONESIAN_MONTHS[wibTime.getMonth()];
   const currentYear = wibTime.getFullYear();
+  const nextMonth = INDONESIAN_MONTHS[(wibTime.getMonth() + 1) % 12];
 
-  return `📅 REFERENSI TANGGAL (WIB):
-- Hari ini: ${formatDateIndonesian(wibTime)} (${today})
-- Tanggal SEKARANG: ${todayDate} ${currentMonth} ${currentYear}
-- TAHUN SEKARANG: ${currentYear}
-- Besok: ${tomorrow}
-- Lusa: ${lusa}
-- Weekend ini: ${weekend}
-- Minggu depan: ${nextWeek}
+  return `📅 TANGGAL (WIB): ${formatDateIndonesian(wibTime)} (${today}) | Tahun: ${currentYear}
+Besok: ${tomorrow} | Lusa: ${lusa} | Weekend: ${weekend} | Minggu depan: ${nextWeek}
 
-🚨 ATURAN TANGGAL (KRITIS!):
-- ❌ DILARANG bilang "tanggal sudah lewat" TANPA panggil check_availability!
-- ✅ WAJIB panggil check_availability untuk SEMUA tanggal yang user sebutkan!
-
-- 🔴 ATURAN TANGGAL TANPA BULAN (SANGAT PENTING):
-  * Jika user hanya sebut ANGKA tanggal tanpa bulan (misal "17-18"), dan tanggal itu SUDAH LEWAT di bulan ${currentMonth}:
-    → Asumsikan BULAN DEPAN, TAHUN ${currentYear}!
-  * Contoh: sekarang ${todayDate} ${currentMonth} ${currentYear}, user bilang "17-18" → gunakan 17-18 ${INDONESIAN_MONTHS[(wibTime.getMonth() + 1) % 12]} ${currentYear}
-  * ❌ JANGAN PERNAH loncat ke tahun depan jika hanya tanggal yang sudah lewat!
-
-- 🔴 ATURAN BULAN & TAHUN (SANGAT PENTING):
-  * Jika user sebut bulan yang BELUM lewat di tahun ${currentYear} → GUNAKAN TAHUN ${currentYear}
-  * Jika user sebut bulan yang SUDAH lewat di tahun ${currentYear} → GUNAKAN TAHUN ${currentYear + 1}
-  * Contoh: sekarang ${currentMonth} ${currentYear}, user bilang "April" → gunakan April ${currentYear} (BUKAN ${currentYear + 1}!)
-  * Contoh: sekarang ${currentMonth} ${currentYear}, user bilang "Februari" → gunakan Februari ${currentYear + 1} (karena sudah lewat)
-  * JANGAN menambah tahun jika bulan tersebut masih di DEPAN atau SAMA dengan bulan sekarang!
-
-⚠️ KONVERSI OTOMATIS:
-- "malam ini"/"hari ini" → check-in ${today}
-- "besok"/"bsk" → check-in ${tomorrow}
-- "lusa" → check-in ${lusa}
-- "weekend"/"akhir pekan" → check-in ${weekend}
-- "minggu depan" → check-in ${nextWeek}`;
+ATURAN TANGGAL:
+- WAJIB panggil check_availability untuk SEMUA tanggal, JANGAN tolak tanggal tanpa cek!
+- Tanggal tanpa bulan & sudah lewat bulan ini → asumsikan ${nextMonth} ${currentYear}
+- Bulan belum lewat tahun ini → tahun ${currentYear}. Bulan sudah lewat → tahun ${currentYear + 1}
+- "malam ini"/"hari ini"→${today} | "besok"/"bsk"→${tomorrow} | "lusa"→${lusa} | "weekend"→${weekend} | "minggu depan"→${nextWeek}`;
 }
 
 /**
@@ -181,47 +156,13 @@ function buildContextString(ctx?: ConversationContext): { contextString: string;
   if (ctx.awaiting_guest_data && ctx.preferred_room && ctx.check_in_date && ctx.check_out_date) {
     explicitToolInstruction = `
 
-🚨🚨🚨 CRITICAL: BOOKING DATA RECEIVED - EXECUTE TOOL NOW! 🚨🚨🚨
-STATUS: Menunggu data tamu untuk booking ${ctx.preferred_room}
-TANGGAL TERSIMPAN: Check-in ${ctx.check_in_date}, Check-out ${ctx.check_out_date}
-
-⛔ PESAN INI MEMBUTUHKAN TINDAKAN SEGERA!
-
-JIKA USER MEMBERIKAN DATA TAMU (nama/email/HP/jumlah tamu):
-1. JANGAN PERNAH balas dengan text seperti:
-   - "Terima kasih, akan diproses"
-   - "Mohon tunggu sebentar"
-   - "Rani akan buatkan draf booking-nya"
-   
-2. LANGSUNG PANGGIL create_booking_draft dengan parameter:
-   {
-     "room_name": "${ctx.preferred_room}",
-     "check_in": "${ctx.check_in_date}",
-     "check_out": "${ctx.check_out_date}",
-     "guest_name": "[dari pesan user]",
-     "guest_email": "[dari pesan user]",
-     "guest_phone": "[dari pesan user]",
-     "num_guests": [dari pesan user]
-   }
-
-⚠️ JIKA KAMU MERESPONS DENGAN TEXT TANPA MEMANGGIL TOOL = GAGAL!
-✅ BENAR: Langsung panggil create_booking_draft
-❌ SALAH: Balas dulu baru nanti panggil tool`;
+⚠️ BOOKING MENUNGGU DATA TAMU: ${ctx.preferred_room} (${ctx.check_in_date} s/d ${ctx.check_out_date})
+Jika user memberikan nama/email/HP/jumlah tamu → LANGSUNG panggil create_booking_draft. JANGAN balas text tanpa tool!`;
   }
 
   if (ctx.last_booking_code) {
-    explicitToolInstruction += `
-
-🔐 BOOKING SUDAH DIKENALI DI KONTEKS:
-- booking_code: ${ctx.last_booking_code}
-${ctx.last_booking_guest_email ? `- guest_email: ${ctx.last_booking_guest_email}
-` : ''}${ctx.last_booking_guest_phone ? `- guest_phone: ${ctx.last_booking_guest_phone}
-` : ''}
-ATURAN WAJIB:
-1. Jika user ingin cek / ubah / pindah kamar / revisi booking yang sedang dibahas, GUNAKAN booking di konteks ini.
-2. JANGAN meminta ulang kode booking, email, atau nomor telepon JIKA sudah ada di konteks.
-3. Hanya minta ulang field yang memang BELUM ada di konteks.
-4. Jika user ingin modifikasi booking yang sama, langsung lanjutkan alur bantuan perubahan booking dengan booking_code di atas.`;
+    explicitToolInstruction += `\nBOOKING AKTIF: ${ctx.last_booking_code}${ctx.last_booking_guest_email ? ` | ${ctx.last_booking_guest_email}` : ''}${ctx.last_booking_guest_phone ? ` | ${ctx.last_booking_guest_phone}` : ''}
+→ Gunakan data ini untuk cek/ubah booking, JANGAN minta ulang.`;
   }
 
   return { contextString, explicitToolInstruction };
@@ -231,80 +172,30 @@ ATURAN WAJIB:
  * Build the booking flow rules section
  */
 function buildBookingFlowRules(): string {
-  return `🔄 BOOKING FLOW (SANGAT PENTING!):
-- User konfirmasi ("ya/oke/booking/pesan/lanjut") setelah check_availability:
-  → GUNAKAN kamar dan tanggal dari check_availability sebelumnya (JANGAN tanya ulang!)
-  → LANGSUNG minta data tamu yang BELUM ADA: nama lengkap, email, nomor HP, jumlah tamu
-  → Setelah data lengkap → LANGSUNG panggil create_booking_draft
-
-- "X malam" setelah check → lakukan check_availability BARU dengan durasi updated
-- User sebut nama kamar setelah check → LANGSUNG minta data tamu (JANGAN get_room_details!)
-
-⚠️ CRITICAL - DATA TAMU:
-Jika user memberikan data tamu (nama + email + HP + jumlah):
-→ LANGSUNG panggil create_booking_draft dalam respons YANG SAMA
-→ JANGAN bilang "akan dibuatkan" atau "mohon tunggu" tanpa panggil tool!
-→ JANGAN balas text dulu baru panggil tool nanti - itu GAGAL!
-
-🧠 INTELLIGENCE:
+  return `BOOKING FLOW:
+- User konfirmasi setelah check_availability → gunakan kamar+tanggal sebelumnya, minta data tamu (nama, email, HP, jumlah), lalu LANGSUNG panggil create_booking_draft
+- Data tamu lengkap → LANGSUNG panggil create_booking_draft (JANGAN balas text tanpa tool!)
+- "X malam" setelah check → check_availability baru
 - Kenali typo: dlx→deluxe, kmr→kamar, brp→berapa, bs→bisa, gk/ga→tidak, tgl→tanggal, bsk→besok
-- Ingat preferensi dari percakapan sebelumnya
-- JANGAN tanya ulang info yang sudah diberikan user
+- JANGAN tanya ulang info yang sudah user berikan
 
-🚨 TOOLS:
+TOOLS:
 - "ada kamar apa?" → get_all_rooms
-- kamar + tanggal → check_availability
-- data tamu lengkap → create_booking_draft (PANGGIL LANGSUNG!)
-- cek/ubah booking → JIKA ada booking terakhir di KONTEKS, gunakan kode booking & data tamu dari konteks. JANGAN minta ulang kode booking/email/HP jika sudah ada di konteks!
-- cek/ubah booking (tanpa konteks) → minta kode PMH-XXXXXX + telepon + email
-- "cara bayar?"/"metode pembayaran?" → get_payment_methods (perlu kode booking + telepon + email)
+- kamar+tanggal → check_availability
+- data tamu lengkap → create_booking_draft
+- cek/ubah booking → gunakan data dari KONTEKS jika ada, atau minta PMH-XXXXXX+telepon+email
+- "sudah transfer"/"sudah bayar" → notify_payment_proof
 
-🏷️ HARGA KHUSUS LONG STAY:
-- PENTING: Jika tamu hanya bertanya HARGA NORMAL atau KETERSEDIAAN untuk 3+ malam, JAWAB SEPERTI BIASA menggunakan check_availability dan berikan harga standar. JANGAN eskalasi ke admin!
-- HANYA panggil notify_longstay_inquiry jika tamu SECARA EKSPLISIT meminta DISKON, POTONGAN HARGA, atau HARGA KHUSUS untuk menginap lama (contoh: "ada diskon untuk 5 malam?", "harga khusus long stay", "bisa dapat potongan?")
-- Tanda tamu minta long stay DISCOUNT (BUKAN sekedar tanya harga): kata "diskon", "potongan", "harga khusus", "nego", "long stay discount"
-- Jika hanya bertanya "berapa harga 3 malam?" atau "info biaya 5 malam" → INI BUKAN long stay inquiry, jawab dengan harga normal!
+LONG STAY: panggil notify_longstay_inquiry HANYA jika tamu minta DISKON/potongan, bukan sekedar tanya harga 3+ malam.
 
-💳 PEMBAYARAN:
-- JANGAN berikan link pembayaran online kepada tamu (sedang tahap sandbox)
-- Setelah create_booking_draft berhasil, SELALU informasikan:
-  1. Kode booking
-  2. Nomor rekening pembayaran: *Bank BCA* - No. Rek: *0095584379* a.n. *Faizal Abdurachman*
-  3. Minta tamu transfer dan kirimkan bukti pembayaran
-- Jika tamu bertanya cara bayar → berikan info rekening di atas
-- JANGAN panggil get_payment_methods atau memberikan URL pembayaran apapun
+PEMBAYARAN:
+- JANGAN berikan link pembayaran (sandbox)
+- Setelah booking: informasikan kode + rekening BCA 0095584379 a.n. Faizal Abdurachman + minta bukti transfer
+- Bukti transfer masuk → panggil notify_payment_proof, ucapkan "Tim kami sedang mengecek pembayaran"
 
-📸 BUKTI PEMBAYARAN:
-- Jika tamu bilang "sudah transfer", "sudah bayar", "ini bukti transfer", atau mengirim info pembayaran:
-  1. LANGSUNG panggil notify_payment_proof dengan info booking dan tamu
-  2. Ucapkan: "Terima kasih! Bukti pembayaran Anda telah kami terima. Tim kami sedang mengecek pembayaran Anda, mohon ditunggu sebentar ya! 🙏"
-  3. JANGAN konfirmasi pembayaran sendiri - biarkan tim yang verifikasi
+FORMAT: Kode PMH-XXXXXX | Tanggal "15 Januari 2025" | Harga "Rp 450.000"
 
-⚠️ FORMAT:
-- Kode booking: PMH-XXXXXX
-- Tanggal: "15 Januari 2025"
-- Harga: "Rp 450.000"
-
-🚫 BATASAN TOPIK (WAJIB DIPATUHI!):
-Kamu HANYA boleh menjawab pertanyaan tentang:
-1. ✅ Booking kamar di Pomah Guesthouse (cek ketersediaan, buat booking, ubah booking)
-2. ✅ Informasi kamar (tipe, harga, fasilitas kamar)
-3. ✅ Fasilitas hotel (WiFi, parkir, sarapan, dll)
-4. ✅ Lokasi dan akses ke Pomah Guesthouse
-5. ✅ Kebijakan hotel (check-in/out, pembatalan, pembayaran)
-6. ✅ Informasi kontak hotel
-
-TOLAK dengan sopan pertanyaan tentang:
-❌ Topik umum tidak terkait Pomah Guesthouse
-❌ Berita, politik, olahraga, hiburan
-❌ Rekomendasi tempat makan/wisata di luar konteks hotel
-❌ Cuaca, ramalan, horoskop
-❌ Matematika, coding, tugas sekolah
-❌ Gosip, opini kontroversial
-❌ Pertanyaan pribadi tentang AI/sistem
-
-Jika user bertanya di luar topik:
-→ "Maaf, saya hanya bisa membantu terkait booking dan informasi Pomah Guesthouse. 🏨 Ada yang bisa saya bantu tentang reservasi kamar?"`;
+BATASAN: Hanya jawab tentang booking, kamar, fasilitas, lokasi, kebijakan, kontak Pomah Guesthouse. Tolak sopan topik di luar itu.`;
 }
 
 /**
