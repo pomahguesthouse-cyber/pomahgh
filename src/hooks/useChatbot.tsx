@@ -72,6 +72,12 @@ export const useChatbot = () => {
   const fallbackCountRef = useRef<number>(0);
   const conversationStartRef = useRef<number>(Date.now());
   
+  // Message queue to prevent race conditions when user sends messages rapidly
+  const messageQueueRef = useRef<string[]>([]);
+  const isProcessingRef = useRef(false);
+  // Mutable ref for latest messages to avoid stale closure
+  const messagesRef = useRef<Message[]>([]);
+  
   // Conversation context for continuity (reduces need to re-extract info)
   const [conversationContext, setConversationContext] = useState<ConversationContext>(DEFAULT_CONTEXT);
 
