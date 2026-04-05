@@ -198,7 +198,8 @@ export const useChatbot = () => {
     }
   };
 
-  const sendMessage = async (userMessage: string) => {
+  // Internal: process a single message (must be called sequentially)
+  const processMessage = async (userMessage: string) => {
     if (!settings) return;
 
     // Start conversation if this is the first message
@@ -212,30 +213,30 @@ export const useChatbot = () => {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, newUserMessage]);
+    // Use ref for latest messages to avoid stale closure
+    const updatedMessages = [...messagesRef.current, newUserMessage];
+    messagesRef.current = updatedMessages;
+    setMessages(updatedMessages);
     setIsLoading(true);
 
     // Log user message
     await logMessage('user', userMessage);
 
     try {
-      // First, call the main chatbot function with conversation context
       const { data: rawChatResponse, error: chatError } = await supabase.functions.invoke('chatbot', {
         body: {
-          messages: [...messages, newUserMessage].map(m => ({
+          messages: updatedMessages.map(m => ({
             role: m.role,
             content: m.content
           })),
           chatbotSettings: settings,
-          conversationContext // Pass context for continuity
+          conversationContext
         }
       });
 
       if (chatError) throw chatError;
 
       const chatResponse = rawChatResponse as ChatbotResponse;
-
-      // Check for fallback response from edge function
       const isFallbackResponse = chatResponse?.fallback === true;
       
       if (isFallbackResponse) {
@@ -257,12 +258,11 @@ export const useChatbot = () => {
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      const withAssistant = [...messagesRef.current, assistantMessage];
+      messagesRef.current = withAssistant;
+      setMessages(withAssistant);
       
-      // Extract and update context from response
       setConversationContext(prev => extractConversationContext(assistantContent, prev));
-      
-      // Log assistant message
       await logMessage('assistant', assistantContent, isFallbackResponse, toolCallsUsed);
     } catch (error) {
       console.error("Chat error:", error);
@@ -272,15 +272,34 @@ export const useChatbot = () => {
         content: errorContent,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      const withError = [...messagesRef.current, errorMessage];
+      messagesRef.current = withError;
+      setMessages(withError);
       
-      // Log error message
       await logMessage('assistant', errorContent);
-      
       toast.error("Terjadi kesalahan saat mengirim pesan");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Process queued messages sequentially
+  const processQueue = async () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+
+    while (messageQueueRef.current.length > 0) {
+      const nextMessage = messageQueueRef.current.shift()!;
+      await processMessage(nextMessage);
+    }
+
+    isProcessingRef.current = false;
+  };
+
+  // Public: enqueue message and process
+  const sendMessage = async (userMessage: string) => {
+    messageQueueRef.current.push(userMessage);
+    await processQueue();
   };
 
   const clearChat = async () => {
