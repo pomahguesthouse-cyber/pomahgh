@@ -322,6 +322,8 @@ export const useChatbot = () => {
 
     // Reset state
     setMessages([]);
+    messagesRef.current = [];
+    messageQueueRef.current = [];
     setConversationContext(DEFAULT_CONTEXT);
     conversationIdRef.current = null;
     sessionIdRef.current = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
