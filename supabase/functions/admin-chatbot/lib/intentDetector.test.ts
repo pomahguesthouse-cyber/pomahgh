@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectIntent, getToolGuidanceHint } from "./intentDetector";
+import { detectIntent, getToolGuidanceHint } from "./intentDetector.ts";
 
 describe("intentDetector", () => {
   it("detects room price intent with high confidence", () => {
