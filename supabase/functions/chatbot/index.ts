@@ -228,9 +228,23 @@ serve(async (req) => {
 
           // Trim large tool results to reduce token growth
           const resultStr = JSON.stringify(toolResult);
-          const trimmedResult = resultStr.length > 2000 
-            ? resultStr.substring(0, 2000) + '..."}'
-            : resultStr;
+          let trimmedResult = resultStr;
+          if (resultStr.length > 5000) {
+            // Smart compression: for arrays, keep first items that fit
+            if (Array.isArray(toolResult)) {
+              const kept: unknown[] = [];
+              let size = 2; // []
+              for (const item of toolResult) {
+                const itemStr = JSON.stringify(item);
+                if (size + itemStr.length + 1 > 4800) break;
+                kept.push(item);
+                size += itemStr.length + 1;
+              }
+              trimmedResult = JSON.stringify({ items: kept, total: toolResult.length, truncated: toolResult.length > kept.length });
+            } else {
+              trimmedResult = resultStr.substring(0, 5000) + '..."}';
+            }
+          }
 
           return {
             role: "tool" as const,

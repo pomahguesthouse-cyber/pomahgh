@@ -182,7 +182,7 @@ function buildBookingFlowRules(): string {
 TOOLS:
 - "ada kamar apa?" → get_all_rooms
 - kamar+tanggal → check_availability
-- data tamu lengkap → create_booking_draft
+- data tamu lengkap (nama+email+HP+jumlah tamu) → create_booking_draft. ⚠️ JANGAN panggil tanpa guest_phone!
 - cek/ubah booking → gunakan data dari KONTEKS jika ada, atau minta PMH-XXXXXX+telepon+email
 - "sudah transfer"/"sudah bayar" → notify_payment_proof
 

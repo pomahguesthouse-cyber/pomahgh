@@ -442,39 +442,13 @@ serve(async (req) => {
 
   const hasValidToken = providedWebhookToken === expectedWebhookToken;
 
-  // If no valid token from headers/query, try to validate by body structure
-  let clonedBodyForAuth: Record<string, unknown> | null = null;
+  // Strict token validation — no fallback to body structure check
   if (!hasValidToken) {
-    try {
-      const clonedReq = req.clone();
-      const ct = req.headers.get("content-type") || "";
-      if (ct.includes("application/json")) {
-        clonedBodyForAuth = await clonedReq.json();
-      } else if (ct.includes("application/x-www-form-urlencoded") || ct.includes("multipart/form-data")) {
-        const fd = await clonedReq.formData();
-        clonedBodyForAuth = Object.fromEntries(fd.entries());
-      } else {
-        const rawText = await clonedReq.text();
-        try { clonedBodyForAuth = JSON.parse(rawText); } catch { clonedBodyForAuth = null; }
-      }
-    } catch {
-      clonedBodyForAuth = null;
-    }
-
-    // Fonnte webhooks always include "sender" (phone number) and "message" or "text"
-    const isFonnteBody = clonedBodyForAuth &&
-      typeof clonedBodyForAuth === "object" &&
-      (typeof clonedBodyForAuth.sender === "string" || typeof clonedBodyForAuth.pengirim === "string") &&
-      (typeof clonedBodyForAuth.message === "string" || typeof clonedBodyForAuth.text === "string" || typeof clonedBodyForAuth.pesan === "string");
-
-    if (!isFonnteBody) {
-      console.warn("Unauthorized webhook request: no valid token and body doesn't match Fonnte structure");
-      return new Response(JSON.stringify({ status: "unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    console.log("Auth: No token provided, but body matches Fonnte webhook structure - allowing");
+    console.warn(`Unauthorized webhook request: invalid or missing token from ${req.headers.get('x-forwarded-for') || 'unknown IP'}`);
+    return new Response(JSON.stringify({ status: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
@@ -493,12 +467,9 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse incoming webhook - reuse body from auth check if available
+    // Parse incoming webhook body
     let body: Record<string, unknown>;
-    if (clonedBodyForAuth) {
-      body = clonedBodyForAuth;
-      console.log("Reusing body from auth validation");
-    } else {
+    {
       const contentType = req.headers.get('content-type') || '';
       console.log("Request content-type:", contentType);
 
@@ -685,16 +656,18 @@ Pastikan ID kamar benar atau persetujuan sudah kadaluarsa (30 menit).`;
             })
             .eq('id', approval.id);
           
-          // Log the adjustment
+          // Detailed audit log with manager identity
           await supabase
             .from('pricing_adjustment_logs')
             .insert({
               room_id: roomId,
               previous_price: approval.old_price,
               new_price: approval.new_price,
-              adjustment_reason: `WhatsApp approved by ${managerInfo?.name || 'Manager'}`,
+              adjustment_reason: `WhatsApp approved by ${managerInfo?.name || 'Manager'} (${phone})`,
               adjustment_type: 'manual_approved'
             });
+          
+          console.log(`✅ AUDIT: Price approval room=${roomId} old=${approval.old_price} new=${approval.new_price} by=${managerInfo?.name} phone=${phone}`);
           
           // Send confirmation
           const confirmMessage = `✅ *PRICE CHANGE APPROVED*
@@ -743,16 +716,18 @@ _Approved by: ${managerInfo?.name || 'Manager'}_`;
             })
             .eq('id', approval.id);
           
-          // Log the rejection
+          // Log the rejection with manager identity
           await supabase
             .from('pricing_adjustment_logs')
             .insert({
               room_id: roomId,
               previous_price: approval.old_price,
               new_price: approval.new_price,
-              adjustment_reason: `WhatsApp rejected: ${reason}`,
+              adjustment_reason: `WhatsApp rejected by ${managerInfo?.name || 'Manager'} (${phone}): ${reason}`,
               adjustment_type: 'manual_rejected'
             });
+          
+          console.log(`❌ AUDIT: Price rejection room=${roomId} by=${managerInfo?.name} phone=${phone} reason=${reason}`);
           
           // Send confirmation
           const rejectMessage = `❌ *PRICE CHANGE REJECTED*

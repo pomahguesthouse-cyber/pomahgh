@@ -50,7 +50,7 @@ export const tools = [
     type: "function",
     function: {
       name: "create_booking_draft",
-      description: "Buat booking. Nomor telepon WAJIB!",
+      description: "Buat booking. WAJIB: guest_phone harus sudah dikasih user sebelum memanggil tool ini! Jika belum ada nomor HP, tanya dulu, JANGAN panggil tool.",
       parameters: {
         type: "object",
         properties: {
