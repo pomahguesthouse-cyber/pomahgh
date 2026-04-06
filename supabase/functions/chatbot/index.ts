@@ -85,7 +85,10 @@ serve(async (req) => {
       tool_calls_used: []
     };
 
-    const callAi = async (chatMessages: ChatCompletionMessage[], retries = 1) => {
+    const MAX_RETRIES = 1; // Hardcoded safety cap
+    const callAi = async (chatMessages: ChatCompletionMessage[], retries = MAX_RETRIES) => {
+      // Safety guard: never exceed MAX_RETRIES  
+      const safeRetries = Math.min(Math.max(0, retries), MAX_RETRIES);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
       
@@ -116,11 +119,11 @@ serve(async (req) => {
           if (response.status === 429) {
             return { rateLimited: true, data: null };
           }
-          // Retry once on 5xx
-          if (response.status >= 500 && retries > 0) {
-            console.warn(`AI gateway ${response.status}, retrying...`);
+          // Retry once on 5xx (capped by MAX_RETRIES)
+          if (response.status >= 500 && safeRetries > 0) {
+            console.warn(`AI gateway ${response.status}, retrying (${safeRetries} left)...`);
             await new Promise(r => setTimeout(r, 2000));
-            return callAi(chatMessages, retries - 1);
+            return callAi(chatMessages, safeRetries - 1);
           }
           const errorText = await response.text();
           console.error("AI gateway error:", response.status, errorText);
@@ -132,9 +135,9 @@ serve(async (req) => {
       } catch (err) {
         clearTimeout(timeout);
         if ((err as Error).name === 'AbortError') {
-          if (retries > 0) {
-            console.warn("AI gateway timeout, retrying...");
-            return callAi(chatMessages, retries - 1);
+          if (safeRetries > 0) {
+            console.warn(`AI gateway timeout, retrying (${safeRetries} left)...`);
+            return callAi(chatMessages, safeRetries - 1);
           }
           throw new Error("AI gateway timeout");
         }

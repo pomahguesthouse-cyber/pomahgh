@@ -24,17 +24,24 @@ import { handleGetPaymentMethods } from "./tools/getPaymentMethods.ts";
 import { handleNotifyLongstayInquiry } from "./tools/notifyLongstayInquiry.ts";
 import { handleNotifyPaymentProof } from "./tools/notifyPaymentProof.ts";
 
-function getRoleFromAuthorization(authHeader: string | null): string | null {
+async function verifyJwtRole(authHeader: string | null): Promise<string | null> {
   if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
 
   const token = authHeader.slice("Bearer ".length).trim();
-  const parts = token.split(".");
-  if (parts.length < 2) return null;
-
+  
+  // Check if this is the service_role key directly (matches env var)
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (token === serviceRoleKey) {
+    return "service_role";
+  }
+  
+  // For other JWTs, verify via Supabase auth
   try {
-    const payloadJson = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
-    const payload = JSON.parse(payloadJson) as { role?: string };
-    return payload.role || null;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return null;
+    return user.role || "authenticated";
   } catch {
     return null;
   }
@@ -56,7 +63,7 @@ serve(async (req) => {
     }
 
     const providedInternalSecret = req.headers.get("x-internal-secret");
-    const tokenRole = getRoleFromAuthorization(req.headers.get("authorization"));
+    const tokenRole = await verifyJwtRole(req.headers.get("authorization"));
     const isTrustedInternal = providedInternalSecret === expectedInternalSecret;
     const isPrivilegedJwt = tokenRole === "service_role" || tokenRole === "authenticated";
 

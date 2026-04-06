@@ -49,6 +49,9 @@ _Segera cek dan konfirmasi pembayaran ini._`;
 
   for (const manager of managers) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      
       const response = await fetch("https://api.fonnte.com/send", {
         method: "POST",
         headers: {
@@ -59,13 +62,16 @@ _Segera cek dan konfirmasi pembayaran ini._`;
           target: manager.phone,
           message: notifMessage,
         }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeout);
       const result = await response.json();
       console.log(`Payment notification sent to ${manager.name} (${manager.phone}):`, JSON.stringify(result));
       results.push({ phone: manager.phone, success: !!result.status });
     } catch (err) {
-      console.error(`Failed to notify ${manager.name}:`, err);
+      const errMsg = (err as Error).name === 'AbortError' ? 'Fonnte API timeout (10s)' : (err as Error).message;
+      console.error(`Failed to notify ${manager.name}: ${errMsg}`);
       results.push({ phone: manager.phone, success: false });
     }
   }

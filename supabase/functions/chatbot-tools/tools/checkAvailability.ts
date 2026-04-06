@@ -48,13 +48,17 @@ export async function handleCheckAvailability(
 
   const availableRooms = (rooms || []).map(room => {
     const roomNumbers: string[] = (room.room_numbers as string[] | null) || [];
-    const totalUnits = roomNumbers.length || room.allotment || 0;
+    // Fallback: if no room_numbers defined, generate from allotment count
+    const effectiveRoomNumbers = roomNumbers.length > 0 
+      ? roomNumbers 
+      : Array.from({ length: room.allotment || 0 }, (_, i) => `${room.name}-${i + 1}`);
+    const totalUnits = effectiveRoomNumbers.length;
     const unavailableRoomNumbers = new Set<string>();
 
     (unavailableDates || []).forEach((ud: { room_id: string; room_number: string | null }) => {
       if (ud.room_id === room.id) {
         if (!ud.room_number) {
-          roomNumbers.forEach(rn => unavailableRoomNumbers.add(rn));
+          effectiveRoomNumbers.forEach(rn => unavailableRoomNumbers.add(rn));
         } else {
           unavailableRoomNumbers.add(ud.room_number);
         }

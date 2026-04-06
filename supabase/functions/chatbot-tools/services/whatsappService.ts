@@ -111,18 +111,24 @@ export async function sendWhatsApp(
       return;
     }
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
     await fetch(`${supabaseUrl}/functions/v1/send-whatsapp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${anonKey}`,
       },
-      body: JSON.stringify({ phone, message, type })
+      body: JSON.stringify({ phone, message, type }),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeout);
     console.log(`✅ WhatsApp sent to ${type}: ${phone}`);
   } catch (err) {
-    console.error(`Failed to send ${type} WhatsApp:`, err);
+    const errMsg = (err as Error).name === 'AbortError' ? 'WhatsApp send timeout (10s)' : (err as Error).message;
+    console.error(`Failed to send ${type} WhatsApp: ${errMsg}`);
   }
 }
 

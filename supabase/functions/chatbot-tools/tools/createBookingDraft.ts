@@ -92,6 +92,7 @@ export async function handleCreateBookingDraft(
   console.log("Matched rooms:", matchedRooms);
   console.log("Total price:", totalPrice);
 
+  // Idempotency: match by email+phone+dates+source to prevent duplicate bookings from webhook retries
   const { data: existingBooking } = await supabase
     .from("bookings")
     .select("id, booking_code, check_in, check_out, room_id, total_price")
@@ -100,6 +101,8 @@ export async function handleCreateBookingDraft(
     .eq("status", "pending")
     .eq("booking_source", "other")
     .eq("other_source", "Chatbot AI")
+    .eq("check_in", check_in)
+    .eq("check_out", check_out)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -197,6 +200,31 @@ export async function handleCreateBookingDraft(
     
     if (bookingRoomsError) {
       console.error("Failed to insert booking_rooms:", bookingRoomsError);
+    }
+
+    // Optimistic concurrency check: re-verify availability after insert
+    // to prevent race condition where two concurrent requests book the same room
+    if (!isUpdate) {
+      for (const room of matchedRooms) {
+        const roomNumbers: string[] = room.availableNumbers;
+        const { available: postCheckAvailable } = await getAvailableRoomNumbers(supabase, {
+          roomId: room.roomId,
+          roomNumbers,
+          checkIn: check_in,
+          checkOut: check_out,
+          excludeBookingId: booking.id
+        });
+        
+        // If another booking took the same room numbers between our check and insert
+        const conflictingNumbers = roomNumbers.filter(rn => !postCheckAvailable.includes(rn));
+        if (conflictingNumbers.length > 0) {
+          console.error(`⚠️ Race condition detected for room ${room.roomName}: ${conflictingNumbers.join(', ')} no longer available`);
+          // Rollback: delete booking and booking_rooms
+          await supabase.from("booking_rooms").delete().eq("booking_id", booking.id);
+          await supabase.from("bookings").delete().eq("id", booking.id);
+          throw new Error(`Maaf, kamar ${room.roomName} baru saja dipesan oleh tamu lain. Silakan cek ketersediaan ulang.`);
+        }
+      }
     }
   }
 
