@@ -1,58 +1,56 @@
 
 
-# Perbaikan Performa Analisa Log WhatsApp - Guest Chatbot
+# Plan: Ubah Gaya Guest Chatbot Menjadi Natural WhatsApp-Style
 
-## Temuan Masalah
+## Masalah Saat Ini
+System prompt di `promptBuilder.ts` terlalu panjang, formal, dan verbose — menghasilkan respons yang terasa seperti robot/skrip, bukan admin WhatsApp sungguhan.
 
-Dari analisis edge function logs dan database schema, ditemukan **2 bug kritis** yang menyebabkan analisa log **gagal total**:
+## Perubahan
 
-### Bug 1: Kolom `auto_generated` tidak ada
-Mode `analyze_logs` (baris 464) menyisipkan field `auto_generated: true` ke tabel `chatbot_training_examples`, tapi kolom ini **tidak ada** di tabel. Error ini muncul berulang di logs.
+### 1. Rewrite `buildPersonaSection()` — Gaya Natural WhatsApp
+Ganti instruksi kepribadian yang panjang dengan aturan singkat:
+- Single message only (gabungkan pesan pendek user jadi satu pemahaman)
+- Max 2-3 kalimat per respons
+- Match user tone (pendek → pendek, panjang → panjang)
+- Max 1 emoji per pesan
+- Handle typo secara natural
+- Jangan tanya ulang info yang sudah disebutkan
+- Sound like real human, bukan scripted bot
 
-### Bug 2: Kolom `answer` tidak ada  
-Mode `generate_for_category` (baris 249) menyisipkan field `answer` padahal kolom sebenarnya bernama `ideal_answer`. Juga menyisipkan field `tags` yang tidak ada di tabel.
+### 2. Rewrite `buildBookingFlowRules()` — Lebih Ringkas
+Potong instruksi booking flow yang verbose, pertahankan logika tool-calling tapi dengan format lebih compact.
 
-### Dampak
-- **210 percakapan WhatsApp** belum teranalisis (dari 280 total)
-- Hanya **10 training examples** berhasil tersimpan (kemungkinan dari sebelum bug muncul)
-- Setiap kali analisis dijalankan, semua insert gagal → data training tidak bertambah
+### 3. Update `buildSystemPrompt()` — Kurangi Boilerplate
+- Hapus emoji headers berlebihan (🎭💬🔒📅📍🛏️🎁✨🗺️🎯❓⚡📚)
+- Gabungkan section yang redundan
+- Tambahkan behavior examples dari user ke prompt
+- Kurangi total panjang prompt ~40-50%
 
----
+### 4. Update default settings
+Di `lib/types.ts`, ubah default:
+- `emoji_usage`: `'moderate'` → `'minimal'`
+- `communication_style`: `'santai-profesional'` → tetap, tapi prompt yang berubah
 
-## Rencana Perbaikan
+### File yang Diubah
+| File | Aksi |
+|------|------|
+| `supabase/functions/chatbot/ai/promptBuilder.ts` | Rewrite major — gaya natural WhatsApp |
+| `supabase/functions/chatbot/lib/types.ts` | Update default emoji_usage |
+| Deploy `chatbot` edge function | |
 
-### 1. Tambah kolom `auto_generated` dan `source` yang hilang
-Migrasi database untuk menambahkan kolom `auto_generated` (boolean, default false) ke tabel `chatbot_training_examples`.
-
-### 2. Fix mode `generate_for_category` 
-- Ganti `answer` → `ideal_answer`
-- Hapus field `tags` (kolom tidak ada, gunakan `response_tags` jika perlu)
-
-### 3. Fix mode `analyze_logs`
-Pastikan semua field yang di-insert sesuai dengan schema tabel (sudah benar menggunakan `ideal_answer`, tapi perlu memastikan `auto_generated` tersedia setelah migrasi).
-
-### 4. Deploy ulang edge function
-
----
-
-## Detail Teknis
-
-**File yang diubah:**
-- `supabase/functions/ai-training-generator/index.ts` — fix field mapping di 2 tempat
-- Database migration — tambah kolom `auto_generated`
-
-**Perubahan kode (baris 245-255):**
-```typescript
-// BEFORE (broken)
-{ question, answer, category, tags, is_active: false, auto_generated: true, display_order }
-
-// AFTER (fixed)
-{ question, ideal_answer: answer, category, is_active: false, source: 'ai_generated', display_order }
+### Contoh Output Prompt Baru (ringkas)
 ```
+Kamu Rani, admin WhatsApp Pomah Guesthouse.
+Balas seperti admin hotel sungguhan yang chat di WA — singkat, natural, friendly.
 
-**Perubahan kode (baris 456-466):**
-```typescript
-// analyze_logs mode - hapus auto_generated jika kolom tidak ditambahkan
-// atau tetap gunakan setelah migrasi menambahkan kolom
+ATURAN:
+- Selalu 1 pesan, max 2-3 kalimat
+- Max 1 emoji
+- Ikuti nada user (pendek→pendek)
+- Ingat konteks (nama, tanggal, kamar) — jangan tanya ulang
+- Handle typo (dlx→deluxe, bsk→besok, bs→bisa)
+- Jawab dulu, follow-up singkat optional
+
+[hotel info, rooms, tools — tetap ada tapi lebih compact]
 ```
 
