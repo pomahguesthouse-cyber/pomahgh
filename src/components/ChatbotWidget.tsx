@@ -39,7 +39,18 @@ const ChatbotWidget = () => {
   const position = settings.widget_position === "bottom-left" ? "left-4" : "right-4";
   return <>
       {/* Chat Button */}
-      {!isOpen}
+      {!isOpen && (
+        <Button
+          onClick={() => setIsOpen(true)}
+          className={cn(
+            "fixed bottom-4 z-50 rounded-full w-14 h-14 shadow-lg hover:shadow-xl transition-all",
+            position
+          )}
+          style={{ backgroundColor: settings.primary_color ?? undefined }}
+        >
+          <MessageCircle className="h-6 w-6 text-white" />
+        </Button>
+      )}
 
       {/* Chat Window */}
       {isOpen && <Card className={cn("fixed bottom-4 w-[90vw] sm:w-80 h-[480px] max-w-sm shadow-2xl z-50 flex flex-col", position)}>
