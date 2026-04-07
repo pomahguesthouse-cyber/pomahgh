@@ -126,7 +126,7 @@ export const DEFAULT_CHATBOT_SETTINGS: ChatbotSettings = {
   persona_role: 'Customer Service',
   persona_traits: ['ramah', 'profesional', 'helpful'],
   communication_style: 'santai-profesional',
-  emoji_usage: 'moderate',
+  emoji_usage: 'minimal',
   language_formality: 'semi-formal',
   greeting_message: "Halo! 👋 Ada yang bisa saya bantu?"
 };
