@@ -3828,6 +3828,8 @@ export type Database = {
           is_blocked: boolean | null
           is_takeover: boolean | null
           last_message_at: string | null
+          pending_messages: string[] | null
+          pending_since: string | null
           phone_number: string
           session_type: string | null
           takeover_at: string | null
@@ -3848,6 +3850,8 @@ export type Database = {
           is_blocked?: boolean | null
           is_takeover?: boolean | null
           last_message_at?: string | null
+          pending_messages?: string[] | null
+          pending_since?: string | null
           phone_number: string
           session_type?: string | null
           takeover_at?: string | null
@@ -3868,6 +3872,8 @@ export type Database = {
           is_blocked?: boolean | null
           is_takeover?: boolean | null
           last_message_at?: string | null
+          pending_messages?: string[] | null
+          pending_since?: string | null
           phone_number?: string
           session_type?: string | null
           takeover_at?: string | null
