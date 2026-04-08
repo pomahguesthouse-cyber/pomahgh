@@ -11,6 +11,94 @@ const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW = 60 * 1000;
 
+// Message batching: wait for user to finish typing before processing
+const MESSAGE_BATCH_WAIT_MS = 3000; // Initial wait
+const MESSAGE_BATCH_FOLLOWUP_MS = 2000; // Follow-up wait if new messages arrived
+const MESSAGE_BATCH_MAX_WAIT_MS = 10000; // Max total wait time
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Add message to pending buffer and attempt to become the processor.
+ * Returns the combined messages if this invocation should process, or null if another will.
+ */
+async function batchMessages(
+  supabase: SupabaseClient,
+  phone: string,
+  newMessage: string
+): Promise<string[] | null> {
+  // Append message to pending buffer atomically
+  await supabase.rpc('append_pending_message', { p_phone: phone, p_message: newMessage });
+
+  // Wait for more messages
+  const startTime = Date.now();
+  let lastCount = 0;
+
+  while (Date.now() - startTime < MESSAGE_BATCH_MAX_WAIT_MS) {
+    const waitMs = lastCount === 0 ? MESSAGE_BATCH_WAIT_MS : MESSAGE_BATCH_FOLLOWUP_MS;
+    await sleep(waitMs);
+
+    // Check current pending messages
+    const { data: session } = await supabase
+      .from('whatsapp_sessions')
+      .select('pending_messages, pending_since')
+      .eq('phone_number', phone)
+      .single();
+
+    const currentMessages = session?.pending_messages || [];
+
+    if (currentMessages.length === 0) {
+      // Another invocation already processed these
+      console.log(`📦 Batch already processed by another invocation for ${phone}`);
+      return null;
+    }
+
+    if (currentMessages.length === lastCount) {
+      // No new messages arrived during wait — we should process
+      // Atomically claim the batch by clearing pending_messages
+      const { data: claimed } = await supabase
+        .from('whatsapp_sessions')
+        .update({ pending_messages: [], pending_since: null })
+        .eq('phone_number', phone)
+        .eq('pending_since', session?.pending_since) // Optimistic lock
+        .select('pending_messages')
+        .single();
+
+      if (!claimed) {
+        // Another invocation claimed it
+        console.log(`📦 Batch claimed by another invocation for ${phone}`);
+        return null;
+      }
+
+      console.log(`📦 Batch collected ${currentMessages.length} messages for ${phone}: ${JSON.stringify(currentMessages)}`);
+      return currentMessages;
+    }
+
+    // New messages arrived, loop to wait more
+    lastCount = currentMessages.length;
+    console.log(`📦 More messages arrived (${currentMessages.length}), waiting more for ${phone}`);
+  }
+
+  // Max wait exceeded — process whatever we have
+  const { data: session } = await supabase
+    .from('whatsapp_sessions')
+    .select('pending_messages, pending_since')
+    .eq('phone_number', phone)
+    .single();
+
+  if (!session?.pending_messages?.length) return null;
+
+  await supabase
+    .from('whatsapp_sessions')
+    .update({ pending_messages: [], pending_since: null })
+    .eq('phone_number', phone);
+
+  console.log(`📦 Max wait exceeded, processing ${session.pending_messages.length} messages for ${phone}`);
+  return session.pending_messages;
+}
+
 function checkRateLimit(phone: string): boolean {
   const now = Date.now();
 
@@ -1115,8 +1203,24 @@ Silakan coba lagi atau hubungi technical support.`;
         session_type: 'guest',
       }, { onConflict: 'phone_number' });
 
-    // Log user message (normalized)
-    await logMessage(supabase, conversationId, 'user', normalizedMessage);
+    // === MESSAGE BATCHING ===
+    // Wait for user to finish typing multiple messages before processing
+    const batchedMessages = await batchMessages(supabase, phone, normalizedMessage);
+    
+    if (batchedMessages === null) {
+      // Another invocation will process this batch
+      console.log(`📦 This invocation yielded to batch processor for ${phone}`);
+      return new Response(JSON.stringify({ status: "batched", phone }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Combine batched messages into one
+    const combinedMessage = batchedMessages.join('\n');
+    console.log(`📦 Processing combined message for ${phone}: "${combinedMessage}"`);
+
+    // Log combined user message
+    await logMessage(supabase, conversationId, 'user', combinedMessage);
 
     // Get conversation history - get 20 NEWEST messages (descending), then reverse for chronological order
     const { data: history } = await supabase
@@ -1143,12 +1247,11 @@ Silakan coba lagi atau hubungi technical support.`;
     
     // If history is empty or last message doesn't match current, add it
     const lastMsg = messages[messages.length - 1];
-    if (!lastMsg || lastMsg.content !== normalizedMessage) {
-      messages.push({ role: 'user' as const, content: normalizedMessage });
+    if (!lastMsg || lastMsg.content !== combinedMessage) {
+      messages.push({ role: 'user' as const, content: combinedMessage });
     }
     
     console.log(`Messages array: ${messages.length} items, last user msg: "${messages.filter(m => m.role === 'user').pop()?.content || 'none'}"`);
-
     // === SIMPLE AI FLOW (like web chatbot) ===
     // Extract context from conversation history for booking continuation
     const extractedContext = extractConversationContext(messages) || {};

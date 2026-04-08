@@ -3828,6 +3828,8 @@ export type Database = {
           is_blocked: boolean | null
           is_takeover: boolean | null
           last_message_at: string | null
+          pending_messages: string[] | null
+          pending_since: string | null
           phone_number: string
           session_type: string | null
           takeover_at: string | null
@@ -3848,6 +3850,8 @@ export type Database = {
           is_blocked?: boolean | null
           is_takeover?: boolean | null
           last_message_at?: string | null
+          pending_messages?: string[] | null
+          pending_since?: string | null
           phone_number: string
           session_type?: string | null
           takeover_at?: string | null
@@ -3868,6 +3872,8 @@ export type Database = {
           is_blocked?: boolean | null
           is_takeover?: boolean | null
           last_message_at?: string | null
+          pending_messages?: string[] | null
+          pending_since?: string | null
           phone_number?: string
           session_type?: string | null
           takeover_at?: string | null
@@ -3922,6 +3928,10 @@ export type Database = {
       allocate_room_number: {
         Args: { p_check_in: string; p_check_out: string; p_room_id: string }
         Returns: string
+      }
+      append_pending_message: {
+        Args: { p_message: string; p_phone: string }
+        Returns: undefined
       }
       auto_cancel_expired_bookings: { Args: never; Returns: number }
       calculate_real_time_occupancy: {
