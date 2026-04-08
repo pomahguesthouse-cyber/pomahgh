@@ -3929,6 +3929,10 @@ export type Database = {
         Args: { p_check_in: string; p_check_out: string; p_room_id: string }
         Returns: string
       }
+      append_pending_message: {
+        Args: { p_message: string; p_phone: string }
+        Returns: undefined
+      }
       auto_cancel_expired_bookings: { Args: never; Returns: number }
       calculate_real_time_occupancy: {
         Args: { p_date?: string; p_room_id: string }
