@@ -1203,8 +1203,24 @@ Silakan coba lagi atau hubungi technical support.`;
         session_type: 'guest',
       }, { onConflict: 'phone_number' });
 
-    // Log user message (normalized)
-    await logMessage(supabase, conversationId, 'user', normalizedMessage);
+    // === MESSAGE BATCHING ===
+    // Wait for user to finish typing multiple messages before processing
+    const batchedMessages = await batchMessages(supabase, phone, normalizedMessage);
+    
+    if (batchedMessages === null) {
+      // Another invocation will process this batch
+      console.log(`📦 This invocation yielded to batch processor for ${phone}`);
+      return new Response(JSON.stringify({ status: "batched", phone }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Combine batched messages into one
+    const combinedMessage = batchedMessages.join('\n');
+    console.log(`📦 Processing combined message for ${phone}: "${combinedMessage}"`);
+
+    // Log combined user message
+    await logMessage(supabase, conversationId, 'user', combinedMessage);
 
     // Get conversation history - get 20 NEWEST messages (descending), then reverse for chronological order
     const { data: history } = await supabase
