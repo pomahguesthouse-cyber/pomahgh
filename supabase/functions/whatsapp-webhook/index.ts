@@ -1247,12 +1247,11 @@ Silakan coba lagi atau hubungi technical support.`;
     
     // If history is empty or last message doesn't match current, add it
     const lastMsg = messages[messages.length - 1];
-    if (!lastMsg || lastMsg.content !== normalizedMessage) {
-      messages.push({ role: 'user' as const, content: normalizedMessage });
+    if (!lastMsg || lastMsg.content !== combinedMessage) {
+      messages.push({ role: 'user' as const, content: combinedMessage });
     }
     
     console.log(`Messages array: ${messages.length} items, last user msg: "${messages.filter(m => m.role === 'user').pop()?.content || 'none'}"`);
-
     // === SIMPLE AI FLOW (like web chatbot) ===
     // Extract context from conversation history for booking continuation
     const extractedContext = extractConversationContext(messages) || {};
