@@ -442,13 +442,27 @@ serve(async (req) => {
 
   const hasValidToken = providedWebhookToken === expectedWebhookToken;
 
-  // Strict token validation — no fallback to body structure check
+  // If no valid token, try fallback: validate by inspecting body structure for Fonnte fields
   if (!hasValidToken) {
-    console.warn(`Unauthorized webhook request: invalid or missing token from ${req.headers.get('x-forwarded-for') || 'unknown IP'}`);
-    return new Response(JSON.stringify({ status: "unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    let bodyText = "";
+    try {
+      bodyText = await req.clone().text();
+    } catch { /* ignore */ }
+
+    // Check if body contains Fonnte-characteristic fields
+    const hasFonnteStructure = bodyText && (
+      (bodyText.includes('"sender"') || bodyText.includes('"pengirim"')) &&
+      (bodyText.includes('"message"') || bodyText.includes('"text"') || bodyText.includes('"pesan"'))
+    );
+
+    if (!hasFonnteStructure) {
+      console.warn(`Unauthorized webhook request: invalid or missing token from ${req.headers.get('x-forwarded-for') || 'unknown IP'}`);
+      return new Response(JSON.stringify({ status: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.log("Token not found, but request has valid Fonnte body structure — allowing");
   }
 
   try {
