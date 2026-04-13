@@ -1389,6 +1389,9 @@ Silakan coba lagi atau hubungi technical support.`;
 
     console.log(`AI Response for ${phone}: "${aiResponse.substring(0, 100)}..."`);
 
+    // === SENTIMENT DETECTION: Alert super admin if guest is upset ===
+    detectAndAlertNegativeSentiment(combinedMessage, phone, session?.guest_name, managerNumbers, FONNTE_API_KEY, conversationId);
+
     // Log AI response
     await logMessage(supabase, conversationId, 'assistant', aiResponse);
 
