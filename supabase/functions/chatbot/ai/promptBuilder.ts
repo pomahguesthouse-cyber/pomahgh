@@ -173,7 +173,7 @@ export function buildSystemPrompt(config: PromptConfig): string {
   const { contextString, explicitToolInstruction } = buildContextString(conversationContext);
   const roomsInfo = buildRoomsInfo(hotelData);
   const addonsInfo = buildAddonsInfo(hotelData);
-  const bookingFlowRules = buildBookingFlowRules();
+  const bookingFlowRules = buildCombinedFlowRules();
 
   // Relevant training examples
   const relevantExamples = lastUserMessage 
