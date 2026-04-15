@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { BookOpen, Image, FileText, Link, MapPin, Video } from 'lucide-react';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
 
 interface PromptStudioProps {
@@ -10,6 +12,15 @@ interface PromptStudioProps {
   onSave: (configId: string, data: Record<string, unknown>) => void;
   isSaving?: boolean;
 }
+
+const KB_TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
+  doc: { label: 'DOC', icon: <FileText className="h-3 w-3" /> },
+  txt: { label: 'TXT', icon: <FileText className="h-3 w-3" /> },
+  pdf: { label: 'PDF', icon: <FileText className="h-3 w-3" /> },
+  link: { label: 'Link', icon: <Link className="h-3 w-3" /> },
+  maps: { label: 'Maps', icon: <MapPin className="h-3 w-3" /> },
+  media: { label: 'Media', icon: <Image className="h-3 w-3" /> },
+};
 
 export const PromptStudio = ({ agents, onSave, isSaving }: PromptStudioProps) => {
   const [selectedId, setSelectedId] = useState(agents[0]?.id);
@@ -41,7 +52,7 @@ export const PromptStudio = ({ agents, onSave, isSaving }: PromptStudioProps) =>
   };
 
   return (
-    <div className="flex border rounded-lg bg-card overflow-hidden h-[500px]">
+    <div className="flex border rounded-lg bg-card overflow-hidden h-[560px]">
       <div className="w-52 border-r overflow-y-auto">
         <div className="p-3 border-b">
           <h3 className="text-xs font-semibold text-foreground">Agents</h3>
@@ -52,18 +63,60 @@ export const PromptStudio = ({ agents, onSave, isSaving }: PromptStudioProps) =>
             onClick={() => setSelectedId(a.id)}
             className={`w-full text-left px-3 py-2.5 text-xs border-b hover:bg-muted/50 transition-colors ${selectedId === a.id ? 'bg-muted font-medium' : ''}`}
           >
-            <span className="mr-2">{a.icon}</span>
-            {a.name}
+            <div className="flex items-center gap-2">
+              <span>{a.icon}</span>
+              <span className="truncate">{a.name}</span>
+            </div>
+            <div className="flex gap-1 mt-1 ml-5">
+              {a.knowledgeBaseEnabled && (
+                <BookOpen className="h-3 w-3 text-primary opacity-60" />
+              )}
+              {a.canSendMedia && (
+                <Video className="h-3 w-3 text-primary opacity-60" />
+              )}
+            </div>
           </button>
         ))}
       </div>
       <div className="flex-1 p-4 space-y-4 overflow-y-auto">
         {selected && (
           <>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">{selected.icon}</span>
-              <h3 className="text-sm font-semibold text-foreground">{selected.name}</h3>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{selected.icon}</span>
+                <h3 className="text-sm font-semibold text-foreground">{selected.name}</h3>
+              </div>
+              <div className="flex gap-1.5 flex-wrap">
+                {selected.knowledgeBaseEnabled && (
+                  <Badge variant="secondary" className="text-[10px] gap-1">
+                    <BookOpen className="h-3 w-3" /> Knowledge Base
+                  </Badge>
+                )}
+                {selected.canSendMedia && (
+                  <Badge variant="secondary" className="text-[10px] gap-1">
+                    <Image className="h-3 w-3" /> Kirim Media
+                  </Badge>
+                )}
+              </div>
             </div>
+
+            {/* KB Types */}
+            {selected.knowledgeBaseEnabled && selected.knowledgeBaseTypes && selected.knowledgeBaseTypes.length > 0 && (
+              <div className="bg-muted/50 rounded-md p-2.5 space-y-1.5">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Sumber Knowledge Base</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {selected.knowledgeBaseTypes.map(type => {
+                    const info = KB_TYPE_LABELS[type];
+                    return (
+                      <Badge key={type} variant="outline" className="text-[10px] gap-1 py-0.5">
+                        {info?.icon} {info?.label || type}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-xs">System Prompt</Label>
               <Textarea
@@ -84,7 +137,7 @@ export const PromptStudio = ({ agents, onSave, isSaving }: PromptStudioProps) =>
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" size="sm" className="text-xs" onClick={handleReset}>Reset</Button>
-              <Button size="sm" className="text-xs bg-emerald-600 hover:bg-emerald-700" onClick={handleSave} disabled={isSaving}>
+              <Button size="sm" className="text-xs" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? 'Menyimpan...' : 'Simpan'}
               </Button>
             </div>
