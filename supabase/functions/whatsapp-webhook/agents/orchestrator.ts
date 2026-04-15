@@ -3,6 +3,7 @@ import type { SupabaseClient, WhatsAppSession, ManagerInfo, EnvConfig } from '..
 import { corsHeaders } from '../types.ts';
 import { normalizePhone } from '../utils/phone.ts';
 import { normalizeIndonesianMessage } from '../utils/slang.ts';
+import type { TraceContext } from '../../_shared/traceContext.ts';
 import { checkRateLimit } from '../middleware/rateLimiter.ts';
 import { getCachedHotelSettings, ensureConversation, updateSession } from '../services/session.ts';
 import { logMessage } from '../services/conversation.ts';
@@ -18,6 +19,7 @@ import { handleGuestBookingFlow } from './booking.ts';
 export async function orchestrate(
   req: Request,
   env: EnvConfig,
+  trace?: TraceContext,
 ): Promise<Response> {
   const supabase = createClient(env.supabaseUrl, env.supabaseServiceKey);
 
@@ -38,7 +40,7 @@ export async function orchestrate(
 
   const phone = normalizePhone(String(sender));
   const normalizedMessage = normalizeIndonesianMessage(String(message));
-  console.log(`Processing message from ${phone}: "${message}"`);
+  trace?.info('Processing message', { phone, message_length: String(message).length });
 
   // Rate limit
   if (!checkRateLimit(phone)) {
@@ -135,7 +137,7 @@ export async function orchestrate(
   // === BOOKING AGENT: AI conversation ===
   return handleGuestBookingFlow(
     supabase, session as WhatsAppSession, phone, normalizedMessage, conversationId!,
-    personaName, managerNumbers, env
+    personaName, managerNumbers, env, trace
   );
 }
 

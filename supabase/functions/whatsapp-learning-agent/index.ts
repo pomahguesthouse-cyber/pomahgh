@@ -65,15 +65,21 @@ Deno.serve(async (req: Request) => {
   }
 
   // --- Authentication ---
+  // Support both user JWT and CRON_SECRET for automated pipeline
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
   const token = authHeader.slice(7);
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !user) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
+  const CRON_SECRET = Deno.env.get("CRON_SECRET");
+  const isCronAuth = CRON_SECRET && token === CRON_SECRET;
+
+  if (!isCronAuth) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
   }
 
   try {
@@ -105,10 +111,13 @@ Deno.serve(async (req: Request) => {
         }
         return await analyzeSingleConversation(supabase, LOVABLE_API_KEY, hotelContext, conversation_id);
 
+      case "auto_pipeline":
+        return await runAutoPipeline(supabase, LOVABLE_API_KEY, hotelContext);
+
       default:
         return jsonResponse({
           error: `Mode tidak dikenal: '${mode}'`,
-          available_modes: ["deep_analyze", "detect_faq", "detect_slang", "promote_faq", "learning_report", "analyze_single"]
+          available_modes: ["deep_analyze", "detect_faq", "detect_slang", "promote_faq", "learning_report", "analyze_single", "auto_pipeline"]
         }, 400);
     }
   } catch (err) {
@@ -1040,5 +1049,89 @@ function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+// ============================================================
+// Mode: auto_pipeline
+// Automated learning pipeline — runs all stages sequentially.
+// Designed to be triggered by pg_cron or external scheduler.
+// Stages: deep_analyze → detect_faq → detect_slang → promote_faq
+// ============================================================
+async function runAutoPipeline(
+  supabase: SupabaseClient,
+  apiKey: string,
+  hotelContext: string,
+): Promise<Response> {
+  const pipelineId = crypto.randomUUID();
+  const startTime = Date.now();
+  const stageResults: Array<{ stage: string; success: boolean; duration_ms: number; summary: unknown }> = [];
+
+  console.log(`[auto_pipeline:${pipelineId}] Starting automated learning pipeline`);
+
+  const stages = [
+    { name: "deep_analyze", fn: () => deepAnalyze(supabase, apiKey, hotelContext, 20) },
+    { name: "detect_faq", fn: () => detectFAQPatterns(supabase, apiKey, hotelContext) },
+    { name: "detect_slang", fn: () => detectNewSlang(supabase, apiKey) },
+    { name: "promote_faq", fn: () => promoteFAQToTraining(supabase, apiKey, hotelContext) },
+  ];
+
+  for (const stage of stages) {
+    const stageStart = Date.now();
+    try {
+      console.log(`[auto_pipeline:${pipelineId}] Running stage: ${stage.name}`);
+      const response = await stage.fn();
+      const body = await response.json();
+      const duration_ms = Date.now() - stageStart;
+
+      stageResults.push({
+        stage: stage.name,
+        success: response.status === 200,
+        duration_ms,
+        summary: body,
+      });
+
+      console.log(`[auto_pipeline:${pipelineId}] Stage ${stage.name} completed in ${duration_ms}ms`);
+    } catch (err) {
+      const duration_ms = Date.now() - stageStart;
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[auto_pipeline:${pipelineId}] Stage ${stage.name} failed:`, message);
+
+      stageResults.push({
+        stage: stage.name,
+        success: false,
+        duration_ms,
+        summary: { error: message },
+      });
+      // Continue to next stage even if one fails
+    }
+  }
+
+  const totalDuration = Date.now() - startTime;
+  const allSucceeded = stageResults.every(s => s.success);
+
+  // Log pipeline run to learning_metrics
+  try {
+    const analyzeStage = stageResults.find(s => s.stage === "deep_analyze");
+    const promoteStage = stageResults.find(s => s.stage === "promote_faq");
+    await supabase.from("whatsapp_learning_metrics").insert({
+      metric_date: new Date().toISOString().split("T")[0],
+      conversations_analyzed: (analyzeStage?.summary as Record<string, unknown>)?.analyzed ?? 0,
+      training_examples_created: (promoteStage?.summary as Record<string, unknown>)?.promoted ?? 0,
+      pipeline_run_id: pipelineId,
+      pipeline_duration_ms: totalDuration,
+      pipeline_success: allSucceeded,
+    });
+  } catch {
+    console.warn(`[auto_pipeline:${pipelineId}] Failed to log metrics`);
+  }
+
+  console.log(`[auto_pipeline:${pipelineId}] Pipeline completed in ${totalDuration}ms (${allSucceeded ? 'all OK' : 'some failed'})`);
+
+  return jsonResponse({
+    success: allSucceeded,
+    pipeline_id: pipelineId,
+    total_duration_ms: totalDuration,
+    stages: stageResults,
   });
 }

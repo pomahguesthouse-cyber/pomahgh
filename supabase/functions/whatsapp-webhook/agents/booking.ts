@@ -6,6 +6,7 @@ import { extractConversationContext, getLatestBookingContextByPhone } from '../s
 import { batchMessages } from '../middleware/messageBatcher.ts';
 import { detectAndAlertNegativeSentiment } from '../middleware/sentiment.ts';
 import { corsHeaders, type ManagerInfo, type WhatsAppSession } from '../types.ts';
+import type { TraceContext } from '../../_shared/traceContext.ts';
 
 /** Execute tool calls in parallel */
 async function executeToolCalls(
@@ -54,6 +55,7 @@ export async function handleGuestBookingFlow(
   personaName: string,
   managerNumbers: ManagerInfo[],
   env: EnvConfig,
+  trace?: TraceContext,
 ): Promise<Response> {
   // Update session
   await supabase.from('whatsapp_sessions').upsert({
@@ -86,7 +88,7 @@ export async function handleGuestBookingFlow(
   const extractedContext = extractConversationContext(messages) || {};
   const bookingContext = await getLatestBookingContextByPhone(supabase, phone);
   const conversationContext = { ...(bookingContext || {}), ...extractedContext };
-  console.log("Calling chatbot function with context:", JSON.stringify(conversationContext));
+  trace?.info('Calling chatbot', { conversationId, contextKeys: Object.keys(conversationContext) });
 
   // Call chatbot
   const chatbotResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
@@ -94,6 +96,7 @@ export async function handleGuestBookingFlow(
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${env.supabaseServiceKey}`,
+      ...(trace?.headers() || {}),
     },
     body: JSON.stringify({
       messages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext,

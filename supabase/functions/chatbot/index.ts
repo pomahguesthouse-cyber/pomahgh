@@ -6,6 +6,8 @@ import { loadChatbotSettings } from "./services/settingsLoader.ts";
 import { loadHotelData } from "./services/dataLoader.ts";
 import { buildSystemPrompt } from "./ai/promptBuilder.ts";
 import { tools } from "./ai/tools.ts";
+import { createTrace } from "../_shared/traceContext.ts";
+import { createHallucinationGuard } from "../_shared/hallucinationGuard.ts";
 
 interface ToolCall {
   id: string;
@@ -32,6 +34,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const trace = createTrace(req, 'chatbot');
 
   try {
     const { messages, chatbotSettings: providedSettings, conversationContext } = await req.json();
@@ -64,7 +68,17 @@ serve(async (req) => {
     // This ensures consistent personality and knowledge-aware responses.
 
     // Load hotel data (parallel fetch for efficiency)
-    const hotelData = await loadHotelData(supabase);
+    const hotelData = await trace.span('loadHotelData', () => loadHotelData(supabase));
+
+    // Initialize hallucination guard with hotel facts
+    const hallucinationGuard = createHallucinationGuard({
+      roomNames: hotelData.rooms?.map((r: { name: string }) => r.name) || [],
+      roomPrices: hotelData.rooms?.map((r: { price_per_night: number }) => r.price_per_night) || [],
+      knownBookingCodes: conversationContext?.last_booking_code ? [conversationContext.last_booking_code] : [],
+    });
+
+    // Collect tool results for hallucination checking
+    const allToolResults: string[] = [];
 
     // Build optimized system prompt
     const systemPrompt = buildSystemPrompt({
@@ -149,7 +163,7 @@ serve(async (req) => {
     const maxIterations = 4;
 
     for (let i = 0; i < maxIterations; i++) {
-      const aiResult = await callAi(workingMessages);
+      const aiResult = await trace.span(`ai_call_${i}`, () => callAi(workingMessages));
 
       if (aiResult.rateLimited) {
         return new Response(
@@ -168,9 +182,21 @@ serve(async (req) => {
       const toolCalls: ToolCall[] = aiMessage.tool_calls || [];
 
       if (toolCalls.length === 0) {
+        // Hallucination guard: validate AI response against tool results and known facts
+        let finalContent = aiMessage.content || "";
+        if (allToolResults.length > 0 && finalContent) {
+          const guardResult = hallucinationGuard.validate(finalContent, allToolResults);
+          if (!guardResult.passed) {
+            trace.warn('Hallucination detected', { violations: guardResult.violations });
+            finalContent = guardResult.corrected;
+          }
+        }
+
+        trace.info('Response ready (no tools)', { iteration: i });
         return new Response(JSON.stringify({
-          choices: [{ message: { role: "assistant", content: aiMessage.content || "" } }],
-          meta
+          choices: [{ message: { role: "assistant", content: finalContent } }],
+          meta,
+          trace: { trace_id: trace.traceId }
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -201,6 +227,7 @@ serve(async (req) => {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
               "X-Internal-Secret": CHATBOT_TOOLS_INTERNAL_SECRET,
+              ...trace.headers(),
             },
             body: JSON.stringify({
               tool_name: toolName,
@@ -269,6 +296,11 @@ serve(async (req) => {
 
       const toolResults = (await Promise.all(toolResultPromises)).filter(Boolean) as ChatCompletionMessage[];
 
+      // Collect tool results for hallucination guard
+      for (const tr of toolResults) {
+        if (tr.content) allToolResults.push(tr.content);
+      }
+
       workingMessages = [
         ...workingMessages,
         {
@@ -287,9 +319,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Chatbot error:", error);
+    trace.error('Chatbot error', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error", trace: { trace_id: trace.traceId } }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

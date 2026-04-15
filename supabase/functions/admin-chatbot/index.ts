@@ -15,6 +15,7 @@ import { TOOLS } from "./tools/definitions.ts";
 import type { HotelSettings, PersonaSettings, ToolExecution } from "./lib/types.ts";
 import { adminCache, ADMIN_CACHE_KEYS, ADMIN_CACHE_TTL, getOrLoadAdmin } from "./lib/cache.ts";
 import { detectIntent, getToolGuidanceHint } from "./lib/intentDetector.ts";
+import { createTrace } from "../_shared/traceContext.ts";
 
 const formatRoomPricesResponse = (hotelName: string, toolResult: unknown): string => {
   const rooms = (toolResult as { rooms?: Array<{ name: string; price_formatted?: string; effective_price?: number; base_price?: number; price_source?: string }> })?.rooms || [];
@@ -47,6 +48,8 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    const trace = createTrace(req, 'admin-chatbot');
 
     // 1. Authenticate
     const auth = await validateAuth(req, supabase);
@@ -173,6 +176,7 @@ Deno.serve(async (req: Request) => {
     const intentHint = getToolGuidanceHint(intentMatch);
 
     console.log(`📝 Intent detected: ${intentMatch.intent} (${intentMatch.confidence}) → ${intentMatch.suggestedTool || 'none'}`);
+    trace.info('Intent detected', { intent: intentMatch.intent, confidence: intentMatch.confidence, tool: intentMatch.suggestedTool });
 
     // 4. Build system prompt with intent hint
     // Combine admin KB + guest KB for comprehensive knowledge

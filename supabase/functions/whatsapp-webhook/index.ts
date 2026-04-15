@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, getEnvConfig } from './types.ts';
 import { validateWebhookAuth } from './middleware/auth.ts';
 import { orchestrate } from './agents/orchestrator.ts';
+import { createTrace } from '../_shared/traceContext.ts';
 
 /**
  * WhatsApp Webhook — Slim Entry Point
@@ -38,7 +39,8 @@ serve(async (req) => {
 
   try {
     const env = getEnvConfig();
-    return await orchestrate(req, env);
+    const trace = createTrace(req, 'whatsapp-webhook');
+    return await orchestrate(req, env, trace);
   } catch (error) {
     console.error("WhatsApp webhook error:", error);
     return new Response(JSON.stringify({
