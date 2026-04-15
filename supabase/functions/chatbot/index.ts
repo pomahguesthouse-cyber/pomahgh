@@ -120,10 +120,9 @@ serve(async (req) => {
               { role: "system", content: systemPrompt },
               ...chatMessages
             ],
-            tools,
-            tool_choice: "auto",
+            ...(faq_mode ? {} : { tools, tool_choice: "auto" }),
             temperature: 0.4,
-            max_tokens: maxTokens
+            max_tokens: faq_mode ? 400 : maxTokens
           }),
           signal: controller.signal,
         });
