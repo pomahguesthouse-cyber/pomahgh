@@ -101,12 +101,12 @@ serve(async (req) => {
     // Process each reservation
     for (const res of (reservations || [])) {
       try {
-        const result = await processApiReservation(supabase, res, requestId);
+        const result = await processApiReservation(supabase as any, res, requestId);
         if (result.action === 'created') created++;
         else if (result.action === 'updated') updated++;
         synced++;
-      } catch (e) {
-        log('error', 'Failed to process reservation', { requestId, error: e.message, reservationId: res.id });
+      } catch (e: unknown) {
+        log('error', 'Failed to process reservation', { requestId, error: (e as Error).message, reservationId: res.id });
         errors++;
       }
     }
@@ -132,10 +132,11 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
-    log('error', 'Sync error', { requestId, error: error.message, stack: error.stack });
+  } catch (error: unknown) {
+    const err = error as Error;
+    log('error', 'Sync error', { requestId, error: err.message, stack: err.stack });
     return new Response(
-      JSON.stringify({ error: 'Internal server error', message: error.message }),
+      JSON.stringify({ error: 'Internal server error', message: err.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -157,7 +158,7 @@ async function processApiReservation(
     .maybeSingle();
 
   // Extract guest info
-  const guest = res.guest || res.guest_info || {};
+  const guest = (res.guest || res.guest_info || {}) as Record<string, unknown>;
   const guestName = guest.name?.toString() || `${guest.first_name || ''} ${guest.last_name || ''}`.trim() || 'Guest';
   const guestEmail = guest.email?.toString() || '';
   const guestPhone = guest.phone?.toString() || guest.telephone?.toString() || '';
