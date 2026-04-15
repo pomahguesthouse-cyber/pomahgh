@@ -118,7 +118,7 @@ export const PromptStudio = ({ agents, onSave, isSaving }: PromptStudioProps) =>
             )}
 
             <div className="space-y-2">
-              <Label className="text-xs">System Prompt</Label>
+              <Label className="text-xs">Agent Prompt</Label>
               <Textarea
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}

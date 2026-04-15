@@ -63,7 +63,7 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
         </div>
       </div>
       <div className="space-y-2">
-        <Label className="text-xs">System Prompt</Label>
+        <Label className="text-xs">Agent Prompt</Label>
         <Textarea value={prompt} onChange={e => setPrompt(e.target.value)} className="text-xs min-h-[80px] font-mono" />
       </div>
       <div className="grid grid-cols-3 gap-4">
