@@ -233,6 +233,9 @@ export const useMultiAgentDashboard = () => {
       isActive: config.is_active ?? true,
       autoEscalate: config.auto_escalate ?? true,
       configId: config.id,
+      knowledgeBaseEnabled: (config as Record<string, unknown>).knowledge_base_enabled as boolean ?? false,
+      knowledgeBaseTypes: (config as Record<string, unknown>).knowledge_base_types as string[] ?? [],
+      canSendMedia: (config as Record<string, unknown>).can_send_media as boolean ?? false,
     };
   });
 
