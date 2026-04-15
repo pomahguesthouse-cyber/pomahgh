@@ -407,7 +407,6 @@ export class PriceApprovalManager {
   // Invalidate price cache
   private async invalidatePriceCache(roomId: string): Promise<void> {
     try {
-      // This would integrate with your Redis cache
       console.log(`Invalidating price cache for room ${roomId}`);
     } catch (error) {
       console.error('Error invalidating price cache:', error);

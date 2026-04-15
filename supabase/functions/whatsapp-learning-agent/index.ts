@@ -804,7 +804,7 @@ async function generateLearningReport(supabase: SupabaseClient): Promise<Respons
 
 // ============================================================
 // Mode: analyze_single
-// Analyze a single conversation in depth
+// Analyze a single conversation in depth (reuses analyzeOneConversation)
 // ============================================================
 async function analyzeSingleConversation(
   supabase: SupabaseClient,
@@ -812,67 +812,34 @@ async function analyzeSingleConversation(
   hotelContext: string,
   conversationId: string
 ): Promise<Response> {
-  const { data: messages } = await supabase
-    .from("chat_messages")
-    .select("role, content, created_at")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+  // Verify conversation exists
+  const { data: conv } = await supabase
+    .from("chat_conversations")
+    .select("id, session_id, message_count")
+    .eq("id", conversationId)
+    .single();
 
-  if (!messages || messages.length === 0) {
-    return jsonResponse({ error: "Percakapan tidak ditemukan atau kosong" }, 404);
+  if (!conv) {
+    return jsonResponse({ error: "Percakapan tidak ditemukan" }, 404);
   }
 
-  const transcript = messages
-    .map(m => `[${m.role === "user" ? "TAMU" : "BOT"}] ${m.content}`)
-    .join("\n");
+  try {
+    const result = await analyzeOneConversation(supabase, apiKey, hotelContext, conv);
 
-  const aiResult = await callAIWithRetry(apiKey, MODEL, [
-    {
-      role: "system",
-      content: buildAnalysisPrompt(hotelContext),
-    },
-    {
-      role: "user",
-      content: `Analisis percakapan WhatsApp berikut secara mendalam:\n\n${transcript}\n\nKembalikan analisis dalam format JSON yang diminta.`,
-    },
-  ], { max_tokens: 2500, temperature: 0.2 });
+    if (!result.success) {
+      return jsonResponse({ error: "Gagal menganalisis percakapan" }, 500);
+    }
 
-  if (aiResult.rateLimited) {
-    return jsonResponse({ error: "Rate limited" }, 429);
-  }
-
-  const rawContent = aiResult.data.choices[0]?.message?.content || "{}";
-  const analysis = parseJsonFromAI(rawContent);
-
-  if (!analysis) {
+    return jsonResponse({
+      success: true,
+      conversation_id: conversationId,
+      topics: result.topics,
+      message_count: conv.message_count,
+    });
+  } catch (err) {
+    console.error(`[analyze_single] Error:`, err);
     return jsonResponse({ error: "Gagal menganalisis percakapan" }, 500);
   }
-
-  // Store insight
-  await supabase.from("whatsapp_conversation_insights").upsert({
-    conversation_id: conversationId,
-    summary: analysis.summary || "Tidak ada ringkasan",
-    topics: analysis.topics || [],
-    sentiment: validateEnum(analysis.sentiment, ["positive", "neutral", "negative", "mixed"], "neutral"),
-    intent_flow: analysis.intent_flow || [],
-    resolution_status: validateEnum(analysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "unresolved"),
-    bot_accuracy_score: clampScore(analysis.bot_accuracy_score),
-    guest_satisfaction_signal: analysis.guest_satisfaction_signal || "neutral",
-    common_questions: analysis.common_questions || [],
-    failed_responses: analysis.failed_responses || [],
-    successful_patterns: analysis.successful_patterns || [],
-    suggested_improvements: analysis.suggested_improvements || [],
-    new_slang_detected: analysis.new_slang_detected || [],
-    message_count: messages.length,
-    model_used: MODEL,
-  }, { onConflict: "conversation_id" });
-
-  return jsonResponse({
-    success: true,
-    conversation_id: conversationId,
-    analysis,
-    message_count: messages.length,
-  });
 }
 
 // ============================================================
@@ -1150,7 +1117,7 @@ async function runAutoPipeline(
     const analyzeStage = stageResults.find(s => s.stage === "deep_analyze");
     const promoteStage = stageResults.find(s => s.stage === "promote_faq");
     await supabase.from("whatsapp_learning_metrics").insert({
-      metric_date: new Date().toISOString().split("T")[0],
+      run_date: new Date().toISOString().split("T")[0],
       conversations_analyzed: (analyzeStage?.summary as Record<string, unknown>)?.analyzed ?? 0,
       training_examples_created: (promoteStage?.summary as Record<string, unknown>)?.promoted ?? 0,
       pipeline_run_id: pipelineId,

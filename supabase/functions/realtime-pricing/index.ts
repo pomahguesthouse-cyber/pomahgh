@@ -40,7 +40,6 @@ interface RoomPricingData {
 
 class RealTimePricingEngine {
   private supabase: any;
-  private redis: any; // Redis client for caching
 
   constructor(supabaseUrl: string, supabaseKey: string) {
     this.supabase = createClient(supabaseUrl, supabaseKey);

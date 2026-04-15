@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Build output logs
+build-output*.txt
+
+# Backup files
+*.backup
+
+# Bun lock files (project uses npm)
+bun.lock
+bun.lockb
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
