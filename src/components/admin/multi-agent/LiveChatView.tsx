@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useWhatsAppSessionMessages, useTakeoverSession, useSendAdminMessage, useReleaseSession } from '@/hooks/useWhatsAppSessions';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { ConversationMemoryViewer } from './ConversationMemoryViewer';
 
 interface LiveChatViewProps {
   sessions: any[];
@@ -36,7 +37,7 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
   return (
     <div className="flex h-[500px] border rounded-lg overflow-hidden bg-card">
       {/* Chat list */}
-      <div className="w-80 border-r overflow-y-auto">
+      <div className="w-72 border-r overflow-y-auto shrink-0">
         <div className="p-3 border-b">
           <h3 className="text-xs font-semibold text-foreground">Percakapan Aktif ({activeSessions.length})</h3>
         </div>
@@ -69,7 +70,7 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
       </div>
 
       {/* Chat window */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {selectedSession ? (
           <>
             <div className="p-3 border-b flex items-center justify-between">
@@ -96,9 +97,9 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {messages?.map(msg => (
                 <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}>
-                  <div className={`max-w-[70%] px-3 py-2 rounded-lg text-xs ${msg.role === 'user' ? 'bg-muted text-foreground' : 'bg-emerald-600 text-white'}`}>
+                  <div className={`max-w-[70%] px-3 py-2 rounded-lg text-xs ${msg.role === 'user' ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'}`}>
                     {msg.content}
-                    <p className={`text-[9px] mt-1 ${msg.role === 'user' ? 'text-muted-foreground' : 'text-emerald-200'}`}>
+                    <p className={`text-[9px] mt-1 ${msg.role === 'user' ? 'text-muted-foreground' : 'opacity-70'}`}>
                       {msg.created_at && new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
@@ -113,7 +114,7 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
                 placeholder="Ketik pesan..."
                 className="text-xs h-8"
               />
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSend}>
+              <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={handleSend}>
                 <Send className="w-3 h-3" />
               </Button>
             </div>
@@ -124,6 +125,11 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
           </div>
         )}
       </div>
+
+      {/* Memory Sidebar */}
+      {selectedSession && (
+        <ConversationMemoryViewer session={selectedSession} />
+      )}
     </div>
   );
 };
