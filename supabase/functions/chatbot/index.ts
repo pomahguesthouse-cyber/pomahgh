@@ -39,7 +39,7 @@ serve(async (req) => {
   const trace = createTrace(req, 'chatbot');
 
   try {
-    const { messages, chatbotSettings: providedSettings, conversationContext } = await req.json();
+    const { messages, chatbotSettings: providedSettings, conversationContext, faq_mode } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
