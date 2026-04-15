@@ -78,7 +78,7 @@ const AdminCityAttractions = lazyRetry(() => import("./pages/admin/AdminCityAttr
 const AdminExploreHeroSlides = lazyRetry(() => import("./pages/admin/AdminExploreHeroSlides"));
 const AdminCompetitorAnalysis = lazyRetry(() => import("./pages/admin/AdminCompetitorAnalysis"));
 const AdminChat = lazyRetry(() => import("./pages/admin/AdminChat"));
-const AdminChatbotDashboard = lazyRetry(() => import("./pages/admin/AdminChatbotDashboard"));
+
 const AdminCityEvents = lazyRetry(() => import("./pages/admin/AdminCityEvents"));
 const AdminLandingPages = lazyRetry(() => import("./pages/admin/AdminLandingPages"));
 const ManagerCalendar = lazyRetry(() => import("./pages/public/ManagerCalendar"));
@@ -154,7 +154,7 @@ const App = () => (
           <Route path="/admin/chatbot" element={<AdminLayout><AdminGuestChatbot /></AdminLayout>} />
           <Route path="/admin/chatbot/guest" element={<AdminLayout><AdminGuestChatbot /></AdminLayout>} />
           <Route path="/admin/chatbot/admin" element={<AdminLayout><AdminAdminChatbot /></AdminLayout>} />
-          <Route path="/admin/chatbot-dashboard" element={<AdminLayout><AdminChatbotDashboard /></AdminLayout>} />
+          
           <Route path="/admin/chat" element={<AdminLayout><AdminChat /></AdminLayout>} />
           <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
           <Route path="/admin/booking-com" element={<AdminLayout><AdminBookingCom /></AdminLayout>} />
