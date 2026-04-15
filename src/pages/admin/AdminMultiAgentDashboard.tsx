@@ -37,6 +37,9 @@ const AdminMultiAgentDashboard = () => {
             <TabsTrigger value="escalation" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               🔀 Alur Eskalasi
             </TabsTrigger>
+            <TabsTrigger value="managers" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+              👨‍💼 Manager
+            </TabsTrigger>
             <TabsTrigger value="settings" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               ⚙️ Pengaturan
             </TabsTrigger>
