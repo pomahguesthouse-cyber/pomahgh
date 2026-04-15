@@ -154,8 +154,8 @@ async function processApiReservation(
   const { data: existing } = await supabase
     .from('bookings')
     .select('id')
-    .eq('ota_booking_id', bookingId || confirmationNumber || '')
-    .maybeSingle();
+    .eq('ota_booking_id' as any, bookingId || confirmationNumber || '')
+    .maybeSingle() as { data: { id: string } | null };
 
   // Extract guest info
   const guest = (res.guest || res.guest_info || {}) as Record<string, unknown>;
@@ -186,12 +186,12 @@ async function processApiReservation(
     const { error } = await supabase
       .from('bookings')
       .update({
-        check_in: checkIn,
-        check_out: checkOut,
+        check_in: checkIn as string,
+        check_out: checkOut as string,
         total_price: totalPrice,
         status: status === 'cancelled' ? 'cancelled' : 'confirmed',
         updated_at: new Date().toISOString()
-      })
+      } as any)
       .eq('id', existing.id);
 
     if (error) throw error;
