@@ -7,3 +7,4 @@ export { ActivityLog } from './ActivityLog';
 export { PromptStudio } from './PromptStudio';
 export { EscalationFlow } from './EscalationFlow';
 export { SettingsPanel } from './SettingsPanel';
+export { ConversationMemoryViewer } from './ConversationMemoryViewer';
