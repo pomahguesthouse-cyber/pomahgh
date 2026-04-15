@@ -179,6 +179,105 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_configs: {
+        Row: {
+          agent_id: string
+          auto_escalate: boolean | null
+          category: string
+          config_json: Json | null
+          created_at: string | null
+          escalation_target: string | null
+          icon: string
+          id: string
+          is_active: boolean | null
+          max_turns: number | null
+          name: string
+          role: string
+          system_prompt: string | null
+          tags: string[] | null
+          temperature: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          auto_escalate?: boolean | null
+          category?: string
+          config_json?: Json | null
+          created_at?: string | null
+          escalation_target?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          max_turns?: number | null
+          name: string
+          role: string
+          system_prompt?: string | null
+          tags?: string[] | null
+          temperature?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          auto_escalate?: boolean | null
+          category?: string
+          config_json?: Json | null
+          created_at?: string | null
+          escalation_target?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          max_turns?: number | null
+          name?: string
+          role?: string
+          system_prompt?: string | null
+          tags?: string[] | null
+          temperature?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      agent_routing_logs: {
+        Row: {
+          conversation_id: string | null
+          created_at: string | null
+          duration_ms: number | null
+          from_agent: string
+          id: string
+          intent: string | null
+          metadata: Json | null
+          phone_number: string | null
+          reason: string | null
+          to_agent: string | null
+          trace_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          from_agent: string
+          id?: string
+          intent?: string | null
+          metadata?: Json | null
+          phone_number?: string | null
+          reason?: string | null
+          to_agent?: string | null
+          trace_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          from_agent?: string
+          id?: string
+          intent?: string | null
+          metadata?: Json | null
+          phone_number?: string | null
+          reason?: string | null
+          to_agent?: string | null
+          trace_id?: string | null
+        }
+        Relationships: []
+      }
       availability_sync_logs: {
         Row: {
           channel_manager_id: string | null
