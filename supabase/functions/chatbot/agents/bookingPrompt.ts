@@ -44,7 +44,7 @@ KOREKSI / PERPANJANGAN SETELAH BOOKING DIBUAT:
 TOOLS:
 - "ada kamar apa?" → get_all_rooms
 - kamar+tanggal → check_availability
-- data tamu lengkap (nama+email+HP+jumlah) → create_booking_draft. ⚠️ WAJIB ada guest_phone!
+- data tamu lengkap + user sudah konfirmasi "ya" → create_booking_draft. ⚠️ WAJIB ada guest_phone! WAJIB sudah dikonfirmasi user!
 - cek/ubah booking → pakai data KONTEKS atau minta PMH-XXXXXX+telepon+email
 - "sudah transfer" → notify_payment_proof
 
