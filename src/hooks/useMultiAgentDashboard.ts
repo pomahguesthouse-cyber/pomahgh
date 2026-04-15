@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export interface AgentDefinition {
   id: string;
@@ -19,16 +20,19 @@ export interface AgentDefinition {
   prompt?: string;
   temperature?: number;
   maxTurns?: number;
+  isActive?: boolean;
+  autoEscalate?: boolean;
+  configId?: string;
 }
 
-const AGENT_DEFINITIONS: Omit<AgentDefinition, 'status' | 'chatCount' | 'successRate' | 'avgResponseTime'>[] = [
-  { id: 'orchestrator', name: 'Orchestrator', role: 'Router utama — mendelegasikan pesan ke agent tepat', icon: '🎯', backendFile: 'orchestrator.ts', tags: ['core', 'routing'], category: 'core' },
-  { id: 'intent', name: 'Intent Router', role: 'Koleksi nama tamu & deteksi intent awal', icon: '🔀', backendFile: 'intent.ts', tags: ['core', 'nlp'], category: 'core' },
-  { id: 'booking', name: 'Reservasi Bot', role: 'AI percakapan penuh + tool calls (booking, extend, cancel)', icon: '📅', backendFile: 'booking.ts', tags: ['booking', 'tools', 'ai'], category: 'specialist', escalationTarget: 'manager' },
-  { id: 'faq', name: 'CS & FAQ Bot', role: 'Jawab FAQ tanpa tools (fasilitas, lokasi, aturan)', icon: '💬', backendFile: 'faq.ts', tags: ['faq', 'info', 'fast'], category: 'specialist', escalationTarget: 'booking' },
-  { id: 'pricing', name: 'Pricing Bot', role: 'Proses APPROVE/REJECT harga dari manager', icon: '💰', backendFile: 'pricing.ts', tags: ['pricing', 'approval'], category: 'manager', escalationTarget: 'manager' },
-  { id: 'manager', name: 'Manager Bot', role: 'Chat AI khusus manager via admin-chatbot', icon: '👔', backendFile: 'manager.ts', tags: ['admin', 'command'], category: 'manager' },
-];
+const BACKEND_FILES: Record<string, string> = {
+  orchestrator: 'orchestrator.ts',
+  intent: 'intent.ts',
+  booking: 'booking.ts',
+  faq: 'faq.ts',
+  pricing: 'pricing.ts',
+  manager: 'manager.ts',
+};
 
 export const useMultiAgentDashboard = () => {
   const queryClient = useQueryClient();
@@ -44,10 +48,27 @@ export const useMultiAgentDashboard = () => {
         queryClient.invalidateQueries({ queryKey: ['multi-agent-sessions'] });
         queryClient.invalidateQueries({ queryKey: ['multi-agent-activity-log'] });
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_routing_logs' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['multi-agent-routing-logs'] });
+        queryClient.invalidateQueries({ queryKey: ['multi-agent-stats'] });
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
+
+  // Load agent configs from DB
+  const agentConfigsQuery = useQuery({
+    queryKey: ['multi-agent-configs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('agent_configs')
+        .select('*')
+        .order('created_at');
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const sessionsQuery = useQuery({
     queryKey: ['multi-agent-sessions'],
@@ -59,6 +80,24 @@ export const useMultiAgentDashboard = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Routing logs for real agent activity
+  const routingLogsQuery = useQuery({
+    queryKey: ['multi-agent-routing-logs'],
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { data, error } = await supabase
+        .from('agent_routing_logs')
+        .select('*')
+        .gte('created_at', today.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 15000,
   });
 
   const statsQuery = useQuery({
@@ -76,14 +115,35 @@ export const useMultiAgentDashboard = () => {
         .select('id, message_count, booking_created')
         .gte('started_at', today.toISOString());
 
+      const { data: todayRoutings } = await supabase
+        .from('agent_routing_logs')
+        .select('from_agent, to_agent, duration_ms')
+        .gte('created_at', today.toISOString());
+
       const activeSessions = sessions?.filter(s => s.is_active && !s.is_blocked).length || 0;
       const bookingsToday = todayConvs?.filter(c => c.booking_created).length || 0;
       const escalations = sessions?.filter(s => s.is_takeover).length || 0;
       const totalMessages = todayConvs?.reduce((sum, c) => sum + (c.message_count || 0), 0) || 0;
-      const managerSessions = sessions?.filter(s => s.session_type === 'admin').length || 0;
-      const guestSessions = sessions?.filter(s => s.is_active && !s.is_blocked && s.session_type !== 'admin').length || 0;
 
-      return { activeSessions, bookingsToday, escalations, totalMessages, totalConversationsToday: todayConvs?.length || 0, managerSessions, guestSessions };
+      // Real avg response time from routing logs
+      const durations = todayRoutings?.filter(r => r.duration_ms && r.duration_ms > 0).map(r => r.duration_ms!) || [];
+      const avgResponseMs = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
+
+      // Per-agent routing counts
+      const agentRoutingCounts: Record<string, number> = {};
+      todayRoutings?.forEach(r => {
+        if (r.to_agent) {
+          agentRoutingCounts[r.to_agent] = (agentRoutingCounts[r.to_agent] || 0) + 1;
+        }
+      });
+
+      return {
+        activeSessions, bookingsToday, escalations, totalMessages,
+        totalConversationsToday: todayConvs?.length || 0,
+        avgResponseMs,
+        agentRoutingCounts,
+        totalRoutings: todayRoutings?.length || 0,
+      };
     },
   });
 
@@ -101,62 +161,103 @@ export const useMultiAgentDashboard = () => {
     refetchInterval: 10000,
   });
 
-  // Build agent status from real data
-  const agents: AgentDefinition[] = AGENT_DEFINITIONS.map(def => {
+  // Build agent list from DB configs + live session data
+  const agents: AgentDefinition[] = (agentConfigsQuery.data || []).map(config => {
     const activeSessions = sessionsQuery.data?.filter(s => s.is_active && !s.is_blocked) || [];
     const guestSessions = activeSessions.filter(s => (s as Record<string, unknown>).session_type !== 'admin');
     const managerSessions = activeSessions.filter(s => (s as Record<string, unknown>).session_type === 'admin');
+    const routingCounts = statsQuery.data?.agentRoutingCounts || {};
 
     let status: AgentDefinition['status'] = 'idle';
-    let chatCount = 0;
+    let chatCount = routingCounts[config.agent_id] || 0;
 
-    switch (def.id) {
+    switch (config.agent_id) {
       case 'orchestrator':
-        // Always active when there are any sessions
         status = activeSessions.length > 0 ? 'active' : 'idle';
         chatCount = activeSessions.length;
         break;
       case 'intent':
-        // Active when there are sessions awaiting name
         const awaitingName = activeSessions.filter(s => (s as Record<string, unknown>).awaiting_name === true);
         status = awaitingName.length > 0 ? 'active' : (activeSessions.length > 0 ? 'active' : 'idle');
-        chatCount = awaitingName.length;
+        chatCount = awaitingName.length || routingCounts['intent'] || 0;
         break;
       case 'booking':
-        // Active when guest sessions exist (most go through booking)
         status = guestSessions.length > 0 ? 'active' : 'idle';
-        chatCount = guestSessions.length;
+        chatCount = routingCounts['booking'] || guestSessions.length;
         break;
       case 'faq':
-        // Active when guest sessions exist (shares load with booking)
         status = guestSessions.length > 0 ? 'active' : 'idle';
-        chatCount = Math.floor(guestSessions.length * 0.3); // ~30% FAQ estimate
+        chatCount = routingCounts['faq'] || 0;
         break;
       case 'pricing':
-        // Active only when managers are online
         status = managerSessions.length > 0 ? 'active' : 'idle';
-        chatCount = 0; // Pricing is command-based, not session-based
+        chatCount = routingCounts['pricing'] || 0;
         break;
       case 'manager':
         status = managerSessions.length > 0 ? 'active' : 'idle';
-        chatCount = managerSessions.length;
+        chatCount = routingCounts['manager'] || managerSessions.length;
         break;
     }
 
-    // Success rate from actual conversation data
-    const totalConvs = statsQuery.data?.totalConversationsToday || 0;
-    const fallbackCount = activityLogQuery.data?.filter(m => m.is_fallback).length || 0;
-    const totalMsgs = activityLogQuery.data?.length || 1;
-    const successRate = Math.max(0, Math.min(100, 100 - (fallbackCount / totalMsgs * 100)));
+    if (!config.is_active) status = 'idle';
+
+    // Success rate from routing logs (tool failures = errors)
+    const todayLogs = routingLogsQuery.data || [];
+    const agentLogs = todayLogs.filter(l => l.from_agent === config.agent_id);
+    const failedLogs = agentLogs.filter(l => l.reason === 'failed');
+    const successRate = agentLogs.length > 0
+      ? Number(((1 - failedLogs.length / agentLogs.length) * 100).toFixed(1))
+      : 100;
 
     return {
-      ...def,
+      id: config.agent_id,
+      name: config.name,
+      role: config.role,
+      icon: config.icon,
+      backendFile: BACKEND_FILES[config.agent_id] || `${config.agent_id}.ts`,
       status,
       chatCount,
-      successRate: Number(successRate.toFixed(1)),
-      avgResponseTime: totalConvs > 0 ? `${(1.5 + Math.random() * 0.5).toFixed(1)}s` : '-',
+      successRate,
+      avgResponseTime: statsQuery.data?.avgResponseMs
+        ? `${(statsQuery.data.avgResponseMs / 1000).toFixed(1)}s`
+        : '-',
+      tags: config.tags || [],
+      category: config.category as AgentDefinition['category'],
+      escalationTarget: config.escalation_target || undefined,
+      prompt: config.system_prompt || undefined,
+      temperature: config.temperature ? Number(config.temperature) : 0.3,
+      maxTurns: config.max_turns || 10,
+      isActive: config.is_active ?? true,
+      autoEscalate: config.auto_escalate ?? true,
+      configId: config.id,
     };
   });
 
-  return { agents, sessions: sessionsQuery, stats: statsQuery, activityLog: activityLogQuery };
+  // Save agent config mutation
+  const saveAgentConfig = useMutation({
+    mutationFn: async (update: { configId: string; data: Record<string, unknown> }) => {
+      const { error } = await supabase
+        .from('agent_configs')
+        .update(update.data)
+        .eq('id', update.configId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['multi-agent-configs'] });
+      toast.success('Konfigurasi agent berhasil disimpan');
+    },
+    onError: (err) => {
+      toast.error(`Gagal menyimpan: ${err.message}`);
+    },
+  });
+
+  return {
+    agents,
+    sessions: sessionsQuery,
+    stats: statsQuery,
+    activityLog: activityLogQuery,
+    routingLogs: routingLogsQuery,
+    agentConfigs: agentConfigsQuery,
+    saveAgentConfig,
+  };
 };
