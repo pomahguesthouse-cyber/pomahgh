@@ -1,0 +1,1 @@
+UPDATE whatsapp_sessions SET is_takeover = false, takeover_at = null WHERE phone_number = '6282226749990';
