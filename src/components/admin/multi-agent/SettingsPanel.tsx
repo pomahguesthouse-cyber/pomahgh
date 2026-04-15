@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useHotelSettings } from '@/hooks/useHotelSettings';
 
 export const SettingsPanel = () => {
-  const { data: settings } = useHotelSettings();
+  const { settings } = useHotelSettings();
 
   return (
     <div className="space-y-6 max-w-2xl">

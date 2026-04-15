@@ -84,6 +84,7 @@ const defaultMenuGroups: MenuGroup[] = [
     id: "virtual-assistant",
     label: "Virtual Assistant",
     items: [
+      { id: "multi-agent", title: "Multi-Agent", url: "/admin/multi-agent", icon: LayoutDashboard },
       { id: "web-chatbot", title: "Web Chatbot", url: "/admin/chat", icon: Bot },
       { id: "guest-chatbot", title: "Guest Chatbot", url: "/admin/chatbot/guest", icon: Users },
       { id: "admin-chatbot", title: "Admin Chatbot", url: "/admin/chatbot/admin", icon: Shield }
