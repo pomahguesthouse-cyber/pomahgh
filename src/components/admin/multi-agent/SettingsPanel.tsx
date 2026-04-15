@@ -146,7 +146,7 @@ export const SettingsPanel = () => {
 
       <div className="flex justify-end gap-2">
         {saved && (
-          <span className="text-xs text-emerald-600 flex items-center gap-1">
+          <span className="text-xs text-primary flex items-center gap-1">
             <CheckCircle className="w-3.5 h-3.5" /> Tersimpan
           </span>
         )}
