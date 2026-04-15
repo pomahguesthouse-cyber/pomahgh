@@ -1649,6 +1649,39 @@ export type Database = {
         }
         Relationships: []
       }
+      escalation_rules: {
+        Row: {
+          condition_text: string
+          created_at: string | null
+          from_agent: string
+          id: string
+          is_active: boolean | null
+          priority: number | null
+          to_agent: string
+          updated_at: string | null
+        }
+        Insert: {
+          condition_text?: string
+          created_at?: string | null
+          from_agent: string
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          to_agent: string
+          updated_at?: string | null
+        }
+        Update: {
+          condition_text?: string
+          created_at?: string | null
+          from_agent?: string
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          to_agent?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       explore_hero_slides: {
         Row: {
           alt_text: string | null
