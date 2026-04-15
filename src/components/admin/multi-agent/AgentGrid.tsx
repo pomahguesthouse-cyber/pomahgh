@@ -84,6 +84,11 @@ export const AgentGrid = ({ agents, onSelectAgent, selectedAgentId }: AgentGridP
                 <span className="font-medium text-foreground">{agent.avgResponseTime}</span>
               </div>
               <div className="flex gap-1 flex-wrap mt-1">
+                {'category' in agent && (
+                  <Badge variant={agent.category === 'core' ? 'default' : agent.category === 'manager' ? 'destructive' : 'outline'} className="text-[9px] px-1.5 py-0">
+                    {agent.category === 'core' ? '⚡ Core' : agent.category === 'manager' ? '🔐 Manager' : '🧩 Specialist'}
+                  </Badge>
+                )}
                 {agent.tags.map(tag => (
                   <Badge key={tag} variant="secondary" className="text-[9px] px-1.5 py-0">{tag}</Badge>
                 ))}

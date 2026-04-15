@@ -12,6 +12,30 @@ import { handlePriceApproval } from './pricing.ts';
 import { handleManagerChat } from './manager.ts';
 import { handleNameCollection } from './intent.ts';
 import { handleGuestBookingFlow } from './booking.ts';
+import { handleGuestFAQ } from './faq.ts';
+
+/**
+ * Detect intent category from normalized message.
+ * Returns 'faq' for general info questions, 'booking' for booking-related.
+ */
+function detectIntent(message: string): 'faq' | 'booking' {
+  // Booking-related patterns: availability, pricing, reservations, extend, dates
+  const bookingPatterns = /\b(book|booking|pesan|reservas|kamar\s+(?:kosong|tersedia|available)|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|harga|tarif|biaya|bayar|transfer|pembayaran|payment|cancel|batal|refund|promo|diskon|ketersediaan|available|cek\s+kamar|berapa\s+(?:harga|malam|kamar)|tanggal|tgl|kapan\s+(?:bisa|check)|mau\s+(?:menginap|pesan|booking|nginap)|jadi\s+berapa|total(?:nya)?|dp|uang\s+muka)\b/i;
+
+  if (bookingPatterns.test(message)) {
+    return 'booking';
+  }
+
+  // FAQ patterns: general info about facilities, location, etc.
+  const faqPatterns = /\b(fasilitas|facility|wifi|parkir|parking|sarapan|breakfast|kolam|pool|ac|handuk|towel|alamat|lokasi|location|arah|direction|dekat|nearby|jam\s+(?:buka|operasional|kerja)|buka\s+(?:jam|sampai)|tutup\s+(?:jam|pukul)|aturan|rule|policy|kebijakan|smoking|merokok|hewan|pet|anak|child|extra\s+bed|laundry|restoran|restaurant|mushola|masjid|transportasi|airport|bandara|stasiun|terminal)\b/i;
+
+  if (faqPatterns.test(message)) {
+    return 'faq';
+  }
+
+  // Default to booking (has full AI + tools capability)
+  return 'booking';
+}
 
 /**
  * Orchestrator Agent: Central routing hub.
@@ -153,11 +177,42 @@ export async function orchestrate(
     return nameResult;
   }
 
-  // === BOOKING AGENT: AI conversation ===
+  // === INTENT DETECTION: Route to FAQ or Booking agent ===
+  const intent = detectIntent(normalizedMessage);
+
+  if (intent === 'faq') {
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+      from_agent: 'orchestrator', to_agent: 'faq',
+      reason: 'faq_intent_detected', intent: 'faq',
+    });
+
+    const faqResult = await handleGuestFAQ(
+      supabase, session as WhatsAppSession, phone, normalizedMessage,
+      conversationId!, personaName, env, trace
+    );
+
+    // If FAQ agent escalated to booking (needed tools), fall through
+    const faqBody = await faqResult.clone().json().catch(() => null);
+    if (faqBody?.status === 'faq_escalate_to_booking') {
+      console.log('🔀 FAQ → Booking Agent escalation');
+      logAgentDecision(supabase, {
+        trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+        from_agent: 'faq', to_agent: 'booking',
+        reason: 'faq_needs_tools', intent: 'booking',
+      });
+      // Fall through to booking agent below
+    } else {
+      return faqResult;
+    }
+  }
+
+  // === BOOKING AGENT: AI conversation with tools ===
   logAgentDecision(supabase, {
     trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
     from_agent: 'orchestrator', to_agent: 'booking',
-    reason: 'guest_booking_flow', intent: 'booking_inquiry',
+    reason: intent === 'faq' ? 'faq_escalation' : 'booking_intent_detected',
+    intent: 'booking_inquiry',
   });
   return handleGuestBookingFlow(
     supabase, session as WhatsAppSession, phone, normalizedMessage, conversationId!,
