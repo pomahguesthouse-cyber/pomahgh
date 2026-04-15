@@ -1,5 +1,8 @@
 /**
- * Admin takeover & boundary rules — extracted from promptBuilder.ts
+ * Intent Agent / Admin takeover rules — extracted from promptBuilder.ts
+ * Handles:
+ * 1. Admin takeover seamless transition
+ * 2. Topic boundary enforcement
  */
 export function buildAdminTakeoverRules(): string {
   return `ADMIN TAKEOVER:

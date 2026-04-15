@@ -1,5 +1,11 @@
 /**
- * Booking rules prompt section — extracted from promptBuilder.ts
+ * Booking Agent prompt — handles the complete reservation flow:
+ * 1. Check availability
+ * 2. Collect guest data efficiently (all at once)
+ * 3. Show draft summary & get confirmation
+ * 4. Create booking only after user confirms
+ * 5. Update/extend/cancel existing bookings
+ * 6. Long stay discount inquiry
  */
 export function buildBookingFlowRules(): string {
   return `BOOKING:
