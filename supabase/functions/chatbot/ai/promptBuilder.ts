@@ -137,7 +137,7 @@ function buildContextString(ctx?: ConversationContext): { contextString: string;
 
   let explicitToolInstruction = '';
   if (ctx.awaiting_guest_data && ctx.preferred_room && ctx.check_in_date && ctx.check_out_date) {
-    explicitToolInstruction = `\n⚠️ BOOKING PENDING: ${ctx.preferred_room} (${ctx.check_in_date}–${ctx.check_out_date}). Jika user kasih nama/email/HP/jumlah tamu → LANGSUNG panggil create_booking_draft!`;
+    explicitToolInstruction = `\n⚠️ BOOKING PENDING: ${ctx.preferred_room} (${ctx.check_in_date}–${ctx.check_out_date}). Jika user kasih nama/email/HP/jumlah tamu → TAMPILKAN RINGKASAN DRAFT dulu, minta konfirmasi "Ya". BARU panggil create_booking_draft setelah user konfirmasi.`;
   }
 
   if (ctx.last_booking_code) {

@@ -6,10 +6,29 @@ export function buildBookingFlowRules(): string {
 - Saat user mau booking tapi belum lengkap, tanyakan SEMUA info yang kurang dalam 1 pertanyaan: tipe kamar, jumlah tamu, berapa malam
   Contoh: "Oke kak, untuk hari ini tanggal 15 April ya. Mau kamar tipe apa, untuk berapa orang, dan berapa malam?"
   JANGAN tanya satu-satu! Gabungkan jadi 1 pertanyaan efisien.
-- User konfirmasi setelah cek → pakai kamar+tanggal sebelumnya, minta data (nama, email, HP, jumlah), lalu LANGSUNG panggil create_booking_draft
-- Data lengkap → LANGSUNG create_booking_draft (jangan balas text dulu!)
 - "X malam" SEBELUM booking → check_availability
 - Jangan tanya ulang info yang sudah ada
+
+DRAFT KONFIRMASI (WAJIB sebelum create_booking_draft):
+- Setelah semua data tamu lengkap (nama, email, HP, jumlah tamu, kamar, tanggal), JANGAN langsung panggil create_booking_draft!
+- Tampilkan RINGKASAN DRAFT dulu dalam format:
+
+  📋 *Ringkasan Booking*
+  👤 Nama: [nama]
+  📧 Email: [email]
+  📱 HP: [hp]
+  🏨 Kamar: [tipe kamar]
+  📅 Check-in: [tanggal]
+  📅 Check-out: [tanggal]
+  🌙 Durasi: [X] malam
+  👥 Tamu: [jumlah] orang
+  💰 Total: Rp [harga]
+
+  Apakah data di atas sudah benar? Ketik *Ya* untuk konfirmasi booking. 😊
+
+- BARU panggil create_booking_draft setelah user membalas konfirmasi (ya/ok/benar/betul/setuju/lanjut/oke/yap/yup/confirmed/gas/siap)
+- Jika user minta koreksi → perbaiki data, tampilkan ulang ringkasan, minta konfirmasi lagi
+- Jika user EKSPLISIT bilang "langsung booking" / "booking sekarang" → boleh skip draft, langsung create_booking_draft
 
 KOREKSI / PERPANJANGAN SETELAH BOOKING DIBUAT:
 - Jika SUDAH ADA booking aktif (ada kode PMH-XXXXXX di konteks), dan user minta perubahan (jumlah malam, tanggal, dll):
@@ -25,7 +44,7 @@ KOREKSI / PERPANJANGAN SETELAH BOOKING DIBUAT:
 TOOLS:
 - "ada kamar apa?" → get_all_rooms
 - kamar+tanggal → check_availability
-- data tamu lengkap (nama+email+HP+jumlah) → create_booking_draft. ⚠️ WAJIB ada guest_phone!
+- data tamu lengkap + user sudah konfirmasi "ya" → create_booking_draft. ⚠️ WAJIB ada guest_phone! WAJIB sudah dikonfirmasi user!
 - cek/ubah booking → pakai data KONTEKS atau minta PMH-XXXXXX+telepon+email
 - "sudah transfer" → notify_payment_proof
 
