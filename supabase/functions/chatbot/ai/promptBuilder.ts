@@ -163,7 +163,7 @@ ${buildAdminTakeoverRules()}`;
  */
 export function buildSystemPrompt(config: PromptConfig): string {
   const { settings, hotelData, conversationContext, lastUserMessage } = config;
-  const { settings: hotel, facilities, knowledgeBase, trainingExamples, faqPatterns, learningInsights, nearbyLocations } = hotelData;
+  const { settings: hotel, facilities, knowledgeBase, trainingExamples, faqPatterns, learningInsights, nearbyLocations, bankAccounts } = hotelData;
 
   const wibTime = getWIBTime();
   const timeGreeting = getTimeGreeting(wibTime.getHours());
@@ -174,6 +174,11 @@ export function buildSystemPrompt(config: PromptConfig): string {
   const roomsInfo = buildRoomsInfo(hotelData);
   const addonsInfo = buildAddonsInfo(hotelData);
   const bookingFlowRules = buildCombinedFlowRules();
+
+  // Bank accounts info (CRITICAL: prevents AI from hallucinating wrong bank details)
+  const bankInfo = (bankAccounts || []).length > 0
+    ? (bankAccounts || []).map(b => `🏦 ${b.bank_name} | No. Rek: ${b.account_number} | a.n. ${b.account_holder_name}`).join('\n')
+    : '';
 
   // Relevant training examples
   const relevantExamples = lastUserMessage 
@@ -219,6 +224,7 @@ ${bookingFlowRules}
 
 HOTEL: ${hotel.hotel_name}, ${hotel.address}
 Check-in ${hotel.check_in_time} | Check-out ${hotel.check_out_time} | WA ${hotel.whatsapp_number}
+${bankInfo ? `\nREKENING PEMBAYARAN (WAJIB pakai data ini, JANGAN mengarang nomor rekening lain!):\n${bankInfo}` : ''}
 
 KAMAR:
 ${roomsInfo}
