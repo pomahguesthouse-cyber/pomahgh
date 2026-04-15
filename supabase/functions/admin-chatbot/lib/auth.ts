@@ -71,8 +71,8 @@ export async function validateAuth(
       isAuthorized: true,
       adminId: `whatsapp_${whatsappPhone}`,
       adminEmail: `${managerName} (WhatsApp: ${whatsappPhone})`,
-      managerName,
-      managerRole
+      managerName: managerInfo.name || managerName,
+      managerRole: (managerInfo.role as ManagerRole) || 'viewer'
     };
   }
 

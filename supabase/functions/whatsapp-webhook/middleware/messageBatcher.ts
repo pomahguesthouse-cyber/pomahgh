@@ -69,10 +69,19 @@ export async function batchMessages(
 
   if (!session?.pending_messages?.length) return null;
 
-  await supabase
+  // Use optimistic locking even on max-wait timeout to prevent race condition
+  const { data: claimed } = await supabase
     .from('whatsapp_sessions')
     .update({ pending_messages: [], pending_since: null })
-    .eq('phone_number', phone);
+    .eq('phone_number', phone)
+    .eq('pending_since', session.pending_since)
+    .select('pending_messages')
+    .single();
+
+  if (!claimed) {
+    console.log(`📦 Max wait: batch already claimed by another invocation for ${phone}`);
+    return null;
+  }
 
   console.log(`📦 Max wait exceeded, processing ${session.pending_messages.length} messages for ${phone}`);
   return session.pending_messages;

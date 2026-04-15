@@ -200,6 +200,11 @@ export async function handleCreateBookingDraft(
     
     if (bookingRoomsError) {
       console.error("Failed to insert booking_rooms:", bookingRoomsError);
+      // Rollback: remove orphaned booking
+      if (!isUpdate) {
+        await supabase.from("bookings").delete().eq("id", booking.id);
+      }
+      throw new Error(`Gagal menyimpan detail kamar: ${bookingRoomsError.message}`);
     }
 
     // Optimistic concurrency check: re-verify availability after insert
