@@ -1,14 +1,18 @@
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW = 60 * 1000;
+const CLEANUP_INTERVAL = 30 * 1000;
+let lastCleanup = 0;
 
 export function checkRateLimit(phone: string): boolean {
   const now = Date.now();
 
-  if (rateLimitMap.size > 500) {
+  // Clean expired entries periodically or when map grows large
+  if (now - lastCleanup > CLEANUP_INTERVAL || rateLimitMap.size > 500) {
     for (const [k, v] of rateLimitMap) {
       if (now > v.resetAt) rateLimitMap.delete(k);
     }
+    lastCleanup = now;
   }
 
   const entry = rateLimitMap.get(phone);

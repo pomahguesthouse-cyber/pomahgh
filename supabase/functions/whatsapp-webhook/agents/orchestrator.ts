@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { SupabaseClient, WhatsAppSession, ManagerInfo, EnvConfig } from '../types.ts';
 import { corsHeaders } from '../types.ts';
-import { normalizePhone } from '../utils/phone.ts';
+import { normalizePhone, isValidPhone } from '../utils/phone.ts';
 import { normalizeIndonesianMessage } from '../utils/slang.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
@@ -19,10 +19,13 @@ import { handleGuestFAQ } from './faq.ts';
  * Returns 'faq' for general info questions, 'booking' for booking-related.
  */
 function detectIntent(message: string): 'faq' | 'booking' {
-  // Booking-related patterns: availability, pricing, reservations, extend, dates
-  const bookingPatterns = /\b(book|booking|pesan|reservas|kamar\s+(?:kosong|tersedia|available)|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|harga|tarif|biaya|bayar|transfer|pembayaran|payment|cancel|batal|refund|promo|diskon|ketersediaan|available|cek\s+kamar|berapa\s+(?:harga|malam|kamar)|tanggal|tgl|kapan\s+(?:bisa|check)|mau\s+(?:menginap|pesan|booking|nginap)|jadi\s+berapa|total(?:nya)?|dp|uang\s+muka)\b/i;
+  // Booking-specific: explicit reservation, payment, scheduling actions
+  const bookingPatterns = /\b(book|booking|pesan\s+kamar|reservas|cek\s+ketersediaan|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|bayar|transfer|pembayaran|payment|cancel|batal|refund|promo|diskon|mau\s+(?:menginap|pesan|booking|nginap)|dp|uang\s+muka|kamar\s+(?:kosong|tersedia|available))\b/i;
 
-  if (bookingPatterns.test(message)) {
+  // Price queries: only when asking about room cost, not general info
+  const pricePatterns = /\b(?:(?:berapa|brp)\s+(?:harga|tarif|biaya|per\s*malam)|harga\s+kamar|tarif\s+kamar|biaya\s+(?:menginap|kamar)|jadi\s+berapa|total(?:nya)?)\b/i;
+
+  if (bookingPatterns.test(message) || pricePatterns.test(message)) {
     return 'booking';
   }
 
@@ -64,6 +67,11 @@ export async function orchestrate(
   }
 
   const phone = normalizePhone(String(sender));
+  if (!isValidPhone(phone)) {
+    return new Response(JSON.stringify({ status: 'error', reason: 'invalid_phone_format' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
   const normalizedMessage = normalizeIndonesianMessage(String(message));
   trace?.info('Processing message', { phone, message_length: String(message).length });
 
@@ -156,11 +164,17 @@ export async function orchestrate(
   const isNewSession = !conversationId || isStale;
 
   if (isNewSession) {
-    const { data: newConv } = await supabase
+    const { data: newConv, error: convError } = await supabase
       .from('chat_conversations')
       .insert({ session_id: `wa_${phone}_${Date.now()}`, message_count: 0 })
       .select().single();
-    conversationId = newConv?.id;
+    if (convError || !newConv?.id) {
+      console.error('Failed to create conversation:', convError);
+      return new Response(JSON.stringify({ status: 'error', reason: 'conversation_creation_failed' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    conversationId = newConv.id;
   }
 
   // === INTENT AGENT: Name collection ===

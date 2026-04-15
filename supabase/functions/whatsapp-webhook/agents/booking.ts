@@ -142,6 +142,8 @@ export async function handleGuestBookingFlow(
 
   if (!hasToolCalls && stuckPatterns.test(aiResponse)) {
     console.log("⚠️ STUCK RESPONSE DETECTED - retrying...");
+    // Log retry attempt for audit trail
+    await logMessage(supabase, conversationId, 'system', `[Stuck retry triggered: AI said "${aiResponse.substring(0, 80)}..." without calling tools]`);
     const retryMessages = [
       ...messages,
       { role: 'assistant', content: aiResponse },

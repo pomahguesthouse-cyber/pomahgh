@@ -17,6 +17,9 @@ import { adminCache, ADMIN_CACHE_KEYS, ADMIN_CACHE_TTL, getOrLoadAdmin } from ".
 import { detectIntent, getToolGuidanceHint } from "./lib/intentDetector.ts";
 import { createTrace } from "../_shared/traceContext.ts";
 import { logToolExecution } from "../_shared/agentLogger.ts";
+import { createHallucinationGuard } from "../_shared/hallucinationGuard.ts";
+
+const AI_FETCH_TIMEOUT_MS = 15_000; // 15 second timeout per AI call
 
 const formatRoomPricesResponse = (hotelName: string, toolResult: unknown): string => {
   const rooms = (toolResult as { rooms?: Array<{ name: string; price_formatted?: string; effective_price?: number; base_price?: number; price_source?: string }> })?.rooms || [];
@@ -222,7 +225,10 @@ Deno.serve(async (req: Request) => {
     // Force tool execution for room price requests to avoid hallucination
     if (intentMatch.suggestedTool === 'get_room_prices' && intentMatch.confidence !== 'low') {
       const forcedToolStart = Date.now();
-      const roomToolResult = await executeToolWithValidation(supabase, 'get_room_prices', {}, auth.managerRole);
+      // Extract room name from user message if mentioned
+      const roomNameMatch = userMessage.match(/(?:kamar|room|tipe|type)\s+(\w+)/i);
+      const forcedArgs = roomNameMatch ? { room_name: roomNameMatch[1] } : {};
+      const roomToolResult = await executeToolWithValidation(supabase, 'get_room_prices', forcedArgs, auth.managerRole);
 
       logToolExecution(supabase, {
         trace_id: trace.traceId, tool_name: 'get_room_prices',
@@ -271,6 +277,7 @@ Deno.serve(async (req: Request) => {
       
       let iterations = 0;
       const maxIterations = 5;
+      const allToolResults: string[] = [];
 
       while (iterations < maxIterations) {
         iterations++;
@@ -278,19 +285,33 @@ Deno.serve(async (req: Request) => {
         const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
         if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-        const response = await fetch(`${LOVABLE_API_URL}/chat/completions`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${LOVABLE_API_KEY}`
-          },
-          body: JSON.stringify({
-            messages: currentMessages,
-            model: "google/gemini-2.5-flash",
-            tools: filteredTools,
-            tool_choice: "auto"
-          })
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), AI_FETCH_TIMEOUT_MS);
+
+        let response: Response;
+        try {
+          response = await fetch(`${LOVABLE_API_URL}/chat/completions`, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`
+            },
+            body: JSON.stringify({
+              messages: currentMessages,
+              model: "google/gemini-2.5-flash",
+              tools: filteredTools,
+              tool_choice: "auto"
+            }),
+            signal: controller.signal,
+          });
+        } catch (fetchErr: unknown) {
+          clearTimeout(timeoutId);
+          if (fetchErr instanceof DOMException && fetchErr.name === 'AbortError') {
+            throw new Error(`AI API timeout after ${AI_FETCH_TIMEOUT_MS}ms`);
+          }
+          throw fetchErr;
+        }
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`AI API error: ${response.status}`);
@@ -334,6 +355,7 @@ Deno.serve(async (req: Request) => {
                 tool_call_id: toolCall.id,
                 content: JSON.stringify(toolResult)
               });
+              allToolResults.push(JSON.stringify(toolResult));
             } catch (toolError: unknown) {
               const errMsg = toolError instanceof Error ? toolError.message : String(toolError);
               console.error(`Tool error (${toolName}):`, toolError);
@@ -362,11 +384,29 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        // Stream final response
+        // Stream final response with hallucination guard
         const content = choice.message?.content || "";
         if (content) {
-          finalResponse = content;
-          sendTextChunk(ctx, content);
+          // Validate AI response against tool results
+          const guard = createHallucinationGuard({
+            roomPrices: allToolResults.flatMap(tr => {
+              const prices: number[] = [];
+              for (const m of tr.matchAll(/"(?:price_per_night|effective_price|base_price)"\s*:\s*(\d+)/g)) {
+                prices.push(Number(m[1]));
+              }
+              return prices;
+            }),
+            knownBookingCodes: allToolResults.flatMap(tr => {
+              return [...tr.matchAll(/PMH-[A-Z0-9]{4,10}/gi)].map(m => m[0]);
+            }),
+          });
+          const validation = guard.validate(content, allToolResults);
+          if (!validation.passed) {
+            console.warn(`⚠️ Hallucination guard flagged ${validation.violations.length} violation(s):`,
+              validation.violations.map(v => `${v.type}: ${v.detail}`));
+          }
+          finalResponse = validation.passed ? content : validation.corrected;
+          sendTextChunk(ctx, finalResponse);
         }
         break;
       }

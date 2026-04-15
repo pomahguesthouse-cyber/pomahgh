@@ -9,3 +9,8 @@ export function normalizePhone(phone: string): string {
   }
   return normalized;
 }
+
+/** Validate phone number format (digits only, 10-15 chars) */
+export function isValidPhone(phone: string): boolean {
+  return /^\d{10,15}$/.test(phone);
+}

@@ -65,9 +65,9 @@ serve(async (req) => {
     const providedInternalSecret = req.headers.get("x-internal-secret");
     const tokenRole = await verifyJwtRole(req.headers.get("authorization"));
     const isTrustedInternal = providedInternalSecret === expectedInternalSecret;
-    const isPrivilegedJwt = tokenRole === "service_role" || tokenRole === "authenticated";
+    const isServiceRole = tokenRole === "service_role";
 
-    if (!isTrustedInternal && !isPrivilegedJwt) {
+    if (!isTrustedInternal && !isServiceRole) {
       return new Response(JSON.stringify({ error: "Unauthorized tool execution" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

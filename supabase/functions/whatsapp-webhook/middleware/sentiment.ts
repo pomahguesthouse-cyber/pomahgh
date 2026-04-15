@@ -4,7 +4,8 @@ const NEGATIVE_SENTIMENT_PATTERNS = /\b(marah|kesal|kecewa|komplain|tidak puas|j
 const NEGATIVE_EMOJI_PATTERNS = /😡|😤|🤬|💢|😠|👎/;
 
 /**
- * Fire-and-forget: detect negative sentiment and alert super admin managers
+ * Detect negative sentiment and alert super admin managers.
+ * Uses Promise.allSettled for reliable delivery.
  */
 export function detectAndAlertNegativeSentiment(
   userMessage: string,
@@ -29,20 +30,28 @@ export function detectAndAlertNegativeSentiment(
 Segera cek dan ambil alih percakapan jika diperlukan.
 🔗 Conversation ID: ${conversationId || '-'}`;
 
-  for (const admin of superAdmins) {
-    fetch('https://api.fonnte.com/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': fonnteApiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ target: admin.phone, message: alertMessage }),
-    }).then(r => r.json()).then(res => {
-      console.log(`🚨 Negative sentiment alert sent to ${admin.name} (${admin.phone}):`, res.status ? 'success' : 'failed');
-    }).catch(err => {
-      console.error(`🚨 Failed to send alert to ${admin.name}:`, err);
-    });
-  }
+  // Use Promise.allSettled to ensure all alerts are attempted
+  Promise.allSettled(
+    superAdmins.map(admin =>
+      fetch('https://api.fonnte.com/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': fonnteApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ target: admin.phone, message: alertMessage }),
+      })
+      .then(r => r.json())
+      .then(res => {
+        console.log(`🚨 Negative sentiment alert sent to ${admin.name} (${admin.phone}):`, res.status ? 'success' : 'failed');
+      })
+    )
+  ).then(results => {
+    const failed = results.filter(r => r.status === 'rejected');
+    if (failed.length > 0) {
+      console.error(`🚨 ${failed.length}/${results.length} sentiment alerts failed`);
+    }
+  });
 
   console.log(`🚨 Negative sentiment detected from ${phone}: "${userMessage.substring(0, 80)}..." — alerting ${superAdmins.length} super admin(s)`);
 }
