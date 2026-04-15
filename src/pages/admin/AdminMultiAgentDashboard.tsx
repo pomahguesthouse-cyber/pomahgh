@@ -5,8 +5,12 @@ import { useMultiAgentDashboard } from '@/hooks/useMultiAgentDashboard';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
 
 const AdminMultiAgentDashboard = () => {
-  const { agents, sessions, stats, activityLog } = useMultiAgentDashboard();
+  const { agents, sessions, stats, activityLog, routingLogs, saveAgentConfig } = useMultiAgentDashboard();
   const [selectedAgent, setSelectedAgent] = useState<AgentDefinition | null>(null);
+
+  const handleSaveConfig = (configId: string, data: Record<string, unknown>) => {
+    saveAgentConfig.mutate({ configId, data });
+  };
 
   return (
     <div className="space-y-0 bg-background min-h-screen">
@@ -46,7 +50,12 @@ const AdminMultiAgentDashboard = () => {
           <AgentGrid agents={agents} onSelectAgent={setSelectedAgent} selectedAgentId={selectedAgent?.id} />
           {selectedAgent && (
             <div className="p-4">
-              <AgentConfigPanel agent={selectedAgent} onClose={() => setSelectedAgent(null)} />
+              <AgentConfigPanel
+                agent={selectedAgent}
+                onClose={() => setSelectedAgent(null)}
+                onSave={handleSaveConfig}
+                isSaving={saveAgentConfig.isPending}
+              />
             </div>
           )}
         </TabsContent>
@@ -56,11 +65,19 @@ const AdminMultiAgentDashboard = () => {
         </TabsContent>
 
         <TabsContent value="logs" className="mt-0 p-4">
-          <ActivityLog logs={activityLog.data || []} isLoading={activityLog.isLoading} />
+          <ActivityLog
+            logs={activityLog.data || []}
+            routingLogs={routingLogs?.data || []}
+            isLoading={activityLog.isLoading}
+          />
         </TabsContent>
 
         <TabsContent value="prompt" className="mt-0 p-4">
-          <PromptStudio agents={agents} />
+          <PromptStudio
+            agents={agents}
+            onSave={handleSaveConfig}
+            isSaving={saveAgentConfig.isPending}
+          />
         </TabsContent>
 
         <TabsContent value="escalation" className="mt-0 p-4">
