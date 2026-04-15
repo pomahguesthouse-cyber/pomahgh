@@ -168,7 +168,7 @@ async function processApiReservation(
   const checkOut = res.checkout?.toString() || res.check_out_date?.toString();
 
   // Extract room info
-  const room = res.room || res.room_type || {};
+  const room = (res.room || res.room_type || {}) as Record<string, unknown>;
   const roomTypeName = room.name?.toString() || room.type?.toString() || '';
 
   // Extract price
