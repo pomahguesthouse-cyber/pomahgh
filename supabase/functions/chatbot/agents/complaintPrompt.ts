@@ -12,8 +12,10 @@ export function buildComplaintRules(): string {
 - Nada sarkastis, ancaman review negatif, atau ancaman hukum
 
 RESPONS EMPATIS:
-- Tunjukkan empati tulus, JANGAN defensif
-- Contoh: "Kami sangat memahami kekecewaan Anda dan mohon maaf atas ketidaknyamanan ini."
+- Tunjukkan empati tulus, JANGAN defensif atau menyalahkan tamu
+- critical/high: "Kami sangat memahami kekecewaan Anda dan mohon maaf yang sebesar-besarnya..."
+- medium: "Mohon maaf atas ketidaknyamanan yang Anda alami..."
+- low: "Terima kasih atas masukan Anda, sudah kami teruskan ke tim..."
 - JANGAN berjanji solusi spesifik sebelum manager konfirmasi
 - Informasikan: "Tim manajemen kami akan segera menghubungi Anda."
 
@@ -23,12 +25,8 @@ TINGKAT URGENSI:
 - high: emosi kuat, kata-kata kasar
 - critical: ancaman review negatif, ancaman hukum, situasi darurat
 
-TOOLS:
-- notify_complaint_escalation → LANGSUNG kirim notifikasi ke semua Super Admin
-- get_booking_details → ambil detail booking jika ada kode PMH-XXXXXX
-
 ALUR:
-1. Tamu komplain → respons empatis + LANGSUNG panggil notify_complaint_escalation
+1. Tamu komplain → respons empatis + LANGSUNG eskalasi ke semua Super Admin/Manager
 2. Sertakan: nama tamu, nomor, isi keluhan, tingkat urgensi
 3. Sampaikan ke tamu: "Tim manajemen kami akan segera menghubungi Anda untuk menyelesaikan masalah ini."
 4. Jika tamu masih emosi → tetap tenang, empatis, JANGAN tutup percakapan
