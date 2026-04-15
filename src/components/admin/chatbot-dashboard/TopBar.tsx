@@ -1,4 +1,4 @@
-import { Activity, Users, Clock, Settings, Zap } from 'lucide-react';
+import { Activity, Users, Clock, Settings, Zap, Hand } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -27,23 +27,29 @@ export const TopBar = ({ analytics }: TopBarProps) => {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex items-center gap-3">
+        <h1 className="text-lg font-bold">AI Dashboard</h1>
+        <div className="h-5 w-px bg-border" />
         <div className="flex items-center gap-2">
-          <Zap className="h-5 w-5 text-green-500" />
-          <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400">
-            AI Active
+          <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400 gap-1">
+            <Zap className="h-3 w-3" />
+            AI Auto
+          </Badge>
+          <Badge variant="outline" className="border-muted-foreground/20 text-muted-foreground gap-1 opacity-50">
+            <Hand className="h-3 w-3" />
+            Manual
           </Badge>
         </div>
-        <div className="h-5 w-px bg-border" />
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <div className="h-5 w-px bg-border hidden sm:block" />
+        <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground">
           <Users className="h-4 w-4" />
           <span className="font-medium text-foreground">{analytics?.activeChats ?? 0}</span>
-          <span>active users</span>
+          <span>active</span>
         </div>
-        <div className="h-5 w-px bg-border" />
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <div className="h-5 w-px bg-border hidden sm:block" />
+        <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground">
           <Activity className="h-4 w-4" />
           <span className="font-medium text-foreground">{analytics?.totalMessages ?? 0}</span>
-          <span>messages</span>
+          <span>msg</span>
         </div>
       </div>
 

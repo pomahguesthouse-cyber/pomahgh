@@ -1,4 +1,4 @@
-import { Phone, Clock, MessageCircle, Shield, Ban } from 'lucide-react';
+import { Phone, Clock, MessageCircle, Shield, Ban, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -9,6 +9,7 @@ interface LiveConversationListProps {
   sessions: DashboardSession[] | undefined;
   selectedSessionId: string | null;
   onSelectSession: (session: DashboardSession) => void;
+  layout?: 'grid' | 'list';
 }
 
 const formatTime = (dateStr: string | null) => {
@@ -33,7 +34,17 @@ const intentColors: Record<string, string> = {
   unknown: 'bg-muted text-muted-foreground',
 };
 
-export const LiveConversationList = ({ sessions, selectedSessionId, onSelectSession }: LiveConversationListProps) => {
+const getGuestName = (session: DashboardSession): string | null => {
+  if (session.guest_name) return session.guest_name;
+  const ctx = session.context as Record<string, unknown> | null;
+  if (ctx?.guest_name) return ctx.guest_name as string;
+  if (ctx?.name) return ctx.name as string;
+  return null;
+};
+
+export const LiveConversationList = ({ sessions, selectedSessionId, onSelectSession, layout = 'list' }: LiveConversationListProps) => {
+  const isGrid = layout === 'grid';
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
@@ -45,50 +56,117 @@ export const LiveConversationList = ({ sessions, selectedSessionId, onSelectSess
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <ScrollArea className="h-[400px]">
-          <div className="divide-y">
-            {(!sessions || sessions.length === 0) && (
-              <div className="p-6 text-center text-sm text-muted-foreground">Belum ada percakapan aktif</div>
-            )}
+      <CardContent className={isGrid ? 'p-4 pt-0' : 'p-0'}>
+        {(!sessions || sessions.length === 0) && (
+          <div className="p-6 text-center text-sm text-muted-foreground">Belum ada percakapan aktif</div>
+        )}
+
+        {isGrid ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {sessions?.map((s) => {
               const intent = getIntentFromContext(s.context);
               const isSelected = s.id === selectedSessionId;
+              const guestName = getGuestName(s);
               return (
                 <button
                   key={s.id}
                   onClick={() => onSelectSession(s)}
                   className={cn(
-                    'w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors',
-                    isSelected && 'bg-primary/5 border-l-2 border-l-primary'
+                    'text-left rounded-lg border p-3 transition-all hover:shadow-md',
+                    isSelected
+                      ? 'border-primary bg-primary/5 shadow-sm'
+                      : 'border-border bg-card hover:bg-muted/50'
                   )}
                 >
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="text-sm font-medium truncate">
-                        {s.guest_name || s.phone_number}
-                      </span>
-                      {s.is_takeover && <Shield className="h-3.5 w-3.5 text-orange-500 shrink-0" />}
-                      {s.is_blocked && <Ban className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                      <div className="rounded-full bg-muted p-1.5 shrink-0">
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        {guestName ? (
+                          <>
+                            <p className="text-sm font-semibold truncate">{guestName}</p>
+                            <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                              <Phone className="h-3 w-3 shrink-0" />
+                              {s.phone_number}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm font-medium truncate flex items-center gap-1">
+                            <Phone className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            {s.phone_number}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <Badge variant="outline" className={cn('text-[10px] shrink-0', intentColors[intent] || intentColors.unknown)}>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {s.is_takeover && <Shield className="h-3.5 w-3.5 text-orange-500" />}
+                      {s.is_blocked && <Ban className="h-3.5 w-3.5 text-destructive" />}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="outline" className={cn('text-[10px]', intentColors[intent] || intentColors.unknown)}>
                       {intent.toUpperCase()}
                     </Badge>
-                  </div>
-                  <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>{formatTime(s.last_message_at)}</span>
-                    <span className="ml-1">WIB</span>
-                    {s.session_type === 'admin' && (
-                      <Badge variant="outline" className="ml-2 text-[10px] bg-orange-500/10 text-orange-600">Manager</Badge>
-                    )}
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatTime(s.last_message_at)} WIB
+                    </span>
                   </div>
                 </button>
               );
             })}
           </div>
-        </ScrollArea>
+        ) : (
+          <ScrollArea className="h-[500px]">
+            <div className="divide-y">
+              {sessions?.map((s) => {
+                const intent = getIntentFromContext(s.context);
+                const isSelected = s.id === selectedSessionId;
+                const guestName = getGuestName(s);
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => onSelectSession(s)}
+                    className={cn(
+                      'w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors',
+                      isSelected && 'bg-primary/5 border-l-2 border-l-primary'
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          {guestName ? (
+                            <>
+                              <span className="text-sm font-semibold truncate block">{guestName}</span>
+                              <span className="text-xs text-muted-foreground truncate block">{s.phone_number}</span>
+                            </>
+                          ) : (
+                            <span className="text-sm font-medium truncate block">{s.phone_number}</span>
+                          )}
+                        </div>
+                        {s.is_takeover && <Shield className="h-3.5 w-3.5 text-orange-500 shrink-0" />}
+                        {s.is_blocked && <Ban className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                      </div>
+                      <Badge variant="outline" className={cn('text-[10px] shrink-0', intentColors[intent] || intentColors.unknown)}>
+                        {intent.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>{formatTime(s.last_message_at)} WIB</span>
+                      {s.session_type === 'admin' && (
+                        <Badge variant="outline" className="ml-2 text-[10px] bg-orange-500/10 text-orange-600">Manager</Badge>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        )}
       </CardContent>
     </Card>
   );
