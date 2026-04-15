@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TopBar, AgentMetrics, AgentGrid, AgentConfigPanel, LiveChatView, ActivityLog, PromptStudio, EscalationFlow, SettingsPanel, AgentAnalytics } from '@/components/admin/multi-agent';
+import { TopBar, AgentMetrics, AgentGrid, AgentConfigPanel, LiveChatView, ActivityLog, PromptStudio, EscalationFlow, SettingsPanel, AgentAnalytics, ManagerNumbersPanel } from '@/components/admin/multi-agent';
 import { useMultiAgentDashboard } from '@/hooks/useMultiAgentDashboard';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
 

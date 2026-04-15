@@ -9,3 +9,4 @@ export { EscalationFlow } from './EscalationFlow';
 export { SettingsPanel } from './SettingsPanel';
 export { ConversationMemoryViewer } from './ConversationMemoryViewer';
 export { AgentAnalytics } from './AgentAnalytics';
+export { ManagerNumbersPanel } from './ManagerNumbersPanel';
