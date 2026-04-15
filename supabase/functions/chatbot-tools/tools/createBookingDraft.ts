@@ -280,7 +280,17 @@ export async function handleCreateBookingDraft(
     console.error("Failed to notify managers:", notifyErr);
   }
 
-  const bankInfo = `Silakan transfer ke:\n🏦 Bank BCA\n💳 No. Rek: 0095584379\n👤 a.n. Faizal Abdurachman\n\nSetelah transfer, kirimkan bukti pembayaran kepada kami.`;
+  // Fetch bank accounts from DB (dynamic, not hardcoded)
+  const { data: bankAccountsData } = await supabase
+    .from("bank_accounts")
+    .select("bank_name, account_number, account_holder_name")
+    .eq("is_active", true)
+    .order("display_order")
+    .limit(3);
+
+  const bankInfo = (bankAccountsData && bankAccountsData.length > 0)
+    ? `Silakan transfer ke:\n${bankAccountsData.map(b => `🏦 ${b.bank_name}\n💳 No. Rek: ${b.account_number}\n👤 a.n. ${b.account_holder_name}`).join('\n\n')}\n\nSetelah transfer, kirimkan bukti pembayaran kepada kami.`
+    : `Silakan hubungi kami untuk informasi pembayaran.`;
 
   // Build hotel policies section
   let policiesInfo = '';

@@ -39,7 +39,8 @@ export async function loadHotelData(
     { data: knowledgeBase },
     { data: trainingExamples },
     { data: faqPatternsRaw },
-    { data: insightsRaw }
+    { data: insightsRaw },
+    { data: bankAccountsRaw }
   ] = await Promise.all([
     supabase.from("hotel_settings").select("*").single(),
     supabase.from("rooms")
@@ -79,7 +80,12 @@ export async function loadHotelData(
       .select("suggested_improvements")
       .not("suggested_improvements", "eq", "[]")
       .order("analyzed_at", { ascending: false })
-      .limit(10)
+      .limit(10),
+    // Bank accounts for payment info (prevent AI hallucination)
+    supabase.from("bank_accounts")
+      .select("bank_name, account_number, account_holder_name")
+      .eq("is_active", true)
+      .order("display_order")
   ]);
 
   // Extract unique high-priority improvement suggestions (keep highest priority per area)
@@ -110,6 +116,7 @@ export async function loadHotelData(
     trainingExamples: trainingExamples || [],
     faqPatterns: (faqPatternsRaw || []).filter((p: { best_response: string | null }) => p.best_response),
     learningInsights: Array.from(improvementMap.values()).slice(0, 5),
+    bankAccounts: bankAccountsRaw || [],
   };
 
   // Cache the result
