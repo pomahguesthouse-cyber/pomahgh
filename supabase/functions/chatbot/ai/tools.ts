@@ -98,7 +98,7 @@ export const tools = [
     type: "function",
     function: {
       name: "update_booking",
-      description: "Ubah booking. WAJIB verifikasi dulu",
+      description: "Ubah booking (ganti tanggal, perpanjang/extend menginap, ubah jumlah tamu). Untuk perpanjang: hitung new_check_out = check_out lama + jumlah malam tambahan. WAJIB verifikasi dengan booking_id + phone + email.",
       parameters: {
         type: "object",
         properties: {

@@ -8,13 +8,16 @@ export function buildBookingFlowRules(): string {
 - "X malam" SEBELUM booking → check_availability
 - Jangan tanya ulang info yang sudah ada
 
-KOREKSI SETELAH BOOKING DIBUAT:
+KOREKSI / PERPANJANGAN SETELAH BOOKING DIBUAT:
 - Jika SUDAH ADA booking aktif (ada kode PMH-XXXXXX di konteks), dan user minta perubahan (jumlah malam, tanggal, dll):
   → LANGSUNG panggil update_booking dengan kode booking + email + phone dari konteks
   → JANGAN buat booking baru! JANGAN panggil check_availability!
 - "2 malam" setelah booking 1 malam → update_booking, ubah check_out = check_in + 2 hari
 - "ganti tanggal" → update_booking dengan tanggal baru
 - "tambah tamu" → update_booking dengan num_guests baru
+- "perpanjang" / "extend" / "tambah malam" → update_booking: hitung new_check_out = check_out lama + jumlah malam tambahan
+  Contoh: check_out lama 2026-04-20, minta tambah 1 malam → new_check_out = 2026-04-21
+  GUNAKAN tanggal check_in dan check_out dari konteks (last_booking_check_in, last_booking_check_out)
 
 TOOLS:
 - "ada kamar apa?" → get_all_rooms
