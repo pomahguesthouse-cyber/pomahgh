@@ -97,6 +97,36 @@ const AdminBookings = () => {
     };
   }, []);
 
+  // Detect overbooking: same room_number used by multiple bookings on overlapping dates
+  const overbookedBookingIds = useMemo(() => {
+    if (!bookings) return new Set<string>();
+    const activeBookings = bookings.filter(
+      (b) => !['cancelled', 'no_show', 'checked_out'].includes(b.status)
+    );
+    const entries: { bookingId: string; roomNumber: string; checkIn: string; checkOut: string }[] = [];
+    for (const b of activeBookings) {
+      if (b.booking_rooms && b.booking_rooms.length > 0) {
+        for (const br of b.booking_rooms) {
+          entries.push({ bookingId: b.id, roomNumber: br.room_number, checkIn: b.check_in, checkOut: b.check_out });
+        }
+      } else if (b.allocated_room_number) {
+        entries.push({ bookingId: b.id, roomNumber: b.allocated_room_number, checkIn: b.check_in, checkOut: b.check_out });
+      }
+    }
+    const overbooked = new Set<string>();
+    for (let i = 0; i < entries.length; i++) {
+      for (let j = i + 1; j < entries.length; j++) {
+        const a = entries[i], b = entries[j];
+        if (a.roomNumber === b.roomNumber && a.bookingId !== b.bookingId &&
+            a.checkIn < b.checkOut && a.checkOut > b.checkIn) {
+          overbooked.add(a.bookingId);
+          overbooked.add(b.bookingId);
+        }
+      }
+    }
+    return overbooked;
+  }, [bookings]);
+
   // Filter bookings
   const filteredBookings = useMemo(() => {
     return bookings?.filter((booking) => {
