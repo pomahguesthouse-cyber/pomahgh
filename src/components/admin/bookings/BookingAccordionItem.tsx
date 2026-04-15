@@ -68,6 +68,7 @@ interface BookingAccordionItemProps {
   onInvoiceClick: (booking: Booking) => void;
   isUpdating?: boolean;
   isDeleting?: boolean;
+  isOverbooked?: boolean;
 }
 
 export const BookingAccordionItem = memo(function BookingAccordionItem({
