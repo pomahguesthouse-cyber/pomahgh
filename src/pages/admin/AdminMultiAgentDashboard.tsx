@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TopBar, AgentMetrics, AgentGrid, AgentConfigPanel, LiveChatView, ActivityLog, PromptStudio, EscalationFlow, SettingsPanel } from '@/components/admin/multi-agent';
+import { TopBar, AgentMetrics, AgentGrid, AgentConfigPanel, LiveChatView, ActivityLog, PromptStudio, EscalationFlow, SettingsPanel, AgentAnalytics } from '@/components/admin/multi-agent';
 import { useMultiAgentDashboard } from '@/hooks/useMultiAgentDashboard';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
 
@@ -19,22 +19,25 @@ const AdminMultiAgentDashboard = () => {
       <Tabs defaultValue="agents" className="w-full">
         <div className="border-b px-4">
           <TabsList className="bg-transparent h-10 p-0 gap-0">
-            <TabsTrigger value="agents" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="agents" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               🤖 Semua Agent
             </TabsTrigger>
-            <TabsTrigger value="live-chat" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="live-chat" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               💬 Live Chat
             </TabsTrigger>
-            <TabsTrigger value="logs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="logs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               📋 Jadwal & Log
             </TabsTrigger>
-            <TabsTrigger value="prompt" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="prompt" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               ✏️ Prompt Studio
             </TabsTrigger>
-            <TabsTrigger value="escalation" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="analytics" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+              📊 Analytics
+            </TabsTrigger>
+            <TabsTrigger value="escalation" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               🔀 Alur Eskalasi
             </TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="settings" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               ⚙️ Pengaturan
             </TabsTrigger>
           </TabsList>
@@ -78,6 +81,10 @@ const AdminMultiAgentDashboard = () => {
             onSave={handleSaveConfig}
             isSaving={saveAgentConfig.isPending}
           />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="mt-0 p-4">
+          <AgentAnalytics />
         </TabsContent>
 
         <TabsContent value="escalation" className="mt-0 p-4">
