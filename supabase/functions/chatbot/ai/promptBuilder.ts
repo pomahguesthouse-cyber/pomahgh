@@ -5,6 +5,9 @@ import {
 import { getWIBTime, formatDateIndonesian, formatDateISO, addDays, getNextSaturday, getTimeGreeting } from '../utils/time.ts';
 import { selectRelevantExamples, formatTrainingExamples, selectRelevantFAQPatterns, formatFAQPatterns, selectRelevantKnowledge, formatKnowledge } from '../services/exampleSelector.ts';
 import type { PromptConfig, ConversationContext, ChatbotSettings, HotelData } from '../lib/types.ts';
+import { buildBookingFlowRules } from '../agents/bookingPrompt.ts';
+import { buildPaymentRules } from '../agents/paymentPrompt.ts';
+import { buildAdminTakeoverRules } from '../agents/intentPrompt.ts';
 
 /**
  * Build persona — natural WhatsApp admin style
@@ -145,46 +148,14 @@ function buildContextString(ctx?: ConversationContext): { contextString: string;
 }
 
 /**
- * Booking flow rules — compact
+ * Combined flow rules — assembled from agent prompt modules
  */
-function buildBookingFlowRules(): string {
-  return `BOOKING:
-- User konfirmasi setelah cek → pakai kamar+tanggal sebelumnya, minta data (nama, email, HP, jumlah), lalu LANGSUNG panggil create_booking_draft
-- Data lengkap → LANGSUNG create_booking_draft (jangan balas text dulu!)
-- "X malam" SEBELUM booking → check_availability
-- Jangan tanya ulang info yang sudah ada
+function buildCombinedFlowRules(): string {
+  return `${buildBookingFlowRules()}
 
-KOREKSI SETELAH BOOKING DIBUAT:
-- Jika SUDAH ADA booking aktif (ada kode PMH-XXXXXX di konteks), dan user minta perubahan (jumlah malam, tanggal, dll):
-  → LANGSUNG panggil update_booking dengan kode booking + email + phone dari konteks
-  → JANGAN buat booking baru! JANGAN panggil check_availability!
-- "2 malam" setelah booking 1 malam → update_booking, ubah check_out = check_in + 2 hari
-- "ganti tanggal" → update_booking dengan tanggal baru
-- "tambah tamu" → update_booking dengan num_guests baru
+${buildPaymentRules()}
 
-TOOLS:
-- "ada kamar apa?" → get_all_rooms
-- kamar+tanggal → check_availability
-- data tamu lengkap (nama+email+HP+jumlah) → create_booking_draft. ⚠️ WAJIB ada guest_phone!
-- cek/ubah booking → pakai data KONTEKS atau minta PMH-XXXXXX+telepon+email
-- "sudah transfer" → notify_payment_proof
-
-LONG STAY: panggil notify_longstay_inquiry HANYA jika minta DISKON, bukan sekedar tanya harga 3+ malam.
-
-PEMBAYARAN:
-- JANGAN kasih link pembayaran
-- Setelah booking: info kode + rekening BCA 0095584379 a.n. Faizal Abdurachman + minta bukti transfer
-- Bukti masuk → notify_payment_proof, bilang "Tim kami sedang cek pembayaran"
-
-FORMAT: Kode PMH-XXXXXX | Tanggal "15 Januari 2025" | Harga "Rp 450.000"
-
-ADMIN TAKEOVER:
-- Jika ada pesan dari admin/pengelola di riwayat, BACA dan PAHAMI apa yang sudah dijawab
-- Lanjutkan percakapan secara natural berdasarkan jawaban admin, JANGAN ulangi atau bertentangan
-- Anggap admin dan kamu satu tim — transisi harus seamless
-- Jika admin sudah jawab pertanyaan tamu, jangan jawab ulang — lanjut ke topik berikutnya
-
-BATASAN: Hanya jawab tentang Pomah Guesthouse (booking, kamar, fasilitas, lokasi, kebijakan, kontak). Tolak sopan topik lain.`;
+${buildAdminTakeoverRules()}`;
 }
 
 /**
@@ -202,7 +173,7 @@ export function buildSystemPrompt(config: PromptConfig): string {
   const { contextString, explicitToolInstruction } = buildContextString(conversationContext);
   const roomsInfo = buildRoomsInfo(hotelData);
   const addonsInfo = buildAddonsInfo(hotelData);
-  const bookingFlowRules = buildBookingFlowRules();
+  const bookingFlowRules = buildCombinedFlowRules();
 
   // Relevant training examples
   const relevantExamples = lastUserMessage 
