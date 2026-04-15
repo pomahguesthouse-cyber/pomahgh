@@ -79,6 +79,12 @@ export interface LearningInsight {
   priority: string;
 }
 
+export interface BankAccount {
+  bank_name: string;
+  account_number: string;
+  account_holder_name: string;
+}
+
 export interface HotelData {
   settings: HotelSettings;
   rooms: Room[];
@@ -89,6 +95,7 @@ export interface HotelData {
   trainingExamples: TrainingExample[];
   faqPatterns: FAQPattern[];
   learningInsights: LearningInsight[];
+  bankAccounts: BankAccount[];
 }
 
 export interface ParsedDate {
