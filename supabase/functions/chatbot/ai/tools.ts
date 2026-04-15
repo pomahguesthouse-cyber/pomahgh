@@ -180,5 +180,22 @@ export const tools = [
         }
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "cancel_booking",
+      description: "Batalkan booking. Gunakan saat tamu bilang 'tidak jadi', 'batal', 'cancel', 'ga jadi'. WAJIB verifikasi dengan booking_id + phone + email dari konteks.",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_id: { type: "string", description: "Kode PMH-XXXXXX" },
+          guest_phone: { type: "string", description: "Telepon" },
+          guest_email: { type: "string", description: "Email" },
+          reason: { type: "string", description: "Alasan pembatalan (opsional)" }
+        },
+        required: ["booking_id", "guest_phone", "guest_email"]
+      }
+    }
   }
 ];
