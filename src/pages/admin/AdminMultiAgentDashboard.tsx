@@ -94,6 +94,10 @@ const AdminMultiAgentDashboard = () => {
           <EscalationFlow agents={agents} />
         </TabsContent>
 
+        <TabsContent value="managers" className="mt-0 p-4">
+          <ManagerNumbersPanel />
+        </TabsContent>
+
         <TabsContent value="settings" className="mt-0 p-4">
           <SettingsPanel />
         </TabsContent>
