@@ -8,36 +8,81 @@ import { logAgentDecision } from '../../_shared/agentLogger.ts';
 import { checkRateLimit } from '../middleware/rateLimiter.ts';
 import { getCachedHotelSettings, ensureConversation, updateSession } from '../services/session.ts';
 import { logMessage } from '../services/conversation.ts';
+import { sendWhatsApp } from '../services/fonnte.ts';
 import { handlePriceApproval } from './pricing.ts';
 import { handleManagerChat } from './manager.ts';
 import { handleNameCollection } from './intent.ts';
 import { handleGuestBookingFlow } from './booking.ts';
 import { handleGuestFAQ } from './faq.ts';
+import { handleComplaint, isComplaintMessage } from './complaint.ts';
+import { handlePayment, isPaymentMessage } from './payment.ts';
+
+type IntentType = 'faq' | 'booking' | 'complaint' | 'payment';
 
 /**
  * Detect intent category from normalized message.
- * Returns 'faq' for general info questions, 'booking' for booking-related.
+ * Priority: complaint > payment > booking > faq (default for unknown)
  */
-function detectIntent(message: string): 'faq' | 'booking' {
-  // Booking-specific: explicit reservation, payment, scheduling actions
-  const bookingPatterns = /\b(book|booking|pesan\s+kamar|reservas|cek\s+ketersediaan|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|bayar|transfer|pembayaran|payment|cancel|batal|refund|promo|diskon|mau\s+(?:menginap|pesan|booking|nginap)|dp|uang\s+muka|kamar\s+(?:kosong|tersedia|available))\b/i;
+function detectIntent(message: string): IntentType {
+  // 1. Complaint: negative sentiment takes highest priority
+  if (isComplaintMessage(message)) {
+    return 'complaint';
+  }
 
-  // Price queries: only when asking about room cost, not general info
+  // 2. Payment: explicit payment-related keywords
+  if (isPaymentMessage(message)) {
+    return 'payment';
+  }
+
+  // 3. Booking: explicit reservation, scheduling actions
+  const bookingPatterns = /\b(book|booking|pesan\s+kamar|reservas|cek\s+ketersediaan|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|cancel|batal|refund|promo|diskon|mau\s+(?:menginap|pesan|booking|nginap)|kamar\s+(?:kosong|tersedia|available))\b/i;
   const pricePatterns = /\b(?:(?:berapa|brp)\s+(?:harga|tarif|biaya|per\s*malam)|harga\s+kamar|tarif\s+kamar|biaya\s+(?:menginap|kamar)|jadi\s+berapa|total(?:nya)?)\b/i;
 
   if (bookingPatterns.test(message) || pricePatterns.test(message)) {
     return 'booking';
   }
 
-  // FAQ patterns: general info about facilities, location, etc.
+  // 4. FAQ: general info about facilities, location, etc.
   const faqPatterns = /\b(fasilitas|facility|wifi|parkir|parking|sarapan|breakfast|kolam|pool|ac|handuk|towel|alamat|lokasi|location|arah|direction|dekat|nearby|jam\s+(?:buka|operasional|kerja)|buka\s+(?:jam|sampai)|tutup\s+(?:jam|pukul)|aturan|rule|policy|kebijakan|smoking|merokok|hewan|pet|anak|child|extra\s+bed|laundry|restoran|restaurant|mushola|masjid|transportasi|airport|bandara|stasiun|terminal)\b/i;
 
   if (faqPatterns.test(message)) {
     return 'faq';
   }
 
-  // Default to booking (has full AI + tools capability)
-  return 'booking';
+  // Default UNKNOWN → FAQ (knowledge base fallback)
+  return 'faq';
+}
+
+/**
+ * Notify Human Staff (Super Admins) on critical errors.
+ */
+async function escalateToHumanStaff(
+  supabase: SupabaseClient,
+  phone: string,
+  conversationId: string,
+  errorMessage: string,
+  managerNumbers: ManagerInfo[],
+  fonnteApiKey: string,
+): Promise<void> {
+  try {
+    const superAdmins = managerNumbers.filter(m => m.role === 'super_admin' || m.role === 'admin');
+    const targets = superAdmins.length > 0 ? superAdmins : managerNumbers;
+    const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+
+    const notif = `🔴 *ERROR AGENT*
+
+📱 Tamu: ${phone}
+❌ Error: ${errorMessage.substring(0, 200)}
+⏰ ${now}
+
+_Sistem gagal memproses pesan tamu. Mohon ditindaklanjuti manual._`;
+
+    await Promise.allSettled(
+      targets.map(m => sendWhatsApp(m.phone, notif, fonnteApiKey))
+    );
+  } catch (err) {
+    console.error('Failed to escalate to human staff:', err);
+  }
 }
 
 /**
@@ -191,47 +236,107 @@ export async function orchestrate(
     return nameResult;
   }
 
-  // === INTENT DETECTION: Route to FAQ or Booking agent ===
+  // === INTENT DETECTION: Route to appropriate agent ===
   const intent = detectIntent(normalizedMessage);
+  console.log(`🎯 Intent detected: ${intent} for ${phone}`);
 
-  if (intent === 'faq') {
-    logAgentDecision(supabase, {
-      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
-      from_agent: 'orchestrator', to_agent: 'faq',
-      reason: 'faq_intent_detected', intent: 'faq',
-    });
-
-    const faqResult = await handleGuestFAQ(
-      supabase, session as WhatsAppSession, phone, normalizedMessage,
-      conversationId!, personaName, env, trace
-    );
-
-    // If FAQ agent escalated to booking (needed tools), fall through
-    const faqBody = await faqResult.clone().json().catch(() => null);
-    if (faqBody?.status === 'faq_escalate_to_booking') {
-      console.log('🔀 FAQ → Booking Agent escalation');
+  try {
+    // === COMPLAINT AGENT ===
+    if (intent === 'complaint') {
       logAgentDecision(supabase, {
         trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
-        from_agent: 'faq', to_agent: 'booking',
-        reason: 'faq_needs_tools', intent: 'booking',
+        from_agent: 'orchestrator', to_agent: 'complaint',
+        reason: 'complaint_intent_detected', intent: 'complaint',
       });
-      // Fall through to booking agent below
-    } else {
-      return faqResult;
+      return await handleComplaint(
+        supabase, session as WhatsAppSession, phone, normalizedMessage,
+        conversationId!, personaName, managerNumbers, env, trace
+      );
     }
-  }
 
-  // === BOOKING AGENT: AI conversation with tools ===
-  logAgentDecision(supabase, {
-    trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
-    from_agent: 'orchestrator', to_agent: 'booking',
-    reason: intent === 'faq' ? 'faq_escalation' : 'booking_intent_detected',
-    intent: 'booking_inquiry',
-  });
-  return handleGuestBookingFlow(
-    supabase, session as WhatsAppSession, phone, normalizedMessage, conversationId!,
-    personaName, managerNumbers, env, trace
-  );
+    // === PAYMENT AGENT ===
+    if (intent === 'payment') {
+      logAgentDecision(supabase, {
+        trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+        from_agent: 'orchestrator', to_agent: 'payment',
+        reason: 'payment_intent_detected', intent: 'payment',
+      });
+      return await handlePayment(
+        supabase, session as WhatsAppSession, phone, normalizedMessage,
+        conversationId!, personaName, managerNumbers, env, trace
+      );
+    }
+
+    // === FAQ AGENT ===
+    if (intent === 'faq') {
+      logAgentDecision(supabase, {
+        trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+        from_agent: 'orchestrator', to_agent: 'faq',
+        reason: 'faq_intent_detected', intent: 'faq',
+      });
+
+      const faqResult = await handleGuestFAQ(
+        supabase, session as WhatsAppSession, phone, normalizedMessage,
+        conversationId!, personaName, env, trace
+      );
+
+      // If FAQ agent escalated to booking (needed tools), fall through
+      const faqBody = await faqResult.clone().json().catch(() => null);
+      if (faqBody?.status === 'faq_escalate_to_booking') {
+        console.log('🔀 FAQ → Booking Agent escalation');
+        logAgentDecision(supabase, {
+          trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+          from_agent: 'faq', to_agent: 'booking',
+          reason: 'faq_needs_tools', intent: 'booking',
+        });
+        // Fall through to booking agent below
+      } else {
+        return faqResult;
+      }
+    }
+
+    // === BOOKING AGENT: AI conversation with tools ===
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+      from_agent: 'orchestrator', to_agent: 'booking',
+      reason: intent === 'faq' ? 'faq_escalation' : 'booking_intent_detected',
+      intent: 'booking_inquiry',
+    });
+    return await handleGuestBookingFlow(
+      supabase, session as WhatsAppSession, phone, normalizedMessage, conversationId!,
+      personaName, managerNumbers, env, trace
+    );
+
+  } catch (agentError) {
+    // === ERROR → HUMAN STAFF ESCALATION ===
+    const errorMsg = (agentError as Error).message || 'Unknown agent error';
+    console.error(`❌ Agent error for ${phone}:`, errorMsg);
+
+    // Log error
+    await logMessage(supabase, conversationId!, 'system',
+      `[Error] Agent ${intent} failed: ${errorMsg}`
+    );
+
+    // Notify human staff
+    await escalateToHumanStaff(supabase, phone, conversationId!, errorMsg, managerNumbers, env.fonnteApiKey);
+
+    // Send apology to guest
+    const apologyMsg = 'Maaf, ada kendala dalam memproses pesan Anda. Tim kami akan segera menghubungi Anda. 🙏';
+    await sendWhatsApp(phone, apologyMsg, env.fonnteApiKey);
+    await logMessage(supabase, conversationId!, 'assistant', apologyMsg);
+
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+      from_agent: intent, to_agent: 'human_staff',
+      reason: 'agent_error', intent: 'error_escalation',
+    });
+
+    return new Response(JSON.stringify({
+      status: 'error_escalated', conversation_id: conversationId, error: errorMsg,
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 }
 
 /** Parse various content types from webhook body */
