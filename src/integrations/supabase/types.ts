@@ -183,6 +183,7 @@ export type Database = {
         Row: {
           agent_id: string
           auto_escalate: boolean | null
+          can_send_media: boolean | null
           category: string
           config_json: Json | null
           created_at: string | null
@@ -190,6 +191,8 @@ export type Database = {
           icon: string
           id: string
           is_active: boolean | null
+          knowledge_base_enabled: boolean | null
+          knowledge_base_types: string[] | null
           max_turns: number | null
           name: string
           role: string
@@ -201,6 +204,7 @@ export type Database = {
         Insert: {
           agent_id: string
           auto_escalate?: boolean | null
+          can_send_media?: boolean | null
           category?: string
           config_json?: Json | null
           created_at?: string | null
@@ -208,6 +212,8 @@ export type Database = {
           icon?: string
           id?: string
           is_active?: boolean | null
+          knowledge_base_enabled?: boolean | null
+          knowledge_base_types?: string[] | null
           max_turns?: number | null
           name: string
           role: string
@@ -219,6 +225,7 @@ export type Database = {
         Update: {
           agent_id?: string
           auto_escalate?: boolean | null
+          can_send_media?: boolean | null
           category?: string
           config_json?: Json | null
           created_at?: string | null
@@ -226,6 +233,8 @@ export type Database = {
           icon?: string
           id?: string
           is_active?: boolean | null
+          knowledge_base_enabled?: boolean | null
+          knowledge_base_types?: string[] | null
           max_turns?: number | null
           name?: string
           role?: string
