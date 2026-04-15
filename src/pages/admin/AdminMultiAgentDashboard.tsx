@@ -31,10 +31,13 @@ const AdminMultiAgentDashboard = () => {
             <TabsTrigger value="prompt" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               ✏️ Prompt Studio
             </TabsTrigger>
-            <TabsTrigger value="escalation" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="analytics" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+              📊 Analytics
+            </TabsTrigger>
+            <TabsTrigger value="escalation" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               🔀 Alur Eskalasi
             </TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="settings" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               ⚙️ Pengaturan
             </TabsTrigger>
           </TabsList>
