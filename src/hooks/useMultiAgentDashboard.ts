@@ -193,6 +193,10 @@ export const useMultiAgentDashboard = () => {
         status = guestSessions.length > 0 ? 'active' : 'idle';
         chatCount = routingCounts['faq'] || 0;
         break;
+      case 'payment':
+        status = guestSessions.length > 0 ? 'active' : 'idle';
+        chatCount = routingCounts['payment'] || 0;
+        break;
       case 'pricing':
         status = managerSessions.length > 0 ? 'active' : 'idle';
         chatCount = routingCounts['pricing'] || 0;
