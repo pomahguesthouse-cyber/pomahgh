@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
-import { useRooms } from "@/hooks/useRooms";
+import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useBookingValidation } from "@/hooks/useBookingValidation";
 import { useRoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
@@ -34,7 +34,7 @@ const AdminBookings = () => {
     isUpdating,
     isDeleting,
   } = useAdminBookings();
-  const { data: rooms } = useRooms();
+  const { rooms } = useAdminRooms();
   const { bankAccounts } = useBankAccounts();
   const { checkBookingConflict } = useBookingValidation();
   const { exportToExcel, exportToPDF } = useBookingExport();
