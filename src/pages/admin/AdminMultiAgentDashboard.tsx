@@ -19,16 +19,16 @@ const AdminMultiAgentDashboard = () => {
       <Tabs defaultValue="agents" className="w-full">
         <div className="border-b px-4">
           <TabsList className="bg-transparent h-10 p-0 gap-0">
-            <TabsTrigger value="agents" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="agents" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               🤖 Semua Agent
             </TabsTrigger>
-            <TabsTrigger value="live-chat" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="live-chat" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               💬 Live Chat
             </TabsTrigger>
-            <TabsTrigger value="logs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="logs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               📋 Jadwal & Log
             </TabsTrigger>
-            <TabsTrigger value="prompt" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+            <TabsTrigger value="prompt" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               ✏️ Prompt Studio
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
