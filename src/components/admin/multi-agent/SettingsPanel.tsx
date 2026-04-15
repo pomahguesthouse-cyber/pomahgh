@@ -9,7 +9,7 @@ import { useHotelSettings } from '@/hooks/useHotelSettings';
 import { Loader2, Save, CheckCircle } from 'lucide-react';
 
 export const SettingsPanel = () => {
-  const { settings, isLoading, updateSettings } = useHotelSettings();
+  const { settings, isLoading, updateSettings, isUpdating } = useHotelSettings();
 
   const [form, setForm] = useState({
     whatsapp_number: '',
