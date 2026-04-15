@@ -8,6 +8,7 @@ import { buildSystemPrompt } from "./ai/promptBuilder.ts";
 import { tools } from "./ai/tools.ts";
 import { createTrace } from "../_shared/traceContext.ts";
 import { createHallucinationGuard } from "../_shared/hallucinationGuard.ts";
+import { logToolExecution } from "../_shared/agentLogger.ts";
 
 interface ToolCall {
   id: string;
@@ -217,6 +218,7 @@ serve(async (req) => {
           parameters = {};
         }
 
+        const toolStart = Date.now();
         try {
           const toolController = new AbortController();
           const toolTimeout = setTimeout(() => toolController.abort(), 15000); // 15s per tool
@@ -276,6 +278,13 @@ serve(async (req) => {
             }
           }
 
+          logToolExecution(supabase, {
+            trace_id: trace.traceId, tool_name: toolName, arguments: parameters,
+            result_status: !toolResponse.ok ? 'failed' : 'success',
+            result_summary: resultStr.substring(0, 200),
+            duration_ms: Date.now() - toolStart, agent_name: 'chatbot',
+          });
+
           return {
             role: "tool" as const,
             content: trimmedResult,
@@ -286,6 +295,11 @@ serve(async (req) => {
             ? `Tool ${toolName} timeout (15s)` 
             : `Tool ${toolName} failed`;
           console.error(errMsg, toolError);
+          logToolExecution(supabase, {
+            trace_id: trace.traceId, tool_name: toolName, arguments: parameters,
+            result_status: 'failed', error_message: errMsg,
+            duration_ms: Date.now() - toolStart, agent_name: 'chatbot',
+          });
           return {
             role: "tool" as const,
             content: JSON.stringify({ error: errMsg }),

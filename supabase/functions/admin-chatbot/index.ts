@@ -16,6 +16,7 @@ import type { HotelSettings, PersonaSettings, ToolExecution } from "./lib/types.
 import { adminCache, ADMIN_CACHE_KEYS, ADMIN_CACHE_TTL, getOrLoadAdmin } from "./lib/cache.ts";
 import { detectIntent, getToolGuidanceHint } from "./lib/intentDetector.ts";
 import { createTrace } from "../_shared/traceContext.ts";
+import { logToolExecution } from "../_shared/agentLogger.ts";
 
 const formatRoomPricesResponse = (hotelName: string, toolResult: unknown): string => {
   const rooms = (toolResult as { rooms?: Array<{ name: string; price_formatted?: string; effective_price?: number; base_price?: number; price_source?: string }> })?.rooms || [];
@@ -220,7 +221,15 @@ Deno.serve(async (req: Request) => {
 
     // Force tool execution for room price requests to avoid hallucination
     if (intentMatch.suggestedTool === 'get_room_prices' && intentMatch.confidence !== 'low') {
+      const forcedToolStart = Date.now();
       const roomToolResult = await executeToolWithValidation(supabase, 'get_room_prices', {}, auth.managerRole);
+
+      logToolExecution(supabase, {
+        trace_id: trace.traceId, tool_name: 'get_room_prices',
+        arguments: {}, result_status: 'success',
+        result_summary: 'forced_price_lookup',
+        duration_ms: Date.now() - forcedToolStart, agent_name: 'admin-chatbot',
+      });
 
       executedTools.push({
         tool_name: 'get_room_prices',
@@ -298,6 +307,7 @@ Deno.serve(async (req: Request) => {
           for (const toolCall of choice.message.tool_calls) {
             const toolName = toolCall.function.name;
             const toolArgs = JSON.parse(toolCall.function.arguments || "{}");
+            const toolStart = Date.now();
 
             try {
               // Execute with role re-validation
@@ -305,6 +315,12 @@ Deno.serve(async (req: Request) => {
                 supabase, toolName, toolArgs, auth.managerRole
               );
               
+              logToolExecution(supabase, {
+                trace_id: trace.traceId, tool_name: toolName, arguments: toolArgs,
+                result_status: 'success', result_summary: JSON.stringify(toolResult).substring(0, 200),
+                duration_ms: Date.now() - toolStart, agent_name: 'admin-chatbot',
+              });
+
               executedTools.push({
                 tool_name: toolName,
                 arguments: toolArgs,
@@ -322,6 +338,12 @@ Deno.serve(async (req: Request) => {
               const errMsg = toolError instanceof Error ? toolError.message : String(toolError);
               console.error(`Tool error (${toolName}):`, toolError);
               
+              logToolExecution(supabase, {
+                trace_id: trace.traceId, tool_name: toolName, arguments: toolArgs,
+                result_status: 'failed', error_message: errMsg,
+                duration_ms: Date.now() - toolStart, agent_name: 'admin-chatbot',
+              });
+
               executedTools.push({
                 tool_name: toolName,
                 arguments: toolArgs,

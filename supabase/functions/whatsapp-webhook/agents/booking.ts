@@ -7,17 +7,22 @@ import { batchMessages } from '../middleware/messageBatcher.ts';
 import { detectAndAlertNegativeSentiment } from '../middleware/sentiment.ts';
 import { corsHeaders, type ManagerInfo, type WhatsAppSession } from '../types.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
+import { logAgentDecision, logToolExecution } from '../../_shared/agentLogger.ts';
 
 /** Execute tool calls in parallel */
 async function executeToolCalls(
   toolCalls: ToolCall[],
   env: EnvConfig,
-  label = ''
+  label = '',
+  supabase?: SupabaseClient,
+  traceId?: string,
+  conversationId?: string,
 ): Promise<Array<{ role: string; content: string; tool_call_id: string }>> {
   const prefix = label ? `[${label}] ` : '';
   return Promise.all(
     toolCalls.map(async (toolCall) => {
       console.log(`${prefix}Executing tool: ${toolCall.function.name}`);
+      const toolStart = Date.now();
       try {
         const toolResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot-tools`, {
           method: 'POST',
@@ -33,9 +38,25 @@ async function executeToolCalls(
         });
         const toolResult = await toolResponse.json();
         console.log(`${prefix}Tool ${toolCall.function.name} result:`, JSON.stringify(toolResult).substring(0, 200));
+        if (supabase) {
+          logToolExecution(supabase, {
+            trace_id: traceId, conversation_id: conversationId,
+            tool_name: toolCall.function.name, arguments: JSON.parse(toolCall.function.arguments || '{}'),
+            result_status: 'success', result_summary: JSON.stringify(toolResult).substring(0, 200),
+            duration_ms: Date.now() - toolStart, agent_name: 'booking',
+          });
+        }
         return { role: 'tool', content: JSON.stringify(toolResult), tool_call_id: toolCall.id };
       } catch (toolError) {
         console.error(`${prefix}Tool ${toolCall.function.name} error:`, toolError);
+        if (supabase) {
+          logToolExecution(supabase, {
+            trace_id: traceId, conversation_id: conversationId,
+            tool_name: toolCall.function.name, result_status: 'failed',
+            error_message: (toolError as Error).message, duration_ms: Date.now() - toolStart,
+            agent_name: 'booking',
+          });
+        }
         return { role: 'tool', content: JSON.stringify({ error: 'Tool execution failed' }), tool_call_id: toolCall.id };
       }
     })
@@ -89,6 +110,10 @@ export async function handleGuestBookingFlow(
   const bookingContext = await getLatestBookingContextByPhone(supabase, phone);
   const conversationContext = { ...(bookingContext || {}), ...extractedContext };
   trace?.info('Calling chatbot', { conversationId, contextKeys: Object.keys(conversationContext) });
+  logAgentDecision(supabase, {
+    trace_id: trace?.traceId, conversation_id: conversationId, phone_number: phone,
+    from_agent: 'booking', to_agent: 'chatbot', reason: 'ai_conversation',
+  });
 
   // Call chatbot
   const chatbotResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
@@ -135,7 +160,7 @@ export async function handleGuestBookingFlow(
 
       if (retryMessage?.tool_calls?.length > 0) {
         console.log(`✅ Retry triggered ${retryMessage.tool_calls.length} tool call(s)`);
-        const retryToolResults = await executeToolCalls(retryMessage.tool_calls, env, 'retry');
+        const retryToolResults = await executeToolCalls(retryMessage.tool_calls, env, 'retry', supabase, trace?.traceId, conversationId);
 
         const finalRetryResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
           method: 'POST',

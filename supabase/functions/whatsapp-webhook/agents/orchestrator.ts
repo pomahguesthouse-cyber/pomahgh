@@ -4,6 +4,7 @@ import { corsHeaders } from '../types.ts';
 import { normalizePhone } from '../utils/phone.ts';
 import { normalizeIndonesianMessage } from '../utils/slang.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
+import { logAgentDecision } from '../../_shared/agentLogger.ts';
 import { checkRateLimit } from '../middleware/rateLimiter.ts';
 import { getCachedHotelSettings, ensureConversation, updateSession } from '../services/session.ts';
 import { logMessage } from '../services/conversation.ts';
@@ -44,6 +45,7 @@ export async function orchestrate(
 
   // Rate limit
   if (!checkRateLimit(phone)) {
+    logAgentDecision(supabase, { trace_id: trace?.traceId, phone_number: phone, from_agent: 'orchestrator', reason: 'rate_limited' });
     return new Response(JSON.stringify({ status: "rate_limited" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -95,10 +97,20 @@ export async function orchestrate(
 
   // === PRICING AGENT: Price approval commands ===
   if (isManager && managerInfo) {
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone,
+      from_agent: 'orchestrator', to_agent: 'pricing',
+      reason: 'manager_detected', intent: 'price_approval',
+    });
     const priceResult = await handlePriceApproval(supabase, normalizedMessage, phone, managerInfo, env);
     if (priceResult) return priceResult;
 
     // === MANAGER AGENT: Pengelola chatbot ===
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone,
+      from_agent: 'orchestrator', to_agent: 'manager',
+      reason: 'manager_chat', intent: 'manager_command',
+    });
     return handleManagerChat(supabase, session, phone, normalizedMessage, managerInfo, env);
   }
 
@@ -132,9 +144,21 @@ export async function orchestrate(
     supabase, session as WhatsAppSession, phone, conversationId!, String(message),
     normalizedMessage, isNewSession, personaName, env
   );
-  if (nameResult) return nameResult;
+  if (nameResult) {
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+      from_agent: 'orchestrator', to_agent: 'intent',
+      reason: 'name_collection', intent: 'greeting',
+    });
+    return nameResult;
+  }
 
   // === BOOKING AGENT: AI conversation ===
+  logAgentDecision(supabase, {
+    trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+    from_agent: 'orchestrator', to_agent: 'booking',
+    reason: 'guest_booking_flow', intent: 'booking_inquiry',
+  });
   return handleGuestBookingFlow(
     supabase, session as WhatsAppSession, phone, normalizedMessage, conversationId!,
     personaName, managerNumbers, env, trace

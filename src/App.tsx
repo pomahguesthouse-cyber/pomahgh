@@ -78,6 +78,7 @@ const AdminCityAttractions = lazyRetry(() => import("./pages/admin/AdminCityAttr
 const AdminExploreHeroSlides = lazyRetry(() => import("./pages/admin/AdminExploreHeroSlides"));
 const AdminCompetitorAnalysis = lazyRetry(() => import("./pages/admin/AdminCompetitorAnalysis"));
 const AdminChat = lazyRetry(() => import("./pages/admin/AdminChat"));
+const AdminAgentDashboard = lazyRetry(() => import("./pages/admin/AdminAgentDashboard"));
 
 const AdminCityEvents = lazyRetry(() => import("./pages/admin/AdminCityEvents"));
 const AdminLandingPages = lazyRetry(() => import("./pages/admin/AdminLandingPages"));
@@ -154,6 +155,7 @@ const App = () => (
           <Route path="/admin/chatbot" element={<AdminLayout><AdminGuestChatbot /></AdminLayout>} />
           <Route path="/admin/chatbot/guest" element={<AdminLayout><AdminGuestChatbot /></AdminLayout>} />
           <Route path="/admin/chatbot/admin" element={<AdminLayout><AdminAdminChatbot /></AdminLayout>} />
+          <Route path="/admin/agent-dashboard" element={<AdminLayout><AdminAgentDashboard /></AdminLayout>} />
           
           <Route path="/admin/chat" element={<AdminLayout><AdminChat /></AdminLayout>} />
           <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
