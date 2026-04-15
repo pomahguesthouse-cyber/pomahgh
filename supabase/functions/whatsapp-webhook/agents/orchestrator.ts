@@ -16,6 +16,7 @@ import { handleGuestBookingFlow } from './booking.ts';
 import { handleGuestFAQ } from './faq.ts';
 import { handleComplaint, isComplaintMessage } from './complaint.ts';
 import { handlePayment, isPaymentMessage } from './payment.ts';
+import { setAgentConfigs, isAgentActive, getEscalationTarget, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 
 type IntentType = 'faq' | 'booking' | 'complaint' | 'payment';
 
@@ -132,12 +133,20 @@ export async function orchestrate(
     });
   }
 
-  // Load settings, chatbot persona, session in parallel
-  const [hotelSettings, { data: chatbotSettingsRow }, { data: session }] = await Promise.all([
+  // Load settings, chatbot persona, session, agent configs in parallel
+  const [hotelSettings, { data: chatbotSettingsRow }, { data: session }, { data: agentConfigs }, { data: escalationRules }] = await Promise.all([
     getCachedHotelSettings(supabase),
     supabase.from('chatbot_settings').select('persona_name, greeting_message').single(),
     supabase.from('whatsapp_sessions').select('*').eq('phone_number', phone).single(),
+    supabase.from('agent_configs').select('agent_id, is_active, system_prompt, temperature, escalation_target, auto_escalate'),
+    supabase.from('escalation_rules').select('from_agent, to_agent, condition_text, priority, is_active').eq('is_active', true).order('priority', { ascending: true }),
   ]);
+
+  // Populate shared agent config cache
+  setAgentConfigs(
+    (agentConfigs || []) as AgentConfigRecord[],
+    (escalationRules || []) as EscalationRule[],
+  );
 
   const personaName = chatbotSettingsRow?.persona_name || 'Rani';
   const sessionTimeoutMinutes = hotelSettings?.whatsapp_session_timeout_minutes || 15;
@@ -243,11 +252,23 @@ export async function orchestrate(
 
   // === INTENT DETECTION: Route to appropriate agent ===
   const intent = detectIntent(normalizedMessage);
-  console.log(`🎯 Intent detected: ${intent} for ${phone}`);
+
+  // Resolve target agent: check is_active, fallback to escalation_target
+  let resolvedAgent: string = intent;
+  if (!isAgentActive(resolvedAgent)) {
+    const fallback = getEscalationTarget(resolvedAgent);
+    resolvedAgent = (fallback && isAgentActive(fallback)) ? fallback : 'booking';
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+      from_agent: 'orchestrator', to_agent: resolvedAgent,
+      reason: `${intent}_agent_inactive`, intent,
+    });
+  }
+  console.log(`🎯 Intent: ${intent}, Agent: ${resolvedAgent} for ${phone}`);
 
   try {
     // === COMPLAINT AGENT ===
-    if (intent === 'complaint') {
+    if (resolvedAgent === 'complaint') {
       logAgentDecision(supabase, {
         trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
         from_agent: 'orchestrator', to_agent: 'complaint',
@@ -260,7 +281,7 @@ export async function orchestrate(
     }
 
     // === PAYMENT AGENT ===
-    if (intent === 'payment') {
+    if (resolvedAgent === 'payment') {
       logAgentDecision(supabase, {
         trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
         from_agent: 'orchestrator', to_agent: 'payment',
@@ -273,7 +294,7 @@ export async function orchestrate(
     }
 
     // === FAQ AGENT ===
-    if (intent === 'faq') {
+    if (resolvedAgent === 'faq') {
       logAgentDecision(supabase, {
         trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
         from_agent: 'orchestrator', to_agent: 'faq',
@@ -285,13 +306,14 @@ export async function orchestrate(
         conversationId!, personaName, env, trace
       );
 
-      // If FAQ agent escalated to booking (needed tools), fall through
+      // If FAQ agent escalated (needed tools), use escalation_rules from DB
       const faqBody = await faqResult.clone().json().catch(() => null);
       if (faqBody?.status === 'faq_escalate_to_booking') {
-        console.log('🔀 FAQ → Booking Agent escalation');
+        const faqEscTarget = getEscalationTarget('faq') || 'booking';
+        console.log(`🔀 FAQ → ${faqEscTarget} Agent escalation`);
         logAgentDecision(supabase, {
           trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
-          from_agent: 'faq', to_agent: 'booking',
+          from_agent: 'faq', to_agent: faqEscTarget,
           reason: 'faq_needs_tools', intent: 'booking',
         });
         // Fall through to booking agent below
@@ -304,7 +326,7 @@ export async function orchestrate(
     logAgentDecision(supabase, {
       trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
       from_agent: 'orchestrator', to_agent: 'booking',
-      reason: intent === 'faq' ? 'faq_escalation' : 'booking_intent_detected',
+      reason: resolvedAgent === 'faq' ? 'faq_escalation' : 'booking_intent_detected',
       intent: 'booking_inquiry',
     });
     return await handleGuestBookingFlow(
