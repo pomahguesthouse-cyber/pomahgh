@@ -34,6 +34,7 @@ const BACKEND_FILES: Record<string, string> = {
   booking: 'booking.ts',
   faq: 'faq.ts',
   payment: 'paymentPrompt.ts',
+  complaint: 'complaintPrompt.ts',
   pricing: 'pricing.ts',
   manager: 'manager.ts',
 };
