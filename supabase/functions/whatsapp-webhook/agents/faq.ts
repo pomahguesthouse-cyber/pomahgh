@@ -74,7 +74,11 @@ export async function handleGuestFAQ(
 
     await logMessage(supabase, convId, 'assistant', aiResponse);
     const formattedResponse = formatForWhatsApp(aiResponse);
-    await sendWhatsApp(phone, formattedResponse, env.fonnteApiKey);
+    const fonnteResult = await sendWhatsApp(phone, formattedResponse, env.fonnteApiKey);
+
+    if (fonnteResult.status === false) {
+      console.error(`❌ FAQ Agent: Failed to send WhatsApp to ${phone}: ${fonnteResult.detail || 'unknown'}`);
+    }
 
     logAgentDecision(supabase, {
       trace_id: trace?.traceId, phone_number: phone, conversation_id: convId,
@@ -94,7 +98,11 @@ export async function handleGuestFAQ(
       `Halo! Saya ${personaName} dari Pomah Guesthouse 😊\n\nUntuk pertanyaan umum, silakan langsung tanyakan saja ya! Saya siap membantu seputar kamar, fasilitas, lokasi, dan booking.`
     );
     await logMessage(supabase, convId, 'assistant', fallback);
-    await sendWhatsApp(phone, fallback, env.fonnteApiKey);
+    const fallbackResult = await sendWhatsApp(phone, fallback, env.fonnteApiKey);
+
+    if (fallbackResult.status === false) {
+      console.error(`❌ FAQ fallback: Failed to send WhatsApp to ${phone}: ${fallbackResult.detail || 'unknown'}`);
+    }
 
     return new Response(JSON.stringify({ status: "faq_fallback", conversation_id: convId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

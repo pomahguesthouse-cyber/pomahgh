@@ -209,6 +209,10 @@ export async function handleGuestBookingFlow(
   const fonnteResult = await sendWhatsApp(phone, formattedResponse, env.fonnteApiKey);
   console.log("Fonnte result:", JSON.stringify(fonnteResult));
 
+  if (fonnteResult.status === false) {
+    console.error(`❌ Booking Agent: Failed to send WhatsApp to ${phone}: ${fonnteResult.detail || 'unknown'}`);
+  }
+
   return new Response(JSON.stringify({
     status: "success", conversation_id: conversationId, response_length: formattedResponse.length,
   }), {

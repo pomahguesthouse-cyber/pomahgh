@@ -17,7 +17,12 @@ export async function batchMessages(
   phone: string,
   newMessage: string
 ): Promise<string[] | null> {
-  await supabase.rpc('append_pending_message', { p_phone: phone, p_message: newMessage });
+  const { error: rpcError } = await supabase.rpc('append_pending_message', { p_phone: phone, p_message: newMessage });
+  if (rpcError) {
+    console.error(`📦 append_pending_message failed for ${phone}:`, rpcError.message);
+    // Return the single message so it still gets processed
+    return [newMessage];
+  }
 
   const startTime = Date.now();
   let lastCount = 0;

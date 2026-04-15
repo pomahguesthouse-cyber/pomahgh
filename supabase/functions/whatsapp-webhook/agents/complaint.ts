@@ -68,7 +68,11 @@ export async function handleComplaint(
   // Send empathetic response
   const empathyResponse = EMPATHY_RESPONSES[urgency];
   await logMessage(supabase, conversationId, 'assistant', empathyResponse);
-  await sendWhatsApp(phone, empathyResponse, env.fonnteApiKey);
+  const fonnteResult = await sendWhatsApp(phone, empathyResponse, env.fonnteApiKey);
+
+  if (fonnteResult.status === false) {
+    console.error(`❌ Complaint Agent: Failed to send WhatsApp to ${phone}: ${fonnteResult.detail || 'unknown'}`);
+  }
 
   // Notify all Super Admins / Managers
   const superAdmins = managerNumbers.filter(m => 

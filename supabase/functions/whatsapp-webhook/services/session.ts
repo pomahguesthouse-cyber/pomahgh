@@ -24,12 +24,18 @@ export async function ensureConversation(
 ): Promise<string> {
   if (session?.conversation_id) return session.conversation_id;
 
-  const { data: newConv } = await supabase
+  const { data: newConv, error } = await supabase
     .from('chat_conversations')
     .insert({ session_id: `wa_${phone}_${Date.now()}`, message_count: 0 })
     .select()
     .single();
-  return newConv?.id;
+
+  if (error || !newConv?.id) {
+    console.error('❌ ensureConversation failed:', error?.message);
+    throw new Error('Failed to create conversation');
+  }
+
+  return newConv.id;
 }
 
 export async function updateSession(

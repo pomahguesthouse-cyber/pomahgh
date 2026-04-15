@@ -96,7 +96,11 @@ export async function handlePayment(
   // Log and send
   await logMessage(supabase, conversationId, 'assistant', aiResponse);
   const formattedResponse = formatForWhatsApp(aiResponse);
-  await sendWhatsApp(phone, formattedResponse, env.fonnteApiKey);
+  const fonnteResult = await sendWhatsApp(phone, formattedResponse, env.fonnteApiKey);
+
+  if (fonnteResult.status === false) {
+    console.error(`❌ Payment Agent: Failed to send WhatsApp to ${phone}: ${fonnteResult.detail || 'unknown'}`);
+  }
 
   return new Response(JSON.stringify({
     status: 'payment_handled', conversation_id: conversationId,
