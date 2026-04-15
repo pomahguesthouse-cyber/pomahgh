@@ -5,6 +5,9 @@ import {
 import { getWIBTime, formatDateIndonesian, formatDateISO, addDays, getNextSaturday, getTimeGreeting } from '../utils/time.ts';
 import { selectRelevantExamples, formatTrainingExamples, selectRelevantFAQPatterns, formatFAQPatterns, selectRelevantKnowledge, formatKnowledge } from '../services/exampleSelector.ts';
 import type { PromptConfig, ConversationContext, ChatbotSettings, HotelData } from '../lib/types.ts';
+import { buildBookingFlowRules } from '../agents/bookingPrompt.ts';
+import { buildPaymentRules } from '../agents/paymentPrompt.ts';
+import { buildAdminTakeoverRules } from '../agents/intentPrompt.ts';
 
 /**
  * Build persona — natural WhatsApp admin style
