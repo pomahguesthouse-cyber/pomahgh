@@ -37,7 +37,7 @@ const getPageTitle = (pathname: string): string => {
     "/admin/chat": "Web Chatbot",
     "/admin/chatbot/guest": "Guest Chatbot",
     "/admin/chatbot/admin": "Admin Chatbot",
-    "/admin/agent-dashboard": "Multi-Agent Dashboard",
+    
     "/admin/room-addons": "Room Add-ons",
     "/admin/promotions": "Promotions",
     "/admin/media-library": "Media Library",

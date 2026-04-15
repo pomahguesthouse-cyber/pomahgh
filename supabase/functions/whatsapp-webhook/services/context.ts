@@ -132,8 +132,9 @@ export async function getLatestBookingContextByPhone(
 
   const { data: booking } = await supabase
     .from('bookings')
-    .select(`booking_code, guest_name, guest_email, guest_phone, rooms:room_id (name)`)
+    .select(`booking_code, guest_name, guest_email, guest_phone, check_in, check_out, total_nights, status, rooms:room_id (name)`)
     .or(`guest_phone.eq.${phone},guest_phone.eq.${localPhone}`)
+    .not('status', 'in', '("cancelled","rejected")')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -151,5 +152,9 @@ export async function getLatestBookingContextByPhone(
     last_booking_guest_email: booking.guest_email || undefined,
     last_booking_guest_phone: booking.guest_phone ? normalizePhone(booking.guest_phone) : undefined,
     last_booking_room: roomName || undefined,
+    last_booking_check_in: booking.check_in || undefined,
+    last_booking_check_out: booking.check_out || undefined,
+    last_booking_total_nights: booking.total_nights || undefined,
+    last_booking_status: booking.status || undefined,
   };
 }
