@@ -212,9 +212,10 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
 
           {/* Row 2: Room Type + Number with icon (left) & Price (right) */}
           <div className="flex items-center justify-between mt-1">
-            <span className="flex items-center gap-2 font-semibold text-sm text-foreground">
+            <span className={`flex items-center gap-2 font-semibold text-sm ${isOverbooked ? "text-red-600" : "text-foreground"}`}>
               <Bed className="h-4 w-4 text-gray-500" />
               {roomTypes} : {allocatedRooms}
+              {isOverbooked && <AlertTriangle className="h-3.5 w-3.5 text-red-500" />}
             </span>
             <span className="text-sm font-medium">
               {formatRupiahID(booking.total_price)}
