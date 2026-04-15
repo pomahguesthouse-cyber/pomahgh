@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TopBar, AgentMetrics, AgentGrid, AgentConfigPanel, LiveChatView, ActivityLog, PromptStudio, EscalationFlow, SettingsPanel, AgentAnalytics } from '@/components/admin/multi-agent';
+import { TopBar, AgentMetrics, AgentGrid, AgentConfigPanel, LiveChatView, ActivityLog, PromptStudio, EscalationFlow, SettingsPanel, AgentAnalytics, ManagerNumbersPanel } from '@/components/admin/multi-agent';
 import { useMultiAgentDashboard } from '@/hooks/useMultiAgentDashboard';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
 
@@ -36,6 +36,9 @@ const AdminMultiAgentDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="escalation" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               🔀 Alur Eskalasi
+            </TabsTrigger>
+            <TabsTrigger value="managers" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
+              👨‍💼 Manager
             </TabsTrigger>
             <TabsTrigger value="settings" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               ⚙️ Pengaturan
@@ -89,6 +92,10 @@ const AdminMultiAgentDashboard = () => {
 
         <TabsContent value="escalation" className="mt-0 p-4">
           <EscalationFlow agents={agents} />
+        </TabsContent>
+
+        <TabsContent value="managers" className="mt-0 p-4">
+          <ManagerNumbersPanel />
         </TabsContent>
 
         <TabsContent value="settings" className="mt-0 p-4">
