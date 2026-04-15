@@ -36,7 +36,7 @@ export const SettingsPanel = () => {
   }, [settings]);
 
   const handleSave = () => {
-    updateSettings.mutate(form as any, {
+    updateSettings(form as any, {
       onSuccess: () => {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
