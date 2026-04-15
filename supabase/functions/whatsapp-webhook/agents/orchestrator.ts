@@ -34,12 +34,15 @@ function detectIntent(message: string): IntentType {
     return 'payment';
   }
 
-  // 3. Booking: reservation, availability, pricing, or short follow-up replies in booking context
+  // 3. Booking: reservation, availability, pricing, room names, or short follow-ups
   const bookingPatterns = /\b(book|booking|pesan\s+kamar|reservas|cek\s+ketersediaan|ketersediaan|tersedia|available|ada\s+kamar|masih\s+ada|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|cancel|batal|refund|promo|diskon|mau\s+(?:menginap|pesan|booking|nginap)|kamar\s+(?:kosong|tersedia|available)|hari\s+ini|malam\s+ini|besok|untuk\s+\d+\s+orang|\d+\s+(?:orang|kamar|malam))\b/i;
   const pricePatterns = /\b(?:(?:berapa|brp)\s+(?:harga|tarif|biaya|per\s*malam)|harga\s+kamar|tarif\s+kamar|biaya\s+(?:menginap|kamar)|jadi\s+berapa|total(?:nya)?)\b/i;
-  const bookingFollowUpPatterns = /^(ada\??|ada\s+ya\??|ada\s+ga\??|gimana(?:\s+kak)?\??|bagaimana(?:\s+kak)?\??|boleh\??|iya\??|ya\??|oke\??|ok\??|lanjut\??|cek\??)$/i;
+  // Room type names → always booking intent (need tool access for availability)
+  const roomNamePatterns = /\b(deluxe|grand\s*deluxe|family\s*suite|single|standard|superior|twin|double|triple|kamar)\b/i;
+  // Short follow-up messages in active conversations
+  const bookingFollowUpPatterns = /^(ada\??|ada\s+ya\??|ada\s+ga\??|ada\s+gak\??|gimana(?:\s+kak)?\??|bagaimana(?:\s+kak)?\??|boleh\??|iya\??|ya\s*boleh\??|ya\??|oke\??|ok\??|lanjut\??|cek\??|mau\??|jadi\??|di\s*web\s+masih\s+ada)$/i;
 
-  if (bookingPatterns.test(message) || pricePatterns.test(message) || bookingFollowUpPatterns.test(message.trim())) {
+  if (bookingPatterns.test(message) || pricePatterns.test(message) || roomNamePatterns.test(message) || bookingFollowUpPatterns.test(message.trim())) {
     return 'booking';
   }
 
