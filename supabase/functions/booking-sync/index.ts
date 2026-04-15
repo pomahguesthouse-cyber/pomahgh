@@ -207,7 +207,7 @@ async function processApiReservation(
         .select('id')
         .ilike('name', `%${roomTypeName}%`)
         .limit(1)
-        .single();
+        .single() as { data: { id: string } | null };
       
       if (rooms) roomId = rooms.id;
     }
@@ -217,7 +217,7 @@ async function processApiReservation(
         .from('rooms')
         .select('id')
         .limit(1)
-        .single();
+        .single() as { data: { id: string } | null };
       
       if (firstRoom) roomId = firstRoom.id;
     }
@@ -225,8 +225,8 @@ async function processApiReservation(
     if (!roomId) throw new Error('No room available');
 
     // Calculate nights
-    const checkInDate = new Date(checkIn);
-    const checkOutDate = new Date(checkOut);
+    const checkInDate = new Date(checkIn as string);
+    const checkOutDate = new Date(checkOut as string);
     const totalNights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
 
     // Create booking
