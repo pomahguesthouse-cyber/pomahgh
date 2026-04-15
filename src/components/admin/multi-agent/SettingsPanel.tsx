@@ -154,9 +154,9 @@ export const SettingsPanel = () => {
           size="sm"
           className="text-xs bg-primary hover:bg-primary/90 gap-1.5"
           onClick={handleSave}
-          disabled={updateSettings.isPending}
+          disabled={isUpdating}
         >
-          {updateSettings.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+          {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
           Simpan Pengaturan
         </Button>
       </div>
