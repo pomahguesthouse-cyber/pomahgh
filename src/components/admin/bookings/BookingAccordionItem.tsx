@@ -83,6 +83,7 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
   onInvoiceClick,
   isUpdating,
   isDeleting,
+  isOverbooked,
 }: BookingAccordionItemProps) {
   const checkInDate = parseISO(booking.check_in);
   const checkOutDate = parseISO(booking.check_out);
