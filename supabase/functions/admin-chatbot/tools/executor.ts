@@ -3,12 +3,26 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { isToolAllowed } from "../lib/toolFilter.ts";
 import type { ManagerRole } from "../lib/constants.ts";
+import { adminCache } from "../lib/cache.ts";
 
 import { getAvailabilitySummary, getTodayGuests } from "./availability.ts";
 import { getBookingStats, getRecentBookings, searchBookings, getBookingDetail } from "./bookingStats.ts";
 import { createAdminBooking, updateBookingStatus, updateGuestInfo, rescheduleBooking, changeBookingRoom, updateRoomStatus, extendStay, setLateCheckout, checkExtendAvailability } from "./bookingMutations.ts";
 import { getRoomInventory, updateRoomPrice, getRoomPrices } from "./roomManagement.ts";
 import { sendCheckinReminder, sendCalendarLink, sendWhatsAppMessage, getManagerList } from "./notifications.ts";
+
+// Tools that modify data — cache must be invalidated after execution
+const MUTATION_TOOLS: Record<string, string[]> = {
+  create_admin_booking: ['booking', 'availability'],
+  update_booking_status: ['booking'],
+  update_guest_info: ['booking'],
+  reschedule_booking: ['booking', 'availability'],
+  change_booking_room: ['booking', 'availability'],
+  update_room_status: ['room', 'availability'],
+  extend_stay: ['booking', 'availability'],
+  set_late_checkout: ['booking'],
+  update_room_price: ['room', 'price'],
+};
 
 /**
  * Execute a tool with role re-validation
@@ -25,7 +39,20 @@ export async function executeToolWithValidation(
     throw new Error(`Akses ditolak: Role "${managerRole}" tidak dapat menggunakan "${toolName}"`);
   }
   
-  return await executeTool(supabase, toolName, toolArgs);
+  const result = await executeTool(supabase, toolName, toolArgs);
+
+  // Invalidate relevant caches after mutation tools
+  const patterns = MUTATION_TOOLS[toolName];
+  if (patterns) {
+    for (const pattern of patterns) {
+      const count = adminCache.invalidate(pattern);
+      if (count > 0) {
+        console.log(`🗑️ Cache invalidated: ${count} entries matching "${pattern}" after ${toolName}`);
+      }
+    }
+  }
+
+  return result;
 }
 
 /**

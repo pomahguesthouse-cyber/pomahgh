@@ -36,7 +36,7 @@ export interface ValidationResult {
 }
 
 export interface Violation {
-  type: 'fabricated_price' | 'fabricated_booking_code' | 'fabricated_url' | 'fabricated_phone' | 'unknown_room' | 'availability_contradiction';
+  type: 'fabricated_price' | 'fabricated_booking_code' | 'fabricated_url' | 'fabricated_phone' | 'unknown_room' | 'availability_contradiction' | 'total_price_mismatch';
   detail: string;
   /** The problematic text snippet */
   snippet: string;
@@ -73,6 +73,9 @@ export function createHallucinationGuard(config: HallucinationGuardConfig) {
 
       // 5. Check for availability contradictions
       checkAvailabilityContradictions(response, toolResults, violations);
+
+      // 6. Check total price calculations against tool data
+      checkTotalPriceCalculation(response, toolResults, violations);
 
       // Build corrected response
       let corrected = response;
@@ -282,4 +285,70 @@ function checkAvailabilityContradictions(
       }
     }
   }
+}
+
+/**
+ * Check if AI's stated total matches price_per_night × nights from tool results.
+ * Catches arithmetic hallucinations like "2 malam × Rp200.000 = Rp500.000".
+ */
+function checkTotalPriceCalculation(
+  response: string,
+  toolResults: string[],
+  violations: Violation[]
+) {
+  // Extract total amounts from tool results
+  for (const tr of toolResults) {
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(tr);
+    } catch {
+      continue;
+    }
+
+    // Look for price_per_night and nights/total fields in tool result
+    const pricePerNight = extractNumber(parsed, ['price_per_night', 'effective_price', 'base_price']);
+    const nights = extractNumber(parsed, ['nights', 'total_nights', 'duration']);
+    const rooms = extractNumber(parsed, ['room_count', 'rooms', 'total_rooms']) || 1;
+    const toolTotal = extractNumber(parsed, ['total_price', 'total_amount', 'grand_total']);
+
+    if (pricePerNight && nights) {
+      const expectedTotal = pricePerNight * nights * rooms;
+
+      // Check if AI mentions a total price in the response
+      const totalPattern = /(?:total|jumlah|seluruh|keseluruhan)[^Rp]*Rp\s?[\d.,]+/gi;
+      const totalMatches = response.matchAll(totalPattern);
+
+      for (const match of totalMatches) {
+        const priceStr = match[0].match(/Rp\s?[\d.,]+/i)?.[0] || '';
+        const statedTotal = Number(priceStr.replace(/[Rp\s.]/gi, '').replace(/,/g, ''));
+        if (isNaN(statedTotal) || statedTotal < 10000) continue;
+
+        const ratio = statedTotal / expectedTotal;
+        if (ratio < 0.95 || ratio > 1.05) {
+          violations.push({
+            type: 'total_price_mismatch',
+            detail: `AI stated total ${priceStr} but calculated total should be Rp${expectedTotal.toLocaleString('id-ID')} (${pricePerNight.toLocaleString('id-ID')} × ${nights} malam × ${rooms} kamar)`,
+            snippet: match[0],
+          });
+        }
+      }
+
+      // Also validate tool's own total if provided
+      if (toolTotal && Math.abs(toolTotal - expectedTotal) > expectedTotal * 0.05) {
+        // Tool result itself may have inconsistency — log but don't block
+        console.warn(`[hallucination-guard] Tool total ${toolTotal} != calculated ${expectedTotal}`);
+      }
+    }
+  }
+}
+
+function extractNumber(obj: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    if (key in obj && typeof obj[key] === 'number') return obj[key] as number;
+    if (key in obj && typeof obj[key] === 'string') {
+      const n = Number(obj[key]);
+      if (!isNaN(n)) return n;
+    }
+  }
+  return null;
 }

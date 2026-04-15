@@ -128,6 +128,152 @@ Deno.serve(async (req: Request) => {
 });
 
 // ============================================================
+// Helper: Analyze a single conversation (used in parallel chunks)
+// ============================================================
+interface AnalyzeResult {
+  conversation_id: string;
+  success: boolean;
+  topics?: string[];
+  insightGenerated: boolean;
+  accuracyScore?: number;
+  resolved: boolean;
+}
+
+async function analyzeOneConversation(
+  supabase: SupabaseClient,
+  apiKey: string,
+  hotelContext: string,
+  conv: { id: string; session_id: string; message_count?: number }
+): Promise<AnalyzeResult> {
+  const { data: messages } = await supabase
+    .from("chat_messages")
+    .select("role, content, created_at")
+    .eq("conversation_id", conv.id)
+    .order("created_at", { ascending: true });
+
+  if (!messages || messages.length === 0) {
+    await supabase.from("whatsapp_conversation_insights").insert({
+      conversation_id: conv.id,
+      session_id: conv.session_id,
+      summary: "Percakapan kosong",
+      topics: [],
+      sentiment: "neutral",
+      resolution_status: "abandoned",
+      message_count: 0,
+      model_used: MODEL,
+    });
+    return { conversation_id: conv.id, success: true, topics: [], insightGenerated: false, resolved: false };
+  }
+
+  if (messages.length < 3) {
+    const shortTranscript = messages.map(m => `[${m.role === "user" ? "TAMU" : "BOT"}] ${m.content}`).join("\n");
+    const userMsgs = messages.filter(m => m.role === "user").map(m => m.content);
+    const topic = userMsgs.length > 0 ? userMsgs[0].substring(0, 100) : "";
+
+    try {
+      const shortResult = await callAIWithRetry(apiKey, MODEL, [
+        {
+          role: "system",
+          content: `Analisis singkat percakapan hotel pendek ini. Kembalikan JSON: {"summary":"...","topics":[],"sentiment":"positive|neutral|negative|mixed","resolution_status":"resolved|unresolved|escalated|abandoned","bot_accuracy_score":0.0-1.0,"common_questions":[{"question":"...","category":"..."}]}\nHANYA JSON, tanpa teks lain.`
+        },
+        { role: "user", content: shortTranscript }
+      ], { max_tokens: 500, temperature: 0.2 });
+
+      if (!shortResult.rateLimited) {
+        const shortAnalysis = parseJsonFromAI(shortResult.data.choices[0]?.message?.content || "{}");
+        if (shortAnalysis) {
+          await supabase.from("whatsapp_conversation_insights").insert({
+            conversation_id: conv.id,
+            session_id: conv.session_id,
+            summary: (shortAnalysis.summary as string) || `Percakapan singkat: ${topic}`,
+            topics: (shortAnalysis.topics as string[]) || [],
+            sentiment: validateEnum(shortAnalysis.sentiment, ["positive", "neutral", "negative", "mixed"], "neutral"),
+            resolution_status: validateEnum(shortAnalysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "abandoned"),
+            bot_accuracy_score: clampScore(shortAnalysis.bot_accuracy_score),
+            common_questions: shortAnalysis.common_questions || [],
+            message_count: messages.length,
+            model_used: MODEL,
+          });
+          return {
+            conversation_id: conv.id, success: true,
+            topics: (shortAnalysis.topics as string[]) || [],
+            insightGenerated: true, resolved: false,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn(`[deep_analyze] Light analysis failed for ${conv.id}:`, e);
+    }
+
+    // Fallback
+    await supabase.from("whatsapp_conversation_insights").insert({
+      conversation_id: conv.id,
+      session_id: conv.session_id,
+      summary: `Percakapan singkat (${messages.length} pesan)`,
+      topics: [],
+      sentiment: "neutral",
+      resolution_status: "abandoned",
+      message_count: messages.length,
+      model_used: MODEL,
+    });
+    return { conversation_id: conv.id, success: true, topics: [], insightGenerated: false, resolved: false };
+  }
+
+  // Full analysis for longer conversations
+  const transcript = messages
+    .map(m => `[${m.role === "user" ? "TAMU" : "BOT"}] ${m.content}`)
+    .join("\n");
+
+  const aiResult = await callAIWithRetry(apiKey, MODEL, [
+    { role: "system", content: buildAnalysisPrompt(hotelContext) },
+    { role: "user", content: `Analisis percakapan WhatsApp berikut:\n\n${transcript}\n\nKembalikan analisis dalam format JSON yang diminta.` },
+  ], { max_tokens: 2000, temperature: 0.2 });
+
+  if (aiResult.rateLimited) {
+    console.warn(`[deep_analyze] Rate limited, skipping ${conv.id}`);
+    return { conversation_id: conv.id, success: false, insightGenerated: false, resolved: false };
+  }
+
+  const rawContent = aiResult.data.choices[0]?.message?.content || "{}";
+  const analysis = parseJsonFromAI(rawContent);
+
+  if (!analysis) {
+    return { conversation_id: conv.id, success: false, insightGenerated: false, resolved: false };
+  }
+
+  await supabase.from("whatsapp_conversation_insights").insert({
+    conversation_id: conv.id,
+    session_id: conv.session_id,
+    summary: analysis.summary || "Tidak ada ringkasan",
+    topics: analysis.topics || [],
+    sentiment: validateEnum(analysis.sentiment, ["positive", "neutral", "negative", "mixed"], "neutral"),
+    intent_flow: analysis.intent_flow || [],
+    resolution_status: validateEnum(analysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "unresolved"),
+    bot_accuracy_score: clampScore(analysis.bot_accuracy_score),
+    guest_satisfaction_signal: analysis.guest_satisfaction_signal || "neutral",
+    common_questions: analysis.common_questions || [],
+    failed_responses: analysis.failed_responses || [],
+    successful_patterns: analysis.successful_patterns || [],
+    suggested_improvements: analysis.suggested_improvements || [],
+    new_slang_detected: analysis.new_slang_detected || [],
+    message_count: messages.length,
+    model_used: MODEL,
+  });
+
+  const score = clampScore(analysis.bot_accuracy_score);
+  const resolution = validateEnum(analysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "unresolved");
+
+  return {
+    conversation_id: conv.id,
+    success: true,
+    topics: analysis.topics as string[],
+    insightGenerated: true,
+    accuracyScore: score,
+    resolved: resolution === "resolved",
+  };
+}
+
+// ============================================================
 // Mode: deep_analyze
 // Deep analysis of WhatsApp conversation logs
 // ============================================================
@@ -169,143 +315,32 @@ async function deepAnalyze(
   let resolvedCount = 0;
   let totalAnalyzed = 0;
 
-  for (const conv of toAnalyze) {
-    const { data: messages } = await supabase
-      .from("chat_messages")
-      .select("role, content, created_at")
-      .eq("conversation_id", conv.id)
-      .order("created_at", { ascending: true });
+  // Process conversations in parallel chunks of 3 to avoid rate limits
+  const CHUNK_SIZE = 3;
+  for (let i = 0; i < toAnalyze.length; i += CHUNK_SIZE) {
+    const chunk = toAnalyze.slice(i, i + CHUNK_SIZE);
+    const chunkResults = await Promise.allSettled(
+      chunk.map(conv => analyzeOneConversation(supabase, apiKey, hotelContext, conv))
+    );
 
-    if (!messages || messages.length === 0) {
-      await supabase.from("whatsapp_conversation_insights").insert({
-        conversation_id: conv.id,
-        session_id: conv.session_id,
-        summary: "Percakapan kosong",
-        topics: [],
-        sentiment: "neutral",
-        resolution_status: "abandoned",
-        message_count: 0,
-        model_used: MODEL,
-      });
-      results.push({ conversation_id: conv.id, success: true, topics: [] });
-      continue;
-    }
-
-    if (messages.length < 3) {
-      // Light analysis for short conversations
-      const shortTranscript = messages.map(m => `[${m.role === "user" ? "TAMU" : "BOT"}] ${m.content}`).join("\n");
-      const userMsgs = messages.filter(m => m.role === "user").map(m => m.content);
-      const topic = userMsgs.length > 0 ? userMsgs[0].substring(0, 100) : "";
-
-      try {
-        const shortResult = await callAIWithRetry(apiKey, MODEL, [
-          {
-            role: "system",
-            content: `Analisis singkat percakapan hotel pendek ini. Kembalikan JSON: {"summary":"...","topics":[],"sentiment":"positive|neutral|negative|mixed","resolution_status":"resolved|unresolved|escalated|abandoned","bot_accuracy_score":0.0-1.0,"common_questions":[{"question":"...","category":"..."}]}\nHANYA JSON, tanpa teks lain.`
-          },
-          { role: "user", content: shortTranscript }
-        ], { max_tokens: 500, temperature: 0.2 });
-
-        if (!shortResult.rateLimited) {
-          const shortAnalysis = parseJsonFromAI(shortResult.data.choices[0]?.message?.content || "{}");
-          if (shortAnalysis) {
-            await supabase.from("whatsapp_conversation_insights").insert({
-              conversation_id: conv.id,
-              session_id: conv.session_id,
-              summary: (shortAnalysis.summary as string) || `Percakapan singkat: ${topic}`,
-              topics: (shortAnalysis.topics as string[]) || [],
-              sentiment: validateEnum(shortAnalysis.sentiment, ["positive", "neutral", "negative", "mixed"], "neutral"),
-              resolution_status: validateEnum(shortAnalysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "abandoned"),
-              bot_accuracy_score: clampScore(shortAnalysis.bot_accuracy_score),
-              common_questions: shortAnalysis.common_questions || [],
-              message_count: messages.length,
-              model_used: MODEL,
-            });
-            totalInsights++;
-            results.push({ conversation_id: conv.id, success: true, topics: (shortAnalysis.topics as string[]) || [] });
-            continue;
+    for (const settled of chunkResults) {
+      if (settled.status === 'fulfilled') {
+        const r = settled.value;
+        results.push({ conversation_id: r.conversation_id, success: r.success, topics: r.topics });
+        if (r.success) {
+          totalInsights += r.insightGenerated ? 1 : 0;
+          if (r.accuracyScore !== undefined) {
+            accuracyScores.push(r.accuracyScore);
+            totalAnalyzed++;
           }
+          if (r.resolved) resolvedCount++;
         }
-      } catch (e) {
-        console.warn(`[deep_analyze] Light analysis failed for ${conv.id}:`, e);
-      }
-
-      // Fallback if light analysis fails
-      await supabase.from("whatsapp_conversation_insights").insert({
-        conversation_id: conv.id,
-        session_id: conv.session_id,
-        summary: `Percakapan singkat (${messages.length} pesan)`,
-        topics: [],
-        sentiment: "neutral",
-        resolution_status: "abandoned",
-        message_count: messages.length,
-        model_used: MODEL,
-      });
-      results.push({ conversation_id: conv.id, success: true, topics: [] });
-      continue;
-    }
-
-    const transcript = messages
-      .map(m => `[${m.role === "user" ? "TAMU" : "BOT"}] ${m.content}`)
-      .join("\n");
-
-    try {
-      const aiResult = await callAIWithRetry(apiKey, MODEL, [
-        {
-          role: "system",
-          content: buildAnalysisPrompt(hotelContext),
-        },
-        {
-          role: "user",
-          content: `Analisis percakapan WhatsApp berikut:\n\n${transcript}\n\nKembalikan analisis dalam format JSON yang diminta.`,
-        },
-      ], { max_tokens: 2000, temperature: 0.2 });
-
-      if (aiResult.rateLimited) {
-        console.warn(`[deep_analyze] Rate limited after retries, skipping conversation ${conv.id}`);
-        results.push({ conversation_id: conv.id, success: false });
-        continue;
-      }
-
-      const rawContent = aiResult.data.choices[0]?.message?.content || "{}";
-      const analysis = parseJsonFromAI(rawContent);
-
-      if (analysis) {
-        await supabase.from("whatsapp_conversation_insights").insert({
-          conversation_id: conv.id,
-          session_id: conv.session_id,
-          summary: analysis.summary || "Tidak ada ringkasan",
-          topics: analysis.topics || [],
-          sentiment: validateEnum(analysis.sentiment, ["positive", "neutral", "negative", "mixed"], "neutral"),
-          intent_flow: analysis.intent_flow || [],
-          resolution_status: validateEnum(analysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "unresolved"),
-          bot_accuracy_score: clampScore(analysis.bot_accuracy_score),
-          guest_satisfaction_signal: analysis.guest_satisfaction_signal || "neutral",
-          common_questions: analysis.common_questions || [],
-          failed_responses: analysis.failed_responses || [],
-          successful_patterns: analysis.successful_patterns || [],
-          suggested_improvements: analysis.suggested_improvements || [],
-          new_slang_detected: analysis.new_slang_detected || [],
-          message_count: messages.length,
-          model_used: MODEL,
-        });
-
-        totalInsights++;
-        totalAnalyzed++;
-        const score = clampScore(analysis.bot_accuracy_score);
-        accuracyScores.push(score);
-        const resolution = validateEnum(analysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "unresolved");
-        if (resolution === "resolved") resolvedCount++;
-        results.push({ conversation_id: conv.id, success: true, topics: analysis.topics as string[] });
       } else {
-        results.push({ conversation_id: conv.id, success: false });
+        console.error(`[deep_analyze] Chunk item failed:`, settled.reason);
+        results.push({ conversation_id: 'unknown', success: false });
       }
-    } catch (err) {
-      console.error(`[deep_analyze] Error for ${conv.id}:`, err);
-      results.push({ conversation_id: conv.id, success: false });
     }
   }
-
   // Record metrics
   const avgAccuracy = accuracyScores.length > 0
     ? accuracyScores.reduce((a, b) => a + b, 0) / accuracyScores.length
