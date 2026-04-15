@@ -82,6 +82,13 @@ export interface HotelSettings {
   whatsapp_contact_numbers?: WhatsAppContact[];
   whatsapp_response_mode?: 'ai' | 'manual';
   whatsapp_manager_numbers?: WhatsAppManager[];
+  whatsapp_price_approval_enabled?: boolean;
+  aggressive_pricing_enabled?: boolean;
+  auto_approval_threshold?: number;
+  last_minute_pricing_enabled?: boolean;
+  last_minute_hours?: number;
+  hidden_page_slugs?: string[];
+  homepage_slug?: string;
 }
 
 export const useHotelSettings = () => {
