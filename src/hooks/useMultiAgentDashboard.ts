@@ -252,11 +252,14 @@ export const useMultiAgentDashboard = () => {
   // Save agent config mutation
   const saveAgentConfig = useMutation({
     mutationFn: async (update: { configId: string; data: Record<string, unknown> }) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('agent_configs')
         .update(update.data)
-        .eq('id', update.configId);
+        .eq('id', update.configId)
+        .select()
+        .single();
       if (error) throw error;
+      if (!data) throw new Error('Update gagal - pastikan Anda login sebagai admin');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['multi-agent-configs'] });
