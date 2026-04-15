@@ -98,13 +98,13 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
       const types = new Set(
         booking.booking_rooms.map((br) => {
           const room = rooms?.find((r) => r.id === br.room_id);
-          return room?.name || "Unknown";
+          return room?.name || booking.rooms?.name || "Unknown";
         })
       );
       return Array.from(types).join(", ");
     }
-    return getRoomName(booking.room_id);
-  }, [booking.booking_rooms, booking.room_id, rooms, getRoomName]);
+    return getRoomName(booking.room_id) || booking.rooms?.name || "Unknown";
+  }, [booking.booking_rooms, booking.room_id, booking.rooms, rooms, getRoomName]);
 
   // Calculate price per night from booking_rooms (sum of all room prices)
   const pricePerNight = useMemo(() => {
