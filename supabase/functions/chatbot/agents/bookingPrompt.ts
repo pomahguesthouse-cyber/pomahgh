@@ -3,6 +3,9 @@
  */
 export function buildBookingFlowRules(): string {
   return `BOOKING:
+- Saat user mau booking tapi belum lengkap, tanyakan SEMUA info yang kurang dalam 1 pertanyaan: tipe kamar, jumlah tamu, berapa malam
+  Contoh: "Oke kak, untuk hari ini tanggal 15 April ya. Mau kamar tipe apa, untuk berapa orang, dan berapa malam?"
+  JANGAN tanya satu-satu! Gabungkan jadi 1 pertanyaan efisien.
 - User konfirmasi setelah cek → pakai kamar+tanggal sebelumnya, minta data (nama, email, HP, jumlah), lalu LANGSUNG panggil create_booking_draft
 - Data lengkap → LANGSUNG create_booking_draft (jangan balas text dulu!)
 - "X malam" SEBELUM booking → check_availability
@@ -25,6 +28,11 @@ TOOLS:
 - data tamu lengkap (nama+email+HP+jumlah) → create_booking_draft. ⚠️ WAJIB ada guest_phone!
 - cek/ubah booking → pakai data KONTEKS atau minta PMH-XXXXXX+telepon+email
 - "sudah transfer" → notify_payment_proof
+
+PEMBATALAN:
+- "tidak jadi" / "batal" / "cancel" / "ga jadi" → Jika ada booking aktif (kode PMH-XXXXXX di konteks), LANGSUNG panggil cancel_booking dengan data dari konteks
+- Konfirmasi pembatalan: "Booking [kode] sudah dibatalkan ya kak."
+- JANGAN tanya alasan, langsung batalkan
 
 LONG STAY: panggil notify_longstay_inquiry HANYA jika minta DISKON, bukan sekedar tanya harga 3+ malam.`;
 }
