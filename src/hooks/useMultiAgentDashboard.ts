@@ -23,6 +23,9 @@ export interface AgentDefinition {
   isActive?: boolean;
   autoEscalate?: boolean;
   configId?: string;
+  knowledgeBaseEnabled?: boolean;
+  knowledgeBaseTypes?: string[];
+  canSendMedia?: boolean;
 }
 
 const BACKEND_FILES: Record<string, string> = {
