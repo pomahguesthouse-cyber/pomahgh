@@ -96,6 +96,7 @@ const MobileLoginPage = lazyRetry(() => import("./pages/app/MobileLoginPage"));
 const AttractionDetail = lazyRetry(() => import("./pages/AttractionDetail"));
 const Chat = lazyRetry(() => import("./pages/Chat"));
 const EventDetail = lazyRetry(() => import("./pages/EventDetail"));
+const AdminMultiAgentDashboard = lazyRetry(() => import("./pages/admin/AdminMultiAgentDashboard"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -158,6 +159,7 @@ const App = () => (
           
           
           <Route path="/admin/chat" element={<AdminLayout><AdminChat /></AdminLayout>} />
+          <Route path="/admin/multi-agent" element={<AdminLayout><AdminMultiAgentDashboard /></AdminLayout>} />
           <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
           <Route path="/admin/booking-com" element={<AdminLayout><AdminBookingCom /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
