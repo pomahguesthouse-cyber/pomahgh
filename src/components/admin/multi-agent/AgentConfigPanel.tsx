@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
+import { FAQKnowledgePanel } from './FAQKnowledgePanel';
 
 interface AgentConfigPanelProps {
   agent: AgentDefinition;
@@ -13,6 +15,8 @@ interface AgentConfigPanelProps {
   onSave: (configId: string, data: Record<string, unknown>) => void;
   isSaving?: boolean;
 }
+
+const FAQ_AGENT_IDS = ['faq_bot', 'cs_faq', 'faq'];
 
 export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConfigPanelProps) => {
   const [name, setName] = useState(agent.name);
@@ -23,6 +27,10 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
   const [escalationTarget, setEscalationTarget] = useState(agent.escalationTarget || '');
   const [isActive, setIsActive] = useState(agent.isActive ?? true);
   const [autoEscalate, setAutoEscalate] = useState(agent.autoEscalate ?? true);
+
+  const isFAQAgent = FAQ_AGENT_IDS.includes(agent.id) || 
+    agent.name.toLowerCase().includes('faq') || 
+    agent.name.toLowerCase().includes('cs');
 
   const handleSave = () => {
     if (!agent.configId) return;
@@ -37,15 +45,8 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
     });
   };
 
-  return (
-    <div className="border rounded-lg bg-card p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{agent.icon}</span>
-          <h3 className="font-semibold text-foreground">Konfigurasi: {agent.name}</h3>
-        </div>
-        <Button variant="ghost" size="icon" onClick={onClose}><X className="w-4 h-4" /></Button>
-      </div>
+  const configContent = (
+    <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label className="text-xs">Nama Agent</Label>
@@ -90,6 +91,35 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
           {isSaving ? 'Menyimpan...' : 'Simpan'}
         </Button>
       </div>
+    </div>
+  );
+
+  return (
+    <div className="border rounded-lg bg-card p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{agent.icon}</span>
+          <h3 className="font-semibold text-foreground">Konfigurasi: {agent.name}</h3>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onClose}><X className="w-4 h-4" /></Button>
+      </div>
+
+      {isFAQAgent ? (
+        <Tabs defaultValue="config">
+          <TabsList className="h-8">
+            <TabsTrigger value="config" className="text-xs px-3 h-7">⚙️ Konfigurasi</TabsTrigger>
+            <TabsTrigger value="knowledge" className="text-xs px-3 h-7">📚 Knowledge Base</TabsTrigger>
+          </TabsList>
+          <TabsContent value="config" className="mt-3">
+            {configContent}
+          </TabsContent>
+          <TabsContent value="knowledge" className="mt-3">
+            <FAQKnowledgePanel />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        configContent
+      )}
     </div>
   );
 };
