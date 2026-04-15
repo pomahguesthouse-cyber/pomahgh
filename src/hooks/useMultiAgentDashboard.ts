@@ -33,6 +33,7 @@ const BACKEND_FILES: Record<string, string> = {
   intent: 'intent.ts',
   booking: 'booking.ts',
   faq: 'faq.ts',
+  payment: 'paymentPrompt.ts',
   pricing: 'pricing.ts',
   manager: 'manager.ts',
 };
@@ -191,6 +192,10 @@ export const useMultiAgentDashboard = () => {
       case 'faq':
         status = guestSessions.length > 0 ? 'active' : 'idle';
         chatCount = routingCounts['faq'] || 0;
+        break;
+      case 'payment':
+        status = guestSessions.length > 0 ? 'active' : 'idle';
+        chatCount = routingCounts['payment'] || 0;
         break;
       case 'pricing':
         status = managerSessions.length > 0 ? 'active' : 'idle';
