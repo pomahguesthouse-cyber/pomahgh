@@ -42,6 +42,7 @@ import {
   User,
   Calendar,
   Package,
+  AlertTriangle,
 } from "lucide-react";
 
 import { Booking, BankAccount, Room } from "./types";
@@ -68,6 +69,7 @@ interface BookingAccordionItemProps {
   onInvoiceClick: (booking: Booking) => void;
   isUpdating?: boolean;
   isDeleting?: boolean;
+  isOverbooked?: boolean;
 }
 
 export const BookingAccordionItem = memo(function BookingAccordionItem({
@@ -82,6 +84,7 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
   onInvoiceClick,
   isUpdating,
   isDeleting,
+  isOverbooked,
 }: BookingAccordionItemProps) {
   const checkInDate = parseISO(booking.check_in);
   const checkOutDate = parseISO(booking.check_out);
@@ -125,7 +128,7 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
     <AccordionItem value={booking.id} className="border-0">
       <AccordionTrigger
         className={`px-4 py-3 hover:no-underline hover:bg-gray-100 border-b border-gray-200 ${
-          index % 2 === 0 ? "bg-gray-50" : "bg-white"
+          isOverbooked ? "bg-red-50 border-l-4 border-l-red-500" : index % 2 === 0 ? "bg-gray-50" : "bg-white"
         }`}
       >
         {/* Desktop: Table-like row */}
@@ -151,7 +154,19 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
                 <p>{roomTypes}</p>
               </TooltipContent>
             </Tooltip>
-            <div className="text-center">{allocatedRooms}</div>
+            <div className="text-center flex items-center justify-center gap-1">
+              {isOverbooked && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-red-600 font-medium">⚠️ Overbook! Kamar ini bentrok dengan booking lain</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              <span className={isOverbooked ? "text-red-600 font-bold" : ""}>{allocatedRooms}</span>
+            </div>
             <div className="text-center">
               {format(checkInDate, "dd/MM/yyyy")}
             </div>
@@ -197,9 +212,10 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
 
           {/* Row 2: Room Type + Number with icon (left) & Price (right) */}
           <div className="flex items-center justify-between mt-1">
-            <span className="flex items-center gap-2 font-semibold text-sm text-foreground">
+            <span className={`flex items-center gap-2 font-semibold text-sm ${isOverbooked ? "text-red-600" : "text-foreground"}`}>
               <Bed className="h-4 w-4 text-gray-500" />
               {roomTypes} : {allocatedRooms}
+              {isOverbooked && <AlertTriangle className="h-3.5 w-3.5 text-red-500" />}
             </span>
             <span className="text-sm font-medium">
               {formatRupiahID(booking.total_price)}
