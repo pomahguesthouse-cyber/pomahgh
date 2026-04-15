@@ -34,11 +34,12 @@ function detectIntent(message: string): IntentType {
     return 'payment';
   }
 
-  // 3. Booking: explicit reservation, scheduling actions
-  const bookingPatterns = /\b(book|booking|pesan\s+kamar|reservas|cek\s+ketersediaan|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|cancel|batal|refund|promo|diskon|mau\s+(?:menginap|pesan|booking|nginap)|kamar\s+(?:kosong|tersedia|available))\b/i;
+  // 3. Booking: reservation, availability, pricing, or short follow-up replies in booking context
+  const bookingPatterns = /\b(book|booking|pesan\s+kamar|reservas|cek\s+ketersediaan|ketersediaan|tersedia|available|ada\s+kamar|masih\s+ada|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|cancel|batal|refund|promo|diskon|mau\s+(?:menginap|pesan|booking|nginap)|kamar\s+(?:kosong|tersedia|available)|hari\s+ini|malam\s+ini|besok|untuk\s+\d+\s+orang|\d+\s+(?:orang|kamar|malam))\b/i;
   const pricePatterns = /\b(?:(?:berapa|brp)\s+(?:harga|tarif|biaya|per\s*malam)|harga\s+kamar|tarif\s+kamar|biaya\s+(?:menginap|kamar)|jadi\s+berapa|total(?:nya)?)\b/i;
+  const bookingFollowUpPatterns = /^(ada\??|ada\s+ya\??|ada\s+ga\??|gimana(?:\s+kak)?\??|bagaimana(?:\s+kak)?\??|boleh\??|iya\??|ya\??|oke\??|ok\??|lanjut\??|cek\??)$/i;
 
-  if (bookingPatterns.test(message) || pricePatterns.test(message)) {
+  if (bookingPatterns.test(message) || pricePatterns.test(message) || bookingFollowUpPatterns.test(message.trim())) {
     return 'booking';
   }
 
@@ -195,8 +196,9 @@ export async function orchestrate(
   if ((session as WhatsAppSession)?.is_takeover) {
     const convId = await ensureConversation(supabase, session, phone);
     await logMessage(supabase, convId, 'user', String(message));
+    console.log(`⛔ Takeover active for ${phone} - AI skipped`);
     await supabase.from('whatsapp_sessions').update({ last_message_at: new Date().toISOString() }).eq('phone_number', phone);
-    return new Response(JSON.stringify({ status: "takeover_mode", conversation_id: convId }), {
+    return new Response(JSON.stringify({ status: "takeover_mode", conversation_id: convId, reason: 'manual_takeover_active' }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

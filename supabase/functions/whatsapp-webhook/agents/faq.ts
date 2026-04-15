@@ -26,7 +26,7 @@ export async function handleGuestFAQ(
 
   const convId = conversationId || await ensureConversation(supabase, session, phone);
   await logMessage(supabase, convId, 'user', message);
-  await updateSession(supabase, phone, convId, true);
+  await updateSession(supabase, phone, convId, false);
 
   // Get conversation history
   const messages = await getConversationHistory(supabase, convId);
