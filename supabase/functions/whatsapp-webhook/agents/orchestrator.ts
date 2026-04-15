@@ -7,7 +7,7 @@ import { checkRateLimit } from '../middleware/rateLimiter.ts';
 import { getCachedHotelSettings, ensureConversation, updateSession } from '../services/session.ts';
 import { logMessage } from '../services/conversation.ts';
 import { handlePriceApproval } from './pricing.ts';
-import { handleManagerMessage } from './faq.ts';
+import { handleManagerChat } from './manager.ts';
 import { handleNameCollection } from './intent.ts';
 import { handleGuestBookingFlow } from './booking.ts';
 
@@ -96,8 +96,8 @@ export async function orchestrate(
     const priceResult = await handlePriceApproval(supabase, normalizedMessage, phone, managerInfo, env);
     if (priceResult) return priceResult;
 
-    // === FAQ/ADMIN AGENT: Manager chatbot ===
-    return handleManagerMessage(supabase, session, phone, normalizedMessage, managerInfo, env);
+    // === MANAGER AGENT: Pengelola chatbot ===
+    return handleManagerChat(supabase, session, phone, normalizedMessage, managerInfo, env);
   }
 
   // === TAKEOVER mode (admin took over) ===
