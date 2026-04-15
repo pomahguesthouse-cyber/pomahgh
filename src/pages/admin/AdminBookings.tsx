@@ -312,6 +312,7 @@ const AdminBookings = () => {
                     onInvoiceClick={handleInvoiceClick}
                     isUpdating={isUpdating}
                     isDeleting={isDeleting}
+                    isOverbooked={overbookedBookingIds.has(booking.id)}
                   />
                 ))}
               </Accordion>
