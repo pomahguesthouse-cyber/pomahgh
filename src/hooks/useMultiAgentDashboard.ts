@@ -33,6 +33,7 @@ const BACKEND_FILES: Record<string, string> = {
   intent: 'intent.ts',
   booking: 'booking.ts',
   faq: 'faq.ts',
+  payment: 'paymentPrompt.ts',
   pricing: 'pricing.ts',
   manager: 'manager.ts',
 };
