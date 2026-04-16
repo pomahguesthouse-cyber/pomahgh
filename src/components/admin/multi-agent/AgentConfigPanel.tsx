@@ -59,12 +59,12 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
         </div>
         <div className="space-y-2">
           <Label className="text-xs">Role</Label>
-          <Input value={role} onChange={e => setRole(e.target.value)} className="text-xs h-8" />
+          <Textarea value={role} onChange={e => setRole(e.target.value)} className="text-xs min-h-[60px] font-mono" />
         </div>
       </div>
       <div className="space-y-2">
         <Label className="text-xs">Agent Prompt</Label>
-        <Textarea value={prompt} onChange={e => setPrompt(e.target.value)} className="text-xs min-h-[80px] font-mono" />
+        <Textarea value={prompt} onChange={e => setPrompt(e.target.value)} className="text-xs min-h-[200px] font-mono" />
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
