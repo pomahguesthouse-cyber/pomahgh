@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_faq_patterns (
   
   -- Status
   is_promoted_to_training BOOLEAN DEFAULT false,
-  training_example_id UUID REFERENCES public.chatbot_training_examples(id),
+  training_example_id UUID REFERENCES public.chatbot_training_examples(id) ON DELETE SET NULL,
   
   -- Metadata
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_faq_patterns (
 -- 3. Learning metrics: track learning progress over time
 CREATE TABLE IF NOT EXISTS public.whatsapp_learning_metrics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  run_date DATE DEFAULT CURRENT_DATE,
+  run_date DATE DEFAULT CURRENT_DATE UNIQUE,
   
   -- Volume
   conversations_analyzed INTEGER DEFAULT 0,
@@ -87,9 +87,11 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_learning_metrics (
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_insights_conversation ON public.whatsapp_conversation_insights(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_insights_session ON public.whatsapp_conversation_insights(session_id);
 CREATE INDEX IF NOT EXISTS idx_insights_analyzed_at ON public.whatsapp_conversation_insights(analyzed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_faq_patterns_category ON public.whatsapp_faq_patterns(category);
 CREATE INDEX IF NOT EXISTS idx_faq_patterns_occurrence ON public.whatsapp_faq_patterns(occurrence_count DESC);
+CREATE INDEX IF NOT EXISTS idx_faq_patterns_promoted ON public.whatsapp_faq_patterns(is_promoted_to_training) WHERE is_promoted_to_training = false;
 CREATE INDEX IF NOT EXISTS idx_learning_metrics_date ON public.whatsapp_learning_metrics(run_date DESC);
 
 -- RLS
@@ -105,9 +107,6 @@ CREATE POLICY "Service role can manage insights"
 ON public.whatsapp_conversation_insights FOR ALL USING (auth.role() = 'service_role');
 
 -- FAQ patterns: admin full access
-CREATE POLICY "Admins can view FAQ patterns"
-ON public.whatsapp_faq_patterns FOR SELECT USING (is_admin());
-
 CREATE POLICY "Admins can manage FAQ patterns"
 ON public.whatsapp_faq_patterns FOR ALL USING (is_admin());
 
