@@ -57,6 +57,7 @@ const AdminMultiAgentDashboard = () => {
           {selectedAgent && (
             <div className="p-4">
               <AgentConfigPanel
+                key={selectedAgent.id}
                 agent={selectedAgent}
                 onClose={() => setSelectedAgent(null)}
                 onSave={handleSaveConfig}
