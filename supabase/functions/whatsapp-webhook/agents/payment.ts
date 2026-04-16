@@ -9,7 +9,7 @@ import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 
 /** Keywords that indicate payment-related messages */
-const PAYMENT_PATTERNS = /\b(bukti\s+(?:transfer|bayar|pembayaran|tf)|sudah\s+(?:bayar|transfer|tf)|sudah\s+di\s*(?:bayar|transfer)|konfirmasi\s+(?:bayar|pembayaran|transfer)|status\s+(?:bayar|pembayaran)|invoice|tagihan|kwitansi|receipt|nomor\s+rekening|rekening\s+bank|cara\s+bayar|metode\s+(?:bayar|pembayaran)|dp|uang\s+muka|lunas|pelunasan|sisa\s+bayar|total\s+bayar)\b/i;
+const PAYMENT_PATTERNS = /\b(bukti\s+(?:transfer|bayar|pembayaran|tf)|sudah\s+(?:bayar|transfer|tf)|sudah\s+di\s*(?:bayar|transfer)|konfirmasi\s+(?:bayar|pembayaran|transfer)|status\s+(?:bayar|pembayaran)|invoice|tagihan|kwitansi|receipt|nomor\s+rekening|rekening\s+bank|rekening(?:nya)?|no\s*(?:rek|rekening)|cara\s+bayar|metode\s+(?:bayar|pembayaran)|dp|uang\s+muka|lunas|pelunasan|sisa\s+bayar|total\s+bayar|transfer\s+ke\s+mana|bayar\s+(?:kemana|ke\s+mana|gimana|bagaimana)|mau\s+bayar|mau\s+transfer|kirim\s+bukti|upload\s+bukti)\b/i;
 
 export function isPaymentMessage(message: string): boolean {
   return PAYMENT_PATTERNS.test(message);
