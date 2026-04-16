@@ -272,7 +272,24 @@ export async function orchestrate(
   }
 
   // === INTENT DETECTION: Route to appropriate agent ===
-  const intent = detectIntent(normalizedMessage);
+  let intent = detectIntent(normalizedMessage);
+
+  // === CONTEXT-AWARE ROUTING: Ambiguous messages with pending payment → payment agent ===
+  if ((intent === 'faq' || intent === 'booking') && isAmbiguousShortReply(normalizedMessage)) {
+    const hasPending = await hasPendingPaymentBooking(supabase, phone);
+    if (hasPending) {
+      console.log(`💰 Context-aware routing: ${phone} has pending payment, routing ambiguous message to payment`);
+      intent = 'payment';
+    }
+  }
+  // Non-text messages (images/files) with pending payment → likely payment proof
+  if (intent === 'faq' && /non-text message/i.test(normalizedMessage)) {
+    const hasPending = await hasPendingPaymentBooking(supabase, phone);
+    if (hasPending) {
+      console.log(`💰 Context-aware routing: ${phone} sent media with pending payment → payment agent`);
+      intent = 'payment';
+    }
+  }
 
   // Resolve target agent: check is_active, fallback to escalation_target
   let resolvedAgent: string = intent;
