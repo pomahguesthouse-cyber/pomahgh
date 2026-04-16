@@ -660,7 +660,7 @@ Format output JSON array:
         question: p.question,
         ideal_answer: p.ideal_answer,
         category: p.category || pattern.category || "general",
-        is_active: pattern.occurrence_count >= 5,  // Auto-approve if seen 5+ times
+        is_active: pattern.occurrence_count >= 10,  // Auto-approve if seen 10+ times
         source: "auto_whatsapp",
         auto_generated: true,
         response_tags: p.response_tags || [],
@@ -678,7 +678,7 @@ Format output JSON array:
         })
         .eq("id", pattern.id);
       promoted++;
-      if (pattern.occurrence_count >= 5) autoApproved++;
+      if (pattern.occurrence_count >= 10) autoApproved++;
     }
   }
 

@@ -10,9 +10,28 @@ Daftar semua Supabase Edge Functions dan purpose-nya.
 
 | Function | Purpose | Auth Required |
 |----------|---------|---------------|
-| `chatbot` | Guest-facing AI assistant | No |
-| `admin-chatbot` | Admin AI with tool calling | Yes (Admin) |
-| `chatbot-tools` | Tool execution for chatbot | No |
+| `chatbot` | Guest-facing AI assistant with tool calling | No |
+| `admin-chatbot` | Admin AI with role-based tool calling (SSE streaming) | Yes (Admin) |
+| `chatbot-tools` | Tool execution endpoint (12 tools) — internal only | Yes (Internal Secret) |
+
+### 🤖 Multi-Agent WhatsApp System
+
+| Function | Purpose | Auth Required |
+|----------|---------|---------------|
+| `whatsapp-webhook` | Multi-agent WhatsApp entry point with orchestrator | Yes (Webhook Token) |
+| `whatsapp-learning-agent` | Learning pipeline: analyze, FAQ, slang, promote | Yes (JWT / CRON_SECRET) |
+| `validate-manager-token` | Validate manager WhatsApp tokens | Yes (Admin) |
+
+### 🧠 AI Training & Knowledge
+
+| Function | Purpose | Auth Required |
+|----------|---------|---------------|
+| `parse-knowledge` | Parse uploaded documents for guest chatbot KB | No |
+| `parse-admin-knowledge` | Parse documents for admin chatbot KB | No |
+| `extract-training-data` | Extract training examples from conversations | Yes (Admin) |
+| `ai-trainer-coach` | AI-assisted training example improvement | Yes (Admin) |
+| `ai-training-generator` | Generate training examples via AI | Yes (Admin) |
+| `prompt-consultant` | AI prompt optimization consultant | Yes (Admin) |
 
 ### 📅 Booking & Availability
 
@@ -35,8 +54,8 @@ Daftar semua Supabase Edge Functions dan purpose-nya.
 
 | Function | Purpose | Auth Required |
 |----------|---------|---------------|
-| `send-whatsapp` | Send WhatsApp message via API | No (Internal) |
-| `whatsapp-webhook` | Receive WhatsApp webhook events | No (Webhook) |
+| `send-whatsapp` | Send WhatsApp message via Fonnte API | No (Internal) |
+| `whatsapp-webhook` | Multi-agent WhatsApp processing (orchestrator + 7 agents) | Yes (Webhook Token) |
 
 ### 🔍 External Data
 
@@ -75,6 +94,74 @@ Daftar semua Supabase Edge Functions dan purpose-nya.
 ---
 
 ## Function Details
+
+### whatsapp-webhook (Multi-Agent System)
+
+**Path**: `supabase/functions/whatsapp-webhook/`
+
+**Structure**:
+```
+whatsapp-webhook/
+├─ index.ts              # Slim entry point (CORS, auth, delegates to orchestrator)
+├─ types.ts              # Shared types (EnvConfig, WhatsAppSession, ToolCall)
+├─ agents/
+│  ├─ orchestrator.ts    # Central routing hub (intent detection, context-aware routing)
+│  ├─ intent.ts          # Name collection for new guests
+│  ├─ booking.ts         # Full AI conversation with tool calling
+│  ├─ faq.ts             # Tool-free FAQ via chatbot (faq_mode)
+│  ├─ payment.ts         # Payment flow (bukti transfer, status)
+│  ├─ complaint.ts       # 4-level urgency, empathy + staff notification
+│  ├─ pricing.ts         # APPROVE/REJECT price changes (manager-only)
+│  └─ manager.ts         # Routes to admin-chatbot
+├─ middleware/
+│  ├─ auth.ts            # Webhook token validation
+│  ├─ rateLimiter.ts     # DB-backed rate limiting (10 msg/60s per phone)
+│  ├─ messageBatcher.ts  # Batch rapid consecutive messages (3-10s window)
+│  └─ sentiment.ts       # Negative sentiment alerts to Super Admins
+├─ services/
+│  ├─ session.ts         # Hotel settings cache, session management
+│  ├─ conversation.ts    # Message logging, history retrieval (smart truncation)
+│  ├─ fonnte.ts          # Fonnte WhatsApp API wrapper
+│  └─ context.ts         # Extract booking codes, rooms, dates from history
+└─ utils/
+   ├─ slang.ts           # 40+ Indonesian slang/abbreviation normalization
+   ├─ phone.ts           # Phone number normalization
+   └─ format.ts          # WhatsApp formatting, name validation
+```
+
+**Agent Routing Flow**:
+1. Orchestrator receives message, normalizes phone/message
+2. Applies rate limiting (DB-backed) and message batching
+3. Loads `agent_configs` + `escalation_rules` from DB
+4. Detects intent via keyword matching
+5. Routes to specialized agent based on intent + context
+6. On error → escalates to human staff via WhatsApp
+
+---
+
+### whatsapp-learning-agent
+
+**Path**: `supabase/functions/whatsapp-learning-agent/`
+
+**Modes**:
+| Mode | Purpose |
+|------|---------|
+| `deep_analyze` | Analyze unanalyzed WhatsApp conversations (parallel chunks of 3) |
+| `detect_faq` | Cluster questions into FAQ patterns via AI |
+| `detect_slang` | Find new Indonesian abbreviations/slang |
+| `promote_faq` | Auto-promote top FAQ to training examples (10+ occurrences = auto-approve) |
+| `learning_report` | Aggregate learning progress stats |
+| `analyze_single` | Analyze a single conversation by ID |
+| `auto_pipeline` | Run all modes sequentially (CRON daily 03:00 WIB) |
+
+**AI Model**: Gemini 2.5 Flash via Lovable AI Gateway
+
+**Database Tables**:
+- `whatsapp_conversation_insights` — Per-conversation analysis results
+- `whatsapp_faq_patterns` — Aggregated FAQ patterns
+- `whatsapp_learning_metrics` — Daily learning progress metrics
+
+---
 
 ### chatbot
 
@@ -159,12 +246,17 @@ admin-chatbot/
 
 ```
 _shared/
-├─ cors.ts       # CORS headers
-├─ auth.ts       # Auth helpers
-├─ error.ts      # Error response builder
-├─ cache.ts      # Memory cache service
-├─ logger.ts     # Structured logging
-└─ supabase.ts   # Supabase client factory
+├─ cors.ts              # CORS headers
+├─ auth.ts              # Auth helpers
+├─ error.ts             # Error response builder
+├─ cache.ts             # Memory cache service
+├─ logger.ts            # Structured logging
+├─ supabase.ts          # Supabase client factory
+├─ aiProvider.ts        # Lovable AI Gateway wrapper (Gemini/OpenAI/Claude)
+├─ traceContext.ts      # Unified trace ID propagation across functions
+├─ hallucinationGuard.ts # Post-AI validation (prices, codes, URLs, rooms)
+├─ agentLogger.ts       # Fire-and-forget logging to agent_routing_logs
+└─ agentConfigCache.ts  # In-memory cache for agent_configs & escalation_rules
 ```
 
 ---
@@ -176,9 +268,10 @@ _shared/
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_ANON_KEY` | Supabase anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key |
-| `OPENAI_API_KEY` | OpenAI API key (optional) |
-| `WHATSAPP_TOKEN` | WhatsApp Business API token |
-| `WHATSAPP_PHONE_ID` | WhatsApp phone number ID |
+| `LOVABLE_API_KEY` | Lovable AI Gateway key (Gemini/OpenAI) |
+| `WHATSAPP_WEBHOOK_TOKEN` | Webhook auth token for Fonnte |
+| `FONNTE_TOKEN` | Fonnte WhatsApp API token |
+| `CRON_SECRET` | Secret for CRON-triggered functions |
 
 ---
 

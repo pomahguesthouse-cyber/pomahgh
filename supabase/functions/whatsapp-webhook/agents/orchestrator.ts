@@ -147,7 +147,7 @@ export async function orchestrate(
   trace?.info('Processing message', { phone, message_length: String(message).length });
 
   // Rate limit
-  if (!checkRateLimit(phone)) {
+  if (!await checkRateLimit(phone)) {
     logAgentDecision(supabase, { trace_id: trace?.traceId, phone_number: phone, from_agent: 'orchestrator', reason: 'rate_limited' });
     return new Response(JSON.stringify({ status: "rate_limited" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

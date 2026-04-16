@@ -1,26 +1,58 @@
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX = 10;
-const RATE_LIMIT_WINDOW = 60 * 1000;
-const CLEANUP_INTERVAL = 30 * 1000;
-let lastCleanup = 0;
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-export function checkRateLimit(phone: string): boolean {
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+
+// In-memory cache as fast-path (per-isolate), DB as source of truth
+const localCache = new Map<string, { count: number; resetAt: number }>();
+
+export async function checkRateLimit(phone: string): Promise<boolean> {
   const now = Date.now();
 
-  // Clean expired entries periodically or when map grows large
-  if (now - lastCleanup > CLEANUP_INTERVAL || rateLimitMap.size > 500) {
-    for (const [k, v] of rateLimitMap) {
-      if (now > v.resetAt) rateLimitMap.delete(k);
-    }
-    lastCleanup = now;
+  // Fast-path: check local cache first (avoids DB call if clearly under limit)
+  const cached = localCache.get(phone);
+  if (cached && now < cached.resetAt && cached.count >= RATE_LIMIT_MAX) {
+    return false;
   }
 
-  const entry = rateLimitMap.get(phone);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(phone, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
-    return true;
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const windowStart = new Date(now - RATE_LIMIT_WINDOW_SECONDS * 1000).toISOString();
+
+    // Count recent messages from this phone in the DB
+    const { count, error } = await supabase
+      .from("chat_messages")
+      .select("*", { count: "exact", head: true })
+      .eq("sender_phone", phone)
+      .gte("created_at", windowStart);
+
+    if (error) {
+      console.warn("[RateLimit] DB query failed, falling back to allow:", error.message);
+      return true; // Fail open on DB error
+    }
+
+    const messageCount = count ?? 0;
+
+    // Update local cache
+    localCache.set(phone, {
+      count: messageCount,
+      resetAt: now + RATE_LIMIT_WINDOW_SECONDS * 1000,
+    });
+
+    // Clean local cache periodically
+    if (localCache.size > 500) {
+      for (const [k, v] of localCache) {
+        if (now > v.resetAt) localCache.delete(k);
+      }
+    }
+
+    return messageCount < RATE_LIMIT_MAX;
+  } catch (err) {
+    console.warn("[RateLimit] Unexpected error, allowing request:", err);
+    return true; // Fail open
   }
-  if (entry.count >= RATE_LIMIT_MAX) return false;
-  entry.count++;
-  return true;
 }

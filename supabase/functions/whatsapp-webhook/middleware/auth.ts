@@ -28,24 +28,9 @@ export async function validateWebhookAuth(req: Request): Promise<Response | null
 
   if (providedWebhookToken === expectedWebhookToken) return null;
 
-  // Fallback: validate Fonnte body structure
-  let bodyText = "";
-  try {
-    bodyText = await req.clone().text();
-  } catch { /* ignore */ }
-
-  const hasFonnteStructure = bodyText && (
-    (bodyText.includes('"sender"') || bodyText.includes('"pengirim"')) &&
-    (bodyText.includes('"message"') || bodyText.includes('"text"') || bodyText.includes('"pesan"'))
-  );
-
-  if (!hasFonnteStructure) {
-    console.warn(`Unauthorized webhook request from ${req.headers.get('x-forwarded-for') || 'unknown IP'}`);
-    return new Response(JSON.stringify({ status: "unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-  console.log("Token not found, but request has valid Fonnte body structure — allowing");
-  return null;
+  console.warn(`Unauthorized webhook request from ${req.headers.get('x-forwarded-for') || 'unknown IP'}`);
+  return new Response(JSON.stringify({ status: "unauthorized" }), {
+    status: 401,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
