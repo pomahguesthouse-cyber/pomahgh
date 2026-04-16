@@ -18,6 +18,22 @@ import { handleComplaint, isComplaintMessage } from './complaint.ts';
 import { handlePayment, isPaymentMessage } from './payment.ts';
 import { setAgentConfigs, isAgentActive, getEscalationTarget, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 
+/**
+ * Check if guest has a recent booking with pending payment.
+ */
+async function hasPendingPaymentBooking(supabase: SupabaseClient, phone: string): Promise<boolean> {
+  const normalizedPhone = phone.startsWith('62') ? '0' + phone.slice(2) : phone;
+  const { data } = await supabase
+    .from('bookings')
+    .select('id')
+    .or(`guest_phone.eq.${phone},guest_phone.eq.${normalizedPhone}`)
+    .in('payment_status', ['pending', 'unpaid'])
+    .in('status', ['pending_payment', 'confirmed'])
+    .order('created_at', { ascending: false })
+    .limit(1);
+  return !!(data && data.length > 0);
+}
+
 type IntentType = 'faq' | 'booking' | 'complaint' | 'payment';
 
 /**
@@ -41,7 +57,7 @@ function detectIntent(message: string): IntentType {
   // Room type names → always booking intent (need tool access for availability)
   const roomNamePatterns = /\b(deluxe|grand\s*deluxe|family\s*suite|single|standard|superior|twin|double|triple|kamar)\b/i;
   // Short follow-up messages in active conversations
-  const bookingFollowUpPatterns = /^(ada\??|ada\s+ya\??|ada\s+ga\??|ada\s+gak\??|gimana(?:\s+kak)?\??|bagaimana(?:\s+kak)?\??|boleh\??|iya\??|ya\s*boleh\??|ya\??|oke\??|ok\??|lanjut\??|cek\??|mau\??|jadi\??|di\s*web\s+masih\s+ada)$/i;
+  const bookingFollowUpPatterns = /^(ada\??|ada\s+ya\??|ada\s+ga\??|ada\s+gak\??|gimana(?:\s+kak)?\??|bagaimana(?:\s+kak)?\??|boleh\??|lanjut\??|cek\??|mau\??|jadi\??|di\s*web\s+masih\s+ada)$/i;
 
   if (bookingPatterns.test(message) || pricePatterns.test(message) || roomNamePatterns.test(message) || bookingFollowUpPatterns.test(message.trim())) {
     return 'booking';
@@ -56,6 +72,11 @@ function detectIntent(message: string): IntentType {
 
   // Default UNKNOWN → FAQ (knowledge base fallback)
   return 'faq';
+}
+
+/** Messages that are ambiguous short replies - could be payment context */
+function isAmbiguousShortReply(message: string): boolean {
+  return /^(ya|iya|oke|ok|baik|sudah|done|siap|non-text message|image|foto|photo)$/i.test(message.trim());
 }
 
 /**
@@ -251,7 +272,24 @@ export async function orchestrate(
   }
 
   // === INTENT DETECTION: Route to appropriate agent ===
-  const intent = detectIntent(normalizedMessage);
+  let intent = detectIntent(normalizedMessage);
+
+  // === CONTEXT-AWARE ROUTING: Ambiguous messages with pending payment → payment agent ===
+  if ((intent === 'faq' || intent === 'booking') && isAmbiguousShortReply(normalizedMessage)) {
+    const hasPending = await hasPendingPaymentBooking(supabase, phone);
+    if (hasPending) {
+      console.log(`💰 Context-aware routing: ${phone} has pending payment, routing ambiguous message to payment`);
+      intent = 'payment';
+    }
+  }
+  // Non-text messages (images/files) with pending payment → likely payment proof
+  if (intent === 'faq' && /non-text message/i.test(normalizedMessage)) {
+    const hasPending = await hasPendingPaymentBooking(supabase, phone);
+    if (hasPending) {
+      console.log(`💰 Context-aware routing: ${phone} sent media with pending payment → payment agent`);
+      intent = 'payment';
+    }
+  }
 
   // Resolve target agent: check is_active, fallback to escalation_target
   let resolvedAgent: string = intent;
