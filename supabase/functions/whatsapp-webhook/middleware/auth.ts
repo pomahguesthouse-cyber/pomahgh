@@ -28,7 +28,47 @@ export async function validateWebhookAuth(req: Request): Promise<Response | null
 
   if (providedWebhookToken === expectedWebhookToken) return null;
 
-  console.warn(`Unauthorized webhook request from ${req.headers.get('x-forwarded-for') || 'unknown IP'}`);
+  // 🔍 DIAGNOSTIC LOG — capture exactly what Fonnte sends
+  const allHeaders: Record<string, string> = {};
+  req.headers.forEach((value, key) => {
+    // Mask sensitive values but show length and first/last chars
+    if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('token') || key.toLowerCase().includes('key')) {
+      allHeaders[key] = value ? `[len=${value.length}] ${value.slice(0, 4)}...${value.slice(-4)}` : '';
+    } else {
+      allHeaders[key] = value;
+    }
+  });
+
+  let bodyPreview = '';
+  try {
+    const cloned = req.clone();
+    const text = await cloned.text();
+    bodyPreview = text.slice(0, 500);
+  } catch (_) {
+    bodyPreview = '<unable to read body>';
+  }
+
+  const queryParams: Record<string, string> = {};
+  reqUrl.searchParams.forEach((v, k) => {
+    queryParams[k] = k.toLowerCase().includes('token') || k.toLowerCase().includes('key')
+      ? `[len=${v.length}] ${v.slice(0, 4)}...${v.slice(-4)}`
+      : v;
+  });
+
+  console.warn(`🔍 UNAUTHORIZED WEBHOOK DIAGNOSTIC`, JSON.stringify({
+    ip: req.headers.get('x-forwarded-for') || 'unknown',
+    method: req.method,
+    url: reqUrl.pathname,
+    expected_token_length: expectedWebhookToken.length,
+    expected_token_preview: `${expectedWebhookToken.slice(0, 4)}...${expectedWebhookToken.slice(-4)}`,
+    provided_token_found: providedWebhookToken
+      ? `[len=${providedWebhookToken.length}] ${providedWebhookToken.slice(0, 4)}...${providedWebhookToken.slice(-4)}`
+      : 'NONE',
+    query_params: queryParams,
+    headers: allHeaders,
+    body_preview: bodyPreview,
+  }, null, 2));
+
   return new Response(JSON.stringify({ status: "unauthorized" }), {
     status: 401,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
