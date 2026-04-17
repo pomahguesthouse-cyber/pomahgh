@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { useAdminRooms } from "@/hooks/useAdminRooms";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
@@ -38,6 +39,7 @@ const AdminBookings = () => {
   const { bankAccounts } = useBankAccounts();
   const { checkBookingConflict } = useBookingValidation();
   const { exportToExcel, exportToPDF } = useBookingExport();
+  const queryClient = useQueryClient();
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -76,7 +78,7 @@ const AdminBookings = () => {
 
   const getRoomName = (roomId: string) => roomNameMap[roomId] || "Unknown Room";
 
-  // Real-time subscription
+  // Real-time subscription - refresh data tanpa reload halaman
   useEffect(() => {
     const channel = supabase
       .channel("bookings-changes")
@@ -88,14 +90,14 @@ const AdminBookings = () => {
           table: "bookings",
         },
         () => {
-          window.location.reload();
+          queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
         }
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [queryClient]);
 
   // Detect overbooking: same room_number used by multiple bookings on overlapping dates
   const overbookedBookingIds = useMemo(() => {
