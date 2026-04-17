@@ -184,12 +184,32 @@ serve(async (req) => {
       if (toolCalls.length === 0) {
         // Hallucination guard: validate AI response against tool results and known facts
         let finalContent = aiMessage.content || "";
+
+        // Detect malformed tool-call leakage: model emits raw "functions\n{...}" text
+        // instead of proper tool_calls. Retry once with stricter instruction.
+        const leakedToolCallPattern = /^\s*(functions?|tool_calls?)\s*\n?\s*\{[\s\S]*"(check_availability|get_room_details|get_all_rooms|create_booking_draft|get_facilities|get_payment_methods|check_payment_status|get_booking_details|cancel_booking|update_booking|notify_payment_proof|notify_longstay_inquiry)"/i;
+        if (leakedToolCallPattern.test(finalContent) && i < maxIterations - 1) {
+          trace.warn('Detected leaked tool-call as text, retrying', { content_preview: finalContent.substring(0, 100) });
+          workingMessages = [
+            ...workingMessages,
+            { role: "assistant", content: finalContent },
+            { role: "user", content: "[SYSTEM: Jawaban kamu sebelumnya berisi raw JSON tool call sebagai teks. Itu SALAH. Jika kamu perlu memanggil tool, gunakan mekanisme tool_calls (function calling) yang benar — JANGAN tulis JSON sebagai teks. Jika kamu tidak perlu tool, jawab user secara natural dalam bahasa Indonesia. Sekarang ulangi jawabanmu dengan benar.]" }
+          ];
+          continue;
+        }
+
         if (allToolResults.length > 0 && finalContent) {
           const guardResult = hallucinationGuard.validate(finalContent, allToolResults);
           if (!guardResult.passed) {
             trace.warn('Hallucination detected', { violations: guardResult.violations });
             finalContent = guardResult.corrected;
           }
+        }
+
+        // Final safety: strip any remaining leaked tool-call text fragments
+        if (leakedToolCallPattern.test(finalContent)) {
+          trace.warn('Stripping leaked tool-call text from final response');
+          finalContent = "Mohon maaf kak, ada gangguan sebentar. Boleh diulang pertanyaannya? 🙏";
         }
 
         trace.info('Response ready (no tools)', { iteration: i });
