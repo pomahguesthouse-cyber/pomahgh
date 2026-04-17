@@ -67,6 +67,10 @@ export const useAdminBookings = () => {
   const { data: bookings, isLoading } = useQuery({
     queryKey: ["admin-bookings"],
     queryFn: async () => {
+      // Limit to last 90 days to avoid unbounded growth
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
       const { data, error } = await supabase
         .from("bookings")
         .select(`
@@ -94,6 +98,7 @@ export const useAdminBookings = () => {
             )
           )
         `)
+        .gte("created_at", ninetyDaysAgo.toISOString())
         .order("created_at", { ascending: false });
 
       if (error) throw error;

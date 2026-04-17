@@ -26,23 +26,26 @@ export async function getConversationHistory(
   supabase: SupabaseClient,
   conversationId: string,
 ): Promise<Array<{ role: string; content: string }>> {
-  const { data: allMessages, count } = await supabase
+  // Fast count-only query first to avoid fetching data we won't use
+  const { count: totalCount } = await supabase
     .from('chat_messages')
-    .select('role, content, created_at', { count: 'exact' })
-    .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true })
-    .limit(30);
+    .select('id', { count: 'exact', head: true })
+    .eq('conversation_id', conversationId);
 
-  const messages = allMessages || [];
-  const totalCount = count ?? messages.length;
+  const total = totalCount ?? 0;
+  let selected: Array<{ role: string; content: string; created_at: string }>;
 
-  let selected: typeof messages;
-
-  if (totalCount <= 30) {
-    // Short conversation — use all already fetched
-    selected = messages;
+  if (total <= 30) {
+    // Short conversation — single fetch
+    const { data } = await supabase
+      .from('chat_messages')
+      .select('role, content, created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
+      .limit(30);
+    selected = data || [];
   } else {
-    // Long conversation — fetch first 5 + last 25
+    // Long conversation — fetch first 5 + last 25 in parallel
     const [{ data: firstMsgs }, { data: lastMsgs }] = await Promise.all([
       supabase
         .from('chat_messages')
@@ -66,7 +69,7 @@ export async function getConversationHistory(
 
     selected = [
       ...first,
-      { role: 'system', content: `[... ${totalCount - first.length - deduped.length} pesan sebelumnya diringkas ...]`, created_at: '' },
+      { role: 'system', content: `[... ${total - first.length - deduped.length} pesan sebelumnya diringkas ...]`, created_at: '' },
       ...deduped,
     ];
   }

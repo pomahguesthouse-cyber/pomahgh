@@ -40,6 +40,14 @@ type IntentType = 'faq' | 'booking' | 'complaint' | 'payment';
  * Detect intent category from normalized message.
  * Priority: complaint > payment > booking > faq (default for unknown)
  */
+
+// Module-level compiled regex (once per isolate warm start)
+const BOOKING_RE = /\b(book|booking|pesan\s+kamar|reservas|cek\s+ketersediaan|ketersediaan|tersedia|available|ada\s+kamar|masih\s+ada|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|cancel|batal|refund|promo|diskon|mau\s+(?:menginap|pesan|booking|nginap)|kamar\s+(?:kosong|tersedia|available)|hari\s+ini|malam\s+ini|besok|untuk\s+\d+\s+orang|\d+\s+(?:orang|kamar|malam))\b/i;
+const PRICE_RE = /\b(?:(?:berapa|brp)\s+(?:harga|tarif|biaya|per\s*malam)|harga\s+kamar|tarif\s+kamar|biaya\s+(?:menginap|kamar)|jadi\s+berapa|total(?:nya)?)\b/i;
+const ROOM_NAME_RE = /\b(deluxe|grand\s*deluxe|family\s*suite|single|standard|superior|twin|double|triple|kamar)\b/i;
+const BOOKING_FOLLOWUP_RE = /^(ada\??|ada\s+ya\??|ada\s+ga\??|ada\s+gak\??|gimana(?:\s+kak)?\??|bagaimana(?:\s+kak)?\??|boleh\??|lanjut\??|cek\??|mau\??|jadi\??|di\s*web\s+masih\s+ada)$/i;
+const FAQ_RE = /\b(fasilitas|facility|wifi|parkir|parking|sarapan|breakfast|kolam|pool|ac|handuk|towel|alamat|lokasi|location|arah|direction|dekat|nearby|jam\s+(?:buka|operasional|kerja)|buka\s+(?:jam|sampai)|tutup\s+(?:jam|pukul)|aturan|rule|policy|kebijakan|smoking|merokok|hewan|pet|anak|child|extra\s+bed|laundry|restoran|restaurant|mushola|masjid|transportasi|airport|bandara|stasiun|terminal)\b/i;
+
 function detectIntent(message: string): IntentType {
   // 1. Complaint: negative sentiment takes highest priority
   if (isComplaintMessage(message)) {
@@ -52,21 +60,12 @@ function detectIntent(message: string): IntentType {
   }
 
   // 3. Booking: reservation, availability, pricing, room names, or short follow-ups
-  const bookingPatterns = /\b(book|booking|pesan\s+kamar|reservas|cek\s+ketersediaan|ketersediaan|tersedia|available|ada\s+kamar|masih\s+ada|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|cancel|batal|refund|promo|diskon|mau\s+(?:menginap|pesan|booking|nginap)|kamar\s+(?:kosong|tersedia|available)|hari\s+ini|malam\s+ini|besok|untuk\s+\d+\s+orang|\d+\s+(?:orang|kamar|malam))\b/i;
-  const pricePatterns = /\b(?:(?:berapa|brp)\s+(?:harga|tarif|biaya|per\s*malam)|harga\s+kamar|tarif\s+kamar|biaya\s+(?:menginap|kamar)|jadi\s+berapa|total(?:nya)?)\b/i;
-  // Room type names → always booking intent (need tool access for availability)
-  const roomNamePatterns = /\b(deluxe|grand\s*deluxe|family\s*suite|single|standard|superior|twin|double|triple|kamar)\b/i;
-  // Short follow-up messages in active conversations
-  const bookingFollowUpPatterns = /^(ada\??|ada\s+ya\??|ada\s+ga\??|ada\s+gak\??|gimana(?:\s+kak)?\??|bagaimana(?:\s+kak)?\??|boleh\??|lanjut\??|cek\??|mau\??|jadi\??|di\s*web\s+masih\s+ada)$/i;
-
-  if (bookingPatterns.test(message) || pricePatterns.test(message) || roomNamePatterns.test(message) || bookingFollowUpPatterns.test(message.trim())) {
+  if (BOOKING_RE.test(message) || PRICE_RE.test(message) || ROOM_NAME_RE.test(message) || BOOKING_FOLLOWUP_RE.test(message.trim())) {
     return 'booking';
   }
 
   // 4. FAQ: general info about facilities, location, etc.
-  const faqPatterns = /\b(fasilitas|facility|wifi|parkir|parking|sarapan|breakfast|kolam|pool|ac|handuk|towel|alamat|lokasi|location|arah|direction|dekat|nearby|jam\s+(?:buka|operasional|kerja)|buka\s+(?:jam|sampai)|tutup\s+(?:jam|pukul)|aturan|rule|policy|kebijakan|smoking|merokok|hewan|pet|anak|child|extra\s+bed|laundry|restoran|restaurant|mushola|masjid|transportasi|airport|bandara|stasiun|terminal)\b/i;
-
-  if (faqPatterns.test(message)) {
+  if (FAQ_RE.test(message)) {
     return 'faq';
   }
 
@@ -147,7 +146,7 @@ export async function orchestrate(
   trace?.info('Processing message', { phone, message_length: String(message).length });
 
   // Rate limit
-  if (!await checkRateLimit(phone)) {
+  if (!await checkRateLimit(supabase, phone)) {
     logAgentDecision(supabase, { trace_id: trace?.traceId, phone_number: phone, from_agent: 'orchestrator', reason: 'rate_limited' });
     return new Response(JSON.stringify({ status: "rate_limited" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -274,19 +273,15 @@ export async function orchestrate(
   // === INTENT DETECTION: Route to appropriate agent ===
   let intent = detectIntent(normalizedMessage);
 
-  // === CONTEXT-AWARE ROUTING: Ambiguous messages with pending payment → payment agent ===
-  if ((intent === 'faq' || intent === 'booking') && isAmbiguousShortReply(normalizedMessage)) {
+  // === CONTEXT-AWARE ROUTING: Check pending payment once for ambiguous/media messages ===
+  const needsPendingCheck = 
+    ((intent === 'faq' || intent === 'booking') && isAmbiguousShortReply(normalizedMessage)) ||
+    (intent === 'faq' && /non-text message/i.test(normalizedMessage));
+
+  if (needsPendingCheck) {
     const hasPending = await hasPendingPaymentBooking(supabase, phone);
     if (hasPending) {
-      console.log(`💰 Context-aware routing: ${phone} has pending payment, routing ambiguous message to payment`);
-      intent = 'payment';
-    }
-  }
-  // Non-text messages (images/files) with pending payment → likely payment proof
-  if (intent === 'faq' && /non-text message/i.test(normalizedMessage)) {
-    const hasPending = await hasPendingPaymentBooking(supabase, phone);
-    if (hasPending) {
-      console.log(`💰 Context-aware routing: ${phone} sent media with pending payment → payment agent`);
+      console.log(`💰 Context-aware routing: ${phone} has pending payment, routing to payment agent`);
       intent = 'payment';
     }
   }

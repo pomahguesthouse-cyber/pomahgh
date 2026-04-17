@@ -115,15 +115,16 @@ export const useMultiAgentDashboard = () => {
         .from('whatsapp_sessions')
         .select('id, is_active, is_blocked, is_takeover, conversation_id, session_type');
 
-      const { data: todayConvs } = await supabase
-        .from('chat_conversations')
-        .select('id, message_count, booking_created')
-        .gte('started_at', today.toISOString());
-
-      const { data: todayRoutings } = await supabase
-        .from('agent_routing_logs')
-        .select('from_agent, to_agent, duration_ms')
-        .gte('created_at', today.toISOString());
+      const [{ data: todayConvs }, { data: todayRoutings }] = await Promise.all([
+        supabase
+          .from('chat_conversations')
+          .select('id, message_count, booking_created')
+          .gte('started_at', today.toISOString()),
+        supabase
+          .from('agent_routing_logs')
+          .select('from_agent, to_agent, duration_ms')
+          .gte('created_at', today.toISOString()),
+      ]);
 
       const activeSessions = sessions?.filter(s => s.is_active && !s.is_blocked).length || 0;
       const bookingsToday = todayConvs?.filter(c => c.booking_created).length || 0;

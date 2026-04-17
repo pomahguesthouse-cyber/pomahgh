@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
@@ -6,7 +6,7 @@ const RATE_LIMIT_WINDOW_SECONDS = 60;
 // In-memory cache as fast-path (per-isolate), DB as source of truth
 const localCache = new Map<string, { count: number; resetAt: number }>();
 
-export async function checkRateLimit(phone: string): Promise<boolean> {
+export async function checkRateLimit(supabase: SupabaseClient, phone: string): Promise<boolean> {
   const now = Date.now();
 
   // Fast-path: check local cache first (avoids DB call if clearly under limit)
@@ -16,11 +16,6 @@ export async function checkRateLimit(phone: string): Promise<boolean> {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
     const windowStart = new Date(now - RATE_LIMIT_WINDOW_SECONDS * 1000).toISOString();
 
     // Count recent messages from this phone in the DB

@@ -435,20 +435,23 @@ Kembalikan JSON array. Prioritaskan pertanyaan yang paling sering muncul.`
   const patterns = parseJsonArrayFromAI(rawContent);
   let savedCount = 0;
 
+  // Fetch all existing FAQ patterns once to avoid N+1 queries
+  const { data: allExistingPatterns } = await supabase
+    .from("whatsapp_faq_patterns")
+    .select("id, occurrence_count, canonical_question, category");
+
   for (const pattern of patterns) {
     const canonicalQ = String(pattern.canonical_question || '');
     if (!canonicalQ) continue;
 
     // Check if similar pattern already exists using normalized comparison
     const normalizedQ = normalizeForComparison(canonicalQ);
-    const { data: existingPatterns } = await supabase
-      .from("whatsapp_faq_patterns")
-      .select("id, occurrence_count, canonical_question")
-      .eq("category", pattern.category || "general")
-      .limit(50);
+    const categoryPatterns = (allExistingPatterns || []).filter(
+      p => p.category === (pattern.category || "general")
+    );
 
     // Find best match by word overlap similarity
-    const existing = findBestMatch(normalizedQ, existingPatterns || []);
+    const existing = findBestMatch(normalizedQ, categoryPatterns);
 
     if (existing) {
       // Update occurrence count of matched pattern

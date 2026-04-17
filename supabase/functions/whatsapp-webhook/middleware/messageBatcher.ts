@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '../types.ts';
 
-const MESSAGE_BATCH_WAIT_MS = 3000;
-const MESSAGE_BATCH_FOLLOWUP_MS = 2000;
-const MESSAGE_BATCH_MAX_WAIT_MS = 10000;
+const MESSAGE_BATCH_WAIT_MS = 1500;
+const MESSAGE_BATCH_FOLLOWUP_MS = 1000;
+const MESSAGE_BATCH_MAX_WAIT_MS = 5000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));

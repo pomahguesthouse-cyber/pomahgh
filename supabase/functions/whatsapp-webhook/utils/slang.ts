@@ -1,5 +1,5 @@
 /** Indonesian slang normalizer for better AI understanding */
-const SLANG_PATTERNS: Array<[RegExp, string]> = Object.entries({
+const SLANG_MAP: Record<string, string> = {
   'dlx': 'deluxe', 'delux': 'deluxe', 'dluxe': 'deluxe',
   'grnd': 'grand', 'grd': 'grand',
   'fam': 'family', 'fmly': 'family',
@@ -28,12 +28,11 @@ const SLANG_PATTERNS: Array<[RegExp, string]> = Object.entries({
   'tp': 'tapi', 'tpi': 'tapi',
   'sm': 'sama', 'ama': 'sama',
   'trims': 'terima kasih', 'tq': 'terima kasih', 'makasih': 'terima kasih', 'mksh': 'terima kasih',
-}).map(([slang, replacement]) => [new RegExp(`\\b${slang}\\b`, 'gi'), replacement]);
+};
+
+// Single combined regex — compiled once per isolate
+const SLANG_RE = new RegExp(`\\b(${Object.keys(SLANG_MAP).join('|')})\\b`, 'gi');
 
 export function normalizeIndonesianMessage(msg: string): string {
-  let normalized = msg.toLowerCase();
-  for (const [re, replacement] of SLANG_PATTERNS) {
-    normalized = normalized.replace(re, replacement);
-  }
-  return normalized;
+  return msg.toLowerCase().replace(SLANG_RE, (match) => SLANG_MAP[match.toLowerCase()] || match);
 }
