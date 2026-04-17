@@ -1,8 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap");
-
-/* Fonts are loaded in index.html with preload for better performance */
+/* Fonts loaded via index.html <link> tags for non-blocking performance */
 
 @tailwind base;
 @tailwind components;
