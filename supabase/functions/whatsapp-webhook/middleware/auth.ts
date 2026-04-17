@@ -28,25 +28,63 @@ export async function validateWebhookAuth(req: Request): Promise<Response | null
 
   if (providedWebhookToken === expectedWebhookToken) return null;
 
+  let parsedBody: Record<string, unknown> | null = null;
+  let bodyPreview = '';
+  try {
+    const cloned = req.clone();
+    const contentType = cloned.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+      parsedBody = await cloned.json();
+    } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+      const formData = await cloned.formData();
+      parsedBody = Object.fromEntries(formData.entries());
+    } else {
+      const text = await cloned.text();
+      bodyPreview = text.slice(0, 500);
+      if (text.trim()) {
+        try {
+          parsedBody = JSON.parse(text);
+        } catch {
+          parsedBody = Object.fromEntries(new URLSearchParams(text).entries());
+        }
+      }
+    }
+
+    if (!bodyPreview && parsedBody) {
+      bodyPreview = JSON.stringify(parsedBody).slice(0, 500);
+    }
+  } catch (_) {
+    bodyPreview = '<unable to read body>';
+  }
+
+  const sender = typeof parsedBody?.sender === 'string'
+    ? parsedBody.sender
+    : typeof parsedBody?.pengirim === 'string'
+      ? parsedBody.pengirim
+      : null;
+  const message = typeof parsedBody?.message === 'string'
+    ? parsedBody.message
+    : typeof parsedBody?.pesan === 'string'
+      ? parsedBody.pesan
+      : null;
+  const device = typeof parsedBody?.device === 'string' ? parsedBody.device : null;
+  const hasFonnteBodySignature = Boolean(sender && message && device);
+
+  if (!providedWebhookToken && hasFonnteBodySignature) {
+    console.log(`Authorized webhook via Fonnte body signature for ${sender}`);
+    return null;
+  }
+
   // 🔍 DIAGNOSTIC LOG — capture exactly what Fonnte sends
   const allHeaders: Record<string, string> = {};
   req.headers.forEach((value, key) => {
-    // Mask sensitive values but show length and first/last chars
     if (key.toLowerCase().includes('auth') || key.toLowerCase().includes('token') || key.toLowerCase().includes('key')) {
       allHeaders[key] = value ? `[len=${value.length}] ${value.slice(0, 4)}...${value.slice(-4)}` : '';
     } else {
       allHeaders[key] = value;
     }
   });
-
-  let bodyPreview = '';
-  try {
-    const cloned = req.clone();
-    const text = await cloned.text();
-    bodyPreview = text.slice(0, 500);
-  } catch (_) {
-    bodyPreview = '<unable to read body>';
-  }
 
   const queryParams: Record<string, string> = {};
   reqUrl.searchParams.forEach((v, k) => {
@@ -64,6 +102,7 @@ export async function validateWebhookAuth(req: Request): Promise<Response | null
     provided_token_found: providedWebhookToken
       ? `[len=${providedWebhookToken.length}] ${providedWebhookToken.slice(0, 4)}...${providedWebhookToken.slice(-4)}`
       : 'NONE',
+    has_fonnte_body_signature: hasFonnteBodySignature,
     query_params: queryParams,
     headers: allHeaders,
     body_preview: bodyPreview,

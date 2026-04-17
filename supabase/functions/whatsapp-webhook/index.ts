@@ -33,8 +33,8 @@ serve(async (req) => {
     });
   }
 
-  // Auth
-  const authError = await validateWebhookAuth(req);
+  // Auth (use cloned request so diagnostic middleware can inspect body without consuming original request)
+  const authError = await validateWebhookAuth(req.clone());
   if (authError) return authError;
 
   try {
