@@ -84,7 +84,19 @@ async function fetchImageAsDataUrl(url: string): Promise<string | null> {
   }
 }
 
-/** Use Lovable AI Gemini vision to extract payment proof data */
+/**
+ * Use Lovable AI Gemini vision (OCR + financial parser) to extract payment proof data.
+ *
+ * System brief (per Pomah payment-agent spec):
+ *   You are an OCR + financial parser.
+ *   From the uploaded payment proof image, extract:
+ *     - Transfer amount
+ *     - Transaction date
+ *     - Sender name
+ *     - Bank name
+ *     - Reference number (if any)
+ *   Return JSON. If a field is unclear, return null.
+ */
 async function extractWithVision(imageDataUrl: string): Promise<PaymentProofExtraction | null> {
   const apiKey = Deno.env.get('LOVABLE_API_KEY');
   if (!apiKey) {
@@ -104,12 +116,28 @@ async function extractWithVision(imageDataUrl: string): Promise<PaymentProofExtr
         messages: [
           {
             role: 'system',
-            content: 'You are an expert at reading Indonesian bank transfer receipts (BCA, BRI, Mandiri, BNI, OVO, GoPay, DANA, ShopeePay, etc.). Extract structured data from payment proof images. Return data ONLY via the extract_payment_proof function call.',
+            content: [
+              'You are an OCR + financial parser specialized in Indonesian bank transfer & e-wallet receipts',
+              '(BCA, BRI, Mandiri, BNI, BSI, CIMB, OVO, GoPay, DANA, ShopeePay, LinkAja, QRIS, etc.).',
+              '',
+              'From the uploaded payment proof image, extract:',
+              '  - Transfer amount (in Rupiah, integer, no separators)',
+              '  - Transaction date (Indonesian format: "DD MMM YYYY", e.g. "15 Jan 2025")',
+              '  - Sender name (the person/account who SENT the money — never the recipient)',
+              '  - Bank name (or e-wallet name)',
+              '  - Reference number (transaction ID / kode unik / no. referensi if visible)',
+              '',
+              'Rules:',
+              '  - If a field is unclear or not visible, return null for that field.',
+              '  - Set is_payment_proof=false if image is not a transfer/payment receipt (e.g. selfie, room photo, screenshot of chat).',
+              '  - Set confidence = "high" only when ALL key fields (amount + sender + bank) are clearly readable.',
+              '  - Return data ONLY via the extract_payment_proof function call.',
+            ].join('\n'),
           },
           {
             role: 'user',
             content: [
-              { type: 'text', text: 'Periksa apakah gambar ini adalah bukti transfer/pembayaran. Jika ya, ekstrak: jumlah uang (Rp), nama pengirim, nama bank/e-wallet, tanggal transfer (format: DD MMM YYYY), nomor referensi/transaksi.' },
+              { type: 'text', text: 'Ekstrak data bukti transfer dari gambar berikut. Jika ada field tidak jelas, kembalikan null.' },
               { type: 'image_url', image_url: { url: imageDataUrl } },
             ],
           },
@@ -118,18 +146,18 @@ async function extractWithVision(imageDataUrl: string): Promise<PaymentProofExtr
           type: 'function',
           function: {
             name: 'extract_payment_proof',
-            description: 'Return structured extraction of a payment proof image.',
+            description: 'Return structured extraction of a payment proof image (OCR + financial parser).',
             parameters: {
               type: 'object',
               properties: {
-                is_payment_proof: { type: 'boolean', description: 'true if image looks like a transfer/payment receipt' },
+                is_payment_proof: { type: 'boolean', description: 'true if image is a transfer/payment receipt' },
                 confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
-                amount: { type: ['number', 'null'], description: 'Transfer amount in Rupiah, no separators. Null if not visible.' },
-                sender_name: { type: ['string', 'null'] },
-                bank_name: { type: ['string', 'null'], description: 'Bank or e-wallet name (e.g. BCA, GoPay)' },
-                transfer_date: { type: ['string', 'null'], description: 'Transfer date in Indonesian format like "15 Jan 2025"' },
-                reference_number: { type: ['string', 'null'] },
-                notes: { type: ['string', 'null'], description: 'Anything unusual or worth flagging' },
+                amount: { type: ['number', 'null'], description: 'Transfer amount in Rupiah, integer, no separators. Null if unclear.' },
+                sender_name: { type: ['string', 'null'], description: 'Name of the SENDER. Null if unclear.' },
+                bank_name: { type: ['string', 'null'], description: 'Bank or e-wallet name (BCA, GoPay, etc.). Null if unclear.' },
+                transfer_date: { type: ['string', 'null'], description: 'Transaction date as "DD MMM YYYY" Indonesian. Null if unclear.' },
+                reference_number: { type: ['string', 'null'], description: 'Reference / transaction ID. Null if not visible.' },
+                notes: { type: ['string', 'null'], description: 'Anything unusual (e.g. failed transfer, wrong recipient).' },
               },
               required: ['is_payment_proof', 'confidence'],
             },
@@ -151,7 +179,9 @@ async function extractWithVision(imageDataUrl: string): Promise<PaymentProofExtr
       console.warn('Vision did not return tool call');
       return null;
     }
-    return JSON.parse(toolCall.function.arguments) as PaymentProofExtraction;
+    const parsed = JSON.parse(toolCall.function.arguments) as PaymentProofExtraction;
+    console.log(`🧾 OCR result: amount=${parsed.amount}, sender=${parsed.sender_name}, bank=${parsed.bank_name}, ref=${parsed.reference_number}, confidence=${parsed.confidence}`);
+    return parsed;
   } catch (e) {
     console.error('Vision extraction error:', e);
     return null;
