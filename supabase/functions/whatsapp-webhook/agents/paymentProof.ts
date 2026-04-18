@@ -15,6 +15,7 @@ import { sendWhatsApp } from '../services/fonnte.ts';
 import { logMessage } from '../services/conversation.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
+import { sendBookingOrderToGuest } from '../services/sendBookingOrder.ts';
 
 interface PaymentProofExtraction {
   is_payment_proof: boolean;
@@ -294,6 +295,8 @@ export async function handlePaymentProof(
             updated_at: new Date().toISOString(),
           })
           .eq('id', booking.id);
+        // Mark proof row as approved (will be inserted below — update via booking_id)
+        // Note: insert happens above; here we'll patch latest pending after insert finishes.
         matchStatus = `🎉 *AUTO-APPROVED* (confidence ${extraction.confidence}, threshold ${confidenceThreshold}%) — booking otomatis di-set LUNAS.`;
       }
     } else if (extraction.amount) {
