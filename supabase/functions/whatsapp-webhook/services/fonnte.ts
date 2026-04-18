@@ -47,3 +47,60 @@ export async function sendWhatsApp(
     return { status: false, detail: errMsg };
   }
 }
+
+/**
+ * Send a file (PDF, image, doc) via Fonnte API.
+ * Fonnte supports `url` (publicly accessible URL) for media attachment.
+ * Filename is inferred from URL or can be set explicitly.
+ */
+export async function sendWhatsAppFile(
+  phone: string,
+  fileUrl: string,
+  caption: string,
+  fonnteApiKey: string,
+  filename?: string,
+): Promise<{ status: boolean; detail?: string; [key: string]: unknown }> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const payload: Record<string, unknown> = {
+      target: phone,
+      message: caption,
+      url: fileUrl,
+      countryCode: '62',
+    };
+    if (filename) payload.filename = filename;
+
+    const response = await fetch('https://api.fonnte.com/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': fonnteApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'unknown');
+      console.error(`❌ Fonnte file send error: HTTP ${response.status} - ${errorText}`);
+      return { status: false, detail: `HTTP ${response.status}: ${errorText}` };
+    }
+
+    const result = await response.json();
+    if (result.status === false) {
+      console.error(`❌ Fonnte file send failed: ${result.detail || JSON.stringify(result)}`);
+    }
+    return result;
+  } catch (err) {
+    clearTimeout(timeout);
+    const errMsg = (err as Error).name === 'AbortError'
+      ? 'Fonnte file API timeout (20s)'
+      : `Fonnte file API error: ${(err as Error).message}`;
+    console.error(`❌ ${errMsg}`);
+    return { status: false, detail: errMsg };
+  }
+}
