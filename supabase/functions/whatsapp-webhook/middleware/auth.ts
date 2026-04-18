@@ -69,10 +69,15 @@ export async function validateWebhookAuth(req: Request): Promise<Response | null
       ? parsedBody.pesan
       : null;
   const device = typeof parsedBody?.device === 'string' ? parsedBody.device : null;
-  const hasFonnteBodySignature = Boolean(sender && message && device);
+  const messageType = typeof parsedBody?.type === 'string' ? parsedBody.type : null;
+  const mediaUrl = typeof parsedBody?.url === 'string' ? parsedBody.url : null;
+  // Accept Fonnte body signature for text OR media messages (image/video/document have empty `message`)
+  const hasFonnteBodySignature = Boolean(
+    sender && device && (message || messageType || mediaUrl)
+  );
 
   if (!providedWebhookToken && hasFonnteBodySignature) {
-    console.log(`Authorized webhook via Fonnte body signature for ${sender}`);
+    console.log(`Authorized webhook via Fonnte body signature for ${sender} (type=${messageType || 'text'})`);
     return null;
   }
 
