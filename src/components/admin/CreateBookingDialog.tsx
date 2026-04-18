@@ -372,19 +372,6 @@ export const CreateBookingDialog = ({
 
   return (
     <>
-      <BookingConfirmationDialog
-        open={showConfirmation}
-        onOpenChange={setShowConfirmation}
-        onConfirm={handleConfirm}
-        guestName={formData.guest_name}
-        roomName={selectedRooms.length > 1 ? `${selectedRooms.length} kamar` : selectedRooms[0]?.roomName || ""}
-        checkIn={checkIn}
-        checkOut={checkOut}
-        totalNights={totalNights}
-        totalPrice={effectiveTotalPrice}
-        numGuests={formData.num_guests}
-      />
-      
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -920,6 +907,19 @@ export const CreateBookingDialog = ({
           </form>
         </DialogContent>
       </Dialog>
+
+      <BookingConfirmationDialog
+        open={showConfirmation}
+        onOpenChange={setShowConfirmation}
+        onConfirm={handleConfirm}
+        guestName={formData.guest_name}
+        roomName={selectedRooms.length > 1 ? `${selectedRooms.length} kamar` : selectedRooms[0]?.roomName || ""}
+        checkIn={checkIn}
+        checkOut={checkOut}
+        totalNights={totalNights}
+        totalPrice={effectiveTotalPrice}
+        numGuests={formData.num_guests}
+      />
     </>
   );
 };
