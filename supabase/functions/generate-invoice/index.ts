@@ -254,53 +254,65 @@ function buildInvoicePdf(args: {
   doc.text(`Tamu      : ${booking.num_guests} orang`, marginX, y);
   y += 18;
 
-  // === DETAIL PEMESANAN (TABLE) ===
-  y = drawSectionHeader('DETAIL PEMESANAN', y);
-  const tableRows: (string | number)[][] = [];
-  let idx = 1;
-  rooms.forEach((r) => {
-    const subtotal = r.price_per_night * booking.total_nights;
-    tableRows.push([
-      idx++,
-      'Akomodasi',
-      `${hotelName} - ${r.rooms?.name || booking.rooms?.name || 'Kamar'}${r.room_number ? ` #${r.room_number}` : ''}`,
-      `${booking.total_nights} mlm`,
-      formatRupiah(r.price_per_night),
-      formatRupiah(subtotal),
-    ]);
-  });
-  addons.forEach((a) => {
-    tableRows.push([
-      idx++,
-      'Add-on',
-      a.room_addons?.name || 'Layanan tambahan',
-      `${a.quantity}x`,
-      formatRupiah(a.unit_price),
-      formatRupiah(a.total_price),
-    ]);
-  });
+  // === DETAIL PEMESANAN (TABLE or SUMMARY) ===
+  if (showBreakdown) {
+    y = drawSectionHeader('DETAIL PEMESANAN', y);
+    const tableRows: (string | number)[][] = [];
+    let idx = 1;
+    rooms.forEach((r) => {
+      const subtotal = r.price_per_night * booking.total_nights;
+      tableRows.push([
+        idx++,
+        'Akomodasi',
+        `${hotelName} - ${r.rooms?.name || booking.rooms?.name || 'Kamar'}${r.room_number ? ` #${r.room_number}` : ''}`,
+        `${booking.total_nights} mlm`,
+        formatRupiah(r.price_per_night),
+        formatRupiah(subtotal),
+      ]);
+    });
+    addons.forEach((a) => {
+      tableRows.push([
+        idx++,
+        'Add-on',
+        a.room_addons?.name || 'Layanan tambahan',
+        `${a.quantity}x`,
+        formatRupiah(a.unit_price),
+        formatRupiah(a.total_price),
+      ]);
+    });
 
-  autoTable(doc, {
-    startY: y,
-    margin: { left: marginX, right: marginX },
-    head: [['No', 'Jenis', 'Deskripsi', 'Jml', 'Harga Satuan', 'Total']],
-    body: tableRows,
-    headStyles: { fillColor: primary, textColor: 255, fontSize: 9, halign: 'center' },
-    bodyStyles: { fontSize: 9, textColor: 50 },
-    columnStyles: {
-      0: { cellWidth: 28, halign: 'center' },
-      1: { cellWidth: 70 },
-      2: { cellWidth: 'auto' },
-      3: { cellWidth: 50, halign: 'center' },
-      4: { cellWidth: 80, halign: 'right' },
-      5: { cellWidth: 80, halign: 'right' },
-    },
-    foot: [
-      ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
-      ['', '', '', '', 'JUMLAH BAYAR', formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)],
-    ],
-    footStyles: { fillColor: [245, 245, 245], textColor: dark, fontStyle: 'bold', fontSize: 9, halign: 'right' },
-  });
+    autoTable(doc, {
+      startY: y,
+      margin: { left: marginX, right: marginX },
+      head: [['No', 'Jenis', 'Deskripsi', 'Jml', 'Harga Satuan', 'Total']],
+      body: tableRows,
+      headStyles: { fillColor: primary, textColor: 255, fontSize: 9, halign: 'center' },
+      bodyStyles: { fontSize: 9, textColor: 50 },
+      columnStyles: {
+        0: { cellWidth: 28, halign: 'center' },
+        1: { cellWidth: 70 },
+        2: { cellWidth: 'auto' },
+        3: { cellWidth: 50, halign: 'center' },
+        4: { cellWidth: 80, halign: 'right' },
+        5: { cellWidth: 80, halign: 'right' },
+      },
+      foot: [
+        ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
+        ['', '', '', '', 'JUMLAH BAYAR', formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)],
+      ],
+      footStyles: { fillColor: [245, 245, 245], textColor: dark, fontStyle: 'bold', fontSize: 9, halign: 'right' },
+    });
+  } else {
+    // Compact summary (no breakdown)
+    y = drawSectionHeader('TOTAL PEMBAYARAN', y);
+    doc.setFont(fontFamily, 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(...primary);
+    doc.text(formatRupiah(showPaidStamp ? booking.total_price : totalWithCode), pageWidth / 2, y + 10, { align: 'center' });
+    y += 30;
+    // @ts-expect-error -- ensure lastAutoTable equivalent
+    doc.lastAutoTable = { finalY: y };
+  }
 
   // After table position
   // @ts-expect-error -- autoTable adds lastAutoTable to doc
