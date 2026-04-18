@@ -231,7 +231,7 @@ function buildInvoicePdf(args: {
     doc.setFontSize(10);
     doc.setTextColor(...dark);
     doc.text(label, marginX + 12, y + 14);
-    return y + 28;
+    return y + 42;
   };
 
   let y = 140;
