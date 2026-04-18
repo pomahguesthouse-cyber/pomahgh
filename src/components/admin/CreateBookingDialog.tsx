@@ -292,34 +292,52 @@ export const CreateBookingDialog = ({
         totalPrice = selectedRooms.reduce((sum, room) => sum + room.pricePerNight * totalNights, 0);
       }
 
-      // Manual booking — direct insert via admin-create-booking (no payment gateway)
-      const { data: result, error: invokeError } = await supabase.functions.invoke('admin-create-booking', {
-        body: {
+      // Manual booking — direct insert via Supabase client (admin RLS policy)
+      const isPaid = false;
+      const bookingStatus = "pending_payment";
+      const paymentAmount = Math.round(totalPrice);
+
+      const { data: booking, error: insertError } = await supabase
+        .from("bookings")
+        .insert({
           guest_name: formData.guest_name,
           guest_email: formData.guest_email,
-          guest_phone: formData.guest_phone,
-          room_ids: selectedRooms.map(r => r.roomId),
-          room_numbers: selectedRooms.map(r => r.roomNumber),
+          guest_email_backup: formData.guest_email,
+          guest_phone: formData.guest_phone || null,
+          room_id: selectedRooms[0].roomId,
           check_in: format(checkIn, "yyyy-MM-dd"),
           check_out: format(checkOut, "yyyy-MM-dd"),
           total_nights: totalNights,
-          total_price: totalPrice,
-          price_per_night: pricePerNight,
-          num_guests: formData.num_guests,
-          special_requests: formData.special_requests,
-          remark: formData.remark,
+          total_price: paymentAmount,
+          num_guests: formData.num_guests || 1,
+          special_requests: formData.special_requests || null,
+          remark: formData.remark || null,
+          status: bookingStatus,
+          payment_status: "pending",
           booking_source: bookingSource,
           ota_name: bookingSource === "ota" ? otaName : null,
           other_source: bookingSource === "other" ? otherSource : null,
-          payment_status: "pending",
           user_id: user?.id || null,
-        }
-      });
+          is_inline_payment: false,
+          allocated_room_number: selectedRooms[0]?.roomNumber || null,
+        })
+        .select()
+        .single();
 
-      if (invokeError) throw invokeError;
-      if (!result?.success) throw new Error(result?.error || "Gagal membuat booking");
+      if (insertError) throw new Error(insertError.message);
 
-      toast.success(`Booking ${result.booking.booking_code} berhasil dibuat (status: pending payment)`);
+      // Multi-room junction
+      if (selectedRooms.length > 1 || selectedRooms.some(r => r.roomNumber)) {
+        const bookingRooms = selectedRooms.map((r) => ({
+          booking_id: booking.id,
+          room_id: r.roomId,
+          room_number: r.roomNumber || "",
+          price_per_night: Math.round(pricePerNight || paymentAmount / totalNights / selectedRooms.length),
+        }));
+        await supabase.from("booking_rooms").insert(bookingRooms);
+      }
+
+      toast.success(`Booking ${booking.booking_code} berhasil dibuat (status: pending payment)`);
       setShowConfirmation(false);
       onOpenChange(false);
 
