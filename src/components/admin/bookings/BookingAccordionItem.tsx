@@ -110,16 +110,19 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
   }, [booking.booking_rooms, booking.room_id, booking.rooms, rooms, getRoomName]);
 
   // Calculate price per night from booking_rooms (sum of all room prices)
+  // Fallback to total_price / total_nights when junction prices are missing/zero
   const pricePerNight = useMemo(() => {
-    if (booking.booking_rooms && booking.booking_rooms.length > 0) {
-      return booking.booking_rooms.reduce(
-        (sum, br) => sum + br.price_per_night,
-        0
-      );
-    }
-    return booking.total_nights > 0
+    const fallback = booking.total_nights > 0
       ? Math.round(booking.total_price / booking.total_nights)
       : booking.total_price;
+    if (booking.booking_rooms && booking.booking_rooms.length > 0) {
+      const sum = booking.booking_rooms.reduce(
+        (acc, br) => acc + (Number(br.price_per_night) || 0),
+        0
+      );
+      return sum > 0 ? sum : fallback;
+    }
+    return fallback;
   }, [booking.booking_rooms, booking.total_price, booking.total_nights]);
 
   const paymentStatus = (booking.payment_status || "unpaid") as PaymentStatus;

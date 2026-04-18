@@ -326,15 +326,38 @@ export const CreateBookingDialog = ({
 
       if (insertError) throw new Error(insertError.message);
 
-      // Multi-room junction
-      if (selectedRooms.length > 1 || selectedRooms.some(r => r.roomNumber)) {
-        const bookingRooms = selectedRooms.map((r) => ({
-          booking_id: booking.id,
-          room_id: r.roomId,
-          room_number: r.roomNumber || "",
-          price_per_night: Math.round(pricePerNight || paymentAmount / totalNights / selectedRooms.length),
-        }));
-        await supabase.from("booking_rooms").insert(bookingRooms);
+      // Multi-room junction — always insert one row per selected room
+      // so multi-room bookings are stored as a single booking with N room rows
+      if (selectedRooms.length >= 1) {
+        // Compute per-room price:
+        //  - custom "total" mode: spread total evenly across rooms × nights
+        //  - custom "per_night" mode: use the custom value for every room
+        //  - default: use each room's own price_per_night
+        const customPerNightVal = useCustomPrice && pricingMode === "per_night" && customPricePerNight
+          ? parseFloat(customPricePerNight)
+          : null;
+        const customTotalSplit = useCustomPrice && pricingMode === "total" && customTotalPrice && totalNights > 0 && selectedRooms.length > 0
+          ? parseFloat(customTotalPrice) / totalNights / selectedRooms.length
+          : null;
+
+        const bookingRooms = selectedRooms.map((r) => {
+          let perNight: number;
+          if (customPerNightVal !== null) perNight = customPerNightVal;
+          else if (customTotalSplit !== null) perNight = customTotalSplit;
+          else perNight = r.pricePerNight || 0;
+          // Final safety fallback
+          if (!perNight || perNight <= 0) {
+            perNight = totalNights > 0 ? paymentAmount / totalNights / selectedRooms.length : paymentAmount;
+          }
+          return {
+            booking_id: booking.id,
+            room_id: r.roomId,
+            room_number: r.roomNumber || "",
+            price_per_night: Math.round(perNight),
+          };
+        });
+        const { error: brError } = await supabase.from("booking_rooms").insert(bookingRooms);
+        if (brError) console.error("booking_rooms insert error:", brError);
       }
 
       toast.success(`Booking ${booking.booking_code} berhasil dibuat`);
