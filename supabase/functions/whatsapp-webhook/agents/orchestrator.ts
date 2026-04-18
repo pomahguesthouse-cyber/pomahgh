@@ -303,6 +303,21 @@ export async function orchestrate(
     return nameResult;
   }
 
+  // === FAST PATH: Generic price-list questions ===
+  // "berapa harga kamar / rate semalam" → langsung kirim daftar harga
+  // tanpa perlu tanya tipe kamar atau panggil tool.
+  if (isGenericPriceQuestion(normalizedMessage)) {
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+      from_agent: 'orchestrator', to_agent: 'price_list',
+      reason: 'generic_price_question_fastpath', intent: 'price_inquiry',
+    });
+    return handlePriceListQuestion(
+      supabase, session as WhatsAppSession, phone, String(message),
+      conversationId!, personaName, env, trace,
+    );
+  }
+
   // === INTENT DETECTION: Route to appropriate agent ===
   let intent = detectIntent(normalizedMessage);
 
