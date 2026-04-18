@@ -44,7 +44,7 @@ const defaultMenuGroups: MenuGroup[] = [
       { id: "dashboard", title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
       { id: "booking-calendar", title: "Kalender Booking", url: "/admin/booking-calendar", icon: CalendarDays },
       { id: "bookings", title: "Bookings", url: "/admin/bookings", icon: Calendar },
-      { id: "invoice-management", title: "Invoice Management", url: "/admin/invoice-management", icon: Receipt }
+      { id: "invoice-management", title: "Payment Management", url: "/admin/invoice-management", icon: Receipt }
     ]
   },
   {
