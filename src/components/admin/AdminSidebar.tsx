@@ -99,7 +99,10 @@ const defaultMenuGroups: MenuGroup[] = [
   }
 ];
 
-const STORAGE_KEY = "admin-menu-order";
+const STORAGE_KEY = "admin-menu-order-v2";
+
+// Cleanup old version
+try { localStorage.removeItem("admin-menu-order"); } catch {}
 
 // Build a flat map of item id -> icon from defaults
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {};
@@ -115,18 +118,38 @@ function getStoredMenuOrder(): MenuGroup[] | null {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as MenuGroup[];
-      // Restore icon references from defaults since they can't be serialized
-      return parsed.map(group => ({
-        ...group,
-        items: group.items.map(item => ({
-          ...item,
-          icon: iconMap[item.id] || Settings,
-          submenu: item.submenu?.map(sub => ({
-            ...sub,
-            icon: iconMap[sub.url] || Settings,
-          })),
-        })),
-      }));
+      // Collect all stored item ids to detect missing new items
+      const storedItemIds = new Set<string>();
+      parsed.forEach(g => g.items.forEach(i => storedItemIds.add(i.id)));
+
+      // Merge: append any new items from defaults that aren't in stored
+      const merged = parsed.map(group => {
+        const defaultGroup = defaultMenuGroups.find(g => g.id === group.id);
+        const newItemsForGroup = defaultGroup
+          ? defaultGroup.items.filter(i => !storedItemIds.has(i.id))
+          : [];
+        return {
+          ...group,
+          items: [
+            ...group.items.map(item => ({
+              ...item,
+              icon: iconMap[item.id] || Settings,
+              submenu: item.submenu?.map(sub => ({
+                ...sub,
+                icon: iconMap[sub.url] || Settings,
+              })),
+            })),
+            ...newItemsForGroup,
+          ],
+        };
+      });
+
+      // Add any entirely new groups from defaults
+      defaultMenuGroups.forEach(dg => {
+        if (!merged.find(g => g.id === dg.id)) merged.push(dg);
+      });
+
+      return merged;
     }
   } catch (e) {
     console.error("Failed to load menu order:", e);
