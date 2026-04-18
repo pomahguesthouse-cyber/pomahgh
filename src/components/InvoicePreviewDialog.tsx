@@ -129,18 +129,29 @@ export const InvoicePreviewDialog = ({
           </Button>
         </div>
 
-        <div className="flex-1 overflow-hidden bg-muted rounded-md">
+        <div className="flex-1 overflow-hidden bg-muted rounded-md min-h-[500px]">
           {isGenerating && !pdfUrl ? (
             <div className="flex items-center justify-center h-[500px]">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="ml-2">Membuat invoice PDF...</span>
             </div>
           ) : pdfUrl ? (
-            <iframe
-              src={pdfUrl}
-              className="w-full h-[500px] border-0 rounded-md"
-              title={`Invoice ${bookingCode}`}
-            />
+            <object
+              key={pdfUrl}
+              data={`${pdfUrl}#toolbar=1&view=FitH`}
+              type="application/pdf"
+              className="w-full h-[500px] rounded-md"
+              aria-label={`Invoice ${bookingCode}`}
+            >
+              <div className="flex flex-col items-center justify-center h-[500px] text-sm text-muted-foreground gap-3 p-4 text-center">
+                <p>Browser tidak dapat menampilkan PDF secara inline.</p>
+                <Button asChild size="sm">
+                  <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4 mr-2" /> Buka PDF
+                  </a>
+                </Button>
+              </div>
+            </object>
           ) : (
             <div className="flex items-center justify-center h-[500px] text-muted-foreground">
               Tidak dapat membuat invoice

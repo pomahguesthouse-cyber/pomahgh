@@ -430,7 +430,10 @@ serve(async (req) => {
   }
 
   try {
-    const { booking_id, send_email, send_whatsapp } = await req.json();
+    const { booking_id, send_email, send_whatsapp, override_email, override_phone } = await req.json();
+    // Test mode: when override is supplied, send to that target instead of the guest's real contact.
+    const targetEmail: string | null = (override_email && String(override_email).trim()) || null;
+    const targetPhone: string | null = (override_phone && String(override_phone).trim()) || null;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -546,7 +549,8 @@ serve(async (req) => {
 
     // === Optional: Send via Email (Resend) ===
     let emailSent = false;
-    if (send_email && booking.guest_email) {
+    const emailRecipient = targetEmail || booking.guest_email;
+    if (send_email && emailRecipient) {
       try {
         const resendApiKey = Deno.env.get("RESEND_API_KEY");
         if (!resendApiKey) {
@@ -579,8 +583,8 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               from: `${hotelName} <noreply@notify.pomahguesthouse.com>`,
-              to: [booking.guest_email],
-              subject: `Bukti Pemesanan #${booking.booking_code} - ${hotelName}`,
+              to: [emailRecipient],
+              subject: `${targetEmail ? "[TEST] " : ""}Bukti Pemesanan #${booking.booking_code} - ${hotelName}`,
               html: emailHtml,
               attachments: [{
                 filename: `Invoice-${booking.booking_code}.pdf`,
@@ -604,7 +608,8 @@ serve(async (req) => {
 
     // === Optional: Send via WhatsApp (Fonnte) ===
     let whatsappSent = false;
-    if (send_whatsapp && booking.guest_phone) {
+    const phoneRecipient = targetPhone || booking.guest_phone;
+    if (send_whatsapp && phoneRecipient) {
       try {
         const fonnteApiKey = Deno.env.get("FONNTE_API_KEY");
         if (!fonnteApiKey) {
@@ -630,7 +635,7 @@ serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              target: booking.guest_phone,
+              target: phoneRecipient,
               message,
               url: invoicePdfUrl, // attaches the PDF
               filename: `Invoice-${booking.booking_code}.pdf`,

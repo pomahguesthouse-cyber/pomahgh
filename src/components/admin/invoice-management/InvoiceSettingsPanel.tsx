@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { TestSendInvoiceCard } from "./TestSendInvoiceCard";
 
 export const InvoiceSettingsPanel = () => {
   const { template, isLoading, updateTemplate, isUpdating } = useInvoiceTemplate();
@@ -144,6 +145,8 @@ export const InvoiceSettingsPanel = () => {
         {(isUpdating || isUpdatingHotel) && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
         Simpan Pengaturan
       </Button>
+
+      <TestSendInvoiceCard />
     </div>
   );
 };
