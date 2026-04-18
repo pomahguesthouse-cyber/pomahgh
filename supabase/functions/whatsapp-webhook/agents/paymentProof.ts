@@ -357,10 +357,37 @@ ${autoApproved ? '_Pembayaran sudah otomatis dikonfirmasi. Tidak perlu balas._' 
   await sendWhatsApp(phone, guestReply, env.fonnteApiKey);
   await logMessage(supabase, conversationId, 'assistant', guestReply);
 
+  // 7. Jika auto-approved → kirim booking order (PDF invoice) ke WA tamu + tandai proof approved
+  let bookingOrderSent = false;
+  if (autoApproved) {
+    const orderResult = await sendBookingOrderToGuest(booking.id, env);
+    bookingOrderSent = !!orderResult.whatsapp_sent;
+
+    // Update payment_proofs row jadi 'approved' (latest pending utk booking ini)
+    await supabase
+      .from('payment_proofs')
+      .update({ status: 'approved', verified_at: new Date().toISOString() })
+      .eq('booking_id', booking.id)
+      .eq('status', 'pending');
+
+    // Notif manager bahwa booking order sudah dikirim
+    if (bookingOrderSent && managers.length > 0) {
+      await Promise.allSettled(
+        managers.map(m => sendWhatsApp(
+          m.phone,
+          `📨 Booking order *${booking.booking_code}* sudah otomatis dikirim ke WhatsApp tamu (${booking.guest_name}).`,
+          env.fonnteApiKey,
+        )),
+      );
+    }
+  }
+
   return new Response(JSON.stringify({
     status: 'payment_proof_processed',
     booking_id: booking.id,
     extraction,
+    auto_approved: autoApproved,
+    booking_order_sent: bookingOrderSent,
     notified_managers: managers.length,
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
