@@ -2146,38 +2146,77 @@ export type Database = {
       }
       invoice_templates: {
         Row: {
+          approve_message_template: string | null
+          auto_send_invoice: boolean | null
+          auto_verify_ocr: boolean | null
           created_at: string | null
           custom_notes: string | null
+          font_family: string | null
           footer_text: string | null
           id: string
           invoice_primary_color: string | null
           invoice_secondary_color: string | null
+          manual_review_mode: boolean | null
+          notify_guest_on_approve: boolean | null
+          notify_guest_on_reject: boolean | null
+          ocr_confidence_threshold: number | null
+          payment_deadline_hours: number | null
+          qris_image_url: string | null
+          reject_message_template: string | null
           show_bank_accounts: boolean | null
+          show_breakdown: boolean | null
           show_logo: boolean | null
+          show_qris: boolean | null
           updated_at: string | null
           whatsapp_template: string | null
         }
         Insert: {
+          approve_message_template?: string | null
+          auto_send_invoice?: boolean | null
+          auto_verify_ocr?: boolean | null
           created_at?: string | null
           custom_notes?: string | null
+          font_family?: string | null
           footer_text?: string | null
           id?: string
           invoice_primary_color?: string | null
           invoice_secondary_color?: string | null
+          manual_review_mode?: boolean | null
+          notify_guest_on_approve?: boolean | null
+          notify_guest_on_reject?: boolean | null
+          ocr_confidence_threshold?: number | null
+          payment_deadline_hours?: number | null
+          qris_image_url?: string | null
+          reject_message_template?: string | null
           show_bank_accounts?: boolean | null
+          show_breakdown?: boolean | null
           show_logo?: boolean | null
+          show_qris?: boolean | null
           updated_at?: string | null
           whatsapp_template?: string | null
         }
         Update: {
+          approve_message_template?: string | null
+          auto_send_invoice?: boolean | null
+          auto_verify_ocr?: boolean | null
           created_at?: string | null
           custom_notes?: string | null
+          font_family?: string | null
           footer_text?: string | null
           id?: string
           invoice_primary_color?: string | null
           invoice_secondary_color?: string | null
+          manual_review_mode?: boolean | null
+          notify_guest_on_approve?: boolean | null
+          notify_guest_on_reject?: boolean | null
+          ocr_confidence_threshold?: number | null
+          payment_deadline_hours?: number | null
+          qris_image_url?: string | null
+          reject_message_template?: string | null
           show_bank_accounts?: boolean | null
+          show_breakdown?: boolean | null
           show_logo?: boolean | null
+          show_qris?: boolean | null
           updated_at?: string | null
           whatsapp_template?: string | null
         }
