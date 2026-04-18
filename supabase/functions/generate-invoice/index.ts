@@ -115,6 +115,9 @@ function buildInvoicePdf(args: {
   addons: BookingAddonItem[];
   bankAccounts: BankAccountItem[];
   settings: HotelSettingsRow;
+  template: InvoiceTemplateRow | null;
+  logoDataUrl: string | null;
+  qrisDataUrl: string | null;
   totalWithCode: number;
   uniqueCode: number;
   showPaidStamp: boolean;
@@ -122,17 +125,29 @@ function buildInvoicePdf(args: {
   paymentMethodLabel: string;
 }): Uint8Array {
   const {
-    booking, rooms, addons, bankAccounts, settings,
+    booking, rooms, addons, bankAccounts, settings, template,
+    logoDataUrl, qrisDataUrl,
     totalWithCode, uniqueCode, showPaidStamp, transactionStatus, paymentMethodLabel,
   } = args;
+
+  // Resolve template config (with safe fallbacks)
+  const fontFamily = (template?.font_family === 'times' || template?.font_family === 'courier')
+    ? template.font_family
+    : 'helvetica';
+  const showLogo = template?.show_logo !== false;
+  const showBank = template?.show_bank_accounts !== false;
+  const showQris = !!template?.show_qris && !!qrisDataUrl;
+  const showBreakdown = template?.show_breakdown !== false;
+  const customNotes = template?.custom_notes || '';
+  const footerCustom = template?.footer_text || '';
 
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const marginX = 40;
 
-  // Brand colors
-  const primary: [number, number, number] = [74, 155, 217]; // #4a9bd9
-  const secondary: [number, number, number] = [232, 244, 253]; // #e8f4fd
+  // Brand colors from template
+  const primary: [number, number, number] = hexToRgb(template?.invoice_primary_color, [74, 155, 217]);
+  const secondary: [number, number, number] = hexToRgb(template?.invoice_secondary_color, [232, 244, 253]);
   const dark: [number, number, number] = [34, 34, 34];
   const muted: [number, number, number] = [120, 120, 120];
 
