@@ -384,13 +384,18 @@ export async function handleCreateBookingDraft(
   const checkOutTime = hotelSettings?.check_out_time || '12:00';
   const timeInfo = `\n\n⏰ *Jam Check-in:* ${checkInTime} WIB\n⏰ *Jam Check-out:* ${checkOutTime} WIB`;
 
+  const addonsText = matchedAddons.length > 0
+    ? `\n➕ Add-on: ${matchedAddons.map(a => `${a.quantity}x ${a.addonName} (Rp ${a.totalPrice.toLocaleString('id-ID')})`).join(', ')}`
+    : '';
+
   return {
     message: isUpdate
-      ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}. Total baru: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}${timeInfo}${policiesInfo}`
-      : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar). Total: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}${timeInfo}${policiesInfo}`,
+      ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}.${addonsText}\nTotal baru: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}${timeInfo}${policiesInfo}`
+      : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar).${addonsText}\nTotal: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}${timeInfo}${policiesInfo}`,
     booking_code: booking.booking_code,
     booking_id: booking.id,
     rooms_booked: roomsSummary,
+    add_ons_booked: matchedAddons.map(a => ({ name: a.addonName, quantity: a.quantity, total_price: a.totalPrice })),
     total_rooms: totalRooms,
     total_price: totalPrice,
     status: 'pending',
