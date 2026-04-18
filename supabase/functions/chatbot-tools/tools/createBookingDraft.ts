@@ -9,7 +9,7 @@ export async function handleCreateBookingDraft(
   supabase: SupabaseClient,
   params: CreateBookingParams
 ) {
-  const { guest_name, guest_email, guest_phone, room_name, room_selections, num_guests, special_requests } = params;
+  const { guest_name, guest_email, guest_phone, room_name, room_selections, num_guests, special_requests, add_ons } = params;
   
   if (!guest_phone || !guest_phone.trim()) {
     throw new Error("Nomor telepon wajib diisi untuk membuat booking");
