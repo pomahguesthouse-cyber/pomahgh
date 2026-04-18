@@ -155,12 +155,12 @@ function buildInvoicePdf(args: {
   doc.setFillColor(...primary);
   doc.rect(0, 0, 5, 90, 'F');
 
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontFamily, 'bold');
   doc.setFontSize(16);
   doc.setTextColor(...dark);
   doc.text('BUKTI PEMESANAN (BOOKING ORDER)', marginX, 40);
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...muted);
   const createdAt = format(new Date(booking.created_at), "d MMM yyyy, HH:mm", { locale: idLocale });
@@ -168,13 +168,13 @@ function buildInvoicePdf(args: {
   doc.text(`Tanggal: ${createdAt} WIB`, marginX, 72);
 
   // Hotel name (top right)
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontFamily, 'bold');
   doc.setFontSize(13);
   doc.setTextColor(...primary);
   const hotelName = settings.hotel_name || 'Pomah Guesthouse';
   doc.text(hotelName, pageWidth - marginX, 40, { align: 'right' });
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...muted);
   if (settings.address) {
@@ -191,7 +191,7 @@ function buildInvoicePdf(args: {
     doc.rect(marginX, y, pageWidth - marginX * 2, 20, 'F');
     doc.setFillColor(...primary);
     doc.rect(marginX, y, 4, 20, 'F');
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontFamily, 'bold');
     doc.setFontSize(10);
     doc.setTextColor(...dark);
     doc.text(label, marginX + 12, y + 14);
@@ -202,13 +202,13 @@ function buildInvoicePdf(args: {
 
   // === DETAIL PEMBAYARAN ===
   y = drawSectionHeader('DETAIL PEMBAYARAN', y);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...muted);
   doc.text('Booking ID', marginX, y);
   doc.text('Metode', marginX + 180, y);
   doc.text('Status', marginX + 360, y);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontFamily, 'bold');
   doc.setFontSize(10);
   doc.setTextColor(...dark);
   doc.text(booking.booking_code, marginX, y + 14);
@@ -218,7 +218,7 @@ function buildInvoicePdf(args: {
 
   // === DATA PEMESAN ===
   y = drawSectionHeader('DATA PEMESAN', y);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...dark);
   doc.text(`Nama       : ${booking.guest_name}`, marginX, y);
@@ -235,12 +235,12 @@ function buildInvoicePdf(args: {
   y = drawSectionHeader('DETAIL MENGINAP', y);
   const checkInDate = format(new Date(booking.check_in), "EEEE, dd MMMM yyyy", { locale: idLocale });
   const checkOutDate = format(new Date(booking.check_out), "EEEE, dd MMMM yyyy", { locale: idLocale });
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontFamily, 'bold');
   doc.text(`Check-in  : ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}`, marginX, y);
   y += 14;
   doc.text(`Check-out : ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}`, marginX, y);
   y += 14;
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.text(`Durasi    : ${booking.total_nights} malam`, marginX, y);
   y += 14;
   doc.text(`Tamu      : ${booking.num_guests} orang`, marginX, y);
@@ -303,7 +303,7 @@ function buildInvoicePdf(args: {
     doc.setDrawColor(46, 125, 50);
     doc.setLineWidth(3);
     doc.roundedRect(pageWidth / 2 - 60, y, 120, 36, 4, 4, 'S');
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontFamily, 'bold');
     doc.setFontSize(22);
     doc.setTextColor(46, 125, 50);
     doc.text('PAID', pageWidth / 2, y + 25, { align: 'center' });
@@ -312,16 +312,16 @@ function buildInvoicePdf(args: {
     // === INSTRUKSI PEMBAYARAN ===
     if (y > 700) { doc.addPage(); y = 50; }
     y = drawSectionHeader('INSTRUKSI PEMBAYARAN', y);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fontFamily, 'normal');
     doc.setFontSize(10);
     doc.setTextColor(...dark);
     doc.text('Silakan transfer sebesar:', marginX, y);
     y += 16;
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontFamily, 'bold');
     doc.setFontSize(13);
     doc.setTextColor(...primary);
     doc.text(formatRupiah(totalWithCode), marginX, y);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fontFamily, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(...muted);
     doc.text(`(termasuk kode unik 3 digit: ${uniqueCode})`, marginX + 130, y);
@@ -340,12 +340,12 @@ function buildInvoicePdf(args: {
       doc.setFillColor(...primary);
       doc.rect(marginX, y, 3, 50, 'F');
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fontFamily, 'bold');
       doc.setFontSize(11);
       doc.setTextColor(...dark);
       doc.text(bank.bank_name, marginX + 12, y + 16);
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(fontFamily, 'normal');
       doc.setFontSize(10);
       doc.text(`No. Rek: ${bank.account_number}`, marginX + 12, y + 30);
       doc.setTextColor(...muted);
@@ -354,7 +354,7 @@ function buildInvoicePdf(args: {
     });
 
     y += 6;
-    doc.setFont('helvetica', 'italic');
+    doc.setFont(fontFamily, 'italic');
     doc.setFontSize(8);
     doc.setTextColor(...muted);
     const tip = 'Tip: gunakan nominal persis (termasuk kode unik) agar pembayaran cepat terverifikasi.';
@@ -366,7 +366,7 @@ function buildInvoicePdf(args: {
   const footerY = doc.internal.pageSize.getHeight() - 30;
   doc.setFillColor(...primary);
   doc.rect(0, footerY - 6, pageWidth, 30, 'F');
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.setFontSize(8);
   doc.setTextColor(255, 255, 255);
   const footerText = `${hotelName}${settings.email_primary ? ` • ${settings.email_primary}` : ''}${settings.phone_primary ? ` • ${settings.phone_primary}` : ''}`;
