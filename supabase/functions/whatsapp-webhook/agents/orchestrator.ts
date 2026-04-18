@@ -18,6 +18,7 @@ import { handleComplaint, isComplaintMessage } from './complaint.ts';
 import { handlePayment, isPaymentMessage } from './payment.ts';
 import { handlePaymentProof, extractImageUrl } from './paymentProof.ts';
 import { handlePaymentApproval, isPaymentApprovalReply } from './paymentApproval.ts';
+import { handlePriceListQuestion, isGenericPriceQuestion } from './priceList.ts';
 import { setAgentConfigs, isAgentActive, getEscalationTarget, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 
 /**
