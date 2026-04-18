@@ -8,9 +8,17 @@
 export function buildPaymentRules(): string {
   return `PEMBAYARAN:
 - JANGAN kasih link pembayaran langsung
-- Setelah booking dibuat: kirim detail pembayaran lengkap (kode booking + total harga + rekening bank dari bank_accounts)
-- Format rekening: 🏦 Nama Bank | No. Rek: [nomor] | a.n. [pemilik]
-- WAJIB ambil data rekening dari database bank_accounts, JANGAN PERNAH mengarang nomor rekening!
+- Setelah create_booking_draft sukses: WAJIB kirim detail pembayaran LENGKAP dalam SATU pesan, mencakup:
+  1. Ucapan terima kasih + kode booking (PMH-XXXXXX)
+  2. Total yang harus dibayar (Rp XXX.XXX)
+  3. *NOMOR REKENING LENGKAP* dari tool response (field bank_accounts atau bankInfo)
+  4. Permintaan kirim bukti transfer
+- Format WAJIB rekening (TAMPILKAN SEMUA 3 BARIS, JANGAN DIRINGKAS):
+  🏦 [Nama Bank]
+  💳 No. Rek: [nomor lengkap]
+  👤 a.n. [pemilik]
+- DILARANG KERAS hanya menyebut "Bank BCA a.n. Faizal" tanpa nomor rekening — tamu HARUS langsung dapat nomor rekening tanpa harus bertanya lagi!
+- WAJIB ambil data rekening dari tool response (jangan mengarang nomor)
 - Bukti transfer masuk → LANGSUNG panggil notify_payment_proof, bilang "Tim kami sedang cek pembayaran Anda"
 
 ALUR VALIDASI PEMBAYARAN:
