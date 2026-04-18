@@ -50,7 +50,7 @@ export const tools = [
     type: "function",
     function: {
       name: "create_booking_draft",
-      description: "Buat booking. WAJIB: guest_phone harus sudah dikasih user sebelum memanggil tool ini! Jika belum ada nomor HP, tanya dulu, JANGAN panggil tool.",
+      description: "Buat SATU booking. WAJIB: guest_phone harus sudah dikasih user! Untuk pesan >1 kamar (sama tipe atau campur tipe) di tanggal yang sama → PANGGIL TOOL INI HANYA SEKALI dengan room_selections berisi quantity. JANGAN panggil tool ini berkali-kali untuk tamu yang sama di tanggal yang sama!",
       parameters: {
         type: "object",
         properties: {
@@ -59,18 +59,18 @@ export const tools = [
           guest_phone: { type: "string", description: "No HP (WAJIB!)" },
           check_in: { type: "string", description: "Check-in YYYY-MM-DD" },
           check_out: { type: "string", description: "Check-out YYYY-MM-DD" },
-          num_guests: { type: "number", description: "Jumlah tamu" },
-          room_name: { type: "string", description: "Nama kamar" },
+          num_guests: { type: "number", description: "Total jumlah tamu untuk seluruh kamar" },
+          room_name: { type: "string", description: "Nama kamar (HANYA pakai jika 1 kamar saja; untuk >1 kamar pakai room_selections)" },
           room_selections: { 
             type: "array", 
-            description: "Multi-room: [{room_name, quantity}]",
+            description: "WAJIB dipakai jika tamu memesan >1 kamar (sama tipe atau campur). Format: [{room_name, quantity}]. Contoh 3 Deluxe + 2 Family Suite: [{room_name:'Deluxe', quantity:3},{room_name:'Family Suite', quantity:2}]. Akan menghasilkan 1 booking_code saja.",
             items: {
               type: "object",
               properties: {
                 room_name: { type: "string" },
-                quantity: { type: "number" }
+                quantity: { type: "number", description: "Jumlah kamar untuk tipe ini (boleh > 1)" }
               },
-              required: ["room_name"]
+              required: ["room_name", "quantity"]
             }
           },
           add_ons: {
