@@ -8,7 +8,6 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
 import { FAQKnowledgePanel } from './FAQKnowledgePanel';
-import { PaymentInvoiceConfigPanel } from './PaymentInvoiceConfigPanel';
 
 interface AgentConfigPanelProps {
   agent: AgentDefinition;
@@ -18,7 +17,6 @@ interface AgentConfigPanelProps {
 }
 
 const FAQ_AGENT_IDS = ['faq_bot', 'cs_faq', 'faq'];
-const PAYMENT_AGENT_IDS = ['payment', 'payment_agent'];
 
 export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConfigPanelProps) => {
   const [name, setName] = useState(agent.name);
@@ -33,9 +31,6 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
   const isFAQAgent = FAQ_AGENT_IDS.includes(agent.id) || 
     agent.name.toLowerCase().includes('faq') || 
     agent.name.toLowerCase().includes('cs');
-
-  const isPaymentAgent = PAYMENT_AGENT_IDS.includes(agent.id) ||
-    agent.name.toLowerCase().includes('payment');
 
   const handleSave = () => {
     if (!agent.configId) return;
@@ -99,7 +94,7 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
     </div>
   );
 
-  const hasTabs = isFAQAgent || isPaymentAgent;
+  const hasTabs = isFAQAgent;
 
   return (
     <div className="border rounded-lg bg-card p-4 space-y-4">
@@ -116,7 +111,6 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
           <TabsList className="h-8">
             <TabsTrigger value="config" className="text-xs px-3 h-7">⚙️ Konfigurasi</TabsTrigger>
             {isFAQAgent && <TabsTrigger value="knowledge" className="text-xs px-3 h-7">📚 Knowledge Base</TabsTrigger>}
-            {isPaymentAgent && <TabsTrigger value="invoice" className="text-xs px-3 h-7">🧾 Invoice</TabsTrigger>}
           </TabsList>
           <TabsContent value="config" className="mt-3">
             {configContent}
@@ -124,11 +118,6 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
           {isFAQAgent && (
             <TabsContent value="knowledge" className="mt-3">
               <FAQKnowledgePanel />
-            </TabsContent>
-          )}
-          {isPaymentAgent && (
-            <TabsContent value="invoice" className="mt-3">
-              <PaymentInvoiceConfigPanel />
             </TabsContent>
           )}
         </Tabs>
