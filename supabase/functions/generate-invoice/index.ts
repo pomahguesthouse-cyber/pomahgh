@@ -447,12 +447,19 @@ serve(async (req) => {
 
     if (bookingError || !booking) throw new Error(bookingError?.message || "Booking not found");
 
-    // Fetch related
-    const [{ data: bookingRooms }, { data: hotelSettings, error: settingsError }, { data: bankAccounts }, { data: bookingAddons }] = await Promise.all([
+    // Fetch related (incl. invoice template)
+    const [
+      { data: bookingRooms },
+      { data: hotelSettings, error: settingsError },
+      { data: bankAccounts },
+      { data: bookingAddons },
+      { data: invoiceTemplate },
+    ] = await Promise.all([
       supabase.from("booking_rooms").select(`*, rooms (name)`).eq("booking_id", booking_id),
       supabase.from("hotel_settings").select("*").single(),
       supabase.from("bank_accounts").select("*").eq("is_active", true).order("display_order"),
       supabase.from("booking_addons").select(`*, room_addons (name, icon_name, price_type)`).eq("booking_id", booking_id),
+      supabase.from("invoice_templates").select("*").limit(1).maybeSingle(),
     ]);
 
     if (settingsError || !hotelSettings) throw new Error(settingsError?.message || "Hotel settings missing");
@@ -492,6 +499,14 @@ serve(async (req) => {
           price_per_night: booking.total_price / booking.total_nights,
         }];
 
+    // Pre-fetch logo + QRIS as data URLs (parallel)
+    const tpl = (invoiceTemplate || null) as InvoiceTemplateRow | null;
+    const logoUrl = hotelSettings.invoice_logo_url || hotelSettings.logo_url;
+    const [logoDataUrl, qrisDataUrl] = await Promise.all([
+      (tpl?.show_logo !== false) && logoUrl ? fetchImageDataUrl(logoUrl) : Promise.resolve(null),
+      tpl?.show_qris && tpl?.qris_image_url ? fetchImageDataUrl(tpl.qris_image_url) : Promise.resolve(null),
+    ]);
+
     // Generate PDF
     const pdfBytes = buildInvoicePdf({
       booking: booking as BookingRow,
@@ -499,6 +514,9 @@ serve(async (req) => {
       addons: (bookingAddons || []) as BookingAddonItem[],
       bankAccounts: (bankAccounts || []) as BankAccountItem[],
       settings: hotelSettings as HotelSettingsRow,
+      template: tpl,
+      logoDataUrl,
+      qrisDataUrl,
       totalWithCode,
       uniqueCode,
       showPaidStamp,
