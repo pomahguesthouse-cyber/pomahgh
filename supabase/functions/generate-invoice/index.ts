@@ -549,7 +549,8 @@ serve(async (req) => {
 
     // === Optional: Send via Email (Resend) ===
     let emailSent = false;
-    if (send_email && booking.guest_email) {
+    const emailRecipient = targetEmail || booking.guest_email;
+    if (send_email && emailRecipient) {
       try {
         const resendApiKey = Deno.env.get("RESEND_API_KEY");
         if (!resendApiKey) {
