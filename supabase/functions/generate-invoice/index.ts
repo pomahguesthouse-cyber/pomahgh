@@ -234,7 +234,7 @@ function buildInvoicePdf(args: {
     return y + 28;
   };
 
-  let y = 100;
+  let y = 140;
 
   // === DETAIL PEMBAYARAN ===
   y = drawSectionHeader('DETAIL PEMBAYARAN', y);
