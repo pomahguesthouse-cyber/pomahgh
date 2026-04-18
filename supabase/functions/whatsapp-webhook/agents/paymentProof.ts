@@ -352,11 +352,11 @@ export async function handlePaymentProof(
       matchStatus = `✅ *MATCH* — Nominal sesuai (${formatRp(extraction.amount)} vs ${formatRp(booking.total_price)})`;
       matchEmoji = '✅';
 
-      // Auto-approve if enabled & confidence high enough
+      // Auto-approve if enabled & confidence high enough — OR if submitted by admin
       const confidenceScore = extraction.confidence === 'high' ? 95
         : extraction.confidence === 'medium' ? 75
         : 50;
-      if (autoVerifyEnabled && confidenceScore >= confidenceThreshold) {
+      if (isAdminSubmission || (autoVerifyEnabled && confidenceScore >= confidenceThreshold)) {
         autoApproved = true;
         await supabase
           .from('bookings')
@@ -367,9 +367,9 @@ export async function handlePaymentProof(
             updated_at: new Date().toISOString(),
           })
           .eq('id', booking.id);
-        // Mark proof row as approved (will be inserted below — update via booking_id)
-        // Note: insert happens above; here we'll patch latest pending after insert finishes.
-        matchStatus = `🎉 *AUTO-APPROVED* (confidence ${extraction.confidence}, threshold ${confidenceThreshold}%) — booking otomatis di-set LUNAS.`;
+        matchStatus = isAdminSubmission
+          ? `🎉 *AUTO-APPROVED (oleh ${submittedByManager!.name})* — booking otomatis di-set LUNAS.`
+          : `🎉 *AUTO-APPROVED* (confidence ${extraction.confidence}, threshold ${confidenceThreshold}%) — booking otomatis di-set LUNAS.`;
       }
     } else if (extraction.amount) {
       matchStatus = `⚠️ *MISMATCH* — Nominal: ${formatRp(extraction.amount)} (booking: ${formatRp(booking.total_price)})`;
@@ -380,6 +380,23 @@ export async function handlePaymentProof(
   } else if (extraction) {
     matchStatus = '❌ *Bukan bukti transfer* — gambar tidak terdeteksi sebagai struk';
     matchEmoji = '❌';
+  }
+
+  // Admin override: if admin submitted and OCR didn't auto-approve (mismatch / unreadable amount),
+  // still trust the admin and mark as paid. Admin is authoritative for payment confirmation.
+  if (isAdminSubmission && !autoApproved && extraction) {
+    autoApproved = true;
+    await supabase
+      .from('bookings')
+      .update({
+        payment_status: 'paid',
+        status: 'confirmed',
+        payment_amount: extraction.amount ?? booking.total_price,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', booking.id);
+    matchStatus = `🎉 *AUTO-APPROVED (oleh admin ${submittedByManager!.name})* — pembayaran dikonfirmasi manual oleh admin (OCR tidak match).`;
+    matchEmoji = '✅';
   }
 
   const extractionLines: string[] = [];
