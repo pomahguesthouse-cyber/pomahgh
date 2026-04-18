@@ -61,6 +61,48 @@ interface HotelSettingsRow {
   invoice_logo_url: string | null;
 }
 
+interface InvoiceTemplateRow {
+  invoice_primary_color: string | null;
+  invoice_secondary_color: string | null;
+  font_family: string | null;
+  show_logo: boolean | null;
+  show_bank_accounts: boolean | null;
+  show_qris: boolean | null;
+  show_breakdown: boolean | null;
+  footer_text: string | null;
+  custom_notes: string | null;
+  qris_image_url: string | null;
+}
+
+/** Convert "#4a9bd9" → [74, 155, 217]. Falls back to default on parse error. */
+function hexToRgb(hex: string | null | undefined, fallback: [number, number, number]): [number, number, number] {
+  if (!hex || !/^#?[0-9a-fA-F]{6}$/.test(hex.replace('#', ''))) return fallback;
+  const clean = hex.replace('#', '');
+  return [
+    parseInt(clean.slice(0, 2), 16),
+    parseInt(clean.slice(2, 4), 16),
+    parseInt(clean.slice(4, 6), 16),
+  ];
+}
+
+/** Fetch image as base64 data URL for embedding in jsPDF. */
+async function fetchImageDataUrl(url: string): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const resp = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!resp.ok) return null;
+    const ct = resp.headers.get('content-type') || 'image/png';
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return `data:${ct};base64,${btoa(binary)}`;
+  } catch {
+    return null;
+  }
+}
+
 const formatRupiah = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
 
 /**
