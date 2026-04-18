@@ -90,8 +90,71 @@ export async function handleCreateBookingDraft(
   }
 
   console.log("Matched rooms:", matchedRooms);
-  console.log("Total price:", totalPrice);
+  console.log("Total room price:", totalPrice);
 
+  // Resolve add-ons (e.g. Extra Bed) → restrict to selected rooms
+  const matchedAddons: Array<{
+    addonId: string;
+    addonName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }> = [];
+
+  if (add_ons && add_ons.length > 0) {
+    const selectedRoomIds = matchedRooms.map(r => r.roomId);
+    const { data: availableAddons, error: addonsErr } = await supabase
+      .from("room_addons")
+      .select("id, name, price, room_id")
+      .eq("is_active", true)
+      .in("room_id", selectedRoomIds.length > 0 ? selectedRoomIds : ["00000000-0000-0000-0000-000000000000"]);
+
+    if (addonsErr) {
+      console.error("Add-ons fetch error:", addonsErr);
+    }
+
+    for (const sel of add_ons) {
+      const qty = Math.max(1, Number(sel.quantity) || 1);
+      const lowerName = (sel.addon_name || "").toLowerCase().trim();
+
+      // Prefer addon tied to a specific selected room when room_name supplied
+      let addon = null as { id: string; name: string; price: number; room_id: string | null } | null;
+      if (sel.room_name) {
+        const targetRoom = matchedRooms.find(
+          r => r.roomName.toLowerCase() === sel.room_name!.toLowerCase()
+        );
+        if (targetRoom) {
+          addon = (availableAddons || []).find(
+            a => a.room_id === targetRoom.roomId && a.name.toLowerCase().includes(lowerName)
+          ) as typeof addon || null;
+        }
+      }
+      if (!addon) {
+        addon = (availableAddons || []).find(
+          a => a.name.toLowerCase().includes(lowerName)
+        ) as typeof addon || null;
+      }
+
+      if (!addon) {
+        console.warn(`Add-on "${sel.addon_name}" not found, skipping`);
+        continue;
+      }
+
+      const unitPrice = Number(addon.price) || 0;
+      const lineTotal = unitPrice * qty;
+      matchedAddons.push({
+        addonId: addon.id,
+        addonName: addon.name,
+        quantity: qty,
+        unitPrice,
+        totalPrice: lineTotal,
+      });
+      totalPrice += lineTotal;
+    }
+  }
+
+  console.log("Matched add-ons:", matchedAddons);
+  console.log("Grand total price:", totalPrice);
   // Idempotency: match by email+phone+dates+source to prevent duplicate bookings from webhook retries
   const { data: existingBooking } = await supabase
     .from("bookings")
