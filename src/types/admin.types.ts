@@ -95,25 +95,6 @@ export interface SeoSettings {
   is_active: boolean;
 }
 
-// Channel manager
-export interface ChannelManager {
-  id: string;
-  name: string;
-  type: string;
-  api_endpoint: string | null;
-  api_key_secret: string | null;
-  auth_type: string | null;
-  webhook_url: string | null;
-  webhook_secret: string | null;
-  is_active: boolean;
-  max_retries: number;
-  retry_delay_seconds: number;
-  last_sync_at: string | null;
-  last_sync_status: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
 // Competitor hotel
 export interface CompetitorHotel {
   id: string;

@@ -66,8 +66,6 @@ const AdminSettings = lazyRetry(() => import("./pages/admin/AdminSettings"));
 const AdminNearbyLocations = lazyRetry(() => import("./pages/admin/AdminNearbyLocations"));
 const AdminGuestChatbot = lazyRetry(() => import("./pages/admin/AdminGuestChatbot"));
 const AdminAdminChatbot = lazyRetry(() => import("./pages/admin/AdminAdminChatbot"));
-const AdminChannelManagers = lazyRetry(() => import("./pages/admin/AdminChannelManagers"));
-const AdminBookingCom = lazyRetry(() => import("./pages/admin/AdminBookingCom"));
 const AdminBankAccounts = lazyRetry(() => import("./pages/admin/AdminBankAccounts"));
 const AdminRoomFeatures = lazyRetry(() => import("./pages/admin/AdminRoomFeatures"));
 const AdminSeoSettings = lazyRetry(() => import("./pages/admin/AdminSeoSettings"));
@@ -159,8 +157,6 @@ const App = () => (
           
           <Route path="/admin/chat" element={<AdminLayout><AdminChat /></AdminLayout>} />
           <Route path="/admin/multi-agent" element={<AdminLayout><AdminMultiAgentDashboard /></AdminLayout>} />
-          <Route path="/admin/channel-managers" element={<AdminLayout><AdminChannelManagers /></AdminLayout>} />
-          <Route path="/admin/booking-com" element={<AdminLayout><AdminBookingCom /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
           <Route path="/admin/page-editor" element={<AdminLayout><AdminLandingPages /></AdminLayout>} />

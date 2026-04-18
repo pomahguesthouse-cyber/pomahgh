@@ -24,8 +24,6 @@ const getPageTitle = (pathname: string): string => {
     "/admin/facilities": "Facilities",
     "/admin/nearby-locations": "Nearby Locations",
     "/admin/chatbot": "Chatbot Settings",
-    "/admin/channel-managers": "Channel Managers",
-    "/admin/booking-com": "Booking.com Integration",
     "/admin/room-features": "Room Features",
     "/admin/seo-settings": "SEO Settings",
     "/admin/page-editor": "Page Editor",
