@@ -304,6 +304,20 @@ export async function orchestrate(
     return nameResult;
   }
 
+  // === FAST PATH: Room photo / brochure requests ===
+  // "ada foto kamar?", "minta brosur", "ada gambar kamarnya?" → langsung kirim PDF brosur
+  if (isRoomPhotoRequest(normalizedMessage)) {
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+      from_agent: 'orchestrator', to_agent: 'room_brochure',
+      reason: 'room_photo_request_fastpath', intent: 'room_photo_request',
+    });
+    return handleRoomPhotoRequest(
+      supabase, session as WhatsAppSession, phone, String(message),
+      conversationId!, personaName, env, trace,
+    );
+  }
+
   // === FAST PATH: Generic price-list questions ===
   // "berapa harga kamar / rate semalam" → langsung kirim daftar harga
   // tanpa perlu tanya tipe kamar atau panggil tool.
