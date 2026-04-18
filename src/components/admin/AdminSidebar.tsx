@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Calendar, CalendarDays, Building2, ImageIcon, Boxes, Settings, MapPin, CreditCard, Tags, LayoutDashboard, Search, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw } from "lucide-react";
+import { Home, Calendar, CalendarDays, Building2, ImageIcon, Boxes, Settings, MapPin, CreditCard, Tags, LayoutDashboard, Search, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw, Receipt } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
@@ -75,6 +75,7 @@ const defaultMenuGroups: MenuGroup[] = [
     label: "Operations",
     items: [
       { id: "competitor-analysis", title: "Analisis Harga", url: "/admin/competitor-analysis", icon: TrendingUp },
+      { id: "invoice-management", title: "Invoice Management", url: "/admin/invoice-management", icon: Receipt },
       { id: "bank-accounts", title: "Bank Accounts", url: "/admin/bank-accounts", icon: CreditCard }
     ]
   },
