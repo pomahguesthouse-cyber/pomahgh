@@ -16,6 +16,7 @@ import { handleGuestBookingFlow } from './booking.ts';
 import { handleGuestFAQ } from './faq.ts';
 import { handleComplaint, isComplaintMessage } from './complaint.ts';
 import { handlePayment, isPaymentMessage } from './payment.ts';
+import { handlePaymentProof, extractImageUrl } from './paymentProof.ts';
 import { setAgentConfigs, isAgentActive, getEscalationTarget, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 
 /**
@@ -204,6 +205,13 @@ export async function orchestrate(
   // Manager detection
   const isManager = managerNumbers.some(m => m.phone === phone);
   const managerInfo = isManager ? managerNumbers.find(m => m.phone === phone)! : null;
+
+  // === IMAGE DETECTION: route guest image attachments to payment proof OCR ===
+  const imageUrl = extractImageUrl(body);
+  if (imageUrl && !isManager) {
+    const convId = await ensureConversation(supabase, session, phone);
+    return handlePaymentProof(supabase, phone, imageUrl, convId, managerNumbers, env, trace);
+  }
 
   // === PRICING AGENT: Price approval commands ===
   if (isManager && managerInfo) {

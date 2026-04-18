@@ -337,13 +337,38 @@ export const CreateBookingDialog = ({
         await supabase.from("booking_rooms").insert(bookingRooms);
       }
 
-      toast.success(`Booking ${booking.booking_code} berhasil dibuat (status: pending payment)`);
+      toast.success(`Booking ${booking.booking_code} berhasil dibuat`);
       setShowConfirmation(false);
       onOpenChange(false);
 
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["calendar-bookings"] });
+
+      // Auto-send invoice via Email + WhatsApp (fire and forget)
+      try {
+        const { data: invRes, error: invErr } = await supabase.functions.invoke("generate-invoice", {
+          body: {
+            booking_id: booking.id,
+            send_email: !!formData.guest_email,
+            send_whatsapp: !!formData.guest_phone,
+          },
+        });
+        if (invErr) {
+          console.error("Auto-invoice error:", invErr);
+          toast.warning("Booking dibuat, tapi pengiriman invoice gagal. Bisa kirim ulang dari daftar booking.");
+        } else if (invRes?.success) {
+          const channels = [
+            invRes.email_sent ? "email" : null,
+            invRes.whatsapp_sent ? "WhatsApp" : null,
+          ].filter(Boolean);
+          if (channels.length > 0) {
+            toast.success(`Invoice terkirim via ${channels.join(" & ")}`);
+          }
+        }
+      } catch (invokeErr) {
+        console.error("Invoice invoke failed:", invokeErr);
+      }
     } catch (error: any) {
       console.error("Create booking error:", error);
       toast.error(error.message || "Gagal membuat booking");
