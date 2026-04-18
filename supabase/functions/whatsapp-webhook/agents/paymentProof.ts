@@ -58,6 +58,41 @@ async function findPendingBooking(
   return data && data.length > 0 ? (data[0] as PendingBookingRow) : null;
 }
 
+/** Extract a PMH-XXXXXX booking code from a free-text caption (e.g. admin caption). */
+export function extractBookingCodeFromText(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const m = text.match(/PMH-[A-Z0-9]{6}/i);
+  return m ? m[0].toUpperCase() : null;
+}
+
+/** Find booking by explicit booking_code (used for admin-submitted proofs). */
+async function findBookingByCode(
+  supabase: SupabaseClient,
+  bookingCode: string,
+): Promise<PendingBookingRow | null> {
+  const { data } = await supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out')
+    .eq('booking_code', bookingCode)
+    .limit(1)
+    .maybeSingle();
+  return data ? (data as PendingBookingRow) : null;
+}
+
+/** Find the most recent pending-payment booking across the whole hotel (admin fallback). */
+async function findLatestPendingBookingAnywhere(
+  supabase: SupabaseClient,
+): Promise<PendingBookingRow | null> {
+  const { data } = await supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out')
+    .in('payment_status', ['pending', 'unpaid'])
+    .in('status', ['pending_payment', 'confirmed'])
+    .order('created_at', { ascending: false })
+    .limit(1);
+  return data && data.length > 0 ? (data[0] as PendingBookingRow) : null;
+}
+
 /** Download image and convert to base64 data URL */
 async function fetchImageAsDataUrl(url: string): Promise<string | null> {
   try {
