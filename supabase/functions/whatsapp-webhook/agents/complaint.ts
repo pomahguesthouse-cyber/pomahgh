@@ -5,18 +5,32 @@ import { sendWhatsApp } from '../services/fonnte.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 
-/** Sentiment keywords and urgency levels */
+/**
+ * Sentiment keywords and urgency levels.
+ * IMPORTANT: regex MUST use the `u` (unicode) flag — otherwise emoji surrogate
+ * pairs (e.g. 🙏 = \ud83d\ude4f) get split and a class like [😡😤😠👎] would
+ * falsely match the leading \ud83d of any unrelated emoji.
+ */
 const COMPLAINT_PATTERNS = {
-  critical: /\b(ancam|hukum|lawyer|pengacara|polisi|media|viral|review\s+jelek|review\s+negatif|gugat|tuntut|rusak\s+parah|bahaya|emergency|darurat)\b|😡🤬/i,
-  high: /\b(marah|gila|brengsek|bangsat|anjing|bego|tolol|bodoh|goblok|kampret|tai|parah\s+banget|sangat\s+kecewa|kapok|nyesel|menyesal|tidak\s+terima|ngga\s+terima|gak\s+terima)\b|[😡😤🤬💢😠]{2,}/i,
-  medium: /\b(kecewa|mengecewakan|tidak\s+puas|komplain|keluhan|buruk|jelek|kotor|bau|berisik|rusak|lambat|lama\s+banget|ga\s+bisa|nggak\s+bisa|tidak\s+bisa|masalah|problem|issue)\b|[😡😤😠👎]/i,
-  low: /\b(kurang|agak|sedikit|saran|masukan|mending|sebaiknya|harusnya|seharusnya|tolong\s+perbaiki|mohon\s+diperbaiki)\b/i,
+  critical: /\b(ancam|hukum|lawyer|pengacara|polisi|media\s+sosial|viral|review\s+jelek|review\s+negatif|gugat|tuntut|rusak\s+parah|bahaya|emergency|darurat)\b|😡🤬/iu,
+  high: /\b(marah|brengsek|bangsat|anjing|bego|tolol|goblok|kampret|parah\s+banget|sangat\s+kecewa|kapok|nyesel|menyesal|tidak\s+terima|ngga\s+terima|gak\s+terima)\b|[😡😤🤬💢😠]{2,}/iu,
+  medium: /\b(kecewa|mengecewakan|tidak\s+puas|ga\s+puas|nggak\s+puas|komplain|keluhan|kotor|bau|berisik|rusak|lambat|lama\s+banget|tidak\s+bisa|nggak\s+bisa|ga\s+bisa\s+(tidur|mandi|masuk)|ada\s+masalah)\b|[😡😤😠👎]/iu,
+  low: /\b(saran|masukan|mending|sebaiknya|seharusnya|tolong\s+diperbaiki|mohon\s+diperbaiki)\b/iu,
 };
+
+/** Positive / neutral phrases that must NEVER be classified as complaint. */
+const POSITIVE_OVERRIDE = /\b(terima\s*kasih|makasih|thanks|thank\s+you|tq|sip|oke|okay|ok|siap|baik|bagus|mantap|keren|puas|recommended|rekomen|ramah|nyaman|bersih)\b/i;
 
 export type ComplaintUrgency = 'critical' | 'high' | 'medium' | 'low';
 
 /** Detect complaint urgency from message */
 export function detectComplaintUrgency(message: string): ComplaintUrgency | null {
+  // Short messages (< 4 chars) are almost never complaints
+  if (message.trim().length < 4) return null;
+
+  // Positive sentiment overrides any false-positive emoji match
+  if (POSITIVE_OVERRIDE.test(message)) return null;
+
   if (COMPLAINT_PATTERNS.critical.test(message)) return 'critical';
   if (COMPLAINT_PATTERNS.high.test(message)) return 'high';
   if (COMPLAINT_PATTERNS.medium.test(message)) return 'medium';
