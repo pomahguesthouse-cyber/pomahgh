@@ -2471,6 +2471,74 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_proofs: {
+        Row: {
+          amount: number | null
+          bank_name: string | null
+          booking_id: string | null
+          confidence: string | null
+          created_at: string
+          id: string
+          image_url: string
+          is_payment_proof: boolean | null
+          notes: string | null
+          phone: string | null
+          raw_extraction: Json | null
+          reference_number: string | null
+          sender_name: string | null
+          source: string
+          status: string
+          transfer_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          bank_name?: string | null
+          booking_id?: string | null
+          confidence?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          is_payment_proof?: boolean | null
+          notes?: string | null
+          phone?: string | null
+          raw_extraction?: Json | null
+          reference_number?: string | null
+          sender_name?: string | null
+          source?: string
+          status?: string
+          transfer_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          bank_name?: string | null
+          booking_id?: string | null
+          confidence?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_payment_proof?: boolean | null
+          notes?: string | null
+          phone?: string | null
+          raw_extraction?: Json | null
+          reference_number?: string | null
+          sender_name?: string | null
+          source?: string
+          status?: string
+          transfer_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_proofs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_security_logs: {
         Row: {
           booking_id: string | null
