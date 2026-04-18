@@ -1,8 +1,8 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { GetPaymentMethodsParams } from '../lib/types.ts';
 
-// Midtrans supported payment methods
-const MIDTRANS_PAYMENT_METHODS = [
+// Supported payment methods
+const PAYMENT_METHODS = [
   { code: "bank_transfer_bca", name: "BCA Virtual Account", category: "Virtual Account" },
   { code: "bank_transfer_bni", name: "BNI Virtual Account", category: "Virtual Account" },
   { code: "bank_transfer_bri", name: "BRI Virtual Account", category: "Virtual Account" },
@@ -57,9 +57,9 @@ export async function handleGetPaymentMethods(
 
   const amount = Math.round(booking.total_price);
 
-  // Group Midtrans methods by category
+  // Group methods by category
   const grouped: Record<string, string[]> = {};
-  for (const m of MIDTRANS_PAYMENT_METHODS) {
+  for (const m of PAYMENT_METHODS) {
     if (!grouped[m.category]) grouped[m.category] = [];
     grouped[m.category].push(m.name);
   }
@@ -75,7 +75,7 @@ export async function handleGetPaymentMethods(
     booking_id: booking.id,
     total_price: amount,
     methods_summary: summaryParts,
-    methods_count: MIDTRANS_PAYMENT_METHODS.length,
+    methods_count: PAYMENT_METHODS.length,
     already_paid: false,
   };
 }

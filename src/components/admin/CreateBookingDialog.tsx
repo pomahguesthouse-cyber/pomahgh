@@ -27,7 +27,6 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "../BookingConfirmationDialog";
-import { BookingSuccessDialog } from "../booking/BookingSuccessDialog";
 import { useMemberAuth } from "@/hooks/useMemberAuth";
 
 interface CreateBookingDialogProps {
@@ -74,7 +73,6 @@ export const CreateBookingDialog = ({
   const [checkIn, setCheckIn] = useState<Date | undefined>(getDefaultCheckIn());
   const [checkOut, setCheckOut] = useState<Date | undefined>(checkIn ? getDefaultCheckOut(checkIn) : undefined);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<any>(null);
   const { user } = useMemberAuth();
   const [formData, setFormData] = useState({
@@ -336,30 +334,9 @@ export const CreateBookingDialog = ({
     }
   };
 
-  const handleCheckPaymentStatus = async () => {
-    if (!createdBooking) return { status: "pending", is_expired: false };
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('check-inline-payment-status', {
-        body: { booking_id: createdBooking.id }
-      });
-
-      if (error) throw error;
-
-      return {
-        status: data.status,
-        is_expired: data.is_expired
-      };
-    } catch (error) {
-      console.error("Check payment status error:", error);
-      return { status: "pending", is_expired: false };
-    }
-  };
-
   const handlePaymentComplete = () => {
-    setShowPaymentDialog(false);
     onOpenChange(false);
-    toast.success("Booking dan pembayaran berhasil!");
+    toast.success("Booking berhasil!");
   };
 
   const totalNights =
@@ -406,14 +383,6 @@ export const CreateBookingDialog = ({
         totalNights={totalNights}
         totalPrice={effectiveTotalPrice}
         numGuests={formData.num_guests}
-      />
-      
-      {/* Inline Payment Success Dialog */}
-      <BookingSuccessDialog
-        isOpen={showPaymentDialog}
-        onClose={handlePaymentComplete}
-        booking={createdBooking}
-        onCheckStatus={handleCheckPaymentStatus}
       />
       
       <Dialog open={open} onOpenChange={onOpenChange}>

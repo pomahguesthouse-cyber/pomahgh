@@ -1,5 +1,4 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,11 +9,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { CheckCircle2, Banknote } from "lucide-react";
-import { InlinePaymentView } from "@/components/booking/InlinePaymentView";
+import { CheckCircle2 } from "lucide-react";
 
 interface BookingConfirmationDialogProps {
   open: boolean;
@@ -47,7 +44,6 @@ export const BookingConfirmationDialog = ({
   bookingId,
   showPaymentButton = false,
 }: BookingConfirmationDialogProps) => {
-  const navigate = useNavigate();
 
   if (!checkIn || !checkOut) {
     return null;
@@ -112,38 +108,7 @@ export const BookingConfirmationDialog = ({
           </div>
         </div>
 
-        {/* Inline Payment Section - BCA VA */}
-        {showPaymentButton && bookingId && (
-          <div className="border-t pt-4">
-            <InlinePaymentView
-              bookingId={bookingId}
-              totalPrice={totalPrice}
-              guestName={guestName}
-              onPaymentSuccess={() => {
-                // Stay in dialog to show success state
-              }}
-              onExpired={() => {
-                // Stay in dialog to show expired state
-              }}
-            />
 
-            {/* Manual transfer option */}
-            <div className="mt-3 pt-3 border-t">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  onOpenChange(false);
-                  navigate(`/confirm-payment/${bookingId}`);
-                }}
-                className="w-full text-muted-foreground gap-2"
-              >
-                <Banknote className="w-4 h-4" />
-                Atau Transfer Manual
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Footer - only show for confirmation mode */}
         {!showPaymentButton && (

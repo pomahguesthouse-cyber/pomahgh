@@ -83,8 +83,7 @@ const AdminChat = lazyRetry(() => import("./pages/admin/AdminChat"));
 const AdminCityEvents = lazyRetry(() => import("./pages/admin/AdminCityEvents"));
 const AdminLandingPages = lazyRetry(() => import("./pages/admin/AdminLandingPages"));
 const ManagerCalendar = lazyRetry(() => import("./pages/public/ManagerCalendar"));
-const Payment = lazyRetry(() => import("./pages/public/Payment"));
-const PaymentStatus = lazyRetry(() => import("./pages/public/PaymentStatus"));
+
 const PageEditorPage = lazyRetry(() => import("./pages/PageEditorPage"));
 const MemberDashboard = lazyRetry(() => import("./pages/user/MemberDashboard"));
 const AdminLayout = lazyRetry(() => import("./components/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
@@ -172,8 +171,6 @@ const App = () => (
           <Route path="/admin/city-events" element={<AdminLayout><AdminCityEvents /></AdminLayout>} />
           <Route path="/admin/competitor-analysis" element={<AdminCompetitorAnalysis />} />
           <Route path="/editor" element={<PageEditorPage />} />
-          <Route path="/payment/:bookingId" element={<Payment />} />
-          <Route path="/payment/:bookingId/status" element={<PaymentStatus />} />
           <Route path="/manager/view-calendar/:token" element={<ManagerCalendar />} />
           {/* Dynamic landing pages - must be before catch-all */}
           <Route path="/:slug" element={<LandingPage />} />
