@@ -172,10 +172,35 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
                   {roomGroups.map((g, i) => (
                     <div key={i} className="truncate leading-tight">{g.name}</div>
                   ))}
+                  {booking.booking_addons && booking.booking_addons.length > 0 && (
+                    <div className="mt-1 flex flex-col gap-0.5">
+                      {booking.booking_addons.map((addon) => (
+                        <div
+                          key={addon.id}
+                          className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 leading-tight truncate"
+                        >
+                          <Package className="h-2.5 w-2.5 shrink-0" />
+                          <span className="truncate">
+                            + {addon.room_addons?.name || 'Add-on'}
+                            {addon.quantity > 1 ? ` x${addon.quantity}` : ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{roomTypes}</p>
+                {booking.booking_addons && booking.booking_addons.length > 0 && (
+                  <div className="mt-1 text-xs">
+                    {booking.booking_addons.map((addon) => (
+                      <p key={addon.id}>
+                        + {addon.room_addons?.name || 'Add-on'} x{addon.quantity} — {formatRupiahID(addon.total_price)}
+                      </p>
+                    ))}
+                  </div>
+                )}
               </TooltipContent>
             </Tooltip>
             <div className="flex flex-col gap-0.5 items-center justify-center">
