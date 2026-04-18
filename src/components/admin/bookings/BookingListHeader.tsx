@@ -1,6 +1,6 @@
 export function BookingListHeader() {
   return (
-    <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_60px_80px_100px_100px_70px_130px_130px_130px_120px] gap-1 px-4 py-3 bg-muted border-b">
+    <div className="hidden lg:grid grid-cols-[50px_120px_minmax(150px,1fr)_120px_60px_80px_100px_100px_50px_130px_130px_130px_120px] gap-1 px-4 py-3 bg-muted border-b">
       <div className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">No</div>
       <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Booking No.</div>
       <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Nama Tamu</div>
