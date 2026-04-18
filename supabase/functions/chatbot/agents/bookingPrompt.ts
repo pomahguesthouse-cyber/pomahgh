@@ -15,6 +15,18 @@ export function buildBookingFlowRules(): string {
 - "X malam" SEBELUM booking → check_availability
 - Jangan tanya ulang info yang sudah ada
 
+⚠️ MULTI-KAMAR (WAJIB!):
+- Jika tamu pesan LEBIH DARI 1 KAMAR untuk tanggal yang SAMA → CUKUP 1 booking dengan parameter room_selections berisi quantity > 1.
+- JANGAN PERNAH panggil create_booking_draft berkali-kali untuk tamu yang sama di tanggal yang sama!
+- Contoh BENAR untuk "3 kamar Deluxe + 2 kamar Family Suite, 30 April–1 Mei":
+  → SATU panggilan create_booking_draft dengan
+     room_selections: [
+       { room_name: "Deluxe", quantity: 3 },
+       { room_name: "Family Suite", quantity: 2 }
+     ]
+  → Hasil: 1 booking_code dengan total 5 kamar (booking_rooms otomatis dibuat per nomor kamar).
+- Contoh SALAH: memanggil create_booking_draft 5 kali (1 per kamar) → menghasilkan 5 kode booking duplikat. JANGAN LAKUKAN INI.
+
 ADD-ONS / EXTRA BED:
 - Setiap tipe kamar bisa punya add-on berbayar (misal Extra Bed Rp 100.000) — info ada di get_all_rooms (field add_ons).
 - Jika jumlah tamu > kapasitas standar kamar TAPI ≤ kapasitas + max_extra_beds, TAWARKAN extra bed.
