@@ -608,7 +608,8 @@ serve(async (req) => {
 
     // === Optional: Send via WhatsApp (Fonnte) ===
     let whatsappSent = false;
-    if (send_whatsapp && booking.guest_phone) {
+    const phoneRecipient = targetPhone || booking.guest_phone;
+    if (send_whatsapp && phoneRecipient) {
       try {
         const fonnteApiKey = Deno.env.get("FONNTE_API_KEY");
         if (!fonnteApiKey) {
