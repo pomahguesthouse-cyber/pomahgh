@@ -116,7 +116,7 @@ export const PaymentMonitorPanel = () => {
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Monitor Pembayaran</CardTitle>
+          <CardTitle>Daftar Pembayaran</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-3 items-center">
