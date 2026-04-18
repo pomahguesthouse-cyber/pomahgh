@@ -312,8 +312,8 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
         </div>
       </AccordionTrigger>
 
-      <AccordionContent className="px-4 pb-4 bg-gray-50 border-b border-gray-200 font-roboto sticky left-0 w-screen max-w-full lg:w-full">
-        <div className="space-y-4 pt-4 max-w-full">
+      <AccordionContent className="p-0 bg-gray-50 border-b border-gray-200 font-roboto">
+        <div className="sticky left-0 w-screen max-w-[100vw] lg:w-[calc(100vw-var(--sidebar-width,16rem))] px-4 pb-4 space-y-4 pt-4">
           {/* Info Grid - 4 Columns */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
             {/* Room Info */}
