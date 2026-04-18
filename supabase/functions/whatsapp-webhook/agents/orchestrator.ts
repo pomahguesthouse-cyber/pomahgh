@@ -132,7 +132,10 @@ export async function orchestrate(
   }
 
   const { sender, message } = body;
-  if (!sender || !message) {
+  // Allow image-only messages (no caption). Only `sender` is strictly required.
+  // For image attachments, Fonnte may send empty `message` field.
+  const hasImageAttachment = !!extractImageUrl(body);
+  if (!sender || (!message && !hasImageAttachment)) {
     return new Response(JSON.stringify({ status: "skipped", reason: "no sender or message" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
