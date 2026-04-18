@@ -167,22 +167,30 @@ function buildInvoicePdf(args: {
   doc.text(`Booking ID: #${booking.booking_code}`, marginX, 58);
   doc.text(`Tanggal: ${createdAt} WIB`, marginX, 72);
 
-  // Hotel name (top right)
-  doc.setFont(fontFamily, 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(...primary);
+  // Hotel name (top right) — or logo if enabled & available
   const hotelName = settings.hotel_name || 'Pomah Guesthouse';
-  doc.text(hotelName, pageWidth - marginX, 40, { align: 'right' });
+  if (showLogo && logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, 'PNG', pageWidth - marginX - 80, 25, 80, 40, undefined, 'FAST');
+    } catch (e) {
+      console.warn('Failed to embed invoice logo:', e);
+    }
+  } else {
+    doc.setFont(fontFamily, 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...primary);
+    doc.text(hotelName, pageWidth - marginX, 40, { align: 'right' });
+  }
 
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...muted);
   if (settings.address) {
     const addrLine = `${settings.address}${settings.city ? `, ${settings.city}` : ''}`;
-    doc.text(addrLine, pageWidth - marginX, 56, { align: 'right' });
+    doc.text(addrLine, pageWidth - marginX, 78, { align: 'right' });
   }
   if (settings.phone_primary) {
-    doc.text(`Telp: ${settings.phone_primary}`, pageWidth - marginX, 70, { align: 'right' });
+    doc.text(`Telp: ${settings.phone_primary}`, pageWidth - marginX, 90, { align: 'right' });
   }
 
   // Helper to draw a section header bar
@@ -308,7 +316,7 @@ function buildInvoicePdf(args: {
     doc.setTextColor(46, 125, 50);
     doc.text('PAID', pageWidth / 2, y + 25, { align: 'center' });
     y += 56;
-  } else if (bankAccounts.length > 0) {
+  } else if (showBank && bankAccounts.length > 0) {
     // === INSTRUKSI PEMBAYARAN ===
     if (y > 700) { doc.addPage(); y = 50; }
     y = drawSectionHeader('INSTRUKSI PEMBAYARAN', y);
@@ -362,6 +370,34 @@ function buildInvoicePdf(args: {
     y += 14;
   }
 
+  // === QRIS ===
+  if (!showPaidStamp && showQris && qrisDataUrl) {
+    if (y > 620) { doc.addPage(); y = 50; }
+    y = drawSectionHeader('SCAN QRIS', y);
+    try {
+      doc.addImage(qrisDataUrl, 'PNG', pageWidth / 2 - 70, y, 140, 140, undefined, 'FAST');
+      y += 148;
+      doc.setFont(fontFamily, 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(...muted);
+      doc.text('Scan QRIS di atas untuk membayar dengan e-wallet / mobile banking.', pageWidth / 2, y, { align: 'center' });
+      y += 14;
+    } catch (e) {
+      console.warn('Failed to embed QRIS:', e);
+    }
+  }
+
+  // === CUSTOM NOTES ===
+  if (customNotes) {
+    if (y > 760) { doc.addPage(); y = 50; }
+    doc.setFont(fontFamily, 'italic');
+    doc.setFontSize(9);
+    doc.setTextColor(...muted);
+    const noteLines = doc.splitTextToSize(customNotes, pageWidth - marginX * 2);
+    doc.text(noteLines, marginX, y);
+    y += noteLines.length * 12 + 6;
+  }
+
   // === FOOTER ===
   const footerY = doc.internal.pageSize.getHeight() - 30;
   doc.setFillColor(...primary);
@@ -371,7 +407,7 @@ function buildInvoicePdf(args: {
   doc.setTextColor(255, 255, 255);
   const footerText = `${hotelName}${settings.email_primary ? ` • ${settings.email_primary}` : ''}${settings.phone_primary ? ` • ${settings.phone_primary}` : ''}`;
   doc.text(footerText, pageWidth / 2, footerY + 8, { align: 'center' });
-  doc.text('Terima kasih atas kepercayaan Anda. Syarat dan ketentuan berlaku.', pageWidth / 2, footerY + 18, { align: 'center' });
+  doc.text(footerCustom || 'Terima kasih atas kepercayaan Anda. Syarat dan ketentuan berlaku.', pageWidth / 2, footerY + 18, { align: 'center' });
 
   return new Uint8Array(doc.output('arraybuffer'));
 }
