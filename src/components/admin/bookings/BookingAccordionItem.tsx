@@ -168,24 +168,34 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="truncate cursor-default">{roomTypes}</div>
+                <div className="flex flex-col gap-0.5 min-w-0 cursor-default">
+                  {roomGroups.map((g, i) => (
+                    <div key={i} className="truncate leading-tight">{g.name}</div>
+                  ))}
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{roomTypes}</p>
               </TooltipContent>
             </Tooltip>
-            <div className="text-center flex items-center justify-center gap-1">
-              {isOverbooked && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-red-600 font-medium">⚠️ Overbook! Kamar ini bentrok dengan booking lain</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              <span className={isOverbooked ? "text-red-600 font-bold" : ""}>{allocatedRooms}</span>
+            <div className="flex flex-col gap-0.5 items-center justify-center">
+              {roomGroups.map((g, i) => (
+                <div key={i} className="flex items-center gap-1 leading-tight">
+                  {isOverbooked && i === 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-red-600 font-medium">⚠️ Overbook! Kamar ini bentrok dengan booking lain</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                  <span className={isOverbooked ? "text-red-600 font-bold" : ""}>
+                    {g.numbers.join(", ") || "-"}
+                  </span>
+                </div>
+              ))}
             </div>
             <div className="text-center">
               {format(checkInDate, "dd/MM/yyyy")}
@@ -194,7 +204,15 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
               {format(checkOutDate, "dd/MM/yyyy")}
             </div>
             <div className="text-center">{booking.total_nights}</div>
-            <div className="text-right font-medium">{formatNumberID(pricePerNight)}</div>
+            <div className="flex flex-col gap-0.5 text-right font-medium">
+              {roomGroups.length > 1 ? (
+                roomGroups.map((g, i) => (
+                  <div key={i} className="leading-tight">{formatNumberID(g.pricePerNight)}</div>
+                ))
+              ) : (
+                <div>{formatNumberID(pricePerNight)}</div>
+              )}
+            </div>
             <div className="text-right font-semibold">
               {formatNumberID(booking.total_price)}
             </div>
