@@ -43,7 +43,8 @@ const defaultMenuGroups: MenuGroup[] = [
     items: [
       { id: "dashboard", title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
       { id: "booking-calendar", title: "Kalender Booking", url: "/admin/booking-calendar", icon: CalendarDays },
-      { id: "bookings", title: "Bookings", url: "/admin/bookings", icon: Calendar }
+      { id: "bookings", title: "Bookings", url: "/admin/bookings", icon: Calendar },
+      { id: "invoice-management", title: "Invoice Management", url: "/admin/invoice-management", icon: Receipt }
     ]
   },
   {
@@ -75,7 +76,6 @@ const defaultMenuGroups: MenuGroup[] = [
     label: "Operations",
     items: [
       { id: "competitor-analysis", title: "Analisis Harga", url: "/admin/competitor-analysis", icon: TrendingUp },
-      { id: "invoice-management", title: "Invoice Management", url: "/admin/invoice-management", icon: Receipt },
       { id: "bank-accounts", title: "Bank Accounts", url: "/admin/bank-accounts", icon: CreditCard }
     ]
   },
