@@ -2,11 +2,322 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { format } from "https://esm.sh/date-fns@3.6.0";
 import { id as idLocale } from "https://esm.sh/date-fns@3.6.0/locale/id";
+import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
+import autoTable from "https://esm.sh/jspdf-autotable@3.8.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+interface BookingRow {
+  id: string;
+  booking_code: string;
+  guest_name: string;
+  guest_email: string;
+  guest_phone: string | null;
+  check_in: string;
+  check_out: string;
+  check_in_time: string | null;
+  check_out_time: string | null;
+  total_nights: number;
+  total_price: number;
+  payment_amount: number | null;
+  payment_status: string | null;
+  bank_code: string | null;
+  num_guests: number;
+  allocated_room_number: string | null;
+  created_at: string;
+  rooms?: { name: string } | null;
+}
+
+interface BookingRoomItem {
+  rooms?: { name: string } | null;
+  room_number: string;
+  price_per_night: number;
+}
+
+interface BankAccountItem {
+  bank_name: string;
+  account_number: string;
+  account_holder_name: string;
+}
+
+interface BookingAddonItem {
+  room_addons?: { name: string } | null;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
+interface HotelSettingsRow {
+  hotel_name: string | null;
+  address: string | null;
+  city: string | null;
+  postal_code: string | null;
+  phone_primary: string | null;
+  email_primary: string | null;
+  logo_url: string | null;
+  invoice_logo_url: string | null;
+}
+
+const formatRupiah = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
+
+/**
+ * Build a structured PDF invoice with jsPDF + autoTable.
+ * Returns a Uint8Array (PDF bytes).
+ */
+function buildInvoicePdf(args: {
+  booking: BookingRow;
+  rooms: BookingRoomItem[];
+  addons: BookingAddonItem[];
+  bankAccounts: BankAccountItem[];
+  settings: HotelSettingsRow;
+  totalWithCode: number;
+  uniqueCode: number;
+  showPaidStamp: boolean;
+  transactionStatus: string;
+  paymentMethodLabel: string;
+}): Uint8Array {
+  const {
+    booking, rooms, addons, bankAccounts, settings,
+    totalWithCode, uniqueCode, showPaidStamp, transactionStatus, paymentMethodLabel,
+  } = args;
+
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const marginX = 40;
+
+  // Brand colors
+  const primary: [number, number, number] = [74, 155, 217]; // #4a9bd9
+  const secondary: [number, number, number] = [232, 244, 253]; // #e8f4fd
+  const dark: [number, number, number] = [34, 34, 34];
+  const muted: [number, number, number] = [120, 120, 120];
+
+  // Header band
+  doc.setFillColor(...primary);
+  doc.rect(0, 0, 5, 90, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(...dark);
+  doc.text('BUKTI PEMESANAN (BOOKING ORDER)', marginX, 40);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(...muted);
+  const createdAt = format(new Date(booking.created_at), "d MMM yyyy, HH:mm", { locale: idLocale });
+  doc.text(`Booking ID: #${booking.booking_code}`, marginX, 58);
+  doc.text(`Tanggal: ${createdAt} WIB`, marginX, 72);
+
+  // Hotel name (top right)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor(...primary);
+  const hotelName = settings.hotel_name || 'Pomah Guesthouse';
+  doc.text(hotelName, pageWidth - marginX, 40, { align: 'right' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...muted);
+  if (settings.address) {
+    const addrLine = `${settings.address}${settings.city ? `, ${settings.city}` : ''}`;
+    doc.text(addrLine, pageWidth - marginX, 56, { align: 'right' });
+  }
+  if (settings.phone_primary) {
+    doc.text(`Telp: ${settings.phone_primary}`, pageWidth - marginX, 70, { align: 'right' });
+  }
+
+  // Helper to draw a section header bar
+  const drawSectionHeader = (label: string, y: number): number => {
+    doc.setFillColor(...secondary);
+    doc.rect(marginX, y, pageWidth - marginX * 2, 20, 'F');
+    doc.setFillColor(...primary);
+    doc.rect(marginX, y, 4, 20, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...dark);
+    doc.text(label, marginX + 12, y + 14);
+    return y + 28;
+  };
+
+  let y = 100;
+
+  // === DETAIL PEMBAYARAN ===
+  y = drawSectionHeader('DETAIL PEMBAYARAN', y);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...muted);
+  doc.text('Booking ID', marginX, y);
+  doc.text('Metode', marginX + 180, y);
+  doc.text('Status', marginX + 360, y);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(...dark);
+  doc.text(booking.booking_code, marginX, y + 14);
+  doc.text(paymentMethodLabel, marginX + 180, y + 14);
+  doc.text(transactionStatus, marginX + 360, y + 14);
+  y += 36;
+
+  // === DATA PEMESAN ===
+  y = drawSectionHeader('DATA PEMESAN', y);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(...dark);
+  doc.text(`Nama       : ${booking.guest_name}`, marginX, y);
+  y += 14;
+  doc.text(`Email      : ${booking.guest_email}`, marginX, y);
+  y += 14;
+  if (booking.guest_phone) {
+    doc.text(`No. Kontak : ${booking.guest_phone}`, marginX, y);
+    y += 14;
+  }
+  y += 6;
+
+  // === DETAIL HOTEL & STAY ===
+  y = drawSectionHeader('DETAIL MENGINAP', y);
+  const checkInDate = format(new Date(booking.check_in), "EEEE, dd MMMM yyyy", { locale: idLocale });
+  const checkOutDate = format(new Date(booking.check_out), "EEEE, dd MMMM yyyy", { locale: idLocale });
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Check-in  : ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}`, marginX, y);
+  y += 14;
+  doc.text(`Check-out : ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}`, marginX, y);
+  y += 14;
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Durasi    : ${booking.total_nights} malam`, marginX, y);
+  y += 14;
+  doc.text(`Tamu      : ${booking.num_guests} orang`, marginX, y);
+  y += 18;
+
+  // === DETAIL PEMESANAN (TABLE) ===
+  y = drawSectionHeader('DETAIL PEMESANAN', y);
+  const tableRows: (string | number)[][] = [];
+  let idx = 1;
+  rooms.forEach((r) => {
+    const subtotal = r.price_per_night * booking.total_nights;
+    tableRows.push([
+      idx++,
+      'Akomodasi',
+      `${hotelName} - ${r.rooms?.name || booking.rooms?.name || 'Kamar'}${r.room_number ? ` #${r.room_number}` : ''}`,
+      `${booking.total_nights} mlm`,
+      formatRupiah(r.price_per_night),
+      formatRupiah(subtotal),
+    ]);
+  });
+  addons.forEach((a) => {
+    tableRows.push([
+      idx++,
+      'Add-on',
+      a.room_addons?.name || 'Layanan tambahan',
+      `${a.quantity}x`,
+      formatRupiah(a.unit_price),
+      formatRupiah(a.total_price),
+    ]);
+  });
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: marginX, right: marginX },
+    head: [['No', 'Jenis', 'Deskripsi', 'Jml', 'Harga Satuan', 'Total']],
+    body: tableRows,
+    headStyles: { fillColor: primary, textColor: 255, fontSize: 9, halign: 'center' },
+    bodyStyles: { fontSize: 9, textColor: 50 },
+    columnStyles: {
+      0: { cellWidth: 28, halign: 'center' },
+      1: { cellWidth: 70 },
+      2: { cellWidth: 'auto' },
+      3: { cellWidth: 50, halign: 'center' },
+      4: { cellWidth: 80, halign: 'right' },
+      5: { cellWidth: 80, halign: 'right' },
+    },
+    foot: [
+      ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
+      ['', '', '', '', 'JUMLAH BAYAR', formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)],
+    ],
+    footStyles: { fillColor: [245, 245, 245], textColor: dark, fontStyle: 'bold', fontSize: 9, halign: 'right' },
+  });
+
+  // After table position
+  // @ts-expect-error -- autoTable adds lastAutoTable to doc
+  y = (doc.lastAutoTable?.finalY ?? y + 100) + 20;
+
+  // === PAID STAMP ===
+  if (showPaidStamp) {
+    doc.setDrawColor(46, 125, 50);
+    doc.setLineWidth(3);
+    doc.roundedRect(pageWidth / 2 - 60, y, 120, 36, 4, 4, 'S');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(46, 125, 50);
+    doc.text('PAID', pageWidth / 2, y + 25, { align: 'center' });
+    y += 56;
+  } else if (bankAccounts.length > 0) {
+    // === INSTRUKSI PEMBAYARAN ===
+    if (y > 700) { doc.addPage(); y = 50; }
+    y = drawSectionHeader('INSTRUKSI PEMBAYARAN', y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...dark);
+    doc.text('Silakan transfer sebesar:', marginX, y);
+    y += 16;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...primary);
+    doc.text(formatRupiah(totalWithCode), marginX, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    doc.text(`(termasuk kode unik 3 digit: ${uniqueCode})`, marginX + 130, y);
+    y += 18;
+    doc.setFontSize(10);
+    doc.setTextColor(...dark);
+    doc.text('Ke salah satu rekening berikut:', marginX, y);
+    y += 14;
+
+    bankAccounts.forEach((bank) => {
+      if (y > 760) { doc.addPage(); y = 50; }
+      doc.setDrawColor(...primary);
+      doc.setLineWidth(0.5);
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(marginX, y, pageWidth - marginX * 2, 50, 3, 3, 'S');
+      doc.setFillColor(...primary);
+      doc.rect(marginX, y, 3, 50, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(...dark);
+      doc.text(bank.bank_name, marginX + 12, y + 16);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`No. Rek: ${bank.account_number}`, marginX + 12, y + 30);
+      doc.setTextColor(...muted);
+      doc.text(`a.n. ${bank.account_holder_name}`, marginX + 12, y + 44);
+      y += 58;
+    });
+
+    y += 6;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    const tip = 'Tip: gunakan nominal persis (termasuk kode unik) agar pembayaran cepat terverifikasi.';
+    doc.text(tip, marginX, y);
+    y += 14;
+  }
+
+  // === FOOTER ===
+  const footerY = doc.internal.pageSize.getHeight() - 30;
+  doc.setFillColor(...primary);
+  doc.rect(0, footerY - 6, pageWidth, 30, 'F');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(255, 255, 255);
+  const footerText = `${hotelName}${settings.email_primary ? ` • ${settings.email_primary}` : ''}${settings.phone_primary ? ` • ${settings.phone_primary}` : ''}`;
+  doc.text(footerText, pageWidth / 2, footerY + 8, { align: 'center' });
+  doc.text('Terima kasih atas kepercayaan Anda. Syarat dan ketentuan berlaku.', pageWidth / 2, footerY + 18, { align: 'center' });
+
+  return new Uint8Array(doc.output('arraybuffer'));
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -14,79 +325,46 @@ serve(async (req) => {
   }
 
   try {
-    const { booking_id, send_email } = await req.json();
-    
+    const { booking_id, send_email, send_whatsapp } = await req.json();
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log("Generating invoice for booking:", booking_id);
+    console.log(`Generating invoice for booking ${booking_id} (email=${!!send_email}, wa=${!!send_whatsapp})`);
 
-    // Fetch booking data
+    // Fetch booking
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .select(`*, rooms (*)`)
       .eq("id", booking_id)
       .single();
 
-    if (bookingError) throw bookingError;
-    if (!booking) throw new Error("Booking not found");
+    if (bookingError || !booking) throw new Error(bookingError?.message || "Booking not found");
 
-    // Fetch booking rooms
-    const { data: bookingRooms } = await supabase
-      .from("booking_rooms")
-      .select(`*, rooms (name)`)
-      .eq("booking_id", booking_id);
+    // Fetch related
+    const [{ data: bookingRooms }, { data: hotelSettings, error: settingsError }, { data: bankAccounts }, { data: bookingAddons }] = await Promise.all([
+      supabase.from("booking_rooms").select(`*, rooms (name)`).eq("booking_id", booking_id),
+      supabase.from("hotel_settings").select("*").single(),
+      supabase.from("bank_accounts").select("*").eq("is_active", true).order("display_order"),
+      supabase.from("booking_addons").select(`*, room_addons (name, icon_name, price_type)`).eq("booking_id", booking_id),
+    ]);
 
-    // Fetch hotel settings
-    const { data: hotelSettings, error: settingsError } = await supabase
-      .from("hotel_settings")
-      .select("*")
-      .single();
+    if (settingsError || !hotelSettings) throw new Error(settingsError?.message || "Hotel settings missing");
 
-    if (settingsError) throw settingsError;
-
-    // Fetch active bank accounts
-    const { data: bankAccounts } = await supabase
-      .from("bank_accounts")
-      .select("*")
-      .eq("is_active", true)
-      .order("display_order");
-
-    // Fetch booking addons
-    const { data: bookingAddons } = await supabase
-      .from("booking_addons")
-      .select(`*, room_addons (name, icon_name, price_type)`)
-      .eq("booking_id", booking_id);
-
-    // Calculations
-    const addonTotalAmount = bookingAddons?.reduce((sum: number, a: any) => sum + (a.total_price || 0), 0) || 0;
     const paidAmount = booking.payment_amount || 0;
     const remainingBalance = booking.total_price - paidAmount;
-
-    // Generate unique code (last 3 digits for payment identification)
     const uniqueCode = Math.floor(Math.random() * 900 + 100);
     const totalWithCode = booking.total_price + uniqueCode;
 
-    // Format dates
-    const checkInDate = format(new Date(booking.check_in), "dd MMMM yyyy", { locale: idLocale });
-    const checkOutDate = format(new Date(booking.check_out), "dd MMMM yyyy", { locale: idLocale });
-    const createdAtFormatted = format(new Date(booking.created_at), "d MMM yyyy, HH:mm", { locale: idLocale });
-    const createdAtDay = format(new Date(booking.created_at), "EEEE", { locale: idLocale });
-
-    const formatRupiah = (amount: number) => amount.toLocaleString('id-ID') + ',-';
-
-    // Payment method
+    // Payment method label
     let paymentMethodLabel = 'Bank Transfer';
-    if (booking.bank_code) {
-      paymentMethodLabel = `Bank Transfer (${booking.bank_code.toUpperCase()})`;
-    }
+    if (booking.bank_code) paymentMethodLabel = `Bank Transfer (${booking.bank_code.toUpperCase()})`;
 
     // Transaction status
     const paymentStatus = booking.payment_status || 'pending';
     let transactionStatus = 'Belum Bayar';
     let showPaidStamp = false;
-    
     if (paymentStatus === 'paid' || paymentStatus === 'lunas') {
       transactionStatus = 'LUNAS';
       showPaidStamp = true;
@@ -100,202 +378,50 @@ serve(async (req) => {
       showPaidStamp = true;
     }
 
-    // Room list
-    interface BookingRoomItem { rooms?: { name: string } | null; room_number: string; price_per_night: number }
-    interface BankAccountItem { bank_name: string; account_number: string; account_holder_name: string }
-    interface BookingAddonItem { room_addons?: { name: string } | null; quantity: number; unit_price: number; total_price: number }
-
-    const roomListItems = bookingRooms && bookingRooms.length > 0
-      ? (bookingRooms as BookingRoomItem[]).map((br) => ({
-          room_name: br.rooms?.name || booking.rooms?.name,
-          room_number: br.room_number,
-          price_per_night: br.price_per_night
-        }))
+    // Build room list
+    const roomList: BookingRoomItem[] = bookingRooms && bookingRooms.length > 0
+      ? (bookingRooms as BookingRoomItem[])
       : [{
-          room_name: booking.rooms?.name,
-          room_number: booking.allocated_room_number || '-',
-          price_per_night: booking.total_price / booking.total_nights
+          rooms: booking.rooms ? { name: (booking.rooms as { name: string }).name } : null,
+          room_number: booking.allocated_room_number || '',
+          price_per_night: booking.total_price / booking.total_nights,
         }];
 
-    // Build detail rows
-    let rowIndex = 0;
-    const detailRows = roomListItems.map((room) => {
-      rowIndex++;
-      const subtotal = room.price_per_night * booking.total_nights;
-      return `
-        <tr>
-          <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${rowIndex}.</td>
-          <td style="border:1px solid #ddd;padding:10px 12px;">Akomodasi</td>
-          <td style="border:1px solid #ddd;padding:10px 12px;">${hotelSettings.hotel_name || 'Pomah Guesthouse'} ${room.room_name || ''}</td>
-          <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${booking.total_nights} mlm</td>
-          <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(room.price_per_night)}</td>
-          <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(subtotal)}</td>
-        </tr>
-      `;
-    }).join('');
+    // Generate PDF
+    const pdfBytes = buildInvoicePdf({
+      booking: booking as BookingRow,
+      rooms: roomList,
+      addons: (bookingAddons || []) as BookingAddonItem[],
+      bankAccounts: (bankAccounts || []) as BankAccountItem[],
+      settings: hotelSettings as HotelSettingsRow,
+      totalWithCode,
+      uniqueCode,
+      showPaidStamp,
+      transactionStatus,
+      paymentMethodLabel,
+    });
 
-    const addonRows = bookingAddons && bookingAddons.length > 0
-      ? (bookingAddons as BookingAddonItem[]).map((addon) => {
-          rowIndex++;
-          return `
-            <tr>
-              <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${rowIndex}.</td>
-              <td style="border:1px solid #ddd;padding:10px 12px;">Layanan Tambahan</td>
-              <td style="border:1px solid #ddd;padding:10px 12px;">${addon.room_addons?.name || 'Add-on'}</td>
-              <td style="text-align:center;border:1px solid #ddd;padding:10px 12px;">${addon.quantity}x ${booking.total_nights} mlm</td>
-              <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(addon.unit_price)}</td>
-              <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;">${formatRupiah(addon.total_price)}</td>
-            </tr>
-          `;
-        }).join('')
-      : '';
+    // Upload PDF to storage
+    const fileName = `${booking.booking_code}-${Date.now()}.pdf`;
+    const filePath = `${booking.id}/${fileName}`;
 
-    const tamuList = [`1. ${booking.guest_name}`];
+    const { error: uploadErr } = await supabase.storage
+      .from("invoices")
+      .upload(filePath, pdfBytes, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
 
-    const primaryColor = '#4a9bd9';
-    const secondaryColor = '#e8f4fd';
-    const logoUrl = hotelSettings.invoice_logo_url || hotelSettings.logo_url || '';
+    if (uploadErr) {
+      console.error("Failed to upload invoice PDF:", uploadErr);
+      throw new Error(`Storage upload failed: ${uploadErr.message}`);
+    }
 
-    // Build invoice HTML matching the reference template
-    const invoiceHtml = `
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invoice - ${booking.booking_code}</title>
-</head>
-<body style="font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f0f0f0;padding:20px;color:#333;font-size:14px;line-height:1.5;margin:0;">
-  <div style="max-width:800px;margin:0 auto;background:white;">
-    <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:30px 40px 20px;border-left:5px solid ${primaryColor};">
-      <div>
-        <h1 style="font-size:20px;font-weight:700;color:#222;margin:0 0 4px 0;">BUKTI PEMESANAN ( BOOKING ORDER )</h1>
-        <div style="font-size:13px;color:#666;line-height:1.6;">
-          Booking ID &nbsp;: #${booking.booking_code}<br>
-          Tanggal &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ${createdAtFormatted} (${createdAtDay})
-        </div>
-      </div>
-      ${logoUrl ? `
-        <div style="text-align:right;">
-          <img src="${logoUrl}" alt="${hotelSettings.hotel_name} Logo" style="max-height:60px;max-width:150px;object-fit:contain;" crossorigin="anonymous" onerror="this.style.display='none'">
-        </div>
-      ` : ''}
-    </div>
+    const { data: publicUrlData } = supabase.storage.from("invoices").getPublicUrl(filePath);
+    const invoicePdfUrl = publicUrlData.publicUrl;
+    console.log("Invoice PDF uploaded:", invoicePdfUrl);
 
-    <!-- Detail Pembayaran -->
-    <div style="background:${secondaryColor};padding:8px 40px;font-size:13px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:0.5px;border-left:5px solid ${primaryColor};">DETAIL PEMBAYARAN</div>
-    <div style="display:flex;justify-content:space-between;padding:16px 40px 20px;font-size:13px;color:#444;">
-      <div><span style="font-size:11px;color:#888;display:block;">Booking ID</span>${booking.booking_code}</div>
-      <div><span style="font-size:11px;color:#888;display:block;">PEMBELIAN MELALUI</span>${paymentMethodLabel}</div>
-      <div><span style="font-size:11px;color:#888;display:block;">DETAIL TRANSAKSI</span><strong style="font-weight:700;">${transactionStatus}</strong></div>
-    </div>
-
-    <!-- Data Pemesan -->
-    <div style="background:${secondaryColor};padding:8px 40px;font-size:13px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:0.5px;border-left:5px solid ${primaryColor};">DATA PEMESAN</div>
-    <div style="padding:16px 40px 20px;">
-      <p style="font-size:13px;color:#444;line-height:1.7;margin:0;">
-        Nama &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ${booking.guest_name}<br>
-        Email &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ${booking.guest_email}<br>
-        ${booking.guest_phone ? `No. Kontak : ${booking.guest_phone}` : ''}
-      </p>
-    </div>
-
-    <!-- Tamu -->
-    <div style="background:${secondaryColor};padding:8px 40px;font-size:13px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:0.5px;border-left:5px solid ${primaryColor};">TAMU</div>
-    <div style="padding:16px 40px 20px;">
-      <p style="font-size:13px;color:#444;line-height:1.7;margin:0;">
-        ${tamuList.join('<br>')}
-      </p>
-    </div>
-
-    <!-- Detail Hotel -->
-    <div style="background:${secondaryColor};padding:8px 40px;font-size:13px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:0.5px;border-left:5px solid ${primaryColor};">DETAIL HOTEL</div>
-    <div style="padding:16px 40px 20px;">
-      <p style="font-size:13px;color:#444;line-height:1.7;margin:0;">
-        <strong>${hotelSettings.hotel_name || 'Pomah Guesthouse'}</strong><br>
-        ${hotelSettings.address ? `Alamat: ${hotelSettings.address}${hotelSettings.city ? `, ${hotelSettings.city}` : ''}${hotelSettings.postal_code ? `, ${hotelSettings.postal_code}` : ''}` : ''}
-      </p>
-      <hr style="border:none;border-top:1px solid #ddd;margin:12px 0;">
-      <p style="font-size:13px;color:#444;line-height:1.7;margin:0;">
-        <strong>Check-in &nbsp;&nbsp;: ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}</strong><br>
-        <strong>Check-out : ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}</strong><br>
-        Durasi: ${booking.total_nights} malam
-      </p>
-    </div>
-
-    <!-- Detail Pemesanan -->
-    <div style="background:${secondaryColor};padding:8px 40px;font-size:13px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:0.5px;border-left:5px solid ${primaryColor};">DETAIL PEMESANAN</div>
-    <div style="padding:16px 40px 20px;">
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
-        <thead>
-          <tr>
-            <th style="width:40px;text-align:center;border:1px solid #ddd;padding:10px 12px;font-weight:600;font-size:12px;">No</th>
-            <th style="width:120px;text-align:left;border:1px solid #ddd;padding:10px 12px;font-weight:600;font-size:12px;">Jenis Pemesanan</th>
-            <th style="text-align:left;border:1px solid #ddd;padding:10px 12px;font-weight:600;font-size:12px;">Deskripsi</th>
-            <th style="width:50px;text-align:center;border:1px solid #ddd;padding:10px 12px;font-weight:600;font-size:12px;">Jml.</th>
-            <th style="width:120px;text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;font-size:12px;">Harga Satuan (Rp)</th>
-            <th style="width:120px;text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;font-size:12px;">Total (Rp)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${detailRows}
-          ${addonRows}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="4" style="border:none;"></td>
-            <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>TOTAL</strong></td>
-            <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>${formatRupiah(booking.total_price)}</strong></td>
-          </tr>
-          <tr>
-            <td colspan="4" style="border:none;"></td>
-            <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>JUMLAH PEMBAYARAN</strong></td>
-            <td style="text-align:right;border:1px solid #ddd;padding:10px 12px;font-weight:600;"><strong>${formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)}</strong></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-
-    <!-- Paid Stamp - only shows when paid or down_payment -->
-    ${showPaidStamp ? `
-    <div style="text-align:center;padding:30px 40px 10px;">
-      <div style="display:inline-block;border:4px solid #2e7d32;border-radius:8px;padding:6px 28px;transform:rotate(-5deg);opacity:0.85;">
-        <span style="font-size:36px;font-weight:900;color:#2e7d32;letter-spacing:6px;font-family:'Impact','Arial Black',sans-serif;">PAID</span>
-      </div>
-    </div>
-    ` : ''}
-
-    <!-- Payment Instructions if not fully paid -->
-    ${!showPaidStamp && bankAccounts && bankAccounts.length > 0 ? `
-    <div style="background:${secondaryColor};padding:8px 40px;font-size:13px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:0.5px;border-left:5px solid ${primaryColor};">INSTRUKSI PEMBAYARAN</div>
-    <div style="padding:16px 40px 20px;">
-      <p style="font-size:13px;color:#666;margin-bottom:12px;">Silakan transfer sebesar <strong>Rp ${totalWithCode.toLocaleString('id-ID')}</strong> ke rekening berikut:</p>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        ${(bankAccounts as BankAccountItem[]).map((bank) => `
-          <div style="background:#fff;padding:12px 16px;margin-bottom:8px;border-radius:4px;border-left:3px solid ${primaryColor};border:1px solid #e0e0e0;">
-            <strong>${bank.bank_name}</strong><br>
-            No. Rek: <strong>${bank.account_number}</strong><br>
-            a.n. ${bank.account_holder_name}
-          </div>
-        `).join('')}
-      </div>
-    </div>
-    ` : ''}
-
-    <!-- Footer -->
-    <div style="text-align:center;padding:30px 40px 15px;font-size:13px;color:#666;">
-      Untuk pertanyaan apa pun, kunjungi ${hotelSettings.hotel_name || 'Pomah Guesthouse'} Help Center: ${hotelSettings.phone_primary || ''}
-    </div>
-    <div style="background:${primaryColor};color:white;text-align:center;padding:12px 40px;font-size:12px;">
-      Syarat dan Ketentuan berlaku. ${hotelSettings.email_primary ? `Silakan lihat ${hotelSettings.email_primary}` : ''}
-    </div>
-  </div>
-</body>
-</html>
-    `;
-
-    // Send email if requested via Resend
+    // === Optional: Send via Email (Resend) ===
     let emailSent = false;
     if (send_email && booking.guest_email) {
       try {
@@ -304,6 +430,24 @@ serve(async (req) => {
           console.error("RESEND_API_KEY not configured");
         } else {
           const hotelName = hotelSettings.hotel_name || 'Pomah Guesthouse';
+          // Convert PDF to base64 for attachment
+          let binary = '';
+          for (let i = 0; i < pdfBytes.length; i++) binary += String.fromCharCode(pdfBytes[i]);
+          const pdfBase64 = btoa(binary);
+
+          const emailHtml = `
+            <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#222;">
+              <h2 style="color:#4a9bd9;">Bukti Pemesanan #${booking.booking_code}</h2>
+              <p>Halo <strong>${booking.guest_name}</strong>,</p>
+              <p>Terima kasih telah memilih ${hotelName}. Berikut detail pemesanan Anda terlampir dalam bentuk PDF.</p>
+              <p><strong>Kode booking:</strong> ${booking.booking_code}<br>
+                 <strong>Total:</strong> ${formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)}<br>
+                 <strong>Status:</strong> ${transactionStatus}</p>
+              ${!showPaidStamp ? `<p>Silakan lakukan pembayaran sesuai instruksi di invoice. Setelah transfer, kirim bukti ke WhatsApp kami untuk verifikasi.</p>` : ''}
+              <p style="margin-top:30px;font-size:12px;color:#888;">Atau buka invoice online: <a href="${invoicePdfUrl}">${invoicePdfUrl}</a></p>
+            </div>
+          `;
+
           const resendResponse = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
@@ -314,30 +458,85 @@ serve(async (req) => {
               from: `${hotelName} <noreply@notify.pomahguesthouse.com>`,
               to: [booking.guest_email],
               subject: `Bukti Pemesanan #${booking.booking_code} - ${hotelName}`,
-              html: invoiceHtml,
+              html: emailHtml,
+              attachments: [{
+                filename: `Invoice-${booking.booking_code}.pdf`,
+                content: pdfBase64,
+              }],
             }),
           });
 
           const resendResult = await resendResponse.json();
-
           if (resendResponse.ok) {
             emailSent = true;
-            console.log("Invoice email sent via Resend to:", booking.guest_email, "ID:", resendResult.id);
+            console.log("Invoice email sent. ID:", resendResult.id);
           } else {
-            console.error("Resend API error:", resendResult);
+            console.error("Resend error:", resendResult);
           }
         }
-      } catch (emailError) {
-        console.error("Email send error:", emailError);
+      } catch (e) {
+        console.error("Email send error:", e);
+      }
+    }
+
+    // === Optional: Send via WhatsApp (Fonnte) ===
+    let whatsappSent = false;
+    if (send_whatsapp && booking.guest_phone) {
+      try {
+        const fonnteApiKey = Deno.env.get("FONNTE_API_KEY");
+        if (!fonnteApiKey) {
+          console.error("FONNTE_API_KEY not configured");
+        } else {
+          const hotelName = hotelSettings.hotel_name || 'Pomah Guesthouse';
+          const totalLabel = formatRupiah(showPaidStamp ? booking.total_price : totalWithCode);
+          const checkInLabel = format(new Date(booking.check_in), "dd MMM yyyy", { locale: idLocale });
+          const checkOutLabel = format(new Date(booking.check_out), "dd MMM yyyy", { locale: idLocale });
+
+          const bankList = (bankAccounts && bankAccounts.length > 0)
+            ? (bankAccounts as BankAccountItem[]).map(b => `🏦 *${b.bank_name}*\nNo. Rek: ${b.account_number}\na.n. ${b.account_holder_name}`).join('\n\n')
+            : '';
+
+          const message = showPaidStamp
+            ? `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah menginap di ${hotelName}!\n\nBerikut bukti pemesanan Anda (terlampir PDF):\n\n📋 *${booking.booking_code}*\n📅 ${checkInLabel} → ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total: *${totalLabel}* — LUNAS ✅\n\nKami tunggu kunjungan Anda berikutnya 🙏`
+            : `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah memesan di ${hotelName}!\n\nBerikut detail pesanan Anda (PDF terlampir):\n\n📋 Kode: *${booking.booking_code}*\n📅 Check-in: ${checkInLabel}\n📅 Check-out: ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total bayar: *${totalLabel}*\n_(termasuk kode unik 3 digit untuk identifikasi)_\n\n💳 *INSTRUKSI PEMBAYARAN*\n${bankList}\n\nSilakan lakukan pembayaran dan kirim bukti transfer di chat ini ya. Tim kami akan segera memverifikasi 🙏\n\n📄 Invoice: ${invoicePdfUrl}`;
+
+          const fonnteResp = await fetch("https://api.fonnte.com/send", {
+            method: "POST",
+            headers: {
+              "Authorization": fonnteApiKey,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              target: booking.guest_phone,
+              message,
+              url: invoicePdfUrl, // attaches the PDF
+              filename: `Invoice-${booking.booking_code}.pdf`,
+              countryCode: "62",
+            }),
+          });
+
+          const fonnteResult = await fonnteResp.json();
+          if (fonnteResp.ok && fonnteResult.status !== false) {
+            whatsappSent = true;
+            console.log("Invoice sent via WhatsApp:", booking.guest_phone);
+          } else {
+            console.error("Fonnte send failed:", fonnteResult);
+          }
+        }
+      } catch (e) {
+        console.error("WhatsApp send error:", e);
       }
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        invoice_html: invoiceHtml,
+      JSON.stringify({
+        success: true,
+        invoice_pdf_url: invoicePdfUrl,
         email_sent: emailSent,
+        whatsapp_sent: whatsappSent,
         guest_email: booking.guest_email,
+        guest_phone: booking.guest_phone,
+        booking_code: booking.booking_code,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
