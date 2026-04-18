@@ -635,7 +635,7 @@ serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              target: booking.guest_phone,
+              target: phoneRecipient,
               message,
               url: invoicePdfUrl, // attaches the PDF
               filename: `Invoice-${booking.booking_code}.pdf`,
