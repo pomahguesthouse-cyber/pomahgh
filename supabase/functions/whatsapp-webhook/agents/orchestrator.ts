@@ -207,11 +207,18 @@ export async function orchestrate(
   const isManager = managerNumbers.some(m => m.phone === phone);
   const managerInfo = isManager ? managerNumbers.find(m => m.phone === phone)! : null;
 
-  // === IMAGE DETECTION: route guest image attachments to payment proof OCR ===
+  // === IMAGE DETECTION: route image attachments to payment proof OCR ===
+  // Guests: only when they have a pending booking (handled inside paymentProof).
+  // Admins/managers: always — admin foto = bukti transfer untuk booking apapun (caption = kode booking).
   const imageUrl = extractImageUrl(body);
-  if (imageUrl && !isManager) {
+  if (imageUrl) {
     const convId = await ensureConversation(supabase, session, phone);
-    return handlePaymentProof(supabase, phone, imageUrl, convId, managerNumbers, env, trace);
+    // Caption may come as `message` (Fonnte sends image caption inside the message field).
+    const caption = typeof message === 'string' ? message : null;
+    return handlePaymentProof(supabase, phone, imageUrl, convId, managerNumbers, env, trace, {
+      submittedByManager: isManager ? managerInfo : null,
+      caption,
+    });
   }
 
   // === PAYMENT APPROVAL (manager YA/TIDAK reply ke notifikasi bukti transfer) ===

@@ -58,6 +58,41 @@ async function findPendingBooking(
   return data && data.length > 0 ? (data[0] as PendingBookingRow) : null;
 }
 
+/** Extract a PMH-XXXXXX booking code from a free-text caption (e.g. admin caption). */
+export function extractBookingCodeFromText(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const m = text.match(/PMH-[A-Z0-9]{6}/i);
+  return m ? m[0].toUpperCase() : null;
+}
+
+/** Find booking by explicit booking_code (used for admin-submitted proofs). */
+async function findBookingByCode(
+  supabase: SupabaseClient,
+  bookingCode: string,
+): Promise<PendingBookingRow | null> {
+  const { data } = await supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out')
+    .eq('booking_code', bookingCode)
+    .limit(1)
+    .maybeSingle();
+  return data ? (data as PendingBookingRow) : null;
+}
+
+/** Find the most recent pending-payment booking across the whole hotel (admin fallback). */
+async function findLatestPendingBookingAnywhere(
+  supabase: SupabaseClient,
+): Promise<PendingBookingRow | null> {
+  const { data } = await supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out')
+    .in('payment_status', ['pending', 'unpaid'])
+    .in('status', ['pending_payment', 'confirmed'])
+    .order('created_at', { ascending: false })
+    .limit(1);
+  return data && data.length > 0 ? (data[0] as PendingBookingRow) : null;
+}
+
 /** Download image and convert to base64 data URL */
 async function fetchImageAsDataUrl(url: string): Promise<string | null> {
   try {
@@ -192,7 +227,11 @@ async function extractWithVision(imageDataUrl: string): Promise<PaymentProofExtr
 const formatRp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
 /**
- * Main handler — extracts proof, matches booking, notifies managers, replies to guest.
+ * Main handler — extracts proof, matches booking, notifies managers, replies to sender.
+ *
+ * If `submittedByManager` is provided, the proof is treated as admin-submitted:
+ *   - Booking lookup uses caption (booking code) → fallback latest pending hotel-wide
+ *   - OCR result is ALWAYS auto-approved (admin is trusted, no YA/TIDAK loop)
  */
 export async function handlePaymentProof(
   supabase: SupabaseClient,
@@ -202,25 +241,58 @@ export async function handlePaymentProof(
   managerNumbers: ManagerInfo[],
   env: EnvConfig,
   trace?: TraceContext,
+  options?: { submittedByManager?: ManagerInfo | null; caption?: string | null },
 ): Promise<Response> {
-  console.log(`🧾 Payment proof handler: phone=${phone}, image=${imageUrl.substring(0, 80)}`);
-  await logMessage(supabase, conversationId, 'user', `[Image attached] ${imageUrl}`);
+  const submittedByManager = options?.submittedByManager ?? null;
+  const caption = options?.caption ?? null;
+  const isAdminSubmission = !!submittedByManager;
+
+  console.log(`🧾 Payment proof handler: phone=${phone}, image=${imageUrl.substring(0, 80)}, admin=${isAdminSubmission}`);
+  await logMessage(supabase, conversationId, 'user', `[Image attached${isAdminSubmission ? ' by admin' : ''}] ${imageUrl}${caption ? ` | caption: ${caption}` : ''}`);
 
   logAgentDecision(supabase, {
     trace_id: trace?.traceId, conversation_id: conversationId, phone_number: phone,
-    from_agent: 'orchestrator', to_agent: 'payment_proof', reason: 'image_with_pending_payment',
+    from_agent: 'orchestrator', to_agent: 'payment_proof',
+    reason: isAdminSubmission ? 'admin_payment_proof_upload' : 'image_with_pending_payment',
   });
 
   // 1. Find matching booking
-  const booking = await findPendingBooking(supabase, phone);
-  if (!booking) {
-    // No pending booking — soft acknowledge
-    const reply = 'Terima kasih sudah mengirim gambar 🙏 Namun kami belum menemukan booking aktif atas nomor ini. Mohon hubungi admin atau buat booking dulu ya.';
-    await sendWhatsApp(phone, reply, env.fonnteApiKey);
-    await logMessage(supabase, conversationId, 'assistant', reply);
-    return new Response(JSON.stringify({ status: 'no_pending_booking' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  let booking: PendingBookingRow | null = null;
+  if (isAdminSubmission) {
+    // Admin: prefer caption booking code, then fall back to latest pending in the hotel
+    const codeFromCaption = extractBookingCodeFromText(caption);
+    if (codeFromCaption) {
+      booking = await findBookingByCode(supabase, codeFromCaption);
+      if (!booking) {
+        const reply = `Booking *${codeFromCaption}* tidak ditemukan. Mohon cek kode booking di caption foto.`;
+        await sendWhatsApp(phone, reply, env.fonnteApiKey);
+        await logMessage(supabase, conversationId, 'assistant', reply);
+        return new Response(JSON.stringify({ status: 'admin_booking_not_found', code: codeFromCaption }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      booking = await findLatestPendingBookingAnywhere(supabase);
+      if (!booking) {
+        const reply = 'Tidak ada booking pending yang menunggu pembayaran. Sertakan kode booking (PMH-XXXXXX) di caption foto untuk booking tertentu.';
+        await sendWhatsApp(phone, reply, env.fonnteApiKey);
+        await logMessage(supabase, conversationId, 'assistant', reply);
+        return new Response(JSON.stringify({ status: 'admin_no_pending_booking' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+  } else {
+    booking = await findPendingBooking(supabase, phone);
+    if (!booking) {
+      // No pending booking — soft acknowledge
+      const reply = 'Terima kasih sudah mengirim gambar 🙏 Namun kami belum menemukan booking aktif atas nomor ini. Mohon hubungi admin atau buat booking dulu ya.';
+      await sendWhatsApp(phone, reply, env.fonnteApiKey);
+      await logMessage(supabase, conversationId, 'assistant', reply);
+      return new Response(JSON.stringify({ status: 'no_pending_booking' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   // 2. Download + OCR (run in parallel-friendly sequence)
@@ -251,7 +323,7 @@ export async function handlePaymentProof(
       reference_number: extraction?.reference_number ?? null,
       notes: extraction?.notes ?? null,
       raw_extraction: extraction ?? null,
-      source: 'whatsapp',
+      source: isAdminSubmission ? 'whatsapp_admin' : 'whatsapp',
       status: 'pending',
     });
   } catch (e) {
@@ -280,11 +352,11 @@ export async function handlePaymentProof(
       matchStatus = `✅ *MATCH* — Nominal sesuai (${formatRp(extraction.amount)} vs ${formatRp(booking.total_price)})`;
       matchEmoji = '✅';
 
-      // Auto-approve if enabled & confidence high enough
+      // Auto-approve if enabled & confidence high enough — OR if submitted by admin
       const confidenceScore = extraction.confidence === 'high' ? 95
         : extraction.confidence === 'medium' ? 75
         : 50;
-      if (autoVerifyEnabled && confidenceScore >= confidenceThreshold) {
+      if (isAdminSubmission || (autoVerifyEnabled && confidenceScore >= confidenceThreshold)) {
         autoApproved = true;
         await supabase
           .from('bookings')
@@ -295,9 +367,9 @@ export async function handlePaymentProof(
             updated_at: new Date().toISOString(),
           })
           .eq('id', booking.id);
-        // Mark proof row as approved (will be inserted below — update via booking_id)
-        // Note: insert happens above; here we'll patch latest pending after insert finishes.
-        matchStatus = `🎉 *AUTO-APPROVED* (confidence ${extraction.confidence}, threshold ${confidenceThreshold}%) — booking otomatis di-set LUNAS.`;
+        matchStatus = isAdminSubmission
+          ? `🎉 *AUTO-APPROVED (oleh ${submittedByManager!.name})* — booking otomatis di-set LUNAS.`
+          : `🎉 *AUTO-APPROVED* (confidence ${extraction.confidence}, threshold ${confidenceThreshold}%) — booking otomatis di-set LUNAS.`;
       }
     } else if (extraction.amount) {
       matchStatus = `⚠️ *MISMATCH* — Nominal: ${formatRp(extraction.amount)} (booking: ${formatRp(booking.total_price)})`;
@@ -308,6 +380,23 @@ export async function handlePaymentProof(
   } else if (extraction) {
     matchStatus = '❌ *Bukan bukti transfer* — gambar tidak terdeteksi sebagai struk';
     matchEmoji = '❌';
+  }
+
+  // Admin override: if admin submitted and OCR didn't auto-approve (mismatch / unreadable amount),
+  // still trust the admin and mark as paid. Admin is authoritative for payment confirmation.
+  if (isAdminSubmission && !autoApproved && extraction) {
+    autoApproved = true;
+    await supabase
+      .from('bookings')
+      .update({
+        payment_status: 'paid',
+        status: 'confirmed',
+        payment_amount: extraction.amount ?? booking.total_price,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', booking.id);
+    matchStatus = `🎉 *AUTO-APPROVED (oleh admin ${submittedByManager!.name})* — pembayaran dikonfirmasi manual oleh admin (OCR tidak match).`;
+    matchEmoji = '✅';
   }
 
   const extractionLines: string[] = [];
@@ -342,20 +431,24 @@ ${autoApproved ? '_Pembayaran sudah otomatis dikonfirmasi. Tidak perlu balas._' 
     managers.map(m => sendWhatsApp(m.phone, managerMsg, env.fonnteApiKey)),
   );
 
-  // 6. Acknowledge guest (different copy when auto-approved)
-  let guestReply: string;
-  if (autoApproved) {
-    guestReply = `🎉 Halo *${booking.guest_name}*!\n\nPembayaran untuk booking *${booking.booking_code}* sebesar *${formatRp(extraction!.amount!)}* sudah *DIKONFIRMASI LUNAS* secara otomatis ✅\n\nTerima kasih, kami tunggu kedatangan Anda 🙏`;
+  // 6. Acknowledge sender (admin gets short receipt; guest gets full message)
+  let senderReply: string;
+  if (isAdminSubmission) {
+    senderReply = autoApproved
+      ? `✅ Bukti transfer untuk *${booking.booking_code}* (${booking.guest_name}) berhasil dikonfirmasi LUNAS.\n💰 ${formatRp(extraction?.amount ?? booking.total_price)}\n📨 Booking order otomatis dikirim ke WA tamu.`
+      : `⚠️ Foto diterima untuk booking *${booking.booking_code}* (${booking.guest_name}) tapi OCR gagal mengekstrak data. Mohon cek manual di dashboard.`;
+  } else if (autoApproved) {
+    senderReply = `🎉 Halo *${booking.guest_name}*!\n\nPembayaran untuk booking *${booking.booking_code}* sebesar *${formatRp(extraction!.amount!)}* sudah *DIKONFIRMASI LUNAS* secara otomatis ✅\n\nTerima kasih, kami tunggu kedatangan Anda 🙏`;
   } else if (extraction?.is_payment_proof && extraction.amount && extraction.amount >= booking.total_price * 0.95) {
-    guestReply = `Terima kasih *${booking.guest_name}* 🙏\n\nBukti transfer sebesar *${formatRp(extraction.amount)}* untuk booking *${booking.booking_code}* sudah kami terima. Tim kami sedang memverifikasi, mohon ditunggu sebentar ya ✨`;
+    senderReply = `Terima kasih *${booking.guest_name}* 🙏\n\nBukti transfer sebesar *${formatRp(extraction.amount)}* untuk booking *${booking.booking_code}* sudah kami terima. Tim kami sedang memverifikasi, mohon ditunggu sebentar ya ✨`;
   } else if (extraction?.is_payment_proof) {
-    guestReply = `Terima kasih, bukti transfer sudah kami terima 🙏\n\nUntuk booking *${booking.booking_code}* — tim kami akan cek dan konfirmasi via WhatsApp segera. Mohon ditunggu ya 🙏`;
+    senderReply = `Terima kasih, bukti transfer sudah kami terima 🙏\n\nUntuk booking *${booking.booking_code}* — tim kami akan cek dan konfirmasi via WhatsApp segera. Mohon ditunggu ya 🙏`;
   } else {
-    guestReply = `Terima kasih sudah mengirim gambar 🙏\n\nTim kami akan cek dan menghubungi Anda kembali untuk konfirmasi pembayaran booking *${booking.booking_code}* ya.`;
+    senderReply = `Terima kasih sudah mengirim gambar 🙏\n\nTim kami akan cek dan menghubungi Anda kembali untuk konfirmasi pembayaran booking *${booking.booking_code}* ya.`;
   }
 
-  await sendWhatsApp(phone, guestReply, env.fonnteApiKey);
-  await logMessage(supabase, conversationId, 'assistant', guestReply);
+  await sendWhatsApp(phone, senderReply, env.fonnteApiKey);
+  await logMessage(supabase, conversationId, 'assistant', senderReply);
 
   // 7. Jika auto-approved → kirim booking order (PDF invoice) ke WA tamu + tandai proof approved
   let bookingOrderSent = false;
