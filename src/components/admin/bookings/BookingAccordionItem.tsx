@@ -180,6 +180,11 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
             </Tooltip>
             <div className="flex flex-col gap-0.5 items-center justify-center">
               {roomGroups.map((g, i) => (
+                <div key={i} className="leading-tight font-medium">{g.numbers.length}</div>
+              ))}
+            </div>
+            <div className="flex flex-col gap-0.5 items-center justify-center">
+              {roomGroups.map((g, i) => (
                 <div key={i} className="flex items-center gap-1 leading-tight">
                   {isOverbooked && i === 0 && (
                     <Tooltip>
