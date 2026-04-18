@@ -294,8 +294,8 @@ export const CreateBookingDialog = ({
         totalPrice = selectedRooms.reduce((sum, room) => sum + room.pricePerNight * totalNights, 0);
       }
 
-      // Call new edge function for inline payment
-      const { data: result, error: paymentError } = await supabase.functions.invoke('create-booking-with-payment', {
+      // Manual booking — direct insert via admin-create-booking (no payment gateway)
+      const { data: result, error: invokeError } = await supabase.functions.invoke('admin-create-booking', {
         body: {
           guest_name: formData.guest_name,
           guest_email: formData.guest_email,
@@ -313,37 +313,21 @@ export const CreateBookingDialog = ({
           booking_source: bookingSource,
           ota_name: bookingSource === "ota" ? otaName : null,
           other_source: bookingSource === "other" ? otherSource : null,
-          user_id: user?.id || null
+          payment_status: "pending",
+          user_id: user?.id || null,
         }
       });
 
-      if (paymentError) throw paymentError;
+      if (invokeError) throw invokeError;
+      if (!result?.success) throw new Error(result?.error || "Gagal membuat booking");
 
-      if (!result?.success) {
-        throw new Error(result?.error || "Failed to create booking with payment");
-      }
-
-      // Set created booking and show payment dialog
-      setCreatedBooking({
-        id: result.booking.id,
-        booking_code: result.booking.booking_code,
-        guest_name: formData.guest_name,
-        guest_email: formData.guest_email,
-        va_number: result.booking.va_number,
-        total_price: result.booking.total_price,
-        payment_expires_at: result.booking.payment_expires_at,
-        room_name: selectedRooms.map(r => r.roomName).join(', '),
-        check_in: format(checkIn, "yyyy-MM-dd"),
-        check_out: format(checkOut, "yyyy-MM-dd"),
-        total_nights: totalNights
-      });
-
+      toast.success(`Booking ${result.booking.booking_code} berhasil dibuat (status: pending payment)`);
       setShowConfirmation(false);
-      setShowPaymentDialog(true);
-      
+      onOpenChange(false);
+
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-      
+      queryClient.invalidateQueries({ queryKey: ["calendar-bookings"] });
     } catch (error: any) {
       console.error("Create booking error:", error);
       toast.error(error.message || "Gagal membuat booking");
