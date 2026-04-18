@@ -145,6 +145,8 @@ export const InvoiceSettingsPanel = () => {
         {(isUpdating || isUpdatingHotel) && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
         Simpan Pengaturan
       </Button>
+
+      <TestSendInvoiceCard />
     </div>
   );
 };
