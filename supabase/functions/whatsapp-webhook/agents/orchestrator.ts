@@ -19,6 +19,7 @@ import { handlePayment, isPaymentMessage } from './payment.ts';
 import { handlePaymentProof, extractImageUrl } from './paymentProof.ts';
 import { handlePaymentApproval, isPaymentApprovalReply } from './paymentApproval.ts';
 import { handlePriceListQuestion, isGenericPriceQuestion } from './priceList.ts';
+import { handleRoomPhotoRequest, isRoomPhotoRequest } from './roomBrochure.ts';
 import { setAgentConfigs, isAgentActive, getEscalationTarget, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 
 /**
@@ -301,6 +302,20 @@ export async function orchestrate(
       reason: 'name_collection', intent: 'greeting',
     });
     return nameResult;
+  }
+
+  // === FAST PATH: Room photo / brochure requests ===
+  // "ada foto kamar?", "minta brosur", "ada gambar kamarnya?" → langsung kirim PDF brosur
+  if (isRoomPhotoRequest(normalizedMessage)) {
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+      from_agent: 'orchestrator', to_agent: 'room_brochure',
+      reason: 'room_photo_request_fastpath', intent: 'room_photo_request',
+    });
+    return handleRoomPhotoRequest(
+      supabase, session as WhatsAppSession, phone, String(message),
+      conversationId!, personaName, env, trace,
+    );
   }
 
   // === FAST PATH: Generic price-list questions ===
