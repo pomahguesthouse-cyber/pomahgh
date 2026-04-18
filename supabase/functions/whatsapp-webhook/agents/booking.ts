@@ -140,7 +140,54 @@ export async function handleGuestBookingFlow(
   const stuckPatterns = /mohon\s+tunggu|akan\s+(saya\s+)?bantu\s+cek|saya\s+cek(kan)?\s+dulu|sebentar\s+ya/i;
   const hasToolCalls = aiMessage?.tool_calls && aiMessage.tool_calls.length > 0;
 
-  if (!hasToolCalls && stuckPatterns.test(aiResponse)) {
+  // Availability hallucination guard: user asking about availability/dates and AI claims full/available WITHOUT calling tool
+  const userAsksAvailability = /\b(tersedia|available|kosong|ready|ada\s+kamar|cek\s+kamar|booking|pesan\s+kamar|nginap|menginap|check[\s-]?in|checkin|tanggal|besok|lusa|minggu\s+depan|tgl|malam\s+ini)\b/i.test(combinedMessage);
+  const aiClaimsAvailability = /\b(full|penuh|habis|tidak\s+tersedia|tidak\s+ada\s+kamar|sold\s*out|fully\s*booked|tersedia|masih\s+ada|kosong|ready)\b/i.test(aiResponse);
+  const isAvailabilityHallucination = !hasToolCalls && userAsksAvailability && aiClaimsAvailability;
+
+  if (isAvailabilityHallucination) {
+    console.log("⚠️ AVAILABILITY HALLUCINATION DETECTED - AI claimed availability without check_availability tool");
+    await logMessage(supabase, conversationId, 'system', `[Availability guard triggered: AI said "${aiResponse.substring(0, 80)}..." without calling check_availability]`);
+    const guardMessages = [
+      ...messages,
+      { role: 'assistant', content: aiResponse },
+      { role: 'user', content: `[SYSTEM CRITICAL: Kamu menjawab tentang ketersediaan kamar TANPA memanggil tool check_availability. INI DILARANG KERAS karena bisa salah info ke tamu. SEKARANG WAJIB panggil tool check_availability dengan tanggal yang user sebutkan. Jangan balas text - LANGSUNG panggil tool check_availability!]` }
+    ];
+    const guardResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
+      body: JSON.stringify({ messages: guardMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext }),
+    });
+    if (guardResponse.ok) {
+      const guardData = await guardResponse.json();
+      const guardMessage = guardData.choices?.[0]?.message;
+      if (guardMessage?.tool_calls?.length > 0) {
+        console.log(`✅ Availability guard triggered ${guardMessage.tool_calls.length} tool call(s)`);
+        const guardToolResults = await executeToolCalls(guardMessage.tool_calls, env, 'avail-guard', supabase, trace?.traceId, conversationId);
+        const finalGuardResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
+          body: JSON.stringify({
+            messages: [
+              ...guardMessages,
+              { role: 'assistant', content: guardMessage.content, tool_calls: guardMessage.tool_calls },
+              ...guardToolResults,
+            ],
+            session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext,
+          }),
+        });
+        if (finalGuardResponse.ok) {
+          const finalGuardData = await finalGuardResponse.json();
+          const guardContent = finalGuardData.choices?.[0]?.message?.content;
+          if (guardContent) aiResponse = guardContent;
+        }
+      } else if (guardMessage?.content) {
+        aiResponse = guardMessage.content;
+      }
+    }
+  }
+
+  if (!hasToolCalls && !isAvailabilityHallucination && stuckPatterns.test(aiResponse)) {
     console.log("⚠️ STUCK RESPONSE DETECTED - retrying...");
     // Log retry attempt for audit trail
     await logMessage(supabase, conversationId, 'system', `[Stuck retry triggered: AI said "${aiResponse.substring(0, 80)}..." without calling tools]`);
