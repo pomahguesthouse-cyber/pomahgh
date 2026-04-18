@@ -61,6 +61,48 @@ interface HotelSettingsRow {
   invoice_logo_url: string | null;
 }
 
+interface InvoiceTemplateRow {
+  invoice_primary_color: string | null;
+  invoice_secondary_color: string | null;
+  font_family: string | null;
+  show_logo: boolean | null;
+  show_bank_accounts: boolean | null;
+  show_qris: boolean | null;
+  show_breakdown: boolean | null;
+  footer_text: string | null;
+  custom_notes: string | null;
+  qris_image_url: string | null;
+}
+
+/** Convert "#4a9bd9" → [74, 155, 217]. Falls back to default on parse error. */
+function hexToRgb(hex: string | null | undefined, fallback: [number, number, number]): [number, number, number] {
+  if (!hex || !/^#?[0-9a-fA-F]{6}$/.test(hex.replace('#', ''))) return fallback;
+  const clean = hex.replace('#', '');
+  return [
+    parseInt(clean.slice(0, 2), 16),
+    parseInt(clean.slice(2, 4), 16),
+    parseInt(clean.slice(4, 6), 16),
+  ];
+}
+
+/** Fetch image as base64 data URL for embedding in jsPDF. */
+async function fetchImageDataUrl(url: string): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const resp = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!resp.ok) return null;
+    const ct = resp.headers.get('content-type') || 'image/png';
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return `data:${ct};base64,${btoa(binary)}`;
+  } catch {
+    return null;
+  }
+}
+
 const formatRupiah = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
 
 /**
@@ -73,6 +115,9 @@ function buildInvoicePdf(args: {
   addons: BookingAddonItem[];
   bankAccounts: BankAccountItem[];
   settings: HotelSettingsRow;
+  template: InvoiceTemplateRow | null;
+  logoDataUrl: string | null;
+  qrisDataUrl: string | null;
   totalWithCode: number;
   uniqueCode: number;
   showPaidStamp: boolean;
@@ -80,17 +125,29 @@ function buildInvoicePdf(args: {
   paymentMethodLabel: string;
 }): Uint8Array {
   const {
-    booking, rooms, addons, bankAccounts, settings,
+    booking, rooms, addons, bankAccounts, settings, template,
+    logoDataUrl, qrisDataUrl,
     totalWithCode, uniqueCode, showPaidStamp, transactionStatus, paymentMethodLabel,
   } = args;
+
+  // Resolve template config (with safe fallbacks)
+  const fontFamily = (template?.font_family === 'times' || template?.font_family === 'courier')
+    ? template.font_family
+    : 'helvetica';
+  const showLogo = template?.show_logo !== false;
+  const showBank = template?.show_bank_accounts !== false;
+  const showQris = !!template?.show_qris && !!qrisDataUrl;
+  const showBreakdown = template?.show_breakdown !== false;
+  const customNotes = template?.custom_notes || '';
+  const footerCustom = template?.footer_text || '';
 
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const marginX = 40;
 
-  // Brand colors
-  const primary: [number, number, number] = [74, 155, 217]; // #4a9bd9
-  const secondary: [number, number, number] = [232, 244, 253]; // #e8f4fd
+  // Brand colors from template
+  const primary: [number, number, number] = hexToRgb(template?.invoice_primary_color, [74, 155, 217]);
+  const secondary: [number, number, number] = hexToRgb(template?.invoice_secondary_color, [232, 244, 253]);
   const dark: [number, number, number] = [34, 34, 34];
   const muted: [number, number, number] = [120, 120, 120];
 
@@ -98,34 +155,42 @@ function buildInvoicePdf(args: {
   doc.setFillColor(...primary);
   doc.rect(0, 0, 5, 90, 'F');
 
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontFamily, 'bold');
   doc.setFontSize(16);
   doc.setTextColor(...dark);
   doc.text('BUKTI PEMESANAN (BOOKING ORDER)', marginX, 40);
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...muted);
   const createdAt = format(new Date(booking.created_at), "d MMM yyyy, HH:mm", { locale: idLocale });
   doc.text(`Booking ID: #${booking.booking_code}`, marginX, 58);
   doc.text(`Tanggal: ${createdAt} WIB`, marginX, 72);
 
-  // Hotel name (top right)
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(...primary);
+  // Hotel name (top right) — or logo if enabled & available
   const hotelName = settings.hotel_name || 'Pomah Guesthouse';
-  doc.text(hotelName, pageWidth - marginX, 40, { align: 'right' });
+  if (showLogo && logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, 'PNG', pageWidth - marginX - 80, 25, 80, 40, undefined, 'FAST');
+    } catch (e) {
+      console.warn('Failed to embed invoice logo:', e);
+    }
+  } else {
+    doc.setFont(fontFamily, 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...primary);
+    doc.text(hotelName, pageWidth - marginX, 40, { align: 'right' });
+  }
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...muted);
   if (settings.address) {
     const addrLine = `${settings.address}${settings.city ? `, ${settings.city}` : ''}`;
-    doc.text(addrLine, pageWidth - marginX, 56, { align: 'right' });
+    doc.text(addrLine, pageWidth - marginX, 78, { align: 'right' });
   }
   if (settings.phone_primary) {
-    doc.text(`Telp: ${settings.phone_primary}`, pageWidth - marginX, 70, { align: 'right' });
+    doc.text(`Telp: ${settings.phone_primary}`, pageWidth - marginX, 90, { align: 'right' });
   }
 
   // Helper to draw a section header bar
@@ -134,7 +199,7 @@ function buildInvoicePdf(args: {
     doc.rect(marginX, y, pageWidth - marginX * 2, 20, 'F');
     doc.setFillColor(...primary);
     doc.rect(marginX, y, 4, 20, 'F');
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontFamily, 'bold');
     doc.setFontSize(10);
     doc.setTextColor(...dark);
     doc.text(label, marginX + 12, y + 14);
@@ -145,13 +210,13 @@ function buildInvoicePdf(args: {
 
   // === DETAIL PEMBAYARAN ===
   y = drawSectionHeader('DETAIL PEMBAYARAN', y);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...muted);
   doc.text('Booking ID', marginX, y);
   doc.text('Metode', marginX + 180, y);
   doc.text('Status', marginX + 360, y);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontFamily, 'bold');
   doc.setFontSize(10);
   doc.setTextColor(...dark);
   doc.text(booking.booking_code, marginX, y + 14);
@@ -161,7 +226,7 @@ function buildInvoicePdf(args: {
 
   // === DATA PEMESAN ===
   y = drawSectionHeader('DATA PEMESAN', y);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...dark);
   doc.text(`Nama       : ${booking.guest_name}`, marginX, y);
@@ -178,64 +243,76 @@ function buildInvoicePdf(args: {
   y = drawSectionHeader('DETAIL MENGINAP', y);
   const checkInDate = format(new Date(booking.check_in), "EEEE, dd MMMM yyyy", { locale: idLocale });
   const checkOutDate = format(new Date(booking.check_out), "EEEE, dd MMMM yyyy", { locale: idLocale });
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontFamily, 'bold');
   doc.text(`Check-in  : ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}`, marginX, y);
   y += 14;
   doc.text(`Check-out : ${checkOutDate}${booking.check_out_time ? ` (${booking.check_out_time})` : ''}`, marginX, y);
   y += 14;
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.text(`Durasi    : ${booking.total_nights} malam`, marginX, y);
   y += 14;
   doc.text(`Tamu      : ${booking.num_guests} orang`, marginX, y);
   y += 18;
 
-  // === DETAIL PEMESANAN (TABLE) ===
-  y = drawSectionHeader('DETAIL PEMESANAN', y);
-  const tableRows: (string | number)[][] = [];
-  let idx = 1;
-  rooms.forEach((r) => {
-    const subtotal = r.price_per_night * booking.total_nights;
-    tableRows.push([
-      idx++,
-      'Akomodasi',
-      `${hotelName} - ${r.rooms?.name || booking.rooms?.name || 'Kamar'}${r.room_number ? ` #${r.room_number}` : ''}`,
-      `${booking.total_nights} mlm`,
-      formatRupiah(r.price_per_night),
-      formatRupiah(subtotal),
-    ]);
-  });
-  addons.forEach((a) => {
-    tableRows.push([
-      idx++,
-      'Add-on',
-      a.room_addons?.name || 'Layanan tambahan',
-      `${a.quantity}x`,
-      formatRupiah(a.unit_price),
-      formatRupiah(a.total_price),
-    ]);
-  });
+  // === DETAIL PEMESANAN (TABLE or SUMMARY) ===
+  if (showBreakdown) {
+    y = drawSectionHeader('DETAIL PEMESANAN', y);
+    const tableRows: (string | number)[][] = [];
+    let idx = 1;
+    rooms.forEach((r) => {
+      const subtotal = r.price_per_night * booking.total_nights;
+      tableRows.push([
+        idx++,
+        'Akomodasi',
+        `${hotelName} - ${r.rooms?.name || booking.rooms?.name || 'Kamar'}${r.room_number ? ` #${r.room_number}` : ''}`,
+        `${booking.total_nights} mlm`,
+        formatRupiah(r.price_per_night),
+        formatRupiah(subtotal),
+      ]);
+    });
+    addons.forEach((a) => {
+      tableRows.push([
+        idx++,
+        'Add-on',
+        a.room_addons?.name || 'Layanan tambahan',
+        `${a.quantity}x`,
+        formatRupiah(a.unit_price),
+        formatRupiah(a.total_price),
+      ]);
+    });
 
-  autoTable(doc, {
-    startY: y,
-    margin: { left: marginX, right: marginX },
-    head: [['No', 'Jenis', 'Deskripsi', 'Jml', 'Harga Satuan', 'Total']],
-    body: tableRows,
-    headStyles: { fillColor: primary, textColor: 255, fontSize: 9, halign: 'center' },
-    bodyStyles: { fontSize: 9, textColor: 50 },
-    columnStyles: {
-      0: { cellWidth: 28, halign: 'center' },
-      1: { cellWidth: 70 },
-      2: { cellWidth: 'auto' },
-      3: { cellWidth: 50, halign: 'center' },
-      4: { cellWidth: 80, halign: 'right' },
-      5: { cellWidth: 80, halign: 'right' },
-    },
-    foot: [
-      ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
-      ['', '', '', '', 'JUMLAH BAYAR', formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)],
-    ],
-    footStyles: { fillColor: [245, 245, 245], textColor: dark, fontStyle: 'bold', fontSize: 9, halign: 'right' },
-  });
+    autoTable(doc, {
+      startY: y,
+      margin: { left: marginX, right: marginX },
+      head: [['No', 'Jenis', 'Deskripsi', 'Jml', 'Harga Satuan', 'Total']],
+      body: tableRows,
+      headStyles: { fillColor: primary, textColor: 255, fontSize: 9, halign: 'center' },
+      bodyStyles: { fontSize: 9, textColor: 50 },
+      columnStyles: {
+        0: { cellWidth: 28, halign: 'center' },
+        1: { cellWidth: 70 },
+        2: { cellWidth: 'auto' },
+        3: { cellWidth: 50, halign: 'center' },
+        4: { cellWidth: 80, halign: 'right' },
+        5: { cellWidth: 80, halign: 'right' },
+      },
+      foot: [
+        ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
+        ['', '', '', '', 'JUMLAH BAYAR', formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)],
+      ],
+      footStyles: { fillColor: [245, 245, 245], textColor: dark, fontStyle: 'bold', fontSize: 9, halign: 'right' },
+    });
+  } else {
+    // Compact summary (no breakdown)
+    y = drawSectionHeader('TOTAL PEMBAYARAN', y);
+    doc.setFont(fontFamily, 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(...primary);
+    doc.text(formatRupiah(showPaidStamp ? booking.total_price : totalWithCode), pageWidth / 2, y + 10, { align: 'center' });
+    y += 30;
+    // @ts-expect-error -- ensure lastAutoTable equivalent
+    doc.lastAutoTable = { finalY: y };
+  }
 
   // After table position
   // @ts-expect-error -- autoTable adds lastAutoTable to doc
@@ -246,25 +323,25 @@ function buildInvoicePdf(args: {
     doc.setDrawColor(46, 125, 50);
     doc.setLineWidth(3);
     doc.roundedRect(pageWidth / 2 - 60, y, 120, 36, 4, 4, 'S');
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontFamily, 'bold');
     doc.setFontSize(22);
     doc.setTextColor(46, 125, 50);
     doc.text('PAID', pageWidth / 2, y + 25, { align: 'center' });
     y += 56;
-  } else if (bankAccounts.length > 0) {
+  } else if (showBank && bankAccounts.length > 0) {
     // === INSTRUKSI PEMBAYARAN ===
     if (y > 700) { doc.addPage(); y = 50; }
     y = drawSectionHeader('INSTRUKSI PEMBAYARAN', y);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fontFamily, 'normal');
     doc.setFontSize(10);
     doc.setTextColor(...dark);
     doc.text('Silakan transfer sebesar:', marginX, y);
     y += 16;
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontFamily, 'bold');
     doc.setFontSize(13);
     doc.setTextColor(...primary);
     doc.text(formatRupiah(totalWithCode), marginX, y);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fontFamily, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(...muted);
     doc.text(`(termasuk kode unik 3 digit: ${uniqueCode})`, marginX + 130, y);
@@ -283,12 +360,12 @@ function buildInvoicePdf(args: {
       doc.setFillColor(...primary);
       doc.rect(marginX, y, 3, 50, 'F');
 
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fontFamily, 'bold');
       doc.setFontSize(11);
       doc.setTextColor(...dark);
       doc.text(bank.bank_name, marginX + 12, y + 16);
 
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(fontFamily, 'normal');
       doc.setFontSize(10);
       doc.text(`No. Rek: ${bank.account_number}`, marginX + 12, y + 30);
       doc.setTextColor(...muted);
@@ -297,7 +374,7 @@ function buildInvoicePdf(args: {
     });
 
     y += 6;
-    doc.setFont('helvetica', 'italic');
+    doc.setFont(fontFamily, 'italic');
     doc.setFontSize(8);
     doc.setTextColor(...muted);
     const tip = 'Tip: gunakan nominal persis (termasuk kode unik) agar pembayaran cepat terverifikasi.';
@@ -305,16 +382,44 @@ function buildInvoicePdf(args: {
     y += 14;
   }
 
+  // === QRIS ===
+  if (!showPaidStamp && showQris && qrisDataUrl) {
+    if (y > 620) { doc.addPage(); y = 50; }
+    y = drawSectionHeader('SCAN QRIS', y);
+    try {
+      doc.addImage(qrisDataUrl, 'PNG', pageWidth / 2 - 70, y, 140, 140, undefined, 'FAST');
+      y += 148;
+      doc.setFont(fontFamily, 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(...muted);
+      doc.text('Scan QRIS di atas untuk membayar dengan e-wallet / mobile banking.', pageWidth / 2, y, { align: 'center' });
+      y += 14;
+    } catch (e) {
+      console.warn('Failed to embed QRIS:', e);
+    }
+  }
+
+  // === CUSTOM NOTES ===
+  if (customNotes) {
+    if (y > 760) { doc.addPage(); y = 50; }
+    doc.setFont(fontFamily, 'italic');
+    doc.setFontSize(9);
+    doc.setTextColor(...muted);
+    const noteLines = doc.splitTextToSize(customNotes, pageWidth - marginX * 2);
+    doc.text(noteLines, marginX, y);
+    y += noteLines.length * 12 + 6;
+  }
+
   // === FOOTER ===
   const footerY = doc.internal.pageSize.getHeight() - 30;
   doc.setFillColor(...primary);
   doc.rect(0, footerY - 6, pageWidth, 30, 'F');
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(fontFamily, 'normal');
   doc.setFontSize(8);
   doc.setTextColor(255, 255, 255);
   const footerText = `${hotelName}${settings.email_primary ? ` • ${settings.email_primary}` : ''}${settings.phone_primary ? ` • ${settings.phone_primary}` : ''}`;
   doc.text(footerText, pageWidth / 2, footerY + 8, { align: 'center' });
-  doc.text('Terima kasih atas kepercayaan Anda. Syarat dan ketentuan berlaku.', pageWidth / 2, footerY + 18, { align: 'center' });
+  doc.text(footerCustom || 'Terima kasih atas kepercayaan Anda. Syarat dan ketentuan berlaku.', pageWidth / 2, footerY + 18, { align: 'center' });
 
   return new Uint8Array(doc.output('arraybuffer'));
 }
@@ -342,12 +447,19 @@ serve(async (req) => {
 
     if (bookingError || !booking) throw new Error(bookingError?.message || "Booking not found");
 
-    // Fetch related
-    const [{ data: bookingRooms }, { data: hotelSettings, error: settingsError }, { data: bankAccounts }, { data: bookingAddons }] = await Promise.all([
+    // Fetch related (incl. invoice template)
+    const [
+      { data: bookingRooms },
+      { data: hotelSettings, error: settingsError },
+      { data: bankAccounts },
+      { data: bookingAddons },
+      { data: invoiceTemplate },
+    ] = await Promise.all([
       supabase.from("booking_rooms").select(`*, rooms (name)`).eq("booking_id", booking_id),
       supabase.from("hotel_settings").select("*").single(),
       supabase.from("bank_accounts").select("*").eq("is_active", true).order("display_order"),
       supabase.from("booking_addons").select(`*, room_addons (name, icon_name, price_type)`).eq("booking_id", booking_id),
+      supabase.from("invoice_templates").select("*").limit(1).maybeSingle(),
     ]);
 
     if (settingsError || !hotelSettings) throw new Error(settingsError?.message || "Hotel settings missing");
@@ -387,6 +499,14 @@ serve(async (req) => {
           price_per_night: booking.total_price / booking.total_nights,
         }];
 
+    // Pre-fetch logo + QRIS as data URLs (parallel)
+    const tpl = (invoiceTemplate || null) as InvoiceTemplateRow | null;
+    const logoUrl = hotelSettings.invoice_logo_url || hotelSettings.logo_url;
+    const [logoDataUrl, qrisDataUrl] = await Promise.all([
+      (tpl?.show_logo !== false) && logoUrl ? fetchImageDataUrl(logoUrl) : Promise.resolve(null),
+      tpl?.show_qris && tpl?.qris_image_url ? fetchImageDataUrl(tpl.qris_image_url) : Promise.resolve(null),
+    ]);
+
     // Generate PDF
     const pdfBytes = buildInvoicePdf({
       booking: booking as BookingRow,
@@ -394,6 +514,9 @@ serve(async (req) => {
       addons: (bookingAddons || []) as BookingAddonItem[],
       bankAccounts: (bankAccounts || []) as BankAccountItem[],
       settings: hotelSettings as HotelSettingsRow,
+      template: tpl,
+      logoDataUrl,
+      qrisDataUrl,
       totalWithCode,
       uniqueCode,
       showPaidStamp,

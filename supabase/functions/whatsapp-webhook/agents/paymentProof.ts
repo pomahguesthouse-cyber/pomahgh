@@ -205,16 +205,45 @@ export async function handlePaymentProof(
     .update({ payment_proof_url: imageUrl, updated_at: new Date().toISOString() })
     .eq('id', booking.id);
 
+  // 3b. Load template config for auto-verify behaviour
+  const { data: template } = await supabase
+    .from('invoice_templates')
+    .select('auto_verify_ocr, manual_review_mode, ocr_confidence_threshold, notify_guest_on_approve')
+    .limit(1)
+    .maybeSingle();
+
+  const autoVerifyEnabled = !!template?.auto_verify_ocr && !template?.manual_review_mode;
+  const confidenceThreshold = template?.ocr_confidence_threshold ?? 90;
+
   // 4. Build manager notification
   const hotelTime = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
   let matchStatus = '🔍 *Belum bisa diverifikasi otomatis*';
   let matchEmoji = '⚠️';
+  let autoApproved = false;
 
   if (extraction?.is_payment_proof) {
     if (extraction.amount && extraction.amount >= booking.total_price * 0.95) {
       // Within 5% tolerance (covers unique code variations)
       matchStatus = `✅ *MATCH* — Nominal sesuai (${formatRp(extraction.amount)} vs ${formatRp(booking.total_price)})`;
       matchEmoji = '✅';
+
+      // Auto-approve if enabled & confidence high enough
+      const confidenceScore = extraction.confidence === 'high' ? 95
+        : extraction.confidence === 'medium' ? 75
+        : 50;
+      if (autoVerifyEnabled && confidenceScore >= confidenceThreshold) {
+        autoApproved = true;
+        await supabase
+          .from('bookings')
+          .update({
+            payment_status: 'paid',
+            status: 'confirmed',
+            payment_amount: extraction.amount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', booking.id);
+        matchStatus = `🎉 *AUTO-APPROVED* (confidence ${extraction.confidence}, threshold ${confidenceThreshold}%) — booking otomatis di-set LUNAS.`;
+      }
     } else if (extraction.amount) {
       matchStatus = `⚠️ *MISMATCH* — Nominal: ${formatRp(extraction.amount)} (booking: ${formatRp(booking.total_price)})`;
       matchEmoji = '⚠️';
@@ -250,7 +279,7 @@ ${matchStatus}
 
 ⏰ ${hotelTime}
 
-_Balas *YA* / *OK* untuk konfirmasi pembayaran, atau *TIDAK* jika tidak match._`;
+${autoApproved ? '_Pembayaran sudah otomatis dikonfirmasi. Tidak perlu balas._' : '_Balas *YA* / *OK* untuk konfirmasi pembayaran, atau *TIDAK* jika tidak match._'}`;
 
   // 5. Send to all managers
   const managers = managerNumbers.length > 0 ? managerNumbers : [];
