@@ -17,6 +17,7 @@ import { handleGuestFAQ } from './faq.ts';
 import { handleComplaint, isComplaintMessage } from './complaint.ts';
 import { handlePayment, isPaymentMessage } from './payment.ts';
 import { handlePaymentProof, extractImageUrl } from './paymentProof.ts';
+import { handlePaymentApproval, isPaymentApprovalReply } from './paymentApproval.ts';
 import { setAgentConfigs, isAgentActive, getEscalationTarget, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 
 /**
@@ -211,6 +212,19 @@ export async function orchestrate(
   if (imageUrl && !isManager) {
     const convId = await ensureConversation(supabase, session, phone);
     return handlePaymentProof(supabase, phone, imageUrl, convId, managerNumbers, env, trace);
+  }
+
+  // === PAYMENT APPROVAL (manager YA/TIDAK reply ke notifikasi bukti transfer) ===
+  if (isManager && managerInfo) {
+    const approvalDecision = isPaymentApprovalReply(normalizedMessage);
+    if (approvalDecision) {
+      logAgentDecision(supabase, {
+        trace_id: trace?.traceId, phone_number: phone,
+        from_agent: 'orchestrator', to_agent: 'payment_approval',
+        reason: 'manager_yes_no_reply', intent: approvalDecision,
+      });
+      return handlePaymentApproval(supabase, phone, approvalDecision, managerInfo, managerNumbers, env);
+    }
   }
 
   // === PRICING AGENT: Price approval commands ===
