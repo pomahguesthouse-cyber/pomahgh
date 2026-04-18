@@ -28,12 +28,15 @@ export async function handleGetAllRooms(supabase: SupabaseClient) {
     promoMap.set(p.room_id, p);
   });
 
-  // Fetch extra bed add-ons for capacity info
-  const { data: extraBedAddons } = await supabase
+  // Fetch ALL active add-ons (not just extra bed) for capacity + pricing info
+  const { data: allAddons } = await supabase
     .from("room_addons")
-    .select("room_id, extra_capacity, max_quantity")
-    .eq("is_active", true)
-    .ilike("name", "%extra bed%");
+    .select("room_id, name, price, extra_capacity, max_quantity")
+    .eq("is_active", true);
+
+  const extraBedAddons = (allAddons || []).filter(a =>
+    (a.name || "").toLowerCase().includes("extra bed")
+  );
 
   const roomList = (rooms || []).map(room => {
     // Find extra bed addon (room-specific or global with null room_id)
@@ -65,6 +68,16 @@ export async function handleGetAllRooms(supabase: SupabaseClient) {
       }
     }
 
+    // Build add-ons list for this room (room-specific or global with null room_id)
+    const roomAddons = (allAddons || [])
+      .filter(a => a.room_id === room.id || a.room_id === null)
+      .map(a => ({
+        name: a.name,
+        price: Number(a.price) || 0,
+        price_formatted: `Rp ${(Number(a.price) || 0).toLocaleString('id-ID')}`,
+        max_quantity: a.max_quantity || 1,
+      }));
+
     return {
       name: room.name,
       price_per_night: effectivePrice,
@@ -78,7 +91,8 @@ export async function handleGetAllRooms(supabase: SupabaseClient) {
       size_sqm: room.size_sqm,
       total_units: room.allotment,
       description: room.description,
-      features: room.features || []
+      features: room.features || [],
+      add_ons: roomAddons,
     };
   });
 
