@@ -313,7 +313,7 @@ export const CreateBookingDialog = ({
           special_requests: formData.special_requests || null,
           remark: formData.remark || null,
           status: bookingStatus,
-          payment_status: "pending",
+          payment_status: "unpaid",
           booking_source: bookingSource,
           ota_name: bookingSource === "ota" ? otaName : null,
           other_source: bookingSource === "other" ? otherSource : null,
