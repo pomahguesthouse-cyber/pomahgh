@@ -63,6 +63,7 @@ const AdminHeroSlides = lazyRetry(() => import("./pages/admin/AdminHeroSlides"))
 const AdminFacilityHeroSlides = lazyRetry(() => import("./pages/admin/AdminFacilityHeroSlides"));
 const AdminFacilities = lazyRetry(() => import("./pages/admin/AdminFacilities"));
 const AdminSettings = lazyRetry(() => import("./pages/admin/AdminSettings"));
+const AdminInvoiceManagement = lazyRetry(() => import("./pages/admin/AdminInvoiceManagement"));
 const AdminNearbyLocations = lazyRetry(() => import("./pages/admin/AdminNearbyLocations"));
 const AdminGuestChatbot = lazyRetry(() => import("./pages/admin/AdminGuestChatbot"));
 const AdminAdminChatbot = lazyRetry(() => import("./pages/admin/AdminAdminChatbot"));
@@ -150,6 +151,7 @@ const App = () => (
           <Route path="/admin/promotions" element={<AdminLayout><AdminPromotions /></AdminLayout>} />
             <Route path="/admin/nearby-locations" element={<AdminLayout><AdminNearbyLocations /></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
+          <Route path="/admin/invoice-management" element={<AdminLayout><AdminInvoiceManagement /></AdminLayout>} />
           <Route path="/admin/chatbot" element={<AdminLayout><AdminGuestChatbot /></AdminLayout>} />
           <Route path="/admin/chatbot/guest" element={<AdminLayout><AdminGuestChatbot /></AdminLayout>} />
           <Route path="/admin/chatbot/admin" element={<AdminLayout><AdminAdminChatbot /></AdminLayout>} />
