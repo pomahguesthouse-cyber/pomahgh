@@ -235,6 +235,28 @@ export async function handlePaymentProof(
     .update({ payment_proof_url: imageUrl, updated_at: new Date().toISOString() })
     .eq('id', booking.id);
 
+  // 3a. Persist structured OCR result to payment_proofs table
+  try {
+    await supabase.from('payment_proofs').insert({
+      booking_id: booking.id,
+      phone,
+      image_url: imageUrl,
+      is_payment_proof: extraction?.is_payment_proof ?? false,
+      confidence: extraction?.confidence ?? null,
+      amount: extraction?.amount ?? null,
+      sender_name: extraction?.sender_name ?? null,
+      bank_name: extraction?.bank_name ?? null,
+      transfer_date: extraction?.transfer_date ?? null,
+      reference_number: extraction?.reference_number ?? null,
+      notes: extraction?.notes ?? null,
+      raw_extraction: extraction ?? null,
+      source: 'whatsapp',
+      status: 'pending',
+    });
+  } catch (e) {
+    console.warn('payment_proofs insert failed', e);
+  }
+
   // 3b. Load template config for auto-verify behaviour
   const { data: template } = await supabase
     .from('invoice_templates')
