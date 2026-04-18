@@ -171,7 +171,20 @@ function buildInvoicePdf(args: {
   const hotelName = settings.hotel_name || 'Pomah Guesthouse';
   if (showLogo && logoDataUrl) {
     try {
-      doc.addImage(logoDataUrl, 'PNG', pageWidth - marginX - 80, 25, 80, 40, undefined, 'FAST');
+      // Maintain aspect ratio: fit inside 90x55 box at top-right
+      const props = doc.getImageProperties(logoDataUrl);
+      const maxW = 90;
+      const maxH = 55;
+      const ratio = props.width / props.height;
+      let drawW = maxW;
+      let drawH = maxW / ratio;
+      if (drawH > maxH) {
+        drawH = maxH;
+        drawW = maxH * ratio;
+      }
+      const xPos = pageWidth - marginX - drawW;
+      const yPos = 25;
+      doc.addImage(logoDataUrl, 'PNG', xPos, yPos, drawW, drawH, undefined, 'FAST');
     } catch (e) {
       console.warn('Failed to embed invoice logo:', e);
     }
