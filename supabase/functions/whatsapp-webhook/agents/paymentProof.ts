@@ -258,9 +258,11 @@ _Balas *YA* / *OK* untuk konfirmasi pembayaran, atau *TIDAK* jika tidak match._`
     managers.map(m => sendWhatsApp(m.phone, managerMsg, env.fonnteApiKey)),
   );
 
-  // 6. Acknowledge guest
+  // 6. Acknowledge guest (different copy when auto-approved)
   let guestReply: string;
-  if (extraction?.is_payment_proof && extraction.amount && extraction.amount >= booking.total_price * 0.95) {
+  if (autoApproved) {
+    guestReply = `🎉 Halo *${booking.guest_name}*!\n\nPembayaran untuk booking *${booking.booking_code}* sebesar *${formatRp(extraction!.amount!)}* sudah *DIKONFIRMASI LUNAS* secara otomatis ✅\n\nTerima kasih, kami tunggu kedatangan Anda 🙏`;
+  } else if (extraction?.is_payment_proof && extraction.amount && extraction.amount >= booking.total_price * 0.95) {
     guestReply = `Terima kasih *${booking.guest_name}* 🙏\n\nBukti transfer sebesar *${formatRp(extraction.amount)}* untuk booking *${booking.booking_code}* sudah kami terima. Tim kami sedang memverifikasi, mohon ditunggu sebentar ya ✨`;
   } else if (extraction?.is_payment_proof) {
     guestReply = `Terima kasih, bukti transfer sudah kami terima 🙏\n\nUntuk booking *${booking.booking_code}* — tim kami akan cek dan konfirmasi via WhatsApp segera. Mohon ditunggu ya 🙏`;
