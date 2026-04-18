@@ -152,7 +152,6 @@ const AdminLogin = () => {
             Continue with Google
           </Button>
         </CardContent>
-        </CardContent>
       </Card>
     </div>
   );
