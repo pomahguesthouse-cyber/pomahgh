@@ -431,20 +431,24 @@ ${autoApproved ? '_Pembayaran sudah otomatis dikonfirmasi. Tidak perlu balas._' 
     managers.map(m => sendWhatsApp(m.phone, managerMsg, env.fonnteApiKey)),
   );
 
-  // 6. Acknowledge guest (different copy when auto-approved)
-  let guestReply: string;
-  if (autoApproved) {
-    guestReply = `🎉 Halo *${booking.guest_name}*!\n\nPembayaran untuk booking *${booking.booking_code}* sebesar *${formatRp(extraction!.amount!)}* sudah *DIKONFIRMASI LUNAS* secara otomatis ✅\n\nTerima kasih, kami tunggu kedatangan Anda 🙏`;
+  // 6. Acknowledge sender (admin gets short receipt; guest gets full message)
+  let senderReply: string;
+  if (isAdminSubmission) {
+    senderReply = autoApproved
+      ? `✅ Bukti transfer untuk *${booking.booking_code}* (${booking.guest_name}) berhasil dikonfirmasi LUNAS.\n💰 ${formatRp(extraction?.amount ?? booking.total_price)}\n📨 Booking order otomatis dikirim ke WA tamu.`
+      : `⚠️ Foto diterima untuk booking *${booking.booking_code}* (${booking.guest_name}) tapi OCR gagal mengekstrak data. Mohon cek manual di dashboard.`;
+  } else if (autoApproved) {
+    senderReply = `🎉 Halo *${booking.guest_name}*!\n\nPembayaran untuk booking *${booking.booking_code}* sebesar *${formatRp(extraction!.amount!)}* sudah *DIKONFIRMASI LUNAS* secara otomatis ✅\n\nTerima kasih, kami tunggu kedatangan Anda 🙏`;
   } else if (extraction?.is_payment_proof && extraction.amount && extraction.amount >= booking.total_price * 0.95) {
-    guestReply = `Terima kasih *${booking.guest_name}* 🙏\n\nBukti transfer sebesar *${formatRp(extraction.amount)}* untuk booking *${booking.booking_code}* sudah kami terima. Tim kami sedang memverifikasi, mohon ditunggu sebentar ya ✨`;
+    senderReply = `Terima kasih *${booking.guest_name}* 🙏\n\nBukti transfer sebesar *${formatRp(extraction.amount)}* untuk booking *${booking.booking_code}* sudah kami terima. Tim kami sedang memverifikasi, mohon ditunggu sebentar ya ✨`;
   } else if (extraction?.is_payment_proof) {
-    guestReply = `Terima kasih, bukti transfer sudah kami terima 🙏\n\nUntuk booking *${booking.booking_code}* — tim kami akan cek dan konfirmasi via WhatsApp segera. Mohon ditunggu ya 🙏`;
+    senderReply = `Terima kasih, bukti transfer sudah kami terima 🙏\n\nUntuk booking *${booking.booking_code}* — tim kami akan cek dan konfirmasi via WhatsApp segera. Mohon ditunggu ya 🙏`;
   } else {
-    guestReply = `Terima kasih sudah mengirim gambar 🙏\n\nTim kami akan cek dan menghubungi Anda kembali untuk konfirmasi pembayaran booking *${booking.booking_code}* ya.`;
+    senderReply = `Terima kasih sudah mengirim gambar 🙏\n\nTim kami akan cek dan menghubungi Anda kembali untuk konfirmasi pembayaran booking *${booking.booking_code}* ya.`;
   }
 
-  await sendWhatsApp(phone, guestReply, env.fonnteApiKey);
-  await logMessage(supabase, conversationId, 'assistant', guestReply);
+  await sendWhatsApp(phone, senderReply, env.fonnteApiKey);
+  await logMessage(supabase, conversationId, 'assistant', senderReply);
 
   // 7. Jika auto-approved → kirim booking order (PDF invoice) ke WA tamu + tandai proof approved
   let bookingOrderSent = false;
