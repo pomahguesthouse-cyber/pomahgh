@@ -227,7 +227,11 @@ async function extractWithVision(imageDataUrl: string): Promise<PaymentProofExtr
 const formatRp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
 /**
- * Main handler — extracts proof, matches booking, notifies managers, replies to guest.
+ * Main handler — extracts proof, matches booking, notifies managers, replies to sender.
+ *
+ * If `submittedByManager` is provided, the proof is treated as admin-submitted:
+ *   - Booking lookup uses caption (booking code) → fallback latest pending hotel-wide
+ *   - OCR result is ALWAYS auto-approved (admin is trusted, no YA/TIDAK loop)
  */
 export async function handlePaymentProof(
   supabase: SupabaseClient,
@@ -237,25 +241,58 @@ export async function handlePaymentProof(
   managerNumbers: ManagerInfo[],
   env: EnvConfig,
   trace?: TraceContext,
+  options?: { submittedByManager?: ManagerInfo | null; caption?: string | null },
 ): Promise<Response> {
-  console.log(`🧾 Payment proof handler: phone=${phone}, image=${imageUrl.substring(0, 80)}`);
-  await logMessage(supabase, conversationId, 'user', `[Image attached] ${imageUrl}`);
+  const submittedByManager = options?.submittedByManager ?? null;
+  const caption = options?.caption ?? null;
+  const isAdminSubmission = !!submittedByManager;
+
+  console.log(`🧾 Payment proof handler: phone=${phone}, image=${imageUrl.substring(0, 80)}, admin=${isAdminSubmission}`);
+  await logMessage(supabase, conversationId, 'user', `[Image attached${isAdminSubmission ? ' by admin' : ''}] ${imageUrl}${caption ? ` | caption: ${caption}` : ''}`);
 
   logAgentDecision(supabase, {
     trace_id: trace?.traceId, conversation_id: conversationId, phone_number: phone,
-    from_agent: 'orchestrator', to_agent: 'payment_proof', reason: 'image_with_pending_payment',
+    from_agent: 'orchestrator', to_agent: 'payment_proof',
+    reason: isAdminSubmission ? 'admin_payment_proof_upload' : 'image_with_pending_payment',
   });
 
   // 1. Find matching booking
-  const booking = await findPendingBooking(supabase, phone);
-  if (!booking) {
-    // No pending booking — soft acknowledge
-    const reply = 'Terima kasih sudah mengirim gambar 🙏 Namun kami belum menemukan booking aktif atas nomor ini. Mohon hubungi admin atau buat booking dulu ya.';
-    await sendWhatsApp(phone, reply, env.fonnteApiKey);
-    await logMessage(supabase, conversationId, 'assistant', reply);
-    return new Response(JSON.stringify({ status: 'no_pending_booking' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  let booking: PendingBookingRow | null = null;
+  if (isAdminSubmission) {
+    // Admin: prefer caption booking code, then fall back to latest pending in the hotel
+    const codeFromCaption = extractBookingCodeFromText(caption);
+    if (codeFromCaption) {
+      booking = await findBookingByCode(supabase, codeFromCaption);
+      if (!booking) {
+        const reply = `Booking *${codeFromCaption}* tidak ditemukan. Mohon cek kode booking di caption foto.`;
+        await sendWhatsApp(phone, reply, env.fonnteApiKey);
+        await logMessage(supabase, conversationId, 'assistant', reply);
+        return new Response(JSON.stringify({ status: 'admin_booking_not_found', code: codeFromCaption }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      booking = await findLatestPendingBookingAnywhere(supabase);
+      if (!booking) {
+        const reply = 'Tidak ada booking pending yang menunggu pembayaran. Sertakan kode booking (PMH-XXXXXX) di caption foto untuk booking tertentu.';
+        await sendWhatsApp(phone, reply, env.fonnteApiKey);
+        await logMessage(supabase, conversationId, 'assistant', reply);
+        return new Response(JSON.stringify({ status: 'admin_no_pending_booking' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+  } else {
+    booking = await findPendingBooking(supabase, phone);
+    if (!booking) {
+      // No pending booking — soft acknowledge
+      const reply = 'Terima kasih sudah mengirim gambar 🙏 Namun kami belum menemukan booking aktif atas nomor ini. Mohon hubungi admin atau buat booking dulu ya.';
+      await sendWhatsApp(phone, reply, env.fonnteApiKey);
+      await logMessage(supabase, conversationId, 'assistant', reply);
+      return new Response(JSON.stringify({ status: 'no_pending_booking' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   // 2. Download + OCR (run in parallel-friendly sequence)
@@ -286,7 +323,7 @@ export async function handlePaymentProof(
       reference_number: extraction?.reference_number ?? null,
       notes: extraction?.notes ?? null,
       raw_extraction: extraction ?? null,
-      source: 'whatsapp',
+      source: isAdminSubmission ? 'whatsapp_admin' : 'whatsapp',
       status: 'pending',
     });
   } catch (e) {
