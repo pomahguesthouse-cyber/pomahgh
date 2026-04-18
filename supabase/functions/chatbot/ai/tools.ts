@@ -72,6 +72,19 @@ export const tools = [
               },
               required: ["room_name"]
             }
+          },
+          add_ons: {
+            type: "array",
+            description: "Layanan tambahan berbayar yang dipesan tamu (misalnya Extra Bed). Sertakan jika tamu meminta extra bed atau add-on lain. Format: [{addon_name, quantity, room_name?}]",
+            items: {
+              type: "object",
+              properties: {
+                addon_name: { type: "string", description: "Nama add-on, contoh: 'Extra Bed'" },
+                quantity: { type: "number", description: "Jumlah unit add-on" },
+                room_name: { type: "string", description: "Nama tipe kamar yang menggunakan add-on (opsional)" }
+              },
+              required: ["addon_name", "quantity"]
+            }
           }
         },
         required: ["guest_name", "guest_email", "guest_phone", "check_in", "check_out", "num_guests"]

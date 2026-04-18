@@ -83,6 +83,13 @@ export interface WhatsAppMessagePayload {
   status?: string;
 }
 
+// Add-on selection for booking (chatbot side - by name)
+export interface AddOnSelection {
+  addon_name: string;       // e.g. "Extra Bed"
+  quantity: number;         // e.g. 1
+  room_name?: string;       // optional: which room type the addon belongs to
+}
+
 // Create booking parameters
 export interface CreateBookingParams {
   guest_name: string;
@@ -94,6 +101,7 @@ export interface CreateBookingParams {
   room_selections?: RoomSelection[];
   num_guests?: number;
   special_requests?: string;
+  add_ons?: AddOnSelection[];
 }
 
 // Update booking parameters

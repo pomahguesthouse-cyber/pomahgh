@@ -9,7 +9,7 @@ export async function handleCreateBookingDraft(
   supabase: SupabaseClient,
   params: CreateBookingParams
 ) {
-  const { guest_name, guest_email, guest_phone, room_name, room_selections, num_guests, special_requests } = params;
+  const { guest_name, guest_email, guest_phone, room_name, room_selections, num_guests, special_requests, add_ons } = params;
   
   if (!guest_phone || !guest_phone.trim()) {
     throw new Error("Nomor telepon wajib diisi untuk membuat booking");
@@ -90,8 +90,71 @@ export async function handleCreateBookingDraft(
   }
 
   console.log("Matched rooms:", matchedRooms);
-  console.log("Total price:", totalPrice);
+  console.log("Total room price:", totalPrice);
 
+  // Resolve add-ons (e.g. Extra Bed) → restrict to selected rooms
+  const matchedAddons: Array<{
+    addonId: string;
+    addonName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }> = [];
+
+  if (add_ons && add_ons.length > 0) {
+    const selectedRoomIds = matchedRooms.map(r => r.roomId);
+    const { data: availableAddons, error: addonsErr } = await supabase
+      .from("room_addons")
+      .select("id, name, price, room_id")
+      .eq("is_active", true)
+      .in("room_id", selectedRoomIds.length > 0 ? selectedRoomIds : ["00000000-0000-0000-0000-000000000000"]);
+
+    if (addonsErr) {
+      console.error("Add-ons fetch error:", addonsErr);
+    }
+
+    for (const sel of add_ons) {
+      const qty = Math.max(1, Number(sel.quantity) || 1);
+      const lowerName = (sel.addon_name || "").toLowerCase().trim();
+
+      // Prefer addon tied to a specific selected room when room_name supplied
+      let addon = null as { id: string; name: string; price: number; room_id: string | null } | null;
+      if (sel.room_name) {
+        const targetRoom = matchedRooms.find(
+          r => r.roomName.toLowerCase() === sel.room_name!.toLowerCase()
+        );
+        if (targetRoom) {
+          addon = (availableAddons || []).find(
+            a => a.room_id === targetRoom.roomId && a.name.toLowerCase().includes(lowerName)
+          ) as typeof addon || null;
+        }
+      }
+      if (!addon) {
+        addon = (availableAddons || []).find(
+          a => a.name.toLowerCase().includes(lowerName)
+        ) as typeof addon || null;
+      }
+
+      if (!addon) {
+        console.warn(`Add-on "${sel.addon_name}" not found, skipping`);
+        continue;
+      }
+
+      const unitPrice = Number(addon.price) || 0;
+      const lineTotal = unitPrice * qty;
+      matchedAddons.push({
+        addonId: addon.id,
+        addonName: addon.name,
+        quantity: qty,
+        unitPrice,
+        totalPrice: lineTotal,
+      });
+      totalPrice += lineTotal;
+    }
+  }
+
+  console.log("Matched add-ons:", matchedAddons);
+  console.log("Grand total price:", totalPrice);
   // Idempotency: match by email+phone+dates+source to prevent duplicate bookings from webhook retries
   const { data: existingBooking } = await supabase
     .from("bookings")
@@ -141,6 +204,7 @@ export async function handleCreateBookingDraft(
     isUpdate = true;
 
     await supabase.from("booking_rooms").delete().eq("booking_id", booking.id);
+    await supabase.from("booking_addons").delete().eq("booking_id", booking.id);
   } else {
     console.log("No existing booking found, creating new...");
     
@@ -233,6 +297,24 @@ export async function handleCreateBookingDraft(
     }
   }
 
+  // Insert booking_addons (e.g. extra bed)
+  if (matchedAddons.length > 0) {
+    const bookingAddonsData = matchedAddons.map(a => ({
+      booking_id: booking.id,
+      addon_id: a.addonId,
+      quantity: a.quantity,
+      unit_price: a.unitPrice,
+      total_price: a.totalPrice,
+    }));
+    const { error: addonsInsertError } = await supabase
+      .from("booking_addons")
+      .insert(bookingAddonsData);
+    if (addonsInsertError) {
+      console.error("Failed to insert booking_addons:", addonsInsertError);
+      // Non-fatal: booking already created, just warn
+    }
+  }
+
   const { data: hotelSettings } = await supabase
     .from("hotel_settings")
     .select("whatsapp_number, hotel_name, hotel_policies_enabled, hotel_policies_text, check_in_time, check_out_time")
@@ -302,13 +384,18 @@ export async function handleCreateBookingDraft(
   const checkOutTime = hotelSettings?.check_out_time || '12:00';
   const timeInfo = `\n\n⏰ *Jam Check-in:* ${checkInTime} WIB\n⏰ *Jam Check-out:* ${checkOutTime} WIB`;
 
+  const addonsText = matchedAddons.length > 0
+    ? `\n➕ Add-on: ${matchedAddons.map(a => `${a.quantity}x ${a.addonName} (Rp ${a.totalPrice.toLocaleString('id-ID')})`).join(', ')}`
+    : '';
+
   return {
     message: isUpdate
-      ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}. Total baru: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}${timeInfo}${policiesInfo}`
-      : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar). Total: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}${timeInfo}${policiesInfo}`,
+      ? `Booking berhasil diperbarui! Kode: ${booking.booking_code}. Kamar: ${roomsText}.${addonsText}\nTotal baru: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}${timeInfo}${policiesInfo}`
+      : `Booking berhasil dibuat! Kode: ${booking.booking_code}. Kamar: ${roomsText} (${totalRooms} kamar).${addonsText}\nTotal: Rp ${totalPrice.toLocaleString('id-ID')}.\n\n${bankInfo}${timeInfo}${policiesInfo}`,
     booking_code: booking.booking_code,
     booking_id: booking.id,
     rooms_booked: roomsSummary,
+    add_ons_booked: matchedAddons.map(a => ({ name: a.addonName, quantity: a.quantity, total_price: a.totalPrice })),
     total_rooms: totalRooms,
     total_price: totalPrice,
     status: 'pending',
