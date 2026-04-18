@@ -151,12 +151,66 @@ function buildInvoicePdf(args: {
   const dark: [number, number, number] = [34, 34, 34];
   const muted: [number, number, number] = [120, 120, 120];
 
-  // Header band
+  // ===== HEADER (clean, non-overlapping layout) =====
+  // Left accent strip
   doc.setFillColor(...primary);
-  doc.rect(0, 0, 5, 90, 'F');
+  doc.rect(0, 0, 5, 110, 'F');
 
+  const hotelName = settings.hotel_name || 'Pomah Guesthouse';
+
+  // --- RIGHT SIDE: Logo (top) + address (below logo) ---
+  // Compute logo box first so we know where address starts (no overlap).
+  const logoMaxW = 90;
+  const logoMaxH = 55;
+  const logoTop = 25;
+  let logoBottomY = logoTop; // fallback when no logo
+  let logoDrawn = false;
+
+  if (showLogo && logoDataUrl) {
+    try {
+      const props = doc.getImageProperties(logoDataUrl);
+      const ratio = props.width / props.height;
+      let drawW = logoMaxW;
+      let drawH = logoMaxW / ratio;
+      if (drawH > logoMaxH) {
+        drawH = logoMaxH;
+        drawW = logoMaxH * ratio;
+      }
+      const xPos = pageWidth - marginX - drawW;
+      doc.addImage(logoDataUrl, 'PNG', xPos, logoTop, drawW, drawH, undefined, 'FAST');
+      logoBottomY = logoTop + drawH;
+      logoDrawn = true;
+    } catch (e) {
+      console.warn('Failed to embed invoice logo:', e);
+    }
+  }
+
+  if (!logoDrawn) {
+    // Hotel name as text fallback in top-right
+    doc.setFont(fontFamily, 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...primary);
+    doc.text(hotelName, pageWidth - marginX, 40, { align: 'right' });
+    logoBottomY = 45;
+  }
+
+  // Address block — placed BELOW the logo so they never overlap
+  doc.setFont(fontFamily, 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...muted);
+  let addrY = logoBottomY + 12;
+  if (settings.address) {
+    doc.text(settings.address, pageWidth - marginX, addrY, { align: 'right' });
+    addrY += 10;
+  }
+  const cityLine = [settings.city, settings.postal_code].filter(Boolean).join(' ');
+  if (cityLine) {
+    doc.text(cityLine, pageWidth - marginX, addrY, { align: 'right' });
+  }
+
+  // --- LEFT SIDE: Title + Booking ID + Date ---
   doc.setFont(fontFamily, 'bold');
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setTextColor(...dark);
   doc.text('BUKTI PEMESANAN (BOOKING ORDER)', marginX, 40);
 
@@ -164,47 +218,8 @@ function buildInvoicePdf(args: {
   doc.setFontSize(10);
   doc.setTextColor(...muted);
   const createdAt = format(new Date(booking.created_at), "d MMM yyyy, HH:mm", { locale: idLocale });
-  doc.text(`Booking ID: #${booking.booking_code}`, marginX, 58);
-  doc.text(`Tanggal: ${createdAt} WIB`, marginX, 72);
-
-  // Hotel name (top right) — or logo if enabled & available
-  const hotelName = settings.hotel_name || 'Pomah Guesthouse';
-  if (showLogo && logoDataUrl) {
-    try {
-      // Maintain aspect ratio: fit inside 90x55 box at top-right
-      const props = doc.getImageProperties(logoDataUrl);
-      const maxW = 90;
-      const maxH = 55;
-      const ratio = props.width / props.height;
-      let drawW = maxW;
-      let drawH = maxW / ratio;
-      if (drawH > maxH) {
-        drawH = maxH;
-        drawW = maxH * ratio;
-      }
-      const xPos = pageWidth - marginX - drawW;
-      const yPos = 25;
-      doc.addImage(logoDataUrl, 'PNG', xPos, yPos, drawW, drawH, undefined, 'FAST');
-    } catch (e) {
-      console.warn('Failed to embed invoice logo:', e);
-    }
-  } else {
-    doc.setFont(fontFamily, 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(...primary);
-    doc.text(hotelName, pageWidth - marginX, 40, { align: 'right' });
-  }
-
-  doc.setFont(fontFamily, 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...muted);
-  if (settings.address) {
-    const addrLine = `${settings.address}${settings.city ? `, ${settings.city}` : ''}`;
-    doc.text(addrLine, pageWidth - marginX, 78, { align: 'right' });
-  }
-  if (settings.phone_primary) {
-    doc.text(`Telp: ${settings.phone_primary}`, pageWidth - marginX, 90, { align: 'right' });
-  }
+  doc.text(`Booking ID: #${booking.booking_code}`, marginX, 60);
+  doc.text(`Tanggal: ${createdAt} WIB`, marginX, 74);
 
   // Helper to draw a section header bar
   const drawSectionHeader = (label: string, y: number): number => {
