@@ -294,7 +294,7 @@ export const CreateBookingDialog = ({
 
       // Manual booking — direct insert via Supabase client (admin RLS policy)
       const isPaid = false;
-      const bookingStatus = "pending_payment";
+      const bookingStatus = "pending";
       const paymentAmount = Math.round(totalPrice);
 
       const { data: booking, error: insertError } = await supabase
