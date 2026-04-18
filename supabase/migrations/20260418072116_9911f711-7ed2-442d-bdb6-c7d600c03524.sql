@@ -1,0 +1,1 @@
+ALTER TABLE public.payment_proofs ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;

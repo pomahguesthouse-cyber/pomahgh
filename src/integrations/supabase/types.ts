@@ -2490,6 +2490,7 @@ export type Database = {
           status: string
           transfer_date: string | null
           updated_at: string
+          verified_at: string | null
         }
         Insert: {
           amount?: number | null
@@ -2509,6 +2510,7 @@ export type Database = {
           status?: string
           transfer_date?: string | null
           updated_at?: string
+          verified_at?: string | null
         }
         Update: {
           amount?: number | null
@@ -2528,6 +2530,7 @@ export type Database = {
           status?: string
           transfer_date?: string | null
           updated_at?: string
+          verified_at?: string | null
         }
         Relationships: [
           {
