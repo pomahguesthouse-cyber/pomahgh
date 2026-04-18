@@ -147,8 +147,8 @@ export async function orchestrate(
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-  const normalizedMessage = normalizeIndonesianMessage(String(message));
-  trace?.info('Processing message', { phone, message_length: String(message).length });
+  const normalizedMessage = normalizeIndonesianMessage(String(message ?? ''));
+  trace?.info('Processing message', { phone, message_length: String(message ?? '').length, has_image: hasImageAttachment });
 
   // Rate limit
   if (!await checkRateLimit(supabase, phone)) {
