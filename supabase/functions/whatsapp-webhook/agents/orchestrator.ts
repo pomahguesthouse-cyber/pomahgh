@@ -16,6 +16,7 @@ import { handleGuestBookingFlow } from './booking.ts';
 import { handleGuestFAQ } from './faq.ts';
 import { handleComplaint, isComplaintMessage } from './complaint.ts';
 import { handlePayment, isPaymentMessage } from './payment.ts';
+import { handlePaymentProof, extractImageUrl } from './paymentProof.ts';
 import { setAgentConfigs, isAgentActive, getEscalationTarget, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 
 /**
