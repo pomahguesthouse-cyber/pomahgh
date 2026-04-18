@@ -418,6 +418,7 @@ const AdminBookings = () => {
           bookingId={selectedBookingForInvoice.id}
           guestName={selectedBookingForInvoice.guest_name}
           guestEmail={selectedBookingForInvoice.guest_email}
+          guestPhone={selectedBookingForInvoice.guest_phone}
           bookingCode={selectedBookingForInvoice.booking_code}
         />
       )}

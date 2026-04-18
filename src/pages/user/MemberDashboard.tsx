@@ -398,6 +398,7 @@ export default function MemberDashboard() {
             bookingId={selectedInvoiceBooking.id}
             guestName={selectedInvoiceBooking.guest_name}
             guestEmail={selectedInvoiceBooking.guest_email}
+            guestPhone={selectedInvoiceBooking.guest_phone}
             bookingCode={selectedInvoiceBooking.booking_code}
           />
         )}
