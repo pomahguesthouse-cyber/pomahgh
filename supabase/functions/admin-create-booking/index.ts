@@ -121,13 +121,19 @@ serve(async (req) => {
       });
     }
 
-    // Multi-room junction
-    if (room_ids.length > 1 || room_numbers?.length) {
+    // Multi-room junction — always insert one row per selected room
+    if (room_ids.length >= 1) {
+      const fallbackPerNight = total_nights > 0
+        ? Math.round(paymentAmount / total_nights / room_ids.length)
+        : paymentAmount;
+      const perNight = price_per_night && price_per_night > 0
+        ? Math.round(price_per_night)
+        : fallbackPerNight;
       const bookingRooms = room_ids.map((rid: string, idx: number) => ({
         booking_id: booking.id,
         room_id: rid,
         room_number: room_numbers?.[idx] || "",
-        price_per_night: Math.round(price_per_night || paymentAmount / total_nights / room_ids.length),
+        price_per_night: perNight,
       }));
       const { error: brError } = await supabase.from("booking_rooms").insert(bookingRooms);
       if (brError) log("warn", "booking_rooms insert failed", { requestId, error: brError.message });
