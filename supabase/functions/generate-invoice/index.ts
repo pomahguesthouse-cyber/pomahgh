@@ -583,8 +583,8 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               from: `${hotelName} <noreply@notify.pomahguesthouse.com>`,
-              to: [booking.guest_email],
-              subject: `Bukti Pemesanan #${booking.booking_code} - ${hotelName}`,
+              to: [emailRecipient],
+              subject: `${targetEmail ? "[TEST] " : ""}Bukti Pemesanan #${booking.booking_code} - ${hotelName}`,
               html: emailHtml,
               attachments: [{
                 filename: `Invoice-${booking.booking_code}.pdf`,
