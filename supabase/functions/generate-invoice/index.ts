@@ -171,7 +171,20 @@ function buildInvoicePdf(args: {
   const hotelName = settings.hotel_name || 'Pomah Guesthouse';
   if (showLogo && logoDataUrl) {
     try {
-      doc.addImage(logoDataUrl, 'PNG', pageWidth - marginX - 80, 25, 80, 40, undefined, 'FAST');
+      // Maintain aspect ratio: fit inside 90x55 box at top-right
+      const props = doc.getImageProperties(logoDataUrl);
+      const maxW = 90;
+      const maxH = 55;
+      const ratio = props.width / props.height;
+      let drawW = maxW;
+      let drawH = maxW / ratio;
+      if (drawH > maxH) {
+        drawH = maxH;
+        drawW = maxH * ratio;
+      }
+      const xPos = pageWidth - marginX - drawW;
+      const yPos = 25;
+      doc.addImage(logoDataUrl, 'PNG', xPos, yPos, drawW, drawH, undefined, 'FAST');
     } catch (e) {
       console.warn('Failed to embed invoice logo:', e);
     }
@@ -628,19 +641,20 @@ serve(async (req) => {
             ? `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah menginap di ${hotelName}!\n\nBerikut bukti pemesanan Anda (terlampir PDF):\n\n📋 *${booking.booking_code}*\n📅 ${checkInLabel} → ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total: *${totalLabel}* — LUNAS ✅\n\nKami tunggu kunjungan Anda berikutnya 🙏`
             : `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah memesan di ${hotelName}!\n\nBerikut detail pesanan Anda (PDF terlampir):\n\n📋 Kode: *${booking.booking_code}*\n📅 Check-in: ${checkInLabel}\n📅 Check-out: ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total bayar: *${totalLabel}*\n_(termasuk kode unik 3 digit untuk identifikasi)_\n\n💳 *INSTRUKSI PEMBAYARAN*\n${bankList}\n\nSilakan lakukan pembayaran dan kirim bukti transfer di chat ini ya. Tim kami akan segera memverifikasi 🙏\n\n📄 Invoice: ${invoicePdfUrl}`;
 
+          // Send PDF directly as multipart/form-data (avoids "url unreachable" errors when Fonnte cannot fetch our public URL)
+          const formData = new FormData();
+          formData.append("target", phoneRecipient);
+          formData.append("message", message);
+          formData.append("countryCode", "62");
+          const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+          formData.append("file", pdfBlob, `Invoice-${booking.booking_code}.pdf`);
+
           const fonnteResp = await fetch("https://api.fonnte.com/send", {
             method: "POST",
             headers: {
               "Authorization": fonnteApiKey,
-              "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              target: phoneRecipient,
-              message,
-              url: invoicePdfUrl, // attaches the PDF
-              filename: `Invoice-${booking.booking_code}.pdf`,
-              countryCode: "62",
-            }),
+            body: formData,
           });
 
           const fonnteResult = await fonnteResp.json();
