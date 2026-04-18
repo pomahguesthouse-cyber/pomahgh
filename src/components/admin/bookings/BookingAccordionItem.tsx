@@ -181,8 +181,7 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
                         >
                           <Package className="h-2.5 w-2.5 shrink-0" />
                           <span className="truncate">
-                            + {addon.room_addons?.name || 'Add-on'}
-                            {addon.quantity > 1 ? ` x${addon.quantity}` : ''}
+                            + {addon.room_addons?.name || 'Add-on'} x{addon.quantity} — {formatNumberID(addon.total_price)}
                           </span>
                         </div>
                       ))}
