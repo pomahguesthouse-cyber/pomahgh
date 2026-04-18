@@ -95,19 +95,36 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
     booking.allocated_room_number ||
     "-";
 
-  // Get all room types from booking_rooms (for multi-room bookings with different types)
-  const roomTypes = useMemo(() => {
+  // Group booking_rooms by room type (name) so multi-tipe bookings render stacked
+  const roomGroups = useMemo(() => {
     if (booking.booking_rooms && booking.booking_rooms.length > 0) {
-      const types = new Set(
-        booking.booking_rooms.map((br) => {
-          const room = rooms?.find((r) => r.id === br.room_id);
-          return room?.name || booking.rooms?.name || "Unknown";
-        })
-      );
-      return Array.from(types).join(", ");
+      const map = new Map<string, { name: string; numbers: string[]; pricePerNight: number }>();
+      for (const br of booking.booking_rooms) {
+        const room = rooms?.find((r) => r.id === br.room_id);
+        const name = room?.name || booking.rooms?.name || "Unknown";
+        const existing = map.get(name);
+        if (existing) {
+          existing.numbers.push(br.room_number);
+          existing.pricePerNight += Number(br.price_per_night) || 0;
+        } else {
+          map.set(name, {
+            name,
+            numbers: [br.room_number],
+            pricePerNight: Number(br.price_per_night) || 0,
+          });
+        }
+      }
+      return Array.from(map.values());
     }
-    return getRoomName(booking.room_id) || booking.rooms?.name || "Unknown";
-  }, [booking.booking_rooms, booking.room_id, booking.rooms, rooms, getRoomName]);
+    const fallbackName = getRoomName(booking.room_id) || booking.rooms?.name || "Unknown";
+    return [{
+      name: fallbackName,
+      numbers: booking.allocated_room_number ? [booking.allocated_room_number] : [],
+      pricePerNight: 0,
+    }];
+  }, [booking.booking_rooms, booking.room_id, booking.rooms, booking.allocated_room_number, rooms, getRoomName]);
+
+  const roomTypes = useMemo(() => roomGroups.map((g) => g.name).join(", "), [roomGroups]);
 
   // Calculate price per night from booking_rooms (sum of all room prices)
   // Fallback to total_price / total_nights when junction prices are missing/zero
