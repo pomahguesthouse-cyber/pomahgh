@@ -15,8 +15,16 @@ export function buildBookingFlowRules(): string {
 - "X malam" SEBELUM booking → check_availability
 - Jangan tanya ulang info yang sudah ada
 
+ADD-ONS / EXTRA BED:
+- Setiap tipe kamar bisa punya add-on berbayar (misal Extra Bed Rp 100.000) — info ada di get_all_rooms (field add_ons).
+- Jika jumlah tamu > kapasitas standar kamar TAPI ≤ kapasitas + max_extra_beds, TAWARKAN extra bed.
+  Contoh: "Kamar Deluxe untuk 2 orang ya kak, kalau butuh extra bed bisa ditambah Rp 100.000/malam. Mau pakai extra bed?"
+- Jika user setuju extra bed → simpan ke konteks dan WAJIB sertakan di parameter add_ons saat panggil create_booking_draft.
+  Format: add_ons: [{ addon_name: "Extra Bed", quantity: 1, room_name: "Deluxe" }]
+- Hitung total harga = (harga kamar × malam × jumlah kamar) + Σ(harga add-on × quantity).
+
 DRAFT KONFIRMASI (WAJIB sebelum create_booking_draft):
-- Setelah semua data tamu lengkap (nama, email, HP, jumlah tamu, kamar, tanggal), JANGAN langsung panggil create_booking_draft!
+- Setelah semua data tamu lengkap (nama, email, HP, jumlah tamu, kamar, tanggal, add-ons jika ada), JANGAN langsung panggil create_booking_draft!
 - Tampilkan RINGKASAN DRAFT dulu dalam format:
 
   📋 *Ringkasan Booking*
@@ -28,7 +36,8 @@ DRAFT KONFIRMASI (WAJIB sebelum create_booking_draft):
   📅 Check-out: [tanggal]
   🌙 Durasi: [X] malam
   👥 Tamu: [jumlah] orang
-  💰 Total: Rp [harga]
+  ➕ Add-on: [Qty x Nama (Rp ...)] ← tampilkan baris ini hanya jika ada add-on
+  💰 Total: Rp [harga termasuk add-on]
 
   Apakah data di atas sudah benar? Ketik *Ya* untuk konfirmasi booking. 😊
 
@@ -50,7 +59,7 @@ KOREKSI / PERPANJANGAN SETELAH BOOKING DIBUAT:
 TOOLS:
 - "ada kamar apa?" → get_all_rooms
 - kamar+tanggal → check_availability
-- data tamu lengkap + user sudah konfirmasi "ya" → create_booking_draft. ⚠️ WAJIB ada guest_phone! WAJIB sudah dikonfirmasi user!
+- data tamu lengkap + user sudah konfirmasi "ya" → create_booking_draft (sertakan add_ons jika ada). ⚠️ WAJIB ada guest_phone! WAJIB sudah dikonfirmasi user!
 - cek/ubah booking → pakai data KONTEKS atau minta PMH-XXXXXX+telepon+email
 - "sudah transfer" → notify_payment_proof
 
