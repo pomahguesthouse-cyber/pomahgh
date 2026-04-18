@@ -18,6 +18,7 @@ import { handleComplaint, isComplaintMessage } from './complaint.ts';
 import { handlePayment, isPaymentMessage } from './payment.ts';
 import { handlePaymentProof, extractImageUrl } from './paymentProof.ts';
 import { handlePaymentApproval, isPaymentApprovalReply } from './paymentApproval.ts';
+import { handlePriceListQuestion, isGenericPriceQuestion } from './priceList.ts';
 import { setAgentConfigs, isAgentActive, getEscalationTarget, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 
 /**
@@ -300,6 +301,21 @@ export async function orchestrate(
       reason: 'name_collection', intent: 'greeting',
     });
     return nameResult;
+  }
+
+  // === FAST PATH: Generic price-list questions ===
+  // "berapa harga kamar / rate semalam" → langsung kirim daftar harga
+  // tanpa perlu tanya tipe kamar atau panggil tool.
+  if (isGenericPriceQuestion(normalizedMessage)) {
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+      from_agent: 'orchestrator', to_agent: 'price_list',
+      reason: 'generic_price_question_fastpath', intent: 'price_inquiry',
+    });
+    return handlePriceListQuestion(
+      supabase, session as WhatsAppSession, phone, String(message),
+      conversationId!, personaName, env, trace,
+    );
   }
 
   // === INTENT DETECTION: Route to appropriate agent ===
