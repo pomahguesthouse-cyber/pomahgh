@@ -430,7 +430,10 @@ serve(async (req) => {
   }
 
   try {
-    const { booking_id, send_email, send_whatsapp } = await req.json();
+    const { booking_id, send_email, send_whatsapp, override_email, override_phone } = await req.json();
+    // Test mode: when override is supplied, send to that target instead of the guest's real contact.
+    const targetEmail: string | null = (override_email && String(override_email).trim()) || null;
+    const targetPhone: string | null = (override_phone && String(override_phone).trim()) || null;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
