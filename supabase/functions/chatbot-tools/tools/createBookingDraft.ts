@@ -204,6 +204,7 @@ export async function handleCreateBookingDraft(
     isUpdate = true;
 
     await supabase.from("booking_rooms").delete().eq("booking_id", booking.id);
+    await supabase.from("booking_addons").delete().eq("booking_id", booking.id);
   } else {
     console.log("No existing booking found, creating new...");
     
@@ -296,7 +297,24 @@ export async function handleCreateBookingDraft(
     }
   }
 
-  const { data: hotelSettings } = await supabase
+  // Insert booking_addons (e.g. extra bed)
+  if (matchedAddons.length > 0) {
+    const bookingAddonsData = matchedAddons.map(a => ({
+      booking_id: booking.id,
+      addon_id: a.addonId,
+      quantity: a.quantity,
+      unit_price: a.unitPrice,
+      total_price: a.totalPrice,
+    }));
+    const { error: addonsInsertError } = await supabase
+      .from("booking_addons")
+      .insert(bookingAddonsData);
+    if (addonsInsertError) {
+      console.error("Failed to insert booking_addons:", addonsInsertError);
+      // Non-fatal: booking already created, just warn
+    }
+  }
+
     .from("hotel_settings")
     .select("whatsapp_number, hotel_name, hotel_policies_enabled, hotel_policies_text, check_in_time, check_out_time")
     .single();
