@@ -70,8 +70,12 @@ export async function handleManagerChat(
       try { return JSON.parse(s); } catch { return null; }
     };
 
-    if (contentType.includes('text/event-stream') || rawBody.startsWith('data:')) {
-      // Parse SSE stream — concatenate all delta.content / message.content chunks
+    // admin-chatbot's createSSEStream sends PLAIN TEXT chunks (not real SSE 'data:' frames),
+    // even though Content-Type is 'text/event-stream'. So we treat the body as text by default,
+    // and only parse SSE frames if we actually see 'data:' prefixes.
+    const looksLikeSseFrames = /^\s*data:\s/m.test(rawBody);
+
+    if (looksLikeSseFrames) {
       const lines = rawBody.split('\n');
       const parts: string[] = [];
       for (const line of lines) {
@@ -80,7 +84,11 @@ export async function handleManagerChat(
         const payload = trimmed.slice(5).trim();
         if (!payload || payload === '[DONE]') continue;
         const obj = tryParseJson(payload);
-        if (!obj) continue;
+        if (!obj) {
+          // Some streams put raw text after 'data:'
+          parts.push(payload);
+          continue;
+        }
         const delta = obj?.choices?.[0]?.delta?.content
                    ?? obj?.choices?.[0]?.message?.content
                    ?? obj?.content
@@ -88,7 +96,7 @@ export async function handleManagerChat(
         if (delta) parts.push(String(delta));
       }
       aiResponse = parts.join('');
-    } else {
+    } else if (contentType.includes('application/json')) {
       const parsed = tryParseJson(rawBody);
       if (parsed && typeof parsed === 'object') {
         aiResponse = parsed?.choices?.[0]?.message?.content
@@ -98,9 +106,11 @@ export async function handleManagerChat(
                   ?? '';
         if (!aiResponse) aiResponse = JSON.stringify(parsed);
       } else {
-        // Plain text response — use as-is
         aiResponse = rawBody;
       }
+    } else {
+      // Plain text (or text/event-stream sent as plain chunks) — use body as-is
+      aiResponse = rawBody;
     }
 
     aiResponse = (aiResponse || '').trim() || "Maaf, terjadi kesalahan. Silakan coba lagi.";
