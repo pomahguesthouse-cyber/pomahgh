@@ -98,9 +98,9 @@ export const useBookingHistory = (userId: string | null): UseBookingHistoryRetur
     fetchBookings();
   }, [fetchBookings]);
 
-  // Active bookings: pending, confirmed, checked_in
+  // Active bookings: pending, pending_payment, confirmed, checked_in, down_payment
   const activeBookings = bookings.filter(b => 
-    ["pending_payment", "confirmed", "checked_in"].includes(b.status)
+    ["pending", "pending_payment", "confirmed", "checked_in"].includes(b.status)
   );
 
   // Past bookings: checked_out, cancelled, expired

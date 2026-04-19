@@ -11,6 +11,19 @@ export interface RoomTypeAvailability {
   pricePerNight: number;
 }
 
+/**
+ * Hitung ketersediaan tiap tipe kamar untuk rentang tanggal.
+ *
+ * Bug fix:
+ *  - Bug 3: `excludeBookingId` sekarang benar-benar dipakai untuk meng-exclude
+ *    booking yang sedang di-edit dari kalkulasi konflik.
+ *  - Bug 4: query `booking_rooms` (multi-room) ikut diperhitungkan, bukan hanya
+ *    `allocated_room_number` di tabel `bookings`.
+ *  - Bug 8: overlap pakai strict `lt(checkOut)` & `gt(checkIn)` — konsisten
+ *    dengan room.service.ts (same-day turnover sah).
+ *  - Bug 9: tambahkan query `room_unavailable_dates` (block null = block semua
+ *    nomor dari tipe tersebut).
+ */
 export const useRoomTypeAvailability = (
   checkIn: Date | null,
   checkOut: Date | null,
@@ -24,7 +37,7 @@ export const useRoomTypeAvailability = (
       const checkInStr = format(checkIn, "yyyy-MM-dd");
       const checkOutStr = format(checkOut, "yyyy-MM-dd");
 
-      // Fetch all rooms
+      // 1) Tipe kamar
       const { data: rooms, error: roomsError } = await supabase
         .from("rooms")
         .select("id, name, room_numbers, price_per_night, allotment")
@@ -34,33 +47,78 @@ export const useRoomTypeAvailability = (
       if (roomsError) throw roomsError;
       if (!rooms) return [];
 
-      // Fetch all conflicting bookings for the date range
-      const { data: bookings, error: bookingsError } = await supabase
+      // 2) Booking yang overlap (strict — sama tanggal turnover bukan konflik)
+      let bookingsQuery = supabase
         .from("bookings")
-        .select("room_id, allocated_room_number")
+        .select("id, room_id, allocated_room_number")
         .neq("status", "cancelled")
-        .or(`and(check_in.lte.${checkOutStr},check_out.gte.${checkInStr})`);
+        .lt("check_in", checkOutStr)
+        .gt("check_out", checkInStr);
 
+      if (excludeBookingId) {
+        bookingsQuery = bookingsQuery.neq("id", excludeBookingId);
+      }
+
+      const { data: bookings, error: bookingsError } = await bookingsQuery;
       if (bookingsError) throw bookingsError;
 
-      // Note: We can't filter by booking ID here since the query doesn't return full booking objects
-      // The excludeBookingId filtering happens in the conflict check logic
-      const otherBookings = bookings || [];
+      // 3) booking_rooms (multi-room) — ikutkan dalam perhitungan unavailable
+      let brQuery = supabase
+        .from("booking_rooms")
+        .select(`
+          room_id,
+          room_number,
+          booking_id,
+          bookings!inner(id, status, check_in, check_out)
+        `)
+        .neq("bookings.status", "cancelled")
+        .lt("bookings.check_in", checkOutStr)
+        .gt("bookings.check_out", checkInStr);
 
-      // Calculate availability for each room type
-      const availability: RoomTypeAvailability[] = rooms.map(room => {
+      if (excludeBookingId) {
+        brQuery = brQuery.neq("booking_id", excludeBookingId);
+      }
+
+      const { data: bookingRoomsData, error: brError } = await brQuery;
+      if (brError) throw brError;
+
+      // 4) room_unavailable_dates (manual block oleh admin)
+      const { data: blockedDates, error: blockedError } = await supabase
+        .from("room_unavailable_dates")
+        .select("room_id, room_number, unavailable_date")
+        .gte("unavailable_date", checkInStr)
+        .lt("unavailable_date", checkOutStr);
+
+      if (blockedError) throw blockedError;
+
+      // Build set of unavailable per room type
+      const availability: RoomTypeAvailability[] = rooms.map((room) => {
         const roomNumbers = room.room_numbers || [];
-        
-        // Get booked room numbers for this room type
-        const bookedRoomNumbers = otherBookings
-          .filter(b => b.room_id === room.id)
-          .map(b => b.allocated_room_number)
-          .filter(Boolean);
+        const unavailable = new Set<string>();
 
-        // Find available room numbers
-        const availableRooms = roomNumbers.filter(
-          rn => !bookedRoomNumbers.includes(rn)
-        );
+        // From bookings.allocated_room_number
+        (bookings || [])
+          .filter((b) => b.room_id === room.id && b.allocated_room_number)
+          .forEach((b) => unavailable.add(b.allocated_room_number as string));
+
+        // From booking_rooms (multi-room)
+        ((bookingRoomsData || []) as Array<{ room_id: string; room_number: string | null }>)
+          .filter((br) => br.room_id === room.id && br.room_number)
+          .forEach((br) => unavailable.add(br.room_number as string));
+
+        // From room_unavailable_dates
+        (blockedDates || [])
+          .filter((bd) => bd.room_id === room.id)
+          .forEach((bd) => {
+            if (!bd.room_number) {
+              // Null = block semua nomor tipe ini
+              roomNumbers.forEach((rn) => unavailable.add(rn));
+            } else {
+              unavailable.add(bd.room_number);
+            }
+          });
+
+        const availableRooms = roomNumbers.filter((rn) => !unavailable.has(rn));
 
         return {
           roomId: room.id,

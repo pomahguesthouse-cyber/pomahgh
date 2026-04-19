@@ -226,6 +226,7 @@ export const useAdminBookings = () => {
       if (error) throw error;
 
       // Handle editedRooms (from grid selector) - delete and re-insert approach
+      // CRITICAL: throw on error to prevent silent data loss; React Query will roll back UI state.
       if (editedRooms && Array.isArray(editedRooms) && editedRooms.length > 0) {
         // Delete existing booking_rooms
         const { error: deleteError } = await supabase
@@ -234,7 +235,7 @@ export const useAdminBookings = () => {
           .eq("booking_id", booking.id);
         
         if (deleteError) {
-          console.error("Error deleting booking_rooms:", deleteError);
+          throw new Error(`Gagal menghapus booking_rooms lama: ${deleteError.message}`);
         }
 
         // Insert new booking_rooms
@@ -250,7 +251,18 @@ export const useAdminBookings = () => {
           .insert(bookingRoomsData);
         
         if (insertError) {
-          console.error("Error inserting booking_rooms:", insertError);
+          // Data loss prevention: re-insert original rooms back so we don't leave booking with no rooms
+          if (existingRoomsData && existingRoomsData.length > 0) {
+            await supabase.from("booking_rooms").insert(
+              existingRoomsData.map(r => ({
+                booking_id: booking.id,
+                room_id: r.room_id,
+                room_number: r.room_number,
+                price_per_night: 0,
+              }))
+            );
+          }
+          throw new Error(`Gagal menyimpan booking_rooms baru: ${insertError.message}`);
         }
       } else if (booking_rooms && Array.isArray(booking_rooms) && booking_rooms.length > 0) {
         // Fallback: Update each booking_room individually (legacy path)
@@ -266,7 +278,7 @@ export const useAdminBookings = () => {
               .eq("id", br.id);
             
             if (brError) {
-              console.error("Error updating booking_room:", brError);
+              throw new Error(`Gagal memperbarui booking_room ${br.id}: ${brError.message}`);
             }
           }
         }
@@ -274,11 +286,20 @@ export const useAdminBookings = () => {
 
       // Handle editedAddons - delete and re-insert
       if (editedAddons && Array.isArray(editedAddons)) {
-        // Delete existing booking_addons
-        await supabase
+        // Snapshot existing addons before delete (for rollback if insert fails)
+        const { data: existingAddons } = await supabase
+          .from("booking_addons")
+          .select("addon_id, quantity, unit_price, total_price")
+          .eq("booking_id", booking.id);
+
+        const { error: deleteAddonError } = await supabase
           .from("booking_addons")
           .delete()
           .eq("booking_id", booking.id);
+
+        if (deleteAddonError) {
+          throw new Error(`Gagal menghapus booking_addons lama: ${deleteAddonError.message}`);
+        }
 
         // Insert new addons if any
         if (editedAddons.length > 0) {
@@ -295,7 +316,13 @@ export const useAdminBookings = () => {
             .insert(addonsData);
 
           if (addonInsertError) {
-            console.error("Error inserting booking_addons:", addonInsertError);
+            // Try to restore previous addons to prevent data loss
+            if (existingAddons && existingAddons.length > 0) {
+              await supabase.from("booking_addons").insert(
+                existingAddons.map(a => ({ booking_id: booking.id, ...a }))
+              );
+            }
+            throw new Error(`Gagal menyimpan booking_addons baru: ${addonInsertError.message}`);
           }
         }
       }
