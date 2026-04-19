@@ -311,5 +311,49 @@ export const TOOLS: ToolDefinition[] = [
         required: ["booking_code", "recipient"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_booking_detail",
+      description: "Dapatkan detail lengkap satu booking berdasarkan kode booking. Gunakan saat manager minta: 'detail booking PMH-xxx', 'cek booking PMH-xxx', 'info booking PMH-xxx'",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_code: { type: "string", description: "Kode booking (contoh: PMH-ABC123)" }
+        },
+        required: ["booking_code"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_booking_status",
+      description: "Update status booking (confirm, cancel, noshow, dll). Gunakan saat manager minta: 'cancel booking PMH-xxx', 'konfirmasi booking PMH-xxx', 'tandai noshow PMH-xxx'",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_code: { type: "string", description: "Kode booking (contoh: PMH-ABC123)" },
+          new_status: { type: "string", enum: ["confirmed", "cancelled", "checked_in", "checked_out", "no_show"], description: "Status baru booking" },
+          cancellation_reason: { type: "string", description: "Alasan pembatalan (opsional, hanya untuk status cancelled)" }
+        },
+        required: ["booking_code", "new_status"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_today_guests",
+      description: "Dapatkan daftar tamu hari ini (check-in, check-out, atau in-house). Gunakan saat manager minta: 'siapa tamu hari ini', 'daftar checkin hari ini', 'tamu checkout hari ini', 'siapa yang menginap'",
+      parameters: {
+        type: "object",
+        properties: {
+          type: { type: "string", enum: ["all", "checkin", "checkout", "inhouse"], description: "Jenis daftar: all=semua, checkin=yang check-in, checkout=yang checkout, inhouse=sedang menginap" },
+          date: { type: "string", description: "Tanggal spesifik (YYYY-MM-DD), default hari ini" }
+        }
+      }
+    }
   }
 ];

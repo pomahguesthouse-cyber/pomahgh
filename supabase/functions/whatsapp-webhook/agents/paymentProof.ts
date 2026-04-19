@@ -309,8 +309,9 @@ export async function handlePaymentProof(
     .eq('id', booking.id);
 
   // 3a. Persist structured OCR result to payment_proofs table
+  let proofId: string | null = null;
   try {
-    await supabase.from('payment_proofs').insert({
+    const { data: proofRow } = await supabase.from('payment_proofs').insert({
       booking_id: booking.id,
       phone,
       image_url: imageUrl,
@@ -325,7 +326,8 @@ export async function handlePaymentProof(
       raw_extraction: extraction ?? null,
       source: isAdminSubmission ? 'whatsapp_admin' : 'whatsapp',
       status: 'pending',
-    });
+    }).select('id').single();
+    proofId = proofRow?.id ?? null;
   } catch (e) {
     console.warn('payment_proofs insert failed', e);
   }
@@ -425,10 +427,18 @@ ${matchStatus}
 
 ${autoApproved ? '_Pembayaran sudah otomatis dikonfirmasi. Tidak perlu balas._' : '_Balas *YA* / *OK* untuk konfirmasi pembayaran, atau *TIDAK* jika tidak match._'}`;
 
-  // 5. Send to all managers
+  // 5. Send to all managers & store pending_proof_id in their sessions for scoped approval
   const managers = managerNumbers.length > 0 ? managerNumbers : [];
   await Promise.allSettled(
-    managers.map(m => sendWhatsApp(m.phone, managerMsg, env.fonnteApiKey)),
+    managers.map(async (m) => {
+      await sendWhatsApp(m.phone, managerMsg, env.fonnteApiKey);
+      // Store proof ID in manager's session so paymentApproval can scope correctly
+      if (proofId && !autoApproved) {
+        await supabase.from('whatsapp_sessions')
+          .update({ context: { pending_proof_id: proofId } })
+          .eq('phone_number', m.phone);
+      }
+    }),
   );
 
   // 6. Acknowledge sender (admin gets short receipt; guest gets full message)

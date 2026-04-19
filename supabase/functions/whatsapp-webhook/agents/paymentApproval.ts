@@ -25,10 +25,31 @@ export function isPaymentApprovalReply(message: string): 'approve' | 'reject' | 
 }
 
 /**
- * Find the most recent pending payment_proof row that needs manager decision.
- * Returns null if no pending proof exists (e.g. already auto-approved).
+ * Find the pending payment_proof scoped to this manager.
+ * First checks the manager's session for a specific proof ID (set by paymentProof agent).
+ * Falls back to the most recent pending proof globally (backwards compatibility).
  */
-async function findPendingProof(supabase: SupabaseClient) {
+async function findPendingProof(supabase: SupabaseClient, managerPhone: string) {
+  // 1. Check manager's session for a scoped proof ID
+  const { data: session } = await supabase
+    .from('whatsapp_sessions')
+    .select('context')
+    .eq('phone_number', managerPhone)
+    .maybeSingle();
+
+  const pendingProofId = (session?.context as Record<string, unknown>)?.pending_proof_id as string | undefined;
+
+  if (pendingProofId) {
+    const { data } = await supabase
+      .from('payment_proofs')
+      .select('id, booking_id, amount, sender_name, bank_name')
+      .eq('id', pendingProofId)
+      .eq('status', 'pending')
+      .maybeSingle();
+    if (data) return data;
+  }
+
+  // 2. Fallback: most recent pending proof globally
   const { data } = await supabase
     .from('payment_proofs')
     .select('id, booking_id, amount, sender_name, bank_name')
@@ -46,7 +67,7 @@ export async function handlePaymentApproval(
   managerNumbers: ManagerInfo[],
   env: EnvConfig,
 ): Promise<Response> {
-  const proof = await findPendingProof(supabase);
+  const proof = await findPendingProof(supabase, managerPhone);
   if (!proof) {
     await sendWhatsApp(
       managerPhone,
@@ -112,6 +133,11 @@ export async function handlePaymentApproval(
       );
     }
 
+    // 6. Clear pending_proof_id from manager session
+    await supabase.from('whatsapp_sessions')
+      .update({ context: {} })
+      .eq('phone_number', managerPhone);
+
     return new Response(JSON.stringify({ status: 'approved', booking_id: booking.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -140,6 +166,11 @@ export async function handlePaymentApproval(
       env.fonnteApiKey,
     );
   }
+
+  // Clear pending_proof_id from manager session
+  await supabase.from('whatsapp_sessions')
+    .update({ context: {} })
+    .eq('phone_number', managerPhone);
 
   return new Response(JSON.stringify({ status: 'rejected', booking_id: booking.id }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
