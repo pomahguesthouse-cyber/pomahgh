@@ -377,20 +377,23 @@ function buildInvoicePdf(args: {
   } else if (showBank && bankAccounts.length > 0) {
     // === INSTRUKSI PEMBAYARAN ===
     if (y > 700) { doc.addPage(); y = 50; }
-    y = drawSectionHeader('INSTRUKSI PEMBAYARAN', y);
+    y = drawSectionHeader(isDownPayment ? 'PELUNASAN PEMBAYARAN' : 'INSTRUKSI PEMBAYARAN', y);
     doc.setFont(fontFamily, 'normal');
     doc.setFontSize(10);
     doc.setTextColor(...dark);
-    doc.text('Silakan transfer sebesar:', marginX, y);
+    doc.text(isDownPayment ? 'Sisa pembayaran yang harus dilunasi:' : 'Silakan transfer sebesar:', marginX, y);
     y += 16;
     doc.setFont(fontFamily, 'bold');
     doc.setFontSize(13);
     doc.setTextColor(...primary);
-    doc.text(formatRupiah(totalWithCode), marginX, y);
-    doc.setFont(fontFamily, 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(...muted);
-    doc.text(`(termasuk kode unik 3 digit: ${uniqueCode})`, marginX + 130, y);
+    const transferAmount = isDownPayment ? remainingBalance : totalWithCode;
+    doc.text(formatRupiah(transferAmount), marginX, y);
+    if (!isDownPayment) {
+      doc.setFont(fontFamily, 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...muted);
+      doc.text(`(termasuk kode unik 3 digit: ${uniqueCode})`, marginX + 130, y);
+    }
     y += 18;
     doc.setFontSize(10);
     doc.setTextColor(...dark);
