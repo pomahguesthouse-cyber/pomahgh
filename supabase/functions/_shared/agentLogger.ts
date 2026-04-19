@@ -31,9 +31,10 @@ export interface ToolLog {
 
 /**
  * Log an agent routing decision (fire-and-forget).
+ * Returns a Promise for callers that need to await critical logs.
  */
-export function logAgentDecision(supabase: SupabaseClient, entry: DecisionLog): void {
-  supabase.from('agent_routing_logs').insert({
+export function logAgentDecision(supabase: SupabaseClient, entry: DecisionLog): Promise<void> {
+  return supabase.from('agent_routing_logs').insert({
     trace_id: entry.trace_id,
     conversation_id: entry.conversation_id,
     phone_number: entry.phone_number,
@@ -49,10 +50,10 @@ export function logAgentDecision(supabase: SupabaseClient, entry: DecisionLog): 
 
 /**
  * Log a tool execution result (fire-and-forget).
- * Stored as routing log with tool metadata.
+ * Returns a Promise for callers that need to await critical logs.
  */
-export function logToolExecution(supabase: SupabaseClient, entry: ToolLog): void {
-  supabase.from('agent_routing_logs').insert({
+export function logToolExecution(supabase: SupabaseClient, entry: ToolLog): Promise<void> {
+  return supabase.from('agent_routing_logs').insert({
     trace_id: entry.trace_id,
     conversation_id: entry.conversation_id,
     from_agent: entry.agent_name || 'unknown',

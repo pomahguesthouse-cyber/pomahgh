@@ -10,10 +10,15 @@ export async function getCachedHotelSettings(supabase: SupabaseClient): Promise<
   if (hotelSettingsCache.data && now < hotelSettingsCache.expiresAt) {
     return hotelSettingsCache.data;
   }
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('hotel_settings')
     .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_response_mode, whatsapp_manager_numbers')
     .single();
+  if (error || !data) {
+    console.warn('[session] getCachedHotelSettings failed:', error?.message);
+    // Don't cache failures — allow retry on next call
+    return hotelSettingsCache.data || null; // Return stale data if available
+  }
   hotelSettingsCache = { data, expiresAt: now + HOTEL_SETTINGS_TTL };
   return data;
 }
@@ -50,7 +55,7 @@ export async function updateSession(
   isTakeover: boolean,
   sessionType: 'guest' | 'admin' = 'guest',
 ) {
-  await supabase
+  const { error } = await supabase
     .from('whatsapp_sessions')
     .upsert({
       phone_number: phone,
@@ -61,4 +66,8 @@ export async function updateSession(
       takeover_at: isTakeover ? new Date().toISOString() : null,
       session_type: sessionType,
     }, { onConflict: 'phone_number' });
+
+  if (error) {
+    console.warn(`[session] updateSession failed for ${phone}:`, error.message);
+  }
 }

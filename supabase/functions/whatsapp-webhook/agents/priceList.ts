@@ -36,8 +36,8 @@ function rupiah(n: number): string {
 }
 
 function pickPrice(r: RoomRow): number | null {
-  // Prefer promo if set & lower; else price_per_night; else base_price
-  const candidates = [r.price_per_night, r.base_price].filter(
+  // Prefer promo_price if set & positive; else price_per_night; else base_price
+  const candidates = [r.promo_price, r.price_per_night, r.base_price].filter(
     (v): v is number => typeof v === 'number' && v > 0,
   );
   if (candidates.length === 0) return null;
@@ -62,10 +62,11 @@ export async function handlePriceListQuestion(
   await logMessage(supabase, convId, 'user', message);
   await updateSession(supabase, phone, convId, false);
 
-  // Load all rooms — order cheapest first
+  // Load active rooms — order cheapest first
   const { data: rooms } = await supabase
     .from('rooms')
     .select('name, price_per_night, base_price, promo_price, max_guests')
+    .eq('is_active', true)
     .order('price_per_night', { ascending: true, nullsFirst: false });
 
   const list = (rooms || []) as RoomRow[];

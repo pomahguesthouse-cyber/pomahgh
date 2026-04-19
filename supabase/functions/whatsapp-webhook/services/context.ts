@@ -133,7 +133,7 @@ export async function getLatestBookingContextByPhone(
   const { data: booking } = await supabase
     .from('bookings')
     .select(`booking_code, guest_name, guest_email, guest_phone, check_in, check_out, total_nights, status, rooms:room_id (name)`)
-    .or(`guest_phone.eq.${phone},guest_phone.eq.${localPhone}`)
+    .in('guest_phone', [phone, localPhone])
     .not('status', 'in', '("cancelled","rejected")')
     .order('created_at', { ascending: false })
     .limit(1)

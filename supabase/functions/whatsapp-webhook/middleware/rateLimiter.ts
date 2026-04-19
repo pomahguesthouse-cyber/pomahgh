@@ -20,9 +20,9 @@ export async function checkRateLimit(supabase: SupabaseClient, phone: string): P
 
     // Count recent messages from this phone in the DB
     const { count, error } = await supabase
-      .from("chat_messages")
+      .from("agent_routing_logs")
       .select("*", { count: "exact", head: true })
-      .eq("sender_phone", phone)
+      .eq("phone_number", phone)
       .gte("created_at", windowStart);
 
     if (error) {

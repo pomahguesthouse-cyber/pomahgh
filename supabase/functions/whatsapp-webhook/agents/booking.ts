@@ -151,7 +151,7 @@ export async function handleGuestBookingFlow(
     const guardMessages = [
       ...messages,
       { role: 'assistant', content: aiResponse },
-      { role: 'user', content: `[SYSTEM CRITICAL: Kamu menjawab tentang ketersediaan kamar TANPA memanggil tool check_availability. INI DILARANG KERAS karena bisa salah info ke tamu. SEKARANG WAJIB panggil tool check_availability dengan tanggal yang user sebutkan. Jangan balas text - LANGSUNG panggil tool check_availability!]` }
+      { role: 'system', content: `Kamu menjawab tentang ketersediaan kamar TANPA memanggil tool check_availability. INI DILARANG KERAS karena bisa salah info ke tamu. SEKARANG WAJIB panggil tool check_availability dengan tanggal yang user sebutkan. Jangan balas text - LANGSUNG panggil tool check_availability!` }
     ];
     const guardResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
       method: 'POST',
@@ -194,7 +194,7 @@ export async function handleGuestBookingFlow(
     const retryMessages = [
       ...messages,
       { role: 'assistant', content: aiResponse },
-      { role: 'user', content: `[SYSTEM: Kamu baru saja bilang "${aiResponse.substring(0, 80)}..." tapi TIDAK memanggil tool check_availability. INI GAGAL. SEKARANG PANGGIL check_availability DENGAN TANGGAL YANG DISEBUTKAN USER. Jika user bilang "sehari" berarti 1 malam. Jangan balas text - LANGSUNG panggil tool!]` }
+      { role: 'system', content: `Kamu baru saja bilang "${aiResponse.substring(0, 80)}..." tapi TIDAK memanggil tool check_availability. INI GAGAL. SEKARANG PANGGIL check_availability DENGAN TANGGAL YANG DISEBUTKAN USER. Jika user bilang "sehari" berarti 1 malam. Jangan balas text - LANGSUNG panggil tool!` }
     ];
 
     const retryResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {

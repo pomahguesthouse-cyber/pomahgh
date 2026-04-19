@@ -18,8 +18,11 @@ const COMPLAINT_PATTERNS = {
   low: /\b(saran|masukan|mending|sebaiknya|seharusnya|tolong\s+diperbaiki|mohon\s+diperbaiki)\b/iu,
 };
 
-/** Positive / neutral phrases that must NEVER be classified as complaint. */
+/** Positive / neutral phrases that override complaint detection — only when no complaint keyword co-occurs. */
 const POSITIVE_OVERRIDE = /\b(terima\s*kasih|makasih|thanks|thank\s+you|tq|sip|oke|okay|ok|siap|baik|bagus|mantap|keren|puas|recommended|rekomen|ramah|nyaman|bersih)\b/i;
+
+/** Words that indicate genuine complaint even if positive words are present */
+const COMPLAINT_KEYWORDS = /\b(kecewa|marah|komplain|keluhan|kotor|bau|berisik|rusak|lambat|parah|kapok|nyesel|menyesal|tidak\s+puas|ga\s+puas|ancam|hukum|pengacara|polisi|gugat|tuntut|bahaya|darurat|brengsek|bangsat|tolol|goblok|tidak\s+terima|ngga\s+terima|gak\s+terima)\b/i;
 
 export type ComplaintUrgency = 'critical' | 'high' | 'medium' | 'low';
 
@@ -28,8 +31,8 @@ export function detectComplaintUrgency(message: string): ComplaintUrgency | null
   // Short messages (< 4 chars) are almost never complaints
   if (message.trim().length < 4) return null;
 
-  // Positive sentiment overrides any false-positive emoji match
-  if (POSITIVE_OVERRIDE.test(message)) return null;
+  // Positive sentiment overrides complaint only if no complaint keyword co-occurs
+  if (POSITIVE_OVERRIDE.test(message) && !COMPLAINT_KEYWORDS.test(message)) return null;
 
   if (COMPLAINT_PATTERNS.critical.test(message)) return 'critical';
   if (COMPLAINT_PATTERNS.high.test(message)) return 'high';

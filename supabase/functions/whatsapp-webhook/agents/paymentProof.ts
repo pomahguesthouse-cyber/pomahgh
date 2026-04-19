@@ -50,7 +50,7 @@ async function findPendingBooking(
   const { data } = await supabase
     .from('bookings')
     .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out')
-    .or(`guest_phone.eq.${phone},guest_phone.eq.${normalizedPhone}`)
+    .in('guest_phone', [phone, normalizedPhone])
     .in('payment_status', ['pending', 'unpaid'])
     .in('status', ['pending_payment', 'confirmed'])
     .order('created_at', { ascending: false })

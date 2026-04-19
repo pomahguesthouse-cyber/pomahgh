@@ -219,10 +219,18 @@ export async function orchestrate(
     const convId = await ensureConversation(supabase, session, phone);
     // Caption may come as `message` (Fonnte sends image caption inside the message field).
     const caption = typeof message === 'string' ? message : null;
-    return handlePaymentProof(supabase, phone, imageUrl, convId, managerNumbers, env, trace, {
-      submittedByManager: isManager ? managerInfo : null,
-      caption,
-    });
+    try {
+      return await handlePaymentProof(supabase, phone, imageUrl, convId, managerNumbers, env, trace, {
+        submittedByManager: isManager ? managerInfo : null,
+        caption,
+      });
+    } catch (proofError) {
+      console.error(`❌ PaymentProof error for ${phone}:`, proofError);
+      await sendWhatsApp(phone, 'Maaf, terjadi kendala saat memproses gambar Anda. Silakan coba kirim ulang. 🙏', env.fonnteApiKey);
+      return new Response(JSON.stringify({ status: 'payment_proof_error' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   // === PAYMENT APPROVAL (manager YA/TIDAK reply ke notifikasi bukti transfer) ===
@@ -234,19 +242,29 @@ export async function orchestrate(
         from_agent: 'orchestrator', to_agent: 'payment_approval',
         reason: 'manager_yes_no_reply', intent: approvalDecision,
       });
-      return handlePaymentApproval(supabase, phone, approvalDecision, managerInfo, managerNumbers, env);
+      try {
+        return await handlePaymentApproval(supabase, phone, approvalDecision, managerInfo, managerNumbers, env);
+      } catch (approvalError) {
+        console.error(`❌ PaymentApproval error for ${phone}:`, approvalError);
+        await sendWhatsApp(phone, 'Maaf, terjadi kesalahan saat memproses konfirmasi pembayaran. Silakan coba lagi.', env.fonnteApiKey);
+        return new Response(JSON.stringify({ status: 'payment_approval_error' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
   }
 
   // === PRICING AGENT: Price approval commands ===
   if (isManager && managerInfo) {
-    logAgentDecision(supabase, {
-      trace_id: trace?.traceId, phone_number: phone,
-      from_agent: 'orchestrator', to_agent: 'pricing',
-      reason: 'manager_detected', intent: 'price_approval',
-    });
     const priceResult = await handlePriceApproval(supabase, normalizedMessage, phone, managerInfo, env);
-    if (priceResult) return priceResult;
+    if (priceResult) {
+      logAgentDecision(supabase, {
+        trace_id: trace?.traceId, phone_number: phone,
+        from_agent: 'orchestrator', to_agent: 'pricing',
+        reason: 'manager_price_approval', intent: 'price_approval',
+      });
+      return priceResult;
+    }
 
     // === MANAGER AGENT: Pengelola chatbot ===
     logAgentDecision(supabase, {
@@ -290,6 +308,7 @@ export async function orchestrate(
   }
 
   // === INTENT AGENT: Name collection ===
+  try {
   const nameResult = await handleNameCollection(
     supabase, session as WhatsAppSession, phone, conversationId!, String(message),
     normalizedMessage, isNewSession, personaName, env
@@ -301,6 +320,10 @@ export async function orchestrate(
       reason: 'name_collection', intent: 'greeting',
     });
     return nameResult;
+  }
+  } catch (nameError) {
+    console.error(`❌ NameCollection error for ${phone}:`, nameError);
+    // Non-fatal: continue to next agent
   }
 
   // === FAST PATH: Room photo / brochure requests ===

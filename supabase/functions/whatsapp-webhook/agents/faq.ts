@@ -96,7 +96,6 @@ export async function handleGuestFAQ(
   console.log(`❓ FAQ AGENT - handling guest FAQ for ${phone}`);
 
   const convId = conversationId || await ensureConversation(supabase, session, phone);
-  await logMessage(supabase, convId, 'user', message);
   await updateSession(supabase, phone, convId, false);
 
   // === Send room brochure PDF if user asks about room photos ===
@@ -145,10 +144,14 @@ export async function handleGuestFAQ(
     const aiMessage = chatbotData.choices?.[0]?.message;
     if (aiMessage?.tool_calls?.length > 0) {
       console.log('⚠️ FAQ Agent: AI requested tools, escalating to Booking Agent');
+      // Don't log user message here — booking agent will log it
       return new Response(JSON.stringify({ status: "faq_escalate_to_booking" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Not escalating — now log user message
+    await logMessage(supabase, convId, 'user', message);
 
     if (!aiResponse || aiResponse.trim() === '') {
       aiResponse = brochureSent

@@ -31,7 +31,7 @@ export async function handlePriceApproval(
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (!approval) {
       const errorMessage = `❌ *Approval Not Found*\n\nTidak ada permintaan persetujuan harga yang tertunda untuk kamar ini.\n\nRoom ID: ${roomId}\n\nPastikan ID kamar benar atau persetujuan sudah kadaluarsa (30 menit).`;
@@ -75,9 +75,9 @@ export async function handlePriceApproval(
     }
   } catch (error) {
     console.error('❌ Error processing price approval:', error);
-    const errorMsg = `❌ *Error Processing Approval*\n\nTerjadi kesalahan saat memproses persetujuan harga.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n\nSilakan coba lagi atau hubungi technical support.`;
+    const errorMsg = `❌ *Error Processing Approval*\n\nTerjadi kesalahan saat memproses persetujuan harga.\n\nSilakan coba lagi atau hubungi technical support.`;
     await sendWhatsApp(phone, errorMsg, env.fonnteApiKey);
-    return new Response(JSON.stringify({ status: "error", error: error instanceof Error ? error.message : 'Unknown error' }), {
+    return new Response(JSON.stringify({ status: "error", error: 'price_approval_processing_failed' }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

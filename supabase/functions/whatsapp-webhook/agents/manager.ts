@@ -3,6 +3,7 @@ import { corsHeaders } from '../types.ts';
 import { formatForWhatsApp } from '../utils/format.ts';
 import { ensureConversation, updateSession } from '../services/session.ts';
 import { logMessage, getConversationHistory } from '../services/conversation.ts';
+import { sendWhatsApp } from '../services/fonnte.ts';
 
 /**
  * Manager Agent: Khusus menangani chat dari pengelola/manager.
@@ -59,30 +60,31 @@ export async function handleManagerChat(
       throw new Error(`Admin chatbot error: ${adminResponse.status}`);
     }
 
-    // Stream response
-    const reader = adminResponse.body?.getReader();
-    const decoder = new TextDecoder();
+    // Parse response as JSON
+    const adminData = await adminResponse.json();
     let aiResponse = '';
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        aiResponse += decoder.decode(value, { stream: true });
-      }
+
+    // Handle both streaming text and structured JSON responses
+    if (typeof adminData === 'string') {
+      aiResponse = adminData;
+    } else if (adminData?.choices?.[0]?.message?.content) {
+      aiResponse = adminData.choices[0].message.content;
+    } else if (adminData?.response) {
+      aiResponse = adminData.response;
+    } else {
+      // Fallback: try to read as text from a clone
+      aiResponse = JSON.stringify(adminData);
     }
+
     aiResponse = aiResponse.trim() || "Maaf, terjadi kesalahan. Silakan coba lagi.";
     const formattedResponse = formatForWhatsApp(aiResponse);
 
     // Log & send
     await logMessage(supabase, convId, 'assistant', formattedResponse);
-
-    const sendResponse = await fetch('https://api.fonnte.com/send', {
-      method: 'POST',
-      headers: { 'Authorization': env.fonnteApiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target: phone, message: formattedResponse }),
-    });
-    const sendResult = await sendResponse.json();
-    console.log("Fonnte send result (manager):", JSON.stringify(sendResult));
+    const sendResult = await sendWhatsApp(phone, formattedResponse, env.fonnteApiKey);
+    if (sendResult.status === false) {
+      console.error(`❌ Manager Agent: Failed to send WhatsApp to ${phone}: ${sendResult.detail || 'unknown'}`);
+    }
 
     return new Response(JSON.stringify({
       status: "manager_agent",

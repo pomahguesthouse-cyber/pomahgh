@@ -22,7 +22,7 @@ export async function handleNameCollection(
   // New session flow
   if (isNewSession) {
     console.log(`🆕 New session for ${phone}`);
-    const questionPatterns = /[?？]|berapa|harga|kamar|booking|check.?in|check.?out|tersedia|available|promo|fasilitas|alamat|lokasi|wifi|bayar|transfer|cancel|batal|kapan|bagaimana|gimana|apakah|bisa|boleh|ada|mau|ingin|cari|pesan|sewa|tarif|biaya|diskon|info|informasi/i;
+    const questionPatterns = /[?？]|berapa|harga|kamar|booking|check.?in|check.?out|tersedia|available|promo|fasilitas|alamat|lokasi|wifi|bayar|transfer|cancel|batal|kapan|bagaimana|gimana|apakah|bisa.{1,20}(kamar|booking|pesan|check)|ada.{1,20}(kamar|promo|diskon)|mau.{1,20}(pesan|booking|menginap|nginap)|ingin|cari|pesan\s+kamar|sewa|tarif|biaya|diskon|info\s+(kamar|harga|booking)|informasi/i;
     const isQuestion = questionPatterns.test(normalizedMessage);
 
     if (isQuestion) {
@@ -35,6 +35,7 @@ export async function handleNameCollection(
       }, { onConflict: 'phone_number' });
 
       if (conversationId) {
+        // NOTE: guest_email field repurposed for guest display name (schema legacy)
         await supabase.from('chat_conversations').update({ guest_email: `${genericName} (WA: ${phone})` }).eq('id', conversationId);
       }
       return null; // Fall through to AI
@@ -70,6 +71,7 @@ export async function handleNameCollection(
       }).eq('phone_number', phone);
 
       if (conversationId) {
+        // NOTE: guest_email field repurposed for guest display name (schema legacy)
         await supabase.from('chat_conversations').update({ guest_email: `${genericName} (WA: ${phone})` }).eq('id', conversationId);
       }
       return null; // Fall through to AI
@@ -81,6 +83,7 @@ export async function handleNameCollection(
     }).eq('phone_number', phone);
 
     if (conversationId) {
+      // NOTE: guest_email field repurposed for guest display name (schema legacy)
       await supabase.from('chat_conversations').update({ guest_email: `${guestNameCandidate} (WA: ${phone})` }).eq('id', conversationId);
     }
 

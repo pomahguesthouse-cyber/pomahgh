@@ -9,7 +9,7 @@ export async function logMessage(
 ) {
   if (!conversationId) return;
 
-  await Promise.all([
+  const [insertResult, rpcResult] = await Promise.all([
     supabase.from('chat_messages').insert({
       conversation_id: conversationId,
       role,
@@ -17,6 +17,13 @@ export async function logMessage(
     }),
     supabase.rpc('increment_conversation_message_count', { conv_id: conversationId }),
   ]);
+
+  if (insertResult.error) {
+    console.warn(`[logMessage] Insert failed for ${conversationId}:`, insertResult.error.message);
+  }
+  if (rpcResult.error) {
+    console.warn(`[logMessage] Increment failed for ${conversationId}:`, rpcResult.error.message);
+  }
 }
 
 /** Get conversation history with smart truncation.

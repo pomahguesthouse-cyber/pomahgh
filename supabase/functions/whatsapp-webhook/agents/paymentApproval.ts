@@ -26,11 +26,11 @@ export function isPaymentApprovalReply(message: string): 'approve' | 'reject' | 
 
 /**
  * Find the pending payment_proof scoped to this manager.
- * First checks the manager's session for a specific proof ID (set by paymentProof agent).
- * Falls back to the most recent pending proof globally (backwards compatibility).
+ * Checks the manager's session for a specific proof ID (set by paymentProof agent).
+ * Returns null if no scoped proof found — prevents approving wrong booking.
  */
 async function findPendingProof(supabase: SupabaseClient, managerPhone: string) {
-  // 1. Check manager's session for a scoped proof ID
+  // Check manager's session for a scoped proof ID
   const { data: session } = await supabase
     .from('whatsapp_sessions')
     .select('context')
@@ -39,24 +39,19 @@ async function findPendingProof(supabase: SupabaseClient, managerPhone: string) 
 
   const pendingProofId = (session?.context as Record<string, unknown>)?.pending_proof_id as string | undefined;
 
-  if (pendingProofId) {
-    const { data } = await supabase
-      .from('payment_proofs')
-      .select('id, booking_id, amount, sender_name, bank_name')
-      .eq('id', pendingProofId)
-      .eq('status', 'pending')
-      .maybeSingle();
-    if (data) return data;
+  if (!pendingProofId) {
+    console.warn(`[PaymentApproval] No pending_proof_id in session for ${managerPhone}`);
+    return null;
   }
 
-  // 2. Fallback: most recent pending proof globally
   const { data } = await supabase
     .from('payment_proofs')
     .select('id, booking_id, amount, sender_name, bank_name')
+    .eq('id', pendingProofId)
     .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-    .limit(1);
-  return data && data.length > 0 ? data[0] : null;
+    .maybeSingle();
+
+  return data || null;
 }
 
 export async function handlePaymentApproval(
