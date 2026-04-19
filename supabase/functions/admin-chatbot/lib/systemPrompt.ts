@@ -89,6 +89,14 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
 🔍 CARI BOOKING:
 - "cari booking Ahmad" → search_bookings(query="Ahmad")
 - "booking BK001" → get_booking_detail(booking_code="BK001")
+- "list booking" / "daftar booking" / "booking terbaru" → get_recent_bookings (default 5, atau sesuai jumlah yang diminta)
+
+⚠️ FORMAT WAJIB UNTUK LIST/DAFTAR BOOKING (get_recent_bookings & search_bookings):
+- WAJIB tampilkan SEMUA kamar untuk booking multi-room. Gunakan field 'rooms_summary' dari hasil tool.
+- Format per booking:
+  "N. **{kode}** | {guest_name} | {rooms_summary} | {check_in} - {check_out} | Rp {total_price} | {status}"
+- Contoh multi-room: "Family Suite + Deluxe (203, 204, 205, FS100, FS222) [5 kamar]"
+- JANGAN HANYA tampilkan satu nama tipe jika 'is_multi_room=true' — tampilkan SEMUA kamar.
 
 📊 STATISTIK:
 - "statistik hari ini" → get_booking_stats(period="today")
