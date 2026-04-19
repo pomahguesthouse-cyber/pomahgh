@@ -263,7 +263,7 @@ export const useMultiAgentDashboard = () => {
     const todayLogs = routingLogsQuery.data || [];
     const PAYMENT_SUB_AGENTS = ['payment', 'payment_proof', 'payment_approval'];
     const agentLogs = config.agent_id === 'payment'
-      ? todayLogs.filter(l => PAYMENT_SUB_AGENTS.includes(l.to_agent) || PAYMENT_SUB_AGENTS.includes(l.from_agent))
+      ? todayLogs.filter(l => (l.to_agent && PAYMENT_SUB_AGENTS.includes(l.to_agent)) || PAYMENT_SUB_AGENTS.includes(l.from_agent))
       : todayLogs.filter(l => l.to_agent === config.agent_id || l.from_agent === config.agent_id);
     const failedLogs = agentLogs.filter(l => l.reason === 'failed');
     const successRate = agentLogs.length > 0
