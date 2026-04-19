@@ -30,7 +30,6 @@ export interface AgentDefinition {
 
 const BACKEND_FILES: Record<string, string> = {
   orchestrator: 'orchestrator.ts',
-  intent: 'intent.ts',
   booking: 'booking.ts',
   faq: 'faq.ts',
   payment: 'payment.ts',
@@ -204,15 +203,13 @@ export const useMultiAgentDashboard = () => {
     let chatCount = routingCounts[config.agent_id] || 0;
 
     switch (config.agent_id) {
-      case 'orchestrator':
-        status = activeSessions.length > 0 ? 'active' : 'idle';
-        chatCount = activeSessions.length;
-        break;
-      case 'intent':
+      case 'orchestrator': {
         const awaitingName = activeSessions.filter(s => (s as Record<string, unknown>).awaiting_name === true);
-        status = awaitingName.length > 0 ? 'active' : (activeSessions.length > 0 ? 'active' : 'idle');
-        chatCount = awaitingName.length || routingCounts['intent'] || 0;
+        status = activeSessions.length > 0 ? 'active' : 'idle';
+        // Orchestrator chat count = total active + name-collection sessions it's currently handling
+        chatCount = activeSessions.length + awaitingName.length;
         break;
+      }
       case 'booking':
         status = guestSessions.length > 0 ? 'active' : 'idle';
         chatCount = routingCounts['booking'] || guestSessions.length;
