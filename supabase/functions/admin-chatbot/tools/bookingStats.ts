@@ -20,10 +20,15 @@ interface BookingWithRoom {
   booking_code: string;
   guest_name: string;
   guest_phone: string | null;
+  num_guests?: number;
   check_in: string;
   check_out: string;
+  total_nights?: number;
   status: string;
   total_price: number;
+  payment_status?: string | null;
+  payment_amount?: number | null;
+  booking_source?: string | null;
   created_at: string;
   allocated_room_number: string | null;
   rooms: { name: string } | null;
@@ -103,7 +108,7 @@ export async function getRecentBookings(supabase: SupabaseClient, limit: number 
   
   let queryBuilder = supabase
     .from('bookings')
-    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, allocated_room_number, rooms(name), booking_rooms(room_number, rooms(name))')
+    .select('id, booking_code, guest_name, guest_phone, num_guests, check_in, check_out, total_nights, status, total_price, payment_status, payment_amount, booking_source, created_at, allocated_room_number, rooms(name), booking_rooms(room_number, rooms(name))')
     .order('created_at', { ascending: false })
     .limit(actualLimit);
 
@@ -123,6 +128,7 @@ export async function getRecentBookings(supabase: SupabaseClient, limit: number 
         booking_code: b.booking_code,
         guest_name: b.guest_name,
         guest_phone: b.guest_phone,
+        num_guests: b.num_guests,
         room_name: r.room_types.join(' + ') || b.rooms?.name,
         room_numbers: r.room_numbers,
         room_types: r.room_types,
@@ -130,8 +136,12 @@ export async function getRecentBookings(supabase: SupabaseClient, limit: number 
         is_multi_room: r.room_numbers.length > 1,
         check_in: b.check_in,
         check_out: b.check_out,
+        total_nights: b.total_nights,
         status: b.status,
         total_price: b.total_price,
+        payment_status: b.payment_status,
+        payment_amount: b.payment_amount,
+        booking_source: b.booking_source,
         created_at: b.created_at,
       };
     })
@@ -143,7 +153,7 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
   
   let queryBuilder = supabase
     .from('bookings')
-    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, allocated_room_number, rooms(name), booking_rooms(room_number, rooms(name))')
+    .select('id, booking_code, guest_name, guest_phone, num_guests, check_in, check_out, total_nights, status, total_price, payment_status, payment_amount, booking_source, created_at, allocated_room_number, rooms(name), booking_rooms(room_number, rooms(name))')
     .order('created_at', { ascending: false })
     .limit(actualLimit);
 
@@ -170,6 +180,7 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
         booking_code: b.booking_code,
         guest_name: b.guest_name,
         guest_phone: b.guest_phone,
+        num_guests: b.num_guests,
         room_name: r.room_types.join(' + ') || b.rooms?.name,
         room_numbers: r.room_numbers,
         room_types: r.room_types,
@@ -177,8 +188,13 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
         is_multi_room: r.room_numbers.length > 1,
         check_in: b.check_in,
         check_out: b.check_out,
+        total_nights: b.total_nights,
         status: b.status,
         total_price: b.total_price,
+        payment_status: b.payment_status,
+        payment_amount: b.payment_amount,
+        booking_source: b.booking_source,
+        created_at: b.created_at,
       };
     })
   };
