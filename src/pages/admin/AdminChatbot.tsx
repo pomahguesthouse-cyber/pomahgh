@@ -31,6 +31,13 @@ const AdminChatbot = () => {
   const [newWhitelistNumber, setNewWhitelistNumber] = useState("");
   const [newManagerPhone, setNewManagerPhone] = useState("");
   const [newManagerName, setNewManagerName] = useState("");
+  const [newManagerRole, setNewManagerRole] = useState<ManagerRole>('super_admin');
+
+  const ROLE_LABELS: Record<ManagerRole, { label: string; color: string }> = {
+    super_admin: { label: 'Super Admin', color: 'bg-red-500' },
+    booking_manager: { label: 'Booking Manager', color: 'bg-blue-500' },
+    viewer: { label: 'Viewer', color: 'bg-gray-500' },
+  };
   
   const [formData, setFormData] = useState<ChatbotSettingsFormData>(DEFAULT_CHATBOT_FORM_DATA);
 
