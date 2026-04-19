@@ -86,7 +86,9 @@ export const TOOLS: ToolDefinition[] = [
           check_in: { type: "string", description: "Tanggal check-in (YYYY-MM-DD)" },
           check_out: { type: "string", description: "Tanggal check-out (YYYY-MM-DD)" },
           num_guests: { type: "number", description: "Jumlah tamu" },
-          payment_status: { type: "string", enum: ["pending", "paid"], description: "Status pembayaran. Set 'paid' jika manager bilang 'sudah bayar', 'lunas', 'sudah transfer', 'sdh bayar'. Default: 'pending'" }
+          payment_status: { type: "string", enum: ["unpaid", "paid", "down_payment", "pay_at_hotel"], description: "Status pembayaran. 'paid'=lunas/sudah bayar full, 'down_payment'=DP/baru bayar sebagian, 'unpaid'=belum bayar, 'pay_at_hotel'=bayar di hotel. Default: 'unpaid'" },
+          payment_amount: { type: "number", description: "Nominal yang sudah dibayar (rupiah). WAJIB diisi jika payment_status='down_payment' (nominal DP) atau 'paid' (sama dengan total). Kosongkan jika 'unpaid'." },
+          price_per_night: { type: "number", description: "Harga per malam yang disepakati manager (opsional, override harga default kamar)" }
         },
         required: ["guest_name", "guest_phone", "room_name", "check_in", "check_out", "num_guests"]
       }

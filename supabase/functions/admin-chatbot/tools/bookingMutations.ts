@@ -178,16 +178,55 @@ export async function createAdminBooking(supabase: SupabaseClient, args: Record<
     }
   }
 
-  const { totalPrice, promoNights, originalPrice } = calculateFinalPrice(room, checkIn, checkOut, activePromo);
+  let { totalPrice, promoNights, originalPrice } = calculateFinalPrice(room, checkIn, checkOut, activePromo);
+
+  // Manager-supplied price override (per night)
+  const overridePricePerNight = typeof args.price_per_night === 'number' && args.price_per_night > 0
+    ? (args.price_per_night as number)
+    : null;
+  if (overridePricePerNight) {
+    totalPrice = overridePricePerNight * nights;
+    originalPrice = totalPrice;
+    promoNights = 0;
+    console.log(`💰 Price override: ${overridePricePerNight}/night × ${nights} = ${totalPrice}`);
+  }
   const savings = originalPrice - totalPrice;
 
   console.log(`📋 Inserting booking: guest=${args.guest_name}, room=${room.name}#${allocatedRoomNumber}, dates=${args.check_in} to ${args.check_out}`);
 
-  // Determine payment status (manager can mark "sudah bayar" / "lunas")
-  const paymentStatus = (args.payment_status as string) === 'paid' ? 'paid' : 'pending';
-  const isPaid = paymentStatus === 'paid';
+  // Normalize payment status (DB constraint: paid | down_payment | unpaid | pay_at_hotel)
+  const rawStatus = (args.payment_status as string | undefined)?.toLowerCase() || 'unpaid';
+  const statusMap: Record<string, string> = {
+    paid: 'paid',
+    lunas: 'paid',
+    full: 'paid',
+    down_payment: 'down_payment',
+    dp: 'down_payment',
+    partial: 'down_payment',
+    unpaid: 'unpaid',
+    pending: 'unpaid',
+    pay_at_hotel: 'pay_at_hotel',
+  };
+  let paymentStatus = statusMap[rawStatus] || 'unpaid';
 
-  // Create booking
+  let paymentAmount: number | null = null;
+  if (paymentStatus === 'paid') {
+    paymentAmount = totalPrice;
+  } else if (paymentStatus === 'down_payment') {
+    const dp = typeof args.payment_amount === 'number' ? (args.payment_amount as number) : 0;
+    if (dp <= 0) {
+      throw new Error('Nominal DP wajib diisi (payment_amount) saat payment_status=down_payment');
+    }
+    if (dp >= totalPrice) {
+      // DP >= total dianggap lunas
+      paymentStatus = 'paid';
+      paymentAmount = totalPrice;
+    } else {
+      paymentAmount = dp;
+    }
+  }
+
+  // Create booking — DP atau Lunas → status 'confirmed'
   const { data: booking, error: bookingError } = await supabase
     .from('bookings')
     .insert({
@@ -204,7 +243,7 @@ export async function createAdminBooking(supabase: SupabaseClient, args: Record<
       status: 'confirmed',
       booking_source: 'admin',
       payment_status: paymentStatus,
-      payment_amount: isPaid ? totalPrice : null,
+      payment_amount: paymentAmount,
     })
     .select('booking_code, id')
     .single();
@@ -257,7 +296,9 @@ export async function createAdminBooking(supabase: SupabaseClient, args: Record<
     promo_nights: promoNights,
     savings: savings,
     payment_status: paymentStatus,
-    is_paid: isPaid
+    payment_amount: paymentAmount,
+    remaining_balance: paymentStatus === 'down_payment' ? totalPrice - (paymentAmount || 0) : 0,
+    is_paid: paymentStatus === 'paid'
   };
 }
 
