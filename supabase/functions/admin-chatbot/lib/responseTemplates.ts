@@ -82,21 +82,14 @@ export function formatCurrency(amount: number): string {
   return amount.toLocaleString('id-ID');
 }
 
-// Format date to Indonesian
+// Format date global: "Rab, 15/01/2025"
 export function formatDateID(dateStr: string): string {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
-  ];
   const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-  
   const date = new Date(dateStr);
   const dayName = days[date.getDay()];
-  const day = date.getDate();
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  
-  return `${dayName}, ${day} ${month} ${year}`;
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  return `${dayName}, ${dd}/${mm}/${date.getFullYear()}`;
 }
 
 // Replace template variables

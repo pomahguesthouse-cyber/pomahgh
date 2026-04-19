@@ -15,31 +15,30 @@ const parseDate = (date: Date | string): Date => {
 };
 
 /**
- * Format tanggal ke bahasa Indonesia
- * @example formatDate(new Date()) // "30 November 2024"
+ * Format tanggal — default global dd/MM/yyyy.
+ * @example formatDate(new Date()) // "30/11/2024"
  */
 export const formatDate = (
   date: Date | string,
-  formatStr: string = "dd MMMM yyyy"
+  formatStr: string = "dd/MM/yyyy"
 ): string => {
   const dateObj = parseDate(date);
   return format(dateObj, formatStr, { locale: localeId });
 };
 
 /**
- * Format tanggal dengan waktu WIB
- * @example formatDateTime(new Date()) // "30 November 2024, 14:30 WIB"
+ * Format tanggal + jam WIB.
+ * @example formatDateTime(new Date()) // "30/11/2024, 14:30 WIB"
  */
 export const formatDateTime = (date: Date | string): string => {
   const dateObj = parseDate(date);
-  const dateStr = format(dateObj, "dd MMMM yyyy", { locale: localeId });
+  const dateStr = format(dateObj, "dd/MM/yyyy", { locale: localeId });
   const timeStr = format(dateObj, "HH:mm", { locale: localeId });
   return `${dateStr}, ${timeStr} WIB`;
 };
 
 /**
- * Format tanggal pendek
- * @example formatDateShort(new Date()) // "30/11/2024"
+ * Format tanggal pendek — sama dengan formatDate (dd/MM/yyyy).
  */
 export const formatDateShort = (date: Date | string): string => {
   const dateObj = parseDate(date);
@@ -56,8 +55,8 @@ export const formatDateISO = (date: Date | string): string => {
 };
 
 /**
- * Format rentang tanggal
- * @example formatDateRange(start, end) // "28 - 30 November 2024"
+ * Format rentang tanggal — global dd/MM/yyyy.
+ * @example formatDateRange(start, end) // "28/11/2024 - 30/11/2024"
  */
 export const formatDateRange = (
   start: Date | string,
@@ -65,21 +64,7 @@ export const formatDateRange = (
 ): string => {
   const startDate = parseDate(start);
   const endDate = parseDate(end);
-
-  const startMonth = format(startDate, "MMMM", { locale: localeId });
-  const endMonth = format(endDate, "MMMM", { locale: localeId });
-  const startYear = format(startDate, "yyyy");
-  const endYear = format(endDate, "yyyy");
-
-  if (startMonth === endMonth && startYear === endYear) {
-    return `${format(startDate, "dd")} - ${format(endDate, "dd MMMM yyyy", { locale: localeId })}`;
-  }
-
-  if (startYear === endYear) {
-    return `${format(startDate, "dd MMMM", { locale: localeId })} - ${format(endDate, "dd MMMM yyyy", { locale: localeId })}`;
-  }
-
-  return `${format(startDate, "dd MMMM yyyy", { locale: localeId })} - ${format(endDate, "dd MMMM yyyy", { locale: localeId })}`;
+  return `${format(startDate, "dd/MM/yyyy", { locale: localeId })} - ${format(endDate, "dd/MM/yyyy", { locale: localeId })}`;
 };
 
 /**

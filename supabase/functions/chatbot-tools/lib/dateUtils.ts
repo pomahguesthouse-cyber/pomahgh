@@ -2,26 +2,23 @@ import { INDONESIAN_MONTHS, INDONESIAN_DAYS } from './constants.ts';
 import { DateValidationResult } from './types.ts';
 
 /**
- * Format date in Indonesian (e.g., "15 Januari 2025")
+ * Format date global: dd/MM/yyyy.
  */
 export function formatDateIndonesian(dateStr: string): string {
   const date = new Date(dateStr);
-  const day = date.getDate();
-  const month = INDONESIAN_MONTHS[date.getMonth()];
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+  return `${day}/${month}/${year}`;
 }
 
 /**
- * Format date with day name (e.g., "Rabu, 15 Januari 2025")
+ * Format date with day name (e.g., "Rabu, 15/01/2025")
  */
 export function formatDateWithDay(dateStr: string): string {
   const date = new Date(dateStr);
   const dayName = INDONESIAN_DAYS[date.getDay()];
-  const day = date.getDate();
-  const month = INDONESIAN_MONTHS[date.getMonth()];
-  const year = date.getFullYear();
-  return `${dayName}, ${day} ${month} ${year}`;
+  return `${dayName}, ${formatDateIndonesian(dateStr)}`;
 }
 
 /**
