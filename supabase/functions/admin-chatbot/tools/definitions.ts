@@ -293,5 +293,23 @@ export const TOOLS: ToolDefinition[] = [
         }
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_invoice",
+      description: "Generate invoice PDF untuk booking dan kirim ke tamu via WhatsApp dan/atau email, atau ke booking manager. Gunakan saat manager minta: 'kirim invoice', 'invoice ke tamu', 'invoice ke booking manager', 'kirim invoice ke keduanya'. Tool ini otomatis membuat PDF dan mengirimkannya.",
+      parameters: {
+        type: "object",
+        properties: {
+          booking_code: { type: "string", description: "Kode booking (contoh: PMH-ABC123)" },
+          recipient: { type: "string", enum: ["guest", "booking_manager", "both"], description: "Tujuan: 'guest'=tamu langsung, 'booking_manager'=hanya manager pemesan, 'both'=keduanya" },
+          send_whatsapp: { type: "boolean", description: "Kirim via WhatsApp (default: true)" },
+          send_email: { type: "boolean", description: "Kirim via email tamu (default: false, hanya jika recipient=guest atau both)" },
+          manager_phone: { type: "string", description: "Nomor WA booking manager (wajib jika recipient='booking_manager' atau 'both'). Gunakan nomor pengirim pesan saat ini jika tidak disebutkan." }
+        },
+        required: ["booking_code", "recipient"]
+      }
+    }
   }
 ];

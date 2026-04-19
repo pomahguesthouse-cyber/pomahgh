@@ -291,3 +291,110 @@ export async function getManagerList(supabase: SupabaseClient) {
     ).join('\n')
   };
 }
+
+/**
+ * Generate invoice and send via WhatsApp / Email to guest and/or booking manager
+ */
+export async function sendInvoice(
+  supabase: SupabaseClient,
+  args: {
+    booking_code: string;
+    recipient: 'guest' | 'booking_manager' | 'both';
+    send_whatsapp?: boolean;
+    send_email?: boolean;
+    manager_phone?: string;
+  }
+) {
+  const { booking_code, recipient } = args;
+  const sendWa = args.send_whatsapp !== false; // default true
+  const sendEmail = args.send_email === true; // default false
+
+  console.log(`📧 sendInvoice: ${booking_code} → ${recipient} (wa=${sendWa}, email=${sendEmail})`);
+
+  // 1. Find booking
+  const { data: booking, error: bookErr } = await supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, guest_phone, guest_email, total_price, payment_status, payment_amount, check_in, check_out, rooms(name)')
+    .eq('booking_code', booking_code)
+    .single();
+
+  if (bookErr || !booking) {
+    return { success: false, error: `Booking ${booking_code} tidak ditemukan` };
+  }
+
+  // 2. Generate invoice PDF (always email=false here, we control sending separately)
+  let invoiceUrl: string | null = null;
+  let guestEmailSent = false;
+  let guestWaSent = false;
+
+  const wantsGuest = recipient === 'guest' || recipient === 'both';
+  const wantsManager = recipient === 'booking_manager' || recipient === 'both';
+
+  try {
+    const { data: invData, error: invErr } = await supabase.functions.invoke('generate-invoice', {
+      body: {
+        booking_id: booking.id,
+        send_email: wantsGuest && sendEmail,
+        send_whatsapp: wantsGuest && sendWa,
+      },
+    });
+
+    if (invErr) {
+      console.error('generate-invoice error:', invErr);
+      return { success: false, error: `Gagal membuat invoice: ${invErr.message}` };
+    }
+
+    invoiceUrl = invData?.invoice_pdf_url || null;
+    guestEmailSent = !!invData?.email_sent;
+    guestWaSent = !!invData?.whatsapp_sent;
+  } catch (e) {
+    console.error('generate-invoice exception:', e);
+    return { success: false, error: `Gagal generate invoice: ${e instanceof Error ? e.message : 'Unknown'}` };
+  }
+
+  // 3. Send invoice link to booking manager via WA if requested
+  let managerWaSent = false;
+  let managerPhoneUsed: string | null = null;
+  if (wantsManager && sendWa && invoiceUrl) {
+    const phone = args.manager_phone || '';
+    if (!phone) {
+      console.warn('⚠️ booking_manager recipient requested without manager_phone — skipping');
+    } else {
+      const room = (booking.rooms as unknown as { name: string } | null)?.name || '-';
+      const remaining = (booking.total_price || 0) - (booking.payment_amount || 0);
+      const statusLabel = booking.payment_status === 'paid' ? '✅ Lunas' :
+        booking.payment_status === 'down_payment' ? `🟡 DP Rp ${(booking.payment_amount || 0).toLocaleString('id-ID')} (sisa Rp ${remaining.toLocaleString('id-ID')})` :
+        '⏳ Belum bayar';
+      const msg = `📄 *INVOICE BOOKING*\n\n` +
+        `Kode: *${booking.booking_code}*\n` +
+        `Tamu: ${booking.guest_name}\n` +
+        `Kamar: ${room}\n` +
+        `Check-in: ${booking.check_in}\n` +
+        `Check-out: ${booking.check_out}\n` +
+        `Total: Rp ${(booking.total_price || 0).toLocaleString('id-ID')}\n` +
+        `Status: ${statusLabel}\n\n` +
+        `📎 Invoice PDF:\n${invoiceUrl}`;
+
+      const result = await sendWhatsAppMessage(supabase, {
+        phone,
+        message: msg,
+        booking_code: booking.booking_code,
+      });
+      managerWaSent = !!(result as { success?: boolean }).success;
+      managerPhoneUsed = phone;
+    }
+  }
+
+  return {
+    success: true,
+    booking_code: booking.booking_code,
+    invoice_url: invoiceUrl,
+    recipient,
+    guest_whatsapp_sent: guestWaSent,
+    guest_email_sent: guestEmailSent,
+    guest_phone: booking.guest_phone,
+    guest_email: booking.guest_email,
+    manager_whatsapp_sent: managerWaSent,
+    manager_phone: managerPhoneUsed,
+  };
+}

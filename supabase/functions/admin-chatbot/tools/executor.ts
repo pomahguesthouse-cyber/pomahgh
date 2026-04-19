@@ -9,7 +9,7 @@ import { getAvailabilitySummary, getTodayGuests } from "./availability.ts";
 import { getBookingStats, getRecentBookings, searchBookings, getBookingDetail } from "./bookingStats.ts";
 import { createAdminBooking, updateBookingStatus, updateGuestInfo, rescheduleBooking, changeBookingRoom, updateRoomStatus, extendStay, setLateCheckout, checkExtendAvailability } from "./bookingMutations.ts";
 import { getRoomInventory, updateRoomPrice, getRoomPrices } from "./roomManagement.ts";
-import { sendCheckinReminder, sendCalendarLink, sendWhatsAppMessage, getManagerList } from "./notifications.ts";
+import { sendCheckinReminder, sendCalendarLink, sendWhatsAppMessage, getManagerList, sendInvoice } from "./notifications.ts";
 
 // Tools that modify data — cache must be invalidated after execution
 const MUTATION_TOOLS: Record<string, string[]> = {
@@ -144,6 +144,9 @@ async function executeTool(supabase: SupabaseClient, toolName: string, args: Rec
     
     case 'get_manager_list':
       return await getManagerList(supabase);
+    
+    case 'send_invoice':
+      return await sendInvoice(supabase, args as { booking_code: string; recipient: 'guest' | 'booking_manager' | 'both'; send_whatsapp?: boolean; send_email?: boolean; manager_phone?: string });
     
     default:
       throw new Error(`Unknown tool: ${toolName}`);

@@ -101,7 +101,16 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
   - ⚠️ JANGAN PERNAH gunakan "pending" atau "partial" — DB hanya menerima: paid, down_payment, unpaid, pay_at_hotel
   - Status booking otomatis menjadi "confirmed" baik untuk DP maupun Lunas
   - Setelah create_admin_booking BERHASIL, RINGKAS hasil dengan format DP (jika ada): tampilkan total, DP dibayar, sisa tagihan
-  - Setelah berhasil dan manager memilih invoice ke tamu/booking manager/keduanya, panggil send_whatsapp_message ke nomor yang sesuai dengan link/info invoice
+
+📧 KIRIM INVOICE (PENTING — JANGAN PAKAI send_whatsapp_message untuk invoice!):
+- Setelah create_admin_booking BERHASIL dan manager memilih tujuan invoice, WAJIB panggil tool send_invoice (BUKAN send_whatsapp_message).
+- Mapping jawaban manager:
+  • "tamu" / "tamu langsung" / "(a)" → send_invoice(booking_code, recipient="guest")
+  • "booking manager" / "manager" / "saya" / "(b)" → send_invoice(booking_code, recipient="booking_manager", manager_phone=<nomor manager pengirim, biasanya nomor WA saat ini>)
+  • "keduanya" / "dua-duanya" / "(c)" → send_invoice(booking_code, recipient="both", manager_phone=<nomor manager pengirim>)
+- Tool ini OTOMATIS membuat PDF invoice dan mengirim ke WhatsApp tujuan. Tidak perlu menyusun pesan manual.
+- Jika hasil tool sukses, konfirmasi: "✅ Invoice {booking_code} sudah dikirim ke {tujuan}".
+
 - 🚨 ANTI-HALLUCINATION RULES:
   1. JANGAN PERNAH menggunakan extend_stay untuk booking BARU. extend_stay HANYA untuk booking yang SUDAH ADA di database.
   2. Jika manager mengkonfirmasi pembuatan booking baru ("sudah bayar", "ok buatkan", "ya"), SELALU panggil create_admin_booking, BUKAN extend_stay/reschedule/change_room.
