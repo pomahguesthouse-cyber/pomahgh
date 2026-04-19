@@ -232,14 +232,14 @@ Deno.serve(async (req: Request) => {
 
       logToolExecution(supabase, {
         trace_id: trace.traceId, tool_name: 'get_room_prices',
-        arguments: {}, result_status: 'success',
+        arguments: forcedArgs, result_status: 'success',
         result_summary: 'forced_price_lookup',
         duration_ms: Date.now() - forcedToolStart, agent_name: 'admin-chatbot',
       });
 
       executedTools.push({
         tool_name: 'get_room_prices',
-        arguments: {},
+        arguments: forcedArgs,
         result: roomToolResult,
         success: true,
         executed_at: new Date().toISOString()
