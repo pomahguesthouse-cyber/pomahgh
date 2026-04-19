@@ -2,14 +2,14 @@ import { INDONESIAN_MONTHS, INDONESIAN_DAYS } from './constants.ts';
 import { DateValidationResult } from './types.ts';
 
 /**
- * Format date global: dd/MM/yyyy.
+ * Format date ke format Indonesia yang mudah dibaca: "23 April 2026"
  */
 export function formatDateIndonesian(dateStr: string): string {
   const date = new Date(dateStr);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const d = date.getDate();
+  const monthName = INDONESIAN_MONTHS[date.getMonth()];
   const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+  return `${d} ${monthName} ${year}`;
 }
 
 /**

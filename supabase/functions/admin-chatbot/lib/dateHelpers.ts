@@ -28,27 +28,27 @@ export function formatDateISO(date: Date): string {
 }
 
 /**
- * Format date to dd/MM/yyyy — STANDAR GLOBAL untuk SEMUA output ke user/manager.
+ * Format date ke format Indonesia yang mudah dibaca: "23 April 2026"
  * Terima Date, ISO string (YYYY-MM-DD), atau null/undefined.
  */
 export function formatDateDDMMYYYY(input: Date | string | null | undefined): string {
   if (!input) return '-';
   const date = typeof input === 'string' ? new Date(input) : input;
   if (isNaN(date.getTime())) return String(input);
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  return `${dd}/${mm}/${date.getFullYear()}`;
+  const d = date.getDate();
+  const monthName = INDONESIAN_MONTHS[date.getMonth()];
+  return `${d} ${monthName} ${date.getFullYear()}`;
 }
 
 /**
- * Format date global: "Rabu, 15/01/2025"
+ * Format date global: "Rabu, 15 Januari 2025"
  */
 export function formatDateIndonesian(dateStr: string): string {
   const date = new Date(dateStr);
   const day = INDONESIAN_DAYS[date.getDay()];
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  return `${day}, ${dd}/${mm}/${date.getFullYear()}`;
+  const d = date.getDate();
+  const monthName = INDONESIAN_MONTHS[date.getMonth()];
+  return `${day}, ${d} ${monthName} ${date.getFullYear()}`;
 }
 
 /**

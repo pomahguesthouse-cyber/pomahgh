@@ -72,7 +72,7 @@ serve(async (req) => {
       ? (template?.approve_message_template ?? "✅ Halo {{guest_name}}, pembayaran booking {{booking_code}} sudah kami konfirmasi LUNAS. Terima kasih!")
       : (template?.reject_message_template ?? "⚠️ Halo {{guest_name}}, bukti pembayaran booking {{booking_code}} belum dapat dikonfirmasi. Alasan: {{reason}}");
 
-    const checkInLabel = format(new Date(booking.check_in), "dd/MM/yyyy", { locale: idLocale });
+    const checkInLabel = format(new Date(booking.check_in), "d MMMM yyyy", { locale: idLocale });
 
     const message = tpl
       .replaceAll("{{guest_name}}", booking.guest_name)

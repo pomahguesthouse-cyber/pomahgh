@@ -33,8 +33,8 @@ DETAIL INVOICE:
 🏷️ Kode: PMH-XXXXXX
 👤 Nama: [nama tamu]
 🏨 Kamar: [nama kamar]
-📅 Check-in: [tanggal dd/mm/yyyy]
-📅 Check-out: [tanggal dd/mm/yyyy]
+📅 Check-in: [tanggal, contoh: 23 April 2026]
+📅 Check-out: [tanggal, contoh: 25 April 2026]
 🌙 Durasi: [X] malam
 💰 Harga/malam: Rp [harga]
 💵 *TOTAL: Rp [total]*
@@ -47,7 +47,7 @@ TOOLS:
 
 ATURAN:
 - Format harga: Rp XXX.XXX (titik pemisah ribuan)
-- Format tanggal: dd/mm/yyyy (contoh: "15/01/2025")
+- Format tanggal: format Indonesia (contoh: "15 Januari 2025")
 - JANGAN konfirmasi pembayaran tanpa validasi Manager
 - Jika tamu tanya status → panggil check_payment_status`;
 }
