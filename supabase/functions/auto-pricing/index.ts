@@ -65,6 +65,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Allow either admin user OR service role (cron)
+  const cronAuth = verifyServiceRole(req);
+  if (!cronAuth.ok) {
+    const adminAuth = await verifyAdmin(req);
+    if (!adminAuth.ok) {
+      const body = await adminAuth.response.text();
+      return new Response(body, { status: adminAuth.response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  }
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
