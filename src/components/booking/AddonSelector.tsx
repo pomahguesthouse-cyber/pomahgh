@@ -34,19 +34,23 @@ export const AddonSelector = ({ roomId, totalNights, numGuests, onAddonsChange, 
 
   // Update parent whenever selection changes
   useEffect(() => {
-    const bookingAddons: BookingAddon[] = Array.from(selectedAddons.values()).map(({ addon, quantity }) => ({
-      addon_id: addon.id,
-      quantity,
-      unit_price: addon.price,
-      total_price: calculateAddonPrice(addon, quantity, totalNights, numGuests),
-    }));
-    onAddonsChange(bookingAddons);
-
-    // Calculate and report extra capacity from add-ons (e.g., extra beds)
+    // Compute extra capacity contributed by add-ons themselves (e.g., extra beds).
     const totalExtraCapacity = Array.from(selectedAddons.values()).reduce(
       (sum, { addon, quantity }) => sum + ((addon.extra_capacity || 0) * quantity),
       0
     );
+
+    // Avoid circular dependency: numGuests is bumped by parent in response to extraCapacity.
+    // Bill per-person add-ons against the base guest count (excluding capacity we just added).
+    const baseGuests = Math.max(1, numGuests - totalExtraCapacity);
+
+    const bookingAddons: BookingAddon[] = Array.from(selectedAddons.values()).map(({ addon, quantity }) => ({
+      addon_id: addon.id,
+      quantity,
+      unit_price: addon.price,
+      total_price: calculateAddonPrice(addon, quantity, totalNights, baseGuests),
+    }));
+    onAddonsChange(bookingAddons);
     onExtraCapacityChange?.(totalExtraCapacity);
   }, [selectedAddons, totalNights, numGuests, onAddonsChange, onExtraCapacityChange]);
 
@@ -82,8 +86,13 @@ export const AddonSelector = ({ roomId, totalNights, numGuests, onAddonsChange, 
     return null;
   }
 
+  const displayExtraCapacity = Array.from(selectedAddons.values()).reduce(
+    (sum, { addon, quantity }) => sum + ((addon.extra_capacity || 0) * quantity),
+    0
+  );
+  const displayBaseGuests = Math.max(1, numGuests - displayExtraCapacity);
   const totalAddonsPrice = Array.from(selectedAddons.values()).reduce(
-    (sum, { addon, quantity }) => sum + calculateAddonPrice(addon, quantity, totalNights, numGuests),
+    (sum, { addon, quantity }) => sum + calculateAddonPrice(addon, quantity, totalNights, displayBaseGuests),
     0
   );
 
@@ -107,8 +116,8 @@ export const AddonSelector = ({ roomId, totalNights, numGuests, onAddonsChange, 
           const isSelected = selectedAddons.has(addon.id);
           const selectedData = selectedAddons.get(addon.id);
           const calculatedPrice = isSelected && selectedData
-            ? calculateAddonPrice(addon, selectedData.quantity, totalNights, numGuests)
-            : calculateAddonPrice(addon, 1, totalNights, numGuests);
+            ? calculateAddonPrice(addon, selectedData.quantity, totalNights, displayBaseGuests)
+            : calculateAddonPrice(addon, 1, totalNights, displayBaseGuests);
 
           return (
             <div

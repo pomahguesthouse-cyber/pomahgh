@@ -13,6 +13,9 @@ interface Notification {
   timestamp: string;
 }
 
+// Cap live notifications buffer to prevent unbounded memory growth on long sessions.
+const MAX_LIVE_NOTIFS = 100;
+
 export const MobileNotificationsTab = () => {
   const [liveNotifs, setLiveNotifs] = useState<Notification[]>([]);
 
@@ -74,13 +77,13 @@ export const MobileNotificationsTab = () => {
           setLiveNotifs((prev) => [
             {
               id: msg.id,
-              type: "whatsapp",
+              type: "whatsapp" as const,
               title: phone ? `WhatsApp: ${phone}` : "Pesan Baru",
               description: msg.content?.substring(0, 100) || "",
               timestamp: msg.created_at,
             },
             ...prev,
-          ]);
+          ].slice(0, MAX_LIVE_NOTIFS));
         }
       )
       .on(
@@ -91,13 +94,13 @@ export const MobileNotificationsTab = () => {
           setLiveNotifs((prev) => [
             {
               id: b.id,
-              type: "booking",
+              type: "booking" as const,
               title: "Booking Baru",
               description: `${b.guest_name} - ${b.booking_code}`,
               timestamp: b.created_at,
             },
             ...prev,
-          ]);
+          ].slice(0, MAX_LIVE_NOTIFS));
         }
       )
       .subscribe();

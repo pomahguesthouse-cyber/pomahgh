@@ -110,8 +110,10 @@ export const bookingService = {
         rooms:room_id (name, room_count, allotment),
         booking_rooms (id, room_id, room_number, price_per_night)
       `)
-      .gte("check_in", startDate)
-      .lte("check_out", endDate)
+      // Overlap range: any booking whose stay intersects [startDate, endDate].
+      // Previous gte/lte missed bookings spanning the entire range.
+      .lt("check_in", endDate)
+      .gt("check_out", startDate)
       .neq("status", "cancelled")
       .order("check_in", { ascending: true });
 
