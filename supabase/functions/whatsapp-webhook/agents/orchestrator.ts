@@ -15,33 +15,18 @@ import { handleNameCollection } from './intent.ts';
 import { handleGuestBookingFlow } from './booking.ts';
 import { handleGuestFAQ, isRoomPhotoRequest } from './faq.ts';
 import { handleComplaint, isComplaintMessage } from './complaint.ts';
-import { handlePayment, isPaymentMessage } from './payment.ts';
+import { isPaymentMessage } from './payment.ts';
 import { handlePaymentProof, extractImageUrl } from './paymentProof.ts';
 import { handlePaymentApproval, isPaymentApprovalReply } from './paymentApproval.ts';
 import { handlePriceListQuestion, isGenericPriceQuestion } from './priceList.ts';
 import { setAgentConfigs, isAgentActive, getEscalationTarget, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 
-/**
- * Check if guest has a recent booking with pending payment.
- */
-async function hasPendingPaymentBooking(supabase: SupabaseClient, phone: string): Promise<boolean> {
-  const normalizedPhone = phone.startsWith('62') ? '0' + phone.slice(2) : phone;
-  const { data } = await supabase
-    .from('bookings')
-    .select('id')
-    .or(`guest_phone.eq.${phone},guest_phone.eq.${normalizedPhone}`)
-    .in('payment_status', ['pending', 'unpaid'])
-    .in('status', ['pending_payment', 'confirmed'])
-    .order('created_at', { ascending: false })
-    .limit(1);
-  return !!(data && data.length > 0);
-}
-
-type IntentType = 'faq' | 'booking' | 'complaint' | 'payment';
+type IntentType = 'faq' | 'booking' | 'complaint';
 
 /**
  * Detect intent category from normalized message.
- * Priority: complaint > payment > booking > faq (default for unknown)
+ * Priority: complaint > booking (incl. payment keywords) > faq (default for unknown)
+ * Payment is a sub-flow of Booking agent, not a separate top-level intent.
  */
 
 // Module-level compiled regex (once per isolate warm start)
@@ -57,28 +42,20 @@ function detectIntent(message: string): IntentType {
     return 'complaint';
   }
 
-  // 2. Payment: explicit payment-related keywords
-  if (isPaymentMessage(message)) {
-    return 'payment';
-  }
-
-  // 3. Booking: reservation, availability, pricing, room names, or short follow-ups
-  if (BOOKING_RE.test(message) || PRICE_RE.test(message) || ROOM_NAME_RE.test(message) || BOOKING_FOLLOWUP_RE.test(message.trim())) {
+  // 2. Booking: reservation, availability, pricing, room names, payment, or short follow-ups
+  //    Payment keywords (bayar, transfer, rekening) route to Booking agent which handles
+  //    payment as a sub-flow via chatbot-tools (get_bank_accounts, check_payment_status).
+  if (BOOKING_RE.test(message) || PRICE_RE.test(message) || ROOM_NAME_RE.test(message) || BOOKING_FOLLOWUP_RE.test(message.trim()) || isPaymentMessage(message)) {
     return 'booking';
   }
 
-  // 4. FAQ: general info about facilities, location, etc.
+  // 3. FAQ: general info about facilities, location, etc.
   if (FAQ_RE.test(message)) {
     return 'faq';
   }
 
   // Default UNKNOWN → FAQ (knowledge base fallback)
   return 'faq';
-}
-
-/** Messages that are ambiguous short replies - could be payment context */
-function isAmbiguousShortReply(message: string): boolean {
-  return /^(ya|iya|oke|ok|baik|sudah|done|siap|non-text message|image|foto|photo)$/i.test(message.trim());
 }
 
 /**
@@ -355,21 +332,8 @@ export async function orchestrate(
     );
   }
 
-  // === INTENT DETECTION: Route to appropriate agent ===
-  let intent = detectIntent(normalizedMessage);
-
-  // === CONTEXT-AWARE ROUTING: Check pending payment once for ambiguous/media messages ===
-  const needsPendingCheck = 
-    ((intent === 'faq' || intent === 'booking') && isAmbiguousShortReply(normalizedMessage)) ||
-    (intent === 'faq' && /non-text message/i.test(normalizedMessage));
-
-  if (needsPendingCheck) {
-    const hasPending = await hasPendingPaymentBooking(supabase, phone);
-    if (hasPending) {
-      console.log(`💰 Context-aware routing: ${phone} has pending payment, routing to payment agent`);
-      intent = 'payment';
-    }
-  }
+  // === INTENT DETECTION: Route to appropriate agent (3 intents: faq, booking, complaint) ===
+  const intent = detectIntent(normalizedMessage);
 
   // Resolve target agent: check is_active, fallback to escalation_target
   let resolvedAgent: string = intent;
@@ -393,19 +357,6 @@ export async function orchestrate(
         reason: 'complaint_intent_detected', intent: 'complaint',
       });
       return await handleComplaint(
-        supabase, session as WhatsAppSession, phone, normalizedMessage,
-        conversationId!, personaName, managerNumbers, env, trace
-      );
-    }
-
-    // === PAYMENT AGENT ===
-    if (resolvedAgent === 'payment') {
-      logAgentDecision(supabase, {
-        trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
-        from_agent: 'orchestrator', to_agent: 'payment',
-        reason: 'payment_intent_detected', intent: 'payment',
-      });
-      return await handlePayment(
         supabase, session as WhatsAppSession, phone, normalizedMessage,
         conversationId!, personaName, managerNumbers, env, trace
       );

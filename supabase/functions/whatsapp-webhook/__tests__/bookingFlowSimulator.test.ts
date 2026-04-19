@@ -6,7 +6,7 @@
  *   2. Room inquiry → booking agent
  *   3. FAQ detection → faq agent
  *   4. Complaint detection → complaint agent
- *   5. Payment flow → payment agent
+ *   5. Payment flow → booking agent (payment is sub-flow of booking)
  *   6. Payment proof (image) → paymentProof agent
  *   7. Manager approval (YA/TIDAK) → paymentApproval agent
  *   8. Message batching → deduplication
@@ -80,7 +80,6 @@ const AGENT_CONFIGS: MockRow[] = [
   { agent_id: 'booking', is_active: true, system_prompt: null, temperature: 0.7, escalation_target: null, auto_escalate: false },
   { agent_id: 'faq', is_active: true, system_prompt: null, temperature: 0.5, escalation_target: 'booking', auto_escalate: false },
   { agent_id: 'complaint', is_active: true, system_prompt: null, temperature: 0.3, escalation_target: null, auto_escalate: true },
-  { agent_id: 'payment', is_active: true, system_prompt: null, temperature: 0.3, escalation_target: null, auto_escalate: false },
 ];
 const ESCALATION_RULES: MockRow[] = [
   { from_agent: 'faq', to_agent: 'booking', condition_text: 'needs_tools', priority: 1, is_active: true },
@@ -210,8 +209,8 @@ describe('WhatsApp Booking Flow Simulator', () => {
 
     function detectIntent(msg: string): string {
       if (COMPLAINT_KEYWORDS.test(msg)) return 'complaint';
-      if (PAYMENT_KEYWORDS.test(msg)) return 'payment';
-      if (BOOKING_RE.test(msg) || PRICE_RE.test(msg) || ROOM_NAME_RE.test(msg)) return 'booking';
+      // Payment keywords now route to booking (payment is sub-flow of booking agent)
+      if (BOOKING_RE.test(msg) || PRICE_RE.test(msg) || ROOM_NAME_RE.test(msg) || PAYMENT_KEYWORDS.test(msg)) return 'booking';
       if (FAQ_RE.test(msg)) return 'faq';
       return 'faq'; // default
     }
@@ -243,12 +242,12 @@ describe('WhatsApp Booking Flow Simulator', () => {
       expect(detectIntent('mengecewakan, saya marah')).toBe('complaint');
     });
 
-    it('routes payment messages correctly', () => {
-      expect(detectIntent('cara bayar gimana?')).toBe('payment');
-      expect(detectIntent('sudah transfer ke rekening')).toBe('payment');
-      expect(detectIntent('minta nomor rekening')).toBe('payment');
-      expect(detectIntent('sudah bayar dp')).toBe('payment');
-      expect(detectIntent('kirim invoice dong')).toBe('payment');
+    it('routes payment messages to booking agent (payment is sub-flow)', () => {
+      expect(detectIntent('cara bayar gimana?')).toBe('booking');
+      expect(detectIntent('sudah transfer ke rekening')).toBe('booking');
+      expect(detectIntent('minta nomor rekening')).toBe('booking');
+      expect(detectIntent('sudah bayar dp')).toBe('booking');
+      expect(detectIntent('kirim invoice dong')).toBe('booking');
     });
 
     it('complaint takes priority over booking keywords', () => {
@@ -256,9 +255,9 @@ describe('WhatsApp Booking Flow Simulator', () => {
       expect(detectIntent('kamar kotor banget!')).toBe('complaint');
     });
 
-    it('payment takes priority over FAQ', () => {
-      // "bayar" → payment even if message mentions facilities
-      expect(detectIntent('sudah bayar, fasilitas apa yang include?')).toBe('payment');
+    it('payment takes priority over FAQ but routes to booking', () => {
+      // "bayar" → booking (payment sub-flow) even if message mentions facilities
+      expect(detectIntent('sudah bayar, fasilitas apa yang include?')).toBe('booking');
     });
 
     it('unknown messages default to FAQ', () => {
@@ -608,11 +607,11 @@ describe('WhatsApp Booking Flow Simulator', () => {
         },
       });
 
-      // Step 5: Guest asks about payment → payment agent
+      // Step 5: Guest asks about payment → booking agent (payment sub-flow)
       journey.push({
         step: 'payment_inquiry',
         message: 'cara bayar gimana? minta nomor rekening',
-        expectedAgent: 'payment',
+        expectedAgent: 'booking',
         check: () => {
           const PAYMENT_RE = /\b(bayar|rekening|transfer)\b/i;
           expect(PAYMENT_RE.test('cara bayar gimana? minta nomor rekening')).toBe(true);
@@ -693,11 +692,12 @@ describe('WhatsApp Booking Flow Simulator', () => {
       expect(isWhitelisted).toBe(true);
     });
 
-    it('ambiguous short reply with pending payment routes to payment agent', () => {
-      // Guest has pending booking + says "ya" → should go to payment, not FAQ
+    it('ambiguous short reply with pending payment routes to booking agent', () => {
+      // With 3-intent architecture, ambiguous replies go to FAQ or booking (default).
+      // Payment is handled as sub-flow within booking agent via tools.
       const isAmbiguous = /^(ya|iya|oke|ok|baik|sudah|done|siap)$/i.test('ya');
       expect(isAmbiguous).toBe(true);
-      // If hasPendingPaymentBooking returns true → intent overridden to 'payment'
+      // Booking agent handles payment context via chatbot-tools
     });
 
     it('invalid phone number is rejected', () => {

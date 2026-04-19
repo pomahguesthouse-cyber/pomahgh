@@ -26,12 +26,12 @@ Pomah Guesthouse adalah aplikasi hotel management system yang dibangun dengan:
 │  Edge Functions                    │  Database (PostgreSQL)     │
 │  ├─ whatsapp-webhook (Multi-Agent) │  ├─ bookings               │
 │  │   ├─ Orchestrator               │  ├─ rooms                  │
-│  │   ├─ Intent Agent               │  ├─ hotel_settings         │
-│  │   ├─ Booking Agent              │  ├─ chat_conversations     │
+│  │   ├─ Intent Agent (name coll.)  │  ├─ hotel_settings         │
+│  │   ├─ Booking Agent (+ Payment)  │  ├─ chat_conversations     │
 │  │   ├─ FAQ Agent                  │  ├─ agent_configs          │
-│  │   ├─ Payment Agent              │  ├─ escalation_rules       │
-│  │   ├─ Complaint Agent            │  ├─ agent_routing_logs     │
-│  │   ├─ Pricing Agent              │  ├─ whatsapp_faq_patterns  │
+│  │   ├─ Complaint Agent            │  ├─ escalation_rules       │
+│  │   ├─ Pricing Agent              │  ├─ agent_routing_logs     │
+│  │   └─ Manager Agent              │  ├─ whatsapp_faq_patterns  │
 │  │   └─ Manager Agent              │  ├─ whatsapp_conv_insights │
 │  ├─ chatbot (Guest AI)            │  └─ ...                    │
 │  ├─ admin-chatbot (Admin AI)      │                             │
@@ -55,29 +55,93 @@ Pomah Guesthouse adalah aplikasi hotel management system yang dibangun dengan:
 
 ## Multi-Agent AI System
 
-### Agent Architecture
+### Agent Architecture (Target)
 
 ```
-WhatsApp (Fonnte) → whatsapp-webhook → Orchestrator
-                                         ├→ Intent Agent    (name collection for new guests)
-                                         ├→ Booking Agent   (AI + 12 tools via chatbot-tools)
-                                         ├→ FAQ Agent       (AI, no tools - faq_mode)
-                                         ├→ Payment Agent   (payment flow + bukti transfer)
-                                         ├→ Complaint Agent (empathy + escalation to staff)
-                                         ├→ Pricing Agent   (APPROVE/REJECT price changes)
-                                         └→ Manager Agent   (routes to admin-chatbot)
+                         ┌──────────────────────────────────────────────────────┐
+                         │               WhatsApp (Fonnte API)                  │
+                         └────────────────────────┬─────────────────────────────┘
+                                                  ▼
+                         ┌──────────────────────────────────────────────────────┐
+                         │              whatsapp-webhook (Entry)                │
+                         │   Auth → Rate Limiter → Message Batcher → Sentiment │
+                         └────────────────────────┬─────────────────────────────┘
+                                                  ▼
+                    ┌─────────────────────────────────────────────────────────────────┐
+                    │                     ORCHESTRATOR                                │
+                    │                                                                 │
+                    │  1. Normalize phone & message (slang → formal)                  │
+                    │  2. Session management (new guest → Name Collection)             │
+                    │  3. Fast-paths:                                                  │
+                    │     • "foto kamar / brosur" → FAQ Agent                         │
+                    │     • "berapa harga" → Price List Agent (daftar harga langsung)  │
+                    │     • Manager phone → Manager Agent                             │
+                    │     • Pricing approval reply → Pricing Agent                    │
+                    │  4. Intent detection (keyword): faq | booking | complaint        │
+                    │  5. Agent active check → fallback via escalation_rules           │
+                    │  6. Error catch → Human Staff Escalation                        │
+                    └──────┬──────────────────────┬───────────────────────┬────────────┘
+                           │                      │                       │
+                 ┌─────────▼──────────┐ ┌────────▼─────────┐  ┌─────────▼──────────┐
+                 │    FAQ Agent       │ │  Booking Agent    │  │  Complaint Agent   │
+                 │  (AI, no tools)    │ │  (AI + 12 tools)  │  │  (empathy + alert) │
+                 │                    │ │                    │  │                    │
+                 │ • Knowledge base   │ │ • check_avail     │  │ • Detect severity  │
+                 │ • FAQ patterns     │ │ • create_booking   │  │ • Send empathy     │
+                 │ • Room brochure    │ │ • get_bank_accts   │  │ • Log to DB        │
+                 │                    │ │ • check_payment    │  │ • Notify manager   │
+                 │ Escalation:        │ │ • cancel_booking   │  │   (always)         │
+                 │ Can't answer →     │ │ • ...              │  │                    │
+                 │  → Orchestrator    │ │                    │  │ Escalation:        │
+                 │  → re-route       │ │  Sub-flows:        │  │ Severe/failed →    │
+                 │    (via esc_rules) │ │  ┌──────────────┐  │  │  → Manager Agent   │
+                 └────────────────────┘ │  │ Pricing      │  │  └────────────────────┘
+                                        │  │ (need price) │  │
+                                        │  ├──────────────┤  │
+                                        │  │ Payment      │  │
+                                        │  │ (user bayar) │  │
+                                        │  │  ↓           │  │
+                                        │  │ PaymentProof │  │
+                                        │  │ (OCR foto)   │  │
+                                        │  │  ↓           │  │
+                                        │  │ PaymentAppr. │  │
+                                        │  │ (mgr Y/N)   │  │
+                                        │  └──────────────┘  │
+                                        └────────────────────┘
+                                                  │
+                                          ┌───────▼────────┐
+                                          │ Booking DB     │
+                                          │ (bookings,     │
+                                          │  rooms, etc.)  │
+                                          └────────────────┘
+
+Special Agents (not intent-routed):
+  • Intent Agent     — Name collection for new/unknown guests
+  • Price List Agent — Fast-path: generic price questions → room price table
+  • Pricing Agent    — Manager APPROVE/REJECT price change requests
+  • Manager Agent    — Routes manager messages to admin-chatbot
 
 Web Chat → chatbot edge function → AI + tool calls → chatbot-tools
 ```
 
-### Agent Routing
+### Top-Level Intent Routing (3 intents)
 
-1. **Orchestrator** receives WhatsApp messages, normalizes phone/message, applies rate limiting
+| Intent | Keywords | Agent | Fallback |
+|--------|----------|-------|----------|
+| `faq` | tanya, info, jam, wifi, ... | FAQ Agent | → Booking (via escalation_rules) |
+| `booking` | pesan, book, kamar, checkin, bayar, transfer, ... | Booking Agent | — (default) |
+| `complaint` | keluhan, komplain, kecewa, kotor, ... | Complaint Agent | → Booking |
+
+### Routing Flow
+
+1. **Orchestrator** receives WhatsApp message, normalizes phone/message, applies rate limiting
 2. Loads `agent_configs` and `escalation_rules` from DB (cached per-request)
-3. Detects intent via keyword matching (`faq|booking|complaint|payment`)
-4. Context-aware routing: ambiguous messages + pending payment → Payment Agent
-5. Falls back to Booking Agent as default
-6. On errors → escalates to human staff via WhatsApp notification
+3. Fast-paths checked first (room photo, generic price, manager, pricing approval)
+4. Detects intent via keyword matching: `faq | booking | complaint`
+5. Payment keywords (`bayar`, `transfer`, `rekening`) → **Booking Agent** (handles payment sub-flow via tools)
+6. Agent active check → fallback via `escalation_rules` → default: Booking
+7. FAQ escalation: FAQ can't answer → re-routed by Orchestrator via `escalation_rules`
+8. On errors → escalates to human staff via WhatsApp notification
 
 ### Middleware Pipeline
 
@@ -119,7 +183,7 @@ src/
 supabase/functions/
 ├─ _shared/            # Shared utilities (traceContext, aiProvider, hallucinationGuard, agentLogger)
 ├─ whatsapp-webhook/   # Multi-agent WhatsApp entry point
-│  ├─ agents/          # Orchestrator + 7 specialized agents
+│  ├─ agents/          # Orchestrator + 6 specialized agents (FAQ, Booking, Complaint, Pricing, Manager, Intent)
 │  ├─ middleware/       # Auth, rate limiter, message batcher, sentiment
 │  ├─ services/        # Session, conversation, fonnte, context
 │  └─ utils/           # Slang normalization, phone, formatting
