@@ -6,6 +6,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { format } from "https://esm.sh/date-fns@3.6.0";
 import { id as idLocale } from "https://esm.sh/date-fns@3.6.0/locale/id";
+import { verifyAdmin } from "../_shared/adminAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +17,12 @@ const formatRp = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const auth = await verifyAdmin(req);
+  if (!auth.ok) {
+    const body = await auth.response.text();
+    return new Response(body, { status: auth.response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   try {
     const { booking_id, decision, reason } = await req.json();
