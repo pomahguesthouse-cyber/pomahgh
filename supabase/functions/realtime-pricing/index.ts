@@ -495,8 +495,16 @@ serve(async (req) => {
 
     let response: PricingResponse;
 
-    switch (new URL(req.url).pathname) {
-      case '/calculate':
+    // Match by trailing path segment so it works regardless of mount path
+    // (e.g. /functions/v1/realtime-pricing/calculate)
+    const rawPath = new URL(req.url).pathname.replace(/\/+$/, "");
+    const lastSegment = rawPath.split("/").pop() || "";
+    // Also accept an explicit `action` field in the body as fallback
+    const action = (body as any).action || lastSegment;
+
+    switch (action) {
+      case 'calculate':
+      case 'realtime-pricing': // default when no sub-path provided
         // Calculate real-time price for single room
         if (!body.room_id) {
           throw new Error('room_id is required');
@@ -515,7 +523,7 @@ serve(async (req) => {
         };
         break;
 
-      case '/batch-calculate':
+      case 'batch-calculate':
         // Calculate prices for multiple rooms
         const roomIds = body.room_ids || [];
         const results = [];
@@ -540,7 +548,7 @@ serve(async (req) => {
         };
         break;
 
-      case '/process-events':
+      case 'process-events':
         // Process pricing events queue
         const result = await engine.processPricingEvents(body.batch_size || 10);
         
@@ -553,7 +561,7 @@ serve(async (req) => {
         break;
 
       default:
-        throw new Error('Invalid endpoint');
+        throw new Error(`Invalid endpoint: ${action}`);
     }
 
     return new Response(
