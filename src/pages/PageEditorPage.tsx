@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
+import { AdminGuard } from "@/components/admin/AdminGuard";
 
 function PageEditorInner() {
   const navigate = useNavigate();
