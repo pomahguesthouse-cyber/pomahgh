@@ -21,10 +21,23 @@ export function addDays(date: Date, days: number): Date {
 }
 
 /**
- * Format date to YYYY-MM-DD
+ * Format date to YYYY-MM-DD (untuk query DB saja)
  */
 export function formatDateISO(date: Date): string {
   return date.toISOString().split('T')[0];
+}
+
+/**
+ * Format date to dd/MM/yyyy — STANDAR GLOBAL untuk SEMUA output ke user/manager.
+ * Terima Date, ISO string (YYYY-MM-DD), atau null/undefined.
+ */
+export function formatDateDDMMYYYY(input: Date | string | null | undefined): string {
+  if (!input) return '-';
+  const date = typeof input === 'string' ? new Date(input) : input;
+  if (isNaN(date.getTime())) return String(input);
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}/${date.getFullYear()}`;
 }
 
 /**
