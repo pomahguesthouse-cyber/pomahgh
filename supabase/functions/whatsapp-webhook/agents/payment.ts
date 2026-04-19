@@ -1,4 +1,4 @@
-import type { SupabaseClient, EnvConfig, ManagerInfo, WhatsAppSession, ToolCall } from '../types.ts';
+import type { SupabaseClient, EnvConfig, ManagerInfo, WhatsAppSession } from '../types.ts';
 import { corsHeaders } from '../types.ts';
 import { formatForWhatsApp } from '../utils/format.ts';
 import { logMessage, getConversationHistory } from '../services/conversation.ts';
@@ -6,59 +6,7 @@ import { sendWhatsApp } from '../services/fonnte.ts';
 import { extractConversationContext, getLatestBookingContextByPhone } from '../services/context.ts';
 import { batchMessages } from '../middleware/messageBatcher.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
-import { logAgentDecision, logToolExecution } from '../../_shared/agentLogger.ts';
-
-/** Execute tool calls returned by chatbot */
-async function executeToolCalls(
-  toolCalls: ToolCall[],
-  env: EnvConfig,
-  supabase?: SupabaseClient,
-  traceId?: string,
-  conversationId?: string,
-): Promise<Array<{ role: string; content: string; tool_call_id: string }>> {
-  return Promise.all(
-    toolCalls.map(async (toolCall) => {
-      console.log(`[Payment] Executing tool: ${toolCall.function.name}`);
-      const toolStart = Date.now();
-      try {
-        const toolResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot-tools`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${env.supabaseServiceKey}`,
-            'X-Internal-Secret': env.chatbotToolsInternalSecret,
-          },
-          body: JSON.stringify({
-            tool_name: toolCall.function.name,
-            parameters: JSON.parse(toolCall.function.arguments || '{}'),
-          }),
-        });
-        const toolResult = await toolResponse.json();
-        console.log(`[Payment] Tool ${toolCall.function.name} result:`, JSON.stringify(toolResult).substring(0, 200));
-        if (supabase) {
-          logToolExecution(supabase, {
-            trace_id: traceId, conversation_id: conversationId,
-            tool_name: toolCall.function.name, arguments: JSON.parse(toolCall.function.arguments || '{}'),
-            result_status: 'success', result_summary: JSON.stringify(toolResult).substring(0, 200),
-            duration_ms: Date.now() - toolStart, agent_name: 'payment',
-          });
-        }
-        return { role: 'tool', content: JSON.stringify(toolResult), tool_call_id: toolCall.id };
-      } catch (toolError) {
-        console.error(`[Payment] Tool ${toolCall.function.name} error:`, toolError);
-        if (supabase) {
-          logToolExecution(supabase, {
-            trace_id: traceId, conversation_id: conversationId,
-            tool_name: toolCall.function.name, result_status: 'failed',
-            error_message: (toolError as Error).message, duration_ms: Date.now() - toolStart,
-            agent_name: 'payment',
-          });
-        }
-        return { role: 'tool', content: JSON.stringify({ error: 'Tool execution failed' }), tool_call_id: toolCall.id };
-      }
-    })
-  );
-}
+import { logAgentDecision } from '../../_shared/agentLogger.ts';
 
 /** Keywords that indicate payment-related messages */
 const PAYMENT_PATTERNS = /\b(bukti\s+(?:transfer|bayar|pembayaran|tf)|sudah\s+(?:bayar|transfer|tf)|sudah\s+di\s*(?:bayar|transfer)|konfirmasi\s+(?:bayar|pembayaran|transfer)|status\s+(?:bayar|pembayaran)|invoice|tagihan|kwitansi|receipt|nomor\s+rekening|rekening\s+bank|rekening(?:nya)?|no\s*(?:rek|rekening)|cara\s+bayar|metode\s+(?:bayar|pembayaran)|dp|uang\s+muka|lunas|pelunasan|sisa\s+bayar|total\s+bayar|transfer\s+ke\s+mana|bayar\s+(?:kemana|ke\s+mana|gimana|bagaimana)|mau\s+bayar|mau\s+transfer|kirim\s+bukti|upload\s+bukti)\b/i;
@@ -140,49 +88,11 @@ export async function handlePayment(
   }
 
   const chatbotData = await chatbotResponse.json();
-  let aiMessage = chatbotData.choices?.[0]?.message;
+  const aiMessage = chatbotData.choices?.[0]?.message;
   let aiResponse = aiMessage?.content || '';
 
-  // Tool execution loop (max 3 rounds)
-  let toolRound = 0;
-  const MAX_TOOL_ROUNDS = 3;
-  let currentMessages = [...messages];
-
-  while (aiMessage?.tool_calls?.length > 0 && toolRound < MAX_TOOL_ROUNDS) {
-    toolRound++;
-    console.log(`💰 Payment Agent: Tool round ${toolRound}, ${aiMessage.tool_calls.length} tool(s)`);
-
-    const toolResults = await executeToolCalls(
-      aiMessage.tool_calls, env, supabase, trace?.traceId, conversationId,
-    );
-
-    currentMessages = [
-      ...currentMessages,
-      { role: 'assistant', content: aiMessage.content || '', tool_calls: aiMessage.tool_calls },
-      ...toolResults,
-    ];
-
-    const followUpResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${env.supabaseServiceKey}`,
-        ...(trace?.headers() || {}),
-      },
-      body: JSON.stringify({
-        messages: currentMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext,
-      }),
-    });
-
-    if (!followUpResponse.ok) {
-      console.error(`Payment Agent: Follow-up chatbot error ${followUpResponse.status}`);
-      break;
-    }
-
-    const followUpData = await followUpResponse.json();
-    aiMessage = followUpData.choices?.[0]?.message;
-    aiResponse = aiMessage?.content || aiResponse;
-  }
+  // Note: chatbot function resolves tool calls internally (up to 4 rounds).
+  // The response always contains the final resolved text.
 
   if (!aiResponse || aiResponse.trim() === '') {
     aiResponse = 'Mohon maaf, saya belum bisa memproses permintaan pembayaran Anda saat ini. Silakan coba lagi atau hubungi admin kami. 🙏';

@@ -181,6 +181,8 @@ export async function handleGuestFAQ(
     });
   } catch (error) {
     console.error('❌ FAQ Agent error:', error);
+    // Ensure user message is logged even on error
+    await logMessage(supabase, convId, 'user', message);
     // Fallback response
     const fallback = formatForWhatsApp(
       `Halo! Saya ${personaName} dari Pomah Guesthouse 😊\n\nUntuk pertanyaan umum, silakan langsung tanyakan saja ya! Saya siap membantu seputar kamar, fasilitas, lokasi, dan booking.`
