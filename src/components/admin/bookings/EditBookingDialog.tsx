@@ -47,7 +47,7 @@ interface EditBookingDialogProps {
   rooms: Room[] | undefined;
   roomTypeAvailability: RoomTypeAvailability[] | undefined;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSave: (data: any) => void;
+  onSave: (data: any) => void | Promise<void>;
   onCheckConflict?: (params: {
     roomId: string;
     roomNumber: string;
@@ -99,6 +99,7 @@ export function EditBookingDialog({
   const [status, setStatus] = useState("pending");
   const [paymentStatus, setPaymentStatus] = useState("unpaid");
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   
   // Auto-confirm when payment status changes to paid or down_payment
   useEffect(() => {
@@ -316,7 +317,7 @@ export function EditBookingDialog({
   };
 
   // Handle save
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editedRooms.length === 0) {
       toast.error("Pilih minimal satu kamar");
       return;
@@ -348,33 +349,40 @@ export function EditBookingDialog({
       ? "confirmed"
       : status;
 
-    onSave({
-      id: booking?.id,
-      room_id: editedRooms[0].roomId,
-      guest_name: guestName,
-      guest_email: guestEmail,
-      guest_phone: guestPhone,
-      check_in: checkIn ? format(checkIn, "yyyy-MM-dd") : booking?.check_in,
-      check_out: checkOut ? format(checkOut, "yyyy-MM-dd") : booking?.check_out,
-      check_in_time: checkInTime,
-      check_out_time: checkOutTime,
-      num_guests: numGuests,
-      total_nights: totalNights,
-      total_price: calculatedTotalPrice,
-      allocated_room_number: editedRooms[0].roomNumber,
-      special_requests: specialRequests,
-      remark,
-      status: finalStatus,
-      payment_status: paymentStatus,
-      payment_amount: paymentStatus === "down_payment" ? parseFloat(paymentAmount) || 0 : null,
-      booking_source: bookingSource,
-      ota_name: bookingSource === "ota" ? otaName : null,
-      other_source: bookingSource === "other" ? otherSource : null,
-      editedRooms,
-      editedAddons,
-    });
-    
-    onOpenChange(false);
+    setIsSaving(true);
+    try {
+      await onSave({
+        id: booking?.id,
+        room_id: editedRooms[0].roomId,
+        guest_name: guestName,
+        guest_email: guestEmail,
+        guest_phone: guestPhone,
+        check_in: checkIn ? format(checkIn, "yyyy-MM-dd") : booking?.check_in,
+        check_out: checkOut ? format(checkOut, "yyyy-MM-dd") : booking?.check_out,
+        check_in_time: checkInTime,
+        check_out_time: checkOutTime,
+        num_guests: numGuests,
+        total_nights: totalNights,
+        total_price: calculatedTotalPrice,
+        allocated_room_number: editedRooms[0].roomNumber,
+        special_requests: specialRequests,
+        remark,
+        status: finalStatus,
+        payment_status: paymentStatus,
+        payment_amount: paymentStatus === "down_payment" ? parseFloat(paymentAmount) || 0 : null,
+        booking_source: bookingSource,
+        ota_name: bookingSource === "ota" ? otaName : null,
+        other_source: bookingSource === "other" ? otherSource : null,
+        editedRooms,
+        editedAddons,
+      });
+      onOpenChange(false);
+    } catch (err) {
+      // Error toast handled by mutation
+      console.error("Save booking error:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!booking) return null;
@@ -781,10 +789,12 @@ export function EditBookingDialog({
           
           {/* Action Buttons */}
           <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
               Batal
             </Button>
-            <Button onClick={handleSave}>Simpan Perubahan</Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+            </Button>
           </div>
         </div>
       </DialogContent>

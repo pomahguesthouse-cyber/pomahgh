@@ -144,24 +144,57 @@ export const useAdminBookings = () => {
         throw new Error("Booking tidak ditemukan");
       }
 
-      // Check for conflicts for ALL rooms in editedRooms
-      if (editedRooms && editedRooms.length > 0) {
-        for (const room of editedRooms) {
-          const conflict = await checkBookingConflict({
-            roomId: room.roomId,
-            roomNumber: room.roomNumber,
-            checkIn: booking.check_in ? parseISO(booking.check_in) : parseISO(currentBooking.check_in),
-            checkOut: booking.check_out ? parseISO(booking.check_out) : parseISO(currentBooking.check_out),
-            checkInTime: booking.check_in_time ?? currentBooking.check_in_time ?? undefined,
-            checkOutTime: booking.check_out_time ?? currentBooking.check_out_time ?? undefined,
-            excludeBookingId: booking.id
-          });
+      // Detect if dates or rooms actually changed - skip conflict check if not
+      const datesChanged = (booking.check_in && booking.check_in !== currentBooking.check_in) ||
+                           (booking.check_out && booking.check_out !== currentBooking.check_out) ||
+                           (booking.check_in_time && booking.check_in_time !== currentBooking.check_in_time) ||
+                           (booking.check_out_time && booking.check_out_time !== currentBooking.check_out_time);
 
-          if (conflict.hasConflict) {
-            throw new Error(`Konflik pada kamar ${room.roomNumber}: ${conflict.reason}`);
-          }
+      const existingRoomKeys = new Set<string>();
+      if (currentBooking.allocated_room_number) {
+        existingRoomKeys.add(`${currentBooking.room_id}|${currentBooking.allocated_room_number}`);
+      }
+      // Fetch existing booking_rooms keys to detect room changes
+      const { data: existingRoomsData } = await supabase
+        .from("booking_rooms")
+        .select("room_id, room_number")
+        .eq("booking_id", booking.id);
+      (existingRoomsData || []).forEach(r => existingRoomKeys.add(`${r.room_id}|${r.room_number}`));
+
+      const newRoomKeys = new Set(
+        (editedRooms || []).map(r => `${r.roomId}|${r.roomNumber}`)
+      );
+      const roomsChanged = editedRooms && editedRooms.length > 0 && (
+        existingRoomKeys.size !== newRoomKeys.size ||
+        [...newRoomKeys].some(k => !existingRoomKeys.has(k))
+      );
+
+      // Check for conflicts for ALL rooms in editedRooms - only if changed (parallel)
+      if (editedRooms && editedRooms.length > 0 && (datesChanged || roomsChanged)) {
+        const checkIn = booking.check_in ? parseISO(booking.check_in) : parseISO(currentBooking.check_in);
+        const checkOut = booking.check_out ? parseISO(booking.check_out) : parseISO(currentBooking.check_out);
+        const checkInTime = booking.check_in_time ?? currentBooking.check_in_time ?? undefined;
+        const checkOutTime = booking.check_out_time ?? currentBooking.check_out_time ?? undefined;
+
+        const conflictResults = await Promise.all(
+          editedRooms.map(room =>
+            checkBookingConflict({
+              roomId: room.roomId,
+              roomNumber: room.roomNumber,
+              checkIn,
+              checkOut,
+              checkInTime,
+              checkOutTime,
+              excludeBookingId: booking.id
+            }).then(result => ({ room, result }))
+          )
+        );
+
+        const conflict = conflictResults.find(c => c.result.hasConflict);
+        if (conflict) {
+          throw new Error(`Konflik pada kamar ${conflict.room.roomNumber}: ${conflict.result.reason}`);
         }
-      } else if (booking.check_in || booking.check_out || booking.allocated_room_number) {
+      } else if (!editedRooms?.length && (datesChanged || booking.allocated_room_number)) {
         // Fallback: check single room conflict if no editedRooms
         const conflict = await checkBookingConflict({
           roomId: currentBooking.room_id,
