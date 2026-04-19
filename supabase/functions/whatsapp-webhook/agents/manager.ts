@@ -60,23 +60,50 @@ export async function handleManagerChat(
       throw new Error(`Admin chatbot error: ${adminResponse.status}`);
     }
 
-    // Parse response as JSON
-    const adminData = await adminResponse.json();
+    // admin-chatbot may return: (a) plain text, (b) SSE stream, (c) JSON.
+    // Read as text first, then try to interpret.
+    const rawBody = await adminResponse.text();
+    const contentType = adminResponse.headers.get('content-type') || '';
     let aiResponse = '';
 
-    // Handle both streaming text and structured JSON responses
-    if (typeof adminData === 'string') {
-      aiResponse = adminData;
-    } else if (adminData?.choices?.[0]?.message?.content) {
-      aiResponse = adminData.choices[0].message.content;
-    } else if (adminData?.response) {
-      aiResponse = adminData.response;
+    const tryParseJson = (s: string): any | null => {
+      try { return JSON.parse(s); } catch { return null; }
+    };
+
+    if (contentType.includes('text/event-stream') || rawBody.startsWith('data:')) {
+      // Parse SSE stream — concatenate all delta.content / message.content chunks
+      const lines = rawBody.split('\n');
+      const parts: string[] = [];
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const payload = trimmed.slice(5).trim();
+        if (!payload || payload === '[DONE]') continue;
+        const obj = tryParseJson(payload);
+        if (!obj) continue;
+        const delta = obj?.choices?.[0]?.delta?.content
+                   ?? obj?.choices?.[0]?.message?.content
+                   ?? obj?.content
+                   ?? '';
+        if (delta) parts.push(String(delta));
+      }
+      aiResponse = parts.join('');
     } else {
-      // Fallback: try to read as text from a clone
-      aiResponse = JSON.stringify(adminData);
+      const parsed = tryParseJson(rawBody);
+      if (parsed && typeof parsed === 'object') {
+        aiResponse = parsed?.choices?.[0]?.message?.content
+                  ?? parsed?.response
+                  ?? parsed?.content
+                  ?? parsed?.message
+                  ?? '';
+        if (!aiResponse) aiResponse = JSON.stringify(parsed);
+      } else {
+        // Plain text response — use as-is
+        aiResponse = rawBody;
+      }
     }
 
-    aiResponse = aiResponse.trim() || "Maaf, terjadi kesalahan. Silakan coba lagi.";
+    aiResponse = (aiResponse || '').trim() || "Maaf, terjadi kesalahan. Silakan coba lagi.";
     const formattedResponse = formatForWhatsApp(aiResponse);
 
     // Log & send
