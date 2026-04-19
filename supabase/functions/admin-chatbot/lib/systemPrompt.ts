@@ -134,7 +134,12 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
      💰 Rp {total_price} • {payment_status_label}
      📌 Status: {status} • Sumber: {booking_source}
   \`\`\`
-- payment_status_label: "paid"→✅ Lunas, "partial"→🟡 DP (Rp {payment_amount}), "pending"→⏳ Belum bayar, lainnya→tampilkan apa adanya.
+- payment_status_label (WAJIB pakai mapping ini, JANGAN PERNAH sebut "Lunas" jika status bukan "paid"):
+  • "paid" → ✅ Lunas
+  • "down_payment" → 🟡 DP Rp {payment_amount} (sisa Rp {total_price - payment_amount})
+  • "unpaid" → ⏳ Belum bayar
+  • "pay_at_hotel" → 🏨 Bayar di hotel
+  • lainnya → tampilkan apa adanya (jangan asumsi Lunas)
 - Jika field kosong/null, tampilkan "-" (jangan dihilangkan).
 - Contoh multi-room: "Family Suite + Deluxe (203, 204, 205, FS100, FS222) [5 kamar]"
 - JANGAN HANYA tampilkan satu nama tipe jika 'is_multi_room=true' — tampilkan SEMUA kamar.
