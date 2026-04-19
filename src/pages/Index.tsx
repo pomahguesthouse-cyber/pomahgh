@@ -9,7 +9,6 @@ import { Rooms } from "@/components/Rooms";
 import { Amenities } from "@/components/Amenities";
 import { Location } from "@/components/Location";
 import { Footer } from "@/components/Footer";
-import ChatbotWidget from "@/components/ChatbotWidget";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { LazySection } from "@/components/LazySection";
 
@@ -49,7 +48,6 @@ const Index = () => {
         </LazySection>
       </main>
       <Footer />
-      <ChatbotWidget />
       {/* Hidden on mobile (already handled by component) */}
       <FloatingWhatsApp />
     </div>

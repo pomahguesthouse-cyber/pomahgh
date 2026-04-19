@@ -4,7 +4,6 @@
  */
 
 // Components (re-export from chat index)
-export { default as ChatbotWidget } from "@/components/ChatbotWidget";
 export { ChatHeader, ChatInput, ChatMessages } from "@/components/chat";
 
 // Hooks
