@@ -10,6 +10,11 @@ interface BookingRow {
   created_at: string;
 }
 
+interface BookingRoomJoin {
+  room_number: string;
+  rooms: { name: string } | null;
+}
+
 interface BookingWithRoom {
   id: string;
   booking_code: string;
@@ -20,7 +25,25 @@ interface BookingWithRoom {
   status: string;
   total_price: number;
   created_at: string;
+  allocated_room_number: string | null;
   rooms: { name: string } | null;
+  booking_rooms: BookingRoomJoin[] | null;
+}
+
+function summarizeRooms(b: BookingWithRoom): { room_numbers: string[]; room_types: string[]; rooms_summary: string } {
+  const brs = b.booking_rooms || [];
+  let numbers: string[] = brs.map(r => r.room_number).filter(Boolean);
+  let types: string[] = Array.from(new Set(brs.map(r => r.rooms?.name).filter((n): n is string => !!n)));
+  if (numbers.length === 0 && b.allocated_room_number) numbers = [b.allocated_room_number];
+  if (types.length === 0 && b.rooms?.name) types = [b.rooms.name];
+  const typesStr = types.join(' + ') || '-';
+  const numbersStr = numbers.length ? ` (${numbers.join(', ')})` : '';
+  const countSuffix = numbers.length > 1 ? ` [${numbers.length} kamar]` : '';
+  return {
+    room_numbers: numbers,
+    room_types: types,
+    rooms_summary: `${typesStr}${numbersStr}${countSuffix}`,
+  };
 }
 
 interface BookingDetail {
@@ -80,7 +103,7 @@ export async function getRecentBookings(supabase: SupabaseClient, limit: number 
   
   let queryBuilder = supabase
     .from('bookings')
-    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, rooms(name)')
+    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, allocated_room_number, rooms(name), booking_rooms(room_number, rooms(name))')
     .order('created_at', { ascending: false })
     .limit(actualLimit);
 
@@ -94,17 +117,24 @@ export async function getRecentBookings(supabase: SupabaseClient, limit: number 
   const rows = (data || []) as unknown as BookingWithRoom[];
   return {
     count: rows.length,
-    bookings: rows.map((b) => ({
-      booking_code: b.booking_code,
-      guest_name: b.guest_name,
-      guest_phone: b.guest_phone,
-      room_name: b.rooms?.name,
-      check_in: b.check_in,
-      check_out: b.check_out,
-      status: b.status,
-      total_price: b.total_price,
-      created_at: b.created_at
-    }))
+    bookings: rows.map((b) => {
+      const r = summarizeRooms(b);
+      return {
+        booking_code: b.booking_code,
+        guest_name: b.guest_name,
+        guest_phone: b.guest_phone,
+        room_name: r.room_types.join(' + ') || b.rooms?.name,
+        room_numbers: r.room_numbers,
+        room_types: r.room_types,
+        rooms_summary: r.rooms_summary,
+        is_multi_room: r.room_numbers.length > 1,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        status: b.status,
+        total_price: b.total_price,
+        created_at: b.created_at,
+      };
+    })
   };
 }
 
@@ -113,7 +143,7 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
   
   let queryBuilder = supabase
     .from('bookings')
-    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, rooms(name)')
+    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, allocated_room_number, rooms(name), booking_rooms(room_number, rooms(name))')
     .order('created_at', { ascending: false })
     .limit(actualLimit);
 
@@ -134,23 +164,30 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
   return {
     query: query || null,
     count: rows.length,
-    bookings: rows.map((b) => ({
-      booking_code: b.booking_code,
-      guest_name: b.guest_name,
-      guest_phone: b.guest_phone,
-      room_name: b.rooms?.name,
-      check_in: b.check_in,
-      check_out: b.check_out,
-      status: b.status,
-      total_price: b.total_price
-    }))
+    bookings: rows.map((b) => {
+      const r = summarizeRooms(b);
+      return {
+        booking_code: b.booking_code,
+        guest_name: b.guest_name,
+        guest_phone: b.guest_phone,
+        room_name: r.room_types.join(' + ') || b.rooms?.name,
+        room_numbers: r.room_numbers,
+        room_types: r.room_types,
+        rooms_summary: r.rooms_summary,
+        is_multi_room: r.room_numbers.length > 1,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        status: b.status,
+        total_price: b.total_price,
+      };
+    })
   };
 }
 
 export async function getBookingDetail(supabase: SupabaseClient, bookingCode: string) {
   const { data, error } = await supabase
     .from('bookings')
-    .select('*, rooms(name, price_per_night, max_guests)')
+    .select('*, rooms(name, price_per_night, max_guests), booking_rooms(room_number, price_per_night, rooms(name))')
     .eq('booking_code', bookingCode)
     .single();
 
@@ -158,7 +195,13 @@ export async function getBookingDetail(supabase: SupabaseClient, bookingCode: st
     throw new Error(`Booking ${bookingCode} tidak ditemukan`);
   }
 
-  const b = data as BookingDetail;
+  const b = data as BookingDetail & { booking_rooms?: Array<{ room_number: string; price_per_night: number; rooms: { name: string } | null }> };
+  const brs = b.booking_rooms || [];
+  const roomNumbers = brs.map(r => r.room_number).filter(Boolean);
+  const roomTypes = Array.from(new Set(brs.map(r => r.rooms?.name).filter((n): n is string => !!n)));
+  const fallbackNumbers = roomNumbers.length ? roomNumbers : (b.allocated_room_number ? [b.allocated_room_number] : []);
+  const fallbackTypes = roomTypes.length ? roomTypes : (b.rooms?.name ? [b.rooms.name] : []);
+
   return {
     booking_code: b.booking_code,
     status: b.status,
@@ -169,8 +212,12 @@ export async function getBookingDetail(supabase: SupabaseClient, bookingCode: st
       count: b.num_guests
     },
     room: {
-      name: b.rooms?.name,
-      number: b.allocated_room_number,
+      name: fallbackTypes.join(' + '),
+      number: fallbackNumbers.join(', '),
+      numbers: fallbackNumbers,
+      types: fallbackTypes,
+      is_multi_room: fallbackNumbers.length > 1,
+      rooms_summary: `${fallbackTypes.join(' + ') || '-'}${fallbackNumbers.length ? ` (${fallbackNumbers.join(', ')})` : ''}${fallbackNumbers.length > 1 ? ` [${fallbackNumbers.length} kamar]` : ''}`,
       price_per_night: b.rooms?.price_per_night,
       max_guests: b.rooms?.max_guests
     },
