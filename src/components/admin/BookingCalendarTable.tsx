@@ -278,6 +278,19 @@ export const BookingCalendarTable = () => {
       return;
     }
 
+    // Validate DP amount: harus > 0 dan < total_price
+    if (editedBooking.payment_status === 'down_payment') {
+      const dp = Number(editedBooking.payment_amount) || 0;
+      if (dp <= 0) {
+        toast.error("Nominal DP harus lebih dari 0");
+        return;
+      }
+      if (dp >= editedBooking.total_price) {
+        toast.error("Nominal DP harus lebih kecil dari total harga (gunakan status 'Lunas' jika sudah penuh)");
+        return;
+      }
+    }
+
     try {
       await updateBooking({
         id: editedBooking.id,
