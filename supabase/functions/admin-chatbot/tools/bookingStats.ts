@@ -187,7 +187,7 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
 export async function getBookingDetail(supabase: SupabaseClient, bookingCode: string) {
   const { data, error } = await supabase
     .from('bookings')
-    .select('*, rooms(name, price_per_night, max_guests)')
+    .select('*, rooms(name, price_per_night, max_guests), booking_rooms(room_number, price_per_night, rooms(name))')
     .eq('booking_code', bookingCode)
     .single();
 
@@ -195,7 +195,13 @@ export async function getBookingDetail(supabase: SupabaseClient, bookingCode: st
     throw new Error(`Booking ${bookingCode} tidak ditemukan`);
   }
 
-  const b = data as BookingDetail;
+  const b = data as BookingDetail & { booking_rooms?: Array<{ room_number: string; price_per_night: number; rooms: { name: string } | null }> };
+  const brs = b.booking_rooms || [];
+  const roomNumbers = brs.map(r => r.room_number).filter(Boolean);
+  const roomTypes = Array.from(new Set(brs.map(r => r.rooms?.name).filter((n): n is string => !!n)));
+  const fallbackNumbers = roomNumbers.length ? roomNumbers : (b.allocated_room_number ? [b.allocated_room_number] : []);
+  const fallbackTypes = roomTypes.length ? roomTypes : (b.rooms?.name ? [b.rooms.name] : []);
+
   return {
     booking_code: b.booking_code,
     status: b.status,
@@ -206,8 +212,12 @@ export async function getBookingDetail(supabase: SupabaseClient, bookingCode: st
       count: b.num_guests
     },
     room: {
-      name: b.rooms?.name,
-      number: b.allocated_room_number,
+      name: fallbackTypes.join(' + '),
+      number: fallbackNumbers.join(', '),
+      numbers: fallbackNumbers,
+      types: fallbackTypes,
+      is_multi_room: fallbackNumbers.length > 1,
+      rooms_summary: `${fallbackTypes.join(' + ') || '-'}${fallbackNumbers.length ? ` (${fallbackNumbers.join(', ')})` : ''}${fallbackNumbers.length > 1 ? ` [${fallbackNumbers.length} kamar]` : ''}`,
       price_per_night: b.rooms?.price_per_night,
       max_guests: b.rooms?.max_guests
     },
