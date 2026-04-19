@@ -69,14 +69,24 @@ export const GlobalSEO = () => {
       document.head.appendChild(script);
     }
 
-    /* ---- Custom Head Scripts ---- */
+    /* ---- Custom Head Scripts (sanitized) ---- */
+    const injectedNodes: Node[] = [];
     if (settings.custom_head_scripts) {
-      const wrap = document.createElement("div");
-      wrap.innerHTML = settings.custom_head_scripts;
-      Array.from(wrap.children).forEach((child) => {
-        document.head.appendChild(child);
+      const sanitized = sanitizeHeadMarkup(settings.custom_head_scripts);
+      sanitized.forEach((node) => {
+        document.head.appendChild(node);
+        injectedNodes.push(node);
       });
     }
+
+    return () => {
+      // Cleanup injected custom nodes on settings change/unmount
+      injectedNodes.forEach((node) => {
+        if (node.parentNode === document.head) {
+          document.head.removeChild(node);
+        }
+      });
+    };
   }, [settings]);
 
   /* --------------------------------------------------
