@@ -284,20 +284,20 @@ export async function orchestrate(
     conversationId = newConv.id;
   }
 
-  // === INTENT AGENT: Name collection ===
+  // === NAME COLLECTION (merged into Orchestrator) ===
   try {
-  const nameResult = await handleNameCollection(
-    supabase, session as WhatsAppSession, phone, conversationId!, String(message),
-    normalizedMessage, isNewSession, personaName, env
-  );
-  if (nameResult) {
-    logAgentDecision(supabase, {
-      trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
-      from_agent: 'orchestrator', to_agent: 'intent',
-      reason: 'name_collection', intent: 'greeting',
-    });
-    return nameResult;
-  }
+    const nameResult = await handleNameCollection(
+      supabase, session as WhatsAppSession, phone, conversationId!, String(message),
+      normalizedMessage, isNewSession, personaName, env
+    );
+    if (nameResult) {
+      logAgentDecision(supabase, {
+        trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
+        from_agent: 'orchestrator', to_agent: 'orchestrator',
+        reason: 'name_collection', intent: 'greeting',
+      });
+      return nameResult;
+    }
   } catch (nameError) {
     console.error(`❌ NameCollection error for ${phone}:`, nameError);
     // Non-fatal: continue to next agent
