@@ -79,7 +79,31 @@ const Bookings = () => {
   const queryClient = useQueryClient();
 
   const handleCancelBooking = async (bookingId: string) => {
-    const { error } = await supabase.from("bookings").delete().eq("id", bookingId);
+    // Guard: only allow cancel for non-terminal, pre-checkin states
+    const target = bookings.find((b) => b.id === bookingId);
+    if (!target) {
+      toast.error("Booking tidak ditemukan");
+      return;
+    }
+    const cancellableStatuses = ["pending", "pending_payment", "confirmed"];
+    if (!cancellableStatuses.includes(target.status)) {
+      toast.error("Booking ini tidak dapat dibatalkan", {
+        description: `Status saat ini: ${target.status}`,
+      });
+      return;
+    }
+
+    // Soft-cancel: update status (do NOT hard delete)
+    const { error } = await supabase
+      .from("bookings")
+      .update({
+        status: "cancelled",
+        cancellation_reason: "Cancelled by user",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", bookingId)
+      .eq("user_id", user?.id || "")
+      .in("status", cancellableStatuses);
 
     if (error) {
       toast.error("Failed to cancel booking", {
