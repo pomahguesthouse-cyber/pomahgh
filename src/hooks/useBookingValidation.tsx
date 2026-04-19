@@ -138,6 +138,7 @@ export const useBookingValidation = () => {
             reason: `Kamar belum tersedia. Check-out tamu sebelumnya jam ${existingCheckOutTime.slice(0, 5)}`
           };
         }
+        continue; // time fit → skip Case 3 fallthrough
       }
 
       // Case 2: Same check-out date - conflict if new check-out time > existing check-in time
@@ -149,6 +150,7 @@ export const useBookingValidation = () => {
             reason: `Kamar sudah dibooking untuk tamu berikutnya. Check-in jam ${existingCheckInTime.slice(0, 5)}`
           };
         }
+        continue; // time fit → skip Case 3 fallthrough
       }
 
       // Case 3: TRUE date overlap (strict — ujung yang bersentuhan sudah ditangani Case A/B)
