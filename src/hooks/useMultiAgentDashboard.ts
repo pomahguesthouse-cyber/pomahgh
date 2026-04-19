@@ -40,6 +40,7 @@ const BACKEND_FILES: Record<string, string> = {
   payment_proof: 'paymentProof.ts',
   payment_approval: 'paymentApproval.ts',
   price_list: 'priceList.ts',
+  room_brochure: 'roomBrochure.ts',
 };
 
 export const useMultiAgentDashboard = () => {
@@ -249,6 +250,10 @@ export const useMultiAgentDashboard = () => {
       case 'price_list':
         status = guestSessions.length > 0 ? 'active' : 'idle';
         chatCount = routingCounts['price_list'] || 0;
+        break;
+      case 'room_brochure':
+        status = guestSessions.length > 0 ? 'active' : 'idle';
+        chatCount = routingCounts['room_brochure'] || 0;
         break;
     }
 

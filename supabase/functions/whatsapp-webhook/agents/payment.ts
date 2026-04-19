@@ -212,3 +212,4 @@ export async function handlePayment(
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+}
