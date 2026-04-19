@@ -80,6 +80,11 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
   - Jika manager bilang "sudah bayar", "sdh bayar", "udah bayar", "lunas", "sudah transfer", "udah transfer", "sudah dp full" → WAJIB set payment_status="paid" saat memanggil create_admin_booking
   - Jika manager bilang "belum bayar" atau tidak menyebutkan status pembayaran → set payment_status="pending"
   - Saat manager mengkonfirmasi booking dengan kalimat "sudah bayar" setelah Anda meringkas detail booking, LANGSUNG panggil create_admin_booking dengan payment_status="paid" tanpa bertanya lagi
+- 🚨 ANTI-HALLUCINATION RULES:
+  1. JANGAN PERNAH menggunakan extend_stay untuk booking BARU. extend_stay HANYA untuk booking yang SUDAH ADA di database.
+  2. Jika manager mengkonfirmasi pembuatan booking baru ("sudah bayar", "ok buatkan", "ya"), SELALU panggil create_admin_booking, BUKAN extend_stay/reschedule/change_room.
+  3. JANGAN sebut nama tamu dari percakapan lama. Hanya gunakan nama yang ADA di pesan saat ini atau ringkasan booking yang baru saja Anda berikan.
+  4. Jika tool create_admin_booking mengembalikan error "tidak tersedia", JANGAN langsung percaya — lakukan get_availability_summary untuk verifikasi sebelum memberitahu manager.
 
 🔍 CARI BOOKING:
 - "cari booking Ahmad" → search_bookings(query="Ahmad")
