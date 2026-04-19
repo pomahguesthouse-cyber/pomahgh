@@ -673,7 +673,7 @@ serve(async (req) => {
           console.error("FONNTE_API_KEY not configured");
         } else {
           const hotelName = hotelSettings.hotel_name || 'Pomah Guesthouse';
-          const totalLabel = formatRupiah(showPaidStamp ? booking.total_price : totalWithCode);
+          const totalLabel = formatRupiah(showPaidStamp || isDownPayment ? booking.total_price : totalWithCode);
           const checkInLabel = format(new Date(booking.check_in), "dd MMM yyyy", { locale: idLocale });
           const checkOutLabel = format(new Date(booking.check_out), "dd MMM yyyy", { locale: idLocale });
 
@@ -683,7 +683,9 @@ serve(async (req) => {
 
           const message = showPaidStamp
             ? `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah menginap di ${hotelName}!\n\nBerikut bukti pemesanan Anda (terlampir PDF):\n\n📋 *${booking.booking_code}*\n📅 ${checkInLabel} → ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total: *${totalLabel}* — LUNAS ✅\n\nKami tunggu kunjungan Anda berikutnya 🙏`
-            : `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah memesan di ${hotelName}!\n\nBerikut detail pesanan Anda (PDF terlampir):\n\n📋 Kode: *${booking.booking_code}*\n📅 Check-in: ${checkInLabel}\n📅 Check-out: ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total bayar: *${totalLabel}*\n_(termasuk kode unik 3 digit untuk identifikasi)_\n\n💳 *INSTRUKSI PEMBAYARAN*\n${bankList}\n\nSilakan lakukan pembayaran dan kirim bukti transfer di chat ini ya. Tim kami akan segera memverifikasi 🙏\n\n📄 Invoice: ${invoicePdfUrl}`;
+            : isDownPayment
+              ? `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah memesan di ${hotelName}!\n\nBerikut bukti pemesanan Anda (PDF terlampir):\n\n📋 Kode: *${booking.booking_code}*\n📅 Check-in: ${checkInLabel}\n📅 Check-out: ${checkOutLabel} (${booking.total_nights} malam)\n\n💵 Total: *${totalLabel}*\n✅ DP dibayar: *${formatRupiah(paidAmount)}*\n💳 Sisa pelunasan: *${formatRupiah(remainingBalance)}*\n\n💳 *PELUNASAN PEMBAYARAN*\n${bankList}\n\nSilakan lunasi sisa pembayaran sebesar *${formatRupiah(remainingBalance)}* dan kirim bukti transfer di chat ini ya 🙏\n\n📄 Invoice: ${invoicePdfUrl}`
+              : `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah memesan di ${hotelName}!\n\nBerikut detail pesanan Anda (PDF terlampir):\n\n📋 Kode: *${booking.booking_code}*\n📅 Check-in: ${checkInLabel}\n📅 Check-out: ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total bayar: *${formatRupiah(totalWithCode)}*\n_(termasuk kode unik 3 digit untuk identifikasi)_\n\n💳 *INSTRUKSI PEMBAYARAN*\n${bankList}\n\nSilakan lakukan pembayaran dan kirim bukti transfer di chat ini ya. Tim kami akan segera memverifikasi 🙏\n\n📄 Invoice: ${invoicePdfUrl}`;
 
           // Send PDF directly as multipart/form-data (avoids "url unreachable" errors when Fonnte cannot fetch our public URL)
           const formData = new FormData();
