@@ -614,13 +614,18 @@ serve(async (req) => {
           for (let i = 0; i < pdfBytes.length; i++) binary += String.fromCharCode(pdfBytes[i]);
           const pdfBase64 = btoa(binary);
 
+          const emailTotalLine = isDownPayment
+            ? `<strong>Total:</strong> ${formatRupiah(booking.total_price)}<br>
+               <strong>DP dibayar:</strong> ${formatRupiah(paidAmount)}<br>
+               <strong>Sisa pembayaran:</strong> ${formatRupiah(remainingBalance)}<br>`
+            : `<strong>Total:</strong> ${formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)}<br>`;
           const emailHtml = `
             <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#222;">
               <h2 style="color:#4a9bd9;">Bukti Pemesanan #${booking.booking_code}</h2>
               <p>Halo <strong>${booking.guest_name}</strong>,</p>
               <p>Terima kasih telah memilih ${hotelName}. Berikut detail pemesanan Anda terlampir dalam bentuk PDF.</p>
               <p><strong>Kode booking:</strong> ${booking.booking_code}<br>
-                 <strong>Total:</strong> ${formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)}<br>
+                 ${emailTotalLine}
                  <strong>Status:</strong> ${transactionStatus}</p>
               ${!showPaidStamp ? `<p>Silakan lakukan pembayaran sesuai instruksi di invoice. Setelah transfer, kirim bukti ke WhatsApp kami untuk verifikasi.</p>` : ''}
               <p style="margin-top:30px;font-size:12px;color:#888;">Atau buka invoice online: <a href="${invoicePdfUrl}">${invoicePdfUrl}</a></p>
