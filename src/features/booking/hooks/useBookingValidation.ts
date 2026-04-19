@@ -101,36 +101,61 @@ export const useBookingValidation = () => {
       const existingCheckInTime = existing.check_in_time || "14:00:00";
       const existingCheckOutTime = existing.check_out_time || "12:00:00";
 
-      // Case 1: Same check-in date - conflict if new check-in time < existing check-out time
+      // Case A: Same-day turnover — new check-in = existing check-out (sah jika jam sesuai)
+      if (checkInStr === existingCheckOut) {
+        if (checkInTime < existingCheckOutTime) {
+          return {
+            hasConflict: true,
+            conflictingBooking: existing,
+            reason: `Tamu sebelumnya check-out jam ${existingCheckOutTime.slice(0, 5)}. Check-in baru harus setelah jam tersebut.`
+          };
+        }
+        continue; // turnover sah → lanjut booking berikutnya
+      }
+
+      // Case B: Same-day turnover — new check-out = existing check-in (sah jika jam sesuai)
+      if (checkOutStr === existingCheckIn) {
+        if (checkOutTime > existingCheckInTime) {
+          return {
+            hasConflict: true,
+            conflictingBooking: existing,
+            reason: `Tamu berikutnya check-in jam ${existingCheckInTime.slice(0, 5)}. Check-out harus sebelum jam tersebut.`
+          };
+        }
+        continue; // turnover sah
+      }
+
+      // Case 1: Tanggal check-in sama persis dengan booking lain
       if (checkInStr === existingCheckIn) {
         if (checkInTime < existingCheckOutTime) {
-          return { 
-            hasConflict: true, 
+          return {
+            hasConflict: true,
             conflictingBooking: existing,
             reason: `Kamar belum tersedia. Check-out tamu sebelumnya jam ${existingCheckOutTime.slice(0, 5)}`
           };
         }
       }
 
-      // Case 2: Same check-out date - conflict if new check-out time > existing check-in time
+      // Case 2: Tanggal check-out sama persis dengan booking lain
       if (checkOutStr === existingCheckOut) {
         if (checkOutTime > existingCheckInTime) {
-          return { 
-            hasConflict: true, 
+          return {
+            hasConflict: true,
             conflictingBooking: existing,
             reason: `Kamar sudah dibooking untuk tamu berikutnya. Check-in jam ${existingCheckInTime.slice(0, 5)}`
           };
         }
       }
 
-      // Case 3: Date ranges overlap (standard overlap check)
+      // Case 3: TRUE date overlap (strict — ujung yang bersentuhan sudah ditangani Case A/B)
       if (
-        (checkInStr >= existingCheckIn && checkInStr < existingCheckOut) ||
-        (checkOutStr > existingCheckIn && checkOutStr <= existingCheckOut) ||
-        (checkInStr <= existingCheckIn && checkOutStr >= existingCheckOut)
+        (checkInStr > existingCheckIn && checkInStr < existingCheckOut) ||
+        (checkOutStr > existingCheckIn && checkOutStr < existingCheckOut) ||
+        (checkInStr < existingCheckIn && checkOutStr > existingCheckOut) ||
+        (checkInStr === existingCheckIn && checkOutStr === existingCheckOut)
       ) {
-        return { 
-          hasConflict: true, 
+        return {
+          hasConflict: true,
           conflictingBooking: existing,
           reason: `Kamar sudah dibooking untuk tanggal ${existingCheckIn} - ${existingCheckOut}`
         };
