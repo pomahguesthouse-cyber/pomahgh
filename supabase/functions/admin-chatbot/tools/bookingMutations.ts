@@ -254,7 +254,9 @@ export async function createAdminBooking(supabase: SupabaseClient, args: Record<
     original_price: originalPrice,
     promo_applied: activePromo?.name || null,
     promo_nights: promoNights,
-    savings: savings
+    savings: savings,
+    payment_status: paymentStatus,
+    is_paid: isPaid
   };
 }
 
