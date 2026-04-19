@@ -77,7 +77,7 @@ export const MobileNotificationsTab = () => {
           setLiveNotifs((prev) => [
             {
               id: msg.id,
-              type: "whatsapp",
+              type: "whatsapp" as const,
               title: phone ? `WhatsApp: ${phone}` : "Pesan Baru",
               description: msg.content?.substring(0, 100) || "",
               timestamp: msg.created_at,
@@ -94,7 +94,7 @@ export const MobileNotificationsTab = () => {
           setLiveNotifs((prev) => [
             {
               id: b.id,
-              type: "booking",
+              type: "booking" as const,
               title: "Booking Baru",
               description: `${b.guest_name} - ${b.booking_code}`,
               timestamp: b.created_at,
