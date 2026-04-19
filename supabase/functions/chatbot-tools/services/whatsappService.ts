@@ -104,9 +104,9 @@ export async function sendWhatsApp(
 ): Promise<void> {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!supabaseUrl || !anonKey) {
+    if (!supabaseUrl || !serviceKey) {
       console.error("Missing Supabase environment variables for WhatsApp");
       return;
     }
@@ -118,7 +118,7 @@ export async function sendWhatsApp(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${anonKey}`,
+        "Authorization": `Bearer ${serviceKey}`,
       },
       body: JSON.stringify({ phone, message, type }),
       signal: controller.signal,
