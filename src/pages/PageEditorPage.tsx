@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 
-export default function PageEditorPage() {
+function PageEditorInner() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const pageId = searchParams.get("id");
@@ -299,5 +299,14 @@ export default function PageEditorPage() {
         />
       </div>
     </DndContext>
+  );
+}
+
+export default function PageEditorPage() {
+  // Auth + admin role guard — /editor must not be open to anonymous users
+  return (
+    <AdminGuard>
+      <PageEditorInner />
+    </AdminGuard>
   );
 }

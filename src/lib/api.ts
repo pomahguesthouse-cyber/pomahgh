@@ -42,7 +42,8 @@ export const api = {
   ): Promise<ApiResponse<T>> => {
     const { data, error } = await supabase.functions.invoke(functionName, {
       method: "POST",
-      body, // supabase-js auto-serializes; do NOT JSON.stringify here
+      // supabase-js auto-serializes JSON; do NOT JSON.stringify here
+      body: body as Record<string, unknown> | undefined,
     });
     return {
       data: error ? null : (data as T),
@@ -60,7 +61,8 @@ export const api = {
   ): Promise<ApiResponse<T>> => {
     const { data, error } = await supabase.functions.invoke(functionName, {
       method: "PUT",
-      body, // supabase-js auto-serializes; do NOT JSON.stringify here
+      // supabase-js auto-serializes JSON; do NOT JSON.stringify here
+      body: body as Record<string, unknown> | undefined,
     });
     return {
       data: error ? null : (data as T),
