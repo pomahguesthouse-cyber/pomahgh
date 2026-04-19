@@ -28,13 +28,14 @@ export function formatDateISO(date: Date): string {
 }
 
 /**
- * Format date in Indonesian format
+ * Format date global: "Rabu, 15/01/2025"
  */
 export function formatDateIndonesian(dateStr: string): string {
   const date = new Date(dateStr);
   const day = INDONESIAN_DAYS[date.getDay()];
-  const month = INDONESIAN_MONTHS[date.getMonth()];
-  return `${day}, ${date.getDate()} ${month} ${date.getFullYear()}`;
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  return `${day}, ${dd}/${mm}/${date.getFullYear()}`;
 }
 
 /**

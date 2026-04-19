@@ -273,8 +273,8 @@ function buildInvoicePdf(args: {
 
   // === DETAIL HOTEL & STAY ===
   y = drawSectionHeader('DETAIL MENGINAP', y);
-  const checkInDate = format(new Date(booking.check_in), "EEEE, dd MMMM yyyy", { locale: idLocale });
-  const checkOutDate = format(new Date(booking.check_out), "EEEE, dd MMMM yyyy", { locale: idLocale });
+  const checkInDate = format(new Date(booking.check_in), "dd/MM/yyyy", { locale: idLocale });
+  const checkOutDate = format(new Date(booking.check_out), "dd/MM/yyyy", { locale: idLocale });
   doc.setFont(fontFamily, 'bold');
   doc.text(`Check-in  : ${checkInDate}${booking.check_in_time ? ` (${booking.check_in_time})` : ''}`, marginX, y);
   y += 14;
