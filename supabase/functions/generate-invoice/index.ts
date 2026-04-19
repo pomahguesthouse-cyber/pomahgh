@@ -426,7 +426,9 @@ function buildInvoicePdf(args: {
     doc.setFont(fontFamily, 'italic');
     doc.setFontSize(8);
     doc.setTextColor(...muted);
-    const tip = 'Tip: gunakan nominal persis (termasuk kode unik) agar pembayaran cepat terverifikasi.';
+    const tip = isDownPayment
+      ? 'Tip: lakukan pelunasan minimal 1 hari sebelum check-in agar tidak ada kendala saat tiba.'
+      : 'Tip: gunakan nominal persis (termasuk kode unik) agar pembayaran cepat terverifikasi.';
     doc.text(tip, marginX, y);
     y += 14;
   }
