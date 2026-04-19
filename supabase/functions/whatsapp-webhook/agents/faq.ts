@@ -140,10 +140,10 @@ export async function handleGuestFAQ(
     const chatbotData = await chatbotResponse.json();
     let aiResponse = chatbotData.choices?.[0]?.message?.content || '';
 
-    // If AI tried to use tools (shouldn't happen in faq_mode but safety check)
-    const aiMessage = chatbotData.choices?.[0]?.message;
-    if (aiMessage?.tool_calls?.length > 0) {
-      console.log('⚠️ FAQ Agent: AI requested tools, escalating to Booking Agent');
+    // If chatbot used tools (shouldn't happen in faq_mode but safety check)
+    const toolsUsed: string[] = chatbotData.meta?.tool_calls_used || [];
+    if (toolsUsed.length > 0) {
+      console.log('⚠️ FAQ Agent: AI used tools in faq_mode, escalating to Booking Agent');
       // Don't log user message here — booking agent will log it
       return new Response(JSON.stringify({ status: "faq_escalate_to_booking" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

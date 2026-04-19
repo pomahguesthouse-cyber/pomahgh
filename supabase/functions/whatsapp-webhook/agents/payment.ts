@@ -116,6 +116,7 @@ export async function handlePayment(
   } catch (error) {
     console.error(`❌ Payment Agent error for ${phone}:`, error);
     const fallbackMsg = 'Mohon maaf, terjadi kendala saat memproses pembayaran. Silakan coba lagi atau hubungi admin kami. 🙏';
+    await logMessage(supabase, conversationId, 'assistant', fallbackMsg);
     await sendWhatsApp(phone, fallbackMsg, env.fonnteApiKey);
     return new Response(JSON.stringify({ status: 'payment_error', error: (error as Error).message }), {
       status: 500,
