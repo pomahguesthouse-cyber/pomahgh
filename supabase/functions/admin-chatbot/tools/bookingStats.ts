@@ -143,7 +143,7 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
   
   let queryBuilder = supabase
     .from('bookings')
-    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, rooms(name)')
+    .select('id, booking_code, guest_name, guest_phone, check_in, check_out, status, total_price, created_at, allocated_room_number, rooms(name), booking_rooms(room_number, rooms(name))')
     .order('created_at', { ascending: false })
     .limit(actualLimit);
 
@@ -164,16 +164,23 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
   return {
     query: query || null,
     count: rows.length,
-    bookings: rows.map((b) => ({
-      booking_code: b.booking_code,
-      guest_name: b.guest_name,
-      guest_phone: b.guest_phone,
-      room_name: b.rooms?.name,
-      check_in: b.check_in,
-      check_out: b.check_out,
-      status: b.status,
-      total_price: b.total_price
-    }))
+    bookings: rows.map((b) => {
+      const r = summarizeRooms(b);
+      return {
+        booking_code: b.booking_code,
+        guest_name: b.guest_name,
+        guest_phone: b.guest_phone,
+        room_name: r.room_types.join(' + ') || b.rooms?.name,
+        room_numbers: r.room_numbers,
+        room_types: r.room_types,
+        rooms_summary: r.rooms_summary,
+        is_multi_room: r.room_numbers.length > 1,
+        check_in: b.check_in,
+        check_out: b.check_out,
+        status: b.status,
+        total_price: b.total_price,
+      };
+    })
   };
 }
 
