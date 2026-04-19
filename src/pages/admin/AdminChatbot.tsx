@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
-import { useHotelSettings, WhatsAppContact, WhatsAppManager } from '@/hooks/useHotelSettings';
-import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, Phone, Plus, Trash2, Ban, UserCog, Shield, FileText, Brain } from 'lucide-react';
+import { useHotelSettings, WhatsAppContact, WhatsAppManager, ManagerRole } from '@/hooks/useHotelSettings';
+import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, Phone, Plus, Trash2, Ban, UserCog, Shield, FileText, Brain, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import AdminPersonaSettingsTab from '@/components/admin/AdminPersonaSettingsTab';
 import { toast } from '@/hooks/use-toast';
