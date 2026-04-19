@@ -128,24 +128,25 @@ export async function createAdminBooking(supabase: SupabaseClient, args: Record<
 
   const activePromo = (activePromos?.[0] as PromoRow | undefined) || null;
 
-  // Get existing bookings
+  // Get existing bookings (strict overlap: check_in < new_check_out AND check_out > new_check_in)
+  // Same-day turnover allowed: previous guest checks out morning, new guest checks in afternoon
   const { data: conflictingBookings } = await supabase
     .from('bookings')
     .select('allocated_room_number')
     .eq('room_id', room.id)
     .neq('status', 'cancelled')
-    .lte('check_in', args.check_out)
-    .gte('check_out', args.check_in);
+    .lt('check_in', args.check_out)
+    .gt('check_out', args.check_in);
 
   const bookedNumbers = new Set((conflictingBookings || []).map((b: { allocated_room_number: string | null }) => b.allocated_room_number).filter(Boolean) as string[]);
   
-  // Get blocked dates
+  // Get blocked dates (exclude check_out date — guest leaves morning, room available same day)
   const { data: blockedDates } = await supabase
     .from('room_unavailable_dates')
     .select('room_number')
     .eq('room_id', room.id)
     .gte('unavailable_date', args.check_in)
-    .lte('unavailable_date', args.check_out);
+    .lt('unavailable_date', args.check_out);
 
   const blockedNumbers = new Set((blockedDates || []).map((d: { room_number: string }) => d.room_number));
 
