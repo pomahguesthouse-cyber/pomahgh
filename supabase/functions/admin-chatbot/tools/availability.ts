@@ -367,18 +367,19 @@ export async function getTodayGuests(supabase: SupabaseClient, type: string = 'a
     results.checkin_guests = guests;
   }
 
-  // Query for check-out today
+  // Query for check-out today (include already checked_out so manager can see status)
   if (type === 'checkout' || type === 'all') {
     const { data } = await supabase
       .from('bookings')
       .select('id, booking_code, guest_name, guest_phone, check_in, check_out, allocated_room_number, num_guests, total_price, status, rooms(name)')
       .eq('check_out', targetDate)
-      .in('status', ['confirmed', 'checked_in'])
+      .in('status', ['confirmed', 'checked_in', 'checked_out'])
       .order('guest_name');
     
     const guests = [];
     for (const b of (data || []) as unknown as GuestBookingRow[]) {
       const roomNumbers = await getRoomNumbers(b.id, b.allocated_room_number);
+      const alreadyCheckedOut = b.status === 'checked_out' || (!isBeforeCheckoutTime);
       guests.push({
         booking_code: b.booking_code,
         guest_name: b.guest_name,
@@ -390,7 +391,10 @@ export async function getTodayGuests(supabase: SupabaseClient, type: string = 'a
         check_in: b.check_in,
         check_out: b.check_out,
         num_guests: b.num_guests,
-        total_price: b.total_price
+        total_price: b.total_price,
+        status: b.status,
+        already_checked_out: alreadyCheckedOut,
+        checkout_status_label: alreadyCheckedOut ? 'Sudah Check-Out' : 'Belum Check-Out'
       });
     }
     results.checkout_guests = guests;
