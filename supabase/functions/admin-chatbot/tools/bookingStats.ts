@@ -51,6 +51,35 @@ function summarizeRooms(b: BookingWithRoom): { room_numbers: string[]; room_type
   };
 }
 
+function formatPaymentLabel(b: BookingWithRoom): string {
+  const total = b.total_price?.toLocaleString('id-ID') || '0';
+  switch (b.payment_status) {
+    case 'paid': return `Rp ${total} • ✅ Lunas`;
+    case 'down_payment': {
+      const dp = b.payment_amount?.toLocaleString('id-ID') || '0';
+      const sisa = ((b.total_price || 0) - (b.payment_amount || 0)).toLocaleString('id-ID');
+      return `Rp ${total} • 🟡 DP Rp ${dp} (sisa Rp ${sisa})`;
+    }
+    case 'unpaid': return `Rp ${total} • ⏳ Belum bayar`;
+    case 'pay_at_hotel': return `Rp ${total} • 🏨 Bayar di hotel`;
+    default: return `Rp ${total} • ${b.payment_status || '-'}`;
+  }
+}
+
+function formatBookingLine(b: BookingWithRoom, idx: number): string {
+  const r = summarizeRooms(b);
+  return [
+    `${idx}. *${b.booking_code}* — ${b.guest_name} (${b.num_guests || 1} tamu)`,
+    `   🛏️ ${r.rooms_summary}`,
+    `   📅 ${formatDateDDMMYYYY(b.check_in)} → ${formatDateDDMMYYYY(b.check_out)} (${b.total_nights || '-'} malam)`,
+    `   📞 ${b.guest_phone || '-'}`,
+    `   💰 ${formatPaymentLabel(b)}`,
+    `   📌 Status: ${b.status} • Sumber: ${b.booking_source || '-'}`,
+  ].join('\n');
+}
+
+const BOOKING_SEPARATOR = '\n-------------------------------\n';
+
 interface BookingDetail {
   booking_code: string;
   status: string;
@@ -120,8 +149,10 @@ export async function getRecentBookings(supabase: SupabaseClient, limit: number 
   if (error) throw error;
 
   const rows = (data || []) as unknown as BookingWithRoom[];
+  const formatted_text = rows.map((b, i) => formatBookingLine(b, i + 1)).join(BOOKING_SEPARATOR);
   return {
     count: rows.length,
+    formatted_text,
     bookings: rows.map((b) => {
       const r = summarizeRooms(b);
       return {
@@ -171,9 +202,11 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
   if (error) throw error;
 
   const rows = (data || []) as unknown as BookingWithRoom[];
+  const formatted_text = rows.map((b, i) => formatBookingLine(b, i + 1)).join(BOOKING_SEPARATOR);
   return {
     query: query || null,
     count: rows.length,
+    formatted_text,
     bookings: rows.map((b) => {
       const r = summarizeRooms(b);
       return {

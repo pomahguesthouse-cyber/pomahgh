@@ -131,30 +131,24 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
 - "list booking" / "daftar booking" / "booking terbaru" → get_recent_bookings (default 5, atau sesuai jumlah yang diminta)
 
 ⚠️ FORMAT WAJIB UNTUK LIST/DAFTAR BOOKING (get_recent_bookings & search_bookings):
-- WAJIB tampilkan SEMUA kamar untuk booking multi-room. Gunakan field 'rooms_summary' dari hasil tool.
-- WAJIB tampilkan info LENGKAP per booking — JANGAN dipotong/diringkas.
-- 📅 TANGGAL WAJIB format Indonesia (contoh: 23 April 2026) — COPY PERSIS dari hasil tool. JANGAN konversi ke format lain!
-- Format per booking (multi-baris, lengkap, WAJIB ada garis pemisah antar booking):
+- Tool sudah mengembalikan field "formatted_text" yang SIAP PAKAI — COPY PERSIS ke response.
+- JANGAN format ulang, JANGAN ubah tanggal, JANGAN hilangkan separator.
+- Cukup tambahkan kalimat pembuka (misal: "Berikut adalah 5 booking terbaru:") lalu PASTE formatted_text apa adanya.
+- formatted_text sudah berisi: nomor, kode booking, nama tamu, kamar, tanggal, telepon, harga, status, DAN garis pemisah antar booking.
+- WAJIB tampilkan SEMUA kamar untuk booking multi-room.
+- 📅 TANGGAL sudah dalam format Indonesia (contoh: 23 April 2026) — JANGAN konversi ke format lain!
+- CONTOH RESPONS BENAR (formatted_text sudah berisi ini, tinggal copy):
   \`\`\`
-  N. **{booking_code}** — {guest_name} ({num_guests} tamu)
-     🛏️ {rooms_summary}
-     📅 {check_in} → {check_out} ({total_nights} malam)
-     📞 {guest_phone}
-     💰 Rp {total_price} • {payment_status_label}
-     📌 Status: {status} • Sumber: {booking_source}
-  ─────────────────────────────
-  \`\`\`
-- WAJIB tambahkan garis pemisah ─────────────────────────────── di antara setiap booking. Booking terakhir TIDAK perlu garis di bawahnya.
-- CONTOH OUTPUT BENAR (perhatikan format tanggal Indonesia dan garis pemisah):
-  \`\`\`
-  1. **PMH-R3JMQW** — Weka Faruq (1 tamu)
+  Berikut adalah 5 booking terbaru:
+
+  1. *PMH-R3JMQW* — Weka Faruq Maali (1 tamu)
      🛏️ Single (207)
      📅 23 April 2026 → 25 April 2026 (2 malam)
      📞 +6285328937884
      💰 Rp 300.000 • 🟡 DP Rp 150.000 (sisa Rp 150.000)
      📌 Status: confirmed • Sumber: admin
-  ───────────────────────────────
-  2. **PMH-4BCC54** — Erfin Trilaksana (4 tamu)
+  -------------------------------
+  2. *PMH-4BCC54* — Erfin Trilaksana (4 tamu)
      🛏️ Family Suite (FS100)
      📅 15 Mei 2026 → 17 Mei 2026 (2 malam)
      📞 08121613084
@@ -162,12 +156,6 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
      📌 Status: confirmed • Sumber: other
   \`\`\`
 - ❌ CONTOH OUTPUT SALAH (DILARANG): 📅 2026-04-23 → 2026-04-25 atau 📅 23/04/2026 → 25/04/2026
-- payment_status_label (WAJIB pakai mapping ini, JANGAN PERNAH sebut "Lunas" jika status bukan "paid"):
-  • "paid" → ✅ Lunas
-  • "down_payment" → 🟡 DP Rp {payment_amount} (sisa Rp {total_price - payment_amount})
-  • "unpaid" → ⏳ Belum bayar
-  • "pay_at_hotel" → 🏨 Bayar di hotel
-  • lainnya → tampilkan apa adanya (jangan asumsi Lunas)
 - Jika field kosong/null, tampilkan "-" (jangan dihilangkan).
 - Contoh multi-room: "Family Suite + Deluxe (203, 204, 205, FS100, FS222) [5 kamar]"
 - JANGAN HANYA tampilkan satu nama tipe jika 'is_multi_room=true' — tampilkan SEMUA kamar.
