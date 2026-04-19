@@ -3,6 +3,7 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { findBestRoomMatch } from "../lib/roomMatcher.ts";
 import { DAY_PRICE_FIELDS } from "../lib/constants.ts";
+import { formatDateDDMMYYYY } from "../lib/dateHelpers.ts";
 
 interface RoomWithPricing {
   id: string;
@@ -287,8 +288,8 @@ export async function createAdminBooking(supabase: SupabaseClient, args: Record<
     room_name: room.name,
     room_number: allocatedRoomNumber,
     allocation_mode: allocationMode,
-    check_in: args.check_in,
-    check_out: args.check_out,
+    check_in: formatDateDDMMYYYY(args.check_in as string),
+    check_out: formatDateDDMMYYYY(args.check_out as string),
     nights: nights,
     total_price: totalPrice,
     original_price: originalPrice,
@@ -464,8 +465,8 @@ export async function rescheduleBooking(supabase: SupabaseClient, args: Record<s
   return {
     success: true,
     booking_code,
-    old_dates: { check_in: booking.check_in, check_out: booking.check_out },
-    new_dates: { check_in: checkIn, check_out: checkOut },
+    old_dates: { check_in: formatDateDDMMYYYY(booking.check_in), check_out: formatDateDDMMYYYY(booking.check_out) },
+    new_dates: { check_in: formatDateDDMMYYYY(checkIn), check_out: formatDateDDMMYYYY(checkOut) },
     new_nights: nights,
     new_total_price: totalPrice
   };
@@ -796,8 +797,8 @@ export async function updateRoomStatus(supabase: SupabaseClient, args: Record<st
     room_type: matchingBooking.rooms?.name || matchingBooking.booking_rooms?.[0]?.rooms?.name,
     old_status: oldStatus,
     new_status: new_status,
-    check_in: matchingBooking.check_in,
-    check_out: matchingBooking.check_out
+    check_in: formatDateDDMMYYYY(matchingBooking.check_in),
+    check_out: formatDateDDMMYYYY(matchingBooking.check_out)
   };
 }
 
@@ -900,8 +901,8 @@ export async function extendStay(supabase: SupabaseClient, args: Record<string, 
     booking_code: matchingBooking.booking_code,
     guest_name: matchingBooking.guest_name,
     room_numbers: roomNumbers.join(', '),
-    old_check_out: matchingBooking.check_out,
-    new_check_out: newCheckOut,
+    old_check_out: formatDateDDMMYYYY(matchingBooking.check_out),
+    new_check_out: formatDateDDMMYYYY(newCheckOut),
     old_nights: matchingBooking.total_nights,
     new_nights: newNights,
     extra_nights: extraNightsCount,
@@ -967,13 +968,13 @@ export async function checkExtendAvailability(supabase: SupabaseClient, args: Re
       booking_code: matchingBooking.booking_code,
       guest_name: matchingBooking.guest_name,
       room_number: room_number,
-      current_checkout: matchingBooking.check_out,
-      requested_checkout: newCheckOut,
+      current_checkout: formatDateDDMMYYYY(matchingBooking.check_out),
+      requested_checkout: formatDateDDMMYYYY(newCheckOut),
       extra_nights: extra_nights,
       conflict_guest: conflicts[0].guest_name,
       conflict_booking: conflicts[0].booking_code,
-      conflict_checkin: conflicts[0].check_in,
-      reason: `Kamar ${room_number} sudah dipesan oleh ${conflicts[0].guest_name} mulai ${conflicts[0].check_in}`
+      conflict_checkin: formatDateDDMMYYYY(conflicts[0].check_in),
+      reason: `Kamar ${room_number} sudah dipesan oleh ${conflicts[0].guest_name} mulai ${formatDateDDMMYYYY(conflicts[0].check_in)}`
     };
   }
   
@@ -1000,8 +1001,8 @@ export async function checkExtendAvailability(supabase: SupabaseClient, args: Re
     guest_name: matchingBooking.guest_name,
     room_numbers: roomNumbers.join(', '),
     room_type: matchingBooking.rooms?.name || matchingBooking.booking_rooms?.[0]?.rooms?.name,
-    current_checkout: matchingBooking.check_out,
-    new_checkout: newCheckOut,
+    current_checkout: formatDateDDMMYYYY(matchingBooking.check_out),
+    new_checkout: formatDateDDMMYYYY(newCheckOut),
     extra_nights: extra_nights,
     price_per_night: pricePerNight,
     extra_price: extraPrice,

@@ -1,7 +1,7 @@
 // ============= AVAILABILITY TOOLS =============
 
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getWibDate, formatDateISO, isBeforeTime, getCurrentTimeWIB } from "../lib/dateHelpers.ts";
+import { getWibDate, formatDateISO, formatDateDDMMYYYY, isBeforeTime, getCurrentTimeWIB } from "../lib/dateHelpers.ts";
 
 interface RoomRow {
   id: string;
@@ -277,8 +277,8 @@ export async function getAvailabilitySummary(supabase: SupabaseClient, checkIn: 
   });
 
   return {
-    check_in: checkIn,
-    check_out: checkOut,
+    check_in: formatDateDDMMYYYY(checkIn),
+    check_out: formatDateDDMMYYYY(checkOut),
     standard_check_in_time: standardCheckInTime,
     standard_check_out_time: standardCheckOutTime,
     rooms: result,
@@ -358,8 +358,8 @@ export async function getTodayGuests(supabase: SupabaseClient, type: string = 'a
         room_number: roomNumbers.join(', '),
         room_numbers: roomNumbers,
         room_count: roomNumbers.length,
-        check_in: b.check_in,
-        check_out: b.check_out,
+        check_in: formatDateDDMMYYYY(b.check_in),
+        check_out: formatDateDDMMYYYY(b.check_out),
         num_guests: b.num_guests,
         total_price: b.total_price
       });
@@ -388,8 +388,8 @@ export async function getTodayGuests(supabase: SupabaseClient, type: string = 'a
         room_number: roomNumbers.join(', '),
         room_numbers: roomNumbers,
         room_count: roomNumbers.length,
-        check_in: b.check_in,
-        check_out: b.check_out,
+        check_in: formatDateDDMMYYYY(b.check_in),
+        check_out: formatDateDDMMYYYY(b.check_out),
         num_guests: b.num_guests,
         total_price: b.total_price,
         status: b.status,
@@ -428,8 +428,8 @@ export async function getTodayGuests(supabase: SupabaseClient, type: string = 'a
         room_number: roomNumbers.join(', '),
         room_numbers: roomNumbers,
         room_count: roomNumbers.length,
-        check_in: b.check_in,
-        check_out: b.check_out,
+        check_in: formatDateDDMMYYYY(b.check_in),
+        check_out: formatDateDDMMYYYY(b.check_out),
         num_guests: b.num_guests,
         total_price: b.total_price,
         is_checkout_today: b.check_out === targetDate

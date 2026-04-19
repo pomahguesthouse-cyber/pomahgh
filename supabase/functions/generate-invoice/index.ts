@@ -688,8 +688,8 @@ serve(async (req) => {
         } else {
           const hotelName = hotelSettings.hotel_name || 'Pomah Guesthouse';
           const totalLabel = formatRupiah(showPaidStamp || isDownPayment ? booking.total_price : totalWithCode);
-          const checkInLabel = format(new Date(booking.check_in), "dd MMM yyyy", { locale: idLocale });
-          const checkOutLabel = format(new Date(booking.check_out), "dd MMM yyyy", { locale: idLocale });
+          const checkInLabel = format(new Date(booking.check_in), "dd/MM/yyyy", { locale: idLocale });
+          const checkOutLabel = format(new Date(booking.check_out), "dd/MM/yyyy", { locale: idLocale });
 
           const bankList = (bankAccounts && bankAccounts.length > 0)
             ? (bankAccounts as BankAccountItem[]).map(b => `🏦 *${b.bank_name}*\nNo. Rek: ${b.account_number}\na.n. ${b.account_holder_name}`).join('\n\n')

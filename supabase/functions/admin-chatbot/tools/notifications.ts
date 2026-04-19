@@ -1,7 +1,7 @@
 // ============= NOTIFICATION TOOLS =============
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { formatDateIndonesian, getWibDate, formatDateISO } from "../lib/dateHelpers.ts";
+import { formatDateIndonesian, formatDateDDMMYYYY, getWibDate, formatDateISO } from "../lib/dateHelpers.ts";
 import { getTemplate, replaceTemplateVariables } from "../lib/templateHelpers.ts";
 
 // Default template if database template not found
@@ -369,8 +369,8 @@ export async function sendInvoice(
         `Kode: *${booking.booking_code}*\n` +
         `Tamu: ${booking.guest_name}\n` +
         `Kamar: ${room}\n` +
-        `Check-in: ${booking.check_in}\n` +
-        `Check-out: ${booking.check_out}\n` +
+        `Check-in: ${formatDateDDMMYYYY(booking.check_in)}\n` +
+        `Check-out: ${formatDateDDMMYYYY(booking.check_out)}\n` +
         `Total: Rp ${(booking.total_price || 0).toLocaleString('id-ID')}\n` +
         `Status: ${statusLabel}\n\n` +
         `📎 Invoice PDF:\n${invoiceUrl}`;
