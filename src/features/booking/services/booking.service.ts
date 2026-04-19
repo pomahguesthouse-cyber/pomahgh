@@ -254,7 +254,7 @@ export const bookingService = {
       updateData.payment_amount = paymentAmount;
     }
     // Auto-confirm booking when payment is paid or down_payment
-    if (paymentStatus === "paid" || paymentStatus === "partial") {
+    if (paymentStatus === "paid" || paymentStatus === "down_payment") {
       updateData.status = "confirmed";
     }
 

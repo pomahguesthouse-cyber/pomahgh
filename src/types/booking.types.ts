@@ -6,8 +6,8 @@
 // Booking status options
 export type BookingStatus = "pending" | "confirmed" | "checked_in" | "checked_out" | "cancelled" | "no_show";
 
-// Payment status options
-export type PaymentStatus = "pending" | "paid" | "refunded" | "partial";
+// Payment status options (must match DB constraint on bookings.payment_status)
+export type PaymentStatus = "unpaid" | "paid" | "down_payment" | "pay_at_hotel" | "refunded" | "pending" | "partial";
 
 // Booking source options
 export type BookingSource = "direct" | "ota" | "walk_in" | "other";

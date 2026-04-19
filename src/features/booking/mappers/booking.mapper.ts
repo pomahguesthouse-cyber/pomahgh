@@ -88,10 +88,13 @@ const STATUS_LABELS: Record<BookingStatus, string> = {
 };
 
 const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  unpaid: "Belum Bayar",
   pending: "Belum Bayar",
   paid: "Lunas",
+  down_payment: "DP",
+  partial: "DP",
+  pay_at_hotel: "Bayar di Hotel",
   refunded: "Refund",
-  partial: "Sebagian",
 };
 
 export const bookingMapper = {
