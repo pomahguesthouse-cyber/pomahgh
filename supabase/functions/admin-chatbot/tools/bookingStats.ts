@@ -78,7 +78,7 @@ function formatBookingLine(b: BookingWithRoom, idx: number): string {
   ].join('\n');
 }
 
-const BOOKING_SEPARATOR = '\n-------------------------------\n';
+const BOOKING_SEPARATOR = '\n──────────────\n';
 
 interface BookingDetail {
   booking_code: string;
