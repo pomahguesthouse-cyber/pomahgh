@@ -20,7 +20,21 @@ export async function batchMessages(
   const { error: rpcError } = await supabase.rpc('append_pending_message', { p_phone: phone, p_message: newMessage });
   if (rpcError) {
     console.error(`📦 append_pending_message failed for ${phone}:`, rpcError.message);
-    // Return the single message so it still gets processed
+
+    // Check if another invocation already appended this message to avoid duplicates
+    const { data: existing } = await supabase
+      .from('whatsapp_sessions')
+      .select('pending_messages')
+      .eq('phone_number', phone)
+      .maybeSingle();
+
+    const pending = existing?.pending_messages as string[] | null;
+    if (pending && pending.includes(newMessage)) {
+      console.log(`📦 RPC failed but message already in pending buffer, deferring to other invocation for ${phone}`);
+      return null;
+    }
+
+    // Message truly not in buffer — process it directly as single message
     return [newMessage];
   }
 
