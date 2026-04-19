@@ -164,6 +164,7 @@ export const BookingCalendarTable = () => {
     switch (paymentStatus) {
       case 'paid':
         return '💰 Lunas';
+      case 'down_payment':
       case 'partial':
         return '💵 DP';
       case 'unpaid':
@@ -252,7 +253,7 @@ export const BookingCalendarTable = () => {
     if (!editedBooking) return;
     
     // Validate payment amount
-    if (editedBooking.payment_status === 'partial') {
+    if (editedBooking.payment_status === 'down_payment') {
       if (!editedBooking.payment_amount || editedBooking.payment_amount <= 0) {
         toast.error("Masukkan jumlah DP yang valid");
         return;
@@ -291,7 +292,7 @@ export const BookingCalendarTable = () => {
         num_guests: editedBooking.num_guests,
         status: editedBooking.status,
         payment_status: editedBooking.payment_status,
-        payment_amount: editedBooking.payment_status === 'partial' ? editedBooking.payment_amount : 
+        payment_amount: editedBooking.payment_status === 'down_payment' ? editedBooking.payment_amount :
                        editedBooking.payment_status === 'paid' ? editedBooking.total_price : 0,
         special_requests: editedBooking.special_requests,
       });
@@ -784,7 +785,7 @@ export const BookingCalendarTable = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="unpaid">❌ Belum Dibayar</SelectItem>
-                        <SelectItem value="partial">💵 DP (Down Payment)</SelectItem>
+                        <SelectItem value="down_payment">💵 DP (Down Payment)</SelectItem>
                         <SelectItem value="paid">💰 Lunas</SelectItem>
                         <SelectItem value="pay_at_hotel">🏨 Bayar di Hotel</SelectItem>
                       </SelectContent>
@@ -794,12 +795,12 @@ export const BookingCalendarTable = () => {
                       <Badge
                         variant={
                           editedBooking.payment_status === 'paid' ? 'default' :
-                          editedBooking.payment_status === 'partial' ? 'secondary' :
+                          (editedBooking.payment_status === 'down_payment' || editedBooking.payment_status === 'partial') ? 'secondary' :
                           'outline'
                         }
                       >
                         {editedBooking.payment_status === 'paid' ? '💰 Lunas' :
-                         editedBooking.payment_status === 'partial' ? '💵 DP' :
+                         (editedBooking.payment_status === 'down_payment' || editedBooking.payment_status === 'partial') ? '💵 DP' :
                          editedBooking.payment_status === 'pay_at_hotel' ? '🏨 Bayar di Hotel' :
                          '❌ Belum Dibayar'}
                       </Badge>
@@ -807,7 +808,7 @@ export const BookingCalendarTable = () => {
                   )}
                 </div>
                 
-                {(editedBooking.payment_status === 'partial' || (isEditMode && editedBooking.payment_status === 'partial')) && (
+                {(editedBooking.payment_status === 'down_payment' || editedBooking.payment_status === 'partial') && (
                   <div className="space-y-2">
                     <Label>Jumlah DP</Label>
                     {isEditMode ? (
