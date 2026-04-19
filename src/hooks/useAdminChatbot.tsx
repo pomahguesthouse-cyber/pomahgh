@@ -81,10 +81,14 @@ export const useAdminChatbot = () => {
         assistantContent += chunk;
         
         setMessages(prev => {
-          const updated = [...prev];
-          if (updated[updated.length - 1]?.role === 'assistant') {
-            updated[updated.length - 1].content = assistantContent;
+          if (prev.length === 0 || prev[prev.length - 1]?.role !== 'assistant') {
+            return prev;
           }
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
+            content: assistantContent,
+          };
           return updated;
         });
       }
