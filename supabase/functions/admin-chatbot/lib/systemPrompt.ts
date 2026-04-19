@@ -143,7 +143,9 @@ const GUEST_LIST_FORMAT = `FORMAT RESPONS WAJIB:
 1. **[Nama]** ([Kode]) | Kamar [Nomor] ([Tipe])
 
 **Check-out Hari Ini ([N]):**
-1. **[Nama]** ([Kode]) | Kamar [Nomor] ([Tipe])
+1. **[Nama]** ([Kode]) | Kamar [Nomor] ([Tipe]) — [✅ Sudah Check-Out / ⏳ Belum Check-Out]
+
+⚠️ WAJIB tampilkan SEMUA tamu check-out hari ini, termasuk yang sudah check-out. Gunakan field 'checkout_status_label' atau 'already_checked_out' dari hasil tool untuk menentukan badge status.
 
 **Tamu Menginap ([N]):**
 1. **[Nama]** ([Kode]) | Kamar [Nomor] ([Tipe]) - s.d. [Checkout]
