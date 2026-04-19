@@ -21,9 +21,11 @@ const log = (level: 'info' | 'error', message: string, data?: Record<string, unk
 };
 
 serve(async (req) => {
-  // Simple auth check - require service role key
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader?.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.slice(-10) || "")) {
+  // Strict service role check
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const authHeader = req.headers.get("authorization") || "";
+  const bearer = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : "";
+  if (!serviceKey || bearer !== serviceKey) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { 
       status: 401, 
       headers: corsHeaders 

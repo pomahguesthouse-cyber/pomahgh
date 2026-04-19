@@ -5,6 +5,8 @@
  * (amount, sender, bank, date, reference) without going through the WhatsApp
  * pipeline. Uses the same Gemini Vision prompt as the production handler.
  */
+import { verifyAdmin } from "../_shared/adminAuth.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -24,6 +26,12 @@ interface PaymentProofExtraction {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const auth = await verifyAdmin(req);
+  if (!auth.ok) {
+    const body = await auth.response.text();
+    return new Response(body, { status: auth.response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   try {
     const { image_data_url } = await req.json();

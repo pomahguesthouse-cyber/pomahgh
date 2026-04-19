@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyAdmin } from "../_shared/adminAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +38,12 @@ async function refreshAccessToken(
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const auth = await verifyAdmin(req);
+  if (!auth.ok) {
+    const body = await auth.response.text();
+    return new Response(body, { status: auth.response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
   try {

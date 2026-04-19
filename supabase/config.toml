@@ -88,7 +88,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.parse-knowledge]
-verify_jwt = true
+verify_jwt = false
 
 [functions.whatsapp-learning-agent]
 verify_jwt = true
@@ -121,7 +121,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.fetch-gsc-rankings]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-alt-text]
 verify_jwt = true
@@ -137,3 +137,31 @@ verify_jwt = false
 
 [functions.booking-webhook]
 verify_jwt = false
+
+[functions.expire-pending-payments]
+verify_jwt = false
+
+[functions.payment-expiry-checker]
+verify_jwt = false
+
+[functions.auto-checkout]
+verify_jwt = false
+
+[functions.auto-pricing]
+verify_jwt = false
+
+[functions.auto-cancel-expired-bookings]
+verify_jwt = false
+
+[functions.checkout-reminder]
+verify_jwt = false
+
+[functions.notify-payment-decision]
+verify_jwt = false
+
+[functions.extract-training-data]
+verify_jwt = false
+
+[functions.ocr-payment-proof-test]
+verify_jwt = false
+
