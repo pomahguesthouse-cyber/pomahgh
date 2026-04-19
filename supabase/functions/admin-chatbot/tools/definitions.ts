@@ -85,7 +85,8 @@ export const TOOLS: ToolDefinition[] = [
           room_number: { type: "string", description: "Nomor kamar spesifik (opsional)" },
           check_in: { type: "string", description: "Tanggal check-in (YYYY-MM-DD)" },
           check_out: { type: "string", description: "Tanggal check-out (YYYY-MM-DD)" },
-          num_guests: { type: "number", description: "Jumlah tamu" }
+          num_guests: { type: "number", description: "Jumlah tamu" },
+          payment_status: { type: "string", enum: ["pending", "paid"], description: "Status pembayaran. Set 'paid' jika manager bilang 'sudah bayar', 'lunas', 'sudah transfer', 'sdh bayar'. Default: 'pending'" }
         },
         required: ["guest_name", "guest_phone", "room_name", "check_in", "check_out", "num_guests"]
       }
