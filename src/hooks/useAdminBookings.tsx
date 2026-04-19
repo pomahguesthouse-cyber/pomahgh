@@ -150,12 +150,10 @@ export const useAdminBookings = () => {
                            (booking.check_in_time && booking.check_in_time !== currentBooking.check_in_time) ||
                            (booking.check_out_time && booking.check_out_time !== currentBooking.check_out_time);
 
-      const existingRoomKeys = new Set(
-        (Array.isArray(currentBooking) ? [] : []).concat(
-          // fallback: use allocated_room_number for legacy
-          currentBooking.allocated_room_number ? [`${currentBooking.room_id}|${currentBooking.allocated_room_number}`] : []
-        )
-      );
+      const existingRoomKeys = new Set<string>();
+      if (currentBooking.allocated_room_number) {
+        existingRoomKeys.add(`${currentBooking.room_id}|${currentBooking.allocated_room_number}`);
+      }
       // Fetch existing booking_rooms keys to detect room changes
       const { data: existingRoomsData } = await supabase
         .from("booking_rooms")
