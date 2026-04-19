@@ -1,7 +1,7 @@
 // ============= BOOKING STATS TOOLS =============
 
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getWibDate, formatDateISO } from "../lib/dateHelpers.ts";
+import { getWibDate, formatDateISO, formatDateDDMMYYYY } from "../lib/dateHelpers.ts";
 
 interface BookingRow {
   id: string;
@@ -134,15 +134,15 @@ export async function getRecentBookings(supabase: SupabaseClient, limit: number 
         room_types: r.room_types,
         rooms_summary: r.rooms_summary,
         is_multi_room: r.room_numbers.length > 1,
-        check_in: b.check_in,
-        check_out: b.check_out,
+        check_in: formatDateDDMMYYYY(b.check_in),
+        check_out: formatDateDDMMYYYY(b.check_out),
         total_nights: b.total_nights,
         status: b.status,
         total_price: b.total_price,
         payment_status: b.payment_status,
         payment_amount: b.payment_amount,
         booking_source: b.booking_source,
-        created_at: b.created_at,
+        created_at: formatDateDDMMYYYY(b.created_at),
       };
     })
   };
@@ -186,15 +186,15 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
         room_types: r.room_types,
         rooms_summary: r.rooms_summary,
         is_multi_room: r.room_numbers.length > 1,
-        check_in: b.check_in,
-        check_out: b.check_out,
+        check_in: formatDateDDMMYYYY(b.check_in),
+        check_out: formatDateDDMMYYYY(b.check_out),
         total_nights: b.total_nights,
         status: b.status,
         total_price: b.total_price,
         payment_status: b.payment_status,
         payment_amount: b.payment_amount,
         booking_source: b.booking_source,
-        created_at: b.created_at,
+        created_at: formatDateDDMMYYYY(b.created_at),
       };
     })
   };
@@ -238,8 +238,8 @@ export async function getBookingDetail(supabase: SupabaseClient, bookingCode: st
       max_guests: b.rooms?.max_guests
     },
     dates: {
-      check_in: b.check_in,
-      check_out: b.check_out,
+      check_in: formatDateDDMMYYYY(b.check_in),
+      check_out: formatDateDDMMYYYY(b.check_out),
       nights: b.total_nights
     },
     payment: {
@@ -249,6 +249,6 @@ export async function getBookingDetail(supabase: SupabaseClient, bookingCode: st
     },
     booking_source: b.booking_source,
     special_requests: b.special_requests,
-    created_at: b.created_at
+    created_at: formatDateDDMMYYYY(b.created_at)
   };
 }
