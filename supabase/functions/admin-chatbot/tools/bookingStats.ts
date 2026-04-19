@@ -151,31 +151,9 @@ export async function getRecentBookings(supabase: SupabaseClient, limit: number 
   const rows = (data || []) as unknown as BookingWithRoom[];
   const formatted_text = rows.map((b, i) => formatBookingLine(b, i + 1)).join(BOOKING_SEPARATOR);
   return {
+    instruction: "COPY formatted_text PERSIS ke response. JANGAN format ulang.",
     count: rows.length,
     formatted_text,
-    bookings: rows.map((b) => {
-      const r = summarizeRooms(b);
-      return {
-        booking_code: b.booking_code,
-        guest_name: b.guest_name,
-        guest_phone: b.guest_phone,
-        num_guests: b.num_guests,
-        room_name: r.room_types.join(' + ') || b.rooms?.name,
-        room_numbers: r.room_numbers,
-        room_types: r.room_types,
-        rooms_summary: r.rooms_summary,
-        is_multi_room: r.room_numbers.length > 1,
-        check_in: formatDateDDMMYYYY(b.check_in),
-        check_out: formatDateDDMMYYYY(b.check_out),
-        total_nights: b.total_nights,
-        status: b.status,
-        total_price: b.total_price,
-        payment_status: b.payment_status,
-        payment_amount: b.payment_amount,
-        booking_source: b.booking_source,
-        created_at: formatDateDDMMYYYY(b.created_at),
-      };
-    })
   };
 }
 
@@ -204,32 +182,10 @@ export async function searchBookings(supabase: SupabaseClient, query?: string, d
   const rows = (data || []) as unknown as BookingWithRoom[];
   const formatted_text = rows.map((b, i) => formatBookingLine(b, i + 1)).join(BOOKING_SEPARATOR);
   return {
+    instruction: "COPY formatted_text PERSIS ke response. JANGAN format ulang.",
     query: query || null,
     count: rows.length,
     formatted_text,
-    bookings: rows.map((b) => {
-      const r = summarizeRooms(b);
-      return {
-        booking_code: b.booking_code,
-        guest_name: b.guest_name,
-        guest_phone: b.guest_phone,
-        num_guests: b.num_guests,
-        room_name: r.room_types.join(' + ') || b.rooms?.name,
-        room_numbers: r.room_numbers,
-        room_types: r.room_types,
-        rooms_summary: r.rooms_summary,
-        is_multi_room: r.room_numbers.length > 1,
-        check_in: formatDateDDMMYYYY(b.check_in),
-        check_out: formatDateDDMMYYYY(b.check_out),
-        total_nights: b.total_nights,
-        status: b.status,
-        total_price: b.total_price,
-        payment_status: b.payment_status,
-        payment_amount: b.payment_amount,
-        booking_source: b.booking_source,
-        created_at: formatDateDDMMYYYY(b.created_at),
-      };
-    })
   };
 }
 
