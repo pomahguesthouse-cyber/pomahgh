@@ -3,6 +3,7 @@ import type { SupabaseClient, WhatsAppSession, ManagerInfo, EnvConfig } from '..
 import { corsHeaders } from '../types.ts';
 import { normalizePhone, isValidPhone } from '../utils/phone.ts';
 import { normalizeIndonesianMessage } from '../utils/slang.ts';
+import { isLikelyPersonName } from '../utils/format.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 import { checkRateLimit } from '../middleware/rateLimiter.ts';
@@ -11,7 +12,6 @@ import { logMessage } from '../services/conversation.ts';
 import { sendWhatsApp } from '../services/fonnte.ts';
 import { handlePriceApproval } from './pricing.ts';
 import { handleManagerChat } from './manager.ts';
-import { handleNameCollection } from './intent.ts';
 import { handleGuestBookingFlow } from './booking.ts';
 import { handleGuestFAQ, isRoomPhotoRequest } from './faq.ts';
 import { handleComplaint, isComplaintMessage } from './complaint.ts';
