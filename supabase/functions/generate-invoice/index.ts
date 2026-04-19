@@ -324,10 +324,16 @@ function buildInvoicePdf(args: {
         4: { cellWidth: 80, halign: 'right' },
         5: { cellWidth: 80, halign: 'right' },
       },
-      foot: [
-        ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
-        ['', '', '', '', 'JUMLAH BAYAR', formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)],
-      ],
+      foot: isDownPayment
+        ? [
+            ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
+            ['', '', '', '', 'DP DIBAYAR', formatRupiah(paidAmount)],
+            ['', '', '', '', 'SISA PEMBAYARAN', formatRupiah(remainingBalance)],
+          ]
+        : [
+            ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
+            ['', '', '', '', 'JUMLAH BAYAR', formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)],
+          ],
       footStyles: { fillColor: [245, 245, 245], textColor: dark, fontStyle: 'bold', fontSize: 9, halign: 'right' },
     });
   } else {
@@ -336,8 +342,20 @@ function buildInvoicePdf(args: {
     doc.setFont(fontFamily, 'bold');
     doc.setFontSize(18);
     doc.setTextColor(...primary);
-    doc.text(formatRupiah(showPaidStamp ? booking.total_price : totalWithCode), pageWidth / 2, y + 10, { align: 'center' });
+    const headlineAmount = showPaidStamp
+      ? booking.total_price
+      : isDownPayment
+        ? booking.total_price
+        : totalWithCode;
+    doc.text(formatRupiah(headlineAmount), pageWidth / 2, y + 10, { align: 'center' });
     y += 30;
+    if (isDownPayment) {
+      doc.setFont(fontFamily, 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(80);
+      doc.text(`DP dibayar: ${formatRupiah(paidAmount)}  •  Sisa: ${formatRupiah(remainingBalance)}`, pageWidth / 2, y, { align: 'center' });
+      y += 16;
+    }
     // @ts-expect-error -- ensure lastAutoTable equivalent
     doc.lastAutoTable = { finalY: y };
   }
@@ -359,20 +377,23 @@ function buildInvoicePdf(args: {
   } else if (showBank && bankAccounts.length > 0) {
     // === INSTRUKSI PEMBAYARAN ===
     if (y > 700) { doc.addPage(); y = 50; }
-    y = drawSectionHeader('INSTRUKSI PEMBAYARAN', y);
+    y = drawSectionHeader(isDownPayment ? 'PELUNASAN PEMBAYARAN' : 'INSTRUKSI PEMBAYARAN', y);
     doc.setFont(fontFamily, 'normal');
     doc.setFontSize(10);
     doc.setTextColor(...dark);
-    doc.text('Silakan transfer sebesar:', marginX, y);
+    doc.text(isDownPayment ? 'Sisa pembayaran yang harus dilunasi:' : 'Silakan transfer sebesar:', marginX, y);
     y += 16;
     doc.setFont(fontFamily, 'bold');
     doc.setFontSize(13);
     doc.setTextColor(...primary);
-    doc.text(formatRupiah(totalWithCode), marginX, y);
-    doc.setFont(fontFamily, 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(...muted);
-    doc.text(`(termasuk kode unik 3 digit: ${uniqueCode})`, marginX + 130, y);
+    const transferAmount = isDownPayment ? remainingBalance : totalWithCode;
+    doc.text(formatRupiah(transferAmount), marginX, y);
+    if (!isDownPayment) {
+      doc.setFont(fontFamily, 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...muted);
+      doc.text(`(termasuk kode unik 3 digit: ${uniqueCode})`, marginX + 130, y);
+    }
     y += 18;
     doc.setFontSize(10);
     doc.setTextColor(...dark);
@@ -405,7 +426,9 @@ function buildInvoicePdf(args: {
     doc.setFont(fontFamily, 'italic');
     doc.setFontSize(8);
     doc.setTextColor(...muted);
-    const tip = 'Tip: gunakan nominal persis (termasuk kode unik) agar pembayaran cepat terverifikasi.';
+    const tip = isDownPayment
+      ? 'Tip: lakukan pelunasan minimal 1 hari sebelum check-in agar tidak ada kendala saat tiba.'
+      : 'Tip: gunakan nominal persis (termasuk kode unik) agar pembayaran cepat terverifikasi.';
     doc.text(tip, marginX, y);
     y += 14;
   }
@@ -508,12 +531,13 @@ serve(async (req) => {
     const paymentStatus = booking.payment_status || 'pending';
     let transactionStatus = 'Belum Bayar';
     let showPaidStamp = false;
+    let isDownPayment = false;
     if (paymentStatus === 'paid' || paymentStatus === 'lunas') {
       transactionStatus = 'LUNAS';
       showPaidStamp = true;
     } else if (paymentStatus === 'down_payment' || paymentStatus === 'partial') {
-      transactionStatus = 'DOWN PAYMENT';
-      showPaidStamp = true;
+      transactionStatus = `DP — Sisa ${formatRupiah(remainingBalance)}`;
+      isDownPayment = true;
     } else if (paymentStatus === 'pay_at_hotel') {
       transactionStatus = 'Bayar di Hotel';
     } else if (remainingBalance <= 0 && paidAmount > 0) {
@@ -590,13 +614,18 @@ serve(async (req) => {
           for (let i = 0; i < pdfBytes.length; i++) binary += String.fromCharCode(pdfBytes[i]);
           const pdfBase64 = btoa(binary);
 
+          const emailTotalLine = isDownPayment
+            ? `<strong>Total:</strong> ${formatRupiah(booking.total_price)}<br>
+               <strong>DP dibayar:</strong> ${formatRupiah(paidAmount)}<br>
+               <strong>Sisa pembayaran:</strong> ${formatRupiah(remainingBalance)}<br>`
+            : `<strong>Total:</strong> ${formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)}<br>`;
           const emailHtml = `
             <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#222;">
               <h2 style="color:#4a9bd9;">Bukti Pemesanan #${booking.booking_code}</h2>
               <p>Halo <strong>${booking.guest_name}</strong>,</p>
               <p>Terima kasih telah memilih ${hotelName}. Berikut detail pemesanan Anda terlampir dalam bentuk PDF.</p>
               <p><strong>Kode booking:</strong> ${booking.booking_code}<br>
-                 <strong>Total:</strong> ${formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)}<br>
+                 ${emailTotalLine}
                  <strong>Status:</strong> ${transactionStatus}</p>
               ${!showPaidStamp ? `<p>Silakan lakukan pembayaran sesuai instruksi di invoice. Setelah transfer, kirim bukti ke WhatsApp kami untuk verifikasi.</p>` : ''}
               <p style="margin-top:30px;font-size:12px;color:#888;">Atau buka invoice online: <a href="${invoicePdfUrl}">${invoicePdfUrl}</a></p>
@@ -644,7 +673,7 @@ serve(async (req) => {
           console.error("FONNTE_API_KEY not configured");
         } else {
           const hotelName = hotelSettings.hotel_name || 'Pomah Guesthouse';
-          const totalLabel = formatRupiah(showPaidStamp ? booking.total_price : totalWithCode);
+          const totalLabel = formatRupiah(showPaidStamp || isDownPayment ? booking.total_price : totalWithCode);
           const checkInLabel = format(new Date(booking.check_in), "dd MMM yyyy", { locale: idLocale });
           const checkOutLabel = format(new Date(booking.check_out), "dd MMM yyyy", { locale: idLocale });
 
@@ -654,7 +683,9 @@ serve(async (req) => {
 
           const message = showPaidStamp
             ? `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah menginap di ${hotelName}!\n\nBerikut bukti pemesanan Anda (terlampir PDF):\n\n📋 *${booking.booking_code}*\n📅 ${checkInLabel} → ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total: *${totalLabel}* — LUNAS ✅\n\nKami tunggu kunjungan Anda berikutnya 🙏`
-            : `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah memesan di ${hotelName}!\n\nBerikut detail pesanan Anda (PDF terlampir):\n\n📋 Kode: *${booking.booking_code}*\n📅 Check-in: ${checkInLabel}\n📅 Check-out: ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total bayar: *${totalLabel}*\n_(termasuk kode unik 3 digit untuk identifikasi)_\n\n💳 *INSTRUKSI PEMBAYARAN*\n${bankList}\n\nSilakan lakukan pembayaran dan kirim bukti transfer di chat ini ya. Tim kami akan segera memverifikasi 🙏\n\n📄 Invoice: ${invoicePdfUrl}`;
+            : isDownPayment
+              ? `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah memesan di ${hotelName}!\n\nBerikut bukti pemesanan Anda (PDF terlampir):\n\n📋 Kode: *${booking.booking_code}*\n📅 Check-in: ${checkInLabel}\n📅 Check-out: ${checkOutLabel} (${booking.total_nights} malam)\n\n💵 Total: *${totalLabel}*\n✅ DP dibayar: *${formatRupiah(paidAmount)}*\n💳 Sisa pelunasan: *${formatRupiah(remainingBalance)}*\n\n💳 *PELUNASAN PEMBAYARAN*\n${bankList}\n\nSilakan lunasi sisa pembayaran sebesar *${formatRupiah(remainingBalance)}* dan kirim bukti transfer di chat ini ya 🙏\n\n📄 Invoice: ${invoicePdfUrl}`
+              : `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah memesan di ${hotelName}!\n\nBerikut detail pesanan Anda (PDF terlampir):\n\n📋 Kode: *${booking.booking_code}*\n📅 Check-in: ${checkInLabel}\n📅 Check-out: ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total bayar: *${formatRupiah(totalWithCode)}*\n_(termasuk kode unik 3 digit untuk identifikasi)_\n\n💳 *INSTRUKSI PEMBAYARAN*\n${bankList}\n\nSilakan lakukan pembayaran dan kirim bukti transfer di chat ini ya. Tim kami akan segera memverifikasi 🙏\n\n📄 Invoice: ${invoicePdfUrl}`;
 
           // Send PDF directly as multipart/form-data (avoids "url unreachable" errors when Fonnte cannot fetch our public URL)
           const formData = new FormData();
