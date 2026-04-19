@@ -13,13 +13,12 @@ import { handlePriceApproval } from './pricing.ts';
 import { handleManagerChat } from './manager.ts';
 import { handleNameCollection } from './intent.ts';
 import { handleGuestBookingFlow } from './booking.ts';
-import { handleGuestFAQ } from './faq.ts';
+import { handleGuestFAQ, isRoomPhotoRequest } from './faq.ts';
 import { handleComplaint, isComplaintMessage } from './complaint.ts';
 import { handlePayment, isPaymentMessage } from './payment.ts';
 import { handlePaymentProof, extractImageUrl } from './paymentProof.ts';
 import { handlePaymentApproval, isPaymentApprovalReply } from './paymentApproval.ts';
 import { handlePriceListQuestion, isGenericPriceQuestion } from './priceList.ts';
-import { handleRoomPhotoRequest, isRoomPhotoRequest } from './roomBrochure.ts';
 import { setAgentConfigs, isAgentActive, getEscalationTarget, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 
 /**
@@ -305,14 +304,14 @@ export async function orchestrate(
   }
 
   // === FAST PATH: Room photo / brochure requests ===
-  // "ada foto kamar?", "minta brosur", "ada gambar kamarnya?" → langsung kirim PDF brosur
+  // "ada foto kamar?", "minta brosur", "ada gambar kamarnya?" → route to FAQ agent (handles brochure PDF)
   if (isRoomPhotoRequest(normalizedMessage)) {
     logAgentDecision(supabase, {
       trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
-      from_agent: 'orchestrator', to_agent: 'room_brochure',
+      from_agent: 'orchestrator', to_agent: 'faq',
       reason: 'room_photo_request_fastpath', intent: 'room_photo_request',
     });
-    return handleRoomPhotoRequest(
+    return handleGuestFAQ(
       supabase, session as WhatsAppSession, phone, String(message),
       conversationId!, personaName, env, trace,
     );

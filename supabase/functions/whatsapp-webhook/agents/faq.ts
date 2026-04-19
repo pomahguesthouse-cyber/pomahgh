@@ -8,7 +8,26 @@ import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 
 // Detect requests for room photos / brochure
-const ROOM_PHOTO_RE = /\b(foto|gambar|pic(?:ture)?|photo|liat|lihat|tampilan|brosur|brochure|katalog|preview)\b.*\b(kamar|room|deluxe|single|family|grand|standard|superior)\b|\b(kamar|room|deluxe|single|family|grand)\b.*\b(foto|gambar|pic(?:ture)?|photo|brosur|brochure|katalog)\b/i;
+const PHOTO_WORDS = /(foto|fotonya|gambar|gambarnya|pic(?:ture)?|photo|brosur|brochure|katalog|preview)/i;
+const ROOM_WORDS = /(kamar|kamarnya|room|rooms|deluxe|single|family|grand|standard|superior)/i;
+
+/**
+ * Detect if the message is asking for room photos or brochure.
+ * Matches: "ada foto kamar?", "minta brosur", "ada gambar kamarnya?", "brosur", "ada fotonya?"
+ */
+export function isRoomPhotoRequest(message: string): boolean {
+  const m = message.toLowerCase();
+  if (!PHOTO_WORDS.test(m)) return false;
+  // "brosur" / "katalog" / "brochure" alone is enough
+  if (/(brosur|brochure|katalog)/i.test(m)) return true;
+  // Photo word + room context word
+  if (ROOM_WORDS.test(m)) return true;
+  // Generic short asks: "ada fotonya?", "ada contoh gambarnya?"
+  if (/(ada\s+(?:foto|gambar|fotonya|gambarnya|contoh\s+(?:foto|gambar)))/i.test(m)) return true;
+  // "minta fotonya", "lihat gambarnya", etc.
+  if (/(minta|liat|lihat|kirim|share|tunjuk)\s+(?:foto|gambar|fotonya|gambarnya)/i.test(m)) return true;
+  return false;
+}
 
 /**
  * Try to send the room brochure PDF if guest asks about room photos.
@@ -20,7 +39,7 @@ async function trySendRoomBrochure(
   message: string,
   env: EnvConfig,
 ): Promise<boolean> {
-  if (!ROOM_PHOTO_RE.test(message)) return false;
+  if (!isRoomPhotoRequest(message)) return false;
 
   // Lookup brochure file in knowledge base
   const { data: kb } = await supabase

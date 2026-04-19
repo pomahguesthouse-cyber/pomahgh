@@ -12,8 +12,8 @@
 --   3. payment_proof → payment_approval: OCR done, manager reviews
 --   4. payment → booking: after payment info given, may need booking context
 --   5. price_list → booking: guest wants to book after seeing prices
---   6. room_brochure → booking: guest wants to book after seeing photos
---   7. any_agent → human_staff: error catch in orchestrator
+--   6. any_agent → human_staff: error catch in orchestrator
+--   7. payment_approval → booking: payment confirmed, send booking order
 -- ============================================================
 
 -- Remove incorrect rules
@@ -21,7 +21,8 @@ DELETE FROM public.escalation_rules
 WHERE (from_agent = 'intent' AND to_agent = 'faq')
    OR (from_agent = 'intent' AND to_agent = 'booking')
    OR (from_agent = 'booking' AND to_agent = 'manager')
-   OR (from_agent = 'pricing' AND to_agent = 'booking');
+   OR (from_agent = 'pricing' AND to_agent = 'booking')
+   OR from_agent = 'room_brochure' OR to_agent = 'room_brochure';
 
 -- Update existing faq → booking rule with better description
 UPDATE public.escalation_rules
@@ -36,7 +37,6 @@ VALUES
   ('payment_proof', 'payment_approval', 'OCR bukti transfer selesai → kirim ke manager untuk konfirmasi YA/TIDAK', 3, true),
   ('payment', 'booking', 'Info pembayaran diberikan, tamu mungkin perlu lanjut ke proses booking', 4, true),
   ('price_list', 'booking', 'Tamu sudah lihat daftar harga → lanjut tanya ketersediaan/booking', 5, true),
-  ('room_brochure', 'booking', 'Tamu sudah lihat foto/brosur kamar → lanjut booking', 6, true),
-  ('booking', 'human_staff', 'Error atau tamu stuck berulang → eskalasi ke staff manusia', 7, true),
-  ('payment_approval', 'booking', 'Pembayaran dikonfirmasi manager → kirim booking order ke tamu', 8, true)
+  ('booking', 'human_staff', 'Error atau tamu stuck berulang → eskalasi ke staff manusia', 6, true),
+  ('payment_approval', 'booking', 'Pembayaran dikonfirmasi manager → kirim booking order ke tamu', 7, true)
 ON CONFLICT DO NOTHING;
