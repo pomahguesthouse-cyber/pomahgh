@@ -111,8 +111,18 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
 
 ⚠️ FORMAT WAJIB UNTUK LIST/DAFTAR BOOKING (get_recent_bookings & search_bookings):
 - WAJIB tampilkan SEMUA kamar untuk booking multi-room. Gunakan field 'rooms_summary' dari hasil tool.
-- Format per booking:
-  "N. **{kode}** | {guest_name} | {rooms_summary} | {check_in} - {check_out} | Rp {total_price} | {status}"
+- WAJIB tampilkan info LENGKAP per booking — JANGAN dipotong/diringkas.
+- Format per booking (multi-baris, lengkap):
+  \`\`\`
+  N. **{booking_code}** — {guest_name} ({num_guests} tamu)
+     🛏️ {rooms_summary}
+     📅 {check_in} → {check_out} ({total_nights} malam)
+     📞 {guest_phone}
+     💰 Rp {total_price} • {payment_status_label}
+     📌 Status: {status} • Sumber: {booking_source}
+  \`\`\`
+- payment_status_label: "paid"→✅ Lunas, "partial"→🟡 DP (Rp {payment_amount}), "pending"→⏳ Belum bayar, lainnya→tampilkan apa adanya.
+- Jika field kosong/null, tampilkan "-" (jangan dihilangkan).
 - Contoh multi-room: "Family Suite + Deluxe (203, 204, 205, FS100, FS222) [5 kamar]"
 - JANGAN HANYA tampilkan satu nama tipe jika 'is_multi_room=true' — tampilkan SEMUA kamar.
 
