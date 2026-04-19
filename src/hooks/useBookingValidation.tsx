@@ -45,7 +45,7 @@ export const useBookingValidation = () => {
       .select(`
         room_number,
         booking_id,
-        bookings!inner(id, check_in, check_out, status, guest_name)
+        bookings!inner(id, check_in, check_out, check_in_time, check_out_time, status, guest_name)
       `)
       .eq("room_id", roomId)
       .eq("room_number", roomNumber);
