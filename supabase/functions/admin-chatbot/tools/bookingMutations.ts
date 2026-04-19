@@ -391,14 +391,14 @@ export async function rescheduleBooking(supabase: SupabaseClient, args: Record<s
     throw new Error(`Tanggal baru bentrok dengan booking lain (${conflicts[0].booking_code})`);
   }
 
-  // Check blocked dates
+  // Check blocked dates (exclude check_out date — guest leaves morning, room available same day)
   const { data: blockedDates } = await supabase
     .from('room_unavailable_dates')
     .select('unavailable_date')
     .eq('room_id', booking.room_id)
     .eq('room_number', booking.allocated_room_number)
     .gte('unavailable_date', checkIn)
-    .lte('unavailable_date', checkOut);
+    .lt('unavailable_date', checkOut);
 
   if (blockedDates && blockedDates.length > 0) {
     throw new Error(`Kamar diblokir pada tanggal: ${blockedDates.map((d: { unavailable_date: string }) => d.unavailable_date).join(', ')}`);
@@ -492,14 +492,14 @@ export async function changeBookingRoom(supabase: SupabaseClient, args: Record<s
     throw new Error(`Kamar ${newRoom.name} ${new_room_number} tidak tersedia (bentrok dengan ${legacyConflicts[0].booking_code})`);
   }
 
-  // Check blocked dates
+  // Check blocked dates (exclude check_out date)
   const { data: blockedDates } = await supabase
     .from('room_unavailable_dates')
     .select('unavailable_date')
     .eq('room_id', newRoom.id)
     .eq('room_number', new_room_number)
     .gte('unavailable_date', booking.check_in)
-    .lte('unavailable_date', booking.check_out);
+    .lt('unavailable_date', booking.check_out);
 
   if (blockedDates && blockedDates.length > 0) {
     throw new Error(`Kamar ${newRoom.name} ${new_room_number} diblokir pada tanggal: ${blockedDates.map((d: { unavailable_date: string }) => d.unavailable_date).join(', ')}`);
