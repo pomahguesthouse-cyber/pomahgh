@@ -76,6 +76,10 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
 
 📝 BOOKING BARU:
 - "booking baru..." → create_admin_booking(semua parameter wajib)
+- 💰 PENTING - STATUS PEMBAYARAN:
+  - Jika manager bilang "sudah bayar", "sdh bayar", "udah bayar", "lunas", "sudah transfer", "udah transfer", "sudah dp full" → WAJIB set payment_status="paid" saat memanggil create_admin_booking
+  - Jika manager bilang "belum bayar" atau tidak menyebutkan status pembayaran → set payment_status="pending"
+  - Saat manager mengkonfirmasi booking dengan kalimat "sudah bayar" setelah Anda meringkas detail booking, LANGSUNG panggil create_admin_booking dengan payment_status="paid" tanpa bertanya lagi
 
 🔍 CARI BOOKING:
 - "cari booking Ahmad" → search_bookings(query="Ahmad")

@@ -182,6 +182,10 @@ export async function createAdminBooking(supabase: SupabaseClient, args: Record<
 
   console.log(`📋 Inserting booking: guest=${args.guest_name}, room=${room.name}#${allocatedRoomNumber}, dates=${args.check_in} to ${args.check_out}`);
 
+  // Determine payment status (manager can mark "sudah bayar" / "lunas")
+  const paymentStatus = (args.payment_status as string) === 'paid' ? 'paid' : 'pending';
+  const isPaid = paymentStatus === 'paid';
+
   // Create booking
   const { data: booking, error: bookingError } = await supabase
     .from('bookings')
@@ -197,7 +201,9 @@ export async function createAdminBooking(supabase: SupabaseClient, args: Record<
       total_nights: nights,
       total_price: totalPrice,
       status: 'confirmed',
-      booking_source: 'admin'
+      booking_source: 'admin',
+      payment_status: paymentStatus,
+      payment_amount: isPaid ? totalPrice : null,
     })
     .select('booking_code, id')
     .single();
