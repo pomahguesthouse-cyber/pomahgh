@@ -103,6 +103,32 @@ export const useBookingValidation = () => {
       const existingCheckInTime = existing.check_in_time || "14:00:00";
       const existingCheckOutTime = existing.check_out_time || "12:00:00";
 
+      // Case A: Same-day turnover — tamu baru check-in di hari tamu lama check-out
+      // Sah HANYA jika tamu baru check-in setelah tamu lama check-out
+      if (checkInStr === existingCheckOut) {
+        if (checkInTime < existingCheckOutTime) {
+          return {
+            hasConflict: true,
+            conflictingBooking: existing,
+            reason: `Tamu sebelumnya check-out jam ${existingCheckOutTime.slice(0, 5)}. Check-in baru harus setelah jam tersebut.`
+          };
+        }
+        continue; // turnover sah → lanjut booking berikutnya
+      }
+
+      // Case B: Same-day turnover — tamu baru check-out di hari tamu berikut check-in
+      // Sah HANYA jika tamu baru check-out sebelum tamu berikut check-in
+      if (checkOutStr === existingCheckIn) {
+        if (checkOutTime > existingCheckInTime) {
+          return {
+            hasConflict: true,
+            conflictingBooking: existing,
+            reason: `Tamu berikutnya check-in jam ${existingCheckInTime.slice(0, 5)}. Check-out harus sebelum jam tersebut.`
+          };
+        }
+        continue; // turnover sah
+      }
+
       // Case 1: Same check-in date - conflict if new check-in time < existing check-out time
       if (checkInStr === existingCheckIn) {
         if (checkInTime < existingCheckOutTime) {
@@ -125,11 +151,12 @@ export const useBookingValidation = () => {
         }
       }
 
-      // Case 3: Date ranges overlap (standard overlap check)
+      // Case 3: TRUE date overlap (strict — ujung yang bersentuhan sudah ditangani Case A/B)
       if (
-        (checkInStr >= existingCheckIn && checkInStr < existingCheckOut) ||
-        (checkOutStr > existingCheckIn && checkOutStr <= existingCheckOut) ||
-        (checkInStr <= existingCheckIn && checkOutStr >= existingCheckOut)
+        (checkInStr > existingCheckIn && checkInStr < existingCheckOut) ||
+        (checkOutStr > existingCheckIn && checkOutStr < existingCheckOut) ||
+        (checkInStr < existingCheckIn && checkOutStr > existingCheckOut) ||
+        (checkInStr === existingCheckIn && checkOutStr === existingCheckOut)
       ) {
         return { 
           hasConflict: true, 
