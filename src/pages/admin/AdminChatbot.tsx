@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChatbotSettings, useUpdateChatbotSettings } from '@/hooks/useChatbot';
-import { useHotelSettings, WhatsAppContact, WhatsAppManager } from '@/hooks/useHotelSettings';
-import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, Phone, Plus, Trash2, Ban, UserCog, Shield, FileText, Brain } from 'lucide-react';
+import { useHotelSettings, WhatsAppContact, WhatsAppManager, ManagerRole } from '@/hooks/useHotelSettings';
+import { Bot, Palette, Settings, Zap, BookOpen, MessageSquare, Phone, Plus, Trash2, Ban, UserCog, Shield, FileText, Brain, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import AdminPersonaSettingsTab from '@/components/admin/AdminPersonaSettingsTab';
 import { toast } from '@/hooks/use-toast';
@@ -31,6 +31,13 @@ const AdminChatbot = () => {
   const [newWhitelistNumber, setNewWhitelistNumber] = useState("");
   const [newManagerPhone, setNewManagerPhone] = useState("");
   const [newManagerName, setNewManagerName] = useState("");
+  const [newManagerRole, setNewManagerRole] = useState<ManagerRole>('super_admin');
+
+  const ROLE_LABELS: Record<ManagerRole, { label: string; color: string }> = {
+    super_admin: { label: 'Super Admin', color: 'bg-red-500' },
+    booking_manager: { label: 'Booking Manager', color: 'bg-blue-500' },
+    viewer: { label: 'Viewer', color: 'bg-gray-500' },
+  };
   
   const [formData, setFormData] = useState<ChatbotSettingsFormData>(DEFAULT_CHATBOT_FORM_DATA);
 

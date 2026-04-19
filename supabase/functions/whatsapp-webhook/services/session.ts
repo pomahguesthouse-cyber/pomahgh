@@ -1,8 +1,9 @@
 import type { SupabaseClient, HotelSettingsData } from '../types.ts';
 
-// Module-level TTL cache for hotel_settings
+// Module-level TTL cache for hotel_settings.
+// Short TTL agar perubahan role manager (whatsapp_manager_numbers) cepat berlaku.
 let hotelSettingsCache: { data: HotelSettingsData | null; expiresAt: number } = { data: null, expiresAt: 0 };
-const HOTEL_SETTINGS_TTL = 5 * 60 * 1000;
+const HOTEL_SETTINGS_TTL = 30 * 1000; // 30 detik
 
 export async function getCachedHotelSettings(supabase: SupabaseClient): Promise<HotelSettingsData | null> {
   const now = Date.now();
@@ -15,6 +16,10 @@ export async function getCachedHotelSettings(supabase: SupabaseClient): Promise<
     .single();
   hotelSettingsCache = { data, expiresAt: now + HOTEL_SETTINGS_TTL };
   return data;
+}
+
+export function invalidateHotelSettingsCache(): void {
+  hotelSettingsCache = { data: null, expiresAt: 0 };
 }
 
 export async function ensureConversation(
