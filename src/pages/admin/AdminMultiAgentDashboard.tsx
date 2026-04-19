@@ -5,7 +5,7 @@ import { useMultiAgentDashboard } from '@/hooks/useMultiAgentDashboard';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
 
 const AdminMultiAgentDashboard = () => {
-  const { agents, sessions, stats, activityLog, routingLogs, saveAgentConfig } = useMultiAgentDashboard();
+  const { agents, allAgents, sessions, stats, activityLog, routingLogs, saveAgentConfig } = useMultiAgentDashboard();
   const [selectedAgent, setSelectedAgent] = useState<AgentDefinition | null>(null);
 
   const handleSaveConfig = (configId: string, data: Record<string, unknown>) => {
@@ -92,7 +92,7 @@ const AdminMultiAgentDashboard = () => {
         </TabsContent>
 
         <TabsContent value="escalation" className="mt-0 p-4">
-          <EscalationFlow agents={agents} />
+          <EscalationFlow agents={allAgents} />
         </TabsContent>
 
         <TabsContent value="managers" className="mt-0 p-4">

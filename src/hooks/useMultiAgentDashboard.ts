@@ -154,6 +154,16 @@ export const useMultiAgentDashboard = () => {
         agentAvgResponseMs[agentId] = durations.reduce((a, b) => a + b, 0) / durations.length;
       }
 
+      // Aggregate payment sub-agent durations into payment agent
+      const paymentDurations = [
+        ...(agentDurations['payment'] || []),
+        ...(agentDurations['payment_proof'] || []),
+        ...(agentDurations['payment_approval'] || []),
+      ];
+      if (paymentDurations.length > 0) {
+        agentAvgResponseMs['payment'] = paymentDurations.reduce((a, b) => a + b, 0) / paymentDurations.length;
+      }
+
       // Global avg response
       const allDurations = Object.values(agentDurations).flat();
       const avgResponseMs = allDurations.length > 0 ? allDurations.reduce((a, b) => a + b, 0) / allDurations.length : 0;
@@ -213,7 +223,9 @@ export const useMultiAgentDashboard = () => {
         break;
       case 'payment':
         status = guestSessions.length > 0 ? 'active' : 'idle';
-        chatCount = routingCounts['payment'] || 0;
+        chatCount = (routingCounts['payment'] || 0)
+                  + (routingCounts['payment_proof'] || 0)
+                  + (routingCounts['payment_approval'] || 0);
         break;
       case 'complaint':
         status = guestSessions.length > 0 ? 'active' : 'idle';
@@ -249,7 +261,10 @@ export const useMultiAgentDashboard = () => {
 
     // Success rate from routing logs — use to_agent (agents appear as targets)
     const todayLogs = routingLogsQuery.data || [];
-    const agentLogs = todayLogs.filter(l => l.to_agent === config.agent_id || l.from_agent === config.agent_id);
+    const PAYMENT_SUB_AGENTS = ['payment', 'payment_proof', 'payment_approval'];
+    const agentLogs = config.agent_id === 'payment'
+      ? todayLogs.filter(l => PAYMENT_SUB_AGENTS.includes(l.to_agent) || PAYMENT_SUB_AGENTS.includes(l.from_agent))
+      : todayLogs.filter(l => l.to_agent === config.agent_id || l.from_agent === config.agent_id);
     const failedLogs = agentLogs.filter(l => l.reason === 'failed');
     const successRate = agentLogs.length > 0
       ? Number(((1 - failedLogs.length / agentLogs.length) * 100).toFixed(1))
@@ -284,6 +299,10 @@ export const useMultiAgentDashboard = () => {
     };
   });
 
+  // Sub-agents aggregated into parent — hide from grid display
+  const HIDDEN_SUB_AGENTS = ['payment_proof', 'payment_approval'];
+  const displayAgents = agents.filter(a => !HIDDEN_SUB_AGENTS.includes(a.id));
+
   // Save agent config mutation
   const saveAgentConfig = useMutation({
     mutationFn: async (update: { configId: string; data: Record<string, unknown> }) => {
@@ -306,7 +325,8 @@ export const useMultiAgentDashboard = () => {
   });
 
   return {
-    agents,
+    agents: displayAgents,
+    allAgents: agents,
     sessions: sessionsQuery,
     stats: statsQuery,
     activityLog: activityLogQuery,
