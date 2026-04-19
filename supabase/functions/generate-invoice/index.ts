@@ -508,12 +508,13 @@ serve(async (req) => {
     const paymentStatus = booking.payment_status || 'pending';
     let transactionStatus = 'Belum Bayar';
     let showPaidStamp = false;
+    let isDownPayment = false;
     if (paymentStatus === 'paid' || paymentStatus === 'lunas') {
       transactionStatus = 'LUNAS';
       showPaidStamp = true;
     } else if (paymentStatus === 'down_payment' || paymentStatus === 'partial') {
-      transactionStatus = 'DOWN PAYMENT';
-      showPaidStamp = true;
+      transactionStatus = `DP — Sisa ${formatRupiah(remainingBalance)}`;
+      isDownPayment = true;
     } else if (paymentStatus === 'pay_at_hotel') {
       transactionStatus = 'Bayar di Hotel';
     } else if (remainingBalance <= 0 && paidAmount > 0) {
