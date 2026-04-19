@@ -3,6 +3,48 @@ import { useSeoSettings } from "@/hooks/useSeoSettings";
 import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { useEffect } from "react";
 
+/**
+ * Sanitize raw HTML markup intended for <head> injection.
+ * - Whitelists tags: script, meta, link, noscript, style
+ * - Strips inline event handler attributes (onerror, onload, etc.)
+ * - Strips javascript: URLs from src/href
+ */
+function sanitizeHeadMarkup(raw: string): Node[] {
+  const ALLOWED_TAGS = new Set(["SCRIPT", "META", "LINK", "NOSCRIPT", "STYLE"]);
+  const doc = new DOMParser().parseFromString(`<head>${raw}</head>`, "text/html");
+  const safe: Node[] = [];
+
+  Array.from(doc.head.children).forEach((el) => {
+    if (!ALLOWED_TAGS.has(el.tagName)) return;
+
+    Array.from(el.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      const value = attr.value.trim().toLowerCase();
+      if (name.startsWith("on")) {
+        el.removeAttribute(attr.name);
+        return;
+      }
+      if ((name === "src" || name === "href") && value.startsWith("javascript:")) {
+        el.removeAttribute(attr.name);
+      }
+    });
+
+    // Re-create <script> so the browser actually executes it
+    if (el.tagName === "SCRIPT") {
+      const newScript = document.createElement("script");
+      Array.from(el.attributes).forEach((attr) => {
+        newScript.setAttribute(attr.name, attr.value);
+      });
+      newScript.text = el.textContent ?? "";
+      safe.push(newScript);
+    } else {
+      safe.push(el.cloneNode(true));
+    }
+  });
+
+  return safe;
+}
+
 export const GlobalSEO = () => {
   const { settings } = useSeoSettings();
   const { settings: hotelSettings } = usePublicHotelSettings();
