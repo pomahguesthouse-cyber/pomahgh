@@ -120,13 +120,19 @@ const INTENT_PATTERNS: { intent: DetectedIntent; patterns: RegExp[]; tool: strin
   {
     intent: 'create_booking',
     patterns: [
-      /buat\s*booking/i,
+      /buat(kan)?\s*booking/i,
       /create\s*booking/i,
       /booking\s*baru/i,
+      /booking\s*(an)?\s*kan/i,
       /new\s*booking/i,
       /reservasi\s*baru/i,
       /pesan\s*kamar/i,
       /book\s*room/i,
+      /tolong\s*booking/i,
+      // "untuk booking tanggal X a.n Y" / "booking tgl X a.n Y N malam" → intent membuat reservasi
+      /untuk\s*booking\s*(tgl|tanggal|tg)/i,
+      /booking\s*(tgl|tanggal|tg)\s*\d+.*(a\.?\s*n\.?|atas\s*nama)/i,
+      /(a\.?\s*n\.?|atas\s*nama)\s*[A-Za-z]+.*(\d+\s*malam|\d+\s*night|menginap)/i,
     ],
     tool: 'create_admin_booking'
   },
@@ -135,9 +141,10 @@ const INTENT_PATTERNS: { intent: DetectedIntent; patterns: RegExp[]; tool: strin
     patterns: [
       /cari\s*booking/i,
       /search\s*booking/i,
-      /booking\s*(dari|milik|atas\s*nama)/i,
-      /booking\s*[A-Z]{2,}/i,
-      /kode\s*[A-Z]{2,}/i,
+      /(cari|temukan|find)\s*.*(atas\s*nama|a\.?\s*n\.?)/i,
+      /booking\s*[A-Z]{2,}\d/i,
+      /kode\s*booking/i,
+      /kode\s*[A-Z]{2,}\d/i,
     ],
     tool: 'search_bookings'
   },
