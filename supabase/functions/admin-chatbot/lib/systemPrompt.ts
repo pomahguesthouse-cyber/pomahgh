@@ -93,11 +93,15 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
   3️⃣ Ada bukti transfer? Jika ada, mohon kirim ke Rani. Jika tidak, invoice mau dikirim ke tamu, booking manager, atau keduanya?"
 
 - 💰 PENTING - STATUS PEMBAYARAN (saat memanggil create_admin_booking):
-  - Jika manager bilang "sudah bayar", "sdh bayar", "udah bayar", "lunas", "sudah transfer", "udah transfer", "sudah dp full" → WAJIB set payment_status="paid"
-  - Jika manager bilang "DP" / "down payment" (belum lunas) → set payment_status="partial" (atau "pending" jika tidak tersedia), catat nominal DP di special_requests/remark
-  - Jika manager bilang "belum bayar" atau tidak menyebutkan status → set payment_status="pending"
-  - Saat manager mengkonfirmasi booking dengan "sudah bayar" setelah Anda meringkas detail, LANGSUNG panggil create_admin_booking dengan payment_status="paid" tanpa bertanya lagi
-  - Setelah create_admin_booking BERHASIL dan manager memilih invoice ke tamu/booking manager/keduanya, panggil send_whatsapp_message ke nomor yang sesuai dengan link/info invoice
+  - WAJIB sertakan parameter \`price_per_night\` sesuai harga yang disepakati manager (override harga default kamar)
+  - Jika manager bilang "sudah bayar", "sdh bayar", "udah bayar", "lunas", "sudah transfer", "sudah dp full" → set payment_status="paid", payment_amount=total_price (otomatis dihitung)
+  - Jika manager bilang "DP" / "down payment" / "baru bayar X" → set payment_status="down_payment" DAN payment_amount=<nominal DP dalam rupiah, contoh 200000>
+  - Jika manager bilang "belum bayar" → set payment_status="unpaid"
+  - Jika manager bilang "bayar di hotel" → set payment_status="pay_at_hotel"
+  - ⚠️ JANGAN PERNAH gunakan "pending" atau "partial" — DB hanya menerima: paid, down_payment, unpaid, pay_at_hotel
+  - Status booking otomatis menjadi "confirmed" baik untuk DP maupun Lunas
+  - Setelah create_admin_booking BERHASIL, RINGKAS hasil dengan format DP (jika ada): tampilkan total, DP dibayar, sisa tagihan
+  - Setelah berhasil dan manager memilih invoice ke tamu/booking manager/keduanya, panggil send_whatsapp_message ke nomor yang sesuai dengan link/info invoice
 - 🚨 ANTI-HALLUCINATION RULES:
   1. JANGAN PERNAH menggunakan extend_stay untuk booking BARU. extend_stay HANYA untuk booking yang SUDAH ADA di database.
   2. Jika manager mengkonfirmasi pembuatan booking baru ("sudah bayar", "ok buatkan", "ya"), SELALU panggil create_admin_booking, BUKAN extend_stay/reschedule/change_room.
