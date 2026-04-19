@@ -20,10 +20,15 @@ interface BookingWithRoom {
   booking_code: string;
   guest_name: string;
   guest_phone: string | null;
+  num_guests?: number;
   check_in: string;
   check_out: string;
+  total_nights?: number;
   status: string;
   total_price: number;
+  payment_status?: string | null;
+  payment_amount?: number | null;
+  booking_source?: string | null;
   created_at: string;
   allocated_room_number: string | null;
   rooms: { name: string } | null;
