@@ -324,10 +324,16 @@ function buildInvoicePdf(args: {
         4: { cellWidth: 80, halign: 'right' },
         5: { cellWidth: 80, halign: 'right' },
       },
-      foot: [
-        ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
-        ['', '', '', '', 'JUMLAH BAYAR', formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)],
-      ],
+      foot: isDownPayment
+        ? [
+            ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
+            ['', '', '', '', 'DP DIBAYAR', formatRupiah(paidAmount)],
+            ['', '', '', '', 'SISA PEMBAYARAN', formatRupiah(remainingBalance)],
+          ]
+        : [
+            ['', '', '', '', 'TOTAL', formatRupiah(booking.total_price)],
+            ['', '', '', '', 'JUMLAH BAYAR', formatRupiah(showPaidStamp ? booking.total_price : totalWithCode)],
+          ],
       footStyles: { fillColor: [245, 245, 245], textColor: dark, fontStyle: 'bold', fontSize: 9, halign: 'right' },
     });
   } else {
@@ -336,8 +342,20 @@ function buildInvoicePdf(args: {
     doc.setFont(fontFamily, 'bold');
     doc.setFontSize(18);
     doc.setTextColor(...primary);
-    doc.text(formatRupiah(showPaidStamp ? booking.total_price : totalWithCode), pageWidth / 2, y + 10, { align: 'center' });
+    const headlineAmount = showPaidStamp
+      ? booking.total_price
+      : isDownPayment
+        ? booking.total_price
+        : totalWithCode;
+    doc.text(formatRupiah(headlineAmount), pageWidth / 2, y + 10, { align: 'center' });
     y += 30;
+    if (isDownPayment) {
+      doc.setFont(fontFamily, 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(80);
+      doc.text(`DP dibayar: ${formatRupiah(paidAmount)}  •  Sisa: ${formatRupiah(remainingBalance)}`, pageWidth / 2, y, { align: 'center' });
+      y += 16;
+    }
     // @ts-expect-error -- ensure lastAutoTable equivalent
     doc.lastAutoTable = { finalY: y };
   }
