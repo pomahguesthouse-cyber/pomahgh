@@ -40,6 +40,7 @@ const BACKEND_FILES: Record<string, string> = {
   payment_proof: 'paymentProof.ts',
   payment_approval: 'paymentApproval.ts',
   price_list: 'priceList.ts',
+  room_brochure: 'roomBrochure.ts',
 };
 
 export const useMultiAgentDashboard = () => {
@@ -250,6 +251,10 @@ export const useMultiAgentDashboard = () => {
         status = guestSessions.length > 0 ? 'active' : 'idle';
         chatCount = routingCounts['price_list'] || 0;
         break;
+      case 'room_brochure':
+        status = guestSessions.length > 0 ? 'active' : 'idle';
+        chatCount = routingCounts['room_brochure'] || 0;
+        break;
     }
 
     if (!config.is_active) status = 'idle';
@@ -258,7 +263,7 @@ export const useMultiAgentDashboard = () => {
     const todayLogs = routingLogsQuery.data || [];
     const PAYMENT_SUB_AGENTS = ['payment', 'payment_proof', 'payment_approval'];
     const agentLogs = config.agent_id === 'payment'
-      ? todayLogs.filter(l => PAYMENT_SUB_AGENTS.includes(l.to_agent) || PAYMENT_SUB_AGENTS.includes(l.from_agent))
+      ? todayLogs.filter(l => (l.to_agent && PAYMENT_SUB_AGENTS.includes(l.to_agent)) || PAYMENT_SUB_AGENTS.includes(l.from_agent))
       : todayLogs.filter(l => l.to_agent === config.agent_id || l.from_agent === config.agent_id);
     const failedLogs = agentLogs.filter(l => l.reason === 'failed');
     const successRate = agentLogs.length > 0

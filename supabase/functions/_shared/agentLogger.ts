@@ -33,8 +33,8 @@ export interface ToolLog {
  * Log an agent routing decision (fire-and-forget).
  * Returns a Promise for callers that need to await critical logs.
  */
-export function logAgentDecision(supabase: SupabaseClient, entry: DecisionLog): Promise<void> {
-  return supabase.from('agent_routing_logs').insert({
+export async function logAgentDecision(supabase: SupabaseClient, entry: DecisionLog): Promise<void> {
+  const { error } = await supabase.from('agent_routing_logs').insert({
     trace_id: entry.trace_id,
     conversation_id: entry.conversation_id,
     phone_number: entry.phone_number,
@@ -43,17 +43,16 @@ export function logAgentDecision(supabase: SupabaseClient, entry: DecisionLog): 
     reason: entry.reason,
     intent: entry.intent,
     metadata: entry.metadata || {},
-  }).then(({ error }) => {
-    if (error) console.warn('[agentLogger] Decision log failed:', error.message);
   });
+  if (error) console.warn('[agentLogger] Decision log failed:', error.message);
 }
 
 /**
  * Log a tool execution result (fire-and-forget).
  * Returns a Promise for callers that need to await critical logs.
  */
-export function logToolExecution(supabase: SupabaseClient, entry: ToolLog): Promise<void> {
-  return supabase.from('agent_routing_logs').insert({
+export async function logToolExecution(supabase: SupabaseClient, entry: ToolLog): Promise<void> {
+  const { error } = await supabase.from('agent_routing_logs').insert({
     trace_id: entry.trace_id,
     conversation_id: entry.conversation_id,
     from_agent: entry.agent_name || 'unknown',
@@ -66,7 +65,6 @@ export function logToolExecution(supabase: SupabaseClient, entry: ToolLog): Prom
       result_summary: entry.result_summary,
       error_message: entry.error_message,
     },
-  }).then(({ error }) => {
-    if (error) console.warn('[agentLogger] Tool log failed:', error.message);
   });
+  if (error) console.warn('[agentLogger] Tool log failed:', error.message);
 }
