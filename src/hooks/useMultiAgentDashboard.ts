@@ -33,10 +33,14 @@ const BACKEND_FILES: Record<string, string> = {
   intent: 'intent.ts',
   booking: 'booking.ts',
   faq: 'faq.ts',
-  payment: 'paymentPrompt.ts',
-  complaint: 'complaintPrompt.ts',
+  payment: 'payment.ts',
+  complaint: 'complaint.ts',
   pricing: 'pricing.ts',
   manager: 'manager.ts',
+  payment_proof: 'paymentProof.ts',
+  payment_approval: 'paymentApproval.ts',
+  price_list: 'priceList.ts',
+  room_brochure: 'roomBrochure.ts',
 };
 
 export const useMultiAgentDashboard = () => {
@@ -131,23 +135,35 @@ export const useMultiAgentDashboard = () => {
       const escalations = sessions?.filter(s => s.is_takeover).length || 0;
       const totalMessages = todayConvs?.reduce((sum, c) => sum + (c.message_count || 0), 0) || 0;
 
-      // Real avg response time from routing logs
-      const durations = todayRoutings?.filter(r => r.duration_ms && r.duration_ms > 0).map(r => r.duration_ms!) || [];
-      const avgResponseMs = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
-
-      // Per-agent routing counts
+      // Per-agent routing counts AND per-agent avg response time
       const agentRoutingCounts: Record<string, number> = {};
+      const agentDurations: Record<string, number[]> = {};
       todayRoutings?.forEach(r => {
         if (r.to_agent) {
           agentRoutingCounts[r.to_agent] = (agentRoutingCounts[r.to_agent] || 0) + 1;
+          if (r.duration_ms && r.duration_ms > 0) {
+            if (!agentDurations[r.to_agent]) agentDurations[r.to_agent] = [];
+            agentDurations[r.to_agent].push(r.duration_ms);
+          }
         }
       });
+
+      // Per-agent avg response in ms
+      const agentAvgResponseMs: Record<string, number> = {};
+      for (const [agentId, durations] of Object.entries(agentDurations)) {
+        agentAvgResponseMs[agentId] = durations.reduce((a, b) => a + b, 0) / durations.length;
+      }
+
+      // Global avg response
+      const allDurations = Object.values(agentDurations).flat();
+      const avgResponseMs = allDurations.length > 0 ? allDurations.reduce((a, b) => a + b, 0) / allDurations.length : 0;
 
       return {
         activeSessions, bookingsToday, escalations, totalMessages,
         totalConversationsToday: todayConvs?.length || 0,
         avgResponseMs,
         agentRoutingCounts,
+        agentAvgResponseMs,
         totalRoutings: todayRoutings?.length || 0,
       };
     },
@@ -211,13 +227,29 @@ export const useMultiAgentDashboard = () => {
         status = managerSessions.length > 0 ? 'active' : 'idle';
         chatCount = routingCounts['manager'] || managerSessions.length;
         break;
+      case 'payment_proof':
+        status = guestSessions.length > 0 ? 'active' : 'idle';
+        chatCount = routingCounts['payment_proof'] || 0;
+        break;
+      case 'payment_approval':
+        status = managerSessions.length > 0 ? 'active' : 'idle';
+        chatCount = routingCounts['payment_approval'] || 0;
+        break;
+      case 'price_list':
+        status = guestSessions.length > 0 ? 'active' : 'idle';
+        chatCount = routingCounts['price_list'] || 0;
+        break;
+      case 'room_brochure':
+        status = guestSessions.length > 0 ? 'active' : 'idle';
+        chatCount = routingCounts['room_brochure'] || 0;
+        break;
     }
 
     if (!config.is_active) status = 'idle';
 
-    // Success rate from routing logs (tool failures = errors)
+    // Success rate from routing logs — use to_agent (agents appear as targets)
     const todayLogs = routingLogsQuery.data || [];
-    const agentLogs = todayLogs.filter(l => l.from_agent === config.agent_id);
+    const agentLogs = todayLogs.filter(l => l.to_agent === config.agent_id || l.from_agent === config.agent_id);
     const failedLogs = agentLogs.filter(l => l.reason === 'failed');
     const successRate = agentLogs.length > 0
       ? Number(((1 - failedLogs.length / agentLogs.length) * 100).toFixed(1))
@@ -232,9 +264,11 @@ export const useMultiAgentDashboard = () => {
       status,
       chatCount,
       successRate,
-      avgResponseTime: statsQuery.data?.avgResponseMs
-        ? `${(statsQuery.data.avgResponseMs / 1000).toFixed(1)}s`
-        : '-',
+      avgResponseTime: statsQuery.data?.agentAvgResponseMs?.[config.agent_id]
+        ? `${(statsQuery.data.agentAvgResponseMs[config.agent_id] / 1000).toFixed(1)}s`
+        : statsQuery.data?.avgResponseMs
+          ? `${(statsQuery.data.avgResponseMs / 1000).toFixed(1)}s`
+          : '-',
       tags: config.tags || [],
       category: config.category as AgentDefinition['category'],
       escalationTarget: config.escalation_target || undefined,

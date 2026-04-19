@@ -11,7 +11,7 @@ export const AgentMetrics = ({ activeSessions, bookingsToday, totalMessages, esc
   const metrics = [
     { label: 'Chat Aktif', value: activeSessions, icon: MessageSquare, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
     { label: 'Reservasi Hari Ini', value: bookingsToday, icon: CalendarCheck, color: 'text-blue-600', bg: 'bg-blue-500/10' },
-    { label: 'Respons Hari Ini', value: totalMessages, icon: Zap, color: 'text-amber-600', bg: 'bg-amber-500/10' },
+    { label: 'Pesan Hari Ini', value: totalMessages, icon: Zap, color: 'text-amber-600', bg: 'bg-amber-500/10' },
     { label: 'Eskalasi', value: escalations, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-500/10' },
   ];
 
