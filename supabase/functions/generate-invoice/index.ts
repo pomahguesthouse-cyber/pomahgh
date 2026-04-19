@@ -123,11 +123,15 @@ function buildInvoicePdf(args: {
   showPaidStamp: boolean;
   transactionStatus: string;
   paymentMethodLabel: string;
+  paidAmount: number;
+  remainingBalance: number;
+  isDownPayment: boolean;
 }): Uint8Array {
   const {
     booking, rooms, addons, bankAccounts, settings, template,
     logoDataUrl, qrisDataUrl,
     totalWithCode, uniqueCode, showPaidStamp, transactionStatus, paymentMethodLabel,
+    paidAmount, remainingBalance, isDownPayment,
   } = args;
 
   // Resolve template config (with safe fallbacks)
@@ -577,6 +581,9 @@ serve(async (req) => {
       showPaidStamp,
       transactionStatus,
       paymentMethodLabel,
+      paidAmount,
+      remainingBalance,
+      isDownPayment,
     });
 
     // Upload PDF to storage
