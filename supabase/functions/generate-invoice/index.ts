@@ -524,7 +524,14 @@ serve(async (req) => {
 
     const paidAmount = booking.payment_amount || 0;
     const remainingBalance = booking.total_price - paidAmount;
-    const uniqueCode = Math.floor(Math.random() * 900 + 100);
+    // Deterministic 3-digit unique code derived from booking id so the invoice
+    // total stays stable across regenerations (was Math.random → confusing for guests).
+    const idStr = String(booking.id || booking.booking_code || "");
+    let hash = 0;
+    for (let i = 0; i < idStr.length; i++) {
+      hash = ((hash << 5) - hash + idStr.charCodeAt(i)) | 0;
+    }
+    const uniqueCode = (Math.abs(hash) % 900) + 100;
     const totalWithCode = booking.total_price + uniqueCode;
 
     // Payment method label

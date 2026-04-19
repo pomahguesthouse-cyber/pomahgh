@@ -87,10 +87,16 @@ serve(async (req) => {
           .eq("status", "pending");
 
         try {
-          const message = `❌ *Booking Dibatalkan*\n\nKode: ${booking.booking_code}\nStatus: Pembayaran kadaluarsa\n\nSilakan buat booking baru jika masih ingin menginap.`;
-          await supabase.functions.invoke("send-whatsapp", {
-            body: { phone: booking.guest_phone || booking.guest_email, message, type: "booking_cancelled" }
-          });
+          // Only send WhatsApp if a real phone number exists; email is not a valid WA target.
+          const rawPhone = (booking.guest_phone || "").toString().replace(/\D/g, "");
+          if (rawPhone.length >= 8) {
+            const message = `❌ *Booking Dibatalkan*\n\nKode: ${booking.booking_code}\nStatus: Pembayaran kadaluarsa\n\nSilakan buat booking baru jika masih ingin menginap.`;
+            await supabase.functions.invoke("send-whatsapp", {
+              body: { phone: rawPhone, message, type: "booking_cancelled" }
+            });
+          } else {
+            console.log(`Skipping WA cancel notice for ${booking.booking_code}: no valid phone`);
+          }
         } catch (waError: unknown) {
           log('warn', `Failed to send WA for ${booking.id}`, { error: (waError as Error).message });
         }

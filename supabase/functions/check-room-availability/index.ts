@@ -50,6 +50,8 @@ serve(async (req) => {
 
     if (directBookingsError) throw directBookingsError
 
+    // Filter at the DB level: only overlapping, non-cancelled stays.
+    // Previously this loaded the entire booking_rooms history into memory.
     const { data: bookedRooms, error: bookedRoomsError } = await supabase
       .from("booking_rooms")
       .select(`
@@ -61,6 +63,9 @@ serve(async (req) => {
           status
         )
       `)
+      .lt("booking.check_in", checkOut)
+      .gt("booking.check_out", checkIn)
+      .not("booking.status", "in", '("cancelled","rejected")')
 
     if (bookedRoomsError) throw bookedRoomsError
 

@@ -13,6 +13,9 @@ interface Notification {
   timestamp: string;
 }
 
+// Cap live notifications buffer to prevent unbounded memory growth on long sessions.
+const MAX_LIVE_NOTIFS = 100;
+
 export const MobileNotificationsTab = () => {
   const [liveNotifs, setLiveNotifs] = useState<Notification[]>([]);
 
@@ -80,7 +83,7 @@ export const MobileNotificationsTab = () => {
               timestamp: msg.created_at,
             },
             ...prev,
-          ]);
+          ].slice(0, MAX_LIVE_NOTIFS));
         }
       )
       .on(
@@ -97,7 +100,7 @@ export const MobileNotificationsTab = () => {
               timestamp: b.created_at,
             },
             ...prev,
-          ]);
+          ].slice(0, MAX_LIVE_NOTIFS));
         }
       )
       .subscribe();
