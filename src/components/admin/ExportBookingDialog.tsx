@@ -56,7 +56,7 @@ export const ExportBookingDialog = ({
   const filteredBookingCount = useMemo(() => {
     if (!startDate || !endDate) return 0;
 
-    let filtered = bookings.filter(booking => {
+    const filtered = bookings.filter(booking => {
       const checkIn = new Date(booking.check_in);
       const checkOut = new Date(booking.check_out);
       

@@ -96,8 +96,8 @@ const INTENT_PATTERNS: { intent: DetectedIntent; patterns: RegExp[]; tool: strin
     intent: 'late_checkout',
     patterns: [
       // "207 2 jam 17.00" or "207 LCO 17:00" or "207 late checkout jam 15"
-      /(\d{3})\s+2\s+(jam\s*)?(\d{1,2})[:\.]?(\d{2})?/i,
-      /(\d{3})\s*(late\s*check\s*-?\s*out|lco)\s*(jam\s*)?(\d{1,2})[:\.]?(\d{2})?/i,
+      /(\d{3})\s+2\s+(jam\s*)?(\d{1,2})[:.]?(\d{2})?/i,
+      /(\d{3})\s*(late\s*check\s*-?\s*out|lco)\s*(jam\s*)?(\d{1,2})[:.]?(\d{2})?/i,
       /late\s*check\s*-?\s*out\s*(kamar\s*)?(\d{3})\s*(jam\s*)?(\d{1,2})/i,
       /lco\s*(kamar\s*)?(\d{3})\s*(jam\s*)?(\d{1,2})/i,
     ],
@@ -264,7 +264,7 @@ function extractDate(message: string): string | undefined {
   if (isoMatch) return isoMatch[1];
   
   // Match DD/MM or DD-MM
-  const shortMatch = message.match(/\b(\d{1,2})[\/\-](\d{1,2})\b/);
+  const shortMatch = message.match(/\b(\d{1,2})[/-](\d{1,2})\b/);
   if (shortMatch) {
     const day = shortMatch[1].padStart(2, '0');
     const month = shortMatch[2].padStart(2, '0');
@@ -317,9 +317,9 @@ function extractLateCheckoutInfo(message: string): { checkout_time?: string; fee
   
   // Extract time - patterns like "17.00", "17:00", "jam 17", "15:30"
   const timePatterns = [
-    /jam\s*(\d{1,2})[:\.](\d{2})/i,
+    /jam\s*(\d{1,2})[:.](\d{2})/i,
     /jam\s*(\d{1,2})\b/i,
-    /(\d{1,2})[:\.](\d{2})/,
+    /(\d{1,2})[:.](\d{2})/,
     /\b(\d{1,2})\s*(wib)?$/i,
   ];
   

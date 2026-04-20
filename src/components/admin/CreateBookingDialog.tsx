@@ -174,7 +174,7 @@ export const CreateBookingDialog = ({
       toast.error("Nomor telepon wajib diisi");
       return;
     }
-    if (!/^[\d\s\+\-\(\)]+$/.test(formData.guest_phone)) {
+    if (!/^[\d\s+\-()]+$/.test(formData.guest_phone)) {
       toast.error("Format nomor telepon tidak valid");
       return;
     }

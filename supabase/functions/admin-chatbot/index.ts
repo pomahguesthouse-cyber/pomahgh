@@ -270,7 +270,7 @@ Deno.serve(async (req: Request) => {
     // 6. Stream response
     const stream = createSSEStream(async (ctx: StreamContext) => {
       let finalResponse = '';
-      let currentMessages: Array<{ role: string; content: string; tool_call_id?: string }> = [
+      const currentMessages: Array<{ role: string; content: string; tool_call_id?: string }> = [
         { role: "system", content: systemPrompt },
         ...(chatMessages as ChatMessage[]).map((m) => ({ role: m.role, content: m.content }))
       ];

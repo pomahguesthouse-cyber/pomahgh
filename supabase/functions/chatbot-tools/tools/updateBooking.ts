@@ -10,7 +10,7 @@ export async function handleUpdateBooking(
   params: UpdateBookingParams
 ) {
   const { booking_id, guest_phone, guest_email, new_num_guests, new_special_requests } = params;
-  let { new_check_in, new_check_out } = params;
+  const { new_check_in, new_check_out } = params;
 
   const validation = validateBookingVerification(booking_id, guest_phone, guest_email);
   if (!validation.valid) {

@@ -18,16 +18,16 @@ export function extractConversationContext(
         if (bookingCodeMatch) {
           context.last_booking_code = bookingCodeMatch[0];
 
-          const nameMatch = msg.content.match(/(?:Nama(?:\s+tamu)?|Atas nama|a\.n\.?)\s*[:\-]?\s*\*?([A-Za-z\s]+?)\*?(?:\n|$|,|\|)/i);
+          const nameMatch = msg.content.match(/(?:Nama(?:\s+tamu)?|Atas nama|a\.n\.?)\s*[:-]?\s*\*?([A-Za-z\s]+?)\*?(?:\n|$|,|\|)/i);
           if (nameMatch) context.last_booking_guest_name = nameMatch[1].trim();
 
-          const emailMatch = msg.content.match(/(?:Email)\s*[:\-]?\s*\*?([^\s*\n]+@[^\s*\n]+)\*?/i);
+          const emailMatch = msg.content.match(/(?:Email)\s*[:-]?\s*\*?([^\s*\n]+@[^\s*\n]+)\*?/i);
           if (emailMatch) context.last_booking_guest_email = emailMatch[1].trim();
 
-          const phoneMatch = msg.content.match(/(?:(?:No\.?\s*)?(?:HP|Telepon|WhatsApp|WA|Telp))\s*[:\-]?\s*\*?([0-9+\-\s]{8,})\*?/i);
+          const phoneMatch = msg.content.match(/(?:(?:No\.?\s*)?(?:HP|Telepon|WhatsApp|WA|Telp))\s*[:-]?\s*\*?([0-9+\-\s]{8,})\*?/i);
           if (phoneMatch) context.last_booking_guest_phone = phoneMatch[1].trim();
 
-          const bookingRoomMatch = msg.content.match(/(?:Kamar|Tipe|Room)\s*[:\-]?\s*\*?(Single|Deluxe|Grand Deluxe|Family Suite)\*?/i);
+          const bookingRoomMatch = msg.content.match(/(?:Kamar|Tipe|Room)\s*[:-]?\s*\*?(Single|Deluxe|Grand Deluxe|Family Suite)\*?/i);
           if (bookingRoomMatch) context.last_booking_room = bookingRoomMatch[1];
         }
       }

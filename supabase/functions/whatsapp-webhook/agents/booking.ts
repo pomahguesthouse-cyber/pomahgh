@@ -79,7 +79,7 @@ export async function handleGuestBookingFlow(
   }
 
   const chatbotData = await chatbotResponse.json();
-  let aiMessage = chatbotData.choices?.[0]?.message;
+  const aiMessage = chatbotData.choices?.[0]?.message;
   let aiResponse = aiMessage?.content || "";
 
   // Check if chatbot used tools internally (chatbot resolves tools and returns meta.tool_calls_used)

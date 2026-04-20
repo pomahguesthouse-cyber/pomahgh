@@ -40,7 +40,7 @@ const bookingSchema = z.object({
     .trim()
     .min(1, "Nomor telepon harus diisi")
     .max(20, "Nomor telepon terlalu panjang")
-    .regex(/^[\d\s\+\-\(\)]+$/, "Format nomor telepon tidak valid")
+    .regex(/^[\d\s+\-()]+$/, "Format nomor telepon tidak valid")
     .refine(val => val.replace(/\D/g, '').length >= 10, {
       message: "Nomor telepon minimal 10 digit"
     }),

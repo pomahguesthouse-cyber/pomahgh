@@ -19,7 +19,7 @@ export function isLikelyPersonName(rawMessage: string): boolean {
   if (!text) return false;
   if (text.length < 2 || text.length > 40) return false;
   if (/\d/.test(text)) return false;
-  if (/[?@#%&_=+\/\\]/.test(text)) return false;
+  if (/[?@#%&_=+/\\]/.test(text)) return false;
   if (/\b(harga|kamar|booking|check.?in|check.?out|berapa|promo|fasilitas|alamat|lokasi|wifi|bayar|transfer|cancel|batal|tolong|mohon|skip|nanti\s+aja|ga\s+usah|tidak\s+usah)\b/i.test(text)) {
     return false;
   }

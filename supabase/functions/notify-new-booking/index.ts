@@ -122,7 +122,7 @@ serve(async (req) => {
 
     // Send to each manager
     let successCount = 0;
-    let errors: string[] = [];
+    const errors: string[] = [];
 
     for (const manager of managers) {
       const phone = ((manager as { phone?: string }).phone || '').toString().replace(/\D/g, '');

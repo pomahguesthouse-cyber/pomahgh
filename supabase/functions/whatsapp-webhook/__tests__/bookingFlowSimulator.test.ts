@@ -514,7 +514,7 @@ describe('WhatsApp Booking Flow Simulator', () => {
   describe('Phone Normalization', () => {
     // Mirrors normalizePhone from utils/phone.ts
     function normalizePhone(phone: string): string {
-      let cleaned = phone.replace(/[\s\-\(\)]/g, '');
+      let cleaned = phone.replace(/[\s\-()]/g, '');
       if (cleaned.startsWith('+')) cleaned = cleaned.slice(1);
       if (cleaned.startsWith('08')) cleaned = '62' + cleaned.slice(1);
       if (cleaned.startsWith('8') && cleaned.length >= 10) cleaned = '62' + cleaned;
