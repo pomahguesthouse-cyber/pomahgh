@@ -74,8 +74,9 @@ export function decide(intent: Intent): RoutingDecision {
   let reason = `intent:${intent}`;
   let fallbackUsed = false;
 
-  // Skip override checks for inline-handled keys
-  const dbCheckable: AgentKey[] = ['booking', 'faq', 'complaint'];
+  // Skip override checks only for inline-handled keys.
+  // Fast-path agents are still operational agents and should honor DB toggles.
+  const dbCheckable: AgentKey[] = ['booking', 'faq', 'complaint', 'price_list', 'room_brochure', 'payment'];
   if (dbCheckable.includes(agent)) {
     if (!isAgentActive(agent)) {
       const fallback = getEscalationTarget(agent);

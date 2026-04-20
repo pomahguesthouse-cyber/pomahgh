@@ -54,7 +54,7 @@ export const getBookingColor = (booking: Booking): string => {
       return "from-red-500/90 to-red-600/90";
     case "no_show":
       return "from-purple-500/90 to-purple-600/90";
-    default:
+    default: {
       // Fallback ke warna berdasarkan ID
       const colors = [
         "from-blue-500/90 to-blue-600/90",
@@ -64,5 +64,6 @@ export const getBookingColor = (booking: Booking): string => {
       ];
       const colorIndex = booking.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
       return colors[colorIndex];
+    }
   }
 };

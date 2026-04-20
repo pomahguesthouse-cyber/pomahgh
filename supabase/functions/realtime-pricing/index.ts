@@ -509,55 +509,61 @@ serve(async (req) => {
         if (!body.room_id) {
           throw new Error('room_id is required');
         }
-        
-        const pricingData = await engine.calculateRealTimePrice(
-          body.room_id,
-          body.date || new Date().toISOString().split('T')[0],
-          body.force_recalculate || false
-        );
 
-        response = {
-          success: true,
-          data: pricingData,
-          processing_time_ms: Date.now() - startTime
-        };
+        {
+          const pricingData = await engine.calculateRealTimePrice(
+            body.room_id,
+            body.date || new Date().toISOString().split('T')[0],
+            body.force_recalculate || false
+          );
+
+          response = {
+            success: true,
+            data: pricingData,
+            processing_time_ms: Date.now() - startTime
+          };
+        }
         break;
 
       case 'batch-calculate':
         // Calculate prices for multiple rooms
-        const roomIds = body.room_ids || [];
-        const results = [];
+        {
+          const roomIds = body.room_ids || [];
+          const results = [];
 
-        for (const roomId of roomIds) {
-          try {
-            const data = await engine.calculateRealTimePrice(
-              roomId,
-              body.date || new Date().toISOString().split('T')[0],
-              body.force_recalculate || false
-            );
-            results.push({ room_id: roomId, success: true, data });
-          } catch (error) {
-            results.push({ room_id: roomId, success: false, error: error.message });
+          for (const roomId of roomIds) {
+            try {
+              const data = await engine.calculateRealTimePrice(
+                roomId,
+                body.date || new Date().toISOString().split('T')[0],
+                body.force_recalculate || false
+              );
+              results.push({ room_id: roomId, success: true, data });
+            } catch (error) {
+              results.push({ room_id: roomId, success: false, error: error.message });
+            }
           }
-        }
 
-        response = {
-          success: true,
-          data: results,
-          processing_time_ms: Date.now() - startTime
-        };
+          response = {
+            success: true,
+            data: results,
+            processing_time_ms: Date.now() - startTime
+          };
+        }
         break;
 
       case 'process-events':
         // Process pricing events queue
-        const result = await engine.processPricingEvents(body.batch_size || 10);
-        
-        response = {
-          success: true,
-          data: result,
-          processing_time_ms: Date.now() - startTime,
-          events_processed: result.events_processed
-        };
+        {
+          const result = await engine.processPricingEvents(body.batch_size || 10);
+
+          response = {
+            success: true,
+            data: result,
+            processing_time_ms: Date.now() - startTime,
+            events_processed: result.events_processed
+          };
+        }
         break;
 
       default:

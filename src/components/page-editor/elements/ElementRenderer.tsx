@@ -1,4 +1,4 @@
-import { memo, useMemo, useCallback } from "react";
+import { memo, useMemo, useCallback, type ReactNode } from "react";
 import { EditorElement } from "@/stores/editorStore";
 import { HeadingElement } from "./HeadingElement";
 import { ParagraphElement } from "./ParagraphElement";
@@ -39,19 +39,24 @@ export const ElementRenderer = memo(function ElementRenderer({
   onHover,
   isPreview = false,
 }: ElementRendererProps) {
-  if (element.isVisible === false && isPreview) return null;
+  const isHiddenInPreview = element.isVisible === false && isPreview;
+  const handleSelect = useCallback(() => {
+    if (!element.isLocked) {
+      onSelect();
+    }
+  }, [element.isLocked, onSelect]);
 
   // Memoize common props to prevent creating new objects on each render
   const commonProps = useMemo(() => ({
     element,
     isSelected,
     isHovered,
-    onSelect: element.isLocked ? () => {} : onSelect,
+    onSelect: handleSelect,
     onHover,
     isPreview,
-  }), [element, isSelected, isHovered, onSelect, onHover, isPreview, element.isLocked]);
+  }), [element, isSelected, isHovered, handleSelect, onHover, isPreview]);
 
-  const wrapHidden = useCallback((node: React.ReactNode) => {
+  const wrapHidden = useCallback((node: ReactNode) => {
     if (element.isVisible === false && !isPreview) {
       return <div className="opacity-30 pointer-events-auto">{node}</div>;
     }
@@ -108,6 +113,8 @@ export const ElementRenderer = memo(function ElementRenderer({
         );
     }
   }, [element.type, commonProps]);
+
+  if (isHiddenInPreview) return null;
 
   return wrapHidden(rendered);
 });

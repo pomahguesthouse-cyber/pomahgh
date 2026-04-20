@@ -102,7 +102,11 @@ const defaultMenuGroups: MenuGroup[] = [
 const STORAGE_KEY = "admin-menu-order-v2";
 
 // Cleanup old version
-try { localStorage.removeItem("admin-menu-order"); } catch {}
+try {
+  localStorage.removeItem("admin-menu-order");
+} catch {
+  // Ignore storage errors so the sidebar still renders in restricted contexts.
+}
 
 // Build a flat map of item id -> icon from defaults
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {};

@@ -151,12 +151,20 @@ export default function OptimizedHero() {
   useEffect(() => {
     const delay = heroSlides[0]?.duration ?? 5000;
     if (autoplayRef.current?.destroy) {
-      try { autoplayRef.current.destroy(); } catch {}
+      try {
+        autoplayRef.current.destroy();
+      } catch {
+        // Ignore plugin teardown failures so the hero can continue rendering.
+      }
     }
     autoplayRef.current = Autoplay({ delay, stopOnInteraction: false });
     return () => {
       if (autoplayRef.current?.destroy) {
-        try { autoplayRef.current.destroy(); } catch {}
+        try {
+          autoplayRef.current.destroy();
+        } catch {
+          // Ignore plugin teardown failures during unmount.
+        }
       }
     };
   }, [heroSlides]);
