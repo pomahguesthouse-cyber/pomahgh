@@ -26,8 +26,8 @@ interface ElementDef {
   name: string;
   icon: React.ComponentType<{className?: string;}>;
   description: string;
-  defaultProps?: Record<string, any>;
-  defaultStyles?: Record<string, any>;
+  defaultProps?: Record<string, unknown>;
+  defaultStyles?: Record<string, unknown>;
 }
 
 interface Category {

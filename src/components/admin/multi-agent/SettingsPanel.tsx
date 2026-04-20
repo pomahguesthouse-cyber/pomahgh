@@ -5,13 +5,23 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useHotelSettings } from '@/hooks/useHotelSettings';
+import { useHotelSettings, type HotelSettings } from '@/hooks/useHotelSettings';
 import { Loader2, Save, CheckCircle } from 'lucide-react';
+
+type SettingsForm = Pick<
+  HotelSettings,
+  | 'whatsapp_number'
+  | 'whatsapp_response_mode'
+  | 'whatsapp_session_timeout_minutes'
+  | 'reception_hours_start'
+  | 'reception_hours_end'
+  | 'whatsapp_price_approval_enabled'
+>;
 
 export const SettingsPanel = () => {
   const { settings, isLoading, updateSettings, isUpdating } = useHotelSettings();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<SettingsForm>({
     whatsapp_number: '',
     whatsapp_response_mode: 'ai',
     whatsapp_session_timeout_minutes: 15,
@@ -36,7 +46,7 @@ export const SettingsPanel = () => {
   }, [settings]);
 
   const handleSave = () => {
-    updateSettings(form as any, {
+    updateSettings(form, {
       onSuccess: () => {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
@@ -44,7 +54,7 @@ export const SettingsPanel = () => {
     });
   };
 
-  const update = (key: string, value: unknown) => {
+  const update = <K extends keyof SettingsForm>(key: K, value: SettingsForm[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
     setSaved(false);
   };
