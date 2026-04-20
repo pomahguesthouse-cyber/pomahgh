@@ -98,42 +98,50 @@ export async function handleGuestBookingFlow(
   if (isAvailabilityHallucination) {
     console.log("⚠️ AVAILABILITY HALLUCINATION DETECTED - AI claimed availability without check_availability tool");
     await logMessage(supabase, conversationId, 'system', `[Availability guard triggered: AI said "${aiResponse.substring(0, 80)}..." without calling check_availability. Tools used: ${toolsUsed.join(', ') || 'none'}]`);
-    const guardMessages = [
-      ...messages,
-      { role: 'assistant', content: aiResponse },
-      { role: 'system', content: `Kamu menjawab tentang ketersediaan kamar TANPA memanggil tool check_availability. INI DILARANG KERAS karena bisa salah info ke tamu. SEKARANG WAJIB panggil tool check_availability dengan tanggal yang user sebutkan. Jangan balas text - LANGSUNG panggil tool check_availability!` }
-    ];
-    const guardResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
-      body: JSON.stringify({ messages: guardMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext }),
-    });
-    if (guardResponse.ok) {
-      const guardData = await guardResponse.json();
-      const guardContent = guardData.choices?.[0]?.message?.content;
-      if (guardContent) aiResponse = guardContent;
+    try {
+      const guardMessages = [
+        ...messages,
+        { role: 'assistant', content: aiResponse },
+        { role: 'system', content: `Kamu menjawab tentang ketersediaan kamar TANPA memanggil tool check_availability. INI DILARANG KERAS karena bisa salah info ke tamu. SEKARANG WAJIB panggil tool check_availability dengan tanggal yang user sebutkan. Jangan balas text - LANGSUNG panggil tool check_availability!` }
+      ];
+      const guardResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
+        body: JSON.stringify({ messages: guardMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext }),
+      });
+      if (guardResponse.ok) {
+        const guardData = await guardResponse.json();
+        const guardContent = guardData.choices?.[0]?.message?.content;
+        if (guardContent) aiResponse = guardContent;
+      }
+    } catch (guardError) {
+      console.error('⚠️ Hallucination guard retry failed:', guardError);
     }
   }
 
   if (!hasToolCalls && !isAvailabilityHallucination && stuckPatterns.test(aiResponse)) {
     console.log("⚠️ STUCK RESPONSE DETECTED - retrying...");
     await logMessage(supabase, conversationId, 'system', `[Stuck retry triggered: AI said "${aiResponse.substring(0, 80)}..." without calling tools]`);
-    const retryMessages = [
-      ...messages,
-      { role: 'assistant', content: aiResponse },
-      { role: 'system', content: `Kamu baru saja bilang "${aiResponse.substring(0, 80)}..." tapi TIDAK memanggil tool check_availability. INI GAGAL. SEKARANG PANGGIL check_availability DENGAN TANGGAL YANG DISEBUTKAN USER. Jika user bilang "sehari" berarti 1 malam. Jangan balas text - LANGSUNG panggil tool!` }
-    ];
+    try {
+      const retryMessages = [
+        ...messages,
+        { role: 'assistant', content: aiResponse },
+        { role: 'system', content: `Kamu baru saja bilang "${aiResponse.substring(0, 80)}..." tapi TIDAK memanggil tool check_availability. INI GAGAL. SEKARANG PANGGIL check_availability DENGAN TANGGAL YANG DISEBUTKAN USER. Jika user bilang "sehari" berarti 1 malam. Jangan balas text - LANGSUNG panggil tool!` }
+      ];
 
-    const retryResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
-      body: JSON.stringify({ messages: retryMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext }),
-    });
+      const retryResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
+        body: JSON.stringify({ messages: retryMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext }),
+      });
 
-    if (retryResponse.ok) {
-      const retryData = await retryResponse.json();
-      const retryContent = retryData.choices?.[0]?.message?.content;
-      if (retryContent) aiResponse = retryContent;
+      if (retryResponse.ok) {
+        const retryData = await retryResponse.json();
+        const retryContent = retryData.choices?.[0]?.message?.content;
+        if (retryContent) aiResponse = retryContent;
+      }
+    } catch (retryError) {
+      console.error('⚠️ Stuck retry failed:', retryError);
     }
   }
 

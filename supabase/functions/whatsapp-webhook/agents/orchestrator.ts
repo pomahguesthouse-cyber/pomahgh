@@ -301,6 +301,12 @@ export async function orchestrate(
           conversationId!, personaName, managerNumbers, env, trace,
         );
 
+      case 'name_collection':
+        return await handleGuestFAQ(
+          supabase, session as WhatsAppSession, phone, normalizedMessage,
+          conversationId!, personaName, env, trace,
+        );
+
       case 'faq': {
         const faqResult = await handleGuestFAQ(
           supabase, session as WhatsAppSession, phone, normalizedMessage,

@@ -133,6 +133,9 @@ export async function handleManagerChat(
     });
   } catch (error) {
     console.error("Manager agent error:", error);
+    const fallbackMsg = 'Maaf, terjadi kesalahan saat memproses pesan Anda. Silakan coba lagi. 🙏';
+    await logMessage(supabase, convId, 'assistant', fallbackMsg);
+    await sendWhatsApp(phone, fallbackMsg, env.fonnteApiKey);
     return new Response(JSON.stringify({ status: "error", error: String(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
