@@ -162,7 +162,9 @@ export const GlobalSEO = () => {
   /* ---------------------
    * Canonical fallback
    * --------------------- */
-  const canonical = settings.canonical_url || window.location.href;
+  const canonical = settings.canonical_url
+    ? settings.canonical_url.replace(/\/$/, "")
+    : `${window.location.origin}${window.location.pathname}`.replace(/\/$/, "");
 
   /* ---------------------
    * Structured Data base
@@ -212,6 +214,7 @@ export const GlobalSEO = () => {
       <meta property="og:title" content={settings.site_title} />
       <meta property="og:description" content={settings.meta_description || ""} />
       <meta property="og:image" content={settings.default_og_image} />
+      {settings.meta_description && <meta property="og:image:alt" content={settings.meta_description} />}
       <meta property="og:url" content={canonical} />
       <meta property="og:type" content="website" />
       <meta property="og:locale" content={settings.og_locale || "id_ID"} />
@@ -224,6 +227,7 @@ export const GlobalSEO = () => {
       <meta name="twitter:description" content={settings.meta_description || ""} />
       <meta name="twitter:image" content={settings.default_og_image} />
       {settings.twitter_handle && <meta name="twitter:site" content={`@${settings.twitter_handle}`} />}
+      {settings.twitter_handle && <meta name="twitter:creator" content={`@${settings.twitter_handle}`} />}
 
       {/* Local SEO */}
       {settings.geo_region && <meta name="geo.region" content={settings.geo_region} />}
