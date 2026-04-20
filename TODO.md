@@ -1,0 +1,4 @@
+- [x] Baca dan pahami alur booking dari dokumen dan kode utama
+- [x] Jalankan aplikasi lokal
+- [x] Simulasikan proses booking end-to-end (berbasis kode + checklist manual)
+- [ ] Dokumentasikan hasil simulasi dan temuan error
