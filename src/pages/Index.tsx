@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import OptimizedHero from "@/components/OptimizedHero";
@@ -14,6 +15,18 @@ import { LazySection } from "@/components/LazySection";
 
 const Index = () => {
   const location = useLocation();
+  const canonical = `${window.location.origin}`;
+  const title = "Pomah Guesthouse - Your Perfect Stay in Semarang";
+  const description = "Pomah Guesthouse Dewi Sartika - Alternatif Penginapan Keluarga di Kota Semarang";
+
+  const webPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: title,
+    description,
+    url: canonical,
+    inLanguage: "id",
+  };
 
   // Handle hash navigation from other pages
   useEffect(() => {
@@ -31,6 +44,21 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <link rel="canonical" href={canonical} />
+
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:type" content="website" />
+
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+
+        <script type="application/ld+json">{JSON.stringify(webPageSchema)}</script>
+      </Helmet>
       <Header />
       <main>
         <OptimizedHero />
