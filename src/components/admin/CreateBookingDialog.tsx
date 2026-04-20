@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,11 @@ interface CreateBookingDialogProps {
   }>;
 }
 
+interface CreatedBooking {
+  id: string;
+  booking_code: string;
+}
+
 export const CreateBookingDialog = ({
   open,
   onOpenChange,
@@ -55,25 +60,24 @@ export const CreateBookingDialog = ({
   const { settings } = useHotelSettings();
 
   // Set default dates: initialDate or today (WIB), and next day for checkout
-  const getDefaultCheckIn = () => {
+  const getDefaultCheckIn = useCallback(() => {
     if (initialDate) {
       const date = new Date(initialDate);
       date.setHours(0, 0, 0, 0);
       return date;
     }
     return getWIBToday();
-  };
+  }, [initialDate]);
 
-  const getDefaultCheckOut = (checkInDate: Date) => {
+  const getDefaultCheckOut = useCallback((checkInDate: Date) => {
     const nextDay = new Date(checkInDate);
     nextDay.setDate(nextDay.getDate() + 1);
     return nextDay;
-  };
+  }, []);
 
   const [checkIn, setCheckIn] = useState<Date | undefined>(getDefaultCheckIn());
   const [checkOut, setCheckOut] = useState<Date | undefined>(checkIn ? getDefaultCheckOut(checkIn) : undefined);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [createdBooking, setCreatedBooking] = useState<any>(null);
   const { user } = useMemberAuth();
   const [formData, setFormData] = useState({
     guest_name: "",
@@ -150,7 +154,7 @@ export const CreateBookingDialog = ({
         setSelectedRooms([]);
       }
     }
-  }, [open, initialDate, roomId, roomNumber, rooms]);
+  }, [open, roomId, roomNumber, rooms, getDefaultCheckIn, getDefaultCheckOut]);
 
   const selectedRoom = rooms.find((r) => r.id === roomId);
 
@@ -322,7 +326,7 @@ export const CreateBookingDialog = ({
           allocated_room_number: selectedRooms[0]?.roomNumber || null,
         })
         .select()
-        .single();
+        .single<CreatedBooking>();
 
       if (insertError) throw new Error(insertError.message);
 
@@ -392,9 +396,10 @@ export const CreateBookingDialog = ({
       } catch (invokeErr) {
         console.error("Invoice invoke failed:", invokeErr);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Create booking error:", error);
-      toast.error(error.message || "Gagal membuat booking");
+      const message = error instanceof Error ? error.message : "Gagal membuat booking";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

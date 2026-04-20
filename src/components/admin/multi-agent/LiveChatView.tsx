@@ -5,13 +5,42 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useWhatsAppSessionMessages, useTakeoverSession, useSendAdminMessage, useReleaseSession } from '@/hooks/useWhatsAppSessions';
-import { useHotelSettings } from '@/hooks/useHotelSettings';
+import { useHotelSettings, type WhatsAppManager } from '@/hooks/useHotelSettings';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { ConversationMemoryViewer } from './ConversationMemoryViewer';
 
+interface SessionConversationSummary {
+  id: string;
+  message_count: number | null;
+  booking_created: boolean | null;
+  started_at: string | null;
+  ended_at: string | null;
+}
+
+interface LiveChatSession {
+  id: string;
+  phone_number: string;
+  guest_name: string | null;
+  conversation_id: string | null;
+  last_message_at: string | null;
+  is_active: boolean | null;
+  is_blocked: boolean | null;
+  is_takeover: boolean | null;
+  session_type?: string | null;
+  awaiting_name?: boolean | null;
+  chat_conversations?: SessionConversationSummary | null;
+}
+
+interface ChatMessageItem {
+  id: string;
+  role: string;
+  content: string | null;
+  created_at: string | null;
+}
+
 interface LiveChatViewProps {
-  sessions: any[];
+  sessions: LiveChatSession[];
 }
 
 const normalizePhone = (phone: string | null | undefined): string => {
@@ -28,37 +57,39 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
   const [activeTab, setActiveTab] = useState<'guest' | 'manager'>('guest');
 
   const { settings: hotelSettings } = useHotelSettings();
-  const managerNumbers = hotelSettings?.whatsapp_manager_numbers || [];
+  const managerNumbers = hotelSettings?.whatsapp_manager_numbers;
 
   // Build phone -> manager name lookup
   const managerMap = useMemo(() => {
     const map = new Map<string, { name: string; role?: string }>();
-    managerNumbers.forEach((m: any) => {
+    managerNumbers?.forEach((m: WhatsAppManager) => {
       const norm = normalizePhone(m.phone);
       if (norm) map.set(norm, { name: m.name, role: m.role });
     });
     return map;
   }, [managerNumbers]);
 
-  const isManagerSession = (session: any): boolean => {
+  const isManagerSession = (session: LiveChatSession): boolean => {
     if (session.session_type === 'admin') return true;
     return managerMap.has(normalizePhone(session.phone_number));
   };
 
-  const getDisplayName = (session: any): string => {
+  const getDisplayName = (session: LiveChatSession): string => {
     const norm = normalizePhone(session.phone_number);
     const manager = managerMap.get(norm);
     if (manager) return manager.name;
     return session.guest_name || session.phone_number;
   };
 
-  const getManagerRole = (session: any): string | undefined => {
+  const getManagerRole = (session: LiveChatSession): string | undefined => {
     const norm = normalizePhone(session.phone_number);
     return managerMap.get(norm)?.role;
   };
 
   const selectedSession = sessions?.find(s => s.id === selectedSessionId);
-  const { data: messages } = useWhatsAppSessionMessages(selectedSession?.conversation_id);
+  const { data: messages } = useWhatsAppSessionMessages(selectedSession?.conversation_id) as {
+    data: ChatMessageItem[] | undefined;
+  };
   const takeover = useTakeoverSession();
   const release = useReleaseSession();
   const sendMessage = useSendAdminMessage();

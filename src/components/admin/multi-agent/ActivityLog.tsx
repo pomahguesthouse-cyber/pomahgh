@@ -2,9 +2,28 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
+interface ActivityLogItem {
+  id: string;
+  role: string;
+  content: string | null;
+  created_at: string | null;
+  tool_calls_used: string[] | null;
+  is_fallback: boolean | null;
+}
+
+interface RoutingLogItem {
+  id: string;
+  created_at: string | null;
+  from_agent: string;
+  to_agent: string | null;
+  reason: string | null;
+  intent: string | null;
+  duration_ms: number | null;
+}
+
 interface ActivityLogProps {
-  logs: any[];
-  routingLogs?: any[];
+  logs: ActivityLogItem[];
+  routingLogs?: RoutingLogItem[];
   isLoading: boolean;
 }
 
@@ -76,7 +95,7 @@ export const ActivityLog = ({ logs, routingLogs = [], isLoading }: ActivityLogPr
               {routingLogs.length === 0 ? (
                 <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">Belum ada routing log hari ini</td></tr>
               ) : (
-                routingLogs.slice(0, 30).map((log: any) => (
+                routingLogs.slice(0, 30).map((log) => (
                   <tr key={log.id} className="border-b hover:bg-muted/30">
                     <td className="p-2 text-muted-foreground whitespace-nowrap">
                       {log.created_at && new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}

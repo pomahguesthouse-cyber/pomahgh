@@ -13,6 +13,15 @@ interface HeroSliderElementProps {
   isPreview?: boolean;
 }
 
+interface HeroSlide {
+  id: string;
+  imageUrl: string;
+  headline: string;
+  subheadline: string;
+  ctaText: string;
+  ctaUrl: string;
+}
+
 export function HeroSliderElement({
   element,
   isSelected,
@@ -24,7 +33,7 @@ export function HeroSliderElement({
   const { updateElement } = useEditorStore();
   const [currentSlide, setCurrentSlide] = useState(0);
   
-  const slides = element.props.slides || [
+  const slides: HeroSlide[] = (element.props.slides as HeroSlide[] | undefined) || [
     {
       id: "slide-1",
       imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920",
@@ -236,7 +245,7 @@ export function HeroSliderElement({
         onTouchEnd={onTouchEnd}
       >
         {/* Slide Background */}
-        {slides.map((slide: any, index: number) => {
+        {slides.map((slide, index) => {
           const isActive = index === currentSlide;
           const bgStyle: React.CSSProperties = {
             backgroundImage: `url(${slide.imageUrl || ""})`,
@@ -345,7 +354,7 @@ export function HeroSliderElement({
         {/* Dot Indicators */}
         {showDots && slides.length > 1 && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-            {slides.map((_: any, index: number) => (
+            {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={(e) => {

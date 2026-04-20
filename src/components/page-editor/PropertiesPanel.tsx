@@ -30,6 +30,22 @@ interface PropsPanelProps {
   onClose?: () => void;
 }
 
+type PropValue = unknown;
+
+interface HeroSlideItem {
+  id: string;
+  imageUrl: string;
+  headline: string;
+  subheadline: string;
+  ctaText: string;
+  ctaUrl: string;
+}
+
+interface GalleryImageItem {
+  src: string;
+  alt: string;
+}
+
 const findElement = (elements: EditorElement[], id: string): EditorElement | null => {
   for (const el of elements) {
     if (el.id === id) return el;
@@ -175,10 +191,7 @@ export function PropertiesPanel({ onClose }: PropsPanelProps) {
 function ContentProperties({
   element,
   onPropChange
-
-
-
-}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
+}: {element: EditorElement;onPropChange: (key: string, value: PropValue) => void;}) {
   switch (element.type) {
     case "heading":
       return (
@@ -694,10 +707,8 @@ function HeroSliderContentProperties({
   element,
   onPropChange
 
-
-
-}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
-  const slides = element.props.slides || [];
+}: {element: EditorElement;onPropChange: (key: string, value: PropValue) => void;}) {
+  const slides: HeroSlideItem[] = (element.props.slides as HeroSlideItem[] | undefined) || [];
   const [slidePickerIndex, setSlidePickerIndex] = useState<number | null>(null);
 
   const handleAddSlide = () => {
@@ -713,14 +724,14 @@ function HeroSliderContentProperties({
   };
 
   const handleUpdateSlide = (index: number, field: string, value: string) => {
-    const updatedSlides = slides.map((slide: any, i: number) =>
+    const updatedSlides = slides.map((slide, i: number) =>
     i === index ? { ...slide, [field]: value } : slide
     );
     onPropChange("slides", updatedSlides);
   };
 
   const handleDeleteSlide = (index: number) => {
-    onPropChange("slides", slides.filter((_: any, i: number) => i !== index));
+    onPropChange("slides", slides.filter((_, i: number) => i !== index));
   };
 
   const handleMediaSelect = (media: MediaFile) => {
@@ -765,7 +776,7 @@ function HeroSliderContentProperties({
         </div>
 
         <div className="space-y-3 max-h-[300px] overflow-y-auto">
-          {slides.map((slide: any, index: number) =>
+          {slides.map((slide, index: number) =>
           <div key={slide.id} className="p-3 border border-border rounded-lg bg-muted/30">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium">Slide {index + 1}</span>
@@ -875,10 +886,7 @@ function HeroSliderContentProperties({
 function ImageContentProperties({
   element,
   onPropChange
-
-
-
-}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
+}: {element: EditorElement;onPropChange: (key: string, value: PropValue) => void;}) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const handleSelect = (media: MediaFile) => {
@@ -942,11 +950,8 @@ function ImageContentProperties({
 function GalleryContentProperties({
   element,
   onPropChange
-
-
-
-}: {element: EditorElement;onPropChange: (key: string, value: any) => void;}) {
-  const images = element.props.images || [];
+}: {element: EditorElement;onPropChange: (key: string, value: PropValue) => void;}) {
+  const images: GalleryImageItem[] = (element.props.images as GalleryImageItem[] | undefined) || [];
   const galleryMode = element.props.galleryMode || "grid";
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -954,7 +959,7 @@ function GalleryContentProperties({
   const handlePickerSelect = (media: MediaFile) => {
     const newImage = { src: media.file_url, alt: media.alt_text || "" };
     if (editingIndex !== null) {
-      const updated = images.map((img: any, i: number) =>
+      const updated = images.map((img, i: number) =>
       i === editingIndex ? newImage : img
       );
       onPropChange("images", updated);
@@ -972,11 +977,11 @@ function GalleryContentProperties({
   };
 
   const handleDeleteImage = (index: number) => {
-    onPropChange("images", images.filter((_: any, i: number) => i !== index));
+    onPropChange("images", images.filter((_, i: number) => i !== index));
   };
 
   const handleUpdateAlt = (index: number, alt: string) => {
-    const updated = images.map((img: any, i: number) =>
+    const updated = images.map((img, i: number) =>
     i === index ? { ...img, alt } : img
     );
     onPropChange("images", updated);
@@ -1047,7 +1052,7 @@ function GalleryContentProperties({
         </div>
 
         <div className="space-y-2 max-h-[350px] overflow-y-auto">
-          {images.map((img: any, index: number) =>
+          {images.map((img, index: number) =>
           <div key={index} className="p-2 border border-border rounded-lg bg-muted/30">
               <div className="flex items-start gap-2">
                 {img.src ?
