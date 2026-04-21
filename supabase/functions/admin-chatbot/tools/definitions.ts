@@ -266,6 +266,21 @@ export const TOOLS: ToolDefinition[] = [
   {
     type: "function",
     function: {
+      name: "send_brochure_to_guest",
+      description: "Kirim FILE PDF brosur kamar Pomah Guesthouse ke nomor WhatsApp tamu. WAJIB digunakan saat manager minta: 'kirim brosur ke 08xxx', 'kirim brosur kamar ke +62xxx', 'kirimin brosur ke tamu xxx', 'WA brosur ke xxx'. JANGAN gunakan send_whatsapp_message untuk brosur — tool ini akan attach file PDF asli, bukan teks/link kosong.",
+      parameters: {
+        type: "object",
+        properties: {
+          phone: { type: "string", description: "Nomor telepon tujuan (format 08xxx atau 62xxx atau +62xxx)" },
+          caption: { type: "string", description: "Caption pesan opsional (default: pesan ramah otomatis)" }
+        },
+        required: ["phone"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "update_room_price",
       description: "Update/ganti harga kamar. Gunakan saat manager minta: 'ganti harga deluxe jadi 250rb', 'update harga weekend family suite', 'set harga promo single'. Jenis harga: main (utama), weekday (senin-jumat), weekend (sabtu-minggu), monday-sunday (per hari), promo.",
       parameters: {

@@ -67,6 +67,7 @@ export const ROLE_TOOL_ACCESS: Record<ManagerRole, string[] | 'all'> = {
     'send_whatsapp_message',
     'get_manager_list',
     'send_invoice',
+    'send_brochure_to_guest',
     // EXCLUDED: get_booking_stats, update_room_price (no revenue/price control)
   ],
   viewer: [

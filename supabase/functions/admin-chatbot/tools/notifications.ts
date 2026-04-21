@@ -252,6 +252,104 @@ export async function sendWhatsAppMessage(supabase: SupabaseClient, args: { phon
  * Get list of all registered managers
  */
 export async function getManagerList(supabase: SupabaseClient) {
+  return await _getManagerListImpl(supabase);
+}
+
+/**
+ * Send the room brochure PDF (from knowledge_base) to a guest's WhatsApp.
+ * Looks up an active KB entry titled like "%brosur%kamar%", generates a signed
+ * URL from the private `knowledge-base` bucket, and sends as WhatsApp file.
+ */
+export async function sendBrochureToGuest(
+  supabase: SupabaseClient,
+  args: { phone: string; caption?: string }
+) {
+  const { phone, caption } = args;
+  if (!phone) return { success: false, error: 'Nomor telepon wajib diisi' };
+
+  // Normalize phone
+  let normalizedPhone = phone.replace(/\D/g, '');
+  if (normalizedPhone.startsWith('0')) normalizedPhone = '62' + normalizedPhone.slice(1);
+  if (!normalizedPhone.startsWith('62')) normalizedPhone = '62' + normalizedPhone;
+
+  // Lookup brochure in knowledge base
+  const { data: kb, error: kbErr } = await supabase
+    .from('chatbot_knowledge_base')
+    .select('title, source_url, original_filename')
+    .ilike('title', '%brosur%kamar%')
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+
+  if (kbErr || !kb?.source_url) {
+    return {
+      success: false,
+      error: 'Brosur kamar tidak ditemukan di knowledge base. Pastikan ada entri aktif dengan judul mengandung "brosur kamar".',
+    };
+  }
+
+  // Sign URL (private bucket, valid 1 hour)
+  const { data: signed, error: signErr } = await supabase
+    .storage.from('knowledge-base')
+    .createSignedUrl(kb.source_url, 3600);
+
+  if (signErr || !signed?.signedUrl) {
+    return { success: false, error: `Gagal generate URL brosur: ${signErr?.message || 'unknown'}` };
+  }
+
+  const filename = kb.original_filename || 'brosur-kamar-pomah-guesthouse.pdf';
+  const finalCaption = caption?.trim() ||
+    '📕 Berikut brosur kamar Pomah Guesthouse, lengkap dengan foto & detail tiap tipe kamar 😊';
+
+  // Send via Fonnte API (file with URL attachment)
+  const fonnteApiKey = Deno.env.get('FONNTE_API_KEY');
+  if (!fonnteApiKey) {
+    return { success: false, error: 'FONNTE_API_KEY belum dikonfigurasi' };
+  }
+
+  try {
+    const resp = await fetch('https://api.fonnte.com/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': fonnteApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        target: normalizedPhone,
+        message: finalCaption,
+        url: signed.signedUrl,
+        filename,
+        countryCode: '62',
+      }),
+    });
+
+    const result = await resp.json().catch(() => ({}));
+    if (!resp.ok || result.status === false) {
+      return {
+        success: false,
+        error: `Gagal kirim brosur: ${result.detail || resp.statusText}`,
+        phone: normalizedPhone,
+      };
+    }
+
+    console.log(`✅ Brochure PDF sent to ${normalizedPhone}`);
+    return {
+      success: true,
+      message: `✅ Brosur PDF berhasil dikirim ke ${normalizedPhone}`,
+      phone: normalizedPhone,
+      filename,
+      caption: finalCaption,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: `Error kirim brosur: ${(err as Error).message}`,
+      phone: normalizedPhone,
+    };
+  }
+}
+
+async function _getManagerListImpl(supabase: SupabaseClient) {
   const { data: settings, error } = await supabase
     .from('hotel_settings')
     .select('whatsapp_manager_numbers')
