@@ -32,7 +32,7 @@ type ViewMode = 'messages' | 'routing';
 export const ActivityLog = ({ logs, routingLogs = [], isLoading }: ActivityLogProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('routing');
 
-  const getAgent = (content: string, toolCalls: string[] | null) => {
+  const getAgent = (content: string | null, toolCalls: string[] | null) => {
     if (toolCalls?.some(t => t.includes('booking') || t.includes('reservation'))) return 'Reservasi Bot';
     if (toolCalls?.some(t => t.includes('price') || t.includes('pricing'))) return 'Pricing Bot';
     if (toolCalls?.some(t => t.includes('faq') || t.includes('knowledge'))) return 'CS & FAQ Bot';
@@ -41,7 +41,7 @@ export const ActivityLog = ({ logs, routingLogs = [], isLoading }: ActivityLogPr
     return 'Intent Router';
   };
 
-  const getActivity = (role: string, content: string) => {
+  const getActivity = (role: string, content: string | null) => {
     if (role === 'user') return 'Pesan masuk dari tamu';
     if (content?.includes('[Admin]')) return 'Balasan admin manual';
     if (content?.includes('[System]')) return 'Transisi sistem';
