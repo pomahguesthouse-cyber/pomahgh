@@ -87,7 +87,7 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
   };
 
   const selectedSession = sessions?.find(s => s.id === selectedSessionId);
-  const { data: messages } = useWhatsAppSessionMessages(selectedSession?.conversation_id) as {
+  const { data: messages } = useWhatsAppSessionMessages(selectedSession?.conversation_id ?? null) as {
     data: ChatMessageItem[] | undefined;
   };
   const takeover = useTakeoverSession();
