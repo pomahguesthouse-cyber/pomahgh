@@ -1,13 +1,14 @@
 import type { SupabaseClient, EnvConfig } from '../types.ts';
 import { formatForWhatsApp } from '../utils/format.ts';
 import { logMessage, getConversationHistory } from '../services/conversation.ts';
-import { sendWhatsApp } from '../services/fonnte.ts';
+import { sendWhatsApp, sendWhatsAppFile } from '../services/fonnte.ts';
 import { extractConversationContext, getLatestBookingContextByPhone } from '../services/context.ts';
 import { batchMessages } from '../middleware/messageBatcher.ts';
 import { detectAndAlertNegativeSentiment } from '../middleware/sentiment.ts';
 import { corsHeaders, type ManagerInfo, type WhatsAppSession } from '../types.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
+import { isRoomPhotoRequest } from './faq.ts';
 
 /**
  * Booking Agent: Handle the full AI conversation flow for guest messages.
@@ -44,11 +45,51 @@ export async function handleGuestBookingFlow(
 
   await logMessage(supabase, conversationId, 'user', combinedMessage);
 
+  // Safety net: send room brochure PDF if guest asks for photos/brochure/model kamar.
+  // The intent classifier may have routed this here (booking) instead of room_brochure.
+  let brochureSentInline = false;
+  if (isRoomPhotoRequest(combinedMessage)) {
+    try {
+      const { data: kb } = await supabase
+        .from('chatbot_knowledge_base')
+        .select('source_url, original_filename')
+        .ilike('title', '%brosur%kamar%')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (kb?.source_url) {
+        const { data: signed } = await supabase
+          .storage.from('knowledge-base')
+          .createSignedUrl(kb.source_url, 3600);
+        if (signed?.signedUrl) {
+          const filename = kb.original_filename || 'brosur-kamar-pomah-guesthouse.pdf';
+          const caption = `📕 Berikut brosur kamar Pomah Guesthouse ya kak, lengkap dengan foto & detail tiap tipe kamar 😊`;
+          const result = await sendWhatsAppFile(phone, signed.signedUrl, caption, env.fonnteApiKey, filename);
+          if (result.status !== false) {
+            brochureSentInline = true;
+            console.log(`✅ Booking Agent: Brochure PDF sent to ${phone}`);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Booking Agent: brochure send failed:', (e as Error).message);
+    }
+  }
+
   // Get history and build messages
   const messages = await getConversationHistory(supabase, conversationId);
   const lastMsg = messages[messages.length - 1];
   if (!lastMsg || lastMsg.content !== combinedMessage) {
     messages.push({ role: 'user', content: combinedMessage });
+  }
+
+  // If brochure was sent, instruct AI to acknowledge briefly instead of redirecting elsewhere.
+  if (brochureSentInline) {
+    messages.push({
+      role: 'system',
+      content: 'CONTEXT: Brosur PDF kamar baru saja dikirim ke tamu via WhatsApp. JANGAN suruh tamu cek Instagram/website untuk foto. Cukup konfirmasi singkat bahwa brosur sudah dikirim, lalu tanyakan tipe kamar mana yang menarik atau tanggal menginapnya.',
+    });
   }
 
   // Extract context
