@@ -39,7 +39,26 @@ export interface ClassifyResult {
 
 // ============= KEYWORD PATTERNS =============
 const PRICE_GENERIC_RE = /\b(?:(?:berapa|brp)\s+(?:harga|tarif|biaya|rate|per\s*malam|semalam)|harga\s+(?:kamar|nya)?|tarif\s+kamar|daftar\s+harga|price\s*list|rate\s*list)\b/i;
-const ROOM_PHOTO_RE = /\b(foto\s+kamar|gambar\s+kamar|brosur|brochure|katalog|liat\s+kamar|lihat\s+kamar)\b/i;
+// Broad detection for photo / brochure / "model kamar" / "tipe kamar" requests.
+// Covers: "ada fotonya?", "minta gambarnya", "boleh liat foto", "ada katalog atau pl",
+// "model kamarnya", "tipe kamar yang ada", "gambaran kamar", "preview kamar".
+const ROOM_PHOTO_RE = new RegExp(
+  [
+    // Direct keywords
+    '\\b(?:brosur|brochure|katalog|preview)\\b',
+    // foto/gambar + (kamar|nya|tipe|model|deluxe|single|family|standard|superior|grand)
+    '\\b(?:foto|gambar|fotonya|gambarnya)\\s*(?:kamar|nya|tipe|model|deluxe|single|family|standard|superior|grand)?\\b',
+    // ask verbs + foto/gambar
+    '\\b(?:minta|liat|lihat|kirim|share|tunjuk|boleh|bisa|ada|tau|tahu)\\s+(?:[a-z]+\\s+){0,3}(?:foto|gambar|fotonya|gambarnya|brosur|katalog)\\b',
+    // model / tipe kamar references (often paired with photo intent)
+    '\\b(?:model|tipe|jenis)\\s+kamar(?:nya)?\\b',
+    // gambaran/preview kamar
+    '\\b(?:gambaran|preview|contoh)\\s+(?:kamar|kamarnya)\\b',
+    // "pl kamar" (price list often used interchangeably with brochure)
+    '\\bpl\\s+kamar\\b',
+  ].join('|'),
+  'i',
+);
 const BOOKING_RE = /\b(book|booking|pesan\s+kamar|reservas|cek\s+ketersediaan|ketersediaan|tersedia|available|ada\s+kamar|masih\s+ada|check.?in|check.?out|extend|perpanjang|tambah\s+(?:malam|hari)|cancel|batal|refund|promo|diskon|mau\s+(?:menginap|pesan|booking|nginap)|kamar\s+(?:kosong|tersedia|available)|hari\s+ini|malam\s+ini|besok|untuk\s+\d+\s+orang|\d+\s+(?:orang|kamar|malam))\b/i;
 const PAYMENT_RE = /\b(bayar|pembayaran|payment|transfer|rekening|va\s+number|virtual\s+account|bukti\s+(?:transfer|bayar)|sudah\s+(?:bayar|transfer)|cara\s+(?:bayar|pembayaran)|metode\s+pembayaran)\b/i;
 const FAQ_RE = /\b(fasilitas|facility|wifi|parkir|parking|sarapan|breakfast|kolam|pool|ac|handuk|towel|alamat|lokasi|location|arah|direction|dekat|nearby|jam\s+(?:buka|operasional|kerja)|buka\s+(?:jam|sampai)|tutup\s+(?:jam|pukul)|aturan|rule|policy|kebijakan|smoking|merokok|hewan|pet|anak|child|extra\s+bed|laundry|restoran|restaurant|mushola|masjid|transportasi|airport|bandara|stasiun|terminal)\b/i;
