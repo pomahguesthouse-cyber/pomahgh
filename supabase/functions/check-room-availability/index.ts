@@ -44,7 +44,7 @@ serve(async (req) => {
     const { data: directBookings, error: directBookingsError } = await supabase
       .from("bookings")
       .select("room_id, allocated_room_number, check_in, check_out, status")
-      .not("status", "in", '("cancelled","rejected")')
+      .not("status", "in", '("cancelled","rejected","no_show")')
       .lt("check_in", checkOut)
       .gt("check_out", checkIn)
 
@@ -65,7 +65,7 @@ serve(async (req) => {
       `)
       .lt("booking.check_in", checkOut)
       .gt("booking.check_out", checkIn)
-      .not("booking.status", "in", '("cancelled","rejected")')
+      .not("booking.status", "in", '("cancelled","rejected","no_show")')
 
     if (bookedRoomsError) throw bookedRoomsError
 
@@ -96,6 +96,7 @@ serve(async (req) => {
               booking &&
               booking.status !== "cancelled" &&
               booking.status !== "rejected" &&
+              booking.status !== "no_show" &&
               booking.check_in < checkOut &&
               booking.check_out > checkIn
             ) {

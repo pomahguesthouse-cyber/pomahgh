@@ -25,14 +25,16 @@ export const useBookingValidation = () => {
     const checkOutStr = format(checkOut, "yyyy-MM-dd");
 
     // Query overlapping bookings from direct allocations
+    // STRICT overlap: check_in < newCheckOut AND check_out > newCheckIn
+    // (touching dates like old.check_out == new.check_in are NOT overlap — handled by Case A/B time logic)
     const { data: directBookings, error: directError } = await supabase
       .from("bookings")
       .select("*")
       .eq("room_id", roomId)
       .eq("allocated_room_number", roomNumber)
-      .neq("status", "cancelled")
-      .neq("status", "no_show")
-      .or(`and(check_in.lte.${checkOutStr},check_out.gte.${checkInStr})`);
+      .not("status", "in", '("cancelled","rejected","no_show")')
+      .lt("check_in", checkOutStr)
+      .gt("check_out", checkInStr);
 
     if (directError) {
       console.error("Error checking booking conflict:", directError);
@@ -63,8 +65,10 @@ export const useBookingValidation = () => {
 
     const overlappingBookingRooms = (bookingRoomsData as BookingRoomRow[] || []).filter((br) => {
       const booking = br.bookings;
-      if (!booking || booking.status === "cancelled" || booking.status === "no_show") return false;
-      return booking.check_in <= checkOutStr && booking.check_out >= checkInStr;
+      if (!booking) return false;
+      if (["cancelled", "rejected", "no_show"].includes(booking.status)) return false;
+      // STRICT overlap (same as edge function check-room-availability)
+      return booking.check_in < checkOutStr && booking.check_out > checkInStr;
     });
 
     // Combine all bookings
@@ -219,14 +223,14 @@ export const useBookingValidation = () => {
       });
     }
 
-    // Query overlapping bookings from direct allocations
+    // Query overlapping bookings from direct allocations (STRICT overlap)
     const { data: directBookings, error: directError } = await supabase
       .from("bookings")
       .select("id, allocated_room_number")
       .eq("room_id", roomId)
-      .neq("status", "cancelled")
-      .neq("status", "no_show")
-      .or(`and(check_in.lte.${checkOutStr},check_out.gte.${checkInStr})`);
+      .not("status", "in", '("cancelled","rejected","no_show")')
+      .lt("check_in", checkOutStr)
+      .gt("check_out", checkInStr);
 
     if (directError) {
       console.error("Error checking room type availability:", directError);
@@ -252,12 +256,13 @@ export const useBookingValidation = () => {
     if (bookingRoomsError) {
       console.error("Error checking booking_rooms availability:", bookingRoomsError);
     } else {
-      // Filter booking_rooms for overlapping dates
+      // Filter booking_rooms for overlapping dates (STRICT)
       (bookingRoomsData as Array<{ room_number: string; booking_id: string; bookings: { id: string; check_in: string; check_out: string; status: string } | null }> || []).forEach((br) => {
         const booking = br.bookings;
-        if (!booking || booking.status === "cancelled" || booking.status === "no_show") return;
+        if (!booking) return;
+        if (["cancelled", "rejected", "no_show"].includes(booking.status)) return;
         if (excludeBookingId && booking.id === excludeBookingId) return;
-        if (booking.check_in <= checkOutStr && booking.check_out >= checkInStr) {
+        if (booking.check_in < checkOutStr && booking.check_out > checkInStr) {
           if (br.room_number) {
             unavailableRoomNumbers.add(br.room_number);
           }

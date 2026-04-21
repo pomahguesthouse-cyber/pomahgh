@@ -34,7 +34,9 @@ export async function getAvailableRoomNumbers(
     .from("booking_rooms")
     .select("room_number, booking:bookings!inner(id, check_in, check_out, status)")
     .eq("room_id", roomId)
-    .not("booking.status", "in", '("cancelled","rejected")');
+    .not("booking.status", "in", '("cancelled","rejected","no_show")')
+    .lt("booking.check_in", checkOut)
+    .gt("booking.check_out", checkIn);
 
   interface BookingRoomEntry {
     room_number: string | null;
@@ -58,7 +60,7 @@ export async function getAvailableRoomNumbers(
     .from("bookings")
     .select("id, allocated_room_number")
     .eq("room_id", roomId)
-    .not("status", "in", '("cancelled","rejected")')
+    .not("status", "in", '("cancelled","rejected","no_show")')
     .lt("check_in", checkOut)
     .gt("check_out", checkIn);
 
