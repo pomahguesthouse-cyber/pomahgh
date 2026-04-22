@@ -66,7 +66,7 @@ export async function handlePriceListQuestion(
   const { data: rooms } = await supabase
     .from('rooms')
     .select('name, price_per_night, base_price, promo_price, max_guests')
-    .eq('is_active', true)
+    .eq('available', true)
     .order('price_per_night', { ascending: true, nullsFirst: false });
 
   const list = (rooms || []) as RoomRow[];
