@@ -95,7 +95,35 @@ export async function handleGuestBookingFlow(
   // Extract context
   const extractedContext = extractConversationContext(messages) || {};
   const bookingContext = await getLatestBookingContextByPhone(supabase, phone);
-  const conversationContext = { ...(bookingContext || {}), ...extractedContext };
+  // Booking dari DB adalah source of truth: jika tamu baru saja membuat booking
+  // (lewat web/WA), data tersebut HARUS menang atas konteks lama dari history.
+  // Field history hanya dipakai untuk slot yang tidak terisi dari booking.
+  const conversationContext = { ...extractedContext, ...(bookingContext || {}) };
+
+  // Jika ada booking recent (≤ 24 jam), inject hint agar AI tidak bertanya ulang
+  // tanggal/kamar/harga yang baru saja disepakati.
+  if (bookingContext?.last_booking_is_recent && bookingContext?.last_booking_code) {
+    const room = bookingContext.last_booking_room || '-';
+    const checkIn = bookingContext.last_booking_check_in || '-';
+    const checkOut = bookingContext.last_booking_check_out || '-';
+    const nights = bookingContext.last_booking_total_nights || '-';
+    const price = bookingContext.last_booking_total_price
+      ? `Rp${Number(bookingContext.last_booking_total_price).toLocaleString('id-ID')}`
+      : '-';
+    const status = bookingContext.last_booking_status || '-';
+    const payStatus = bookingContext.last_booking_payment_status || '-';
+    messages.push({
+      role: 'system',
+      content: `KONTEKS BOOKING TERBARU (baru dibuat <24 jam, JANGAN tanya ulang tanggal/kamar):\n` +
+        `• Kode: ${bookingContext.last_booking_code}\n` +
+        `• Kamar: ${room}\n` +
+        `• Check-in: ${checkIn} → Check-out: ${checkOut} (${nights} malam)\n` +
+        `• Total: ${price}\n` +
+        `• Status: ${status} | Pembayaran: ${payStatus}\n` +
+        `Lanjutkan percakapan berdasarkan booking ini. Jangan ulang menawarkan kamar lain kecuali tamu memintanya.`,
+    });
+  }
+
   trace?.info('Calling chatbot', { conversationId, contextKeys: Object.keys(conversationContext) });
   logAgentDecision(supabase, {
     trace_id: trace?.traceId, conversation_id: conversationId, phone_number: phone,
