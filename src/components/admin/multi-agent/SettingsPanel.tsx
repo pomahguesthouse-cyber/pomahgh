@@ -16,6 +16,8 @@ type SettingsForm = Pick<
   | 'reception_hours_start'
   | 'reception_hours_end'
   | 'whatsapp_price_approval_enabled'
+  | 'whatsapp_memory_retention_days'
+  | 'whatsapp_history_window_messages'
 >;
 
 export const SettingsPanel = () => {
@@ -28,6 +30,8 @@ export const SettingsPanel = () => {
     reception_hours_start: '07:00',
     reception_hours_end: '22:00',
     whatsapp_price_approval_enabled: false,
+    whatsapp_memory_retention_days: 2,
+    whatsapp_history_window_messages: 40,
   });
 
   const [saved, setSaved] = useState(false);
@@ -41,6 +45,8 @@ export const SettingsPanel = () => {
         reception_hours_start: settings.reception_hours_start || '07:00',
         reception_hours_end: settings.reception_hours_end || '22:00',
         whatsapp_price_approval_enabled: settings.whatsapp_price_approval_enabled || false,
+        whatsapp_memory_retention_days: settings.whatsapp_memory_retention_days ?? 2,
+        whatsapp_history_window_messages: settings.whatsapp_history_window_messages ?? 40,
       });
     }
   }, [settings]);
