@@ -253,6 +253,36 @@ export async function orchestrate(
     conversationId = newConv.id;
   }
 
+  // ── 5d.1 AUDIT MEMORY DECISION ──
+  // Catat alasan kenapa chatbot mempertahankan atau mereset memory ke chat_messages
+  // sebagai system message agar admin bisa audit langsung dari log percakapan.
+  try {
+    const idleMin = Math.round(idleMs / 60000);
+    let memoryDecision: string;
+    let memoryEmoji: string;
+    if (!session) {
+      memoryDecision = `first_contact | conversation baru dibuat (belum ada session sebelumnya)`;
+      memoryEmoji = '🆕';
+    } else if (!isStaleByTimeout) {
+      memoryDecision = `keep_active | masih aktif (idle ${idleMin} mnt ≤ timeout ${sessionTimeoutMinutes} mnt) — memory dipertahankan`;
+      memoryEmoji = '✅';
+    } else if (preserveMemory) {
+      memoryDecision = `preserve_h2_rule | idle ${idleMin} mnt > timeout ${sessionTimeoutMinutes} mnt, TAPI tamu punya booking aktif/recent (≤ H+2 checkout) — memory dipertahankan`;
+      memoryEmoji = '🧠';
+    } else {
+      memoryDecision = `reset_by_timeout | idle ${idleMin} mnt > timeout ${sessionTimeoutMinutes} mnt, tidak ada booking ≤ H+2 — conversation baru dibuat`;
+      memoryEmoji = '🔄';
+    }
+    await logMessage(
+      supabase,
+      conversationId!,
+      'system',
+      `${memoryEmoji} [MEMORY AUDIT] ${memoryDecision}`,
+    );
+  } catch (auditErr) {
+    console.warn('[orchestrator] memory audit log failed:', auditErr);
+  }
+
   // 5e. NAME COLLECTION
   try {
     const nameResult = await handleNameCollection(
