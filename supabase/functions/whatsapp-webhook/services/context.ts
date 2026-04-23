@@ -132,7 +132,7 @@ export async function getLatestBookingContextByPhone(
 
   const { data: booking } = await supabase
     .from('bookings')
-    .select(`booking_code, guest_name, guest_email, guest_phone, check_in, check_out, total_nights, status, rooms:room_id (name)`)
+    .select(`booking_code, guest_name, guest_email, guest_phone, check_in, check_out, total_nights, total_price, status, payment_status, created_at, rooms:room_id (name, price_per_night)`)
     .in('guest_phone', [phone, localPhone])
     .not('status', 'in', '("cancelled","rejected")')
     .order('created_at', { ascending: false })
@@ -142,9 +142,16 @@ export async function getLatestBookingContextByPhone(
   if (!booking?.booking_code) return null;
 
   const roomsData = booking.rooms as unknown;
-  const roomName = Array.isArray(roomsData)
-    ? (roomsData[0] as { name: string } | undefined)?.name
-    : (roomsData as { name: string } | null)?.name;
+  const roomObj = Array.isArray(roomsData)
+    ? (roomsData[0] as { name?: string; price_per_night?: number } | undefined)
+    : (roomsData as { name?: string; price_per_night?: number } | null);
+  const roomName = roomObj?.name;
+  const roomPrice = roomObj?.price_per_night;
+
+  // Flag booking sebagai "fresh" jika dibuat ≤ 24 jam — chatbot wajib tahu
+  // konteks harga/kamar booking terbaru ini, terutama saat sesi WA baru/idle.
+  const createdAtMs = booking.created_at ? new Date(booking.created_at).getTime() : 0;
+  const isRecent = createdAtMs > 0 && (Date.now() - createdAtMs) <= 24 * 60 * 60 * 1000;
 
   return {
     last_booking_code: booking.booking_code,
@@ -152,9 +159,18 @@ export async function getLatestBookingContextByPhone(
     last_booking_guest_email: booking.guest_email || undefined,
     last_booking_guest_phone: booking.guest_phone ? normalizePhone(booking.guest_phone) : undefined,
     last_booking_room: roomName || undefined,
+    last_booking_room_price: roomPrice || undefined,
     last_booking_check_in: booking.check_in || undefined,
     last_booking_check_out: booking.check_out || undefined,
     last_booking_total_nights: booking.total_nights || undefined,
+    last_booking_total_price: booking.total_price || undefined,
     last_booking_status: booking.status || undefined,
+    last_booking_payment_status: booking.payment_status || undefined,
+    last_booking_created_at: booking.created_at || undefined,
+    last_booking_is_recent: isRecent,
+    // Convenience aliases — saat booking ada, room/dates harus dipertahankan
+    preferred_room: roomName || undefined,
+    check_in_date: booking.check_in || undefined,
+    check_out_date: booking.check_out || undefined,
   };
 }
