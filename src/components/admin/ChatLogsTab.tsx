@@ -408,6 +408,27 @@ const ChatLogsTab = () => {
                   const rating = getMessageRating(msg.id);
                   const userQuestion = msg.role === 'assistant' ? findUserQuestion(messages, index) : '';
                   
+                  // Render system audit messages (mis. MEMORY AUDIT) sebagai banner kecil
+                  if (msg.role === 'system') {
+                    const isMemoryAudit = msg.content.includes('[MEMORY AUDIT]');
+                    return (
+                      <div key={msg.id} className="flex justify-center my-1">
+                        <div
+                          className={`max-w-[90%] px-3 py-1.5 rounded-md border text-xs flex items-start gap-2 ${
+                            isMemoryAudit
+                              ? 'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/30 dark:border-amber-800/50 dark:text-amber-200'
+                              : 'bg-muted/50 border-border text-muted-foreground'
+                          }`}
+                        >
+                          <span className="font-mono whitespace-pre-wrap break-words flex-1">{msg.content}</span>
+                          <span className="opacity-60 shrink-0">
+                            {msg.created_at ? formatDateTimeID(new Date(msg.created_at)) : ''}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div key={msg.id} className="space-y-1">
                       <div
