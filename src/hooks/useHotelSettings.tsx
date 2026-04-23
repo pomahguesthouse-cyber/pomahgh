@@ -83,6 +83,8 @@ export interface HotelSettings {
   whatsapp_response_mode?: 'ai' | 'manual';
   whatsapp_manager_numbers?: WhatsAppManager[];
   whatsapp_price_approval_enabled?: boolean;
+  whatsapp_memory_retention_days?: number;
+  whatsapp_history_window_messages?: number;
   aggressive_pricing_enabled?: boolean;
   auto_approval_threshold?: number;
   last_minute_pricing_enabled?: boolean;
