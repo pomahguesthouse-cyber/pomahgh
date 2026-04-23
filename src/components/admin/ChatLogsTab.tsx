@@ -416,7 +416,7 @@ const ChatLogsTab = () => {
                         <div
                           className={`max-w-[90%] px-3 py-1.5 rounded-md border text-xs flex items-start gap-2 ${
                             isMemoryAudit
-                              ? 'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/30 dark:border-amber-800/50 dark:text-amber-200'
+                              ? 'bg-accent/40 border-accent text-accent-foreground'
                               : 'bg-muted/50 border-border text-muted-foreground'
                           }`}
                         >
