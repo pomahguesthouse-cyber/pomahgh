@@ -27,8 +27,10 @@ export async function logMessage(
 }
 
 /** Get conversation history with smart truncation.
- *  Keeps first 5 messages (initial context) + last 25 (recent state).
- *  For conversations ≤ 30 messages, returns all. */
+ *  Keeps first 5 messages (initial context) + last 35 (recent state).
+ *  For conversations ≤ 40 messages, returns all.
+ *  Window diperluas untuk mendukung retensi memory hingga H+2 check-out
+ *  pada percakapan booking yang panjang. */
 export async function getConversationHistory(
   supabase: SupabaseClient,
   conversationId: string,
@@ -42,17 +44,17 @@ export async function getConversationHistory(
   const total = totalCount ?? 0;
   let selected: Array<{ role: string; content: string; created_at: string }>;
 
-  if (total <= 30) {
+  if (total <= 40) {
     // Short conversation — single fetch
     const { data } = await supabase
       .from('chat_messages')
       .select('role, content, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
-      .limit(30);
+      .limit(40);
     selected = data || [];
   } else {
-    // Long conversation — fetch first 5 + last 25 in parallel
+    // Long conversation — fetch first 5 + last 35 in parallel
     const [{ data: firstMsgs }, { data: lastMsgs }] = await Promise.all([
       supabase
         .from('chat_messages')
@@ -65,7 +67,7 @@ export async function getConversationHistory(
         .select('role, content, created_at')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: false })
-        .limit(25),
+        .limit(35),
     ]);
 
     const first = firstMsgs || [];

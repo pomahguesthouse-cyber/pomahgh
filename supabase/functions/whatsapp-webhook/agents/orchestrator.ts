@@ -7,7 +7,7 @@ import { isLikelyPersonName } from '../utils/format.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 import { checkRateLimit } from '../middleware/rateLimiter.ts';
-import { getCachedHotelSettings, ensureConversation, updateSession } from '../services/session.ts';
+import { getCachedHotelSettings, ensureConversation, updateSession, hasRecentOrActiveBooking } from '../services/session.ts';
 import { logMessage, getConversationHistory } from '../services/conversation.ts';
 import { sendWhatsApp } from '../services/fonnte.ts';
 import { handlePriceApproval } from './pricing.ts';
@@ -222,9 +222,22 @@ export async function orchestrate(
   // 5d. SESSION MANAGEMENT
   const SESSION_TIMEOUT = sessionTimeoutMinutes * 60 * 1000;
   const lastMessageAt = (session as WhatsAppSession)?.last_message_at ? new Date((session as WhatsAppSession).last_message_at!).getTime() : 0;
-  const isStale = Date.now() - lastMessageAt > SESSION_TIMEOUT;
+  const idleMs = Date.now() - lastMessageAt;
+  const isStaleByTimeout = idleMs > SESSION_TIMEOUT;
   let conversationId = (session as WhatsAppSession)?.conversation_id;
-  const isNewSession = !conversationId || isStale;
+
+  // Memory persistence rule: jika tamu punya booking aktif atau baru check-out
+  // (≤ H+2), JANGAN reset percakapan walau idle melewati timeout. Chatbot harus
+  // tetap mengingat konteks booking sampai 2 hari setelah check-out.
+  let preserveMemory = false;
+  if (isStaleByTimeout && conversationId) {
+    preserveMemory = await hasRecentOrActiveBooking(supabase, phone).catch(() => false);
+    if (preserveMemory) {
+      console.log(`🧠 Preserving memory for ${phone} — guest has active/recent booking (≤ H+2 checkout)`);
+    }
+  }
+
+  const isNewSession = !conversationId || (isStaleByTimeout && !preserveMemory);
 
   if (isNewSession) {
     const { data: newConv, error: convError } = await supabase
