@@ -304,7 +304,7 @@ export async function orchestrate(
   }
 
   // ── 6. AI INTENT CLASSIFICATION (memory-aware hybrid) ──
-  const recentMessages = await getConversationHistory(supabase, conversationId!).catch(() => []);
+  const recentMessages = await getConversationHistory(supabase, conversationId!, historyWindowMessages).catch(() => []);
   const classification = await classifyIntent(normalizedMessage, {
     recentMessages: recentMessages.slice(-6),
     awaitingName: false, // already handled above
