@@ -118,6 +118,57 @@ export const SettingsPanel = () => {
         </div>
       </div>
 
+      {/* Memory & History */}
+      <div className="border rounded-lg bg-card p-4 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Memory Percakapan</h3>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            Atur berapa lama chatbot mengingat konteks tamu dan seberapa banyak riwayat pesan yang dibaca AI.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-xs">Retensi Memory (hari setelah check-out)</Label>
+            <Input
+              type="number"
+              value={form.whatsapp_memory_retention_days}
+              onChange={e =>
+                update(
+                  'whatsapp_memory_retention_days',
+                  Math.max(0, Math.min(parseInt(e.target.value) || 0, 30)),
+                )
+              }
+              className="text-xs h-8"
+              min={0}
+              max={30}
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Memory tamu dengan booking aktif akan dipertahankan hingga H+
+              {form.whatsapp_memory_retention_days} dari tanggal check-out, walau idle melewati timeout. Default: 2.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Window Riwayat Pesan</Label>
+            <Input
+              type="number"
+              value={form.whatsapp_history_window_messages}
+              onChange={e =>
+                update(
+                  'whatsapp_history_window_messages',
+                  Math.max(5, Math.min(parseInt(e.target.value) || 40, 200)),
+                )
+              }
+              className="text-xs h-8"
+              min={5}
+              max={200}
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Jumlah pesan terakhir yang dimuat ke konteks AI per percakapan. Default: 40.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Operating Hours */}
       <div className="border rounded-lg bg-card p-4 space-y-4">
         <h3 className="text-sm font-semibold text-foreground">Jam Operasional</h3>
