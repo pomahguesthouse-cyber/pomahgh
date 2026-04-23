@@ -117,6 +117,8 @@ export async function orchestrate(
   const aiWhitelist: string[] = hotelSettings?.whatsapp_ai_whitelist || [];
   const responseMode = hotelSettings?.whatsapp_response_mode || 'ai';
   const managerNumbers: ManagerInfo[] = hotelSettings?.whatsapp_manager_numbers || [];
+  const memoryRetentionDays = hotelSettings?.whatsapp_memory_retention_days ?? 2;
+  const historyWindowMessages = hotelSettings?.whatsapp_history_window_messages ?? 40;
 
   // ── 4. PRE-ROUTING GUARDS ──
   if ((session as WhatsAppSession)?.is_blocked) {
@@ -231,9 +233,9 @@ export async function orchestrate(
   // tetap mengingat konteks booking sampai 2 hari setelah check-out.
   let preserveMemory = false;
   if (isStaleByTimeout && conversationId) {
-    preserveMemory = await hasRecentOrActiveBooking(supabase, phone).catch(() => false);
+    preserveMemory = await hasRecentOrActiveBooking(supabase, phone, memoryRetentionDays).catch(() => false);
     if (preserveMemory) {
-      console.log(`🧠 Preserving memory for ${phone} — guest has active/recent booking (≤ H+2 checkout)`);
+      console.log(`🧠 Preserving memory for ${phone} — guest has active/recent booking (≤ H+${memoryRetentionDays} checkout)`);
     }
   }
 
@@ -267,10 +269,10 @@ export async function orchestrate(
       memoryDecision = `keep_active | masih aktif (idle ${idleMin} mnt ≤ timeout ${sessionTimeoutMinutes} mnt) — memory dipertahankan`;
       memoryEmoji = '✅';
     } else if (preserveMemory) {
-      memoryDecision = `preserve_h2_rule | idle ${idleMin} mnt > timeout ${sessionTimeoutMinutes} mnt, TAPI tamu punya booking aktif/recent (≤ H+2 checkout) — memory dipertahankan`;
+      memoryDecision = `preserve_h${memoryRetentionDays}_rule | idle ${idleMin} mnt > timeout ${sessionTimeoutMinutes} mnt, TAPI tamu punya booking aktif/recent (≤ H+${memoryRetentionDays} checkout) — memory dipertahankan`;
       memoryEmoji = '🧠';
     } else {
-      memoryDecision = `reset_by_timeout | idle ${idleMin} mnt > timeout ${sessionTimeoutMinutes} mnt, tidak ada booking ≤ H+2 — conversation baru dibuat`;
+      memoryDecision = `reset_by_timeout | idle ${idleMin} mnt > timeout ${sessionTimeoutMinutes} mnt, tidak ada booking ≤ H+${memoryRetentionDays} — conversation baru dibuat`;
       memoryEmoji = '🔄';
     }
     await logMessage(
@@ -302,7 +304,7 @@ export async function orchestrate(
   }
 
   // ── 6. AI INTENT CLASSIFICATION (memory-aware hybrid) ──
-  const recentMessages = await getConversationHistory(supabase, conversationId!).catch(() => []);
+  const recentMessages = await getConversationHistory(supabase, conversationId!, historyWindowMessages).catch(() => []);
   const classification = await classifyIntent(normalizedMessage, {
     recentMessages: recentMessages.slice(-6),
     awaitingName: false, // already handled above

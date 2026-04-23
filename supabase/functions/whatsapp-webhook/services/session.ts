@@ -12,7 +12,7 @@ export async function getCachedHotelSettings(supabase: SupabaseClient): Promise<
   }
   const { data, error } = await supabase
     .from('hotel_settings')
-    .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_response_mode, whatsapp_manager_numbers')
+    .select('whatsapp_session_timeout_minutes, whatsapp_ai_whitelist, whatsapp_response_mode, whatsapp_manager_numbers, whatsapp_memory_retention_days, whatsapp_history_window_messages')
     .single();
   if (error || !data) {
     console.warn('[session] getCachedHotelSettings failed:', error?.message);
@@ -69,5 +69,45 @@ export async function updateSession(
 
   if (error) {
     console.warn(`[session] updateSession failed for ${phone}:`, error.message);
+  }
+}
+
+/**
+ * Cek apakah tamu (berdasarkan nomor telepon) memiliki booking yang masih aktif
+ * atau baru saja check-out dalam rentang H+`retentionDays` hari terakhir.
+ * Digunakan untuk menentukan apakah memory percakapan dipertahankan walau idle.
+ */
+export async function hasRecentOrActiveBooking(
+  supabase: SupabaseClient,
+  phone: string,
+  retentionDays: number = 2,
+): Promise<boolean> {
+  try {
+    const days = Math.max(0, Math.min(retentionDays, 30));
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+
+    // Normalisasi: cek baik prefix '62' maupun '0'
+    const variants = new Set<string>([phone]);
+    if (phone.startsWith('62')) variants.add('0' + phone.slice(2));
+    if (phone.startsWith('0')) variants.add('62' + phone.slice(1));
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('id')
+      .in('guest_phone', Array.from(variants))
+      .not('status', 'in', '("cancelled","rejected","no_show")')
+      .gte('check_out', cutoff)
+      .limit(1);
+
+    if (error) {
+      console.warn(`[session] hasRecentOrActiveBooking error: ${error.message}`);
+      return false;
+    }
+    return (data?.length ?? 0) > 0;
+  } catch (err) {
+    console.warn(`[session] hasRecentOrActiveBooking exception:`, err);
+    return false;
   }
 }

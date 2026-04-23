@@ -1991,7 +1991,9 @@ export type Database = {
           updated_at: string | null
           whatsapp_ai_whitelist: string[] | null
           whatsapp_contact_numbers: Json | null
+          whatsapp_history_window_messages: number
           whatsapp_manager_numbers: Json | null
+          whatsapp_memory_retention_days: number
           whatsapp_number: string | null
           whatsapp_price_approval_enabled: boolean | null
           whatsapp_response_mode: string | null
@@ -2063,7 +2065,9 @@ export type Database = {
           updated_at?: string | null
           whatsapp_ai_whitelist?: string[] | null
           whatsapp_contact_numbers?: Json | null
+          whatsapp_history_window_messages?: number
           whatsapp_manager_numbers?: Json | null
+          whatsapp_memory_retention_days?: number
           whatsapp_number?: string | null
           whatsapp_price_approval_enabled?: boolean | null
           whatsapp_response_mode?: string | null
@@ -2135,7 +2139,9 @@ export type Database = {
           updated_at?: string | null
           whatsapp_ai_whitelist?: string[] | null
           whatsapp_contact_numbers?: Json | null
+          whatsapp_history_window_messages?: number
           whatsapp_manager_numbers?: Json | null
+          whatsapp_memory_retention_days?: number
           whatsapp_number?: string | null
           whatsapp_price_approval_enabled?: boolean | null
           whatsapp_response_mode?: string | null

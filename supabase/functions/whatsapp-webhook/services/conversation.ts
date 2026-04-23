@@ -27,14 +27,18 @@ export async function logMessage(
 }
 
 /** Get conversation history with smart truncation.
- *  Keeps first 5 messages (initial context) + last 35 (recent state).
- *  For conversations ≤ 40 messages, returns all.
- *  Window diperluas untuk mendukung retensi memory hingga H+2 check-out
- *  pada percakapan booking yang panjang. */
+ *  Window dapat disetel admin via hotel_settings.whatsapp_history_window_messages.
+ *  Untuk percakapan yang lebih panjang dari window, sistem mempertahankan
+ *  ~12% pesan paling awal (initial context) + sisanya pesan terbaru. */
 export async function getConversationHistory(
   supabase: SupabaseClient,
   conversationId: string,
+  windowSize: number = 40,
 ): Promise<Array<{ role: string; content: string }>> {
+  const window = Math.max(5, Math.min(windowSize, 200));
+  const headSize = Math.max(2, Math.floor(window * 0.125)); // ~5 dari 40
+  const tailSize = Math.max(window - headSize, 3);
+
   // Fast count-only query first to avoid fetching data we won't use
   const { count: totalCount } = await supabase
     .from('chat_messages')
@@ -44,30 +48,30 @@ export async function getConversationHistory(
   const total = totalCount ?? 0;
   let selected: Array<{ role: string; content: string; created_at: string }>;
 
-  if (total <= 40) {
+  if (total <= window) {
     // Short conversation — single fetch
     const { data } = await supabase
       .from('chat_messages')
       .select('role, content, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
-      .limit(40);
+      .limit(window);
     selected = data || [];
   } else {
-    // Long conversation — fetch first 5 + last 35 in parallel
+    // Long conversation — fetch head + tail in parallel
     const [{ data: firstMsgs }, { data: lastMsgs }] = await Promise.all([
       supabase
         .from('chat_messages')
         .select('role, content, created_at')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
-        .limit(5),
+        .limit(headSize),
       supabase
         .from('chat_messages')
         .select('role, content, created_at')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: false })
-        .limit(35),
+        .limit(tailSize),
     ]);
 
     const first = firstMsgs || [];

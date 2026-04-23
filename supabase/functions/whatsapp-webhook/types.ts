@@ -19,6 +19,8 @@ export interface HotelSettingsData {
   whatsapp_ai_whitelist: string[] | null;
   whatsapp_response_mode: string | null;
   whatsapp_manager_numbers: ManagerInfo[] | null;
+  whatsapp_memory_retention_days: number | null;
+  whatsapp_history_window_messages: number | null;
 }
 
 export interface WhatsAppSession {
