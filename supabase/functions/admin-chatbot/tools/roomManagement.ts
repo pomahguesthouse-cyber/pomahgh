@@ -177,7 +177,7 @@ export async function updateRoomPrice(supabase: SupabaseClient, args: Record<str
 export async function getRoomPrices(supabase: SupabaseClient, roomName?: string) {
   const { data: allRooms, error } = await supabase
     .from('rooms')
-    .select('id, name, price_per_night, pricing_priority')
+    .select('id, name, price_per_night, pricing_priority, promo_price, promo_start_date, promo_end_date')
     .order('name');
 
   if (error) throw error;
@@ -199,7 +199,7 @@ export async function getRoomPrices(supabase: SupabaseClient, roomName?: string)
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Fetch active promotions for all rooms
+  // Fetch active promotions from room_promotions table (legacy/secondary source)
   const { data: activePromos } = await supabase
     .from('room_promotions')
     .select('room_id, name, discount_percentage, promo_price, start_date, end_date, badge_text')
@@ -216,7 +216,24 @@ export async function getRoomPrices(supabase: SupabaseClient, roomName?: string)
     count: rooms.length,
     rooms: rooms.map((r) => {
       const priority = r.pricing_priority || ['base', 'promo', 'dynamic'];
-      const promo = promoMap.get(r.id);
+      // Primary source: rooms.promo_price + dates (same fields written by update_room_price)
+      // Fallback: room_promotions table
+      let promo = promoMap.get(r.id);
+      const inlinePromoActive =
+        r.promo_price &&
+        r.promo_price > 0 &&
+        (!r.promo_start_date || r.promo_start_date <= today) &&
+        (!r.promo_end_date || r.promo_end_date >= today);
+      if (inlinePromoActive) {
+        promo = {
+          name: 'Promo',
+          badge_text: 'PROMO',
+          discount_percentage: null,
+          promo_price: r.promo_price,
+          start_date: r.promo_start_date,
+          end_date: r.promo_end_date,
+        };
+      }
       
       // Calculate effective price based on priority order
       let effectivePrice = r.price_per_night;
