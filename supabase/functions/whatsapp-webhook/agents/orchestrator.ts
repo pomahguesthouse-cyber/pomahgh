@@ -379,6 +379,7 @@ export async function orchestrate(
         return await handleGuestBookingFlow(
           supabase, session as WhatsAppSession, phone, normalizedMessage, conversationId!,
           personaName, managerNumbers, env, trace,
+          recentMessages, historyWindowMessages,
         );
     }
   } catch (agentError) {
