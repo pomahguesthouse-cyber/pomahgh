@@ -28,6 +28,9 @@ const hoisted = vi.hoisted(() => {
         const builder = {
           select: vi.fn(() => builder),
           eq: vi.fn(() => builder),
+          order: vi.fn(() => builder),
+          limit: vi.fn(() => builder),
+          maybeSingle: vi.fn().mockResolvedValue({ data: state.session, error: null }),
           single: vi.fn().mockResolvedValue({ data: state.session, error: null }),
           update: vi.fn(() => ({
             eq: vi.fn().mockResolvedValue({ data: null, error: null }),
