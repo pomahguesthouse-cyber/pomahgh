@@ -10,6 +10,37 @@ import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 import { isRoomPhotoRequest } from './faq.ts';
 
+/** Helper: ambil brosur kamar dari KB & kirim file via Fonnte. Return true jika sukses. */
+async function sendBrochureInline(
+  supabase: SupabaseClient,
+  phone: string,
+  fonnteApiKey: string,
+): Promise<boolean> {
+  const { data: kb } = await supabase
+    .from('chatbot_knowledge_base')
+    .select('source_url, original_filename')
+    .ilike('title', '%brosur%kamar%')
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+
+  if (!kb?.source_url) return false;
+
+  const { data: signed } = await supabase
+    .storage.from('knowledge-base')
+    .createSignedUrl(kb.source_url, 3600);
+  if (!signed?.signedUrl) return false;
+
+  const filename = kb.original_filename || 'brosur-kamar-pomah-guesthouse.pdf';
+  const caption = `📕 Berikut brosur kamar Pomah Guesthouse ya kak, lengkap dengan foto & detail tiap tipe kamar 😊`;
+  const result = await sendWhatsAppFile(phone, signed.signedUrl, caption, fonnteApiKey, filename);
+  if (result.status !== false) {
+    console.log(`✅ Booking Agent: Brochure PDF sent to ${phone}`);
+    return true;
+  }
+  return false;
+}
+
 /**
  * Booking Agent: Handle the full AI conversation flow for guest messages.
  * Includes batching, context extraction, chatbot call, stuck detection, and reply.
