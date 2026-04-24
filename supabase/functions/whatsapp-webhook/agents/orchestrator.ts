@@ -123,10 +123,25 @@ export async function orchestrate(
   }
 
   // ── 3. LOAD CONTEXT (parallel) ──
+  // Hanya ambil kolom yang benar-benar dipakai downstream (sesuai interface
+  // WhatsAppSession). Tambah ORDER BY last_message_at DESC + LIMIT 1 agar
+  // memanfaatkan composite index `idx_whatsapp_sessions_phone_last_message`
+  // dan defensive jika ada baris duplikat per phone_number.
+  const SESSION_COLUMNS =
+    'phone_number, conversation_id, last_message_at, is_active, is_blocked, ' +
+    'is_takeover, takeover_at, session_type, awaiting_name, guest_name, ' +
+    'pending_messages, pending_since';
+
   const [hotelSettings, { data: chatbotSettingsRow }, { data: session }, { data: agentConfigs }, { data: escalationRules }] = await Promise.all([
     getCachedHotelSettings(supabase),
     supabase.from('chatbot_settings').select('persona_name, greeting_message').single(),
-    supabase.from('whatsapp_sessions').select('*').eq('phone_number', phone).single(),
+    supabase
+      .from('whatsapp_sessions')
+      .select(SESSION_COLUMNS)
+      .eq('phone_number', phone)
+      .order('last_message_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
     supabase.from('agent_configs').select('agent_id, is_active, system_prompt, temperature, escalation_target, auto_escalate'),
     supabase.from('escalation_rules').select('from_agent, to_agent, condition_text, priority, is_active').eq('is_active', true).order('priority', { ascending: true }),
   ]);
