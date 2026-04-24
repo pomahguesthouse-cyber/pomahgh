@@ -4222,6 +4222,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_conversation_message_count: {
+        Args: { conv_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
