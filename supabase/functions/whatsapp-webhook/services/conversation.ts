@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '../types.ts';
 
-/** Log message to database with parallel insert + atomic increment */
+/** Log message to database with resilient fallback.
+ *  PRIORITAS: insert pesan WAJIB berhasil. Increment counter bersifat best-effort.
+ *  - Jika RPC gagal (mis. fungsi belum ada di skema cache), kita fallback ke
+ *    UPDATE manual menggunakan COUNT pesan supaya counter tetap akurat.
+ *  - Semua error ditangkap agar alur webhook tidak terputus. */
 export async function logMessage(
   supabase: SupabaseClient,
   conversationId: string,
@@ -9,20 +13,58 @@ export async function logMessage(
 ) {
   if (!conversationId) return;
 
-  const [insertResult, rpcResult] = await Promise.all([
-    supabase.from('chat_messages').insert({
+  // 1) Insert pesan dulu (kritis). Tangkap exception agar webhook tidak crash.
+  try {
+    const { error: insertError } = await supabase.from('chat_messages').insert({
       conversation_id: conversationId,
       role,
       content,
-    }),
-    supabase.rpc('increment_conversation_message_count', { conv_id: conversationId }),
-  ]);
-
-  if (insertResult.error) {
-    console.warn(`[logMessage] Insert failed for ${conversationId}:`, insertResult.error.message);
+    });
+    if (insertError) {
+      console.warn(`[logMessage] Insert failed for ${conversationId}: ${insertError.message}`);
+      // Pesan gagal tersimpan — tidak ada gunanya update counter
+      return;
+    }
+  } catch (err) {
+    console.warn(`[logMessage] Insert threw for ${conversationId}:`, (err as Error)?.message);
+    return;
   }
-  if (rpcResult.error) {
-    console.warn(`[logMessage] Increment failed for ${conversationId}:`, rpcResult.error.message);
+
+  // 2) Increment counter (best-effort). Coba RPC dulu, fallback ke UPDATE manual.
+  try {
+    const { error: rpcError } = await supabase.rpc(
+      'increment_conversation_message_count',
+      { conv_id: conversationId },
+    );
+    if (!rpcError) return;
+
+    console.warn(
+      `[logMessage] RPC increment failed for ${conversationId} (${rpcError.message}), trying fallback...`,
+    );
+
+    // Fallback: hitung ulang via COUNT lalu UPDATE. Lebih lambat tapi akurat.
+    const { count } = await supabase
+      .from('chat_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('conversation_id', conversationId);
+
+    if (typeof count === 'number') {
+      const { error: updateError } = await supabase
+        .from('chat_conversations')
+        .update({ message_count: count })
+        .eq('id', conversationId);
+      if (updateError) {
+        console.warn(
+          `[logMessage] Fallback UPDATE failed for ${conversationId}: ${updateError.message}`,
+        );
+      }
+    }
+  } catch (err) {
+    // Increment counter tidak boleh memutus alur — cukup log dan lanjut.
+    console.warn(
+      `[logMessage] Increment counter threw for ${conversationId}:`,
+      (err as Error)?.message,
+    );
   }
 }
 
