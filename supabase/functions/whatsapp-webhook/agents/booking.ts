@@ -24,12 +24,23 @@ export async function handleGuestBookingFlow(
   managerNumbers: ManagerInfo[],
   env: EnvConfig,
   trace?: TraceContext,
+  /** Optional: history sudah di-fetch oleh orchestrator untuk intent classifier.
+   *  Kalau diisi, kita skip fetch ulang untuk mengurangi 1 round-trip DB (~150-300ms). */
+  preFetchedHistory?: Array<{ role: string; content: string }>,
+  /** Optional: ukuran window history (dari hotel_settings). */
+  historyWindow?: number,
 ): Promise<Response> {
-  // Update session
-  await supabase.from('whatsapp_sessions').upsert({
-    phone_number: phone, conversation_id: conversationId,
-    last_message_at: new Date().toISOString(), is_active: true, session_type: 'guest',
-  }, { onConflict: 'phone_number' });
+  // Fire-and-forget session update — tidak perlu memblok pipeline AI.
+  // Jika gagal, di-log tapi tidak menggagalkan respons ke tamu.
+  void supabase
+    .from('whatsapp_sessions')
+    .upsert({
+      phone_number: phone, conversation_id: conversationId,
+      last_message_at: new Date().toISOString(), is_active: true, session_type: 'guest',
+    }, { onConflict: 'phone_number' })
+    .then(({ error }) => {
+      if (error) console.warn('[booking] session upsert failed:', error.message);
+    });
 
   // Message batching
   const batchedMessages = await batchMessages(supabase, phone, normalizedMessage);
@@ -43,42 +54,30 @@ export async function handleGuestBookingFlow(
   const combinedMessage = batchedMessages.join('\n');
   console.log(`📦 Processing combined message for ${phone}: "${combinedMessage}"`);
 
-  await logMessage(supabase, conversationId, 'user', combinedMessage);
+  // ── PARALLELIZE I/O ──
+  // Log pesan user, fetch history (jika belum ada), fetch context booking — semua paralel.
+  const wantsBrochure = isRoomPhotoRequest(combinedMessage);
 
-  // Safety net: send room brochure PDF if guest asks for photos/brochure/model kamar.
-  // The intent classifier may have routed this here (booking) instead of room_brochure.
-  let brochureSentInline = false;
-  if (isRoomPhotoRequest(combinedMessage)) {
-    try {
-      const { data: kb } = await supabase
-        .from('chatbot_knowledge_base')
-        .select('source_url, original_filename')
-        .ilike('title', '%brosur%kamar%')
-        .eq('is_active', true)
-        .limit(1)
-        .maybeSingle();
+  const historyPromise = preFetchedHistory
+    ? Promise.resolve(preFetchedHistory)
+    : getConversationHistory(supabase, conversationId, historyWindow);
 
-      if (kb?.source_url) {
-        const { data: signed } = await supabase
-          .storage.from('knowledge-base')
-          .createSignedUrl(kb.source_url, 3600);
-        if (signed?.signedUrl) {
-          const filename = kb.original_filename || 'brosur-kamar-pomah-guesthouse.pdf';
-          const caption = `📕 Berikut brosur kamar Pomah Guesthouse ya kak, lengkap dengan foto & detail tiap tipe kamar 😊`;
-          const result = await sendWhatsAppFile(phone, signed.signedUrl, caption, env.fonnteApiKey, filename);
-          if (result.status !== false) {
-            brochureSentInline = true;
-            console.log(`✅ Booking Agent: Brochure PDF sent to ${phone}`);
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Booking Agent: brochure send failed:', (e as Error).message);
-    }
-  }
+  const brochurePromise: Promise<boolean> = wantsBrochure
+    ? sendBrochureInline(supabase, phone, env.fonnteApiKey).catch((e) => {
+        console.warn('Booking Agent: brochure send failed:', (e as Error).message);
+        return false;
+      })
+    : Promise.resolve(false);
 
-  // Get history and build messages
-  const messages = await getConversationHistory(supabase, conversationId);
+  // Logging pesan user fire-and-forget — tidak ditunggu.
+  void logMessage(supabase, conversationId, 'user', combinedMessage);
+
+  const [messages, brochureSentInline, bookingContext] = await Promise.all([
+    historyPromise,
+    brochurePromise,
+    getLatestBookingContextByPhone(supabase, phone).catch(() => null),
+  ]);
+
   const lastMsg = messages[messages.length - 1];
   if (!lastMsg || lastMsg.content !== combinedMessage) {
     messages.push({ role: 'user', content: combinedMessage });
@@ -92,9 +91,8 @@ export async function handleGuestBookingFlow(
     });
   }
 
-  // Extract context
+  // Extract context (sync, in-memory)
   const extractedContext = extractConversationContext(messages) || {};
-  const bookingContext = await getLatestBookingContextByPhone(supabase, phone);
   // Booking dari DB adalah source of truth: jika tamu baru saja membuat booking
   // (lewat web/WA), data tersebut HARUS menang atas konteks lama dari history.
   // Field history hanya dipakai untuk slot yang tidak terisi dari booking.
