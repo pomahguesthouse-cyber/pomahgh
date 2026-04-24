@@ -39,6 +39,30 @@ import { decide } from './decisionEngine.ts';
  *  7. Error → human staff escalation
  */
 
+/**
+ * Singleton Supabase client untuk orchestrator.
+ * 
+ * Sebelumnya `createClient` dipanggil pada SETIAP request webhook, padahal
+ * konfigurasinya identik (URL + service-role key dari EnvConfig). Membuat
+ * client baru tiap request → overhead alokasi + GC + kehilangan keepalive
+ * connection pool internal supabase-js. Cache di scope modul agar dipakai
+ * ulang antar invocation pada worker yang sama.
+ * 
+ * Catatan: cache key dibandingkan dengan supabaseUrl agar aman jika EnvConfig
+ * berubah (mis. saat dipakai di test/staging berbeda di proses yang sama).
+ */
+let cachedSupabase: SupabaseClient | null = null;
+let cachedSupabaseUrl: string | null = null;
+
+function getSupabaseClient(env: EnvConfig): SupabaseClient {
+  if (cachedSupabase && cachedSupabaseUrl === env.supabaseUrl) {
+    return cachedSupabase;
+  }
+  cachedSupabase = createClient(env.supabaseUrl, env.supabaseServiceKey) as SupabaseClient;
+  cachedSupabaseUrl = env.supabaseUrl;
+  return cachedSupabase;
+}
+
 async function escalateToHumanStaff(
   supabase: SupabaseClient,
   phone: string,
@@ -63,7 +87,7 @@ export async function orchestrate(
   env: EnvConfig,
   trace?: TraceContext,
 ): Promise<Response> {
-  const supabase = createClient(env.supabaseUrl, env.supabaseServiceKey);
+  const supabase = getSupabaseClient(env);
 
   // ── 1. PARSE BODY ──
   const body = await parseRequestBody(req);
