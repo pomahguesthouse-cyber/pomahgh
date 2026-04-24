@@ -87,7 +87,7 @@ export async function orchestrate(
   env: EnvConfig,
   trace?: TraceContext,
 ): Promise<Response> {
-  const supabase = createClient(env.supabaseUrl, env.supabaseServiceKey);
+  const supabase = getSupabaseClient(env);
 
   // ── 1. PARSE BODY ──
   const body = await parseRequestBody(req);
