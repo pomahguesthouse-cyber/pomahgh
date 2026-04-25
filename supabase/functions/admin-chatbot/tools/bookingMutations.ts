@@ -314,6 +314,242 @@ export async function createAdminBooking(supabase: SupabaseClient, args: Record<
   };
 }
 
+// ============= MULTI-ROOM (1 booking, banyak kamar) =============
+interface ResolvedSelection {
+  room: RoomWithPricing;
+  allocatedNumbers: string[];          // sudah digrup per quantity
+  pricePerNight: number;                // override atau default
+  nightsTotal: number;                  // pricePerNight * nights * quantity
+}
+
+async function createAdminBookingMultiRoom(
+  supabase: SupabaseClient,
+  args: Record<string, unknown>,
+  selections: Array<Record<string, unknown>>,
+) {
+  console.log(`📝 createAdminBookingMultiRoom (${selections.length} entri)`);
+
+  const checkIn = new Date(args.check_in as string);
+  const checkOut = new Date(args.check_out as string);
+  const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+  if (nights <= 0) throw new Error('Tanggal check-out harus setelah check-in');
+
+  // Fetch all rooms once
+  const { data: allRooms, error: roomsError } = await supabase
+    .from('rooms')
+    .select('id, name, price_per_night, room_numbers, max_guests, ' +
+      'sunday_price, monday_price, tuesday_price, wednesday_price, ' +
+      'thursday_price, friday_price, saturday_price, ' +
+      'promo_price, promo_start_date, promo_end_date')
+    .eq('available', true);
+  if (roomsError) throw roomsError;
+
+  const resolved: ResolvedSelection[] = [];
+  let grandTotal = 0;
+  let originalGrandTotal = 0;
+
+  for (const sel of selections) {
+    const roomNameSel = String(sel.room_name || '').trim();
+    if (!roomNameSel) throw new Error('Setiap entri room_selections wajib punya room_name');
+    const quantity = Math.max(1, Number(sel.quantity || 1));
+    const requestedNumber = sel.room_number ? String(sel.room_number) : undefined;
+    const overridePrice = typeof sel.price_per_night === 'number' && sel.price_per_night > 0
+      ? Number(sel.price_per_night) : null;
+
+    const room = findBestRoomMatch(roomNameSel, (allRooms || []) as unknown as Array<{ name: string; [key: string]: unknown }>) as RoomWithPricing | null;
+    if (!room) {
+      const list = (allRooms || []).map((r: any) => r.name).join(', ');
+      throw new Error(`Kamar "${roomNameSel}" tidak ditemukan. Tersedia: ${list}`);
+    }
+
+    // Cek kamar yang sudah dipakai entri sebelumnya untuk room_id yang sama
+    const alreadyTaken = new Set<string>(
+      resolved.filter(r => r.room.id === room.id).flatMap(r => r.allocatedNumbers)
+    );
+
+    // Konflik booking lain
+    const { data: conflicts } = await supabase
+      .from('bookings')
+      .select('allocated_room_number')
+      .eq('room_id', room.id)
+      .neq('status', 'cancelled')
+      .lt('check_in', args.check_out)
+      .gt('check_out', args.check_in);
+    const bookedNumbers = new Set(((conflicts || []).map((b: { allocated_room_number: string | null }) => b.allocated_room_number).filter(Boolean) as string[]));
+
+    // Konflik booking_rooms (kalau ada multi-room booking lain)
+    const { data: conflictsBR } = await supabase
+      .from('booking_rooms')
+      .select('room_number, bookings!inner(room_id, check_in, check_out, status)')
+      .eq('room_id', room.id);
+    for (const br of (conflictsBR || []) as Array<{ room_number: string; bookings: { check_in: string; check_out: string; status: string } }>) {
+      const b = br.bookings;
+      if (b && b.status !== 'cancelled' && b.check_in < (args.check_out as string) && b.check_out > (args.check_in as string)) {
+        bookedNumbers.add(br.room_number);
+      }
+    }
+
+    const { data: blockedDates } = await supabase
+      .from('room_unavailable_dates')
+      .select('room_number')
+      .eq('room_id', room.id)
+      .gte('unavailable_date', args.check_in)
+      .lt('unavailable_date', args.check_out);
+    const blockedNumbers = new Set((blockedDates || []).map((d: { room_number: string }) => d.room_number));
+
+    const candidates = (room.room_numbers || []).filter(
+      (n: string) => !bookedNumbers.has(n) && !blockedNumbers.has(n) && !alreadyTaken.has(n)
+    );
+
+    let allocated: string[] = [];
+    if (requestedNumber && quantity === 1) {
+      if (!room.room_numbers?.includes(requestedNumber)) {
+        throw new Error(`Nomor kamar ${requestedNumber} tidak ada di tipe ${room.name}`);
+      }
+      if (!candidates.includes(requestedNumber)) {
+        throw new Error(`Kamar ${room.name} #${requestedNumber} tidak tersedia. Tersedia: ${candidates.join(', ') || 'tidak ada'}`);
+      }
+      allocated = [requestedNumber];
+    } else {
+      if (candidates.length < quantity) {
+        throw new Error(`Kamar ${room.name} tersedia ${candidates.length}, kebutuhan ${quantity}`);
+      }
+      allocated = candidates.slice(0, quantity);
+    }
+
+    // Hitung harga per entri (pakai override kalau ada, jika tidak pakai calculateFinalPrice)
+    let entryNightsTotal = 0;
+    let entryOriginalTotal = 0;
+    if (overridePrice) {
+      entryNightsTotal = overridePrice * nights * quantity;
+      entryOriginalTotal = entryNightsTotal;
+    } else {
+      const { totalPrice: tp, originalPrice: op } = calculateFinalPrice(room, checkIn, checkOut, null);
+      entryNightsTotal = tp * quantity;
+      entryOriginalTotal = op * quantity;
+    }
+    grandTotal += entryNightsTotal;
+    originalGrandTotal += entryOriginalTotal;
+
+    resolved.push({
+      room,
+      allocatedNumbers: allocated,
+      pricePerNight: overridePrice ?? Math.round(entryNightsTotal / quantity / nights),
+      nightsTotal: entryNightsTotal,
+    });
+  }
+
+  // Normalisasi payment status (sama dengan single-room)
+  const rawStatus = (args.payment_status as string | undefined)?.toLowerCase() || 'unpaid';
+  const statusMap: Record<string, string> = {
+    paid: 'paid', lunas: 'paid', full: 'paid',
+    down_payment: 'down_payment', dp: 'down_payment', partial: 'down_payment',
+    unpaid: 'unpaid', pending: 'unpaid', pay_at_hotel: 'pay_at_hotel',
+  };
+  let paymentStatus = statusMap[rawStatus] || 'unpaid';
+  let paymentAmount: number | null = null;
+  if (paymentStatus === 'paid') {
+    paymentAmount = grandTotal;
+  } else if (paymentStatus === 'down_payment') {
+    const dp = typeof args.payment_amount === 'number' ? (args.payment_amount as number) : 0;
+    if (dp <= 0) throw new Error('Nominal DP wajib (payment_amount) saat payment_status=down_payment');
+    if (dp >= grandTotal) { paymentStatus = 'paid'; paymentAmount = grandTotal; } else { paymentAmount = dp; }
+  }
+
+  // Booking utama: pakai room_id & allocated_room_number dari entri pertama (untuk kompatibilitas kalender lama)
+  const primary = resolved[0];
+  const { data: booking, error: bookingError } = await supabase
+    .from('bookings')
+    .insert({
+      room_id: primary.room.id,
+      allocated_room_number: primary.allocatedNumbers[0],
+      guest_name: args.guest_name as string,
+      guest_phone: args.guest_phone as string,
+      guest_email: (args.guest_email as string) || `${args.guest_phone}@guest.local`,
+      check_in: args.check_in as string,
+      check_out: args.check_out as string,
+      num_guests: args.num_guests as number,
+      total_nights: nights,
+      total_price: grandTotal,
+      status: 'confirmed',
+      booking_source: 'admin',
+      payment_status: paymentStatus,
+      payment_amount: paymentAmount,
+    })
+    .select('booking_code, id')
+    .single();
+  if (bookingError) throw new Error(`Gagal menyimpan booking: ${bookingError.message}`);
+
+  // Insert booking_rooms (semua entri × quantity)
+  const brRows: Array<Record<string, unknown>> = [];
+  for (const r of resolved) {
+    for (const num of r.allocatedNumbers) {
+      brRows.push({
+        booking_id: booking.id,
+        room_id: r.room.id,
+        room_number: num,
+        price_per_night: r.pricePerNight,
+      });
+    }
+  }
+  const { error: brError } = await supabase.from('booking_rooms').insert(brRows);
+  if (brError) {
+    console.error('❌ booking_rooms insert failed:', brError);
+    // Rollback booking utama
+    await supabase.from('bookings').delete().eq('id', booking.id);
+    throw new Error(`Gagal menyimpan booking_rooms: ${brError.message}`);
+  }
+
+  console.log(`✅ Multi-room booking ${booking.booking_code}: ${brRows.length} kamar, total ${grandTotal}`);
+
+  // Notify managers (non-blocking) — ringkasan multi-room
+  try {
+    const roomsSummary = resolved.map(r => `${r.room.name} (${r.allocatedNumbers.join(',')})`).join(' + ');
+    await supabase.functions.invoke('notify-new-booking', {
+      body: {
+        booking_code: booking.booking_code,
+        guest_name: args.guest_name,
+        guest_phone: args.guest_phone,
+        room_name: roomsSummary,
+        room_number: brRows.map(r => r.room_number).join(','),
+        check_in: args.check_in,
+        check_out: args.check_out,
+        total_nights: nights,
+        num_guests: args.num_guests,
+        total_price: grandTotal,
+        original_price: originalGrandTotal,
+        booking_source: 'admin',
+        promo_applied: null,
+        promo_nights: 0,
+        savings: originalGrandTotal - grandTotal,
+      }
+    });
+  } catch (e) { console.error('notify-new-booking failed:', e); }
+
+  return {
+    success: true,
+    booking_code: booking.booking_code,
+    guest_name: args.guest_name,
+    rooms: resolved.map(r => ({
+      room_name: r.room.name,
+      room_numbers: r.allocatedNumbers,
+      price_per_night: r.pricePerNight,
+      subtotal: r.nightsTotal,
+    })),
+    check_in: formatDateDDMMYYYY(args.check_in as string),
+    check_out: formatDateDDMMYYYY(args.check_out as string),
+    nights,
+    total_price: grandTotal,
+    original_price: originalGrandTotal,
+    payment_status: paymentStatus,
+    payment_amount: paymentAmount,
+    remaining_balance: paymentStatus === 'down_payment' ? grandTotal - (paymentAmount || 0) : 0,
+    is_paid: paymentStatus === 'paid',
+    multi_room: true,
+    total_rooms: brRows.length,
+  };
+}
+
 export async function updateBookingStatus(supabase: SupabaseClient, bookingCode: string, newStatus: string, reason?: string) {
   const { data: booking, error: findError } = await supabase
     .from('bookings')
