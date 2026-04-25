@@ -215,6 +215,15 @@ describe("createAdminBooking — multi-room (1 booking, banyak kamar)", () => {
     expect(result.total_rooms).toBe(2);
     expect(result.total_price).toBe(650000);
     expect(result.booking_code).toBe(booking.booking_code);
+    // Pastikan booking_code yang dikembalikan benar-benar sama dengan yang tersimpan
+    expect(typeof result.booking_code).toBe("string");
+    expect(result.booking_code).toBeTruthy();
+    expect(result.booking_code).toMatch(/^PMH-/);
+    expect(booking.booking_code).toBe(result.booking_code);
+    // Dan hanya ada 1 baris bookings dengan booking_code tsb
+    const matched = state.bookings.filter((b) => b.booking_code === result.booking_code);
+    expect(matched).toHaveLength(1);
+    expect(matched[0].id).toBe(booking.id);
     expect(Array.isArray(result.rooms)).toBe(true);
     expect(result.rooms as unknown[]).toHaveLength(2);
 
@@ -245,6 +254,10 @@ describe("createAdminBooking — multi-room (1 booking, banyak kamar)", () => {
     expect(new Set(numbers).size).toBe(2);
     expect(result.total_price).toBe(250000 * 2);
     expect(result.multi_room).toBe(true);
+    // Verifikasi booking_code konsisten dengan yang tersimpan
+    const stored = state.bookings[0];
+    expect(result.booking_code).toBe(stored.booking_code);
+    expect(state.booking_rooms.every((r) => r.booking_id === stored.id)).toBe(true);
   });
 
   it("menolak jika kamar tipe yang diminta sudah terboking penuh untuk tanggal tsb", async () => {
