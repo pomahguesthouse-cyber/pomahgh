@@ -90,7 +90,18 @@ function calculateFinalPrice(
 
 export async function createAdminBooking(supabase: SupabaseClient, args: Record<string, unknown>) {
   console.log(`📝 createAdminBooking called with args:`, JSON.stringify(args));
-  
+
+  // Detect multi-room mode
+  const rawSelections = Array.isArray(args.room_selections) ? args.room_selections as Array<Record<string, unknown>> : null;
+  if (rawSelections && rawSelections.length > 0) {
+    return await createAdminBookingMultiRoom(supabase, args, rawSelections);
+  }
+
+  // Backward-compat: jika room_name kosong tapi room_selections juga kosong → error eksplisit
+  if (!args.room_name) {
+    throw new Error('Parameter "room_name" wajib (atau gunakan "room_selections" untuk multi-kamar).');
+  }
+
   // Fetch all rooms for smart matching
   const { data: allRooms, error: roomsError } = await supabase
     .from('rooms')
