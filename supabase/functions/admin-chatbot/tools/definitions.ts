@@ -74,23 +74,37 @@ export const TOOLS: ToolDefinition[] = [
     type: "function",
     function: {
       name: "create_admin_booking",
-      description: "Buat booking baru langsung (status confirmed). Nomor kamar opsional - otomatis dialokasikan jika tidak disebutkan.",
+      description: "Buat booking baru langsung (status confirmed). Mendukung MULTI-KAMAR dalam SATU booking via 'room_selections' (gunakan saat 1 tamu pesan ≥2 kamar tipe sama/berbeda untuk tanggal sama). Untuk single-room cukup pakai room_name + room_number. Nomor kamar opsional - otomatis dialokasikan jika tidak disebutkan.",
       parameters: {
         type: "object",
         properties: {
           guest_name: { type: "string", description: "Nama tamu" },
           guest_phone: { type: "string", description: "Nomor HP tamu" },
           guest_email: { type: "string", description: "Email tamu (opsional)" },
-          room_name: { type: "string", description: "Nama tipe kamar (contoh: Deluxe, Superior, Villa)" },
-          room_number: { type: "string", description: "Nomor kamar spesifik (opsional)" },
+          room_name: { type: "string", description: "Nama tipe kamar (contoh: Deluxe, Superior, Villa). WAJIB untuk single-room. JANGAN dipakai bersama room_selections — pilih salah satu." },
+          room_number: { type: "string", description: "Nomor kamar spesifik (opsional, hanya untuk single-room)" },
+          room_selections: {
+            type: "array",
+            description: "Daftar kamar untuk MULTI-ROOM booking (1 tamu, beberapa kamar, tanggal sama). Akan dibuat 1 booking dengan total gabungan + entri di booking_rooms. Contoh: [{room_name:'Family Suite', quantity:1, room_number:'FS222', price_per_night:400000}, {room_name:'Deluxe', quantity:1, price_per_night:250000}]. JANGAN pakai bersama room_name top-level.",
+            items: {
+              type: "object",
+              properties: {
+                room_name: { type: "string", description: "Tipe kamar" },
+                quantity: { type: "number", description: "Jumlah kamar tipe ini (default 1)" },
+                room_number: { type: "string", description: "Nomor kamar spesifik (opsional, hanya jika quantity=1)" },
+                price_per_night: { type: "number", description: "Harga per malam disepakati untuk tipe ini (opsional, override default)" }
+              },
+              required: ["room_name"]
+            }
+          },
           check_in: { type: "string", description: "Tanggal check-in (YYYY-MM-DD)" },
           check_out: { type: "string", description: "Tanggal check-out (YYYY-MM-DD)" },
           num_guests: { type: "number", description: "Jumlah tamu" },
           payment_status: { type: "string", enum: ["unpaid", "paid", "down_payment", "pay_at_hotel"], description: "Status pembayaran. 'paid'=lunas/sudah bayar full, 'down_payment'=DP/baru bayar sebagian, 'unpaid'=belum bayar, 'pay_at_hotel'=bayar di hotel. Default: 'unpaid'" },
           payment_amount: { type: "number", description: "Nominal yang sudah dibayar (rupiah). WAJIB diisi jika payment_status='down_payment' (nominal DP) atau 'paid' (sama dengan total). Kosongkan jika 'unpaid'." },
-          price_per_night: { type: "number", description: "Harga per malam yang disepakati manager (opsional, override harga default kamar)" }
+          price_per_night: { type: "number", description: "Harga per malam yang disepakati manager (opsional, override harga default kamar — hanya untuk single-room. Untuk multi-room pakai price_per_night di tiap entri room_selections)." }
         },
-        required: ["guest_name", "guest_phone", "room_name", "check_in", "check_out", "num_guests"]
+        required: ["guest_name", "guest_phone", "check_in", "check_out", "num_guests"]
       }
     }
   },
