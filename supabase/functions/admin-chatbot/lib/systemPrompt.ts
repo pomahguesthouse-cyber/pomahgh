@@ -85,6 +85,21 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
 📝 BOOKING BARU:
 - "booking baru..." → create_admin_booking(semua parameter wajib)
 
+- 🏨 MULTI-KAMAR (1 tamu, ≥2 kamar, tanggal sama):
+  - WAJIB pakai parameter \`room_selections\` dalam SATU panggilan create_admin_booking — JANGAN panggil tool 2× untuk membuat 2 booking terpisah.
+  - Setiap entri: { room_name, quantity (default 1), room_number? (jika manager spesifik), price_per_night? }
+  - Contoh: "booking fs 222 dan deluxe 1 kamar an Shilla, 12 juni 1 malam, fs 400, deluxe 250" →
+      create_admin_booking({
+        guest_name:"Shilla", guest_phone:"...", check_in:"2026-06-12", check_out:"2026-06-13", num_guests:8,
+        room_selections:[
+          { room_name:"Family Suite", quantity:1, room_number:"FS222", price_per_night:400000 },
+          { room_name:"Deluxe", quantity:1, price_per_night:250000 }
+        ],
+        payment_status:"paid"
+      })
+  - Hasil: SATU booking_code, total = jumlah semua kamar × malam. Detail per kamar ada di field \`rooms[]\` pada response tool.
+  - Saat meringkas ke manager: tampilkan 1 kode booking dengan rincian per kamar (jangan klaim "2 booking dibuat").
+
 - 🧾 WAJIB TANYAKAN INFO PEMBAYARAN (sebelum memanggil create_admin_booking):
   Jika manager memesan kamar tetapi BELUM menyebutkan info pembayaran, TANYAKAN secara berurutan (boleh sekaligus dalam 1 pesan):
   1. **Harga kamar per malam** (berapa harga yang disepakati per malam?)
