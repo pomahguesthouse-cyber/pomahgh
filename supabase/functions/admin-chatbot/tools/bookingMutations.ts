@@ -382,10 +382,13 @@ async function createAdminBookingMultiRoom(
       .from('booking_rooms')
       .select('room_number, bookings!inner(room_id, check_in, check_out, status)')
       .eq('room_id', room.id);
-    for (const br of (conflictsBR || []) as Array<{ room_number: string; bookings: { check_in: string; check_out: string; status: string } }>) {
-      const b = br.bookings;
-      if (b && b.status !== 'cancelled' && b.check_in < (args.check_out as string) && b.check_out > (args.check_in as string)) {
-        bookedNumbers.add(br.room_number);
+    for (const br of (conflictsBR || []) as Array<{ room_number: string; bookings: Array<{ check_in: string; check_out: string; status: string }> | { check_in: string; check_out: string; status: string } | null }>) {
+      const bookingsField = Array.isArray(br.bookings) ? br.bookings : (br.bookings ? [br.bookings] : []);
+      for (const b of bookingsField) {
+        if (b && b.status !== 'cancelled' && b.check_in < (args.check_out as string) && b.check_out > (args.check_in as string)) {
+          bookedNumbers.add(br.room_number);
+          break;
+        }
       }
     }
 
