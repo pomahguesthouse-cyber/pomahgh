@@ -185,7 +185,7 @@ describe("createAdminBooking — multi-room (1 booking, banyak kamar)", () => {
       ],
     };
 
-    const result = await createAdminBooking(supabase, args);
+    const result = await createAdminBooking(supabase, args) as Record<string, unknown>;
 
     // 1 baris bookings
     expect(state.bookings).toHaveLength(1);
@@ -216,7 +216,7 @@ describe("createAdminBooking — multi-room (1 booking, banyak kamar)", () => {
     expect(result.total_price).toBe(650000);
     expect(result.booking_code).toBe(booking.booking_code);
     expect(Array.isArray(result.rooms)).toBe(true);
-    expect(result.rooms).toHaveLength(2);
+    expect(result.rooms as unknown[]).toHaveLength(2);
 
     // Notifikasi manager dipanggil sekali dengan ringkasan multi-room
     expect(state.notifyInvocations).toHaveLength(1);
@@ -235,7 +235,7 @@ describe("createAdminBooking — multi-room (1 booking, banyak kamar)", () => {
       ],
     };
 
-    const result = await createAdminBooking(supabase, args);
+    const result = await createAdminBooking(supabase, args) as Record<string, unknown>;
 
     expect(state.bookings).toHaveLength(1);
     expect(state.booking_rooms).toHaveLength(2);
