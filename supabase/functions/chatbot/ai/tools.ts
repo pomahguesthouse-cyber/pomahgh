@@ -85,6 +85,11 @@ export const tools = [
               },
               required: ["addon_name", "quantity"]
             }
+          },
+          payment_method: {
+            type: "string",
+            enum: ["transfer", "pay_at_hotel"],
+            description: "Metode pembayaran. 'transfer' (default) = transfer bank sebelum check-in. 'pay_at_hotel' = bayar di tempat (tunai/transfer saat check-in di guesthouse). HANYA pakai 'pay_at_hotel' jika tamu eksplisit minta bayar di tempat/cash/di lokasi/di sana."
           }
         },
         required: ["guest_name", "guest_email", "guest_phone", "check_in", "check_out", "num_guests"]
