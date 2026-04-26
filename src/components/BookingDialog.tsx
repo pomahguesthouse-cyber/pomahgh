@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarIcon, Users, AlertCircle, FileText } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CalendarIcon, Users, AlertCircle, FileText, Banknote, Wallet } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { getWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
@@ -77,6 +78,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
   const [agreeToPolicy, setAgreeToPolicy] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState<BookingAddon[]>([]);
   const [extraCapacity, setExtraCapacity] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<"transfer" | "pay_at_hotel">("transfer");
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
@@ -211,6 +213,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
         room_quantity: roomQuantity,
         is_non_refundable: room.is_non_refundable || false,
         addons: selectedAddons.length > 0 ? selectedAddons : undefined,
+        payment_method: paymentMethod,
       };
 
       createBooking(bookingData, {
