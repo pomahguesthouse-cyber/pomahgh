@@ -9,7 +9,7 @@ export async function handleCreateBookingDraft(
   supabase: SupabaseClient,
   params: CreateBookingParams
 ) {
-  const { guest_name, guest_email, guest_phone, room_name, room_selections, num_guests, special_requests, add_ons } = params;
+  const { guest_name, guest_email, guest_phone, room_name, room_selections, num_guests, special_requests, add_ons, payment_method } = params;
   
   if (!guest_phone || !guest_phone.trim()) {
     throw new Error("Nomor telepon wajib diisi untuk membuat booking");
@@ -175,6 +175,8 @@ export async function handleCreateBookingDraft(
 
   const primaryRoom = matchedRooms[0];
 
+  const isPayAtHotel = payment_method === "pay_at_hotel";
+
   if (existingBooking) {
     console.log(`Found existing booking ${existingBooking.id}, updating...`);
     
@@ -189,6 +191,7 @@ export async function handleCreateBookingDraft(
         special_requests: special_requests || null,
         total_nights,
         total_price: totalPrice,
+        payment_status: isPayAtHotel ? 'pay_at_hotel' : 'unpaid',
         updated_at: new Date().toISOString()
       })
       .eq("id", existingBooking.id)
@@ -223,7 +226,7 @@ export async function handleCreateBookingDraft(
         total_nights,
         total_price: totalPrice,
         status: 'pending',
-        payment_status: 'unpaid',
+        payment_status: isPayAtHotel ? 'pay_at_hotel' : 'unpaid',
         booking_source: 'other',
         other_source: 'Chatbot AI'
       })

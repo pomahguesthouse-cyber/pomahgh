@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarIcon, Users, AlertCircle, FileText } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CalendarIcon, Users, AlertCircle, FileText, Banknote, Wallet } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { getWIBToday } from "@/utils/wibTimezone";
 import { id as localeId } from "date-fns/locale";
@@ -77,6 +78,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
   const [agreeToPolicy, setAgreeToPolicy] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState<BookingAddon[]>([]);
   const [extraCapacity, setExtraCapacity] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<"transfer" | "pay_at_hotel">("transfer");
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
@@ -211,6 +213,7 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
         room_quantity: roomQuantity,
         is_non_refundable: room.is_non_refundable || false,
         addons: selectedAddons.length > 0 ? selectedAddons : undefined,
+        payment_method: paymentMethod,
       };
 
       createBooking(bookingData, {
@@ -582,6 +585,54 @@ export const BookingDialog = ({ room, open, onOpenChange, initialRoomQuantity = 
               </div>
             </div>
           )}
+
+          {/* Payment Method Selection */}
+          <div className="space-y-3 border rounded-lg p-4 bg-muted/20">
+            <Label className="text-base font-semibold">Metode Pembayaran</Label>
+            <RadioGroup
+              value={paymentMethod}
+              onValueChange={(v) => setPaymentMethod(v as "transfer" | "pay_at_hotel")}
+              className="space-y-2"
+            >
+              <label
+                htmlFor="pay_transfer"
+                className={cn(
+                  "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors",
+                  paymentMethod === "transfer" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
+                )}
+              >
+                <RadioGroupItem value="transfer" id="pay_transfer" className="mt-1" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 font-medium text-sm">
+                    <Banknote className="w-4 h-4 text-primary" />
+                    Transfer Bank
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Bayar via transfer bank sebelum check-in. Detail rekening akan dikirim setelah konfirmasi.
+                  </p>
+                </div>
+              </label>
+
+              <label
+                htmlFor="pay_at_hotel"
+                className={cn(
+                  "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors",
+                  paymentMethod === "pay_at_hotel" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
+                )}
+              >
+                <RadioGroupItem value="pay_at_hotel" id="pay_at_hotel" className="mt-1" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 font-medium text-sm">
+                    <Wallet className="w-4 h-4 text-primary" />
+                    Bayar di Tempat
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Bayar tunai/transfer saat check-in di guesthouse. Reservasi akan dikonfirmasi admin via WhatsApp terlebih dahulu.
+                  </p>
+                </div>
+              </label>
+            </RadioGroup>
+          </div>
 
           <Button 
             type="submit" 

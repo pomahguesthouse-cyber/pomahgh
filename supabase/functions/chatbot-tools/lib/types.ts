@@ -102,6 +102,8 @@ export interface CreateBookingParams {
   num_guests?: number;
   special_requests?: string;
   add_ons?: AddOnSelection[];
+  /** "transfer" (default) → payment_status='unpaid'; "pay_at_hotel" → payment_status='pay_at_hotel' */
+  payment_method?: "transfer" | "pay_at_hotel";
 }
 
 // Update booking parameters
