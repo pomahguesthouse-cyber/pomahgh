@@ -28,6 +28,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "../BookingConfirmationDialog";
 import { useMemberAuth } from "@/hooks/useMemberAuth";
+import { buildAdminPreview, buildCustomerPreview } from "./bookings/whatsappPreview";
 
 interface CreateBookingDialogProps {
   open: boolean;
@@ -112,6 +113,9 @@ export const CreateBookingDialog = ({
   const [otaName, setOtaName] = useState<string>("");
   const [otherSource, setOtherSource] = useState<string>("");
 
+  // Payment method state — admin can pick "transfer" or "pay_at_hotel"
+  const [paymentMethod, setPaymentMethod] = useState<"transfer" | "pay_at_hotel">("transfer");
+
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
@@ -137,6 +141,8 @@ export const CreateBookingDialog = ({
       setBookingSource("direct");
       setOtaName("");
       setOtherSource("");
+      // Reset payment method
+      setPaymentMethod("transfer");
       // Reset multi-room selection, but pre-select if roomId provided
       if (roomId && roomNumber) {
         const room = rooms.find((r) => r.id === roomId);
@@ -297,9 +303,11 @@ export const CreateBookingDialog = ({
       }
 
       // Manual booking — direct insert via Supabase client (admin RLS policy)
-      const isPaid = false;
-      const bookingStatus = "pending";
       const paymentAmount = Math.round(totalPrice);
+      const isPayAtHotel = paymentMethod === "pay_at_hotel";
+      // Pay-at-hotel selalu pending (perlu konfirmasi WhatsApp manual)
+      const bookingStatus = "pending";
+      const paymentStatusValue = isPayAtHotel ? "pay_at_hotel" : "unpaid";
 
       const { data: booking, error: insertError } = await supabase
         .from("bookings")
@@ -317,7 +325,7 @@ export const CreateBookingDialog = ({
           special_requests: formData.special_requests || null,
           remark: formData.remark || null,
           status: bookingStatus,
-          payment_status: "unpaid",
+          payment_status: paymentStatusValue,
           booking_source: bookingSource,
           ota_name: bookingSource === "ota" ? otaName : null,
           other_source: bookingSource === "other" ? otherSource : null,
