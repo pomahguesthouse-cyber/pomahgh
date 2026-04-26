@@ -26,6 +26,8 @@ export interface BookingData {
   room_quantity?: number;
   is_non_refundable?: boolean;
   addons?: BookingAddon[];
+  /** "transfer" (default) → payment_status='unpaid'; "pay_at_hotel" → payment_status='pay_at_hotel' */
+  payment_method?: "transfer" | "pay_at_hotel";
 }
 
 export const useBooking = () => {
@@ -62,6 +64,8 @@ export const useBooking = () => {
 
       const availableNumbers = availableRooms;
 
+      const isPayAtHotel = bookingData.payment_method === "pay_at_hotel";
+
       // Create main booking with first room number
       const { data, error } = await supabase.from("bookings").insert({
         room_id: bookingData.room_id,
@@ -77,6 +81,7 @@ export const useBooking = () => {
         num_guests: bookingData.num_guests,
         special_requests: bookingData.special_requests,
         status: "pending",
+        payment_status: isPayAtHotel ? "pay_at_hotel" : "unpaid",
         allocated_room_number: availableNumbers[0],
         is_non_refundable: bookingData.is_non_refundable || false,
         booking_source: 'other',
