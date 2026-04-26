@@ -81,6 +81,8 @@ export interface WhatsAppMessagePayload {
   bookingCode: string;
   hotelName?: string;
   status?: string;
+  /** Payment method: "transfer" (default) or "pay_at_hotel" */
+  paymentMethod?: "transfer" | "pay_at_hotel";
 }
 
 // Add-on selection for booking (chatbot side - by name)

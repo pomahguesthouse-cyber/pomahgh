@@ -338,7 +338,8 @@ export async function handleCreateBookingDraft(
     numGuests: num_guests || 1,
     totalNights: total_nights,
     totalPrice,
-    bookingCode: booking.booking_code as string
+    bookingCode: booking.booking_code as string,
+    paymentMethod: isPayAtHotel ? 'pay_at_hotel' : 'transfer'
   }, isUpdate ? 'reschedule' : 'new');
 
   // Also notify ALL managers via notify-new-booking edge function
@@ -373,9 +374,12 @@ export async function handleCreateBookingDraft(
     .order("display_order")
     .limit(3);
 
-  const bankInfo = (bankAccountsData && bankAccountsData.length > 0)
-    ? `Silakan transfer ke:\n${bankAccountsData.map(b => `🏦 ${b.bank_name}\n💳 No. Rek: ${b.account_number}\n👤 a.n. ${b.account_holder_name}`).join('\n\n')}\n\nSetelah transfer, kirimkan bukti pembayaran kepada kami.`
-    : `Silakan hubungi kami untuk informasi pembayaran.`;
+  // Pay-at-hotel skips bank account info entirely
+  const bankInfo = isPayAtHotel
+    ? `💵 *Pembayaran: BAYAR DI TEMPAT*\nPembayaran dilakukan saat check-in di guesthouse (cash/transfer).\nTim kami akan konfirmasi reservasi Anda via WhatsApp sebelum tanggal check-in 🙏`
+    : (bankAccountsData && bankAccountsData.length > 0)
+      ? `Silakan transfer ke:\n${bankAccountsData.map(b => `🏦 ${b.bank_name}\n💳 No. Rek: ${b.account_number}\n👤 a.n. ${b.account_holder_name}`).join('\n\n')}\n\nSetelah transfer, kirimkan bukti pembayaran kepada kami.`
+      : `Silakan hubungi kami untuk informasi pembayaran.`;
 
   // Build hotel policies section
   let policiesInfo = '';
