@@ -1,12 +1,19 @@
-- [x] Baca dan pahami alur booking dari dokumen dan kode utama
-- [x] Jalankan aplikasi lokal
-- [x] Simulasikan proses booking end-to-end (berbasis kode + checklist manual)
-- [ ] Dokumentasikan hasil simulasi dan temuan error
+# TODO — Post Code Review
 
-## SEO Audit Tasks
-- [x] Kumpulkan data SEO dari file inti (GlobalSEO, Index, robots, sitemap)
-- [x] Perbaiki canonical & metadata global di `src/components/GlobalSEO.tsx`
-- [x] Tambah metadata halaman utama di `src/pages/Index.tsx`
-- [x] Sinkronkan `public/robots.txt` dengan sitemap domain utama
-- [x] Rapikan `public/sitemap.xml` untuk halaman publik yang indexable
-- [x] Verifikasi konsistensi canonical/robots/sitemap dengan pencarian cepat
+## P1 (Next Week)
+- [ ] Dynamic WA number from hotel_settings
+- [ ] Fix useAuth race condition
+- [ ] Show WA button on mobile
+
+## P2 (Next Month)
+- [ ] Unit tests: useBooking, useRoomAvailability
+- [ ] Restructure hooks/ → subfolders
+- [ ] Normalize DB: split hotel_settings, room_pricing_rules
+- [ ] Move rollup to devDeps
+
+## P3 (Later)
+- [ ] E2E tests (Playwright)
+- [ ] SEO structured data (JSON-LD)
+- [ ] Image WebP optimization
+
+**Merge PR #2 first** for P0 fixes!
