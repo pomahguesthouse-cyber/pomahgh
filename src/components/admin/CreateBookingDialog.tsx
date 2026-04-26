@@ -28,6 +28,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "../BookingConfirmationDialog";
 import { useMemberAuth } from "@/hooks/useMemberAuth";
+import { buildAdminPreview, buildCustomerPreview } from "./bookings/whatsappPreview";
 
 interface CreateBookingDialogProps {
   open: boolean;
@@ -112,6 +113,9 @@ export const CreateBookingDialog = ({
   const [otaName, setOtaName] = useState<string>("");
   const [otherSource, setOtherSource] = useState<string>("");
 
+  // Payment method state — admin can pick "transfer" or "pay_at_hotel"
+  const [paymentMethod, setPaymentMethod] = useState<"transfer" | "pay_at_hotel">("transfer");
+
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
@@ -137,6 +141,8 @@ export const CreateBookingDialog = ({
       setBookingSource("direct");
       setOtaName("");
       setOtherSource("");
+      // Reset payment method
+      setPaymentMethod("transfer");
       // Reset multi-room selection, but pre-select if roomId provided
       if (roomId && roomNumber) {
         const room = rooms.find((r) => r.id === roomId);
@@ -297,9 +303,11 @@ export const CreateBookingDialog = ({
       }
 
       // Manual booking — direct insert via Supabase client (admin RLS policy)
-      const isPaid = false;
-      const bookingStatus = "pending";
       const paymentAmount = Math.round(totalPrice);
+      const isPayAtHotel = paymentMethod === "pay_at_hotel";
+      // Pay-at-hotel selalu pending (perlu konfirmasi WhatsApp manual)
+      const bookingStatus = "pending";
+      const paymentStatusValue = isPayAtHotel ? "pay_at_hotel" : "unpaid";
 
       const { data: booking, error: insertError } = await supabase
         .from("bookings")
@@ -317,7 +325,7 @@ export const CreateBookingDialog = ({
           special_requests: formData.special_requests || null,
           remark: formData.remark || null,
           status: bookingStatus,
-          payment_status: "unpaid",
+          payment_status: paymentStatusValue,
           booking_source: bookingSource,
           ota_name: bookingSource === "ota" ? otaName : null,
           other_source: bookingSource === "other" ? otherSource : null,
@@ -756,6 +764,98 @@ export const CreateBookingDialog = ({
                 </div>
               )}
             </div>
+
+            {/* Payment Method Section */}
+            <div className="space-y-3 border-t pt-4 mt-4">
+              <div>
+                <Label className="text-base font-semibold">Metode Pembayaran</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Pilih bagaimana tamu akan membayar reservasi ini
+                </p>
+              </div>
+              <RadioGroup
+                value={paymentMethod}
+                onValueChange={(v: "transfer" | "pay_at_hotel") => setPaymentMethod(v)}
+                className="grid grid-cols-2 gap-3"
+              >
+                <div>
+                  <RadioGroupItem value="transfer" id="pm-transfer" className="peer sr-only" />
+                  <Label
+                    htmlFor="pm-transfer"
+                    className="flex flex-col items-start justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium">💳 Transfer Bank</span>
+                    <span className="text-xs text-muted-foreground mt-1">
+                      Tamu transfer sebelum check-in
+                    </span>
+                  </Label>
+                </div>
+                <div>
+                  <RadioGroupItem value="pay_at_hotel" id="pm-pay-at-hotel" className="peer sr-only" />
+                  <Label
+                    htmlFor="pm-pay-at-hotel"
+                    className="flex flex-col items-start justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium">💵 Bayar di Tempat</span>
+                    <span className="text-xs text-muted-foreground mt-1">
+                      Cash/transfer saat check-in
+                    </span>
+                  </Label>
+                </div>
+              </RadioGroup>
+              {paymentMethod === "pay_at_hotel" && (
+                <div className="text-xs rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-2 text-amber-800 dark:text-amber-200">
+                  ⚠️ Booking pay-at-hotel akan tetap berstatus <b>pending</b> sampai dikonfirmasi via WhatsApp.
+                </div>
+              )}
+            </div>
+
+            {/* WhatsApp Preview */}
+            {checkIn && checkOut && selectedRooms.length > 0 && (
+              <div className="border-t pt-4 mt-4 space-y-3">
+                <Label className="text-base font-semibold">Preview Pesan WhatsApp</Label>
+                <p className="text-xs text-muted-foreground -mt-1">
+                  Pesan akan dikirim otomatis setelah booking dibuat (mengikuti metode pembayaran).
+                </p>
+                <div>
+                  <p className="text-xs font-medium mb-1">Untuk Admin:</p>
+                  <pre className="text-xs whitespace-pre-wrap font-mono bg-muted/50 rounded-md p-3 border">
+{buildAdminPreview({
+  guestName: formData.guest_name,
+  guestEmail: formData.guest_email,
+  guestPhone: formData.guest_phone,
+  roomsText: selectedRooms.map((r) => `${r.roomName} #${r.roomNumber}`).join(", "),
+  totalRooms: selectedRooms.length,
+  checkIn,
+  checkOut,
+  numGuests: formData.num_guests,
+  totalNights,
+  totalPrice: effectiveTotalPrice,
+  paymentMethod,
+})}
+                  </pre>
+                </div>
+                <div>
+                  <p className="text-xs font-medium mb-1">Untuk Tamu:</p>
+                  <pre className="text-xs whitespace-pre-wrap font-mono bg-muted/50 rounded-md p-3 border">
+{buildCustomerPreview({
+  guestName: formData.guest_name,
+  guestEmail: formData.guest_email,
+  guestPhone: formData.guest_phone,
+  roomsText: selectedRooms.map((r) => `${r.roomName} #${r.roomNumber}`).join(", "),
+  totalRooms: selectedRooms.length,
+  checkIn,
+  checkOut,
+  numGuests: formData.num_guests,
+  totalNights,
+  totalPrice: effectiveTotalPrice,
+  hotelName: settings?.hotel_name,
+  paymentMethod,
+})}
+                  </pre>
+                </div>
+              </div>
+            )}
 
             {/* Custom Pricing Section */}
             <div className="border-t pt-4 mt-4">
