@@ -124,15 +124,15 @@ export async function handleCreateBookingDraft(
           r => r.roomName.toLowerCase() === sel.room_name!.toLowerCase()
         );
         if (targetRoom) {
-          addon = (availableAddons || []).find(
+          addon = ((availableAddons || []).find(
             a => a.room_id === targetRoom.roomId && a.name.toLowerCase().includes(lowerName)
-          ) as typeof addon || null;
+          ) as typeof addon | undefined) ?? null;
         }
       }
       if (!addon) {
-        addon = (availableAddons || []).find(
+        addon = ((availableAddons || []).find(
           a => a.name.toLowerCase().includes(lowerName)
-        ) as typeof addon || null;
+        ) as typeof addon | undefined) ?? null;
       }
 
       if (!addon) {

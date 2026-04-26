@@ -102,7 +102,10 @@ serve(async (req) => {
   }
 });
 
-async function processOccupancyEvent(supabase: ReturnType<typeof createClient>, event: Record<string, unknown>) {
+// deno-lint-ignore no-explicit-any
+type SupaClient = any;
+
+async function processOccupancyEvent(supabase: SupaClient, event: Record<string, unknown>) {
   const today = new Date().toISOString().split('T')[0];
   const roomId = event.room_id as string;
 
@@ -190,7 +193,7 @@ async function processOccupancyEvent(supabase: ReturnType<typeof createClient>, 
   return { priceUpdated: true, approvalCreated: false };
 }
 
-async function sendWhatsAppNotification(supabase: ReturnType<typeof createClient>, room: Record<string, unknown>, oldPrice: number, newPrice: number, occupancy: Record<string, unknown>) {
+async function sendWhatsAppNotification(supabase: SupaClient, room: Record<string, unknown>, oldPrice: number, newPrice: number, occupancy: Record<string, unknown>) {
   try {
     const { data: settings } = await supabase.from('hotel_settings').select('whatsapp_number, hotel_name').single();
     if (!settings?.whatsapp_number) return;

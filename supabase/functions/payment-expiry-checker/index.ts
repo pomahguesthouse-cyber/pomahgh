@@ -103,7 +103,7 @@ serve(async (req) => {
       } catch (err) {
         log('error', 'Failed to release booking', { 
           bookingId: payment.booking_id,
-          error: err.message
+          error: err instanceof Error ? err.message : String(err)
         });
       }
     }
@@ -122,9 +122,10 @@ serve(async (req) => {
       { headers: corsHeaders }
     );
   } catch (error) {
-    log('error', 'Error in expiry checker', { error: error.message });
+    const msg = error instanceof Error ? error.message : String(error);
+    log('error', 'Error in expiry checker', { error: msg });
     return new Response(
-      JSON.stringify({ error: "Internal server error", detail: error.message }),
+      JSON.stringify({ error: "Internal server error", detail: msg }),
       { status: 500, headers: corsHeaders }
     );
   }
