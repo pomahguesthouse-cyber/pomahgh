@@ -175,6 +175,8 @@ export async function handleCreateBookingDraft(
 
   const primaryRoom = matchedRooms[0];
 
+  const isPayAtHotel = payment_method === "pay_at_hotel";
+
   if (existingBooking) {
     console.log(`Found existing booking ${existingBooking.id}, updating...`);
     
@@ -189,6 +191,7 @@ export async function handleCreateBookingDraft(
         special_requests: special_requests || null,
         total_nights,
         total_price: totalPrice,
+        payment_status: isPayAtHotel ? 'pay_at_hotel' : 'unpaid',
         updated_at: new Date().toISOString()
       })
       .eq("id", existingBooking.id)
@@ -205,8 +208,6 @@ export async function handleCreateBookingDraft(
 
     await supabase.from("booking_rooms").delete().eq("booking_id", booking.id);
     await supabase.from("booking_addons").delete().eq("booking_id", booking.id);
-  const isPayAtHotel = payment_method === "pay_at_hotel";
-
   } else {
     console.log("No existing booking found, creating new...");
     
