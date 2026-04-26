@@ -132,7 +132,7 @@ export async function orchestrate(
     'is_takeover, takeover_at, session_type, awaiting_name, guest_name, ' +
     'pending_messages, pending_since';
 
-  const [hotelSettings, { data: chatbotSettingsRow }, { data: session }, { data: agentConfigs }, { data: escalationRules }] = await Promise.all([
+  const [hotelSettings, { data: chatbotSettingsRow }, { data: sessionRaw }, { data: agentConfigs }, { data: escalationRules }] = await Promise.all([
     getCachedHotelSettings(supabase),
     supabase.from('chatbot_settings').select('persona_name, greeting_message').single(),
     supabase
@@ -145,6 +145,8 @@ export async function orchestrate(
     supabase.from('agent_configs').select('agent_id, is_active, system_prompt, temperature, escalation_target, auto_escalate'),
     supabase.from('escalation_rules').select('from_agent, to_agent, condition_text, priority, is_active').eq('is_active', true).order('priority', { ascending: true }),
   ]);
+
+  const session = sessionRaw as unknown as WhatsAppSession | null;
 
   setAgentConfigs(
     (agentConfigs || []) as AgentConfigRecord[],
@@ -160,7 +162,7 @@ export async function orchestrate(
   const historyWindowMessages = hotelSettings?.whatsapp_history_window_messages ?? 40;
 
   // ── 4. PRE-ROUTING GUARDS ──
-  if ((session as WhatsAppSession)?.is_blocked) {
+  if (session?.is_blocked) {
     return new Response(JSON.stringify({ status: 'blocked' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -250,7 +252,7 @@ export async function orchestrate(
   }
 
   // 5c. TAKEOVER MODE → skip AI
-  if ((session as WhatsAppSession)?.is_takeover) {
+  if (session?.is_takeover) {
     const convId = await ensureConversation(supabase, session, phone);
     await logMessage(supabase, convId, 'user', rawMessage);
     console.log(`⛔ Takeover active for ${phone} - AI skipped`);

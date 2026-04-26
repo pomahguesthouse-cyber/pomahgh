@@ -360,13 +360,11 @@ function buildInvoicePdf(args: {
       doc.text(`DP dibayar: ${formatRupiah(paidAmount)}  •  Sisa: ${formatRupiah(remainingBalance)}`, pageWidth / 2, y, { align: 'center' });
       y += 16;
     }
-    // @ts-expect-error -- ensure lastAutoTable equivalent
-    doc.lastAutoTable = { finalY: y };
+    (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable = { finalY: y };
   }
 
   // After table position
-  // @ts-expect-error -- autoTable adds lastAutoTable to doc
-  y = (doc.lastAutoTable?.finalY ?? y + 100) + 20;
+  y = ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y + 100) + 20;
 
   // === PAID STAMP ===
   if (showPaidStamp) {
@@ -706,7 +704,7 @@ serve(async (req) => {
           formData.append("target", phoneRecipient);
           formData.append("message", message);
           formData.append("countryCode", "62");
-          const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+          const pdfBlob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
           formData.append("file", pdfBlob, `Invoice-${booking.booking_code}.pdf`);
 
           const fonnteResp = await fetch("https://api.fonnte.com/send", {
