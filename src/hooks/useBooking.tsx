@@ -90,6 +90,19 @@ export const useBooking = () => {
 
       if (error) throw error;
 
+      // Helper to rollback main booking if child inserts fail
+      const rollbackBooking = async (reason: string, originalError: unknown) => {
+        console.error(`Rolling back booking ${data.id}: ${reason}`, originalError);
+        const { error: deleteError } = await supabase
+          .from("bookings")
+          .delete()
+          .eq("id", data.id);
+        if (deleteError) {
+          // Critical: booking stuck in inconsistent state — alert monitoring
+          console.error("CRITICAL: Failed to rollback booking", data.id, deleteError);
+        }
+      };
+
       // Insert multiple entries into booking_rooms table
       if (roomQuantity > 0) {
         const bookingRoomsData = availableNumbers.slice(0, roomQuantity).map(roomNumber => ({
@@ -104,7 +117,8 @@ export const useBooking = () => {
           .insert(bookingRoomsData);
 
         if (bookingRoomsError) {
-          console.error("Failed to insert booking_rooms:", bookingRoomsError);
+          await rollbackBooking("booking_rooms insert failed", bookingRoomsError);
+          throw new Error("Gagal mengalokasikan kamar. Silakan coba lagi.");
         }
       }
 
@@ -123,7 +137,11 @@ export const useBooking = () => {
           .insert(bookingAddonsData);
 
         if (addonsError) {
-          console.error("Failed to insert booking_addons:", addonsError);
+          // Also rollback booking_rooms children — CASCADE should handle if FK is set,
+          // but delete explicitly to be safe.
+          await supabase.from("booking_rooms").delete().eq("booking_id", data.id);
+          await rollbackBooking("booking_addons insert failed", addonsError);
+          throw new Error("Gagal menambahkan addon. Silakan coba lagi.");
         }
       }
 
