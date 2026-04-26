@@ -1,0 +1,5 @@
+feat(ui): badge "Pending Konfirmasi" untuk payment_status pay_at_hotel
+
+- Update PAYMENT_STATUS_LABELS.pay_at_hotel → "Pending Konfirmasi"
+- Semua admin booking table/calendar badge otomatis update
+- Centralized change di booking.constants.ts
