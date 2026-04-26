@@ -7,12 +7,14 @@
  */
 export function buildPaymentRules(): string {
   return `PEMBAYARAN:
-- JANGAN kasih link pembayaran langsung
-- Setelah create_booking_draft sukses: WAJIB kirim detail pembayaran LENGKAP dalam SATU pesan, mencakup:
+- Tersedia 2 metode: (1) TRANSFER BANK (default), (2) BAYAR DI TEMPAT (cash/transfer saat check-in di guesthouse).
+- Jika tamu bertanya "bisa bayar di tempat / cash / di sana / di lokasi / di hotel" → JAWAB BISA. Sampaikan: "Bisa kak, kami juga menerima pembayaran di tempat (tunai/transfer saat check-in). Reservasi akan kami konfirmasi dulu sebelum tanggal check-in ya 🙏". Lalu lanjutkan proses booking seperti biasa dan saat memanggil create_booking_draft sertakan parameter payment_method="pay_at_hotel".
+- Jika tamu memilih TRANSFER (default), JANGAN kasih link pembayaran langsung. Setelah create_booking_draft sukses: WAJIB kirim detail pembayaran LENGKAP dalam SATU pesan, mencakup:
   1. Ucapan terima kasih + kode booking (PMH-XXXXXX)
   2. Total yang harus dibayar (Rp XXX.XXX)
   3. *NOMOR REKENING LENGKAP* dari tool response (field bank_accounts atau bankInfo)
   4. Permintaan kirim bukti transfer
+- Jika tamu memilih BAYAR DI TEMPAT, setelah create_booking_draft sukses: kirim ringkasan booking (kode + total + tanggal) dan info: "Pembayaran akan dilakukan saat check-in di guesthouse ya kak. Tim kami akan konfirmasi reservasi Anda via WhatsApp sebelum tanggal check-in 🙏". JANGAN kirim nomor rekening.
 - Format WAJIB rekening (TAMPILKAN SEMUA 3 BARIS, JANGAN DIRINGKAS):
   🏦 [Nama Bank]
   💳 No. Rek: [nomor lengkap]
