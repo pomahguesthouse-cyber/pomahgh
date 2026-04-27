@@ -5,6 +5,7 @@
  */
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { formatRupiahID } from "@/utils/indonesianFormat";
 
 export type PreviewPaymentMethod = "transfer" | "pay_at_hotel";
 
@@ -26,6 +27,10 @@ export interface PreviewPayload {
 
 const fmt = (d: Date) => format(d, "EEEE, dd/MM/yyyy", { locale: localeId });
 
+// Null-safe price formatter — gunakan utilitas global agar konsisten dan
+// tidak crash saat totalPrice undefined/null (lihat memory null-safe-indonesian-formatting).
+const priceText = (p: number | null | undefined): string => formatRupiahID(p);
+
 export function buildAdminPreview(p: PreviewPayload): string {
   const isPay = p.paymentMethod === "pay_at_hotel";
   const paymentLine = isPay
@@ -43,7 +48,7 @@ Check-in: ${fmt(p.checkIn)}
 Check-out: ${fmt(p.checkOut)}
 Tamu: ${p.numGuests}
 Total Malam: ${p.totalNights}
-💰 Total: Rp ${p.totalPrice.toLocaleString("id-ID")}
+💰 Total: ${priceText(p.totalPrice)}
 ${paymentLine}
 
 Kode Booking: ${code}`;
@@ -69,7 +74,7 @@ Booking Anda telah kami terima:
 📅 Check-in: ${fmt(p.checkIn)}
 📅 Check-out: ${fmt(p.checkOut)}
 👥 Tamu: ${p.numGuests}
-💰 Total: Rp ${p.totalPrice.toLocaleString("id-ID")}
+💰 Total: ${priceText(p.totalPrice)}
 💵 Pembayaran: BAYAR DI TEMPAT (cash/transfer saat check-in)
 
 📝 Kode Booking: ${code}
@@ -87,7 +92,7 @@ Booking Anda telah kami terima:
 📅 Check-in: ${fmt(p.checkIn)}
 📅 Check-out: ${fmt(p.checkOut)}
 👥 Tamu: ${p.numGuests}
-💰 Total: Rp ${p.totalPrice.toLocaleString("id-ID")}
+💰 Total: ${priceText(p.totalPrice)}
 
 📝 Kode Booking: ${code}
 ⏳ Status: Menunggu konfirmasi

@@ -150,7 +150,7 @@ export async function sendWhatsApp(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    await fetch(`${supabaseUrl}/functions/v1/send-whatsapp`, {
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-whatsapp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -161,6 +161,14 @@ export async function sendWhatsApp(
     });
 
     clearTimeout(timeout);
+
+    if (!response.ok) {
+      const bodyText = await response.text().catch(() => "<no body>");
+      console.error(
+        `❌ WhatsApp send failed for ${type} (${phone}): ${response.status} ${response.statusText} — ${bodyText}`
+      );
+      return;
+    }
     console.log(`✅ WhatsApp sent to ${type}: ${phone}`);
   } catch (err) {
     const errMsg = (err as Error).name === 'AbortError' ? 'WhatsApp send timeout (10s)' : (err as Error).message;

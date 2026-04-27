@@ -38,7 +38,7 @@ export const STATUS_BADGE_COLORS: Record<BookingStatus, string> = {
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   paid: "Lunas",
   unpaid: "Belum Bayar",
-  pay_at_hotel: "Pending Konfirmasi",
+  pay_at_hotel: "Bayar di Tempat",
   partial: "DP/Sebagian",
 };
 
