@@ -43,6 +43,7 @@ import {
   Calendar,
   Package,
   AlertTriangle,
+  Send,
 } from "lucide-react";
 
 import { Booking, BankAccount, Room } from "./types";
@@ -56,6 +57,11 @@ import {
 import { getSourceLabel, formatNumberID } from "./booking.utils";
 import { formatRupiahID, formatTimeID } from "@/utils/indonesianFormat";
 import { PaymentInfo } from "./PaymentInfo";
+import { buildAdminPreview, buildCustomerPreview, type PreviewPaymentMethod } from "./whatsappPreview";
+import { supabase } from "@/integrations/supabase/client";
+import { useHotelSettings } from "@/hooks/useHotelSettings";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface BookingAccordionItemProps {
   booking: Booking;
@@ -88,6 +94,8 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
 }: BookingAccordionItemProps) {
   const checkInDate = parseISO(booking.check_in);
   const checkOutDate = parseISO(booking.check_out);
+  const { settings } = useHotelSettings();
+  const [resending, setResending] = useState(false);
 
   // Get room numbers from booking_rooms
   const allocatedRooms =
@@ -143,6 +151,80 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
   }, [booking.booking_rooms, booking.total_price, booking.total_nights]);
 
   const paymentStatus = (booking.payment_status || "unpaid") as PaymentStatus;
+
+  const paymentMethod: PreviewPaymentMethod =
+    paymentStatus === "pay_at_hotel" ? "pay_at_hotel" : "transfer";
+
+  const buildPreviewPayload = () => ({
+    guestName: booking.guest_name,
+    guestEmail: booking.guest_email,
+    guestPhone: booking.guest_phone,
+    roomsText: roomTypes,
+    totalRooms: booking.booking_rooms?.length ?? 1,
+    checkIn: checkInDate,
+    checkOut: checkOutDate,
+    numGuests: booking.num_guests,
+    totalNights: booking.total_nights,
+    totalPrice: booking.total_price,
+    bookingCode: booking.booking_code,
+    hotelName: settings?.hotel_name,
+    paymentMethod,
+  });
+
+  const handleResendWhatsApp = async (target: "guest" | "admin") => {
+    try {
+      setResending(true);
+      const payload = buildPreviewPayload();
+
+      if (target === "guest") {
+        const phone = booking.guest_phone?.trim();
+        if (!phone) {
+          toast.error("Nomor WhatsApp tamu tidak tersedia");
+          return;
+        }
+        const { error } = await supabase.functions.invoke("send-whatsapp", {
+          body: {
+            phone,
+            message: buildCustomerPreview(payload),
+            type: "booking_resend_guest",
+          },
+        });
+        if (error) throw error;
+        toast.success("Pesan WhatsApp dikirim ulang ke tamu");
+        return;
+      }
+
+      const managers = settings?.whatsapp_manager_numbers ?? [];
+      const targets = managers
+        .map((m) => m.phone?.trim())
+        .filter((p): p is string => !!p);
+      if (targets.length === 0) {
+        toast.error("Nomor WhatsApp admin belum dikonfigurasi");
+        return;
+      }
+      const adminMessage = buildAdminPreview(payload);
+      const results = await Promise.all(
+        targets.map((phone) =>
+          supabase.functions.invoke("send-whatsapp", {
+            body: { phone, message: adminMessage, type: "booking_resend_admin" },
+          })
+        )
+      );
+      const failed = results.filter((r) => r.error).length;
+      if (failed > 0) {
+        toast.error(`Gagal mengirim ke ${failed}/${targets.length} admin`);
+      } else {
+        toast.success(`Pesan dikirim ulang ke ${targets.length} admin`);
+      }
+    } catch (err) {
+      console.error("Resend WhatsApp error:", err);
+      toast.error(
+        err instanceof Error ? err.message : "Gagal mengirim WhatsApp"
+      );
+    } finally {
+      setResending(false);
+    }
+  };
 
   return (
     <AccordionItem value={booking.id} className="border-0">
@@ -470,6 +552,30 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
               <Edit className="mr-1 h-4 w-4" />
               Edit
             </Button>
+
+            {/* Resend WhatsApp */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-emerald-600 border-emerald-600 hover:bg-emerald-50"
+                  disabled={resending}
+                >
+                  <Send className="mr-1 h-4 w-4" />
+                  Kirim WhatsApp Ulang
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleResendWhatsApp("guest")}>
+                  Ke Tamu ({paymentMethod === "pay_at_hotel" ? "Bayar di Tempat" : "Transfer"})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleResendWhatsApp("admin")}>
+                  Ke Admin/Manager
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Delete Button */}
             <AlertDialog>
