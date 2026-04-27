@@ -568,10 +568,16 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleResendWhatsApp("guest")}>
+                <DropdownMenuItem
+                  disabled={resending}
+                  onClick={() => handleResendWhatsApp("guest")}
+                >
                   Ke Tamu ({paymentMethod === "pay_at_hotel" ? "Bayar di Tempat" : "Transfer"})
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleResendWhatsApp("admin")}>
+                <DropdownMenuItem
+                  disabled={resending}
+                  onClick={() => handleResendWhatsApp("admin")}
+                >
                   Ke Admin/Manager
                 </DropdownMenuItem>
               </DropdownMenuContent>
