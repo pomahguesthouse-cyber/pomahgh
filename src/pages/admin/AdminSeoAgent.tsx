@@ -161,7 +161,7 @@ const SettingsTab = () => {
   );
 };
 
-const KeywordsTab = () => {
+const KeywordsTab = ({ onGenerated }: { onGenerated?: () => void }) => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { data: keywords, isLoading, refetch, updateStatus, remove, editKeyword } = useSeoKeywords(statusFilter);
   const [seed, setSeed] = useState("");
@@ -321,6 +321,7 @@ const KeywordsTab = () => {
                                 await invokeSeoAgent("seo-agent-generate", { keyword_id: kw.id });
                                 toast.success("Generate dimulai");
                                 refetch();
+                                onGenerated?.();
                               } catch (e) {
                                 toast.error((e as Error).message);
                               }
