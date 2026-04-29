@@ -9,7 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Sparkles, Search, FileText, RefreshCw, Trash2, CheckCircle2, XCircle, Eye, Play, Wand2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Loader2, Sparkles, Search, FileText, RefreshCw, Trash2, CheckCircle2, XCircle, Eye, Play, Wand2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -19,6 +20,7 @@ import {
   useSeoDrafts,
   invokeSeoAgent,
   type SeoAgentSettings,
+  type SeoKeyword,
 } from "@/hooks/useSeoAgent";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -158,10 +160,39 @@ const SettingsTab = () => {
 
 const KeywordsTab = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const { data: keywords, isLoading, refetch, updateStatus, remove } = useSeoKeywords(statusFilter);
+  const { data: keywords, isLoading, refetch, updateStatus, remove, editKeyword } = useSeoKeywords(statusFilter);
   const [seed, setSeed] = useState("");
   const [manual, setManual] = useState("");
   const [busy, setBusy] = useState<"discover" | "classify" | null>(null);
+  const [editing, setEditing] = useState<SeoKeyword | null>(null);
+  const [editForm, setEditForm] = useState<{ keyword: string; intent_category: string; intent_score: string; rejection_reason: string }>({
+    keyword: "",
+    intent_category: "",
+    intent_score: "",
+    rejection_reason: "",
+  });
+
+  const openEdit = (kw: SeoKeyword) => {
+    setEditing(kw);
+    setEditForm({
+      keyword: kw.keyword,
+      intent_category: kw.intent_category ?? "",
+      intent_score: kw.intent_score?.toString() ?? "",
+      rejection_reason: kw.rejection_reason ?? "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    const patch: Partial<SeoKeyword> = {
+      keyword: editForm.keyword.trim(),
+      intent_category: editForm.intent_category.trim() || null,
+      intent_score: editForm.intent_score ? parseFloat(editForm.intent_score) : null,
+      rejection_reason: editForm.rejection_reason.trim() || null,
+    };
+    await editKeyword.mutateAsync({ id: editing.id, patch });
+    setEditing(null);
+  };
 
   const discover = async () => {
     setBusy("discover");
@@ -258,6 +289,7 @@ const KeywordsTab = () => {
                     <TableHead>Source</TableHead>
                     <TableHead>Intent</TableHead>
                     <TableHead>Score</TableHead>
+                    <TableHead className="max-w-[260px]">Reasoning</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
@@ -269,6 +301,11 @@ const KeywordsTab = () => {
                       <TableCell><span className="text-xs text-muted-foreground">{kw.source}</span></TableCell>
                       <TableCell>{kw.intent_category ?? "—"}</TableCell>
                       <TableCell>{kw.intent_score?.toFixed(2) ?? "—"}</TableCell>
+                      <TableCell className="max-w-[260px]">
+                        <p className="text-xs text-muted-foreground line-clamp-2" title={kw.intent_reasoning ?? kw.rejection_reason ?? ""}>
+                          {kw.intent_reasoning ?? kw.rejection_reason ?? "—"}
+                        </p>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={STATUS_COLORS[kw.status] ?? ""}>{kw.status}</Badge>
                       </TableCell>
@@ -289,16 +326,19 @@ const KeywordsTab = () => {
                             <Sparkles className="h-3.5 w-3.5 mr-1" /> Generate
                           </Button>
                         )}
-                        {kw.status === "new" && (
-                          <>
-                            <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: kw.id, status: "qualified" })}>
-                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Qualify
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => updateStatus.mutate({ id: kw.id, status: "rejected" })}>
-                              <XCircle className="h-3.5 w-3.5" />
-                            </Button>
-                          </>
+                        {(kw.status === "new" || kw.status === "rejected") && (
+                          <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: kw.id, status: "qualified" })} title="Approve">
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve
+                          </Button>
                         )}
+                        {(kw.status === "new" || kw.status === "qualified") && (
+                          <Button size="sm" variant="ghost" onClick={() => updateStatus.mutate({ id: kw.id, status: "rejected" })} title="Reject">
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" onClick={() => openEdit(kw)} title="Edit">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
                         <Button size="sm" variant="ghost" onClick={() => remove.mutate(kw.id)}>
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
@@ -306,7 +346,7 @@ const KeywordsTab = () => {
                     </TableRow>
                   ))}
                   {keywords?.length === 0 && (
-                    <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Belum ada keyword.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Belum ada keyword.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -314,6 +354,55 @@ const KeywordsTab = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Keyword</DialogTitle>
+            <DialogDescription>Sesuaikan teks keyword, intent, atau alasan sebelum diproses agent.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Keyword</Label>
+              <Input value={editForm.keyword} onChange={(e) => setEditForm((f) => ({ ...f, keyword: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Intent Category</Label>
+                <Input
+                  value={editForm.intent_category}
+                  onChange={(e) => setEditForm((f) => ({ ...f, intent_category: e.target.value }))}
+                  placeholder="accommodation"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Intent Score (0–1)</Label>
+                <Input
+                  type="number" step="0.05" min={0} max={1}
+                  value={editForm.intent_score}
+                  onChange={(e) => setEditForm((f) => ({ ...f, intent_score: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Catatan / Reasoning</Label>
+              <Textarea
+                rows={3}
+                value={editForm.rejection_reason}
+                onChange={(e) => setEditForm((f) => ({ ...f, rejection_reason: e.target.value }))}
+                placeholder="Opsional: alasan reject atau catatan reviewer"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditing(null)}>Batal</Button>
+            <Button onClick={saveEdit} disabled={editKeyword.isPending}>
+              {editKeyword.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
