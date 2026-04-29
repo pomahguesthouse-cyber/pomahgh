@@ -10,7 +10,8 @@ import { scoreArticle, slugify, type SeoArticle } from "../_shared/seoScoring.ts
  */
 
 interface ReqBody {
-  keywordId: string;
+  keywordId?: string;
+  keyword_id?: string;
 }
 
 interface ArticleOutput {
@@ -248,7 +249,7 @@ serve(async (req) => {
     }
 
     const body = (await req.json()) as ReqBody;
-    keywordId = body.keywordId;
+    keywordId = body.keywordId ?? body.keyword_id ?? null;
     if (!keywordId) throw new Error("keywordId required");
 
     // Load keyword + settings
