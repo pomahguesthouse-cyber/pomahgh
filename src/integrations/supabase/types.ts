@@ -1278,9 +1278,11 @@ export type Database = {
       city_attractions: {
         Row: {
           address: string | null
+          agent_keyword_id: string | null
           best_time_to_visit: string | null
           category: string
           created_at: string | null
+          created_by_agent: boolean
           description: string | null
           display_order: number | null
           distance_km: number | null
@@ -1295,6 +1297,7 @@ export type Database = {
           latitude: number | null
           long_description: string | null
           longitude: number | null
+          meta_description: string | null
           name: string
           price_range: string | null
           slug: string
@@ -1304,9 +1307,11 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          agent_keyword_id?: string | null
           best_time_to_visit?: string | null
           category: string
           created_at?: string | null
+          created_by_agent?: boolean
           description?: string | null
           display_order?: number | null
           distance_km?: number | null
@@ -1321,6 +1326,7 @@ export type Database = {
           latitude?: number | null
           long_description?: string | null
           longitude?: number | null
+          meta_description?: string | null
           name: string
           price_range?: string | null
           slug: string
@@ -1330,9 +1336,11 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          agent_keyword_id?: string | null
           best_time_to_visit?: string | null
           category?: string
           created_at?: string | null
+          created_by_agent?: boolean
           description?: string | null
           display_order?: number | null
           distance_km?: number | null
@@ -1347,6 +1355,7 @@ export type Database = {
           latitude?: number | null
           long_description?: string | null
           longitude?: number | null
+          meta_description?: string | null
           name?: string
           price_range?: string | null
           slug?: string
@@ -1354,7 +1363,15 @@ export type Database = {
           travel_time_minutes?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "city_attractions_agent_keyword_id_fkey"
+            columns: ["agent_keyword_id"]
+            isOneToOne: false
+            referencedRelation: "seo_keywords"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       city_events: {
         Row: {
@@ -3561,6 +3578,197 @@ export type Database = {
           query?: string | null
         }
         Relationships: []
+      }
+      seo_agent_runs: {
+        Row: {
+          attraction_id: string | null
+          cost_estimate: number | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          issues: Json
+          keyword_density: number | null
+          keyword_id: string | null
+          model_used: string | null
+          payload: Json | null
+          readability_score: number | null
+          seo_score: number | null
+          status: string
+          step: string
+          tokens_used: number | null
+          word_count: number | null
+        }
+        Insert: {
+          attraction_id?: string | null
+          cost_estimate?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          issues?: Json
+          keyword_density?: number | null
+          keyword_id?: string | null
+          model_used?: string | null
+          payload?: Json | null
+          readability_score?: number | null
+          seo_score?: number | null
+          status: string
+          step: string
+          tokens_used?: number | null
+          word_count?: number | null
+        }
+        Update: {
+          attraction_id?: string | null
+          cost_estimate?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          issues?: Json
+          keyword_density?: number | null
+          keyword_id?: string | null
+          model_used?: string | null
+          payload?: Json | null
+          readability_score?: number | null
+          seo_score?: number | null
+          status?: string
+          step?: string
+          tokens_used?: number | null
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_agent_runs_attraction_id_fkey"
+            columns: ["attraction_id"]
+            isOneToOne: false
+            referencedRelation: "city_attractions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seo_agent_runs_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "seo_keywords"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_agent_settings: {
+        Row: {
+          article_min_words: number
+          article_tone: string
+          auto_publish: boolean
+          created_at: string
+          daily_generate_limit: number
+          disclaimer_footer: string
+          id: string
+          intent_threshold: number
+          internal_link_targets: string[]
+          model_classifier: string
+          model_image: string
+          model_text: string
+          seed_keywords: string[]
+          target_intents: string[]
+          updated_at: string
+        }
+        Insert: {
+          article_min_words?: number
+          article_tone?: string
+          auto_publish?: boolean
+          created_at?: string
+          daily_generate_limit?: number
+          disclaimer_footer?: string
+          id?: string
+          intent_threshold?: number
+          internal_link_targets?: string[]
+          model_classifier?: string
+          model_image?: string
+          model_text?: string
+          seed_keywords?: string[]
+          target_intents?: string[]
+          updated_at?: string
+        }
+        Update: {
+          article_min_words?: number
+          article_tone?: string
+          auto_publish?: boolean
+          created_at?: string
+          daily_generate_limit?: number
+          disclaimer_footer?: string
+          id?: string
+          intent_threshold?: number
+          internal_link_targets?: string[]
+          model_classifier?: string
+          model_image?: string
+          model_text?: string
+          seed_keywords?: string[]
+          target_intents?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      seo_keywords: {
+        Row: {
+          attraction_id: string | null
+          created_at: string
+          id: string
+          intent_category: string | null
+          intent_reasoning: string | null
+          intent_score: number | null
+          keyword: string
+          normalized_keyword: string
+          processed_at: string | null
+          rejection_reason: string | null
+          search_volume_estimate: number | null
+          seed_keyword: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attraction_id?: string | null
+          created_at?: string
+          id?: string
+          intent_category?: string | null
+          intent_reasoning?: string | null
+          intent_score?: number | null
+          keyword: string
+          normalized_keyword: string
+          processed_at?: string | null
+          rejection_reason?: string | null
+          search_volume_estimate?: number | null
+          seed_keyword?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attraction_id?: string | null
+          created_at?: string
+          id?: string
+          intent_category?: string | null
+          intent_reasoning?: string | null
+          intent_score?: number | null
+          keyword?: string
+          normalized_keyword?: string
+          processed_at?: string | null
+          rejection_reason?: string | null
+          search_volume_estimate?: number | null
+          seed_keyword?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_keywords_attraction_id_fkey"
+            columns: ["attraction_id"]
+            isOneToOne: false
+            referencedRelation: "city_attractions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       seo_settings: {
         Row: {
