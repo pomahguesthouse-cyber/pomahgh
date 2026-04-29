@@ -70,6 +70,7 @@ const AdminAdminChatbot = lazyRetry(() => import("./pages/admin/AdminAdminChatbo
 const AdminBankAccounts = lazyRetry(() => import("./pages/admin/AdminBankAccounts"));
 const AdminRoomFeatures = lazyRetry(() => import("./pages/admin/AdminRoomFeatures"));
 const AdminSeoSettings = lazyRetry(() => import("./pages/admin/AdminSeoSettings"));
+const AdminSeoAgent = lazyRetry(() => import("./pages/admin/AdminSeoAgent"));
 const AdminMediaLibrary = lazyRetry(() => import("./pages/admin/AdminMediaLibrary"));
 const AdminRoomAddons = lazyRetry(() => import("./pages/admin/AdminRoomAddons"));
 const AdminPromotions = lazyRetry(() => import("./pages/admin/AdminPromotions"));
