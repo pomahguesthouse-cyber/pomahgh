@@ -169,6 +169,42 @@ export const useSeoAgentRuns = () => {
   });
 };
 
+export const useSeoLatestRunByAttraction = (attractionId: string | null) => {
+  return useQuery({
+    queryKey: ["seo-agent-run-by-attraction", attractionId],
+    enabled: !!attractionId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("seo_agent_runs")
+        .select("*")
+        .eq("attraction_id", attractionId!)
+        .eq("step", "generate")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as SeoAgentRun | null;
+    },
+  });
+};
+
+export const useQualifiedKeywordsWithoutDraft = () => {
+  return useQuery({
+    queryKey: ["seo-keywords", "qualified-no-draft"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("seo_keywords")
+        .select("id,keyword,intent_category,intent_score")
+        .eq("status", "qualified")
+        .is("attraction_id", null)
+        .order("intent_score", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as Pick<SeoKeyword, "id" | "keyword" | "intent_category" | "intent_score">[];
+    },
+  });
+};
+
 export const useSeoDrafts = () => {
   const qc = useQueryClient();
   const query = useQuery({
