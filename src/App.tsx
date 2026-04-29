@@ -162,6 +162,7 @@ const App = () => (
           <Route path="/admin/multi-agent" element={<AdminLayout><AdminMultiAgentDashboard /></AdminLayout>} />
           <Route path="/admin/bank-accounts" element={<AdminLayout><AdminBankAccounts /></AdminLayout>} />
           <Route path="/admin/seo-settings" element={<AdminLayout><AdminSeoSettings /></AdminLayout>} />
+          <Route path="/admin/seo-agent" element={<AdminLayout><AdminSeoAgent /></AdminLayout>} />
           <Route path="/admin/page-editor" element={<AdminLayout><AdminLandingPages /></AdminLayout>} />
           <Route path="/admin/media-library" element={<AdminLayout><AdminMediaLibrary /></AdminLayout>} />
           
