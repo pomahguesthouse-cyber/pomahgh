@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,13 @@ import {
   useSeoKeywords,
   useSeoAgentRuns,
   useSeoDrafts,
+  useQualifiedKeywordsWithoutDraft,
   invokeSeoAgent,
   type SeoAgentSettings,
   type SeoKeyword,
+  type SeoDraft,
 } from "@/hooks/useSeoAgent";
+import { SeoDraftPreviewDialog } from "@/components/admin/seo/SeoDraftPreviewDialog";
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-muted text-muted-foreground",
