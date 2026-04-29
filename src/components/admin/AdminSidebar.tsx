@@ -94,6 +94,7 @@ const defaultMenuGroups: MenuGroup[] = [
     label: "System",
     items: [
       { id: "seo-settings", title: "SEO Settings", url: "/admin/seo-settings", icon: Search },
+      { id: "seo-agent", title: "SEO Agent", url: "/admin/seo-agent", icon: Sparkles },
       { id: "settings", title: "Settings", url: "/admin/settings", icon: Settings }
     ]
   }
