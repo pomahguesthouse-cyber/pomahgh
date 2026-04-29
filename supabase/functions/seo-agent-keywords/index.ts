@@ -10,10 +10,14 @@ import { normalizeKeyword } from "../_shared/seoScoring.ts";
  */
 
 interface ReqBody {
-  source: "manual" | "google_suggest";
+  // New combined format (used by admin UI)
+  seeds?: string[];
+  manual?: string[];
+  expandAlphabet?: boolean;
+  // Legacy single-source format (kept for backward compatibility)
+  source?: "manual" | "google_suggest";
   seed?: string;
   keywords?: string[];
-  expandAlphabet?: boolean;
 }
 
 const fetchSuggest = async (q: string): Promise<string[]> => {
@@ -64,25 +68,38 @@ serve(async (req) => {
       });
     }
 
-    const body = (await req.json()) as ReqBody;
-    const collected: { keyword: string; seed?: string }[] = [];
+    const body = (await req.json().catch(() => ({}))) as ReqBody;
+    const collected: { keyword: string; seed?: string; source: string }[] = [];
 
-    if (body.source === "manual") {
-      if (!Array.isArray(body.keywords) || body.keywords.length === 0) {
-        return new Response(JSON.stringify({ error: "keywords array required" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      body.keywords.forEach((k) => collected.push({ keyword: k }));
-    } else if (body.source === "google_suggest") {
-      const seed = (body.seed ?? "").trim();
-      if (!seed) {
-        return new Response(JSON.stringify({ error: "seed required" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    // Resolve seeds: explicit body.seeds, legacy body.seed, or fallback to settings.seed_keywords
+    let seeds: string[] = [];
+    if (Array.isArray(body.seeds) && body.seeds.length > 0) {
+      seeds = body.seeds.filter((s) => typeof s === "string" && s.trim().length > 0);
+    } else if (typeof body.seed === "string" && body.seed.trim()) {
+      seeds = [body.seed.trim()];
+    } else {
+      const { data: settings } = await supabase
+        .from("seo_agent_settings")
+        .select("seed_keywords")
+        .limit(1)
+        .maybeSingle();
+      const settingsSeeds = (settings?.seed_keywords ?? []) as string[];
+      seeds = settingsSeeds.filter((s) => typeof s === "string" && s.trim().length > 0);
+    }
+
+    // Manual list: body.manual or legacy body.keywords
+    const manualList: string[] = Array.isArray(body.manual)
+      ? body.manual
+      : Array.isArray(body.keywords)
+      ? body.keywords
+      : [];
+    manualList
+      .map((k) => (typeof k === "string" ? k.trim() : ""))
+      .filter((k) => k.length > 0)
+      .forEach((k) => collected.push({ keyword: k, source: "manual" }));
+
+    // Google Suggest expansion for each seed
+    for (const seed of seeds) {
       const queries = [seed];
       if (body.expandAlphabet !== false) {
         for (let i = 0; i < 26; i++) {
@@ -91,13 +108,15 @@ serve(async (req) => {
       }
       for (const q of queries) {
         const sugs = await fetchSuggest(q);
-        sugs.forEach((s) => collected.push({ keyword: s, seed }));
+        sugs.forEach((s) => collected.push({ keyword: s, seed, source: "google_suggest" }));
       }
-    } else {
-      return new Response(JSON.stringify({ error: "invalid source" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    }
+
+    if (collected.length === 0) {
+      return new Response(
+        JSON.stringify({ inserted: 0, skipped: 0, error: "Tidak ada seed atau manual keyword. Tambahkan seed di Settings atau isi field di atas." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Dedupe + insert with onConflict on normalized_keyword
@@ -110,7 +129,7 @@ serve(async (req) => {
         return {
           keyword: c.keyword.trim(),
           normalized_keyword: norm,
-          source: body.source,
+          source: c.source,
           seed_keyword: c.seed ?? null,
           status: "new",
         };
@@ -133,7 +152,12 @@ serve(async (req) => {
     await supabase.from("seo_agent_runs").insert({
       step: "research",
       status: "success",
-      payload: { source: body.source, requested: collected.length, inserted: inserted?.length ?? 0 },
+      payload: {
+        seeds,
+        manual_count: manualList.length,
+        requested: collected.length,
+        inserted: inserted?.length ?? 0,
+      },
     });
 
     return new Response(
