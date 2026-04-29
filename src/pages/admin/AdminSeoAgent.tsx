@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,13 @@ import {
   useSeoKeywords,
   useSeoAgentRuns,
   useSeoDrafts,
+  useQualifiedKeywordsWithoutDraft,
   invokeSeoAgent,
   type SeoAgentSettings,
   type SeoKeyword,
+  type SeoDraft,
 } from "@/hooks/useSeoAgent";
+import { SeoDraftPreviewDialog } from "@/components/admin/seo/SeoDraftPreviewDialog";
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-muted text-muted-foreground",
@@ -158,7 +161,7 @@ const SettingsTab = () => {
   );
 };
 
-const KeywordsTab = () => {
+const KeywordsTab = ({ onGenerated }: { onGenerated?: () => void }) => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { data: keywords, isLoading, refetch, updateStatus, remove, editKeyword } = useSeoKeywords(statusFilter);
   const [seed, setSeed] = useState("");
@@ -318,6 +321,7 @@ const KeywordsTab = () => {
                                 await invokeSeoAgent("seo-agent-generate", { keyword_id: kw.id });
                                 toast.success("Generate dimulai");
                                 refetch();
+                                onGenerated?.();
                               } catch (e) {
                                 toast.error((e as Error).message);
                               }
@@ -467,66 +471,189 @@ const RunsTab = () => {
   );
 };
 
-const DraftsTab = () => {
-  const { data: drafts, isLoading, refetch, setActive, remove } = useSeoDrafts();
+const DraftsTab = ({
+  autoOpenLatest,
+  onAutoOpenHandled,
+}: {
+  autoOpenLatest?: number;
+  onAutoOpenHandled?: () => void;
+}) => {
+  const { data: drafts, isLoading, refetch, remove } = useSeoDrafts();
+  const { data: qualifiedKw, isLoading: loadingKw, refetch: refetchKw } = useQualifiedKeywordsWithoutDraft();
+  const [selectedKeywordId, setSelectedKeywordId] = useState<string>("");
+  const [generating, setGenerating] = useState(false);
+  const [previewDraft, setPreviewDraft] = useState<SeoDraft | null>(null);
+  const pollRef = useRef<number | null>(null);
+
+  // Auto-open the latest draft after a fresh generation triggered elsewhere.
+  useEffect(() => {
+    if (!autoOpenLatest) return;
+    let attempts = 0;
+    pollRef.current = window.setInterval(async () => {
+      attempts += 1;
+      const { data } = await refetch();
+      if (data && data.length > 0) {
+        setPreviewDraft(data[0]);
+        if (pollRef.current) window.clearInterval(pollRef.current);
+        onAutoOpenHandled?.();
+      } else if (attempts >= 18) {
+        if (pollRef.current) window.clearInterval(pollRef.current);
+        onAutoOpenHandled?.();
+      }
+    }, 5000);
+    return () => {
+      if (pollRef.current) window.clearInterval(pollRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenLatest]);
+
+  const handleGenerate = async (keywordId: string) => {
+    setGenerating(true);
+    const t = toast.loading("Sedang generate artikel… (±30 detik)");
+    try {
+      await invokeSeoAgent("seo-agent-generate", { keyword_id: keywordId });
+      toast.success("Artikel berhasil digenerate", { id: t });
+      const { data } = await refetch();
+      refetchKw();
+      const latest = data?.[0] ?? null;
+      if (latest) setPreviewDraft(latest);
+    } catch (e) {
+      toast.error((e as Error).message, { id: t });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleRegenerate = async (draft: SeoDraft) => {
+    if (!draft.agent_keyword_id) {
+      toast.error("Draft ini tidak punya keyword sumber, tidak bisa di-regenerate.");
+      return;
+    }
+    if (!window.confirm(`Regenerate artikel untuk "${draft.name}"? Akan membuat draft baru.`)) return;
+    await handleGenerate(draft.agent_keyword_id);
+  };
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Drafts (AI Generated)</CardTitle>
-          <CardDescription>{drafts?.length ?? 0} artikel hasil agent — review sebelum publish.</CardDescription>
-        </div>
-        <Button variant="ghost" size="icon" onClick={() => refetch()}><RefreshCw className="h-4 w-4" /></Button>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Judul</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Dibuat</TableHead>
-                  <TableHead>Published</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(drafts ?? []).map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium max-w-[280px] truncate">{d.name}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{d.slug}</TableCell>
-                    <TableCell className="text-xs">{format(new Date(d.created_at), "dd/MM/yyyy HH:mm")}</TableCell>
-                    <TableCell>
-                      <Switch checked={d.is_active} onCheckedChange={(c) => setActive.mutate({ id: d.id, is_active: c })} />
-                    </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button asChild size="sm" variant="outline">
-                        <a href={`/explore-semarang/${d.slug}`} target="_blank" rel="noopener noreferrer">
-                          <Eye className="h-3.5 w-3.5 mr-1" /> Preview
-                        </a>
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => remove.mutate(d.id)}>
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Generate Artikel Baru</CardTitle>
+          <CardDescription>
+            Pilih keyword qualified yang belum punya draft, lalu generate artikel SEO + thumbnail otomatis.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={selectedKeywordId} onValueChange={setSelectedKeywordId} disabled={loadingKw || generating}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder={loadingKw ? "Memuat…" : "Pilih keyword qualified…"} />
+              </SelectTrigger>
+              <SelectContent>
+                {(qualifiedKw ?? []).map((kw) => (
+                  <SelectItem key={kw.id} value={kw.id}>
+                    {kw.keyword}
+                    {kw.intent_score != null && ` · score ${kw.intent_score.toFixed(2)}`}
+                  </SelectItem>
                 ))}
-                {drafts?.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">Belum ada draft.</TableCell></TableRow>
+                {qualifiedKw?.length === 0 && (
+                  <div className="p-2 text-xs text-muted-foreground">Tidak ada keyword qualified yang menunggu.</div>
                 )}
-              </TableBody>
-            </Table>
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={() => selectedKeywordId && handleGenerate(selectedKeywordId)}
+              disabled={!selectedKeywordId || generating}
+            >
+              {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              Generate Artikel
+            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Drafts (AI Generated)</CardTitle>
+            <CardDescription>{drafts?.length ?? 0} artikel hasil agent — klik Preview untuk review.</CardDescription>
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => refetch()}><RefreshCw className="h-4 w-4" /></Button>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16">Thumb</TableHead>
+                    <TableHead>Judul</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>Dibuat</TableHead>
+                    <TableHead>Published</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(drafts ?? []).map((d) => (
+                    <TableRow key={d.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setPreviewDraft(d)}>
+                      <TableCell>
+                        {d.image_url ? (
+                          <img src={d.image_url} alt="" className="h-10 w-16 object-cover rounded" />
+                        ) : (
+                          <div className="h-10 w-16 rounded bg-muted" />
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium max-w-[280px] truncate">{d.name}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{d.slug}</TableCell>
+                      <TableCell className="text-xs">{format(new Date(d.created_at), "dd/MM/yyyy HH:mm")}</TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Badge variant="outline" className={d.is_active ? STATUS_COLORS.published : STATUS_COLORS.new}>
+                          {d.is_active ? "Published" : "Draft"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-1" onClick={(e) => e.stopPropagation()}>
+                        <Button size="sm" variant="outline" onClick={() => setPreviewDraft(d)}>
+                          <Eye className="h-3.5 w-3.5 mr-1" /> Preview
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            if (window.confirm("Hapus draft ini?")) remove.mutate(d.id);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {drafts?.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Belum ada draft.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <SeoDraftPreviewDialog
+        draft={previewDraft}
+        open={!!previewDraft}
+        onOpenChange={(o) => !o && setPreviewDraft(null)}
+        onRegenerate={handleRegenerate}
+        regenerating={generating}
+      />
+    </div>
   );
 };
 
 const AdminSeoAgent = () => {
+  const [tab, setTab] = useState("settings");
+  const [autoOpenLatest, setAutoOpenLatest] = useState<number>(0);
+
   return (
     <div className="container max-w-7xl py-6 space-y-6">
       <div className="flex items-center gap-3">
@@ -537,7 +664,7 @@ const AdminSeoAgent = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="settings" className="space-y-4">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="settings"><Play className="h-4 w-4 mr-2" />Settings</TabsTrigger>
           <TabsTrigger value="keywords"><Search className="h-4 w-4 mr-2" />Keywords Pool</TabsTrigger>
@@ -545,9 +672,13 @@ const AdminSeoAgent = () => {
           <TabsTrigger value="drafts"><FileText className="h-4 w-4 mr-2" />Drafts</TabsTrigger>
         </TabsList>
         <TabsContent value="settings"><SettingsTab /></TabsContent>
-        <TabsContent value="keywords"><KeywordsTab /></TabsContent>
+        <TabsContent value="keywords">
+          <KeywordsTab onGenerated={() => { setAutoOpenLatest(Date.now()); setTab("drafts"); }} />
+        </TabsContent>
         <TabsContent value="runs"><RunsTab /></TabsContent>
-        <TabsContent value="drafts"><DraftsTab /></TabsContent>
+        <TabsContent value="drafts">
+          <DraftsTab autoOpenLatest={autoOpenLatest} onAutoOpenHandled={() => setAutoOpenLatest(0)} />
+        </TabsContent>
       </Tabs>
     </div>
   );
