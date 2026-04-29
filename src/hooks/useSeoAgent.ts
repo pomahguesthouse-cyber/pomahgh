@@ -139,7 +139,19 @@ export const useSeoKeywords = (status?: string) => {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  return { ...query, updateStatus, remove };
+  const editKeyword = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<SeoKeyword> }) => {
+      const { error } = await supabase.from("seo_keywords").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["seo-keywords"] });
+      toast.success("Keyword diperbarui");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return { ...query, updateStatus, remove, editKeyword };
 };
 
 export const useSeoAgentRuns = () => {
