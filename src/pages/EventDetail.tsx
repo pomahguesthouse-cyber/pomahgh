@@ -102,6 +102,59 @@ const EventDetail = () => {
     { label: event.name },
   ];
 
+  const eventSchema = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.name,
+    description: event.description || event.long_description || event.name,
+    startDate: event.event_date,
+    endDate: event.event_end_date || event.event_date,
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    image: event.image_url ? [event.image_url] : undefined,
+    url: typeof window !== "undefined" ? window.location.href : undefined,
+    location: {
+      "@type": "Place",
+      name: event.venue || "Semarang",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: event.address || event.venue || "Semarang",
+        addressLocality: "Semarang",
+        addressRegion: "Jawa Tengah",
+        addressCountry: "ID",
+      },
+      ...(event.latitude && event.longitude
+        ? {
+            geo: {
+              "@type": "GeoCoordinates",
+              latitude: event.latitude,
+              longitude: event.longitude,
+            },
+          }
+        : {}),
+    },
+    ...(event.organizer
+      ? {
+          organizer: {
+            "@type": "Organization",
+            name: event.organizer,
+            ...(event.website_url ? { url: event.website_url } : {}),
+          },
+        }
+      : {}),
+    ...(event.price_range
+      ? {
+          offers: {
+            "@type": "Offer",
+            price: event.price_range,
+            priceCurrency: "IDR",
+            availability: "https://schema.org/InStock",
+            url: typeof window !== "undefined" ? window.location.href : undefined,
+          },
+        }
+      : {}),
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
@@ -110,6 +163,8 @@ const EventDetail = () => {
         <meta property="og:title" content={event.name} />
         <meta property="og:description" content={event.description || ""} />
         {event.image_url && <meta property="og:image" content={event.image_url} />}
+        <meta property="og:type" content="event" />
+        <script type="application/ld+json">{JSON.stringify(eventSchema)}</script>
       </Helmet>
 
       <Header />

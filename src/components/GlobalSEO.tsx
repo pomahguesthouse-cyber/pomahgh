@@ -169,9 +169,31 @@ export const GlobalSEO = () => {
   /* ---------------------
    * Structured Data base
    * --------------------- */
-  const orgSchema = {
+  const isHotel = settings.business_type === "Hotel";
+
+  const addressSchema = hotelSettings?.address
+    ? {
+        "@type": "PostalAddress",
+        streetAddress: hotelSettings.address,
+        addressLocality: hotelSettings.city || undefined,
+        addressRegion: hotelSettings.state || undefined,
+        postalCode: hotelSettings.postal_code || undefined,
+        addressCountry: hotelSettings.country || "ID",
+      }
+    : undefined;
+
+  const geoSchema =
+    hotelSettings?.latitude && hotelSettings?.longitude
+      ? {
+          "@type": "GeoCoordinates",
+          latitude: hotelSettings.latitude,
+          longitude: hotelSettings.longitude,
+        }
+      : undefined;
+
+  const orgSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": settings.business_type === "Hotel" ? "Hotel" : "Organization",
+    "@type": isHotel ? "Hotel" : "Organization",
     name: settings.og_site_name || settings.site_title,
     url: canonical,
     description: settings.meta_description || "",
@@ -184,6 +206,21 @@ export const GlobalSEO = () => {
       hotelSettings?.tiktok_url,
     ].filter(Boolean),
   };
+
+  if (isHotel) {
+    if (hotelSettings?.phone_primary) orgSchema.telephone = hotelSettings.phone_primary;
+    if (hotelSettings?.email_primary) orgSchema.email = hotelSettings.email_primary;
+    if (addressSchema) orgSchema.address = addressSchema;
+    if (geoSchema) orgSchema.geo = geoSchema;
+    if (hotelSettings?.check_in_time) orgSchema.checkinTime = hotelSettings.check_in_time;
+    if (hotelSettings?.check_out_time) orgSchema.checkoutTime = hotelSettings.check_out_time;
+    if (hotelSettings?.currency_code) orgSchema.priceRange = hotelSettings.currency_code === "IDR" ? "Rp" : hotelSettings.currency_code;
+    orgSchema.image = hotelSettings?.logo_url || settings.default_og_image;
+  } else {
+    if (hotelSettings?.phone_primary) (orgSchema as Record<string, unknown>).telephone = hotelSettings.phone_primary;
+    if (hotelSettings?.email_primary) (orgSchema as Record<string, unknown>).email = hotelSettings.email_primary;
+    if (addressSchema) (orgSchema as Record<string, unknown>).address = addressSchema;
+  }
 
   const websiteSchema = {
     "@context": "https://schema.org",

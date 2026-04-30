@@ -124,6 +124,32 @@ const AttractionDetail = () => {
     })
   };
 
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: attraction.name,
+    description: attraction.description,
+    image: imageUrl,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${baseUrl}/explore-semarang/${attraction.slug}`,
+    },
+    author: {
+      "@type": "Organization",
+      name: seoSettings?.og_site_name || "Pomah Guesthouse",
+      url: baseUrl,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: seoSettings?.og_site_name || "Pomah Guesthouse",
+      logo: {
+        "@type": "ImageObject",
+        url: `${baseUrl}/logo.png`,
+      },
+    },
+    inLanguage: "id-ID",
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
@@ -135,6 +161,7 @@ const AttractionDetail = () => {
         <meta property="og:image" content={imageUrl} />
         <meta property="og:type" content="article" />
         <script type="application/ld+json">{JSON.stringify(attractionSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(articleSchema)}</script>
       </Helmet>
       
       <Header />
