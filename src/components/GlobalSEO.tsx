@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { useSeoSettings } from "@/hooks/useSeoSettings";
 import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
+import { useGoogleRating } from "@/hooks/useGoogleRating";
 import { useEffect } from "react";
 
 /**
@@ -48,6 +49,7 @@ function sanitizeHeadMarkup(raw: string): Node[] {
 export const GlobalSEO = () => {
   const { settings } = useSeoSettings();
   const { settings: hotelSettings } = usePublicHotelSettings();
+  const { data: googleRating } = useGoogleRating();
 
   /* --------------------------------------------------
    * Inject third-party scripts (Analytics, GTM, Pixel)
@@ -216,6 +218,17 @@ export const GlobalSEO = () => {
     if (hotelSettings?.check_out_time) orgSchema.checkoutTime = hotelSettings.check_out_time;
     if (hotelSettings?.currency_code) orgSchema.priceRange = hotelSettings.currency_code === "IDR" ? "Rp" : hotelSettings.currency_code;
     orgSchema.image = hotelSettings?.logo_url || settings.default_og_image;
+
+    // aggregateRating from Google Places (enables review rich results)
+    if (googleRating?.rating && googleRating.reviewCount > 0) {
+      orgSchema.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: googleRating.rating.toFixed(1),
+        reviewCount: googleRating.reviewCount,
+        bestRating: "5",
+        worstRating: "1",
+      };
+    }
   } else {
     if (hotelSettings?.phone_primary) (orgSchema as Record<string, unknown>).telephone = hotelSettings.phone_primary;
     if (hotelSettings?.email_primary) (orgSchema as Record<string, unknown>).email = hotelSettings.email_primary;
