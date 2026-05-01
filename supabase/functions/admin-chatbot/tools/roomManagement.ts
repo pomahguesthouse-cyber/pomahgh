@@ -188,13 +188,31 @@ export async function getRoomPrices(supabase: SupabaseClient, roomName?: string)
 
   let rooms = allRooms as unknown as RoomPriceRow[];
 
-  if (roomName) {
+  // Filter out generic question words that should not be treated as a room name
+  // (intent detector kadang mengekstrak kata seperti "berapa", "harga", dll sebagai room_name)
+  const STOPWORDS = new Set([
+    'berapa', 'harga', 'price', 'kamar', 'room', 'semua', 'all', 'list', 'daftar',
+    'apa', 'saja', 'aja', 'dong', 'ya', 'sih', 'tolong', 'minta', 'cek', 'lihat',
+    'tampilkan', 'tampilin', 'show', 'info', 'informasi'
+  ]);
+  const cleanedRoomName = roomName
+    ? roomName
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w && !STOPWORDS.has(w))
+        .join(' ')
+        .trim()
+    : '';
+
+  if (cleanedRoomName) {
     const matchedRoom = findBestRoomMatch(roomName, allRooms);
     if (!matchedRoom) {
-      const roomList = rooms.map((r) => r.name).join(', ');
-      throw new Error(`Kamar "${roomName}" tidak ditemukan. Kamar yang tersedia: ${roomList}`);
+      // Fallback: jangan throw — kembalikan semua kamar agar manager dapat respons berguna.
+      console.log(`⚠️ Room "${roomName}" tidak match, fallback ke semua kamar`);
     }
-    rooms = [matchedRoom as unknown as RoomPriceRow];
+    if (matchedRoom) {
+      rooms = [matchedRoom as unknown as RoomPriceRow];
+    }
   }
 
   const today = new Date().toISOString().split('T')[0];
