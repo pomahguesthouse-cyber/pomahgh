@@ -19,6 +19,7 @@ export type DetectedIntent =
   | 'reschedule'
   | 'change_room'
   | 'update_guest'
+  | 'send_brochure'
   | 'general';
 
 interface IntentMatch {
@@ -249,6 +250,17 @@ const INTENT_PATTERNS: { intent: DetectedIntent; patterns: RegExp[]; tool: strin
     ],
     tool: 'update_guest_info'
   },
+  {
+    intent: 'send_brochure',
+    patterns: [
+      /kirim(in|kan)?\s*brosur/i,
+      /wa\s*brosur/i,
+      /send\s*brochure/i,
+      /share\s*brosur/i,
+      /brosur\s*(kamar\s*)?(ke|untuk|buat)/i,
+    ],
+    tool: 'send_brochure_to_guest'
+  },
 ];
 
 // Extract room number from message
@@ -394,6 +406,13 @@ export function detectIntent(message: string): IntentMatch {
           const extendInfo = extractExtendInfo(message);
           if (extendInfo.extra_nights) extractedParams.extra_nights = String(extendInfo.extra_nights);
           if (extendInfo.new_check_out) extractedParams.new_check_out = extendInfo.new_check_out;
+        } else if (intent === 'send_brochure') {
+          // Extract phone number (Indonesian formats: +62..., 62..., 08...)
+          const phoneMatch = message.match(/(\+?62[\s-]?\d[\d\s-]{7,}|0\d[\d\s-]{7,})/);
+          if (phoneMatch) {
+            const cleaned = phoneMatch[1].replace(/[\s-]/g, '');
+            extractedParams.phone = cleaned;
+          }
         }
         
         return {
