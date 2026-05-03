@@ -326,6 +326,66 @@ export async function orchestrate(
     console.warn('[orchestrator] memory audit log failed:', auditErr);
   }
 
+  // ── 5d.2 HUMAN HANDOVER REQUEST DETECTION ──
+  // Tamu kadang minta diteruskan ke admin asli. Kalau pesan-nya match pattern
+  // ini, set takeover + alert super-admin agar follow-up dilakukan manusia.
+  // Pattern dijaga eksplisit supaya tidak false-positive untuk kata "admin"
+  // yang muncul di konteks lain.
+  const HUMAN_HANDOVER_PATTERNS: RegExp[] = [
+    /admin\s*(yang\s*)?(asli|manusia|beneran|sungguhan)/i,
+    /(bukan|stop|matikan|jangan)\s*(bot|chatbot|ai)/i,
+    /(masih|ini)\s*bot/i,
+    /tolong\s*(panggil|hubungi)\s*admin/i,
+    /chat\s*(sama|ke)\s*admin\s*(asli|manusia)/i,
+    /bicara\s*(sama|ke|dengan)\s*(admin|manusia)/i,
+  ];
+  const isHandoverRequest = HUMAN_HANDOVER_PATTERNS.some((re) =>
+    re.test(normalizedMessage)
+  );
+  if (isHandoverRequest) {
+    console.log(`🆘 Human handover requested by ${phone}`);
+    await logMessage(supabase, conversationId!, 'user', rawMessage);
+    await logMessage(
+      supabase,
+      conversationId!,
+      'system',
+      `🆘 [HANDOVER] Tamu meminta admin asli — AI dimatikan, super-admin di-notifikasi`,
+    );
+    try {
+      await updateSession(supabase, phone, conversationId!, true);
+    } catch (e) {
+      console.warn('[orchestrator] updateSession (handover) failed:', e);
+    }
+    const reassureMsg =
+      'Baik kak, saya teruskan ke admin kami ya. Mohon ditunggu sebentar 🙏';
+    await sendWhatsApp(phone, reassureMsg, env.fonnteApiKey);
+    await logMessage(supabase, conversationId!, 'assistant', reassureMsg);
+    await escalateToHumanStaff(
+      supabase,
+      phone,
+      conversationId!,
+      'Tamu meminta diteruskan ke admin asli (handover request)',
+      managerNumbers,
+      env.fonnteApiKey,
+    );
+    logAgentDecision(supabase, {
+      trace_id: trace?.traceId,
+      phone_number: phone,
+      conversation_id: conversationId,
+      from_agent: 'orchestrator',
+      to_agent: 'human_staff',
+      reason: 'human_handover_requested',
+      intent: 'handover',
+    });
+    return new Response(
+      JSON.stringify({
+        status: 'handover_requested',
+        conversation_id: conversationId,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+
   // 5e. NAME COLLECTION
   try {
     const nameResult = await handleNameCollection(
