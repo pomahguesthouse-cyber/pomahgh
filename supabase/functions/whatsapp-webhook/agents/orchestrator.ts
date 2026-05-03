@@ -562,6 +562,20 @@ async function handleNameCollection(
     };
     console.log(`🆕 [session-debug] ${JSON.stringify(sessionDebug)}`);
 
+    // Persist intent log untuk dashboard analytics (best-effort, non-blocking)
+    try {
+      await supabase.from('session_intent_logs').insert({
+        phone,
+        conversation_id: conversationId || null,
+        first_message: normalizedMessage.slice(0, 500),
+        matched_intents: matchedIntents,
+        greeting_bypass: isQuestion,
+        source: 'whatsapp',
+      });
+    } catch (e) {
+      console.error('Failed to persist session_intent_log', e);
+    }
+
     if (isQuestion) {
       console.log(`⏭️ First message matched intents [${matchedIntents.join(',')}] - bypassing name prompt`);
       const genericName = `Tamu WA ${phone.slice(-4)}`;
