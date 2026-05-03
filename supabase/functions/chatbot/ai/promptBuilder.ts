@@ -46,6 +46,18 @@ ATURAN WAJIB:
 }
 
 /**
+ * Tool-call enforcement — cegah halusinasi harga & ketersediaan
+ */
+function buildToolEnforcementRules(): string {
+  return `TOOL-CALL WAJIB (NO HALUSINASI):
+- Pertanyaan ketersediaan ("ada kamar?", "available?", "ready?", "kosong?", tanggal+kamar) → WAJIB panggil check_availability. JANGAN jawab dari ingatan.
+- Pertanyaan harga spesifik per kamar/tanggal → pakai data KAMAR di prompt apa adanya. JANGAN mengarang angka, JANGAN mengubah/membulatkan, JANGAN bandingkan harga antar tipe yang tidak ada di list.
+- Permintaan brosur/foto/katalog/preview kamar → WAJIB panggil send_brochure_to_guest. JANGAN bilang "sudah saya kirim" tanpa memanggil tool.
+- Konfirmasi booking final → WAJIB panggil create_booking_draft (setelah ringkasan disetujui user).
+- Jika data tidak tersedia atau tool gagal → katakan "saya cek dulu ya" SEKALI, lalu coba lagi. JANGAN mengarang.`;
+}
+
+/**
  * Build date reference — compact
  */
 function buildDateContext(): string {
@@ -167,6 +179,8 @@ function buildCombinedFlowRules(): string {
   return `${buildBookingFlowRules()}
 
 ${buildPaymentRules()}
+
+${buildToolEnforcementRules()}
 
 ${buildAdminTakeoverRules()}`;
 }

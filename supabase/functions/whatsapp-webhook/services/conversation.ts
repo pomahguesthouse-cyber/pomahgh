@@ -13,12 +13,18 @@ export async function logMessage(
 ) {
   if (!conversationId) return;
 
+  // Auto-detect fallback responses (technical error / generic apology) untuk asisten.
+  // Ini membantu metric tracking tanpa harus modify setiap call site.
+  const FALLBACK_RE = /(kendala teknis|maaf,?\s*(saya|aku)\s+(belum|tidak|gak|ga)\s+(bisa|dapat)|coba\s+lagi\s+nanti|sedang\s+(error|gangguan)|sistem\s+(error|gangguan|sedang)|technical\s+(error|issue))/i;
+  const isFallback = role === 'assistant' && FALLBACK_RE.test(content);
+
   // 1) Insert pesan dulu (kritis). Tangkap exception agar webhook tidak crash.
   try {
     const { error: insertError } = await supabase.from('chat_messages').insert({
       conversation_id: conversationId,
       role,
       content,
+      is_fallback: isFallback,
     });
     if (insertError) {
       console.warn(`[logMessage] Insert failed for ${conversationId}: ${insertError.message}`);
