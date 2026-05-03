@@ -536,7 +536,7 @@ async function handleNameCollection(
   if (isNewSession) {
     console.log(`🆕 New session for ${phone}`);
     // Greeting bypass: jika first message sudah membawa intent (tanya/booking/foto/dll), skip prompt nama.
-    const questionPatterns = /[?？]|berapa|brp|harga|tarif|biaya|sewa|diskon|promo|kamar|kmr|tipe|model|booking|reservas|pesan|menginap|nginap|stay|check.?in|check.?out|extend|tersedia|kosong|available|ready|fasilitas|wifi|sarapan|breakfast|parkir|kolam|pool|alamat|lokasi|maps|arah|bayar|transfer|rekening|payment|cancel|batal|refund|kapan|bagaimana|gimana|apakah|bisa.{1,20}(kamar|booking|pesan|check|nginap)|ada.{1,20}(kamar|promo|diskon|foto|brosur)|mau.{1,20}(pesan|booking|menginap|nginap|nanya|tanya|cek)|ingin|cari|info(?:rmasi)?|foto|gambar|brosur|katalog|preview|hari\s+ini|malam\s+ini|besok|bsk|lusa|weekend|minggu\s+depan|\d+\s*(orang|tamu|malam|hari|kamar)/i;
+    const questionPatterns = /[?？]|berapa|brp|harga|tarif|biaya|sewa|diskon|promo|pricelist|price\s*list|daftar\s*harga|tarif\s*kamar|list\s*harga|rate\s*kamar|kamar|kmr|tipe|model|booking|reservas|pesan|menginap|nginap|stay|check.?in|check.?out|extend|tersedia|kosong|available|ready|fasilitas|wifi|sarapan|breakfast|parkir|kolam|pool|alamat|lokasi|maps|arah|bayar|transfer|rekening|payment|cancel|batal|refund|kapan|bagaimana|gimana|apakah|bisa.{1,20}(kamar|booking|pesan|check|nginap)|ada.{1,20}(kamar|promo|diskon|foto|brosur)|mau.{1,20}(pesan|booking|menginap|nginap|nanya|tanya|cek)|ingin|cari|info(?:rmasi)?|foto|gambar|brosur|katalog|preview|hari\s+ini|malam\s+ini|besok|bsk|lusa|weekend|minggu\s+depan|\d+\s*(orang|tamu|malam|hari|kamar)/i;
     const isQuestion = questionPatterns.test(normalizedMessage);
 
     if (isQuestion) {
