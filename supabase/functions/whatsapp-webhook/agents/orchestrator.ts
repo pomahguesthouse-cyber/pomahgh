@@ -534,13 +534,36 @@ async function handleNameCollection(
   env: EnvConfig,
 ): Promise<Response | null> {
   if (isNewSession) {
-    console.log(`🆕 New session for ${phone}`);
     // Greeting bypass: jika first message sudah membawa intent (tanya/booking/foto/dll), skip prompt nama.
-    const questionPatterns = /[?？]|berapa|brp|harga|tarif|biaya|sewa|diskon|promo|pricelist|price\s*list|daftar\s*harga|tarif\s*kamar|list\s*harga|rate\s*kamar|kamar|kmr|tipe|model|booking|reservas|pesan|menginap|nginap|stay|check.?in|check.?out|extend|tersedia|kosong|available|ready|fasilitas|wifi|sarapan|breakfast|parkir|kolam|pool|alamat|lokasi|maps|arah|bayar|transfer|rekening|payment|cancel|batal|refund|kapan|bagaimana|gimana|apakah|bisa.{1,20}(kamar|booking|pesan|check|nginap)|ada.{1,20}(kamar|promo|diskon|foto|brosur)|mau.{1,20}(pesan|booking|menginap|nginap|nanya|tanya|cek)|ingin|cari|info(?:rmasi)?|foto|gambar|brosur|katalog|preview|hari\s+ini|malam\s+ini|besok|bsk|lusa|weekend|minggu\s+depan|\d+\s*(orang|tamu|malam|hari|kamar)/i;
-    const isQuestion = questionPatterns.test(normalizedMessage);
+    // Named intent buckets supaya matched-intent bisa di-log per session untuk debugging.
+    const intentPatterns: Record<string, RegExp> = {
+      price: /berapa|brp|harga|tarif|biaya|sewa|diskon|promo|pricelist|price\s*list|daftar\s*harga|tarif\s*kamar|list\s*harga|rate\s*kamar/i,
+      availability: /tersedia|kosong|available|ready|hari\s+ini|malam\s+ini|besok|bsk|lusa|weekend|minggu\s+depan/i,
+      brochure: /foto|gambar|brosur|katalog|preview/i,
+      booking: /booking|reservas|pesan|menginap|nginap|stay|check.?in|check.?out|extend|mau.{1,20}(pesan|booking|menginap|nginap)/i,
+      room: /kamar|kmr|tipe|model|\d+\s*(orang|tamu|malam|hari|kamar)/i,
+      facility: /fasilitas|wifi|sarapan|breakfast|parkir|kolam|pool/i,
+      location: /alamat|lokasi|maps|arah/i,
+      payment: /bayar|transfer|rekening|payment|cancel|batal|refund/i,
+      generic_question: /[?？]|kapan|bagaimana|gimana|apakah|ingin|cari|info(?:rmasi)?|nanya|tanya|cek/i,
+    };
+
+    const matchedIntents: string[] = [];
+    for (const [name, re] of Object.entries(intentPatterns)) {
+      if (re.test(normalizedMessage)) matchedIntents.push(name);
+    }
+    const isQuestion = matchedIntents.length > 0;
+    const sessionDebug = {
+      phone,
+      conversation_id: conversationId,
+      first_message: normalizedMessage.slice(0, 200),
+      matched_intents: matchedIntents,
+      greeting_bypass: isQuestion,
+    };
+    console.log(`🆕 [session-debug] ${JSON.stringify(sessionDebug)}`);
 
     if (isQuestion) {
-      console.log(`⏭️ First message is a question - bypassing name prompt`);
+      console.log(`⏭️ First message matched intents [${matchedIntents.join(',')}] - bypassing name prompt`);
       const genericName = `Tamu WA ${phone.slice(-4)}`;
       await supabase.from('whatsapp_sessions').upsert({
         phone_number: phone, conversation_id: conversationId,
@@ -552,6 +575,8 @@ async function handleNameCollection(
       }
       return null;
     }
+
+    console.log(`📛 No intent matched on first message - asking for name`);
 
     await supabase.from('whatsapp_sessions').upsert({
       phone_number: phone, conversation_id: conversationId,
