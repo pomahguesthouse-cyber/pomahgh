@@ -3875,6 +3875,39 @@ export type Database = {
         }
         Relationships: []
       }
+      session_intent_logs: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          first_message: string | null
+          greeting_bypass: boolean
+          id: string
+          matched_intents: string[]
+          phone: string | null
+          source: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          first_message?: string | null
+          greeting_bypass?: boolean
+          id?: string
+          matched_intents?: string[]
+          phone?: string | null
+          source?: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          first_message?: string | null
+          greeting_bypass?: boolean
+          id?: string
+          matched_intents?: string[]
+          phone?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       template_presets: {
         Row: {
           created_at: string | null
