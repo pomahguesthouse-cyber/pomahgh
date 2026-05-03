@@ -5,6 +5,44 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function requireAdmin(req: Request): Promise<{ ok: true } | { ok: false; response: Response }> {
+  const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization") ?? "";
+  if (!authHeader.toLowerCase().startsWith("bearer ")) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      ),
+    };
+  }
+  const token = authHeader.slice(7).trim();
+  const anon = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "");
+  const { data: userData, error: userErr } = await anon.auth.getUser(token);
+  if (userErr || !userData?.user) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      ),
+    };
+  }
+  const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+  const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userData.user.id);
+  const allowed = (roles ?? []).some((r: { role: string }) => ["admin", "super_admin"].includes(String(r.role)));
+  if (!allowed) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: "Forbidden" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      ),
+    };
+  }
+  return { ok: true };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -18,6 +56,13 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
+
+    // The Google OAuth `callback` is invoked by Google's servers and must
+    // remain unauthenticated. All other actions are admin-only.
+    if (action !== "callback") {
+      const auth = await requireAdmin(req);
+      if (!auth.ok) return auth.response;
+    }
 
     // Get OAuth URLs
     if (action === "init") {

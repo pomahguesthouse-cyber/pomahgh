@@ -27,6 +27,29 @@ serve(async (req) => {
     const bookingData = await req.json();
     console.log("📨 Notify new booking:", bookingData);
 
+    // Anti-spam: only notify for bookings that actually exist in our DB.
+    // Prevents unauthenticated attackers from forging booking payloads to
+    // spam manager WhatsApp numbers / abuse the Fonnte API.
+    const bookingCode = (bookingData?.booking_code || '').toString().trim();
+    if (!bookingCode) {
+      return new Response(
+        JSON.stringify({ success: false, reason: 'Missing booking_code' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const { data: bookingRow, error: bookingLookupErr } = await supabase
+      .from('bookings')
+      .select('id, booking_code, guest_name, total_price, check_in, check_out')
+      .eq('booking_code', bookingCode)
+      .maybeSingle();
+    if (bookingLookupErr || !bookingRow) {
+      console.warn(`Refusing to notify for unknown booking_code: ${bookingCode}`);
+      return new Response(
+        JSON.stringify({ success: false, reason: 'Unknown booking_code' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get manager phone numbers and hotel name
     const { data: settings, error: settingsError } = await supabase
       .from('hotel_settings')
