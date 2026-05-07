@@ -540,9 +540,20 @@ async function handleNameCollection(
   pushname: string = '',
 ): Promise<Response | null> {
   if (isNewSession) {
-    // ── Pushname bypass: jika webhook membawa nama profil WA yang valid, skip prompt nama.
-    const trimmedPushname = pushname.trim();
-    if (trimmedPushname && isLikelyPersonName(trimmedPushname)) {
+    // ── Pushname bypass: jika webhook Fonnte membawa nama profil WA yang valid,
+    //    skip prompt "Boleh saya tahu nama Anda?".
+    //    `pushname` sudah dinormalisasi oleh extractPushname (trim, NBSP, dst).
+    //    Bypass HANYA jika lolos heuristik isLikelyPersonName.
+    const trimmedPushname = pushname; // sudah dinormalisasi upstream
+    const pushnameValid = trimmedPushname.length > 0 && isLikelyPersonName(trimmedPushname);
+
+    if (!trimmedPushname) {
+      console.log(`👤 [pushname-empty] No WA pushname for ${phone} → fallback ke flow nama biasa`);
+    } else if (!pushnameValid) {
+      console.log(`👤 [pushname-invalid] Pushname "${trimmedPushname}" gagal validasi untuk ${phone} → fallback ke flow nama biasa`);
+    }
+
+    if (pushnameValid) {
       console.log(`👋 [pushname-bypass] Using WA pushname for ${phone}: "${trimmedPushname}"`);
       await supabase.from('whatsapp_sessions').upsert({
         phone_number: phone, conversation_id: conversationId,
