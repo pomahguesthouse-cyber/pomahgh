@@ -409,10 +409,8 @@ export default function AdminSettings() {
                   </div>
                   <Switch
                     id="full_house_enabled"
-                    checked={(settings as { full_house_enabled?: boolean }).full_house_enabled !== false}
-                    onCheckedChange={(checked) =>
-                      updateSettings({ full_house_enabled: checked } as unknown as Parameters<typeof updateSettings>[0])
-                    }
+                    checked={settings.full_house_enabled !== false}
+                    onCheckedChange={(checked) => updateSettings({ full_house_enabled: checked })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -424,7 +422,7 @@ export default function AdminSettings() {
                       type="number"
                       min="0"
                       step="50000"
-                      defaultValue={(settings as { full_house_price?: number }).full_house_price ?? 3000000}
+                      defaultValue={settings.full_house_price ?? 3000000}
                     />
                   </div>
                 </div>
@@ -435,7 +433,7 @@ export default function AdminSettings() {
                     name="full_house_description"
                     rows={3}
                     defaultValue={
-                      (settings as { full_house_description?: string }).full_house_description ||
+                      settings.full_house_description ||
                       'Sewa seluruh guesthouse (semua kamar aktif) — cocok untuk acara keluarga, gathering, atau rombongan.'
                     }
                   />
