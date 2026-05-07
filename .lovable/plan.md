@@ -1,72 +1,37 @@
-
 ## Tujuan
+Skip prompt "Boleh saya tahu nama Anda?" jika webhook Fonnte sudah membawa pushname WA yang valid, lalu sapa tamu langsung dengan namanya.
 
-Lengkapi tab **Drafts** SEO Agent dengan kemampuan:
-1. **Generate artikel langsung dari halaman Drafts** (untuk keyword qualified yang belum punya draft).
-2. **Preview artikel di dalam dialog** (tanpa harus buka tab `/explore-semarang/:slug`) — render markdown, thumbnail, meta, skor SEO.
-3. Aksi cepat: **Publish/Unpublish, Regenerate, Edit cepat, Hapus**.
-4. Indikator loading saat generasi berjalan (proses bisa 20–60 detik).
+## Catatan
+Nomor telepon tidak menyimpan nama. Yang dipakai adalah field `name` (pushname) yang dikirim Fonnte di payload webhook — yaitu nama profil WhatsApp yang user set sendiri.
 
-## Perubahan UI
+## Perubahan
 
-### Tab Drafts (`AdminSeoAgent.tsx` → `DraftsTab`)
+### 1. `supabase/functions/whatsapp-webhook/agents/orchestrator.ts`
+Pada blok first-message (sekitar line 530–608), sebelum logika intent matching:
 
-Tambah header bar dengan:
-- Dropdown **"Pilih keyword qualified…"** + tombol **Generate Artikel** (memanggil `seo-agent-generate` dengan `keyword_id`).
-- State loading global "Sedang generate…" dengan estimasi waktu.
+- Ekstrak pushname dari body: `body.name` atau `body.pushname` (fallback antar key Fonnte).
+- Validasi pakai `isLikelyPersonName` yang sudah ada.
+- Jika valid:
+  - Set `guest_name = pushname`, `awaiting_name = false`.
+  - Update `chat_conversations.guest_email = "{pushname} (WA: {phone})"`.
+  - Log user message + greeting `Halo Kak {pushname}! 👋 Saya {personaName} dari Pomah Guesthouse. Ada yang bisa saya bantu?`.
+  - Kirim greeting via `sendWhatsApp`, lalu **lanjutkan flow** ke agent routing biasa (jangan return) supaya pesan pertama tamu tetap diproses jika sudah berisi intent. Atau jika pesan pertama hanya sapaan ("halo"), cukup return greeting.
+  - Tambah `session_intent_logs` entry dengan flag baru `name_source: 'pushname'`.
+- Jika pushname tidak valid → fallback ke flow existing (intent match → bypass / ask name).
 
-Ubah tabel drafts: tambah kolom **Thumbnail** (gambar 48x32) dan kolom **SEO Score** (diambil dari run terakhir untuk `attraction_id` tsb).
+### 2. `supabase/functions/whatsapp-webhook/types.ts`
+Tambah `name?: string; pushname?: string;` di tipe webhook body parsing (kalau ada).
 
-Aksi per baris:
-- **Preview** → buka dialog internal (bukan tab baru lagi; tetap sediakan link "Buka di tab baru").
-- **Publish toggle** (sudah ada).
-- **Regenerate** → konfirmasi → panggil `seo-agent-generate` ulang dengan `keyword_id` draft (perlu kolom `agent_keyword_id` yg sudah ada).
-- **Hapus** (sudah ada).
+### 3. (Opsional) `session_intent_logs`
+Tambah kolom `name_source TEXT` (values: `pushname` | `prompt` | `generic`) untuk dashboard analytics — biar tahu berapa % skip prompt karena pushname.
 
-### Dialog Preview Artikel (komponen baru `SeoDraftPreviewDialog`)
+### 4. Test
+Tambah case di `orchestrator.test.ts`:
+- Body dengan `name: "Budi Santoso"` → tidak ada prompt nama, session tersimpan dengan `guest_name: "Budi Santoso"`.
+- Body dengan `name: "🛍️ Toko ABC"` → fallback ke flow existing.
+- Body tanpa `name` → flow existing.
 
-Layout 2 kolom (responsive → 1 kolom di mobile):
-- **Kiri (sticky meta)**: thumbnail besar, judul, slug, meta description, daftar skor SEO (score, density, word count, readability) dari `seo_agent_runs` terbaru, daftar issues bila ada.
-- **Kanan (scroll)**: render `long_description` via `react-markdown` (sudah terpasang di project) dengan styling `prose`.
-- Footer: tombol **Publish/Unpublish**, **Buka halaman publik**, **Regenerate**, **Tutup**.
-
-### Tab Keywords Pool — penyesuaian kecil
-
-Tombol **Generate** yg sudah ada tetap dipertahankan, tetapi:
-- Setelah sukses, langsung redirect ke tab Drafts (via `setActiveTab`) dan auto-buka dialog preview saat draft baru muncul (polling `useSeoDrafts` setiap 5 detik selama job berjalan, max 90 detik).
-
-## Perubahan Hook (`useSeoAgent.ts`)
-
-1. `useSeoDrafts` → tambah join skor terakhir:
-   - Tambah query baru `useSeoLatestRunByAttraction(attractionId)` yang mengambil 1 row terbaru dari `seo_agent_runs` di mana `attraction_id = ?` dan `step = 'generate'`. Dipakai dialog preview.
-2. Tambah hook `useQualifiedKeywordsWithoutDraft()` — keyword `status = 'qualified'` yang `attraction_id IS NULL`, untuk dropdown generate di Drafts.
-3. Re-export tipe `SeoAgentRun` (sudah ada).
-
-Tidak ada perubahan database / edge function — semua sudah tersedia (`seo-agent-generate`, tabel `seo_agent_runs`, `city_attractions.long_description`, `image_url`).
-
-## Detail Teknis
-
-- Render markdown: `import ReactMarkdown from "react-markdown"` di dalam dialog, dibungkus `<div className="prose prose-sm max-w-none">`.
-- Polling generasi: `setInterval` 5 dtk + abort di `useEffect` cleanup; berhenti ketika draft baru muncul atau timeout.
-- Lifecycle generate dari Drafts:
-  ```
-  user pilih keyword → click Generate
-    → optimistic toast "Sedang generate (±30 dtk)…"
-    → invoke 'seo-agent-generate' { keyword_id }
-    → on success: invalidateQueries(['seo-drafts','seo-agent-runs','seo-keywords'])
-    → auto-open SeoDraftPreviewDialog untuk draft baru
-  ```
-- Tombol Regenerate: konfirmasi via `window.confirm` (atau AlertDialog) — passes `keyword_id` & `force: true` (param sudah didukung edge function; bila belum, fallback ke generate baru — perlu cek di implementasi runtime).
-- Format tanggal tetap `dd/MM/yyyy HH:mm` sesuai memory rule global.
-
-## Files yang akan diubah/ditambah
-
-- `src/hooks/useSeoAgent.ts` — tambah `useSeoLatestRunByAttraction`, `useQualifiedKeywordsWithoutDraft`.
-- `src/pages/admin/AdminSeoAgent.tsx` — perbarui `DraftsTab`, integrasi auto-preview dari `KeywordsTab`.
-- `src/components/admin/seo/SeoDraftPreviewDialog.tsx` — **(baru)** komponen dialog preview artikel dengan markdown + meta SEO.
-
-## Out of scope
-
-- Editor markdown inline (cukup tombol "Edit di Admin City Attractions" → link).
-- Perubahan skema DB / edge function generate (gunakan apa adanya).
-- A/B test atau scheduling generate.
+## Yang TIDAK berubah
+- Logika `awaiting_name` untuk session lama.
+- Intent matching & greeting bypass.
+- Fallback `Tamu WA xxxx`.

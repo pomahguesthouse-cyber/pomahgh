@@ -114,6 +114,12 @@ export async function orchestrate(
   const normalizedMessage = normalizeIndonesianMessage(rawMessage);
   trace?.info('Processing message', { phone, message_length: rawMessage.length, has_image: hasImageAttachment });
 
+  // Pushname dari Fonnte (field `name` atau `pushname`) — dipakai untuk skip prompt nama.
+  const rawPushname = (typeof body.name === 'string' && body.name.trim())
+    || (typeof body.pushname === 'string' && body.pushname.trim())
+    || '';
+  const pushname = rawPushname ? String(rawPushname).trim() : '';
+
   // ── 2. RATE LIMIT ──
   if (!await checkRateLimit(supabase, phone)) {
     logAgentDecision(supabase, { trace_id: trace?.traceId, phone_number: phone, from_agent: 'orchestrator', reason: 'rate_limited' });
@@ -390,7 +396,7 @@ export async function orchestrate(
   try {
     const nameResult = await handleNameCollection(
       supabase, session as WhatsAppSession, phone, conversationId!, rawMessage,
-      normalizedMessage, isNewSession, personaName, env,
+      normalizedMessage, isNewSession, personaName, env, pushname,
     );
     if (nameResult) {
       logAgentDecision(supabase, {
@@ -532,8 +538,39 @@ async function handleNameCollection(
   isNewSession: boolean,
   personaName: string,
   env: EnvConfig,
+  pushname: string = '',
 ): Promise<Response | null> {
   if (isNewSession) {
+    // ── Pushname bypass: jika webhook membawa nama profil WA yang valid, skip prompt nama.
+    const trimmedPushname = pushname.trim();
+    if (trimmedPushname && isLikelyPersonName(trimmedPushname)) {
+      console.log(`👋 [pushname-bypass] Using WA pushname for ${phone}: "${trimmedPushname}"`);
+      await supabase.from('whatsapp_sessions').upsert({
+        phone_number: phone, conversation_id: conversationId,
+        last_message_at: new Date().toISOString(), is_active: true,
+        session_type: 'guest', awaiting_name: false, guest_name: trimmedPushname,
+      }, { onConflict: 'phone_number' });
+      if (conversationId) {
+        await supabase.from('chat_conversations')
+          .update({ guest_email: `${trimmedPushname} (WA: ${phone})` })
+          .eq('id', conversationId);
+      }
+      try {
+        await supabase.from('session_intent_logs').insert({
+          phone,
+          conversation_id: conversationId || null,
+          first_message: normalizedMessage.slice(0, 500),
+          matched_intents: ['pushname_bypass'],
+          greeting_bypass: true,
+          source: 'whatsapp',
+        });
+      } catch (e) {
+        console.error('Failed to persist session_intent_log (pushname)', e);
+      }
+      // Lanjutkan flow biasa: pesan pertama tetap diproses oleh agent routing.
+      return null;
+    }
+
     // Greeting bypass: jika first message sudah membawa intent (tanya/booking/foto/dll), skip prompt nama.
     // Named intent buckets supaya matched-intent bisa di-log per session untuk debugging.
     const intentPatterns: Record<string, RegExp> = {
