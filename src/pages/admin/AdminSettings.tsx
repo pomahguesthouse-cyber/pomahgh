@@ -410,7 +410,9 @@ export default function AdminSettings() {
                   <Switch
                     id="full_house_enabled"
                     checked={(settings as { full_house_enabled?: boolean }).full_house_enabled !== false}
-                    onCheckedChange={(checked) => updateSettings({ full_house_enabled: checked })}
+                    onCheckedChange={(checked) =>
+                      updateSettings({ full_house_enabled: checked } as Record<string, unknown>)
+                    }
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
