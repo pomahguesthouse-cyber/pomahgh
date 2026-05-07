@@ -411,7 +411,7 @@ export default function AdminSettings() {
                     id="full_house_enabled"
                     checked={(settings as { full_house_enabled?: boolean }).full_house_enabled !== false}
                     onCheckedChange={(checked) =>
-                      updateSettings({ full_house_enabled: checked } as Record<string, unknown>)
+                      updateSettings({ full_house_enabled: checked } as unknown as Parameters<typeof updateSettings>[0])
                     }
                   />
                 </div>
