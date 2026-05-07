@@ -267,6 +267,8 @@ describe('orchestrator', () => {
       originalIntent: 'faq',
       fallbackUsed: false,
     });
+    hoisted.upsertSessionMock.mockClear();
+    hoisted.upsertSessionMock.mockResolvedValue({ data: null, error: null });
   });
 
   it('rejects invalid phone numbers before routing', async () => {
