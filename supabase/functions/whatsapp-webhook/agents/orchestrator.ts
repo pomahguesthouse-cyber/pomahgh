@@ -18,6 +18,7 @@ import { handleComplaint } from './complaint.ts';
 import { handlePaymentProof, extractImageUrl } from './paymentProof.ts';
 import { handlePaymentApproval, isPaymentApprovalReply } from './paymentApproval.ts';
 import { handlePriceListQuestion } from './priceList.ts';
+import { handleFullHouseQuestion, isFullHouseQuestion } from './fullHouse.ts';
 import { setAgentConfigs, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 import { classifyIntent } from './intentClassifier.ts';
 import { decide } from './decisionEngine.ts';
@@ -410,6 +411,20 @@ export async function orchestrate(
   }
 
   // ── 6. AI INTENT CLASSIFICATION (memory-aware hybrid) ──
+  // Fast-path: full house / sewa seluruh guesthouse → langsung jawab tarif flat
+  if (isFullHouseQuestion(normalizedMessage)) {
+    console.log(`🏡 [full-house] match for ${phone}: "${normalizedMessage.slice(0, 80)}"`);
+    try {
+      return await handleFullHouseQuestion(
+        supabase, session as WhatsAppSession, phone, rawMessage,
+        conversationId!, env, trace,
+      );
+    } catch (fhErr) {
+      console.error(`❌ FullHouse error for ${phone}:`, fhErr);
+      // fall through to normal routing
+    }
+  }
+
   const recentMessages = await getConversationHistory(supabase, conversationId!, historyWindowMessages).catch(() => []);
   const classification = await classifyIntent(normalizedMessage, {
     recentMessages: recentMessages.slice(-6),
