@@ -3,7 +3,7 @@ import type { SupabaseClient, WhatsAppSession, ManagerInfo, EnvConfig } from '..
 import { corsHeaders } from '../types.ts';
 import { normalizePhone, isValidPhone } from '../utils/phone.ts';
 import { normalizeIndonesianMessage } from '../utils/slang.ts';
-import { isLikelyPersonName } from '../utils/format.ts';
+import { isLikelyPersonName, extractPushname } from '../utils/format.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 import { checkRateLimit } from '../middleware/rateLimiter.ts';
@@ -114,11 +114,10 @@ export async function orchestrate(
   const normalizedMessage = normalizeIndonesianMessage(rawMessage);
   trace?.info('Processing message', { phone, message_length: rawMessage.length, has_image: hasImageAttachment });
 
-  // Pushname dari Fonnte (field `name` atau `pushname`) — dipakai untuk skip prompt nama.
-  const rawPushname = (typeof body.name === 'string' && body.name.trim())
-    || (typeof body.pushname === 'string' && body.pushname.trim())
-    || '';
-  const pushname = rawPushname ? String(rawPushname).trim() : '';
+  // Pushname dari Fonnte — dipakai untuk skip prompt nama.
+  // Normalisasi konsisten via helper (handle name/pushname/notify/notifyName,
+ // string kosong, NBSP, whitespace berlebih, number, null).
+  const pushname = extractPushname(body);
 
   // ── 2. RATE LIMIT ──
   if (!await checkRateLimit(supabase, phone)) {
