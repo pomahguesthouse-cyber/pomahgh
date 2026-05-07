@@ -391,6 +391,55 @@ export default function AdminSettings() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Sewa Seluruh Guesthouse (Full House)</CardTitle>
+                <CardDescription>
+                  Tarif khusus jika tamu memesan satu rumah / seluruh kamar sekaligus. Chatbot akan otomatis menjawab harga ini saat tamu bertanya "sewa 1 rumah", "full house", atau "borong semua kamar".
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between pb-4 border-b">
+                  <div className="space-y-1">
+                    <Label htmlFor="full_house_enabled">Aktifkan Tarif Full House</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Jika dimatikan, chatbot akan menjawab bahwa sewa full house sedang tidak tersedia.
+                    </p>
+                  </div>
+                  <Switch
+                    id="full_house_enabled"
+                    checked={settings.full_house_enabled !== false}
+                    onCheckedChange={(checked) => updateSettings({ full_house_enabled: checked })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="full_house_price">Harga per Malam (Rp)</Label>
+                    <Input
+                      id="full_house_price"
+                      name="full_house_price"
+                      type="number"
+                      min="0"
+                      step="50000"
+                      defaultValue={settings.full_house_price ?? 3000000}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="full_house_description">Deskripsi (untuk chatbot & internal)</Label>
+                  <Textarea
+                    id="full_house_description"
+                    name="full_house_description"
+                    rows={3}
+                    defaultValue={
+                      settings.full_house_description ||
+                      'Sewa seluruh guesthouse (semua kamar aktif) — cocok untuk acara keluarga, gathering, atau rombongan.'
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="policies" className="space-y-4">

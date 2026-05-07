@@ -13,6 +13,14 @@ export const tools = [
   {
     type: "function",
     function: {
+      name: "get_full_house_price",
+      description: "Tampilkan tarif sewa SELURUH guesthouse / 1 rumah full / borong semua kamar. Gunakan saat user tanya 'sewa 1 rumah', 'full house', 'sewa guesthouse', 'borong semua kamar', atau yang menanyakan harga kalau ambil semua kamar sekaligus. JANGAN dipakai untuk tanya harga per tipe kamar.",
+      parameters: { type: "object", properties: {} }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "check_availability",
       description: "Cek ketersediaan kamar untuk tanggal tertentu. PENTING: Gunakan tahun SAAT INI jika bulan belum lewat. Jangan default ke tahun depan!",
       parameters: {

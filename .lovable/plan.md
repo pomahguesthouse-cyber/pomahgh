@@ -1,37 +1,58 @@
-## Tujuan
-Skip prompt "Boleh saya tahu nama Anda?" jika webhook Fonnte sudah membawa pushname WA yang valid, lalu sapa tamu langsung dengan namanya.
+# Plan: Harga Full Guesthouse Rp 3.000.000/malam
 
-## Catatan
-Nomor telepon tidak menyimpan nama. Yang dipakai adalah field `name` (pushname) yang dikirim Fonnte di payload webhook — yaitu nama profil WhatsApp yang user set sendiri.
+## Tujuan
+Saat tamu menanyakan booking 1 guesthouse / rumah full (semua kamar), chatbot WhatsApp & web harus menjawab dengan harga **Rp 3.000.000 per malam**. Harga editable oleh admin di settings.
 
 ## Perubahan
 
-### 1. `supabase/functions/whatsapp-webhook/agents/orchestrator.ts`
-Pada blok first-message (sekitar line 530–608), sebelum logika intent matching:
+### 1. Database (migration)
+Tambah kolom di `hotel_settings`:
+- `full_house_price` numeric default `3000000`
+- `full_house_enabled` boolean default `true`
+- `full_house_description` text default `'Sewa seluruh guesthouse (semua kamar aktif) — cocok untuk acara keluarga, gathering, atau rombongan.'`
 
-- Ekstrak pushname dari body: `body.name` atau `body.pushname` (fallback antar key Fonnte).
-- Validasi pakai `isLikelyPersonName` yang sudah ada.
-- Jika valid:
-  - Set `guest_name = pushname`, `awaiting_name = false`.
-  - Update `chat_conversations.guest_email = "{pushname} (WA: {phone})"`.
-  - Log user message + greeting `Halo Kak {pushname}! 👋 Saya {personaName} dari Pomah Guesthouse. Ada yang bisa saya bantu?`.
-  - Kirim greeting via `sendWhatsApp`, lalu **lanjutkan flow** ke agent routing biasa (jangan return) supaya pesan pertama tamu tetap diproses jika sudah berisi intent. Atau jika pesan pertama hanya sapaan ("halo"), cukup return greeting.
-  - Tambah `session_intent_logs` entry dengan flag baru `name_source: 'pushname'`.
-- Jika pushname tidak valid → fallback ke flow existing (intent match → bypass / ask name).
+Update `get_public_hotel_settings()` agar 3 field ini ikut terekspos (publik, agar chatbot web bisa baca).
 
-### 2. `supabase/functions/whatsapp-webhook/types.ts`
-Tambah `name?: string; pushname?: string;` di tipe webhook body parsing (kalau ada).
+### 2. Admin UI
+`src/pages/admin/AdminSettings.tsx` (atau section terkait): tambah card "Full House / Sewa Guesthouse" dengan toggle enable, input harga (rupiah), dan deskripsi.
 
-### 3. (Opsional) `session_intent_logs`
-Tambah kolom `name_source TEXT` (values: `pushname` | `prompt` | `generic`) untuk dashboard analytics — biar tahu berapa % skip prompt karena pushname.
+### 3. Chatbot detection (WhatsApp + Web)
+Buat helper baru `supabase/functions/_shared/fullHousePricing.ts`:
+- `isFullHouseQuestion(message)` — regex: `sewa.?(rumah|guesthouse|seluruh)`, `(booking|pesan).?(satu|1).?(rumah|guesthouse)`, `full.?(house|guesthouse)`, `semua kamar`, `seluruh kamar`, `rumah(nya)?.?full`, `private`, `borong`, dll.
+- `getFullHouseInfo(supabase)` — baca settings + hitung total kamar aktif via `rooms.available=true`, return `{ price, totalRooms, description, totalCapacity }`.
+- `formatFullHouseReply(info, nights?)` — pesan WhatsApp.
 
-### 4. Test
-Tambah case di `orchestrator.test.ts`:
-- Body dengan `name: "Budi Santoso"` → tidak ada prompt nama, session tersimpan dengan `guest_name: "Budi Santoso"`.
-- Body dengan `name: "🛍️ Toko ABC"` → fallback ke flow existing.
-- Body tanpa `name` → flow existing.
+### 4. WhatsApp orchestrator
+`supabase/functions/whatsapp-webhook/agents/orchestrator.ts`: setelah cek `isGenericPriceQuestion`, tambahkan early-branch `isFullHouseQuestion`. Kalau cocok → kirim balasan format dd/MM/yyyy aware, max 1 emoji, sesuai persona. Log via `logAgentDecision` dengan `to_agent: 'full_house'`.
 
-## Yang TIDAK berubah
-- Logika `awaiting_name` untuk session lama.
-- Intent matching & greeting bypass.
-- Fallback `Tamu WA xxxx`.
+Buat agent baru `supabase/functions/whatsapp-webhook/agents/fullHouse.ts` (mirip `priceList.ts`).
+
+### 5. Web chatbot tools
+`supabase/functions/chatbot-tools/`:
+- Tambah tool `getFullHousePrice` di registry (`chatbot-tools/tools/getFullHousePrice.ts` + register di `index.ts`).
+- Update `supabase/functions/chatbot/ai/tools.ts` & `promptBuilder.ts` agar AI tahu kapan memanggilnya (deskripsi: "Gunakan saat tamu menanyakan harga sewa seluruh guesthouse / full house / semua kamar").
+
+### 6. Sample reply
+```
+Untuk sewa seluruh guesthouse (full house) tarifnya *Rp3.000.000/malam* ya kak 🏡
+Sudah termasuk semua kamar aktif (X kamar, total kapasitas Y tamu).
+Mau saya cek ketersediaan untuk tanggal tertentu?
+```
+
+### 7. Tests
+- `supabase/functions/_shared/fullHousePricing.test.ts` untuk regex `isFullHouseQuestion` (positif & negatif false-trigger seperti "kamar deluxe full bed").
+- Smoke test orchestrator branch.
+
+## Tidak diubah
+- Flow booking aktual / pembayaran (di luar scope — saat ini hanya jawaban harga).
+- RLS lain.
+
+## File terpengaruh
+- migration baru
+- `supabase/functions/_shared/fullHousePricing.ts` (new)
+- `supabase/functions/whatsapp-webhook/agents/fullHouse.ts` (new)
+- `supabase/functions/whatsapp-webhook/agents/orchestrator.ts`
+- `supabase/functions/chatbot-tools/tools/getFullHousePrice.ts` (new) + `chatbot-tools/index.ts`
+- `supabase/functions/chatbot/ai/tools.ts`, `promptBuilder.ts`
+- Admin settings page (UI)
+- Test file (new)

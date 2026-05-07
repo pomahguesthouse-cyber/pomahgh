@@ -18,6 +18,7 @@ import { handleComplaint } from './complaint.ts';
 import { handlePaymentProof, extractImageUrl } from './paymentProof.ts';
 import { handlePaymentApproval, isPaymentApprovalReply } from './paymentApproval.ts';
 import { handlePriceListQuestion } from './priceList.ts';
+import { handleFullHouseQuestion, isFullHouseQuestion } from './fullHouse.ts';
 import { setAgentConfigs, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 import { classifyIntent } from './intentClassifier.ts';
 import { decide } from './decisionEngine.ts';
@@ -410,6 +411,20 @@ export async function orchestrate(
   }
 
   // ── 6. AI INTENT CLASSIFICATION (memory-aware hybrid) ──
+  // Fast-path: full house / sewa seluruh guesthouse → langsung jawab tarif flat
+  if (isFullHouseQuestion(normalizedMessage)) {
+    console.log(`🏡 [full-house] match for ${phone}: "${normalizedMessage.slice(0, 80)}"`);
+    try {
+      return await handleFullHouseQuestion(
+        supabase, session as WhatsAppSession, phone, rawMessage,
+        conversationId!, env, trace,
+      );
+    } catch (fhErr) {
+      console.error(`❌ FullHouse error for ${phone}:`, fhErr);
+      // fall through to normal routing
+    }
+  }
+
   const recentMessages = await getConversationHistory(supabase, conversationId!, historyWindowMessages).catch(() => []);
   const classification = await classifyIntent(normalizedMessage, {
     recentMessages: recentMessages.slice(-6),
@@ -585,6 +600,7 @@ async function handleNameCollection(
     // Named intent buckets supaya matched-intent bisa di-log per session untuk debugging.
     const intentPatterns: Record<string, RegExp> = {
       price: /berapa|brp|harga|tarif|biaya|sewa|diskon|promo|pricelist|price\s*list|daftar\s*harga|tarif\s*kamar|list\s*harga|rate\s*kamar/i,
+      full_house: /full\s*house|sewa\s*(satu|1|seluruh|semua)?\s*(rumah|guesthouse|villa)|seluruh\s*kamar|borong\s*(rumah|guesthouse)/i,
       availability: /tersedia|kosong|available|ready|hari\s+ini|malam\s+ini|besok|bsk|lusa|weekend|minggu\s+depan/i,
       brochure: /foto|gambar|brosur|katalog|preview/i,
       booking: /booking|reservas|pesan|menginap|nginap|stay|check.?in|check.?out|extend|mau.{1,20}(pesan|booking|menginap|nginap)/i,
