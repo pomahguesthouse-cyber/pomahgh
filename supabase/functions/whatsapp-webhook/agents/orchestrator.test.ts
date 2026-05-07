@@ -35,6 +35,7 @@ const hoisted = vi.hoisted(() => {
           update: vi.fn(() => ({
             eq: vi.fn().mockResolvedValue({ data: null, error: null }),
           })),
+          upsert: hoisted_upsertSessionMock,
         };
         return builder;
       }
@@ -57,13 +58,35 @@ const hoisted = vi.hoisted(() => {
         return builder;
       }
 
+      if (table === 'chat_conversations') {
+        return {
+          insert: vi.fn(() => ({
+            select: vi.fn(() => ({
+              single: vi.fn().mockResolvedValue({ data: { id: 'conv-new' }, error: null }),
+            })),
+          })),
+          update: vi.fn(() => ({
+            eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+          })),
+        };
+      }
+
+      if (table === 'session_intent_logs' || table === 'chat_messages') {
+        return {
+          insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+        };
+      }
+
       throw new Error(`Unhandled table: ${table}`);
     }),
   };
 
+  const hoisted_upsertSessionMock = vi.fn().mockResolvedValue({ data: null, error: null });
+
   return {
     state,
     supabaseMock,
+    upsertSessionMock: hoisted_upsertSessionMock,
     createClientMock: vi.fn(() => supabaseMock),
     logAgentDecisionMock: vi.fn(),
     checkRateLimitMock: vi.fn(),
