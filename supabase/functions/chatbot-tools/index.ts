@@ -24,6 +24,7 @@ import { handleGetPaymentMethods } from "./tools/getPaymentMethods.ts";
 import { handleNotifyLongstayInquiry } from "./tools/notifyLongstayInquiry.ts";
 import { handleNotifyPaymentProof } from "./tools/notifyPaymentProof.ts";
 import { handleCancelBooking } from "./tools/cancelBooking.ts";
+import { handleGetFullHousePrice } from "./tools/getFullHousePrice.ts";
 
 async function verifyJwtRole(authHeader: string | null): Promise<string | null> {
   if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
@@ -133,6 +134,10 @@ serve(async (req) => {
 
       case "cancel_booking":
         result = await handleCancelBooking(supabase, parameters);
+        break;
+
+      case "get_full_house_price":
+        result = await handleGetFullHousePrice(supabase);
         break;
 
       default:
