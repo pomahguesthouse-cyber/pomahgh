@@ -14,6 +14,8 @@ const hoisted = vi.hoisted(() => {
     },
   };
 
+  const hoisted_upsertSessionMock = vi.fn().mockResolvedValue({ data: null, error: null });
+
   const supabaseMock = {
     from: vi.fn((table: string) => {
       if (table === 'chatbot_settings') {
@@ -80,8 +82,6 @@ const hoisted = vi.hoisted(() => {
       throw new Error(`Unhandled table: ${table}`);
     }),
   };
-
-  const hoisted_upsertSessionMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
   return {
     state,
