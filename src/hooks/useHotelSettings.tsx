@@ -91,6 +91,10 @@ export interface HotelSettings {
   last_minute_hours?: number;
   hidden_page_slugs?: string[];
   homepage_slug?: string;
+  // Full house / sewa seluruh guesthouse
+  full_house_enabled?: boolean;
+  full_house_price?: number;
+  full_house_description?: string;
 }
 
 export const useHotelSettings = () => {
