@@ -114,6 +114,12 @@ export async function orchestrate(
   const normalizedMessage = normalizeIndonesianMessage(rawMessage);
   trace?.info('Processing message', { phone, message_length: rawMessage.length, has_image: hasImageAttachment });
 
+  // Pushname dari Fonnte (field `name` atau `pushname`) — dipakai untuk skip prompt nama.
+  const rawPushname = (typeof body.name === 'string' && body.name.trim())
+    || (typeof body.pushname === 'string' && body.pushname.trim())
+    || '';
+  const pushname = rawPushname ? String(rawPushname).trim() : '';
+
   // ── 2. RATE LIMIT ──
   if (!await checkRateLimit(supabase, phone)) {
     logAgentDecision(supabase, { trace_id: trace?.traceId, phone_number: phone, from_agent: 'orchestrator', reason: 'rate_limited' });
