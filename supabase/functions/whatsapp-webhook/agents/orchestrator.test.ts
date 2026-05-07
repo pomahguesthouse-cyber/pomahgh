@@ -129,6 +129,18 @@ vi.mock('../utils/slang.ts', () => ({
 
 vi.mock('../utils/format.ts', () => ({
   isLikelyPersonName: (value: string) => value.trim().length >= 2,
+  extractPushname: (body: unknown) => {
+    if (!body || typeof body !== 'object') return '';
+    const src = body as Record<string, unknown>;
+    const candidates = [src.name, src.pushname, src.senderName, src.notify, src.notifyName];
+    for (const raw of candidates) {
+      if (raw === null || raw === undefined) continue;
+      const asString = typeof raw === 'string' ? raw : String(raw);
+      const cleaned = asString.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+      if (cleaned) return cleaned;
+    }
+    return '';
+  },
 }));
 
 vi.mock('../../_shared/agentLogger.ts', () => ({
