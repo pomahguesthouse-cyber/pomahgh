@@ -600,6 +600,7 @@ async function handleNameCollection(
     // Named intent buckets supaya matched-intent bisa di-log per session untuk debugging.
     const intentPatterns: Record<string, RegExp> = {
       price: /berapa|brp|harga|tarif|biaya|sewa|diskon|promo|pricelist|price\s*list|daftar\s*harga|tarif\s*kamar|list\s*harga|rate\s*kamar/i,
+      full_house: /full\s*house|sewa\s*(satu|1|seluruh|semua)?\s*(rumah|guesthouse|villa)|seluruh\s*kamar|borong\s*(rumah|guesthouse)/i,
       availability: /tersedia|kosong|available|ready|hari\s+ini|malam\s+ini|besok|bsk|lusa|weekend|minggu\s+depan/i,
       brochure: /foto|gambar|brosur|katalog|preview/i,
       booking: /booking|reservas|pesan|menginap|nginap|stay|check.?in|check.?out|extend|mau.{1,20}(pesan|booking|menginap|nginap)/i,
