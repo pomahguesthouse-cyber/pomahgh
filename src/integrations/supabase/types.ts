@@ -1963,6 +1963,9 @@ export type Database = {
           email_reservations: string | null
           facebook_url: string | null
           favicon_url: string | null
+          full_house_description: string
+          full_house_enabled: boolean
+          full_house_price: number
           full_refund_days_before: number | null
           google_place_id: string | null
           header_bg_color: string | null
@@ -2037,6 +2040,9 @@ export type Database = {
           email_reservations?: string | null
           facebook_url?: string | null
           favicon_url?: string | null
+          full_house_description?: string
+          full_house_enabled?: boolean
+          full_house_price?: number
           full_refund_days_before?: number | null
           google_place_id?: string | null
           header_bg_color?: string | null
@@ -2111,6 +2117,9 @@ export type Database = {
           email_reservations?: string | null
           facebook_url?: string | null
           favicon_url?: string | null
+          full_house_description?: string
+          full_house_enabled?: boolean
+          full_house_price?: number
           full_refund_days_before?: number | null
           google_place_id?: string | null
           header_bg_color?: string | null
