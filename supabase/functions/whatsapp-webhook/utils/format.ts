@@ -28,6 +28,28 @@ export function isLikelyPersonName(rawMessage: string): boolean {
   return words.length >= 1 && words.length <= 4;
 }
 
+/**
+ * Normalisasi field pushname dari payload webhook Fonnte.
+ * Fonnte kadang mengirim field dengan nama berbeda (`name`, `pushname`,
+ * `senderName`, `notify`, `notifyName`) dan tipe data yang tidak konsisten
+ * (string kosong, hanya whitespace/NBSP, number, null, undefined).
+ * Helper ini mengembalikan string sudah-trim & sudah-collapse spasi,
+ * atau '' jika tidak ada nilai yang valid.
+ */
+export function extractPushname(body: unknown): string {
+  if (!body || typeof body !== 'object') return '';
+  const src = body as Record<string, unknown>;
+  const candidates = [src.name, src.pushname, src.senderName, src.notify, src.notifyName];
+  for (const raw of candidates) {
+    if (raw === null || raw === undefined) continue;
+    const asString = typeof raw === 'string' ? raw : String(raw);
+    // Normalize: replace NBSP & all whitespace variants → single space, then trim.
+    const cleaned = asString.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+    if (cleaned) return cleaned;
+  }
+  return '';
+}
+
 /** Convert Indonesian month to number */
 export function indonesianMonthToNumber(month: string): number {
   const months: Record<string, number> = {
