@@ -14,6 +14,8 @@ const hoisted = vi.hoisted(() => {
     },
   };
 
+  const hoisted_upsertSessionMock = vi.fn().mockResolvedValue({ data: null, error: null });
+
   const supabaseMock = {
     from: vi.fn((table: string) => {
       if (table === 'chatbot_settings') {
@@ -35,6 +37,7 @@ const hoisted = vi.hoisted(() => {
           update: vi.fn(() => ({
             eq: vi.fn().mockResolvedValue({ data: null, error: null }),
           })),
+          upsert: hoisted_upsertSessionMock,
         };
         return builder;
       }
@@ -57,6 +60,25 @@ const hoisted = vi.hoisted(() => {
         return builder;
       }
 
+      if (table === 'chat_conversations') {
+        return {
+          insert: vi.fn(() => ({
+            select: vi.fn(() => ({
+              single: vi.fn().mockResolvedValue({ data: { id: 'conv-new' }, error: null }),
+            })),
+          })),
+          update: vi.fn(() => ({
+            eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+          })),
+        };
+      }
+
+      if (table === 'session_intent_logs' || table === 'chat_messages') {
+        return {
+          insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+        };
+      }
+
       throw new Error(`Unhandled table: ${table}`);
     }),
   };
@@ -64,6 +86,7 @@ const hoisted = vi.hoisted(() => {
   return {
     state,
     supabaseMock,
+    upsertSessionMock: hoisted_upsertSessionMock,
     createClientMock: vi.fn(() => supabaseMock),
     logAgentDecisionMock: vi.fn(),
     checkRateLimitMock: vi.fn(),
@@ -106,6 +129,18 @@ vi.mock('../utils/slang.ts', () => ({
 
 vi.mock('../utils/format.ts', () => ({
   isLikelyPersonName: (value: string) => value.trim().length >= 2,
+  extractPushname: (body: unknown) => {
+    if (!body || typeof body !== 'object') return '';
+    const src = body as Record<string, unknown>;
+    const candidates = [src.name, src.pushname, src.senderName, src.notify, src.notifyName];
+    for (const raw of candidates) {
+      if (raw === null || raw === undefined) continue;
+      const asString = typeof raw === 'string' ? raw : String(raw);
+      const cleaned = asString.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+      if (cleaned) return cleaned;
+    }
+    return '';
+  },
 }));
 
 vi.mock('../../_shared/agentLogger.ts', () => ({
@@ -232,6 +267,8 @@ describe('orchestrator', () => {
       originalIntent: 'faq',
       fallbackUsed: false,
     });
+    hoisted.upsertSessionMock.mockClear();
+    hoisted.upsertSessionMock.mockResolvedValue({ data: null, error: null });
   });
 
   it('rejects invalid phone numbers before routing', async () => {
@@ -314,5 +351,57 @@ describe('orchestrator', () => {
       env,
       undefined,
     );
+  });
+
+  describe('pushname fallback', () => {
+    const cases: Array<[string, Record<string, unknown>]> = [
+      ['no name field present', { sender: '081200000001', message: 'halo' }],
+      ['empty string name', { sender: '081200000002', message: 'halo', name: '' }],
+      ['whitespace-only name', { sender: '081200000003', message: 'halo', name: '   ' }],
+      ['NBSP-only name', { sender: '081200000004', message: 'halo', name: '\u00A0\u00A0' }],
+      ['null name with empty pushname', { sender: '081200000005', message: 'halo', name: null, pushname: '' }],
+      ['all candidate fields blank', {
+        sender: '081200000006', message: 'halo',
+        name: '', pushname: '   ', senderName: '\u00A0', notify: '', notifyName: '',
+      }],
+    ];
+
+    it.each(cases)('falls back to name prompt when pushname is %s', async (_label, body) => {
+      const response = await orchestrate(makeRequest(body), env);
+
+      // Fallback flow ends in awaiting_name response (prompt sent via sendWhatsApp).
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({
+        status: 'awaiting_name',
+        conversation_id: 'conv-new',
+      });
+
+      // sendWhatsApp must have been called with the name-prompt greeting (NOT the
+      // pushname-bypass greeting), proving we did not skip the prompt.
+      expect(hoisted.sendWhatsAppMock).toHaveBeenCalledTimes(1);
+      const [, sentMessage] = hoisted.sendWhatsAppMock.mock.calls[0];
+      expect(sentMessage).toMatch(/Boleh saya tahu nama Anda/i);
+
+      // The session must be upserted with awaiting_name=true and no guest_name —
+      // i.e. the pushname-bypass branch did not run.
+      const upsertPayloads = hoisted.upsertSessionMock.mock.calls.map((c) => c[0]);
+      const promptUpsert = upsertPayloads.find(
+        (p) => p && (p as Record<string, unknown>).awaiting_name === true,
+      );
+      expect(promptUpsert).toBeDefined();
+      expect((promptUpsert as Record<string, unknown>).guest_name).toBeNull();
+
+      // No upsert with awaiting_name=false + guest_name set should have happened
+      // (that would indicate the pushname-bypass branch fired).
+      const bypassUpsert = upsertPayloads.find((p) => {
+        const rec = p as Record<string, unknown>;
+        return rec.awaiting_name === false && typeof rec.guest_name === 'string' && rec.guest_name;
+      });
+      expect(bypassUpsert).toBeUndefined();
+
+      // Intent classifier should not run because handleNameCollection returned
+      // a Response (the awaiting_name prompt) and short-circuited.
+      expect(hoisted.classifyIntentMock).not.toHaveBeenCalled();
+    });
   });
 });
