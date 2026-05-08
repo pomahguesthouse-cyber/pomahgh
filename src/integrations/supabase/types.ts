@@ -4397,6 +4397,27 @@ export type Database = {
           },
         ]
       }
+      whatsapp_webhook_dedup: {
+        Row: {
+          created_at: string
+          dedup_key: string
+          expires_at: string
+          phone_number: string
+        }
+        Insert: {
+          created_at?: string
+          dedup_key: string
+          expires_at: string
+          phone_number: string
+        }
+        Update: {
+          created_at?: string
+          dedup_key?: string
+          expires_at?: string
+          phone_number?: string
+        }
+        Relationships: []
+      }
       widget_config: {
         Row: {
           created_at: string | null
@@ -4461,6 +4482,7 @@ export type Database = {
           total_allotment: number
         }[]
       }
+      cleanup_whatsapp_webhook_dedup: { Args: never; Returns: number }
       generate_booking_code: { Args: never; Returns: string }
       generate_manager_token: { Args: never; Returns: string }
       get_manager_role: { Args: { _user_id: string }; Returns: string }
