@@ -79,6 +79,22 @@ const hoisted = vi.hoisted(() => {
         };
       }
 
+      if (table === 'whatsapp_webhook_dedup') {
+        return {
+          upsert: vi.fn(() => ({
+            select: vi.fn().mockResolvedValue({ data: [{ dedup_key: 'k' }], error: null }),
+          })),
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            })),
+          })),
+          update: vi.fn(() => ({
+            eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+          })),
+        };
+      }
+
       throw new Error(`Unhandled table: ${table}`);
     }),
   };
