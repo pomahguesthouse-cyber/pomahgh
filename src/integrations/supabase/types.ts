@@ -4482,7 +4482,9 @@ export type Database = {
           total_allotment: number
         }[]
       }
-      cleanup_whatsapp_webhook_dedup: { Args: never; Returns: number }
+      cleanup_whatsapp_webhook_dedup:
+        | { Args: never; Returns: number }
+        | { Args: { p_batch?: number }; Returns: number }
       generate_booking_code: { Args: never; Returns: string }
       generate_manager_token: { Args: never; Returns: string }
       get_manager_role: { Args: { _user_id: string }; Returns: string }

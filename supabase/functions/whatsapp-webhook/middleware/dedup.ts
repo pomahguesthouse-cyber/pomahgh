@@ -154,9 +154,10 @@ export async function checkDuplicate(
 
   evictExpired(now);
 
-  // Opportunistic cleanup ~1% of the time
-  if (Math.random() < 0.01) {
-    supabase.rpc('cleanup_whatsapp_webhook_dedup').then(
+  // Opportunistic cleanup ~0.1% of the time. Bulk cleanup runs every 5 min via pg_cron;
+  // this is just a safety net between cron ticks under heavy load.
+  if (Math.random() < 0.001) {
+    supabase.rpc('cleanup_whatsapp_webhook_dedup', { p_batch: 1000 }).then(
       () => {},
       (err: unknown) => console.warn('[dedup] cleanup rpc failed:', err),
     );
