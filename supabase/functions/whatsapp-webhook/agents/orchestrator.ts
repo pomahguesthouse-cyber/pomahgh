@@ -7,6 +7,7 @@ import { isLikelyPersonName, extractPushname } from '../utils/format.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 import { checkRateLimit } from '../middleware/rateLimiter.ts';
+import { checkDuplicate, extractMessageId } from '../middleware/dedup.ts';
 import { getCachedHotelSettings, ensureConversation, updateSession, hasRecentOrActiveBooking } from '../services/session.ts';
 import { logMessage, getConversationHistory } from '../services/conversation.ts';
 import { sendWhatsApp } from '../services/fonnte.ts';
@@ -119,6 +120,25 @@ export async function orchestrate(
   // Normalisasi konsisten via helper (handle name/pushname/notify/notifyName,
  // string kosong, NBSP, whitespace berlebih, number, null).
   const pushname = extractPushname(body);
+
+  // ── 1b. WEBHOOK DEDUP / IDENTICAL-TEXT THROTTLE ──
+  // Stops Fonnte retry storms (same message_id ~every 60s) and auto-sender
+  // spam (same text from guest within 90s). Image messages bypass this so
+  // payment proof attachments are never dropped.
+  if (!hasImageAttachment) {
+    const messageId = extractMessageId(body);
+    const dup = checkDuplicate({ phone, messageId, normalizedText: normalizedMessage });
+    if (dup.skip) {
+      trace?.info('Duplicate message skipped', { phone, reason: dup.reason, message_id: messageId });
+      logAgentDecision(supabase, {
+        trace_id: trace?.traceId, phone_number: phone,
+        from_agent: 'orchestrator', reason: dup.reason,
+      });
+      return new Response(JSON.stringify({ status: 'skipped', reason: dup.reason }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
 
   // ── 2. RATE LIMIT ──
   if (!await checkRateLimit(supabase, phone)) {
