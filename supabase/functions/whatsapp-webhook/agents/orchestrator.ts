@@ -127,7 +127,7 @@ export async function orchestrate(
   // payment proof attachments are never dropped.
   if (!hasImageAttachment) {
     const messageId = extractMessageId(body);
-    const dup = checkDuplicate({ phone, messageId, normalizedText: normalizedMessage });
+    const dup = await checkDuplicate(supabase, { phone, messageId, normalizedText: normalizedMessage });
     if (dup.skip) {
       trace?.info('Duplicate message skipped', { phone, reason: dup.reason, message_id: messageId });
       logAgentDecision(supabase, {
