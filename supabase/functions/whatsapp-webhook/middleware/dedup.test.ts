@@ -1,12 +1,12 @@
-import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { __resetDedupCache, buildDedupKeys, checkDuplicate, extractMessageId } from "./dedup.ts";
+import { describe, expect, it } from 'vitest';
+import { __resetDedupCache, buildDedupKeys, checkDuplicate, extractMessageId } from './dedup.ts';
 
 /** Minimal in-memory mock of the Supabase client surface used by checkDuplicate. */
 function createMockSupabase() {
   const rows = new Map<string, { dedup_key: string; phone_number: string; expires_at: string }>();
 
-  // deno-lint-ignore no-explicit-any
-  const builder = (key: string): any => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const builder = (_key: string): any => ({
     upsert: (
       row: { dedup_key: string; phone_number: string; expires_at: string },
       _opts: { onConflict: string; ignoreDuplicates: boolean },
@@ -21,8 +21,7 @@ function createMockSupabase() {
     }),
     select: (_cols: string) => ({
       eq: (_col: string, val: string) => ({
-        maybeSingle: () =>
-          Promise.resolve({ data: rows.get(val) ?? null, error: null }),
+        maybeSingle: () => Promise.resolve({ data: rows.get(val) ?? null, error: null }),
       }),
     }),
     update: (patch: { expires_at: string; phone_number: string }) => ({
@@ -32,102 +31,96 @@ function createMockSupabase() {
         return Promise.resolve({ data: null, error: null });
       },
     }),
-    _table: key,
   });
 
   return {
     from: (table: string) => builder(table),
     rpc: (_name: string) => Promise.resolve({ data: null, error: null }),
     _rows: rows,
-    // deno-lint-ignore no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 
-Deno.test("extractMessageId picks up common field names", () => {
-  assertEquals(extractMessageId({ id: "abc" }), "abc");
-  assertEquals(extractMessageId({ messageId: "x1" }), "x1");
-  assertEquals(extractMessageId({ message_id: "x2" }), "x2");
-  assertEquals(extractMessageId({ id: 12345 }), "12345");
-  assertEquals(extractMessageId({ id: "  " }), null);
-  assertEquals(extractMessageId({}), null);
-  assertEquals(extractMessageId(null), null);
-});
+describe('dedup middleware', () => {
+  it('extractMessageId picks up common field names', () => {
+    expect(extractMessageId({ id: 'abc' })).toBe('abc');
+    expect(extractMessageId({ messageId: 'x1' })).toBe('x1');
+    expect(extractMessageId({ message_id: 'x2' })).toBe('x2');
+    expect(extractMessageId({ id: 12345 })).toBe('12345');
+    expect(extractMessageId({ id: '  ' })).toBe(null);
+    expect(extractMessageId({})).toBe(null);
+    expect(extractMessageId(null)).toBe(null);
+  });
 
-Deno.test("buildDedupKeys constructs id + text keys", () => {
-  const keys = buildDedupKeys({ phone: "6281", messageId: "abc", normalizedText: "halo" });
-  assertEquals(keys.length, 2);
-  assertEquals(keys[0].key, "mid:abc");
-  assertEquals(keys[0].reason, "duplicate_message_id");
-  assertEquals(keys[1].reason, "duplicate_identical_text");
-  assertEquals(keys[1].key.startsWith("txt:6281:"), true);
-});
+  it('buildDedupKeys constructs id + text keys', () => {
+    const keys = buildDedupKeys({ phone: '6281', messageId: 'abc', normalizedText: 'halo' });
+    expect(keys).toHaveLength(2);
+    expect(keys[0].key).toBe('mid:abc');
+    expect(keys[0].reason).toBe('duplicate_message_id');
+    expect(keys[1].reason).toBe('duplicate_identical_text');
+    expect(keys[1].key.startsWith('txt:6281:')).toBe(true);
+  });
 
-Deno.test("buildDedupKeys skips empty text", () => {
-  const keys = buildDedupKeys({ phone: "6281", messageId: "abc", normalizedText: "   " });
-  assertEquals(keys.length, 1);
-  assertEquals(keys[0].reason, "duplicate_message_id");
-});
+  it('buildDedupKeys skips empty text', () => {
+    const keys = buildDedupKeys({ phone: '6281', messageId: 'abc', normalizedText: '   ' });
+    expect(keys).toHaveLength(1);
+    expect(keys[0].reason).toBe('duplicate_message_id');
+  });
 
-Deno.test("checkDuplicate flags repeated message_id (DB-backed)", async () => {
-  __resetDedupCache();
-  const supabase = createMockSupabase();
-  const args = { phone: "6281234", messageId: "abc-1", normalizedText: "halo" };
-  assertEquals((await checkDuplicate(supabase, args)).skip, false);
-  const second = await checkDuplicate(supabase, args);
-  assertEquals(second.skip, true);
-  if (second.skip) assertEquals(second.reason, "duplicate_message_id");
-});
+  it('checkDuplicate flags repeated message_id (DB-backed)', async () => {
+    __resetDedupCache();
+    const supabase = createMockSupabase();
+    const args = { phone: '6281234', messageId: 'abc-1', normalizedText: 'halo' };
+    expect((await checkDuplicate(supabase, args)).skip).toBe(false);
+    const second = await checkDuplicate(supabase, args);
+    expect(second.skip).toBe(true);
+    if (second.skip) expect(second.reason).toBe('duplicate_message_id');
+  });
 
-Deno.test("checkDuplicate flags identical text within window (DB-backed)", async () => {
-  __resetDedupCache();
-  const supabase = createMockSupabase();
-  const phone = "6285656313680";
-  const text = "hallo kak, izin tanya apakah di tanggal 17-18 bisa available?";
-  assertEquals(
-    (await checkDuplicate(supabase, { phone, messageId: null, normalizedText: text })).skip,
-    false,
-  );
-  const dup = await checkDuplicate(supabase, { phone, messageId: "different-id", normalizedText: text });
-  assertEquals(dup.skip, true);
-  if (dup.skip) assertEquals(dup.reason, "duplicate_identical_text");
-});
+  it('checkDuplicate flags identical text within window (DB-backed)', async () => {
+    __resetDedupCache();
+    const supabase = createMockSupabase();
+    const phone = '6285656313680';
+    const text = 'hallo kak, izin tanya apakah di tanggal 17-18 bisa available?';
+    expect(
+      (await checkDuplicate(supabase, { phone, messageId: null, normalizedText: text })).skip,
+    ).toBe(false);
+    const dup = await checkDuplicate(supabase, { phone, messageId: 'different-id', normalizedText: text });
+    expect(dup.skip).toBe(true);
+    if (dup.skip) expect(dup.reason).toBe('duplicate_identical_text');
+  });
 
-Deno.test("checkDuplicate allows different text from same phone", async () => {
-  __resetDedupCache();
-  const supabase = createMockSupabase();
-  const phone = "6281";
-  assertEquals(
-    (await checkDuplicate(supabase, { phone, messageId: null, normalizedText: "halo" })).skip,
-    false,
-  );
-  assertEquals(
-    (await checkDuplicate(supabase, { phone, messageId: null, normalizedText: "berapa harganya?" })).skip,
-    false,
-  );
-});
+  it('checkDuplicate allows different text from same phone', async () => {
+    __resetDedupCache();
+    const supabase = createMockSupabase();
+    const phone = '6281';
+    expect(
+      (await checkDuplicate(supabase, { phone, messageId: null, normalizedText: 'halo' })).skip,
+    ).toBe(false);
+    expect(
+      (await checkDuplicate(supabase, { phone, messageId: null, normalizedText: 'berapa harganya?' })).skip,
+    ).toBe(false);
+  });
 
-Deno.test("checkDuplicate ignores empty text", async () => {
-  __resetDedupCache();
-  const supabase = createMockSupabase();
-  const phone = "6281";
-  assertEquals((await checkDuplicate(supabase, { phone, messageId: null, normalizedText: "" })).skip, false);
-  assertEquals((await checkDuplicate(supabase, { phone, messageId: null, normalizedText: "  " })).skip, false);
-});
+  it('checkDuplicate ignores empty text', async () => {
+    __resetDedupCache();
+    const supabase = createMockSupabase();
+    const phone = '6281';
+    expect((await checkDuplicate(supabase, { phone, messageId: null, normalizedText: '' })).skip).toBe(false);
+    expect((await checkDuplicate(supabase, { phone, messageId: null, normalizedText: '  ' })).skip).toBe(false);
+  });
 
-Deno.test("checkDuplicate detects duplicate even when L1 cache is empty (cold-start scenario)", async () => {
-  __resetDedupCache();
-  const supabase = createMockSupabase();
-  const args = { phone: "6281", messageId: "cold-1", normalizedText: "test" };
+  it('checkDuplicate detects duplicate even when L1 cache is empty (cold-start scenario)', async () => {
+    __resetDedupCache();
+    const supabase = createMockSupabase();
+    const args = { phone: '6281', messageId: 'cold-1', normalizedText: 'test' };
+    const first = await checkDuplicate(supabase, args);
+    expect(first.skip).toBe(false);
 
-  // First isolate processes message
-  const first = await checkDuplicate(supabase, args);
-  assertEquals(first.skip, false);
+    __resetDedupCache();
 
-  // Simulate cold start — L1 wiped, but DB row remains
-  __resetDedupCache();
-
-  // New isolate sees the same message_id → must still detect duplicate via DB
-  const second = await checkDuplicate(supabase, args);
-  assertEquals(second.skip, true);
-  if (second.skip) assertEquals(second.reason, "duplicate_message_id");
+    const second = await checkDuplicate(supabase, args);
+    expect(second.skip).toBe(true);
+    if (second.skip) expect(second.reason).toBe('duplicate_message_id');
+  });
 });
