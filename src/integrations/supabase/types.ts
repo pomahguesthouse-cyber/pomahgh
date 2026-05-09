@@ -1843,6 +1843,48 @@ export type Database = {
         }
         Relationships: []
       }
+      fonnte_health_checks: {
+        Row: {
+          alert_reason: string | null
+          alert_sent: boolean
+          checked_at: string
+          device_connected: boolean
+          device_status: string | null
+          error_message: string | null
+          id: string
+          is_idle: boolean
+          last_inbound_at: string | null
+          minutes_since_last_inbound: number | null
+          raw_response: Json | null
+        }
+        Insert: {
+          alert_reason?: string | null
+          alert_sent?: boolean
+          checked_at?: string
+          device_connected?: boolean
+          device_status?: string | null
+          error_message?: string | null
+          id?: string
+          is_idle?: boolean
+          last_inbound_at?: string | null
+          minutes_since_last_inbound?: number | null
+          raw_response?: Json | null
+        }
+        Update: {
+          alert_reason?: string | null
+          alert_sent?: boolean
+          checked_at?: string
+          device_connected?: boolean
+          device_status?: string | null
+          error_message?: string | null
+          id?: string
+          is_idle?: boolean
+          last_inbound_at?: string | null
+          minutes_since_last_inbound?: number | null
+          raw_response?: Json | null
+        }
+        Relationships: []
+      }
       hero_slides: {
         Row: {
           alt_text: string | null
@@ -1963,6 +2005,9 @@ export type Database = {
           email_reservations: string | null
           facebook_url: string | null
           favicon_url: string | null
+          fonnte_alert_cooldown_minutes: number
+          fonnte_health_check_enabled: boolean
+          fonnte_idle_alert_minutes: number
           full_house_description: string
           full_house_enabled: boolean
           full_house_price: number
@@ -2040,6 +2085,9 @@ export type Database = {
           email_reservations?: string | null
           facebook_url?: string | null
           favicon_url?: string | null
+          fonnte_alert_cooldown_minutes?: number
+          fonnte_health_check_enabled?: boolean
+          fonnte_idle_alert_minutes?: number
           full_house_description?: string
           full_house_enabled?: boolean
           full_house_price?: number
@@ -2117,6 +2165,9 @@ export type Database = {
           email_reservations?: string | null
           facebook_url?: string | null
           favicon_url?: string | null
+          fonnte_alert_cooldown_minutes?: number
+          fonnte_health_check_enabled?: boolean
+          fonnte_idle_alert_minutes?: number
           full_house_description?: string
           full_house_enabled?: boolean
           full_house_price?: number
