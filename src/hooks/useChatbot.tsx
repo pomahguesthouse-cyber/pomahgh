@@ -7,6 +7,7 @@ import type { ChatMessage as Message, ConversationContext } from "@/features/cha
 import { DEFAULT_CONTEXT, extractConversationContext } from "@/features/chatbot/services/contextExtractor";
 import { buildAutoTrainingInserts } from "@/features/chatbot/services/trainingExampleSelector";
 import { getChatErrorMessage } from "@/features/chatbot/services/errorMessage";
+import { sanitizeUserInput } from "@/features/chatbot/services/sanitizeUserInput";
 
 interface ChatbotResponse {
   choices: Array<{ message: { role: string; content: string; tool_calls?: unknown[] } }>;
@@ -202,6 +203,25 @@ export const useChatbot = () => {
   const processMessage = async (userMessage: string) => {
     if (!settings) return;
 
+    // Sanitasi anti prompt-injection sebelum dikirim ke AI
+    const sanitized = sanitizeUserInput(userMessage);
+    if (sanitized.blocked) {
+      const blockedMsg: Message = {
+        role: "assistant",
+        content: "Maaf kak, pesan kakak terdeteksi mengandung instruksi yang tidak diizinkan. Boleh ditulis ulang? 🙏",
+        timestamp: new Date(),
+      };
+      const next = [
+        ...messagesRef.current,
+        { role: "user" as const, content: userMessage, timestamp: new Date() },
+        blockedMsg,
+      ];
+      messagesRef.current = next;
+      setMessages(next);
+      return;
+    }
+    const cleanMessage = sanitized.text;
+
     // Start conversation if this is the first message
     if (!conversationIdRef.current) {
       await startConversation();
@@ -209,7 +229,7 @@ export const useChatbot = () => {
 
     const newUserMessage: Message = {
       role: 'user',
-      content: userMessage,
+      content: cleanMessage,
       timestamp: new Date()
     };
 
@@ -220,7 +240,7 @@ export const useChatbot = () => {
     setIsLoading(true);
 
     // Log user message
-    await logMessage('user', userMessage);
+    await logMessage('user', cleanMessage);
 
     try {
       const { data: rawChatResponse, error: chatError } = await supabase.functions.invoke('chatbot', {
