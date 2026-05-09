@@ -360,6 +360,13 @@ export async function orchestrate(
       });
     }
     conversationId = newConv.id;
+    // Reset state ke idle saat sesi baru dimulai (timeout / past checkout / first contact).
+    await transitionState(supabase, {
+      phone, conversationId,
+      from: pastCheckout ? 'closed' : getState(session),
+      to: 'idle',
+      reason: pastCheckout ? 'reset_past_checkout' : (session ? 'reset_by_timeout' : 'first_contact'),
+    });
   }
 
   // ── 5d.1 AUDIT MEMORY DECISION ──
