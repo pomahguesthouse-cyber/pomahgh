@@ -87,6 +87,15 @@ serve(async (req) => {
     // Get last user message
     const lastUserMessage = messages?.filter((m: { role: string; content: string }) => m.role === "user").pop()?.content || "";
 
+    // Detect price/availability intent — force tool call on first iteration
+    // to mencegah halusinasi harga/ketersediaan dari memori model.
+    const availabilityIntent =
+      /\b(kosong|tersedia|available|ready|ada\s+kamar|ada\s+room|booking|book|pesan|reserve|reservasi|check\s*in|checkin|menginap|nginap)\b/i.test(lastUserMessage) ||
+      /\btanggal\b/i.test(lastUserMessage) ||
+      /\b(\d{1,2})[\s\/-](\d{1,2}|jan|feb|mar|apr|mei|jun|jul|agu|sep|okt|nov|des)/i.test(lastUserMessage);
+    const priceIntent = /\b(harga|tarif|rate|berapa|brp|biaya|cost|price|diskon|promo)\b/i.test(lastUserMessage);
+    const forceToolCall = !faq_mode && (availabilityIntent || priceIntent);
+
     // NOTE: Quick greeting bypass removed intentionally.
     // All messages now go through full AI pipeline with persona, KB, and training.
     // This ensures consistent personality and knowledge-aware responses.
@@ -131,6 +140,11 @@ serve(async (req) => {
       const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
       
       try {
+        // Hanya paksa tool pada iterasi pertama (saat belum ada tool result)
+        const hasToolResults = chatMessages.some(m => m.role === 'tool');
+        const toolChoice = faq_mode
+          ? undefined
+          : (forceToolCall && !hasToolResults ? "required" : "auto");
         const response = await fetch(LOVABLE_API_URL, {
           method: "POST",
           headers: {
@@ -143,7 +157,7 @@ serve(async (req) => {
               { role: "system", content: systemPrompt },
               ...chatMessages
             ],
-            ...(faq_mode ? {} : { tools, tool_choice: "auto" }),
+            ...(faq_mode ? {} : { tools, tool_choice: toolChoice }),
             temperature: 0.4,
             max_tokens: faq_mode ? 400 : maxTokens
           }),
