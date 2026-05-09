@@ -111,3 +111,39 @@ export async function hasRecentOrActiveBooking(
     return false;
   }
 }
+
+/**
+ * Cek apakah tamu sudah melewati tanggal checkout dari booking terakhirnya.
+ * Jika TRUE → memory percakapan WAJIB di-reset (chatbot mulai sesi baru),
+ * tidak peduli idle timeout atau retention rule.
+ * Hanya mempertimbangkan booking yang TIDAK dibatalkan/ditolak.
+ */
+export async function isPastLastCheckout(
+  supabase: SupabaseClient,
+  phone: string,
+): Promise<boolean> {
+  try {
+    const variants = new Set<string>([phone]);
+    if (phone.startsWith('62')) variants.add('0' + phone.slice(2));
+    if (phone.startsWith('0')) variants.add('62' + phone.slice(1));
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('check_out')
+      .in('guest_phone', Array.from(variants))
+      .not('status', 'in', '("cancelled","rejected","no_show")')
+      .order('check_out', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data?.check_out) return false;
+
+    // WIB today (UTC+7) — bandingkan tanggal saja
+    const nowWib = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const today = nowWib.toISOString().slice(0, 10);
+    return String(data.check_out) < today;
+  } catch (err) {
+    console.warn(`[session] isPastLastCheckout exception:`, err);
+    return false;
+  }
+}

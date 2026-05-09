@@ -8,7 +8,7 @@ import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 import { checkRateLimit } from '../middleware/rateLimiter.ts';
 import { checkDuplicate, extractMessageId } from '../middleware/dedup.ts';
-import { getCachedHotelSettings, ensureConversation, updateSession, hasRecentOrActiveBooking } from '../services/session.ts';
+import { getCachedHotelSettings, ensureConversation, updateSession, hasRecentOrActiveBooking, isPastLastCheckout } from '../services/session.ts';
 import { logMessage, getConversationHistory } from '../services/conversation.ts';
 import { sendWhatsApp } from '../services/fonnte.ts';
 import { handlePriceApproval } from './pricing.ts';
@@ -295,18 +295,29 @@ export async function orchestrate(
   const isStaleByTimeout = idleMs > SESSION_TIMEOUT;
   let conversationId = (session as WhatsAppSession)?.conversation_id;
 
+  // Hard rule: jika tanggal hari ini SUDAH MELEWATI check_out booking terakhir,
+  // memory percakapan WAJIB di-reset — chatbot tidak boleh mempertahankan
+  // konteks tamu yang sudah selesai menginap.
+  let pastCheckout = false;
+  if (conversationId) {
+    pastCheckout = await isPastLastCheckout(supabase, phone).catch(() => false);
+    if (pastCheckout) {
+      console.log(`🧹 Resetting memory for ${phone} — today > last booking check_out`);
+    }
+  }
+
   // Memory persistence rule: jika tamu punya booking aktif atau baru check-out
   // (≤ H+2), JANGAN reset percakapan walau idle melewati timeout. Chatbot harus
   // tetap mengingat konteks booking sampai 2 hari setelah check-out.
   let preserveMemory = false;
-  if (isStaleByTimeout && conversationId) {
+  if (isStaleByTimeout && conversationId && !pastCheckout) {
     preserveMemory = await hasRecentOrActiveBooking(supabase, phone, memoryRetentionDays).catch(() => false);
     if (preserveMemory) {
       console.log(`🧠 Preserving memory for ${phone} — guest has active/recent booking (≤ H+${memoryRetentionDays} checkout)`);
     }
   }
 
-  const isNewSession = !conversationId || (isStaleByTimeout && !preserveMemory);
+  const isNewSession = !conversationId || pastCheckout || (isStaleByTimeout && !preserveMemory);
 
   if (isNewSession) {
     const { data: newConv, error: convError } = await supabase
@@ -332,6 +343,9 @@ export async function orchestrate(
     if (!session) {
       memoryDecision = `first_contact | conversation baru dibuat (belum ada session sebelumnya)`;
       memoryEmoji = '🆕';
+    } else if (pastCheckout) {
+      memoryDecision = `reset_past_checkout | tanggal hari ini sudah melewati check_out booking terakhir — memory di-reset`;
+      memoryEmoji = '🧹';
     } else if (!isStaleByTimeout) {
       memoryDecision = `keep_active | masih aktif (idle ${idleMin} mnt ≤ timeout ${sessionTimeoutMinutes} mnt) — memory dipertahankan`;
       memoryEmoji = '✅';

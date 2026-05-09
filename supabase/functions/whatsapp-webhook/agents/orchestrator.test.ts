@@ -171,6 +171,8 @@ vi.mock('../services/session.ts', () => ({
   getCachedHotelSettings: hoisted.getCachedHotelSettingsMock,
   ensureConversation: hoisted.ensureConversationMock,
   updateSession: hoisted.updateSessionMock,
+  hasRecentOrActiveBooking: vi.fn().mockResolvedValue(false),
+  isPastLastCheckout: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock('../services/conversation.ts', () => ({
