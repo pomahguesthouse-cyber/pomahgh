@@ -12,6 +12,7 @@ import type { SupabaseClient, EnvConfig, ManagerInfo } from '../types.ts';
 import { corsHeaders } from '../types.ts';
 import { sendWhatsApp } from '../services/fonnte.ts';
 import { sendBookingOrderToGuest } from '../services/sendBookingOrder.ts';
+import { transitionState } from '../state/conversationState.ts';
 
 const APPROVE_RE = /^\s*(ya|iya|ok|oke|okey|lunas|approve|approved|setuju|konfirmasi|confirm)\s*$/i;
 const REJECT_RE = /^\s*(tidak|no|reject|tolak|gagal|salah|mismatch)\s*$/i;
@@ -133,6 +134,15 @@ export async function handlePaymentApproval(
       .update({ context: {} })
       .eq('phone_number', managerPhone);
 
+    // 6b. Reset state percakapan tamu → idle (booking sudah lunas).
+    if (booking.guest_phone) {
+      await transitionState(supabase, {
+        phone: booking.guest_phone,
+        to: 'idle',
+        reason: 'payment_approved_by_manager',
+      });
+    }
+
     return new Response(JSON.stringify({ status: 'approved', booking_id: booking.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -166,6 +176,15 @@ export async function handlePaymentApproval(
   await supabase.from('whatsapp_sessions')
     .update({ context: {} })
     .eq('phone_number', managerPhone);
+
+  // Reset state tamu → minta kirim ulang bukti.
+  if (booking.guest_phone) {
+    await transitionState(supabase, {
+      phone: booking.guest_phone,
+      to: 'awaiting_payment_proof',
+      reason: 'payment_rejected_by_manager',
+    });
+  }
 
   return new Response(JSON.stringify({ status: 'rejected', booking_id: booking.id }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
