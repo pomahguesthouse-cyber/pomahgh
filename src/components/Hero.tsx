@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useHeroSlides, HeroSlide } from "@/hooks/useHeroSlides";
-import heroImage from "@/assets/hero-guesthouse.jpg";
+import heroImage from "@/assets/hero-guesthouse.webp";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { motion, AnimatePresence } from "framer-motion";

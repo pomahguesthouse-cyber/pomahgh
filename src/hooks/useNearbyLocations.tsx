@@ -23,12 +23,15 @@ export const useNearbyLocations = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("nearby_locations")
-        .select("*")
+        .select(
+          "id,name,category,distance_km,travel_time_minutes,icon_name," +
+            "display_order,is_active,created_at,updated_at"
+        )
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      return data as NearbyLocation[];
+      return data as unknown as NearbyLocation[];
     },
   });
 

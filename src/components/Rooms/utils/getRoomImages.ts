@@ -1,5 +1,5 @@
-import deluxeRoom from "@/assets/room-deluxe.jpg";
-import villaRoom from "@/assets/room-villa.jpg";
+import deluxeRoom from "@/assets/room-deluxe.webp";
+import villaRoom from "@/assets/room-villa.webp";
 import type { Room } from "@/hooks/useRooms";
 
 const fallbackImages: Record<string, string> = {

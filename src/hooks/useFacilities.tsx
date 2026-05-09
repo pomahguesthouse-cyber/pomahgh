@@ -13,13 +13,16 @@ export interface Facility {
   updated_at: string;
 }
 
+const FACILITY_COLUMNS =
+  "id,icon_name,title,description,display_order,is_active,created_at,updated_at";
+
 export const useFacilities = () => {
   return useQuery({
     queryKey: ["facilities"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("facilities")
-        .select("*")
+        .select(FACILITY_COLUMNS)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
@@ -35,7 +38,7 @@ export const useAdminFacilities = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("facilities")
-        .select("*")
+        .select(FACILITY_COLUMNS)
         .order("display_order", { ascending: true });
 
       if (error) throw error;

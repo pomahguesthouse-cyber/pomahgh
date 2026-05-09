@@ -18,18 +18,23 @@ export interface FacilityHeroSlide {
   updated_at: string;
 }
 
+const FACILITY_HERO_COLUMNS =
+  "id,image_url,title,subtitle,display_order,is_active,duration," +
+  "show_overlay,overlay_opacity,overlay_gradient_from,overlay_gradient_to," +
+  "created_at,updated_at";
+
 export const useFacilityHeroSlides = () => {
   return useQuery({
     queryKey: ["facility-hero-slides"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("facility_hero_slides")
-        .select("*")
+        .select(FACILITY_HERO_COLUMNS)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      return data as FacilityHeroSlide[];
+      return data as unknown as FacilityHeroSlide[];
     },
   });
 };
@@ -40,11 +45,11 @@ export const useAdminFacilityHeroSlides = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("facility_hero_slides")
-        .select("*")
+        .select(FACILITY_HERO_COLUMNS)
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      return data as FacilityHeroSlide[];
+      return data as unknown as FacilityHeroSlide[];
     },
   });
 };

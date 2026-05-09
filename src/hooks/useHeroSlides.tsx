@@ -34,18 +34,29 @@ export interface HeroSlide {
   updated_at: string;
 }
 
+// Explicit column list — keep in sync with the HeroSlide interface above.
+// Avoids `select("*")` so we don't pay for columns the public site never
+// reads (e.g. internal admin metadata).
+const HERO_SLIDE_COLUMNS =
+  "id,image_url,video_url,media_type,overlay_text,overlay_subtext," +
+  "font_family,font_size,font_weight,text_color,text_align," +
+  "subtitle_font_family,subtitle_font_size,subtitle_font_weight,subtitle_text_color," +
+  "title_animation,subtitle_animation,title_animation_loop,subtitle_animation_loop," +
+  "show_overlay,overlay_gradient_from,overlay_gradient_to,overlay_opacity," +
+  "display_order,is_active,duration,transition_effect,created_at,updated_at";
+
 export const useHeroSlides = () => {
   return useQuery({
     queryKey: ["hero-slides"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("hero_slides")
-        .select("*")
+        .select(HERO_SLIDE_COLUMNS)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      return data as HeroSlide[];
+      return data as unknown as HeroSlide[];
     },
   });
 };
@@ -56,11 +67,11 @@ export const useAdminHeroSlides = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("hero_slides")
-        .select("*")
+        .select(HERO_SLIDE_COLUMNS)
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      return data as HeroSlide[];
+      return data as unknown as HeroSlide[];
     },
   });
 };

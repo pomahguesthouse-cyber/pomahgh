@@ -68,6 +68,20 @@ const getCurrentPrice = (room: Room, activePromo?: RoomPromotion | null): number
   return room.price_per_night;
 };
 
+// Only the columns the public listing actually renders. Keeps the JSON
+// payload small (rooms can carry large markdown / JSONB columns).
+const ROOM_LIST_COLUMNS =
+  "id,name,slug,description,price_per_night,max_guests,features," +
+  "image_url,image_urls,virtual_tour_url,available,size_sqm," +
+  "room_count,room_numbers,allotment,base_price," +
+  "transition_effect,floor_plan_url,floor_plan_enabled," +
+  "is_non_refundable,pricing_priority,updated_at,created_at";
+
+const ROOM_PROMOTION_COLUMNS =
+  "id,room_id,name,description,promo_price,discount_percentage," +
+  "start_date,end_date,is_active,min_nights,promo_code," +
+  "badge_text,badge_color,priority";
+
 export const useRooms = () => {
   return useQuery({
     queryKey: ["rooms"],
@@ -81,12 +95,12 @@ export const useRooms = () => {
       ] = await Promise.all([
         supabase
           .from("rooms")
-          .select("*")
+          .select(ROOM_LIST_COLUMNS)
           .eq("available", true)
           .order("price_per_night", { ascending: true }),
         supabase
           .from("room_promotions")
-          .select("*")
+          .select(ROOM_PROMOTION_COLUMNS)
           .eq("is_active", true)
           .lte("start_date", today)
           .gte("end_date", today)
@@ -97,13 +111,14 @@ export const useRooms = () => {
       if (promosError) throw promosError;
 
       const promosByRoom = new Map<string, RoomPromotion>();
-      promotions?.forEach((promo) => {
+      const typedPromotions = (promotions ?? []) as unknown as RoomPromotion[];
+      typedPromotions.forEach((promo) => {
         if (!promosByRoom.has(promo.room_id)) {
-          promosByRoom.set(promo.room_id, promo as RoomPromotion);
+          promosByRoom.set(promo.room_id, promo);
         }
       });
-      
-      return (rooms as Room[]).map(room => {
+
+      return (rooms as unknown as Room[]).map(room => {
         const activePromo = promosByRoom.get(room.id) || null;
         return {
           ...room,

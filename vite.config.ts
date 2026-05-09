@@ -58,7 +58,6 @@ export default defineConfig(({ mode }) => ({
           if (!id.includes('node_modules')) return;
 
           // Heavy libraries — already dynamic-imported, ensure separate chunks
-          if (id.includes('html2pdf')) return 'vendor-pdf';
           if (id.includes('/xlsx')) return 'vendor-xlsx';
 
           // Charts + D3 deps

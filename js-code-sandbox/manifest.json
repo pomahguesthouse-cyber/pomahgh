@@ -1,0 +1,7 @@
+{
+  "type": "plugin",
+  "runner": "node",
+  "owner": "dullah",
+  "name": "js-code-sandbox",
+  "revision": 7
+}
