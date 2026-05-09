@@ -63,10 +63,15 @@ serve(async (req) => {
         });
         raw = await r.json();
         const rawObj = raw as Record<string, unknown>;
-        const status = String(rawObj?.status ?? rawObj?.device_status ?? "").toLowerCase();
-        deviceStatus = status || "unknown";
-        // Fonnte returns "connect" / "connected" when online; "disconnect" otherwise
-        deviceConnected = status.includes("connect") && !status.includes("disconnect");
+        // Fonnte device endpoint returns: { status: true, device_status: "connect"|"disconnect", ... }
+        // status (boolean) = API call succeeded; device_status (string) = actual connection state
+        const apiOk = rawObj?.status === true || String(rawObj?.status).toLowerCase() === "true";
+        const ds = String(rawObj?.device_status ?? rawObj?.connected ?? "").toLowerCase();
+        deviceStatus = ds || (apiOk ? "unknown" : "api_error");
+        deviceConnected = apiOk && ds.includes("connect") && !ds.includes("disconnect");
+        if (!apiOk) {
+          fonnteError = String(rawObj?.reason ?? rawObj?.detail ?? "Fonnte API returned status=false");
+        }
       } catch (e) {
         fonnteError = e instanceof Error ? e.message : "fonnte fetch failed";
       }
