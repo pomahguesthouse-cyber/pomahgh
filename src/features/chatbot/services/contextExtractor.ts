@@ -28,8 +28,39 @@ export function extractConversationContext(
   const guestMatch = content.match(/(\d+)\s*(?:orang|tamu|guest)/i);
   if (guestMatch) updated.guest_count = parseInt(guestMatch[1], 10);
 
-  const nameMatch = content.match(/(?:atas nama|nama tamu|nama:?)\s*([A-Za-z\s]+?)(?:\.|,|untuk|\n)/i);
-  if (nameMatch) updated.guest_name = nameMatch[1].trim();
+  const extractedName = extractGuestName(content);
+  if (extractedName) updated.guest_name = extractedName;
 
   return updated;
+}
+
+// Stopword Indonesia + English yang sering ke-tangkap salah sebagai nama
+const NAME_STOPWORDS = new Set([
+  "untuk", "kami", "saya", "aku", "kita", "kamu", "anda", "mereka",
+  "dia", "ini", "itu", "tamu", "guest", "orang", "booking", "pesan",
+  "reservasi", "kamar", "room", "the", "a", "an", "atas", "nama",
+  "dan", "atau", "yang", "dengan", "dari", "ke", "di", "pada",
+  "sebagai", "tolong", "mohon", "ya", "iya", "ok", "oke", "siap",
+]);
+
+function isLikelyName(candidate: string): boolean {
+  const words = candidate.trim().split(/\s+/);
+  // Wajib min 2 kata supaya tidak salah tangkap "untuk" / "kami"
+  if (words.length < 2 || words.length > 5) return false;
+  for (const w of words) {
+    if (w.length < 2 || w.length > 30) return false;
+    if (!/^[A-Za-z][A-Za-z'-]*$/.test(w)) return false;
+    if (NAME_STOPWORDS.has(w.toLowerCase())) return false;
+  }
+  return true;
+}
+
+function extractGuestName(content: string): string | null {
+  // Tangkap kandidat sampai delimiter umum, lalu validasi.
+  const match = content.match(
+    /(?:atas nama|nama tamu|nama pemesan|nama:?)\s+([A-Za-z][A-Za-z\s'-]{2,60}?)(?=\s*(?:[.,;:!?\n]|untuk|buat|tgl|tanggal|tlp|telp|no\.?|hp|wa|email|$))/i,
+  );
+  if (!match) return null;
+  const candidate = match[1].trim().replace(/\s+/g, " ");
+  return isLikelyName(candidate) ? candidate : null;
 }
