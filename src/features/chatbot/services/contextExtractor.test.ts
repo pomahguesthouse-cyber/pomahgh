@@ -43,4 +43,36 @@ describe("contextExtractor", () => {
 
     expect(result.guest_name).toBe("Andi Pratama");
   });
+
+  it("does NOT extract stopword-like phrase as guest name", () => {
+    const result = extractConversationContext(
+      "tolong pesan untuk kami",
+      DEFAULT_CONTEXT,
+    );
+    expect(result.guest_name).toBeNull();
+  });
+
+  it("rejects single-word names", () => {
+    const result = extractConversationContext(
+      "atas nama Budi",
+      DEFAULT_CONTEXT,
+    );
+    expect(result.guest_name).toBeNull();
+  });
+
+  it("extracts 3-word name and stops before tanggal", () => {
+    const result = extractConversationContext(
+      "Booking atas nama Siti Nur Aisyah tanggal 12 Januari",
+      DEFAULT_CONTEXT,
+    );
+    expect(result.guest_name).toBe("Siti Nur Aisyah");
+  });
+
+  it("rejects names containing digits or symbols", () => {
+    const result = extractConversationContext(
+      "atas nama 12345",
+      DEFAULT_CONTEXT,
+    );
+    expect(result.guest_name).toBeNull();
+  });
 });
