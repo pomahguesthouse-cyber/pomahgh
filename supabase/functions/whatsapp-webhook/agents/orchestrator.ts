@@ -343,6 +343,9 @@ export async function orchestrate(
     if (!session) {
       memoryDecision = `first_contact | conversation baru dibuat (belum ada session sebelumnya)`;
       memoryEmoji = '🆕';
+    } else if (pastCheckout) {
+      memoryDecision = `reset_past_checkout | tanggal hari ini sudah melewati check_out booking terakhir — memory di-reset`;
+      memoryEmoji = '🧹';
     } else if (!isStaleByTimeout) {
       memoryDecision = `keep_active | masih aktif (idle ${idleMin} mnt ≤ timeout ${sessionTimeoutMinutes} mnt) — memory dipertahankan`;
       memoryEmoji = '✅';
