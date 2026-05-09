@@ -16,6 +16,7 @@ import { logMessage } from '../services/conversation.ts';
 import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 import { sendBookingOrderToGuest } from '../services/sendBookingOrder.ts';
+import { transitionState } from '../state/conversationState.ts';
 
 interface PaymentProofExtraction {
   is_payment_proof: boolean;
@@ -459,6 +460,18 @@ ${autoApproved ? '_Pembayaran sudah otomatis dikonfirmasi. Tidak perlu balas._' 
 
   await sendWhatsApp(phone, senderReply, env.fonnteApiKey);
   await logMessage(supabase, conversationId, 'assistant', senderReply);
+
+  // ── State transition: bukti diterima ──
+  // - autoApproved → 'idle' (lunas, flow selesai)
+  // - else         → 'awaiting_payment_approval' (menunggu manager YA/TIDAK)
+  if (!isAdminSubmission) {
+    await transitionState(supabase, {
+      phone,
+      conversationId,
+      to: autoApproved ? 'idle' : 'awaiting_payment_approval',
+      reason: autoApproved ? 'payment_auto_approved' : 'payment_proof_received',
+    });
+  }
 
   // 7. Jika auto-approved → kirim booking order (PDF invoice) ke WA tamu + tandai proof approved
   let bookingOrderSent = false;

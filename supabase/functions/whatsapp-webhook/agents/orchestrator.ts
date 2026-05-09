@@ -23,6 +23,7 @@ import { handleFullHouseQuestion, isFullHouseQuestion } from './fullHouse.ts';
 import { setAgentConfigs, type AgentConfigRecord, type EscalationRule } from '../../_shared/agentConfigCache.ts';
 import { classifyIntent } from './intentClassifier.ts';
 import { decide } from './decisionEngine.ts';
+import { transitionState, getState } from '../state/conversationState.ts';
 
 /**
  * Orchestrator (v2) — AI-based decision engine.
@@ -156,7 +157,7 @@ export async function orchestrate(
   const SESSION_COLUMNS =
     'phone_number, conversation_id, last_message_at, is_active, is_blocked, ' +
     'is_takeover, takeover_at, session_type, awaiting_name, guest_name, ' +
-    'pending_messages, pending_since';
+    'pending_messages, pending_since, conversation_state';
 
   const [hotelSettings, { data: chatbotSettingsRow }, { data: sessionRaw }, { data: agentConfigs }, { data: escalationRules }] = await Promise.all([
     getCachedHotelSettings(supabase),
@@ -199,6 +200,10 @@ export async function orchestrate(
     const convId = await ensureConversation(supabase, session, phone);
     await logMessage(supabase, convId, 'user', rawMessage);
     await updateSession(supabase, phone, convId, true);
+    await transitionState(supabase, {
+      phone, conversationId: convId, from: getState(session),
+      to: 'takeover', reason: 'response_mode_manual',
+    });
     return new Response(JSON.stringify({ status: 'manual_mode', conversation_id: convId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -209,6 +214,10 @@ export async function orchestrate(
     const convId = await ensureConversation(supabase, session, phone);
     await logMessage(supabase, convId, 'user', rawMessage);
     await updateSession(supabase, phone, convId, true);
+    await transitionState(supabase, {
+      phone, conversationId: convId, from: getState(session),
+      to: 'takeover', reason: 'whitelist_takeover',
+    });
     return new Response(JSON.stringify({ status: 'whitelist_takeover', conversation_id: convId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -228,6 +237,12 @@ export async function orchestrate(
     await logMessage(supabase, convId, 'user', logged);
     console.log(`⛔ Takeover active for ${phone} - AI skipped (pre-routing)`);
     await supabase.from('whatsapp_sessions').update({ last_message_at: new Date().toISOString() }).eq('phone_number', phone);
+    if (getState(session) !== 'takeover') {
+      await transitionState(supabase, {
+        phone, conversationId: convId, from: getState(session),
+        to: 'takeover', reason: 'takeover_active',
+      });
+    }
     return new Response(JSON.stringify({ status: 'takeover_mode', conversation_id: convId, reason: 'manual_takeover_active' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -345,6 +360,13 @@ export async function orchestrate(
       });
     }
     conversationId = newConv.id;
+    // Reset state ke idle saat sesi baru dimulai (timeout / past checkout / first contact).
+    await transitionState(supabase, {
+      phone, conversationId,
+      from: pastCheckout ? 'closed' : getState(session),
+      to: 'idle',
+      reason: pastCheckout ? 'reset_past_checkout' : (session ? 'reset_by_timeout' : 'first_contact'),
+    });
   }
 
   // ── 5d.1 AUDIT MEMORY DECISION ──
@@ -410,6 +432,10 @@ export async function orchestrate(
     } catch (e) {
       console.warn('[orchestrator] updateSession (handover) failed:', e);
     }
+    await transitionState(supabase, {
+      phone, conversationId, from: getState(session),
+      to: 'takeover', reason: 'human_handover_requested',
+    });
     const reassureMsg =
       'Baik kak, saya teruskan ke admin kami ya. Mohon ditunggu sebentar 🙏';
     await sendWhatsApp(phone, reassureMsg, env.fonnteApiKey);
@@ -622,6 +648,7 @@ async function handleNameCollection(
         phone_number: phone, conversation_id: conversationId,
         last_message_at: new Date().toISOString(), is_active: true,
         session_type: 'guest', awaiting_name: false, guest_name: trimmedPushname,
+        conversation_state: 'idle',
       }, { onConflict: 'phone_number' });
       if (conversationId) {
         await supabase.from('chat_conversations')
@@ -694,6 +721,7 @@ async function handleNameCollection(
         phone_number: phone, conversation_id: conversationId,
         last_message_at: new Date().toISOString(), is_active: true,
         session_type: 'guest', awaiting_name: false, guest_name: genericName,
+        conversation_state: 'idle',
       }, { onConflict: 'phone_number' });
       if (conversationId) {
         await supabase.from('chat_conversations').update({ guest_email: `${genericName} (WA: ${phone})` }).eq('id', conversationId);
@@ -707,6 +735,7 @@ async function handleNameCollection(
       phone_number: phone, conversation_id: conversationId,
       last_message_at: new Date().toISOString(), is_active: true,
       session_type: 'guest', awaiting_name: true, guest_name: null,
+      conversation_state: 'awaiting_name',
     }, { onConflict: 'phone_number' });
 
     await logMessage(supabase, conversationId, 'user', normalizedMessage);
@@ -726,6 +755,7 @@ async function handleNameCollection(
       const genericName = `Tamu WA ${phone.slice(-4)}`;
       await supabase.from('whatsapp_sessions').update({
         guest_name: genericName, awaiting_name: false, last_message_at: new Date().toISOString(),
+        conversation_state: 'idle',
       }).eq('phone_number', phone);
       if (conversationId) {
         await supabase.from('chat_conversations').update({ guest_email: `${genericName} (WA: ${phone})` }).eq('id', conversationId);
@@ -735,6 +765,7 @@ async function handleNameCollection(
 
     await supabase.from('whatsapp_sessions').update({
       guest_name: guestNameCandidate, awaiting_name: false, last_message_at: new Date().toISOString(),
+      conversation_state: 'idle',
     }).eq('phone_number', phone);
     if (conversationId) {
       await supabase.from('chat_conversations').update({ guest_email: `${guestNameCandidate} (WA: ${phone})` }).eq('id', conversationId);

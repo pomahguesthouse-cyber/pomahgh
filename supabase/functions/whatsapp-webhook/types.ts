@@ -36,6 +36,7 @@ export interface WhatsAppSession {
   guest_name?: string | null;
   pending_messages?: string[];
   pending_since?: string | null;
+  conversation_state?: string | null;
 }
 
 export interface ToolCall {
