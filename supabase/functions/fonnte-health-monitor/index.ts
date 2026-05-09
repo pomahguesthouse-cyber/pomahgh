@@ -107,7 +107,11 @@ serve(async (req) => {
     const reasons: string[] = [];
     if (!deviceConnected && !fonnteError) reasons.push(`device ${deviceStatus || "unknown"}`);
     if (fonnteError) reasons.push(`Fonnte API error: ${fonnteError}`);
-    if (isIdle) reasons.push(`tidak ada pesan masuk ${minutesSince} menit (>= ${idleMinutes} menit)`);
+    // Idle inbox sendiri TIDAK memicu alert — itu normal saat jam sepi.
+    // Idle hanya jadi konteks tambahan kalau device juga sudah disconnect/API error.
+    if (isIdle && (!deviceConnected || fonnteError)) {
+      reasons.push(`tidak ada pesan masuk ${minutesSince} menit (>= ${idleMinutes} menit)`);
+    }
 
     let alertSent = false;
     let alertReason: string | null = null;
