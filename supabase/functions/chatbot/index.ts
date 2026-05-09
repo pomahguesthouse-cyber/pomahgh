@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { corsHeaders, LOVABLE_API_URL } from "./lib/constants.ts";
 import { loadChatbotSettings } from "./services/settingsLoader.ts";
+import { checkChatbotRateLimit, getClientKey } from "./lib/rateLimiter.ts";
 import { loadHotelData } from "./services/dataLoader.ts";
 import { buildSystemPrompt } from "./ai/promptBuilder.ts";
 import { tools } from "./ai/tools.ts";
@@ -39,7 +40,29 @@ serve(async (req) => {
   const trace = createTrace(req, 'chatbot');
 
   try {
-    const { messages, chatbotSettings: providedSettings, conversationContext, faq_mode } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { messages, chatbotSettings: providedSettings, conversationContext, faq_mode } = body ?? {};
+
+    // Rate limit per session/IP (best-effort, in-memory per isolate)
+    const rlKey = getClientKey(req, body);
+    const rl = checkChatbotRateLimit(rlKey);
+    if (!rl.allowed) {
+      trace.warn('Rate limit hit', { key: rlKey, reason: rl.reason });
+      return new Response(
+        JSON.stringify({
+          error: "Terlalu banyak permintaan. Mohon tunggu sebentar lalu coba lagi.",
+          retry_after_seconds: rl.retryAfterSeconds,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "Retry-After": String(rl.retryAfterSeconds),
+          },
+        }
+      );
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
