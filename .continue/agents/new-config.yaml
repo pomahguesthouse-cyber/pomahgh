@@ -1,8 +1,0 @@
-"models": [
-  {
-    "title": "LM Studio",
-    "provider": "openai",
-    "model": "nama-model-anda",
-    "apiBase": "http://localhost:1234/v1"
-  }
-]
