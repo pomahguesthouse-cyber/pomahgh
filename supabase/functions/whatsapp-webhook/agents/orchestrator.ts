@@ -8,7 +8,7 @@ import type { TraceContext } from '../../_shared/traceContext.ts';
 import { logAgentDecision } from '../../_shared/agentLogger.ts';
 import { checkRateLimit } from '../middleware/rateLimiter.ts';
 import { checkDuplicate, extractMessageId } from '../middleware/dedup.ts';
-import { getCachedHotelSettings, ensureConversation, updateSession, hasRecentOrActiveBooking } from '../services/session.ts';
+import { getCachedHotelSettings, ensureConversation, updateSession, hasRecentOrActiveBooking, isPastLastCheckout } from '../services/session.ts';
 import { logMessage, getConversationHistory } from '../services/conversation.ts';
 import { sendWhatsApp } from '../services/fonnte.ts';
 import { handlePriceApproval } from './pricing.ts';
