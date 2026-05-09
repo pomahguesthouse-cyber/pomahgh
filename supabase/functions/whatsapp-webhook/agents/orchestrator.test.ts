@@ -16,6 +16,16 @@ const hoisted = vi.hoisted(() => {
 
   const hoisted_upsertSessionMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
+  // Spy for chat_conversations.insert so tests can assert whether the
+  // orchestrator created a brand-new conversation (memory reset) or reused
+  // an existing one. Default returns id 'conv-new'; tests may override the
+  // resolved value if they need to differentiate IDs across multiple inserts.
+  const hoisted_chatConvInsertMock = vi.fn(() => ({
+    select: vi.fn(() => ({
+      single: vi.fn().mockResolvedValue({ data: { id: 'conv-new' }, error: null }),
+    })),
+  }));
+
   const supabaseMock = {
     from: vi.fn((table: string) => {
       if (table === 'chatbot_settings') {
@@ -62,11 +72,7 @@ const hoisted = vi.hoisted(() => {
 
       if (table === 'chat_conversations') {
         return {
-          insert: vi.fn(() => ({
-            select: vi.fn(() => ({
-              single: vi.fn().mockResolvedValue({ data: { id: 'conv-new' }, error: null }),
-            })),
-          })),
+          insert: hoisted_chatConvInsertMock,
           update: vi.fn(() => ({
             eq: vi.fn().mockResolvedValue({ data: null, error: null }),
           })),
@@ -103,6 +109,7 @@ const hoisted = vi.hoisted(() => {
     state,
     supabaseMock,
     upsertSessionMock: hoisted_upsertSessionMock,
+    chatConvInsertMock: hoisted_chatConvInsertMock,
     createClientMock: vi.fn(() => supabaseMock),
     logAgentDecisionMock: vi.fn(),
     checkRateLimitMock: vi.fn(),
@@ -125,6 +132,10 @@ const hoisted = vi.hoisted(() => {
     setAgentConfigsMock: vi.fn(),
     classifyIntentMock: vi.fn(),
     decideMock: vi.fn(),
+    // Memory-reset gating (orchestrator step 5d). Hoisted so individual tests
+    // can drive the pastCheckout / preserveMemory branches end-to-end.
+    isPastLastCheckoutMock: vi.fn().mockResolvedValue(false),
+    hasRecentOrActiveBookingMock: vi.fn().mockResolvedValue(false),
   };
 });
 
@@ -152,7 +163,7 @@ vi.mock('../utils/format.ts', () => ({
     for (const raw of candidates) {
       if (raw === null || raw === undefined) continue;
       const asString = typeof raw === 'string' ? raw : String(raw);
-      const cleaned = asString.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+      const cleaned = asString.replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
       if (cleaned) return cleaned;
     }
     return '';
@@ -171,8 +182,8 @@ vi.mock('../services/session.ts', () => ({
   getCachedHotelSettings: hoisted.getCachedHotelSettingsMock,
   ensureConversation: hoisted.ensureConversationMock,
   updateSession: hoisted.updateSessionMock,
-  hasRecentOrActiveBooking: vi.fn().mockResolvedValue(false),
-  isPastLastCheckout: vi.fn().mockResolvedValue(false),
+  hasRecentOrActiveBooking: hoisted.hasRecentOrActiveBookingMock,
+  isPastLastCheckout: hoisted.isPastLastCheckoutMock,
 }));
 
 vi.mock('../services/conversation.ts', () => ({
@@ -287,6 +298,22 @@ describe('orchestrator', () => {
     });
     hoisted.upsertSessionMock.mockClear();
     hoisted.upsertSessionMock.mockResolvedValue({ data: null, error: null });
+
+    // Memory-reset gates default to "no reset, no preservation rule" so existing
+    // tests behave as before. Per-test overrides happen inside individual it().
+    hoisted.isPastLastCheckoutMock.mockReset();
+    hoisted.isPastLastCheckoutMock.mockResolvedValue(false);
+    hoisted.hasRecentOrActiveBookingMock.mockReset();
+    hoisted.hasRecentOrActiveBookingMock.mockResolvedValue(false);
+
+    // Reset chat_conversations.insert spy AND restore its default
+    // implementation (mockReset wipes implementations, not just call history).
+    hoisted.chatConvInsertMock.mockReset();
+    hoisted.chatConvInsertMock.mockImplementation(() => ({
+      select: vi.fn(() => ({
+        single: vi.fn().mockResolvedValue({ data: { id: 'conv-new' }, error: null }),
+      })),
+    }));
   });
 
   it('rejects invalid phone numbers before routing', async () => {
@@ -376,11 +403,11 @@ describe('orchestrator', () => {
       ['no name field present', { sender: '081200000001', message: 'halo' }],
       ['empty string name', { sender: '081200000002', message: 'halo', name: '' }],
       ['whitespace-only name', { sender: '081200000003', message: 'halo', name: '   ' }],
-      ['NBSP-only name', { sender: '081200000004', message: 'halo', name: '\u00A0\u00A0' }],
+      ['NBSP-only name', { sender: '081200000004', message: 'halo', name: '  ' }],
       ['null name with empty pushname', { sender: '081200000005', message: 'halo', name: null, pushname: '' }],
       ['all candidate fields blank', {
         sender: '081200000006', message: 'halo',
-        name: '', pushname: '   ', senderName: '\u00A0', notify: '', notifyName: '',
+        name: '', pushname: '   ', senderName: ' ', notify: '', notifyName: '',
       }],
     ];
 
@@ -420,6 +447,190 @@ describe('orchestrator', () => {
       // Intent classifier should not run because handleNameCollection returned
       // a Response (the awaiting_name prompt) and short-circuited.
       expect(hoisted.classifyIntentMock).not.toHaveBeenCalled();
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // End-to-end integration tests for the memory-reset rule (orchestrator §5d).
+  //
+  // The contract under test:
+  //   - When isPastLastCheckout(phone) === true, the orchestrator MUST treat
+  //     the request as a brand-new session — i.e. insert a fresh
+  //     chat_conversations row, route the downstream agent into the new
+  //     conversation_id, and emit a `reset_past_checkout` audit log.
+  //   - When isPastLastCheckout(phone) === false AND the existing session is
+  //     still fresh (idle ≤ timeout), the orchestrator MUST preserve memory:
+  //     no chat_conversations.insert, the downstream agent receives the
+  //     pre-existing conversation_id, and the audit log records `keep_active`.
+  //
+  // These two assertions, taken together, prove that pastCheckout actually
+  // gates the memory reset wired through the full orchestrator pipeline —
+  // not just the unit-tested isPastLastCheckout helper.
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('memory reset on pastCheckout', () => {
+    const phoneNormalized = '6285555000111';
+    const phoneRaw = '085555000111';
+    const existingConvId = 'conv-existing-guest';
+
+    function existingFreshSession() {
+      // last_message_at = "now" → not stale → only pastCheckout can force reset.
+      return {
+        phone_number: phoneNormalized,
+        conversation_id: existingConvId,
+        last_message_at: new Date().toISOString(),
+        is_active: true,
+        is_blocked: false,
+        is_takeover: false,
+        awaiting_name: false,
+        guest_name: 'Andi',
+      };
+    }
+
+    it('resets memory (creates new conversation) when pastCheckout=true', async () => {
+      hoisted.state.session = existingFreshSession();
+      hoisted.isPastLastCheckoutMock.mockResolvedValue(true);
+      // Use a distinctive id for the freshly-inserted conversation so we can
+      // tell it apart from existingConvId in every downstream assertion.
+      hoisted.chatConvInsertMock.mockImplementation(() => ({
+        select: vi.fn(() => ({
+          single: vi.fn().mockResolvedValue({
+            data: { id: 'conv-after-reset' },
+            error: null,
+          }),
+        })),
+      }));
+
+      const response = await orchestrate(
+        makeRequest({ sender: phoneRaw, message: 'ada wifi?' }),
+        env,
+      );
+
+      expect(response.status).toBe(200);
+
+      // 1) The reset gate was actually consulted with the normalized phone.
+      expect(hoisted.isPastLastCheckoutMock).toHaveBeenCalledWith(
+        hoisted.supabaseMock,
+        phoneNormalized,
+      );
+
+      // 2) A new conversation row was inserted — proving memory was reset.
+      expect(hoisted.chatConvInsertMock).toHaveBeenCalledTimes(1);
+      const insertPayload = hoisted.chatConvInsertMock.mock.calls[0][0] as {
+        session_id: string;
+        message_count: number;
+      };
+      expect(insertPayload.session_id).toMatch(
+        new RegExp(`^wa_${phoneNormalized}_\\d+$`),
+      );
+      expect(insertPayload.message_count).toBe(0);
+
+      // 3) hasRecentOrActiveBooking must NOT be consulted — pastCheckout is a
+      //    hard reset that bypasses the H+N preservation rule entirely.
+      expect(hoisted.hasRecentOrActiveBookingMock).not.toHaveBeenCalled();
+
+      // 4) The MEMORY AUDIT log was written to the NEW conversation id with
+      //    the reset_past_checkout tag — not the old one.
+      const auditCall = hoisted.logMessageMock.mock.calls.find(
+        (call) =>
+          typeof call[3] === 'string' &&
+          (call[3] as string).includes('[MEMORY AUDIT]'),
+      );
+      expect(auditCall).toBeDefined();
+      expect(auditCall![2]).toBe('system');
+      expect(auditCall![1]).toBe('conv-after-reset');
+      expect(auditCall![3]).toMatch(/reset_past_checkout/);
+
+      // 5) The downstream agent received the NEW conversation id, meaning the
+      //    rest of the pipeline operates against fresh memory.
+      expect(hoisted.handleGuestFAQMock).toHaveBeenCalledTimes(1);
+      const faqArgs = hoisted.handleGuestFAQMock.mock.calls[0];
+      expect(faqArgs[2]).toBe(phoneNormalized);   // phone
+      expect(faqArgs[4]).toBe('conv-after-reset'); // conversationId
+      expect(faqArgs[4]).not.toBe(existingConvId);
+
+      // 6) The whatsapp_sessions upsert (via handleNameCollection's
+      //    intent-bypass branch) writes the NEW conversation id back to the
+      //    session row — completing the reset end-to-end.
+      const sessionUpserts = hoisted.upsertSessionMock.mock.calls.map(
+        (c) => c[0] as Record<string, unknown>,
+      );
+      const upsertWithNewConv = sessionUpserts.find(
+        (p) => p.conversation_id === 'conv-after-reset',
+      );
+      expect(upsertWithNewConv).toBeDefined();
+    });
+
+    it('preserves memory (no new conversation) when pastCheckout=false and session is fresh', async () => {
+      hoisted.state.session = existingFreshSession();
+      hoisted.isPastLastCheckoutMock.mockResolvedValue(false);
+      // Sanity: even if hasRecentOrActiveBooking were asked, it would say no.
+      // It shouldn't be asked at all because the session isn't stale.
+      hoisted.hasRecentOrActiveBookingMock.mockResolvedValue(false);
+
+      const response = await orchestrate(
+        makeRequest({ sender: phoneRaw, message: 'ada wifi?' }),
+        env,
+      );
+
+      expect(response.status).toBe(200);
+
+      // 1) The reset gate was consulted (because conversationId existed) and
+      //    returned false → no reset path.
+      expect(hoisted.isPastLastCheckoutMock).toHaveBeenCalledWith(
+        hoisted.supabaseMock,
+        phoneNormalized,
+      );
+
+      // 2) NO new conversation was inserted — memory is preserved.
+      expect(hoisted.chatConvInsertMock).not.toHaveBeenCalled();
+
+      // 3) Session is fresh (idle ≤ timeout) so the H+N preservation rule
+      //    isn't triggered either.
+      expect(hoisted.hasRecentOrActiveBookingMock).not.toHaveBeenCalled();
+
+      // 4) The MEMORY AUDIT log records keep_active and is written to the
+      //    EXISTING conversation id — not a new one.
+      const auditCall = hoisted.logMessageMock.mock.calls.find(
+        (call) =>
+          typeof call[3] === 'string' &&
+          (call[3] as string).includes('[MEMORY AUDIT]'),
+      );
+      expect(auditCall).toBeDefined();
+      expect(auditCall![1]).toBe(existingConvId);
+      expect(auditCall![3]).toMatch(/keep_active/);
+      expect(auditCall![3]).not.toMatch(/reset_past_checkout/);
+
+      // 5) The downstream agent received the EXISTING conversation id —
+      //    memory continuity preserved across the whole pipeline.
+      expect(hoisted.handleGuestFAQMock).toHaveBeenCalledTimes(1);
+      const faqArgs = hoisted.handleGuestFAQMock.mock.calls[0];
+      expect(faqArgs[2]).toBe(phoneNormalized);
+      expect(faqArgs[4]).toBe(existingConvId);
+    });
+
+    it('does NOT consult isPastLastCheckout when there is no existing conversation_id', async () => {
+      // No session at all (first-contact). The orchestrator skips the
+      // pastCheckout check because there is nothing to potentially preserve.
+      // This guards the `if (conversationId)` branch in step 5d.
+      hoisted.state.session = null;
+
+      const response = await orchestrate(
+        makeRequest({ sender: phoneRaw, message: 'ada wifi?' }),
+        env,
+      );
+
+      expect(response.status).toBe(200);
+      expect(hoisted.isPastLastCheckoutMock).not.toHaveBeenCalled();
+      // First contact still creates a conversation — but via the "no session"
+      // path, not the pastCheckout reset path.
+      expect(hoisted.chatConvInsertMock).toHaveBeenCalledTimes(1);
+      const auditCall = hoisted.logMessageMock.mock.calls.find(
+        (call) =>
+          typeof call[3] === 'string' &&
+          (call[3] as string).includes('[MEMORY AUDIT]'),
+      );
+      expect(auditCall).toBeDefined();
+      expect(auditCall![3]).toMatch(/first_contact/);
     });
   });
 });
