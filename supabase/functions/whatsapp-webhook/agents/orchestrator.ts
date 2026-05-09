@@ -219,6 +219,20 @@ export async function orchestrate(
 
   // ── 5. PRE-ROUTING HANDLERS (must run BEFORE intent classification) ──
 
+  // 5a-pre. TAKEOVER MODE → skip AI for non-manager guests (covers text + image + any input)
+  // Manager commands (5b) are still processed below because managers are not subject to takeover.
+  if (!isManager && session?.is_takeover) {
+    const convId = await ensureConversation(supabase, session, phone);
+    const imgUrlForLog = extractImageUrl(body);
+    const logged = imgUrlForLog ? `[Image attached] ${imgUrlForLog}` : rawMessage;
+    await logMessage(supabase, convId, 'user', logged);
+    console.log(`⛔ Takeover active for ${phone} - AI skipped (pre-routing)`);
+    await supabase.from('whatsapp_sessions').update({ last_message_at: new Date().toISOString() }).eq('phone_number', phone);
+    return new Response(JSON.stringify({ status: 'takeover_mode', conversation_id: convId, reason: 'manual_takeover_active' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   // 5a. IMAGE ATTACHMENT → payment proof OCR
   const imageUrl = extractImageUrl(body);
   if (imageUrl) {
