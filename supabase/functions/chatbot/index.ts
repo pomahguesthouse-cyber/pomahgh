@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, LOVABLE_API_URL } from "./lib/constants.ts";
 import { loadChatbotSettings } from "./services/settingsLoader.ts";
 import { checkChatbotRateLimit, getClientKey } from "./lib/rateLimiter.ts";
+import { sanitizeChatInput } from "./lib/sanitizeInput.ts";
 import { loadHotelData } from "./services/dataLoader.ts";
 import { buildSystemPrompt } from "./ai/promptBuilder.ts";
 import { tools } from "./ai/tools.ts";
@@ -196,7 +197,19 @@ serve(async (req) => {
       }
     };
 
-    let workingMessages: ChatCompletionMessage[] = Array.isArray(messages) ? messages : [];
+    // Sanitasi semua pesan user (defense-in-depth)
+    let workingMessages: ChatCompletionMessage[] = Array.isArray(messages)
+      ? messages.map((m: ChatCompletionMessage) => {
+          if (m?.role === "user" && typeof m.content === "string") {
+            const s = sanitizeChatInput(m.content);
+            if (s.modified) {
+              trace.warn("User input sanitized", { reasons: s.reasons });
+            }
+            return { ...m, content: s.text };
+          }
+          return m;
+        })
+      : [];
     const maxIterations = 4;
 
     for (let i = 0; i < maxIterations; i++) {
