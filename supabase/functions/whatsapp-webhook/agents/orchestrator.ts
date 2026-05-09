@@ -648,6 +648,7 @@ async function handleNameCollection(
         phone_number: phone, conversation_id: conversationId,
         last_message_at: new Date().toISOString(), is_active: true,
         session_type: 'guest', awaiting_name: false, guest_name: trimmedPushname,
+        conversation_state: 'idle',
       }, { onConflict: 'phone_number' });
       if (conversationId) {
         await supabase.from('chat_conversations')
@@ -720,6 +721,7 @@ async function handleNameCollection(
         phone_number: phone, conversation_id: conversationId,
         last_message_at: new Date().toISOString(), is_active: true,
         session_type: 'guest', awaiting_name: false, guest_name: genericName,
+        conversation_state: 'idle',
       }, { onConflict: 'phone_number' });
       if (conversationId) {
         await supabase.from('chat_conversations').update({ guest_email: `${genericName} (WA: ${phone})` }).eq('id', conversationId);
@@ -733,6 +735,7 @@ async function handleNameCollection(
       phone_number: phone, conversation_id: conversationId,
       last_message_at: new Date().toISOString(), is_active: true,
       session_type: 'guest', awaiting_name: true, guest_name: null,
+      conversation_state: 'awaiting_name',
     }, { onConflict: 'phone_number' });
 
     await logMessage(supabase, conversationId, 'user', normalizedMessage);
@@ -752,6 +755,7 @@ async function handleNameCollection(
       const genericName = `Tamu WA ${phone.slice(-4)}`;
       await supabase.from('whatsapp_sessions').update({
         guest_name: genericName, awaiting_name: false, last_message_at: new Date().toISOString(),
+        conversation_state: 'idle',
       }).eq('phone_number', phone);
       if (conversationId) {
         await supabase.from('chat_conversations').update({ guest_email: `${genericName} (WA: ${phone})` }).eq('id', conversationId);
@@ -761,6 +765,7 @@ async function handleNameCollection(
 
     await supabase.from('whatsapp_sessions').update({
       guest_name: guestNameCandidate, awaiting_name: false, last_message_at: new Date().toISOString(),
+      conversation_state: 'idle',
     }).eq('phone_number', phone);
     if (conversationId) {
       await supabase.from('chat_conversations').update({ guest_email: `${guestNameCandidate} (WA: ${phone})` }).eq('id', conversationId);
