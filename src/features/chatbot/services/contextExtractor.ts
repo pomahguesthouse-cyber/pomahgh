@@ -8,6 +8,9 @@ export const DEFAULT_CONTEXT: ConversationContext = {
   guest_count: null,
   phone_number: null,
   email: null,
+  last_booking_code: null,
+  last_booking_guest_email: null,
+  last_booking_guest_phone: null,
 };
 
 export function extractConversationContext(
@@ -30,6 +33,10 @@ export function extractConversationContext(
 
   const extractedName = extractGuestName(content);
   if (extractedName) updated.guest_name = extractedName;
+
+  // Ekstrak kode booking PMH-XXXXXX dari konfirmasi asisten
+  const bookingCodeMatch = content.match(/\b(PMH-[A-Z0-9]{6})\b/);
+  if (bookingCodeMatch) updated.last_booking_code = bookingCodeMatch[1];
 
   return updated;
 }

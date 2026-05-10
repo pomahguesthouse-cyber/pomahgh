@@ -30,6 +30,8 @@ interface ChatCompletionMessage {
 interface ChatbotMeta {
   booking_created: boolean;
   booking_guest_email: string | null;
+  booking_code: string | null;
+  booking_guest_phone: string | null;
   tool_calls_used: string[];
 }
 
@@ -102,7 +104,11 @@ serve(async (req) => {
     const cancelIntent =
       /\b(batal(?:kan|in|kah)?|cancel(?:led|lation)?|tidak\s+jadi|ga\s+jadi|gak\s+jadi|nggak\s+jadi|engga\s+jadi|gajadi|enggajadi|nanti\s+dulu|urungkan|mohon\s+batal|maaf\s+batal|sorry\s+batal|batal\s+aja|batal\s+saja|batal\s+ya|batal\s+dong|batal\s+kak|batal\s+min|batal\s+bang|batal\s+sis|batal\s+mas)\b/i.test(lastUserMessage) &&
       Boolean(conversationContext?.last_booking_code);
-    const forceToolCall = !faq_mode && (availabilityIntent || priceIntent || cancelIntent);
+    // Deteksi intent update booking: perpanjang malam, ganti tanggal, tambah tamu
+    const updateIntent =
+      /\b(perpanjang|tambah\s+malam|jadi(?:nya)?\s+\d+\s+malam|ganti\s+tanggal|ubah\s+tanggal|extend|reschedule|pindah\s+tanggal|tambah\s+tamu|kurangi\s+tamu|ubah\s+tamu)\b/i.test(lastUserMessage) &&
+      Boolean(conversationContext?.last_booking_code);
+    const forceToolCall = !faq_mode && (availabilityIntent || priceIntent || cancelIntent || updateIntent);
 
     // NOTE: Quick greeting bypass removed intentionally.
     // All messages now go through full AI pipeline with persona, KB, and training.
@@ -159,6 +165,8 @@ serve(async (req) => {
     const meta: ChatbotMeta = {
       booking_created: false,
       booking_guest_email: null,
+      booking_code: null,
+      booking_guest_phone: null,
       tool_calls_used: []
     };
 
@@ -349,11 +357,12 @@ serve(async (req) => {
 
           if (
             toolName === "create_booking_draft" &&
-            (toolResult as { success?: boolean })?.success
+            (toolResult as { booking_code?: string })?.booking_code
           ) {
             meta.booking_created = true;
-            meta.booking_guest_email =
-              (toolResult as { booking?: { guest_email?: string } })?.booking?.guest_email || null;
+            meta.booking_code = (toolResult as { booking_code?: string }).booking_code || null;
+            meta.booking_guest_email = (parameters as { guest_email?: string })?.guest_email || null;
+            meta.booking_guest_phone = (parameters as { guest_phone?: string })?.guest_phone || null;
           }
 
           // Trim large tool results to reduce token growth

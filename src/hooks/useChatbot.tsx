@@ -14,6 +14,8 @@ interface ChatbotResponse {
   meta?: {
     booking_created: boolean;
     booking_guest_email: string | null;
+    booking_code: string | null;
+    booking_guest_phone: string | null;
     tool_calls_used: string[];
   };
   fallback?: boolean;
@@ -266,6 +268,8 @@ export const useChatbot = () => {
       const assistantContent = chatResponse?.choices?.[0]?.message?.content || "Maaf, saya tidak bisa memproses permintaan ini saat ini.";
       const bookingCreated = Boolean(chatResponse?.meta?.booking_created);
       const bookingGuestEmail = chatResponse?.meta?.booking_guest_email ?? undefined;
+      const bookingCode = chatResponse?.meta?.booking_code ?? null;
+      const bookingGuestPhone = chatResponse?.meta?.booking_guest_phone ?? null;
       const toolCallsUsed = chatResponse?.meta?.tool_calls_used ?? [];
 
       if (bookingCreated) {
@@ -282,7 +286,20 @@ export const useChatbot = () => {
       messagesRef.current = withAssistant;
       setMessages(withAssistant);
       
-      setConversationContext(prev => extractConversationContext(assistantContent, prev));
+      setConversationContext(prev => {
+        const baseUpdate = extractConversationContext(assistantContent, prev);
+        // Simpan kredensial booking setelah create_booking_draft berhasil
+        // agar update_booking berikutnya punya phone+email untuk verifikasi
+        if (bookingCreated) {
+          return {
+            ...baseUpdate,
+            last_booking_code: bookingCode ?? baseUpdate.last_booking_code,
+            last_booking_guest_email: bookingGuestEmail ?? baseUpdate.last_booking_guest_email,
+            last_booking_guest_phone: bookingGuestPhone ?? baseUpdate.last_booking_guest_phone,
+          };
+        }
+        return baseUpdate;
+      });
       await logMessage('assistant', assistantContent, isFallbackResponse, toolCallsUsed);
     } catch (error) {
       console.error("Chat error:", error);

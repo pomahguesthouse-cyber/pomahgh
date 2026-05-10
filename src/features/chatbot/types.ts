@@ -12,6 +12,9 @@ export interface ConversationContext {
   guest_count: number | null;
   phone_number: string | null;
   email: string | null;
+  last_booking_code: string | null;
+  last_booking_guest_email: string | null;
+  last_booking_guest_phone: string | null;
 }
 
 export interface TrainingPair {
