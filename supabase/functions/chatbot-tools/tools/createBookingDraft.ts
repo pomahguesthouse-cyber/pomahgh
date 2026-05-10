@@ -15,8 +15,10 @@ export async function handleCreateBookingDraft(
     throw new Error("Nomor telepon wajib diisi untuk membuat booking");
   }
   
-  const checkInResult = validateAndFixDate(params.check_in, "check_in");
-  const checkOutResult = validateAndFixDate(params.check_out, "check_out");
+  // Strict mode: tanggal yang sudah lewat akan throw — AI harus tanya ulang
+  // ke tamu. JANGAN insert booking dengan tanggal yang dikoreksi diam-diam.
+  const checkInResult = validateAndFixDate(params.check_in, "check_in", { strict: true });
+  const checkOutResult = validateAndFixDate(params.check_out, "check_out", { strict: true });
   
   const check_in = checkInResult.date;
   const check_out = checkOutResult.date;
