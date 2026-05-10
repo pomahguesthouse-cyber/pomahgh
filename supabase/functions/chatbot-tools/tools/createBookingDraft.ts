@@ -229,6 +229,12 @@ export async function handleCreateBookingDraft(
         total_price: totalPrice,
         status: 'pending',
         payment_status: isPayAtHotel ? 'pay_at_hotel' : 'unpaid',
+        // Backstop: booking unpaid via chatbot WAJIB punya expiry agar
+        // auto_cancel_expired_bookings membersihkannya jika tamu tidak transfer.
+        // Tanpa ini booking jadi "zombie" dan mencemari konteks tamu di sesi berikutnya.
+        payment_expires_at: isPayAtHotel
+          ? null
+          : new Date(Date.now() + 60 * 60 * 1000).toISOString(),
         booking_source: 'other',
         other_source: 'Chatbot AI'
       })
