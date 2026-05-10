@@ -54,8 +54,10 @@ const CORE_RULES = `CORE RULES (WAJIB DIIKUTI):
 5. Format respons berdasarkan hasil tool
 6. JANGAN menambahkan informasi yang tidak ada di hasil tool`;
 
-// Tool usage guidelines with explicit mappings
-const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
+// Tool usage guidelines with explicit mappings.
+// Builder so persona name (single source of truth) can be injected.
+function buildToolRules(personaName: string): string {
+  return `TOOL USAGE (PILIH TOOL YANG TEPAT):
 
 📋 DAFTAR TAMU:
 - "siapa tamu hari ini" → get_today_guests
@@ -106,14 +108,14 @@ const TOOL_RULES = `TOOL USAGE (PILIH TOOL YANG TEPAT):
   2. **Status pembayaran**: Lunas (full payment) atau baru DP (down payment)?
      - Jika DP: tanyakan nominal DP yang sudah dibayar
   3. **Bukti transfer**: Apakah ada bukti transfer?
-     - Jika **YA** → instruksikan manager untuk **kirim bukti transfer ke Rani**
+     - Jika **YA** → instruksikan manager untuk **kirim bukti transfer ke ${personaName}**
      - Jika **TIDAK** → tanyakan: "Invoice mau dikirim ke siapa? (a) Tamu langsung, (b) Booking Manager, atau (c) Keduanya?"
   
   Contoh pertanyaan gabungan:
   "Baik, sebelum saya buat booking, mohon konfirmasi:
   1️⃣ Harga per malam berapa?
   2️⃣ Status pembayaran: Lunas atau DP? (jika DP, berapa nominalnya?)
-  3️⃣ Ada bukti transfer? Jika ada, mohon kirim ke Rani. Jika tidak, invoice mau dikirim ke tamu, booking manager, atau keduanya?"
+  3️⃣ Ada bukti transfer? Jika ada, mohon kirim ke ${personaName}. Jika tidak, invoice mau dikirim ke tamu, booking manager, atau keduanya?"
 
 - 💰 PENTING - STATUS PEMBAYARAN (saat memanggil create_admin_booking):
   - WAJIB sertakan parameter \`price_per_night\` sesuai harga yang disepakati manager (override harga default kamar)
