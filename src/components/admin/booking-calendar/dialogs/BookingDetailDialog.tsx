@@ -10,6 +10,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Calendar as CalendarIcon,
+  User,
+  Mail,
+  Phone,
+  Users,
 } from "lucide-react";
 import { useRoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
 import { Room } from "@/hooks/useRooms";
