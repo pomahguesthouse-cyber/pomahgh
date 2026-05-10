@@ -1,89 +1,191 @@
-import type { SupabaseClient, WhatsAppSession, ManagerInfo, EnvConfig } from "../types.ts";
-import { sendWhatsApp } from "../services/fonnte.ts";
-import { logMessage } from "../services/conversation.ts";
-import { TraceContext } from "../../_shared/traceContext.ts";
-
 /**
- * Handle Guest Booking Flow
- *
- * Strategi:
- * 1. Cek apakah ada data booking yang belum lengkap (misal: tanggal/jumlah malam).
- * 2. Jika tidak lengkap, BUKAN error, melainkan bertanya balik dengan sopan.
- * 3. Jika data lengkap, panggil tool booking.
+ * useBooking hook - Creates a new booking
+ * Refactored to use booking service layer
  */
-export async function handleGuestBookingFlow(
-  supabase: SupabaseClient,
-  session: WhatsAppSession | null,
-  phone: string,
-  message: string,
-  conversationId: string,
-  personaName: string,
-  managerNumbers: ManagerInfo[],
-  env: EnvConfig,
-  trace?: TraceContext,
-  recentMessages?: any[],
-  historyWindowMessages: number = 40,
-  isNewSession: boolean = false,
-): Promise<Response> {
-  try {
-    // 1. Ekstrak data dari percakapan atau konteks (Misalnya: tanggal, jumlah malam)
-    // Di sini Anda biasanya memanggil LLM/Tool untuk mengekstrak entity
-    const bookingIntent = await extractBookingDetails(message, recentMessages);
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { differenceInDays } from "date-fns";
+import { useBookingValidation } from "./useBookingValidation";
+import { formatWIBDate } from "@/utils/wibTimezone";
+import { BookingAddon } from "@/hooks/useRoomAddons";
 
-    // 2. Validasi Data Booking
-    // Jika user bilang "booking 3 malam" tapi belum ada TANGGAL CHECK-IN
-    if (bookingIntent.needs_check_in_date) {
-      const reply = `Baik kak, untuk booking 3 malamnya, boleh saya tahu tanggal berapa rencananya mau check-in? 😊`;
-      await sendWhatsApp(phone, reply, env.fonnteApiKey);
-      await logMessage(supabase, conversationId, "assistant", reply);
-      return new Response(JSON.stringify({ status: "awaiting_check_in_date" }), { status: 200 });
-    }
-
-    // 3. Jika data lengkap, jalankan proses booking via tool
-    // Simulasi pemanggilan tool
-    const bookingResult = await processBookingTool(supabase, phone, bookingIntent);
-
-    if (bookingResult.success) {
-      const reply = `Booking berhasil! Detail booking Anda sudah tercatat untuk ${bookingIntent.nights} malam. Mohon tunggu admin kami memverifikasi ya 🙏`;
-      await sendWhatsApp(phone, reply, env.fonnteApiKey);
-      await logMessage(supabase, conversationId, "assistant", reply);
-    } else {
-      // Jika terjadi error sistem di sisi database/tool, berikan pesan yang tidak memicu loop
-      const reply = `Mohon maaf, sedang ada kendala pada sistem booking. Saya sudah laporkan ke admin untuk dibantu proses manual ya, Kak. Mohon ditunggu sebentar 🙏`;
-      await sendWhatsApp(phone, reply, env.fonnteApiKey);
-      await logMessage(supabase, conversationId, "assistant", reply);
-    }
-
-    return new Response(JSON.stringify({ status: "success" }), { status: 200 });
-  } catch (error) {
-    console.error("Booking Flow Error:", error);
-    // Jangan biarkan error menyebar ke orchestrator jika bisa ditangani dengan balasan ke user
-    return new Response(JSON.stringify({ status: "error", message: "Failed in booking flow" }), { status: 500 });
-  }
+export interface BookingData {
+  room_id: string;
+  guest_name: string;
+  guest_email: string;
+  guest_phone: string;
+  check_in: Date;
+  check_out: Date;
+  check_in_time?: string;
+  check_out_time?: string;
+  num_guests: number;
+  special_requests?: string;
+  price_per_night: number;
+  allocated_room_number?: string;
+  room_quantity?: number;
+  is_non_refundable?: boolean;
+  addons?: BookingAddon[];
+  /** "transfer" (default) → payment_status='unpaid'; "pay_at_hotel" → payment_status='pay_at_hotel' */
+  payment_method?: "transfer" | "pay_at_hotel";
 }
 
-/**
- * Mock/Helper untuk mengekstrak detail.
- * Di produksi, Anda bisa menggunakan LLM untuk memparsing intent.
- */
-async function extractBookingDetails(message: string, history?: any[]) {
-  // Logic untuk membaca tanggal/jumlah malam dari teks
-  const nightsMatch = message.match(/(\d+)\s*malam/i);
-  return {
-    nights: nightsMatch ? parseInt(nightsMatch[1]) : 0,
-    needs_check_in_date: !message.match(/\d{1,2}\s*(jan|feb|mar|apr|mei|jun|jul|agt|sep|okt|nov|des)/i),
-  };
-}
+export const useBooking = () => {
+  const queryClient = useQueryClient();
+  const { checkRoomTypeAvailability } = useBookingValidation();
 
-/**
- * Simulasi memanggil tool database
- */
-async function processBookingTool(supabase: SupabaseClient, phone: string, details: any) {
-  // Contoh: panggil fungsi update_booking atau insert_booking di Supabase
-  try {
-    // const { data, error } = await supabase.rpc('create_booking', { ... });
-    return { success: true };
-  } catch (e) {
-    return { success: false };
-  }
-}
+  return useMutation({
+    mutationFn: async (bookingData: BookingData) => {
+      const roomQuantity = bookingData.room_quantity || 1;
+      const totalNights = differenceInDays(bookingData.check_out, bookingData.check_in);
+      const roomPrice = totalNights * bookingData.price_per_night * roomQuantity;
+      const addonsPrice = bookingData.addons?.reduce((sum, addon) => sum + addon.total_price, 0) || 0;
+      const totalPrice = roomPrice + addonsPrice;
+
+      // Get room to check available room numbers
+      const { data: room, error: roomError } = await supabase
+        .from("rooms")
+        .select("room_numbers, allotment")
+        .eq("id", bookingData.room_id)
+        .single();
+
+      if (roomError) throw roomError;
+
+      // Use checkRoomTypeAvailability to get available rooms (includes booking_rooms check)
+      const { availableRooms } = await checkRoomTypeAvailability({
+        roomId: bookingData.room_id,
+        checkIn: bookingData.check_in,
+        checkOut: bookingData.check_out,
+      });
+
+      if (availableRooms.length < roomQuantity) {
+        throw new Error(`Hanya ${availableRooms.length} kamar tersedia untuk tanggal tersebut`);
+      }
+
+      const availableNumbers = availableRooms;
+
+      const isPayAtHotel = bookingData.payment_method === "pay_at_hotel";
+
+      // Create main booking with first room number
+      const { data, error } = await supabase.from("bookings").insert({
+        room_id: bookingData.room_id,
+        guest_name: bookingData.guest_name,
+        guest_email: bookingData.guest_email,
+        guest_phone: bookingData.guest_phone,
+        check_in: formatWIBDate(bookingData.check_in),
+        check_out: formatWIBDate(bookingData.check_out),
+        check_in_time: bookingData.check_in_time || "14:00:00",
+        check_out_time: bookingData.check_out_time || "12:00:00",
+        total_nights: totalNights,
+        total_price: totalPrice,
+        num_guests: bookingData.num_guests,
+        special_requests: bookingData.special_requests,
+        status: "pending",
+        payment_status: isPayAtHotel ? "pay_at_hotel" : "unpaid",
+        allocated_room_number: availableNumbers[0],
+        is_non_refundable: bookingData.is_non_refundable || false,
+        booking_source: 'other',
+        other_source: 'Website',
+      }).select().single();
+
+      if (error) throw error;
+
+      // Insert multiple entries into booking_rooms table
+      if (roomQuantity > 0) {
+        const bookingRoomsData = availableNumbers.slice(0, roomQuantity).map(roomNumber => ({
+          booking_id: data.id,
+          room_id: bookingData.room_id,
+          room_number: roomNumber,
+          price_per_night: bookingData.price_per_night,
+        }));
+
+        const { error: bookingRoomsError } = await supabase
+          .from("booking_rooms")
+          .insert(bookingRoomsData);
+
+        if (bookingRoomsError) {
+          console.error("Failed to insert booking_rooms:", bookingRoomsError);
+        }
+      }
+
+      // Insert booking addons if any
+      if (bookingData.addons && bookingData.addons.length > 0) {
+        const bookingAddonsData = bookingData.addons.map(addon => ({
+          booking_id: data.id,
+          addon_id: addon.addon_id,
+          quantity: addon.quantity,
+          unit_price: addon.unit_price,
+          total_price: addon.total_price,
+        }));
+
+        const { error: addonsError } = await supabase
+          .from("booking_addons")
+          .insert(bookingAddonsData);
+
+        if (addonsError) {
+          console.error("Failed to insert booking_addons:", addonsError);
+        }
+      }
+
+      return data;
+    },
+    onSuccess: async (bookingData, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      
+      // Notify managers via WhatsApp
+      try {
+        // Fetch room name for notification
+        const { data: roomData } = await supabase
+          .from("rooms")
+          .select("name")
+          .eq("id", variables.room_id)
+          .single();
+
+        // Fetch booking_rooms to get all room numbers for multi-room bookings
+        const { data: bookingRooms } = await supabase
+          .from("booking_rooms")
+          .select("room_number, rooms(name)")
+          .eq("booking_id", bookingData.id);
+
+        // Format room names and numbers for multi-room support
+        let roomNames = roomData?.name || 'Unknown Room';
+        let roomNumbersStr = bookingData.allocated_room_number || '';
+
+        if (bookingRooms && bookingRooms.length > 0) {
+          roomNames = bookingRooms.map(br => (br.rooms as { name?: string } | null)?.name || roomData?.name || 'Unknown').join(', ');
+          roomNumbersStr = bookingRooms.map(br => br.room_number).join(', ');
+        }
+
+        await supabase.functions.invoke('notify-new-booking', {
+          body: {
+            booking_code: bookingData.booking_code,
+            guest_name: bookingData.guest_name,
+            guest_phone: bookingData.guest_phone,
+            room_name: roomNames,
+            room_number: roomNumbersStr,
+            check_in: bookingData.check_in,
+            check_out: bookingData.check_out,
+            total_nights: bookingData.total_nights,
+            num_guests: bookingData.num_guests,
+            total_price: bookingData.total_price,
+            booking_source: bookingData.booking_source || 'other',
+            other_source: bookingData.other_source || 'Website'
+          }
+        });
+        // Manager notification sent
+      } catch (e) {
+        console.error("Failed to notify managers:", e);
+      }
+      
+      toast.success("Booking berhasil!", {
+        description: "Terima kasih! Kami akan mengirimkan konfirmasi ke email Anda."
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Booking error:", error);
+      toast.error("Booking gagal", {
+        description: "Terjadi kesalahan. Silakan coba lagi.",
+      });
+    },
+  });
+};
