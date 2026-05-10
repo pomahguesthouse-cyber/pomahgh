@@ -47,10 +47,10 @@ export async function handleUpdateBooking(
 
   if (new_check_in || new_check_out) {
     const finalCheckIn = new_check_in 
-      ? validateAndFixDate(new_check_in, "new_check_in").date 
+      ? validateAndFixDate(new_check_in, "new_check_in", { strict: true }).date 
       : existingBooking.check_in;
     const finalCheckOut = new_check_out 
-      ? validateAndFixDate(new_check_out, "new_check_out").date 
+      ? validateAndFixDate(new_check_out, "new_check_out", { strict: true }).date 
       : existingBooking.check_out;
 
     const { data: room } = await supabase
