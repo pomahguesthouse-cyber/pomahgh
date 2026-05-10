@@ -32,7 +32,6 @@ const BACKEND_FILES: Record<string, string> = {
   orchestrator: 'orchestrator.ts',
   booking: 'booking.ts',
   faq: 'faq.ts',
-  payment: 'payment.ts',
   complaint: 'complaint.ts',
   pricing: 'pricing.ts',
   manager: 'manager.ts',
