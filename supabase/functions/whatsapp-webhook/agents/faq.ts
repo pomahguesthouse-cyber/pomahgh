@@ -130,6 +130,7 @@ export async function handleGuestFAQ(
         session_id: `wa_${phone}`,
         channel: 'whatsapp',
         faq_mode: true, // Signal to chatbot to skip tools
+        agent_id: 'faq',
       }),
     });
 
