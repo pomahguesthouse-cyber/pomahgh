@@ -395,6 +395,9 @@ describe('orchestrator', () => {
       [],
       env,
       undefined,
+      undefined,
+      undefined,
+      false,
     );
   });
 
