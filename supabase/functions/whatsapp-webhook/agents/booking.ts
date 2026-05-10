@@ -583,6 +583,15 @@ export async function orchestrate(req: Request, env: EnvConfig, trace?: TraceCon
       forceMessage: 'Kamu menyebut bank/nomor rekening TANPA memanggil tool get_payment_methods. INI DILARANG karena nomor rekening bisa salah. SEKARANG WAJIB panggil get_payment_methods. LANGSUNG panggil tool!',
     },
     {
+      // Booking-change guard: tamu minta ubah tanggal/durasi (mis. "jadi 1 malam")
+      // tapi AI menjawab konfirmasi/placeholder tanpa memanggil update_booking.
+      name: 'booking_change',
+      userAsks: /\b(ubah|ganti|reschedule|majuin|mundurin|jadi\s+\d+\s*malam|dari\s+\d+\s*malam\s+jadi\s+\d+\s*malam|perpendek|perpanjang|extend|shorten|check\s*-?out\s+(lebih\s+)?(awal|cepat)|check\s*-?in\s+(lebih\s+)?(awal|lambat))\b/i,
+      aiClaims: /(sudah\s+tercatat|sudah\s+diubah|berhasil\s+diubah|siap\s+diubah|akan\s+saya\s+ubah|pending\s+pembayaran|ada\s+yang\s+mau\s+diubah|sistem(?:nya)?\s+(?:lagi\s+)?(?:ada\s+)?(?:kendala|error|gangguan))/i,
+      requiredTools: ['update_booking'],
+      forceMessage: 'Tamu meminta PERUBAHAN booking (tanggal/durasi), tapi kamu belum memanggil tool update_booking. INI DILARANG. Jangan konfirmasi perubahan / jangan bilang sistem kendala sebelum tool dipanggil. SEKARANG WAJIB panggil update_booking dengan booking_id, guest_phone, guest_email dari konteks booking aktif dan field perubahan yang diminta (new_check_in/new_check_out/new_num_guests/new_special_requests).',
+    },
+    {
       // Cancellation guard: tamu bilang "batal/cancel" + AI mengaku sudah/akan
       // dibatalkan, atau mengarang "sistem error / batal manual / kabari nanti"
       // tanpa benar-benar memanggil cancel_booking → paksa retry dengan tool call.
