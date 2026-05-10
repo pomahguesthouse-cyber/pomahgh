@@ -222,50 +222,12 @@ Deno.serve(async (req: Request) => {
     const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    // Force tool execution for room price requests to avoid hallucination
-    if (intentMatch.suggestedTool === 'get_room_prices' && intentMatch.confidence !== 'low') {
-      const forcedToolStart = Date.now();
-      // Extract room name from user message if mentioned
-      const roomNameMatch = userMessage.match(/(?:kamar|room|tipe|type)\s+(\w+)/i);
-      const forcedArgs = roomNameMatch ? { room_name: roomNameMatch[1] } : {};
-      const roomToolResult = await executeToolWithValidation(supabase, 'get_room_prices', forcedArgs, auth.managerRole);
-
-      logToolExecution(supabase, {
-        trace_id: trace.traceId, tool_name: 'get_room_prices',
-        arguments: forcedArgs, result_status: 'success',
-        result_summary: 'forced_price_lookup',
-        duration_ms: Date.now() - forcedToolStart, agent_name: 'admin-chatbot',
-      });
-
-      executedTools.push({
-        tool_name: 'get_room_prices',
-        arguments: forcedArgs,
-        result: roomToolResult,
-        success: true,
-        executed_at: new Date().toISOString()
-      });
-
-      const forcedResponse = formatRoomPricesResponse(hotelSettings.hotel_name, roomToolResult);
-
-      await logAuditEntry(supabase, {
-        adminId: auth.adminId!,
-        adminEmail: auth.adminEmail,
-        sessionId,
-        userMessage,
-        executedTools,
-        aiResponse: forcedResponse,
-        durationMs: Date.now() - startTime,
-        ipAddress,
-        userAgent
-      });
-
-      const stream = createSSEStream(async (ctx: StreamContext) => {
-        sendTextChunk(ctx, forcedResponse);
-        return forcedResponse;
-      });
-
-      return createSSEResponse(stream);
-    }
+    // BUG 2 fix: removed forced get_room_prices path.
+    // The previous implementation extracted room_name with a brittle regex
+    // (`/(?:kamar|room|tipe|type)\s+(\w+)/i`) which truncated multi-word
+    // names like "Family Suite" to "Family". The AI now decides when to
+    // call get_room_prices via natural tool-calling, with the system
+    // prompt's anti-hallucination guard ensuring the call happens.
 
     // 6. Stream response
     const stream = createSSEStream(async (ctx: StreamContext) => {

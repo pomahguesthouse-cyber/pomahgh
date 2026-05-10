@@ -17,6 +17,22 @@ export async function batchMessages(
   phone: string,
   newMessage: string
 ): Promise<string[] | null> {
+  // BUG 1 fix: defensive in-batch dedup. Even though orchestrator-level
+  // dedup (middleware/dedup.ts) filters duplicates by message_id and
+  // normalized text+phone, a slow-arriving duplicate whose dedup row has
+  // already expired could otherwise be appended twice to the same pending
+  // batch. Skip append if the exact same text is already buffered.
+  const { data: pre } = await supabase
+    .from('whatsapp_sessions')
+    .select('pending_messages')
+    .eq('phone_number', phone)
+    .maybeSingle();
+  const prePending = (pre?.pending_messages as string[] | null) ?? [];
+  if (prePending.includes(newMessage)) {
+    console.log(`📦 In-batch duplicate detected, deferring to existing processor for ${phone}`);
+    return null;
+  }
+
   const { error: rpcError } = await supabase.rpc('append_pending_message', { p_phone: phone, p_message: newMessage });
   if (rpcError) {
     console.error(`📦 append_pending_message failed for ${phone}:`, rpcError.message);
