@@ -3,21 +3,14 @@ import type { SupabaseClient, WhatsAppSession, ManagerInfo, EnvConfig } from "..
 import { corsHeaders } from "../types.ts";
 import { normalizePhone, isValidPhone } from "../utils/phone.ts";
 import { normalizeIndonesianMessage } from "../utils/slang.ts";
-import { isLikelyPersonName, extractPushname } from "../utils/format.ts";
+import { extractPushname } from "../utils/format.ts";
 import type { TraceContext } from "../../_shared/traceContext.ts";
 import { logAgentDecision } from "../../_shared/agentLogger.ts";
 import { checkRateLimit } from "../middleware/rateLimiter.ts";
 import { checkDuplicate, extractMessageId } from "../middleware/dedup.ts";
-import {
-  getCachedHotelSettings,
-  ensureConversation,
-  updateSession,
-  hasRecentOrActiveBooking,
-  isPastLastCheckout,
-} from "../services/session.ts";
+import { getCachedHotelSettings, ensureConversation, updateSession } from "../services/session.ts";
 import { logMessage, getConversationHistory } from "../services/conversation.ts";
 import { sendWhatsApp } from "../services/fonnte.ts";
-import { extractConversationContext, getLatestBookingContextByPhone } from "../services/context.ts";
 import { handlePriceApproval } from "./pricing.ts";
 import { handleManagerChat } from "./manager.ts";
 import { handleGuestBookingFlow } from "./booking.ts";
@@ -42,12 +35,8 @@ function getSupabaseClient(env: EnvConfig): SupabaseClient {
   return cachedSupabase;
 }
 
-async function hasRecentFallbackApology(
-  supabase: SupabaseClient,
-  conversationId: string,
-  withinSeconds: number = 300,
-): Promise<boolean> {
-  const sinceIso = new Date(Date.now() - withinSeconds * 1000).toISOString();
+async function hasRecentFallbackApology(supabase: SupabaseClient, conversationId: string): Promise<boolean> {
+  const sinceIso = new Date(Date.now() - 300 * 1000).toISOString();
   const { data } = await supabase
     .from("chat_messages")
     .select("content")
@@ -55,22 +44,7 @@ async function hasRecentFallbackApology(
     .eq("role", "assistant")
     .gte("created_at", sinceIso)
     .limit(3);
-  const fallbackApologyRe = /(maaf|kendala|error|gangguan|sistem|coba lagi)/i;
-  return data?.some((m) => typeof m.content === "string" && fallbackApologyRe.test(m.content)) ?? false;
-}
-
-async function escalateToHumanStaff(
-  supabase: SupabaseClient,
-  phone: string,
-  conversationId: string,
-  error: string,
-  managerNumbers: ManagerInfo[],
-  fonnteApiKey: string,
-): Promise<void> {
-  const targets = managerNumbers.filter((m) => m.role === "super_admin" || m.role === "admin");
-  const recipients = targets.length > 0 ? targets : managerNumbers;
-  const notif = `🔴 *ERROR AGENT*\n📱 ${phone}\n❌ ${error.substring(0, 100)}`;
-  await Promise.allSettled(recipients.map((m) => sendWhatsApp(m.phone, notif, fonnteApiKey)));
+  return data?.some((m) => /(maaf|kendala|error|gangguan|sistem)/i.test(m.content as string)) ?? false;
 }
 
 export async function orchestrate(req: Request, env: EnvConfig, trace?: TraceContext): Promise<Response> {
@@ -82,7 +56,6 @@ export async function orchestrate(req: Request, env: EnvConfig, trace?: TraceCon
   const phone = normalizePhone(String(sender));
   const rawMessage = String(message ?? "");
   const normalizedMessage = normalizeIndonesianMessage(rawMessage);
-  const pushname = extractPushname(body);
 
   // 1. DEDUP & RATE LIMIT
   if (!(await checkRateLimit(supabase, phone))) return new Response(JSON.stringify({ status: "rate_limited" }));
@@ -104,23 +77,15 @@ export async function orchestrate(req: Request, env: EnvConfig, trace?: TraceCon
   setAgentConfigs((configs || []) as AgentConfigRecord[], (rules || []) as EscalationRule[]);
   const session = sessionRaw as unknown as WhatsAppSession | null;
   const managerNumbers = hotelSettings?.whatsapp_manager_numbers || [];
-  const isManager = managerNumbers.some((m) => m.phone === phone);
+  const conversationId = await ensureConversation(supabase, session, phone);
 
-  // 3. PRE-ROUTING HANDLERS (Simplified)
+  // 3. IMAGE & MANAGER HANDLERS
   const imageUrl = extractImageUrl(body);
   if (imageUrl)
-    return await handlePaymentProof(
-      supabase,
-      phone,
-      imageUrl,
-      await ensureConversation(supabase, session, phone),
-      managerNumbers,
-      env,
-      trace,
-      { caption: rawMessage },
-    );
-
-  if (isManager)
+    return await handlePaymentProof(supabase, phone, imageUrl, conversationId, managerNumbers, env, trace, {
+      caption: rawMessage,
+    });
+  if (managerNumbers.some((m) => m.phone === phone))
     return await handleManagerChat(
       supabase,
       session,
@@ -130,25 +95,26 @@ export async function orchestrate(req: Request, env: EnvConfig, trace?: TraceCon
       env,
     );
 
-  // 4. SESSION & HANDOVER
-  let conversationId = await ensureConversation(supabase, session, phone);
+  // 4. INTENT CLASSIFICATION WITH DUPLICATE GUARD
+  const recentMessages = await getConversationHistory(supabase, conversationId, 10);
+  const lastBotReply = recentMessages.filter((m) => m.role === "assistant").pop()?.content || "";
 
-  // 5. INTENT CLASSIFICATION (With Hard Shortcut)
-  // Shortcut: Jika mengandung kata kunci booking, paksa ke booking agent
-  const isBookingShortcut = /\b(booking|pesan|jadi|malam|check\s*in)\b/i.test(normalizedMessage);
+  // Guard: Jika pesan terakhir bot ada kode booking, abaikan intent booking ulang agar tidak error loop
+  const isDuplicateBooking = /PMH-/i.test(lastBotReply) && /\b(booking|pesan|jadi|malam)\b/i.test(normalizedMessage);
 
   let classification;
-  if (isBookingShortcut) {
+  if (isDuplicateBooking) {
+    console.log("🛡️ Guard: Mencegah duplicate booking intent.");
+    classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "avoid_duplicate_booking" };
+  } else if (/\b(booking|pesan|jadi|malam|check\s*in)\b/i.test(normalizedMessage)) {
     classification = { intent: "booking", confidence: 1.0, source: "keyword", reason: "booking_shortcut" };
   } else {
-    const recentMessages = await getConversationHistory(supabase, conversationId, 20);
     classification = await classifyIntent(normalizedMessage, { recentMessages: recentMessages.slice(-6) });
   }
 
-  // 6. DISPATCH
+  // 5. DISPATCH
   try {
     const decision = decide(classification.intent);
-
     switch (decision.agent) {
       case "booking":
       case "payment":
@@ -162,7 +128,7 @@ export async function orchestrate(req: Request, env: EnvConfig, trace?: TraceCon
           managerNumbers,
           env,
           trace,
-          [],
+          recentMessages,
           20,
           false,
         );
@@ -188,23 +154,21 @@ export async function orchestrate(req: Request, env: EnvConfig, trace?: TraceCon
           managerNumbers,
           env,
           trace,
-          [],
+          recentMessages,
           20,
           false,
         );
     }
   } catch (err) {
-    const msg = (err as Error).message;
-    const hasRecent = await hasRecentFallbackApology(supabase, conversationId);
-    if (!hasRecent) {
+    console.error("Orchestrator Error:", err);
+    if (!(await hasRecentFallbackApology(supabase, conversationId))) {
       await sendWhatsApp(
         phone,
         "Mohon maaf kak, saya sedang mengalami kendala teknis. Mohon tunggu sebentar ya, tim kami akan segera membantu 🙏",
         env.fonnteApiKey,
       );
     }
-    await escalateToHumanStaff(supabase, phone, conversationId, msg, managerNumbers, env.fonnteApiKey);
-    return new Response(JSON.stringify({ status: "agent_failed" }));
+    return new Response(JSON.stringify({ status: "error_handled" }));
   }
 }
 
