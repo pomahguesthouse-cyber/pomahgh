@@ -126,12 +126,13 @@ function buildInvoicePdf(args: {
   paidAmount: number;
   remainingBalance: number;
   isDownPayment: boolean;
+  isTotalMode: boolean;
 }): Uint8Array {
   const {
     booking, rooms, addons, bankAccounts, settings, template,
     logoDataUrl, qrisDataUrl,
     totalWithCode, uniqueCode, showPaidStamp, transactionStatus, paymentMethodLabel,
-    paidAmount, remainingBalance, isDownPayment,
+    paidAmount, remainingBalance, isDownPayment, isTotalMode,
   } = args;
 
   // Resolve template config (with safe fallbacks)
@@ -291,17 +292,34 @@ function buildInvoicePdf(args: {
     y = drawSectionHeader('DETAIL PEMESANAN', y);
     const tableRows: (string | number)[][] = [];
     let idx = 1;
-    rooms.forEach((r) => {
-      const subtotal = r.price_per_night * booking.total_nights;
+    if (isTotalMode) {
+      // Harga total (bukan per-malam) — sembunyikan kolom harga per malam.
+      const addonSum = addons.reduce((s, a) => s + Number(a.total_price || 0), 0);
+      const roomTotal = Math.max(0, booking.total_price - addonSum);
+      const desc = rooms.length > 0
+        ? rooms.map((r) => `${r.rooms?.name || booking.rooms?.name || 'Kamar'}${r.room_number ? ` #${r.room_number}` : ''}`).join(', ')
+        : (booking.rooms?.name || 'Kamar');
       tableRows.push([
         idx++,
         'Akomodasi',
-        `${hotelName} - ${r.rooms?.name || booking.rooms?.name || 'Kamar'}${r.room_number ? ` #${r.room_number}` : ''}`,
-        `${booking.total_nights} mlm`,
-        formatRupiah(r.price_per_night),
-        formatRupiah(subtotal),
+        `${hotelName} - ${desc} (${booking.total_nights} malam)`,
+        '-',
+        '-',
+        formatRupiah(roomTotal),
       ]);
-    });
+    } else {
+      rooms.forEach((r) => {
+        const subtotal = r.price_per_night * booking.total_nights;
+        tableRows.push([
+          idx++,
+          'Akomodasi',
+          `${hotelName} - ${r.rooms?.name || booking.rooms?.name || 'Kamar'}${r.room_number ? ` #${r.room_number}` : ''}`,
+          `${booking.total_nights} mlm`,
+          formatRupiah(r.price_per_night),
+          formatRupiah(subtotal),
+        ]);
+      });
+    }
     addons.forEach((a) => {
       tableRows.push([
         idx++,
@@ -563,6 +581,15 @@ serve(async (req) => {
           price_per_night: booking.total_price / booking.total_nights,
         }];
 
+    // Detect "total price mode": when admin entered total price (bukan per-malam),
+    // booking_rooms.price_per_night tetap berisi harga normal kamar sehingga
+    // (sum price_per_night × nights + addons) ≠ total_price. Dalam kondisi ini
+    // kolom harga per-malam tidak ditampilkan di invoice.
+    const sumRoomsPerNight = roomList.reduce((s, r) => s + Number(r.price_per_night || 0), 0);
+    const addonSumForCheck = (bookingAddons || []).reduce((s, a) => s + Number((a as BookingAddonItem).total_price || 0), 0);
+    const expectedFromPerNight = sumRoomsPerNight * booking.total_nights + addonSumForCheck;
+    const isTotalMode = sumRoomsPerNight > 0 && Math.abs(expectedFromPerNight - Number(booking.total_price)) > 1;
+
     // Pre-fetch logo + QRIS as data URLs (parallel)
     const tpl = (invoiceTemplate || null) as InvoiceTemplateRow | null;
     const logoUrl = hotelSettings.invoice_logo_url || hotelSettings.logo_url;
@@ -589,6 +616,7 @@ serve(async (req) => {
       paidAmount,
       remainingBalance,
       isDownPayment,
+      isTotalMode,
     });
 
     // Upload PDF to storage
