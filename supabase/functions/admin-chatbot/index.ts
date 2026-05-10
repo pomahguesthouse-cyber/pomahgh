@@ -21,27 +21,6 @@ import { createHallucinationGuard } from "../_shared/hallucinationGuard.ts";
 
 const AI_FETCH_TIMEOUT_MS = 15_000; // 15 second timeout per AI call
 
-const formatRoomPricesResponse = (hotelName: string, toolResult: unknown): string => {
-  const rooms = (toolResult as { rooms?: Array<{ name: string; price_formatted?: string; effective_price?: number; base_price?: number; price_source?: string }> })?.rooms || [];
-
-  if (rooms.length === 0) {
-    return `Data harga kamar ${hotelName} tidak tersedia saat ini.`;
-  }
-
-  const lines = rooms.map((room, index) => {
-    const formattedPrice = room.price_formatted || `Rp ${(room.effective_price || room.base_price || 0).toLocaleString('id-ID')}`;
-    const sourceLabel = room.price_source === 'promo'
-      ? ' (Promo)'
-      : room.price_source === 'dynamic'
-        ? ' (Dynamic)'
-        : '';
-
-    return `${index + 1}. *${room.name}*\n   💰 ${formattedPrice}${sourceLabel}`;
-  });
-
-  return `Berikut daftar harga kamar *${hotelName}* per malam:\n\n${lines.join('\n\n')}`;
-};
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -222,50 +201,12 @@ Deno.serve(async (req: Request) => {
     const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    // Force tool execution for room price requests to avoid hallucination
-    if (intentMatch.suggestedTool === 'get_room_prices' && intentMatch.confidence !== 'low') {
-      const forcedToolStart = Date.now();
-      // Extract room name from user message if mentioned
-      const roomNameMatch = userMessage.match(/(?:kamar|room|tipe|type)\s+(\w+)/i);
-      const forcedArgs = roomNameMatch ? { room_name: roomNameMatch[1] } : {};
-      const roomToolResult = await executeToolWithValidation(supabase, 'get_room_prices', forcedArgs, auth.managerRole);
-
-      logToolExecution(supabase, {
-        trace_id: trace.traceId, tool_name: 'get_room_prices',
-        arguments: forcedArgs, result_status: 'success',
-        result_summary: 'forced_price_lookup',
-        duration_ms: Date.now() - forcedToolStart, agent_name: 'admin-chatbot',
-      });
-
-      executedTools.push({
-        tool_name: 'get_room_prices',
-        arguments: forcedArgs,
-        result: roomToolResult,
-        success: true,
-        executed_at: new Date().toISOString()
-      });
-
-      const forcedResponse = formatRoomPricesResponse(hotelSettings.hotel_name, roomToolResult);
-
-      await logAuditEntry(supabase, {
-        adminId: auth.adminId!,
-        adminEmail: auth.adminEmail,
-        sessionId,
-        userMessage,
-        executedTools,
-        aiResponse: forcedResponse,
-        durationMs: Date.now() - startTime,
-        ipAddress,
-        userAgent
-      });
-
-      const stream = createSSEStream(async (ctx: StreamContext) => {
-        sendTextChunk(ctx, forcedResponse);
-        return forcedResponse;
-      });
-
-      return createSSEResponse(stream);
-    }
+    // BUG 2 fix: removed forced get_room_prices path.
+    // The previous implementation extracted room_name with a brittle regex
+    // (`/(?:kamar|room|tipe|type)\s+(\w+)/i`) which truncated multi-word
+    // names like "Family Suite" to "Family". The AI now decides when to
+    // call get_room_prices via natural tool-calling, with the system
+    // prompt's anti-hallucination guard ensuring the call happens.
 
     // 6. Stream response
     const stream = createSSEStream(async (ctx: StreamContext) => {
