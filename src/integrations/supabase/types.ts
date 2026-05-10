@@ -4577,6 +4577,15 @@ export type Database = {
       cleanup_whatsapp_webhook_dedup:
         | { Args: never; Returns: number }
         | { Args: { p_batch?: number }; Returns: number }
+      create_temp_booking: {
+        Args: {
+          p_check_in: string
+          p_nights: number
+          p_notes: string
+          p_phone: string
+        }
+        Returns: undefined
+      }
       generate_booking_code: { Args: never; Returns: string }
       generate_manager_token: { Args: never; Returns: string }
       get_manager_role: { Args: { _user_id: string }; Returns: string }
@@ -4593,6 +4602,10 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
+      update_booking_duration: {
+        Args: { p_code: string; p_nights: number }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
