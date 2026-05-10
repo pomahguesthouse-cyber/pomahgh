@@ -169,7 +169,7 @@ export async function orchestrate(
       .order('last_message_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase.from('agent_configs').select('agent_id, is_active, system_prompt, temperature, escalation_target, auto_escalate'),
+    supabase.from('agent_configs').select('agent_id, is_active, custom_instructions, temperature, escalation_target, auto_escalate'),
     supabase.from('escalation_rules').select('from_agent, to_agent, condition_text, priority, is_active').eq('is_active', true).order('priority', { ascending: true }),
   ]);
 
