@@ -35,6 +35,7 @@ const BACKEND_FILES: Record<string, string> = {
   complaint: 'complaint.ts',
   pricing: 'pricing.ts',
   manager: 'manager.ts',
+  payment: 'paymentProof.ts + paymentApproval.ts',
   payment_proof: 'paymentProof.ts',
   payment_approval: 'paymentApproval.ts',
   price_list: 'priceList.ts',
