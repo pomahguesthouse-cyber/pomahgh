@@ -279,7 +279,7 @@ export const useMultiAgentDashboard = () => {
       tags: config.tags || [],
       category: config.category as AgentDefinition['category'],
       escalationTarget: config.escalation_target || undefined,
-      prompt: config.system_prompt || undefined,
+      prompt: config.custom_instructions || undefined,
       temperature: config.temperature ? Number(config.temperature) : 0.3,
       maxTurns: config.max_turns || 10,
       isActive: config.is_active ?? true,
