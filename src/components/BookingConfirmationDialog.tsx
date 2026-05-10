@@ -114,7 +114,14 @@ export const BookingConfirmationDialog = ({
         {!showPaymentButton && (
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={onConfirm}>
+            <AlertDialogAction
+              onClick={(e) => {
+                // Cegah Radix menutup dialog otomatis — biarkan handler async
+                // yang memutuskan kapan dialog ditutup (sukses / error).
+                e.preventDefault();
+                onConfirm();
+              }}
+            >
               Konfirmasi Booking
             </AlertDialogAction>
           </AlertDialogFooter>
