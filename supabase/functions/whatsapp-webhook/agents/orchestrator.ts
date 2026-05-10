@@ -11,6 +11,7 @@ import { checkDuplicate, extractMessageId } from '../middleware/dedup.ts';
 import { getCachedHotelSettings, ensureConversation, updateSession, hasRecentOrActiveBooking, isPastLastCheckout } from '../services/session.ts';
 import { logMessage, getConversationHistory } from '../services/conversation.ts';
 import { sendWhatsApp } from '../services/fonnte.ts';
+import { extractConversationContext, getLatestBookingContextByPhone } from '../services/context.ts';
 import { handlePriceApproval } from './pricing.ts';
 import { handleManagerChat } from './manager.ts';
 import { handleGuestBookingFlow } from './booking.ts';
@@ -508,6 +509,15 @@ export async function orchestrate(
   }
 
   const recentMessages = await getConversationHistory(supabase, conversationId!, historyWindowMessages).catch(() => []);
+  
+  // Extract conversation context from message history + DB for booking continuation
+  const conversationContextFromMessages = extractConversationContext(recentMessages.map(m => ({ role: m.role, content: m.content })));
+  const dbBookingContext = await getLatestBookingContextByPhone(supabase, phone).catch(() => null);
+  const conversationContext = {
+    ...(dbBookingContext || {}),
+    ...(conversationContextFromMessages || {}),
+  };
+  
   const classification = await classifyIntent(normalizedMessage, {
     recentMessages: recentMessages.slice(-6),
     awaitingName: false, // already handled above
