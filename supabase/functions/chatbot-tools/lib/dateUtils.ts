@@ -34,7 +34,11 @@ export function calculateNights(checkIn: string, checkOut: string): number {
  * Validate and fix dates - ensures dates are in the future
  * IMPROVEMENT: Returns warning flag instead of silent fix
  */
-export function validateAndFixDate(dateStr: string, fieldName: string): DateValidationResult {
+export function validateAndFixDate(
+  dateStr: string,
+  fieldName: string,
+  options: { strict?: boolean } = {},
+): DateValidationResult {
   const date = new Date(dateStr);
   
   // Use WIB (UTC+7) for accurate comparison
@@ -50,6 +54,18 @@ export function validateAndFixDate(dateStr: string, fieldName: string): DateVali
   
   // CRITICAL: If date is in the PAST, try next month first, then next year
   if (targetDate < today) {
+    // Strict mode (untuk operasi yang menulis ke DB seperti createBookingDraft /
+    // updateBooking): JANGAN diam-diam menggeser tanggal — lempar error supaya
+    // AI menanyakan ulang ke tamu. Silent shift menyebabkan booking dengan
+    // tanggal yang berbeda dari yang dikomunikasikan ke tamu.
+    if (options.strict) {
+      const todayStr = today.toISOString().split('T')[0];
+      throw new Error(
+        `Tanggal ${fieldName} (${dateStr}) sudah lewat (hari ini WIB: ${todayStr}). ` +
+        `Mohon konfirmasi ulang tanggal yang benar dengan tamu sebelum booking dibuat.`,
+      );
+    }
+
     // Try adding 1 month first
     const nextMonthDate = new Date(date);
     nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
