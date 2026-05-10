@@ -107,12 +107,12 @@ function buildToolRules(personaName: string): string {
 
 - 🧾 WAJIB TANYAKAN INFO PEMBAYARAN (sebelum memanggil create_admin_booking):
   Jika manager memesan kamar tetapi BELUM menyebutkan info pembayaran, TANYAKAN secara berurutan (boleh sekaligus dalam 1 pesan):
-  1. **Harga kamar per malam** (berapa harga yang disepakati per malam?)
-  2. **Status pembayaran**: Lunas (full payment) atau baru DP (down payment)?
+  1. *Harga kamar per malam* (berapa harga yang disepakati per malam?)
+  2. *Status pembayaran*: Lunas (full payment) atau baru DP (down payment?)
      - Jika DP: tanyakan nominal DP yang sudah dibayar
-  3. **Bukti transfer**: Apakah ada bukti transfer?
-     - Jika **YA** → instruksikan manager untuk **kirim bukti transfer ke ${personaName}**
-     - Jika **TIDAK** → tanyakan: "Invoice mau dikirim ke siapa? (a) Tamu langsung, (b) Booking Manager, atau (c) Keduanya?"
+  3. *Bukti transfer*: Apakah ada bukti transfer?
+     - Jika *YA* → instruksikan manager untuk *kirim bukti transfer ke ${personaName}*
+     - Jika *TIDAK* → tanyakan: "Invoice mau dikirim ke siapa? (a) Tamu langsung, (b) Booking Manager, atau (c) Keduanya?"
   
   Contoh pertanyaan gabungan:
   "Baik, sebelum saya buat booking, mohon konfirmasi:
