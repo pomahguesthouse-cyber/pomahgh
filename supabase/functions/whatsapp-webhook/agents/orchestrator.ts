@@ -306,16 +306,8 @@ export async function orchestrate(
     return handleManagerChat(supabase, session, phone, normalizedMessage, managerInfo, env);
   }
 
-  // 5c. TAKEOVER MODE → skip AI
-  if (session?.is_takeover) {
-    const convId = await ensureConversation(supabase, session, phone);
-    await logMessage(supabase, convId, 'user', rawMessage);
-    console.log(`⛔ Takeover active for ${phone} - AI skipped`);
-    await supabase.from('whatsapp_sessions').update({ last_message_at: new Date().toISOString() }).eq('phone_number', phone);
-    return new Response(JSON.stringify({ status: 'takeover_mode', conversation_id: convId, reason: 'manual_takeover_active' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
+  // NOTE: takeover for non-manager guests is handled earlier at step 5a-pre.
+  // Managers are not subject to takeover mode (they always reach the manager handlers above).
 
   // 5d. SESSION MANAGEMENT
   const SESSION_TIMEOUT = sessionTimeoutMinutes * 60 * 1000;
@@ -524,13 +516,6 @@ export async function orchestrate(
     switch (decision.agent) {
       case 'price_list':
         return await handlePriceListQuestion(
-          supabase, session as WhatsAppSession, phone, rawMessage,
-          conversationId!, personaName, env, trace,
-        );
-
-      case 'room_brochure':
-        // FAQ agent handles room photo/brochure flow
-        return await handleGuestFAQ(
           supabase, session as WhatsAppSession, phone, rawMessage,
           conversationId!, personaName, env, trace,
         );

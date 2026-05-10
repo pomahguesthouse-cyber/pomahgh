@@ -169,6 +169,7 @@ export async function handleGuestBookingFlow(
     },
     body: JSON.stringify({
       messages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext,
+      agent_id: 'booking',
     }),
   });
 
@@ -205,7 +206,7 @@ export async function handleGuestBookingFlow(
       const guardResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
-        body: JSON.stringify({ messages: guardMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext }),
+        body: JSON.stringify({ messages: guardMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext, agent_id: 'booking' }),
       });
       if (guardResponse.ok) {
         const guardData = await guardResponse.json();
@@ -215,6 +216,72 @@ export async function handleGuestBookingFlow(
     } catch (guardError) {
       console.error('⚠️ Hallucination guard retry failed:', guardError);
     }
+  }
+
+  // ── EXTENDED HALLUCINATION GUARDS (price / facility / payment-method) ──
+  // Pattern reusable: deteksi user-asks topic + AI claim spesifik + tool tidak dipanggil → retry paksa.
+  type GuardSpec = {
+    name: string;
+    userAsks: RegExp;
+    aiClaims: RegExp;
+    requiredTools: string[];
+    forceMessage: string;
+  };
+  const extendedGuards: GuardSpec[] = [
+    {
+      name: 'pricing',
+      userAsks: /\b(harga|tarif|rate|berapa|brp|biaya|cost|price)\b/i,
+      aiClaims: /\brp\s*\d|\d{2,3}\.?\d{3}|\d+\s*ribu|\d+\s*rb|\d+rb\b/i,
+      requiredTools: ['get_all_rooms', 'get_room_details', 'get_full_house_price'],
+      forceMessage: 'Kamu menyebut angka harga TANPA memanggil tool get_all_rooms / get_room_details / get_full_house_price. INI DILARANG karena bisa salah harga ke tamu. SEKARANG WAJIB panggil tool yang sesuai. Jangan balas text dulu - LANGSUNG panggil tool!',
+    },
+    {
+      name: 'facility',
+      userAsks: /\b(fasilitas|wifi|wi-fi|sarapan|breakfast|kolam|pool|parkir|parking|ac|tv|kulkas|water\s*heater|gym|sauna)\b/i,
+      aiClaims: /\b(ada|tersedia|disediakan|include|sudah\s+termasuk|gratis|free|tidak\s+ada|belum\s+ada)\b/i,
+      requiredTools: ['get_facilities'],
+      forceMessage: 'Kamu menjawab tentang fasilitas TANPA memanggil tool get_facilities. INI DILARANG. SEKARANG WAJIB panggil get_facilities lalu jawab berdasarkan hasilnya. LANGSUNG panggil tool!',
+    },
+    {
+      name: 'payment_method',
+      userAsks: /\b(rekening|nomor\s+rek|no\s+rek|transfer\s+kemana|bank\s+apa|bayar\s+kemana|cara\s+bayar|metode\s+bayar)\b/i,
+      aiClaims: /\b(bca|mandiri|bni|bri|cimb|bsi|gopay|ovo|dana|qris)\b|\b\d{4,}\b/i,
+      requiredTools: ['get_payment_methods'],
+      forceMessage: 'Kamu menyebut bank/nomor rekening TANPA memanggil tool get_payment_methods. INI DILARANG karena nomor rekening bisa salah. SEKARANG WAJIB panggil get_payment_methods. LANGSUNG panggil tool!',
+    },
+  ];
+
+  for (const guard of extendedGuards) {
+    if (isAvailabilityHallucination) break; // already retried above
+    const userTriggered = guard.userAsks.test(combinedMessage);
+    const aiTriggered = guard.aiClaims.test(aiResponse);
+    const toolUsed = guard.requiredTools.some(t => toolsUsed.includes(t));
+    if (!userTriggered || !aiTriggered || toolUsed) continue;
+
+    console.log(`⚠️ ${guard.name.toUpperCase()} HALLUCINATION DETECTED - retrying with forced tool call`);
+    await logMessage(supabase, conversationId, 'system',
+      `[${guard.name} guard triggered: AI said "${aiResponse.substring(0, 80)}..." without calling ${guard.requiredTools.join('/')}. Tools used: ${toolsUsed.join(', ') || 'none'}]`,
+    );
+    try {
+      const guardMessages = [
+        ...messages,
+        { role: 'assistant', content: aiResponse },
+        { role: 'system', content: guard.forceMessage },
+      ];
+      const resp = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
+        body: JSON.stringify({ messages: guardMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext, agent_id: 'booking' }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) aiResponse = content;
+      }
+    } catch (err) {
+      console.error(`⚠️ ${guard.name} guard retry failed:`, err);
+    }
+    break; // only retry once per turn across all extended guards
   }
 
   if (!hasToolCalls && !isAvailabilityHallucination && stuckPatterns.test(aiResponse)) {
@@ -230,7 +297,7 @@ export async function handleGuestBookingFlow(
       const retryResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
-        body: JSON.stringify({ messages: retryMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext }),
+        body: JSON.stringify({ messages: retryMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext, agent_id: 'booking' }),
       });
 
       if (retryResponse.ok) {

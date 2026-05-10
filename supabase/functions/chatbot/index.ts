@@ -42,7 +42,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { messages, chatbotSettings: providedSettings, conversationContext, faq_mode } = body ?? {};
+    const { messages, chatbotSettings: providedSettings, conversationContext, faq_mode, agent_id } = body ?? {};
 
     // Rate limit per session/IP (best-effort, in-memory per isolate)
     const rlKey = getClientKey(req, body);
@@ -115,12 +115,33 @@ serve(async (req) => {
     const allToolResults: string[] = [];
 
     // Build optimized system prompt
-    const systemPrompt = buildSystemPrompt({
+    let systemPrompt = buildSystemPrompt({
       settings,
       hotelData,
       conversationContext,
       lastUserMessage
     });
+
+    // ── HYBRID PROMPT STUDIO ──
+    // Bila handler agent meneruskan agent_id (mis. 'booking', 'faq'), append
+    // `agent_configs.system_prompt` sebagai instruksi tambahan agent. Hardcoded
+    // base prompt tetap source of truth; admin custom hanya bersifat menambah.
+    if (typeof agent_id === 'string' && agent_id.trim().length > 0) {
+      try {
+        const { data: agentCfg } = await supabase
+          .from('agent_configs')
+          .select('system_prompt, is_active')
+          .eq('agent_id', agent_id)
+          .maybeSingle();
+        const customPrompt = agentCfg?.system_prompt?.trim();
+        if (agentCfg?.is_active !== false && customPrompt) {
+          systemPrompt += `\n\n## INSTRUKSI AGENT (${agent_id})\n${customPrompt}`;
+          trace.info('Appended agent custom prompt', { agent_id, length: customPrompt.length });
+        }
+      } catch (cfgErr) {
+        trace.warn('Failed to load agent_configs prompt', { agent_id, error: (cfgErr as Error).message });
+      }
+    }
 
     // Calculate max tokens based on response speed
     const maxTokens = settings.response_speed === 'fast' ? 500 

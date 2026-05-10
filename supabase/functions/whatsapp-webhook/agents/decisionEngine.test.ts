@@ -28,17 +28,13 @@ describe('decisionEngine', () => {
     expect(isAgentActiveMock).toHaveBeenCalledWith('price_list');
   });
 
-  it('honors DB fallback when room brochure agent is inactive', () => {
-    isAgentActiveMock.mockImplementation((agentId: string) => agentId === 'faq');
-    getEscalationTargetMock.mockReturnValue('faq');
-
+  it('routes room_photo intent directly to faq agent', () => {
     const decision = decide('room_photo');
 
     expect(decision.agent).toBe('faq');
-    expect(decision.reason).toBe('room_brochure_inactive_escalated_to_faq');
-    expect(decision.fallbackUsed).toBe(true);
-    expect(isAgentActiveMock).toHaveBeenCalledWith('room_brochure');
-    expect(getEscalationTargetMock).toHaveBeenCalledWith('room_brochure');
+    expect(decision.reason).toBe('intent:room_photo');
+    expect(decision.fallbackUsed).toBe(false);
+    expect(isAgentActiveMock).toHaveBeenCalledWith('faq');
   });
 
   it('falls back to booking when payment agent is inactive and has no valid target', () => {
