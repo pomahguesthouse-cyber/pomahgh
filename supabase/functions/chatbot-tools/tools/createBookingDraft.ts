@@ -14,6 +14,20 @@ export async function handleCreateBookingDraft(
   if (!guest_phone || !guest_phone.trim()) {
     throw new Error("Nomor telepon wajib diisi untuk membuat booking");
   }
+
+  if (!guest_name || !guest_name.trim()) {
+    throw new Error("Nama tamu wajib diisi. Mohon tanyakan nama lengkap tamu sebelum booking dibuat.");
+  }
+
+  // Email WAJIB — kolom guest_email di DB NOT NULL. Jangan diam-diam pakai placeholder
+  // karena email dipakai untuk invoice dan idempotency. Lempar error supaya AI menanyakan
+  // ke tamu sebelum lanjut.
+  if (!guest_email || !guest_email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guest_email.trim())) {
+    throw new Error(
+      "Email tamu wajib diisi dan valid sebelum booking dibuat. " +
+      "Mohon tanyakan email tamu (untuk invoice & konfirmasi) sebelum memanggil create_booking_draft."
+    );
+  }
   
   // Strict mode: tanggal yang sudah lewat akan throw — AI harus tanya ulang
   // ke tamu. JANGAN insert booking dengan tanggal yang dikoreksi diam-diam.
