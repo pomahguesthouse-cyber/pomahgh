@@ -122,10 +122,11 @@ serve(async (req) => {
       lastUserMessage
     });
 
-    // ── HYBRID PROMPT STUDIO ──
+    // ── HYBRID PROMPT STUDIO (B3) ──
     // Bila handler agent meneruskan agent_id (mis. 'booking', 'faq'), append
-    // `agent_configs.system_prompt` sebagai instruksi tambahan agent. Hardcoded
-    // base prompt tetap source of truth; admin custom hanya bersifat menambah.
+    // `agent_configs.custom_instructions` sebagai instruksi tambahan agent.
+    // Hardcoded base prompt + anti-hallucination guard tetap source of truth;
+    // admin custom hanya bersifat MENAMBAH, bukan mengganti.
     if (typeof agent_id === 'string' && agent_id.trim().length > 0) {
       try {
         const { data: agentCfg } = await supabase
