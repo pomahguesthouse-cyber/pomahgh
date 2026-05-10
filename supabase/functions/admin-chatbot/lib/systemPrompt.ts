@@ -322,7 +322,7 @@ export function buildSystemPrompt(config: PromptConfig): string {
   
   // Greeting for first message only
   const greeting = isFirstMessage 
-    ? `\n\n🎉 INI PESAN PERTAMA - Sapa ${managerName} dengan hangat!`
+    ? `\n\n🎉 SAPAAN PERSONAL WAJIB:\n- Manager baru saja menyapa atau memulai percakapan.\n- WAJIB balas dengan menyebut nama manager: "${managerName}".\n- Contoh: "Selamat pagi, ${managerName}! Ada yang bisa saya bantu?" atau "Halo ${managerName}, siap membantu hari ini."\n- JANGAN balas sapaan tanpa nama manager.`
     : '';
   
   // Intent hint from detector

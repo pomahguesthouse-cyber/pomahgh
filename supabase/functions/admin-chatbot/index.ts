@@ -158,6 +158,10 @@ Deno.serve(async (req: Request) => {
     const intentMatch = detectIntent(userMessage);
     const intentHint = getToolGuidanceHint(intentMatch);
 
+    // Detect pure greeting (sapaan) → force personalized greeting with manager name
+    const isGreeting = /^\s*(selamat\s*(pagi|siang|sore|malam)|pagi|siang|sore|malam|halo+|hai+|hi+|hello+|assalamu?'?alaikum|p\b|test|tes)[\s.!?,]*$/i
+      .test(userMessage.trim());
+
     console.log(`📝 Intent detected: ${intentMatch.intent} (${intentMatch.confidence}) → ${intentMatch.suggestedTool || 'none'}`);
     trace.info('Intent detected', { intent: intentMatch.intent, confidence: intentMatch.confidence, tool: intentMatch.suggestedTool });
 
@@ -187,7 +191,7 @@ Deno.serve(async (req: Request) => {
       personaSettings,
       knowledgeContext: knowledgeContext + facilitiesContext + nearbyContext,
       trainingContext,
-      isFirstMessage: chatMessages.length <= 1,
+      isFirstMessage: chatMessages.length <= 1 || isGreeting,
       intentHint
     });
 
