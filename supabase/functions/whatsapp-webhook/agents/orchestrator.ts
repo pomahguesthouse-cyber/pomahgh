@@ -322,6 +322,22 @@ export async function orchestrate(
   let pastCheckout = false;
   if (conversationId) {
     pastCheckout = await isPastLastCheckout(supabase, phone).catch(() => false);
+    // Hindari reset berulang dalam sesi aktif: kalau session ini sudah aktif
+    // hari ini (WIB), berarti reset_past_checkout sudah dieksekusi pada turn
+    // sebelumnya. Pertahankan memory turn-by-turn agar konteks booking
+    // (mis. tipe kamar yang baru dipilih tamu) tidak hilang setiap pesan.
+    if (pastCheckout && lastMessageAt > 0) {
+      const nowWib = new Date(Date.now() + 7 * 60 * 60 * 1000);
+      const todayWib = nowWib.toISOString().slice(0, 10);
+      const lastWib = new Date(lastMessageAt + 7 * 60 * 60 * 1000)
+        .toISOString().slice(0, 10);
+      if (lastWib >= todayWib) {
+        console.log(
+          `🧠 Skipping past-checkout reset for ${phone} — session already active today (last_message_at=${lastWib})`,
+        );
+        pastCheckout = false;
+      }
+    }
     if (pastCheckout) {
       console.log(`🧹 Resetting memory for ${phone} — today > last booking check_out`);
     }
