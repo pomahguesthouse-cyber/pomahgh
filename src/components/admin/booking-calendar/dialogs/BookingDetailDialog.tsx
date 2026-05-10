@@ -501,8 +501,8 @@ export const BookingDetailDialog = ({
           </div>
 
           {/* Payment Information */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg p-4">
-            <h3 className="font-bold text-sm uppercase tracking-wide mb-4">Informasi Pembayaran</h3>
+          <div className="bg-muted/40 border rounded-2xl p-5">
+            <h3 className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4">Informasi Pembayaran</h3>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <CreditCard className="h-5 w-5 text-primary mt-0.5" />
@@ -604,8 +604,8 @@ export const BookingDetailDialog = ({
           </div>
 
           {/* Special Requests */}
-          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 rounded-lg p-4 space-y-2">
-            <Label className="font-bold text-sm uppercase tracking-wide">Permintaan Khusus</Label>
+          <div className="bg-muted/40 border rounded-2xl p-5 space-y-2">
+            <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground">Permintaan Khusus</Label>
             {isEditMode ? (
               <Textarea
                 value={editedBooking.special_requests || ""}
@@ -625,40 +625,41 @@ export const BookingDetailDialog = ({
             </p>
           </div>
 
-         {/* Action Buttons */}
-{isEditMode && (
-            <div className="flex gap-2 justify-end pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditedBooking(booking);
-                  setIsEditMode(false);
-                }}
-                disabled={isUpdating}
-              >
-                Batal
-              </Button>
-
-              <Button
-                onClick={handleSaveChanges}
-                disabled={isUpdating}
-                className="flex items-center gap-2"
-              >
-                {isUpdating ? (
-                  <>
-                    <Clock className="h-4 w-4 animate-spin" />
-                    Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Simpan
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
         </div>
+
+        {/* Sticky Footer Action Buttons */}
+        {isEditMode && (
+          <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm border-t px-6 py-3 flex gap-2 justify-end rounded-b-2xl">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditedBooking(booking);
+                setIsEditMode(false);
+              }}
+              disabled={isUpdating}
+              className="rounded-full font-semibold px-6"
+            >
+              BATAL
+            </Button>
+            <Button
+              onClick={handleSaveChanges}
+              disabled={isUpdating}
+              className="rounded-full font-semibold px-6 flex items-center gap-2"
+            >
+              {isUpdating ? (
+                <>
+                  <Clock className="h-4 w-4 animate-spin" />
+                  MENYIMPAN...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  SIMPAN
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
