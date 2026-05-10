@@ -259,6 +259,18 @@ export async function handleGuestBookingFlow(
       requiredTools: ['get_payment_methods'],
       forceMessage: 'Kamu menyebut bank/nomor rekening TANPA memanggil tool get_payment_methods. INI DILARANG karena nomor rekening bisa salah. SEKARANG WAJIB panggil get_payment_methods. LANGSUNG panggil tool!',
     },
+    {
+      // Cancellation guard: tamu bilang "batal/cancel" + AI mengaku sudah/akan
+      // dibatalkan, atau mengarang "sistem error / batal manual / kabari nanti"
+      // tanpa benar-benar memanggil cancel_booking → paksa retry dengan tool call.
+      // CATATAN: jika cancel_booking BERHASIL dipanggil, guard skip otomatis
+      // karena toolUsed=true (cek `toolsUsed.includes('cancel_booking')`).
+      name: 'cancellation',
+      userAsks: /\b(batal(?:kan|in)?|cancel|tidak\s+jadi|ga\s+jadi|gak\s+jadi|nggak\s+jadi|engga\s+jadi|maaf\s+batal)\b/i,
+      aiClaims: /(sudah\s+(?:saya\s+)?(?:di)?batal|akan\s+(?:saya\s+)?(?:di)?batal|saya\s+batal(?:kan)?|coba\s+batal|batal(?:kan)?\s+manual|sistem(?:nya)?\s+(?:lagi\s+)?(?:ada\s+)?(?:kendala|error|gangguan)|kabari\s+(?:lagi|nanti)|proses(?:kan)?\s+dulu|nanti\s+saya\s+(?:bantu|cek|kabari))/i,
+      requiredTools: ['cancel_booking'],
+      forceMessage: 'Tamu meminta pembatalan tapi kamu TIDAK memanggil tool cancel_booking. INI DILARANG. Jangan bilang "sistem ada kendala" / "batalkan manual" / "nanti saya kabari" — itu halusinasi. SEKARANG WAJIB panggil cancel_booking dengan booking_id, guest_phone, guest_email dari KONTEKS BOOKING AKTIF. Jangan balas text — LANGSUNG panggil tool cancel_booking!',
+    },
   ];
 
   for (const guard of extendedGuards) {

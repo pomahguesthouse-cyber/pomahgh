@@ -95,7 +95,13 @@ serve(async (req) => {
       /\btanggal\b/i.test(lastUserMessage) ||
       /\b(\d{1,2})[\s\/-](\d{1,2}|jan|feb|mar|apr|mei|jun|jul|agu|sep|okt|nov|des)/i.test(lastUserMessage);
     const priceIntent = /\b(harga|tarif|rate|berapa|brp|biaya|cost|price|diskon|promo)\b/i.test(lastUserMessage);
-    const forceToolCall = !faq_mode && (availabilityIntent || priceIntent);
+    // Pembatalan: deteksi intent "batal/cancel" + ada booking aktif di konteks
+    // → paksa tool call agar AI tidak halusinasi pesan "sistem ada kendala"
+    // dan membatalkan secara nyata via cancel_booking.
+    const cancelIntent =
+      /\b(batal(?:kan|in)?|cancel|tidak\s+jadi|ga\s+jadi|gak\s+jadi|nggak\s+jadi|engga\s+jadi)\b/i.test(lastUserMessage) &&
+      Boolean(conversationContext?.last_booking_code);
+    const forceToolCall = !faq_mode && (availabilityIntent || priceIntent || cancelIntent);
 
     // NOTE: Quick greeting bypass removed intentionally.
     // All messages now go through full AI pipeline with persona, KB, and training.
