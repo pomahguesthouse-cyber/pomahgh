@@ -177,7 +177,7 @@ export const BookingDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto z-[100] shadow-2xl drop-shadow-2xl">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex-1">
             <DialogTitle className="text-2xl font-bold mb-1">Detail Booking</DialogTitle>
@@ -194,7 +194,6 @@ export const BookingDetailDialog = ({
           >
             {isEditMode ? (
               <>
-                <X className="h-4 w-4 mr-2" />
                 Batal
               </>
             ) : (
