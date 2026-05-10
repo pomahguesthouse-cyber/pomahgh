@@ -115,10 +115,11 @@ serve(async (req) => {
     const cancelIntent =
       /\b(batal(?:kan|in|kah)?|cancel(?:led|lation)?|tidak\s+jadi|ga\s+jadi|gak\s+jadi|ngga\s+jadi|nggak\s+jadi|engga\s+jadi|gajadi|nggajadi|enggajadi|ngga(?:k)?\s+jadi\s+booking|tidak\s+jadi\s+booking|nanti\s+dulu|urungkan|mohon\s+batal|maaf\s+batal|sorry\s+batal|batal\s+aja|batal\s+saja|batal\s+ya|batal\s+dong|batal\s+kak|batal\s+min|batal\s+bang|batal\s+sis|batal\s+mas|ya\s+batal)\b/i.test(lastUserMessage) &&
       hasActiveBooking;
-    // Deteksi intent update booking: perpanjang malam/hari, ganti/rubah tanggal/hari, tambah tamu
-    // 'rubah' = informal 'ubah', 'hari' sering dipakai user alih-alih 'malam'/'tanggal'.
+    // Deteksi intent update booking: perpanjang malam/hari, ganti/rubah tanggal/hari, tambah tamu.
+    // 'rubah' = informal 'ubah'. 'hari' sering dipakai user alih-alih 'malam'/'tanggal'.
+    // Cover variasi urutan kata: "jadinya 3 malam", "3 malam jadinya/aja/kak", "eh 3 malam".
     const updateIntent =
-      /\b(perpanjang|tambah\s+(malam|hari)|kurang(?:i)?\s+(malam|hari)|jadi(?:nya)?\s+\d+\s+(malam|hari)|(?:ganti|ubah|rubah|pindah|ubah|rubah)\s+(tanggal|hari|jadwal|tgl)|mau\s+(?:ganti|ubah|rubah|pindah)\s+(tanggal|hari|jadwal|tgl)?|extend|reschedule|tambah\s+tamu|kurangi\s+tamu|ubah\s+tamu|rubah\s+tamu)\b/i.test(lastUserMessage) &&
+      /\b(perpanjang|tambah\s+(malam|hari)|kurang(?:i)?\s+(malam|hari)|jadi(?:nya)?\s+\d+\s+(malam|hari)|\d+\s+(malam|hari)\s+(jadinya|jadi|aja|saja|kak|min|dong|ya|deh|sih)|eh\s+\d+\s+(malam|hari)|(?:ganti|ubah|rubah|pindah)\s+(tanggal|hari|jadwal|tgl)|mau\s+(?:ganti|ubah|rubah|pindah)|extend|reschedule|tambah\s+tamu|kurangi\s+tamu|ubah\s+tamu|rubah\s+tamu)\b/i.test(lastUserMessage) &&
       hasActiveBooking;
     const forceToolCall = !faq_mode && (availabilityIntent || priceIntent || cancelIntent || updateIntent);
 
