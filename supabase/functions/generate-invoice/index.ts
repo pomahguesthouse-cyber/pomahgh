@@ -581,6 +581,15 @@ serve(async (req) => {
           price_per_night: booking.total_price / booking.total_nights,
         }];
 
+    // Detect "total price mode": when admin entered total price (bukan per-malam),
+    // booking_rooms.price_per_night tetap berisi harga normal kamar sehingga
+    // (sum price_per_night × nights + addons) ≠ total_price. Dalam kondisi ini
+    // kolom harga per-malam tidak ditampilkan di invoice.
+    const sumRoomsPerNight = roomList.reduce((s, r) => s + Number(r.price_per_night || 0), 0);
+    const addonSumForCheck = (bookingAddons || []).reduce((s, a) => s + Number((a as BookingAddonItem).total_price || 0), 0);
+    const expectedFromPerNight = sumRoomsPerNight * booking.total_nights + addonSumForCheck;
+    const isTotalMode = sumRoomsPerNight > 0 && Math.abs(expectedFromPerNight - Number(booking.total_price)) > 1;
+
     // Pre-fetch logo + QRIS as data URLs (parallel)
     const tpl = (invoiceTemplate || null) as InvoiceTemplateRow | null;
     const logoUrl = hotelSettings.invoice_logo_url || hotelSettings.logo_url;
