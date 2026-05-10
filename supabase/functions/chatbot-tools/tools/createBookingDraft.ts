@@ -388,6 +388,27 @@ export async function handleCreateBookingDraft(
     console.error("Failed to notify managers:", notifyErr);
   }
 
+  // Auto-generate & kirim invoice ke email tamu (dan WA bila no HP tersedia).
+  // Fire-and-forget — supaya tidak menambah latency response chatbot.
+  // Jalankan untuk booking baru DAN update (invoice akan menampilkan harga/tanggal terbaru).
+  supabase.functions.invoke('generate-invoice', {
+    body: {
+      booking_id: booking.id,
+      send_email: Boolean(guest_email),
+      send_whatsapp: Boolean(guest_phone),
+    }
+  })
+    .then(({ error }) => {
+      if (error) {
+        console.error("generate-invoice error:", error);
+      } else {
+        console.log(`✅ Invoice dispatched for ${booking.booking_code}`);
+      }
+    })
+    .catch((invErr) => {
+      console.error("generate-invoice invocation failed:", invErr);
+    });
+
   // Fetch bank accounts from DB (dynamic, not hardcoded)
   const { data: bankAccountsData } = await supabase
     .from("bank_accounts")

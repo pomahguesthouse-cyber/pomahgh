@@ -125,6 +125,27 @@ export async function handleUpdateBooking(
     status: updatedBooking.status
   }, 'update');
 
+  // Kirim ulang invoice dengan harga/tanggal baru. Fire-and-forget agar tidak
+  // memperlambat response chatbot. Hanya kirim email jika ada email valid;
+  // hanya kirim WA jika ada nomor HP.
+  supabase.functions.invoke('generate-invoice', {
+    body: {
+      booking_id: updatedBooking.id,
+      send_email: Boolean(updatedBooking.guest_email),
+      send_whatsapp: Boolean(updatedBooking.guest_phone),
+    }
+  })
+    .then(({ error }) => {
+      if (error) {
+        console.error("generate-invoice (update) error:", error);
+      } else {
+        console.log(`✅ Updated invoice dispatched for ${updatedBooking.booking_code}`);
+      }
+    })
+    .catch((invErr) => {
+      console.error("generate-invoice (update) invocation failed:", invErr);
+    });
+
   return {
     message: "Booking berhasil diubah!",
     booking_code: updatedBooking.booking_code,
