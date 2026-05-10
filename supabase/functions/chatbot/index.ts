@@ -113,11 +113,12 @@ serve(async (req) => {
     // "YA BATAL" lalu melepas turn tanpa memanggil cancel_booking.
     // Pattern diperluas untuk mencakup semua variasi bahasa Indonesia informal
     const cancelIntent =
-      /\b(batal(?:kan|in|kah)?|cancel(?:led|lation)?|tidak\s+jadi|ga\s+jadi|gak\s+jadi|nggak\s+jadi|engga\s+jadi|gajadi|enggajadi|nanti\s+dulu|urungkan|mohon\s+batal|maaf\s+batal|sorry\s+batal|batal\s+aja|batal\s+saja|batal\s+ya|batal\s+dong|batal\s+kak|batal\s+min|batal\s+bang|batal\s+sis|batal\s+mas|ya\s+batal)\b/i.test(lastUserMessage) &&
+      /\b(batal(?:kan|in|kah)?|cancel(?:led|lation)?|tidak\s+jadi|ga\s+jadi|gak\s+jadi|ngga\s+jadi|nggak\s+jadi|engga\s+jadi|gajadi|nggajadi|enggajadi|ngga(?:k)?\s+jadi\s+booking|tidak\s+jadi\s+booking|nanti\s+dulu|urungkan|mohon\s+batal|maaf\s+batal|sorry\s+batal|batal\s+aja|batal\s+saja|batal\s+ya|batal\s+dong|batal\s+kak|batal\s+min|batal\s+bang|batal\s+sis|batal\s+mas|ya\s+batal)\b/i.test(lastUserMessage) &&
       hasActiveBooking;
-    // Deteksi intent update booking: perpanjang malam, ganti tanggal, tambah tamu
+    // Deteksi intent update booking: perpanjang malam/hari, ganti/rubah tanggal/hari, tambah tamu
+    // 'rubah' = informal 'ubah', 'hari' sering dipakai user alih-alih 'malam'/'tanggal'.
     const updateIntent =
-      /\b(perpanjang|tambah\s+malam|jadi(?:nya)?\s+\d+\s+malam|ganti\s+tanggal|ubah\s+tanggal|extend|reschedule|pindah\s+tanggal|tambah\s+tamu|kurangi\s+tamu|ubah\s+tamu)\b/i.test(lastUserMessage) &&
+      /\b(perpanjang|tambah\s+(malam|hari)|kurang(?:i)?\s+(malam|hari)|jadi(?:nya)?\s+\d+\s+(malam|hari)|(?:ganti|ubah|rubah|pindah|ubah|rubah)\s+(tanggal|hari|jadwal|tgl)|mau\s+(?:ganti|ubah|rubah|pindah)\s+(tanggal|hari|jadwal|tgl)?|extend|reschedule|tambah\s+tamu|kurangi\s+tamu|ubah\s+tamu|rubah\s+tamu)\b/i.test(lastUserMessage) &&
       hasActiveBooking;
     const forceToolCall = !faq_mode && (availabilityIntent || priceIntent || cancelIntent || updateIntent);
 
