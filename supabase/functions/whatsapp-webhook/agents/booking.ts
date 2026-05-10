@@ -616,42 +616,16 @@ export async function orchestrate(req: Request, env: EnvConfig, trace?: TraceCon
     await logMessage(supabase, conversationId, 'system',
       `[${guard.name} guard triggered: AI said "${aiResponse.substring(0, 80)}..." without calling ${guard.requiredTools.join('/')}. Tools used: ${toolsUsed.join(', ') || 'none'}]`,
     );
-    try {
-      await updateSession(supabase, phone, conversationId!, true);
-    } catch (e) {
-      console.warn("[orchestrator] updateSession (handover) failed:", e);
-    }
-    await transitionState(supabase, {
-      phone,
-      conversationId,
-      from: currentState,
-      to: "takeover",
-      reason: "human_handover_requested",
-    });
-    const reassureMsg = "Baik kak, saya teruskan ke admin kami ya. Mohon ditunggu sebentar 🙏";
-    await sendWhatsApp(phone, reassureMsg, env.fonnteApiKey);
-    await logMessage(supabase, conversationId!, "assistant", reassureMsg);
-    await escalateToHumanStaff(
-      supabase,
-      phone,
-      conversationId!,
-      "Tamu meminta diteruskan ke admin asli (handover request)",
-      managerNumbers,
-      env.fonnteApiKey,
-    );
-    logAgentDecision(supabase, {
-      trace_id: trace?.traceId,
-      phone_number: phone,
-      conversation_id: conversationId,
-      from_agent: "orchestrator",
-      to_agent: "human_staff",
-      reason: "human_handover_requested",
-      intent: "handover",
-    });
+    const clarifyMsg = guard.name === 'booking_change'
+      ? 'Siap kak, untuk ubah booking saya proses sekarang. Mohon kirim kode booking (PMH-XXXXXX) dan email saat booking ya 🙏'
+      : 'Boleh saya cek dulu detailnya ya kak, agar datanya akurat 🙏';
+    await sendWhatsApp(phone, clarifyMsg, env.fonnteApiKey);
+    await logMessage(supabase, conversationId!, 'assistant', clarifyMsg);
     return new Response(
       JSON.stringify({
-        status: "handover_requested",
+        status: 'guard_clarification_sent',
         conversation_id: conversationId,
+        guard: guard.name,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
