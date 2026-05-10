@@ -98,8 +98,9 @@ serve(async (req) => {
     // Pembatalan: deteksi intent "batal/cancel" + ada booking aktif di konteks
     // → paksa tool call agar AI tidak halusinasi pesan "sistem ada kendala"
     // dan membatalkan secara nyata via cancel_booking.
+    // Pattern diperluas untuk mencakup semua variasi bahasa Indonesia informal
     const cancelIntent =
-      /\b(batal(?:kan|in)?|cancel|tidak\s+jadi|ga\s+jadi|gak\s+jadi|nggak\s+jadi|engga\s+jadi)\b/i.test(lastUserMessage) &&
+      /\b(batal(?:kan|in|kah)?|cancel(?:led|lation)?|tidak\s+jadi|ga\s+jadi|gak\s+jadi|nggak\s+jadi|engga\s+jadi|gajadi|enggajadi|nanti\s+dulu|urungkan|mohon\s+batal|maaf\s+batal|sorry\s+batal|batal\s+aja|batal\s+saja|batal\s+ya|batal\s+dong|batal\s+kak|batal\s+min|batal\s+bang|batal\s+sis|batal\s+mas)\b/i.test(lastUserMessage) &&
       Boolean(conversationContext?.last_booking_code);
     const forceToolCall = !faq_mode && (availabilityIntent || priceIntent || cancelIntent);
 
