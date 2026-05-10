@@ -169,6 +169,7 @@ export async function handleGuestBookingFlow(
     },
     body: JSON.stringify({
       messages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext,
+      agent_id: 'booking',
     }),
   });
 
@@ -205,7 +206,7 @@ export async function handleGuestBookingFlow(
       const guardResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
-        body: JSON.stringify({ messages: guardMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext }),
+        body: JSON.stringify({ messages: guardMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext, agent_id: 'booking' }),
       });
       if (guardResponse.ok) {
         const guardData = await guardResponse.json();
@@ -230,7 +231,7 @@ export async function handleGuestBookingFlow(
       const retryResponse = await fetch(`${env.supabaseUrl}/functions/v1/chatbot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.supabaseServiceKey}` },
-        body: JSON.stringify({ messages: retryMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext }),
+        body: JSON.stringify({ messages: retryMessages, session_id: `wa_${phone}`, channel: 'whatsapp', conversationContext, agent_id: 'booking' }),
       });
 
       if (retryResponse.ok) {
