@@ -515,7 +515,7 @@ describe('orchestrator', () => {
 
       // 2) A new conversation row was inserted — proving memory was reset.
       expect(hoisted.chatConvInsertMock).toHaveBeenCalledTimes(1);
-      const insertPayload = hoisted.chatConvInsertMock.mock.calls[0][0] as {
+      const insertPayload = (hoisted.chatConvInsertMock.mock.calls[0]?.[0] ?? {}) as {
         session_id: string;
         message_count: number;
       };
