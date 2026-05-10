@@ -472,7 +472,7 @@ export const CreateBookingDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto border-2">
           <DialogHeader>
             <DialogTitle>Buat Booking Baru</DialogTitle>
             <DialogDescription>
