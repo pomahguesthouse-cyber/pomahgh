@@ -616,6 +616,7 @@ serve(async (req) => {
       paidAmount,
       remainingBalance,
       isDownPayment,
+      isTotalMode,
     });
 
     // Upload PDF to storage
