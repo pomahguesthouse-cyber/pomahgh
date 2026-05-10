@@ -15,7 +15,6 @@ import { isAgentActive, getEscalationTarget } from '../../_shared/agentConfigCac
 export type AgentKey =
   | 'name_collection'   // handled inline by orchestrator
   | 'price_list'        // priceList.ts (fast path)
-  | 'room_brochure'     // faq.ts handles this via room photo flow
   | 'booking'           // booking.ts (full AI conversation)
   | 'payment'           // booking agent handles payment sub-flow
   | 'faq'               // faq.ts
@@ -37,7 +36,7 @@ const INTENT_TO_AGENT: Record<Intent, AgentKey> = {
   greeting:          'name_collection',
   name_capture:      'name_collection',
   price_inquiry:     'price_list',
-  room_photo:        'room_brochure',
+  room_photo:        'faq',          // faq.ts handles brochure flow inline
   booking:           'booking',
   payment:           'booking',     // payment is sub-flow of booking agent
   faq:               'faq',
@@ -58,7 +57,6 @@ function normalizeAgentId(id: string): AgentKey | null {
     case 'faq': return 'faq';
     case 'complaint': return 'complaint';
     case 'price_list': return 'price_list';
-    case 'room_brochure': return 'room_brochure';
     case 'payment': return 'payment';
     default: return null;
   }
@@ -76,7 +74,7 @@ export function decide(intent: Intent): RoutingDecision {
 
   // Skip override checks only for inline-handled keys.
   // Fast-path agents are still operational agents and should honor DB toggles.
-  const dbCheckable: AgentKey[] = ['booking', 'faq', 'complaint', 'price_list', 'room_brochure', 'payment'];
+  const dbCheckable: AgentKey[] = ['booking', 'faq', 'complaint', 'price_list', 'payment'];
   if (dbCheckable.includes(agent)) {
     if (!isAgentActive(agent)) {
       const fallback = getEscalationTarget(agent);
