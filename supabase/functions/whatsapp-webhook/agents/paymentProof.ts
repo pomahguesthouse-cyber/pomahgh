@@ -42,7 +42,11 @@ interface PendingBookingRow {
 const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
 
-/** Find the most recent pending-payment booking for this phone */
+/** Find the most recent pending-payment booking for this phone.
+ * Status 'pending' termasuk karena create_booking_draft (chatbot) menyimpan
+ * dengan status itu — sebelumnya tidak diakomodir sehingga payment proof
+ * dari tamu chatbot selalu balas "booking aktif tidak ditemukan".
+ */
 async function findPendingBooking(
   supabase: SupabaseClient,
   phone: string,
@@ -53,7 +57,7 @@ async function findPendingBooking(
     .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out')
     .in('guest_phone', [phone, normalizedPhone])
     .in('payment_status', ['pending', 'unpaid'])
-    .in('status', ['pending_payment', 'confirmed'])
+    .in('status', ['pending', 'pending_payment', 'confirmed'])
     .order('created_at', { ascending: false })
     .limit(1);
   return data && data.length > 0 ? (data[0] as PendingBookingRow) : null;
@@ -88,7 +92,7 @@ async function findLatestPendingBookingAnywhere(
     .from('bookings')
     .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out')
     .in('payment_status', ['pending', 'unpaid'])
-    .in('status', ['pending_payment', 'confirmed'])
+    .in('status', ['pending', 'pending_payment', 'confirmed'])
     .order('created_at', { ascending: false })
     .limit(1);
   return data && data.length > 0 ? (data[0] as PendingBookingRow) : null;
