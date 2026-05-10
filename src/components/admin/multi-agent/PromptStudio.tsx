@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Image, FileText, Link, MapPin, Video } from 'lucide-react';
+import { BookOpen, Image, FileText, Link, MapPin, Video, AlertTriangle } from 'lucide-react';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
 
 interface PromptStudioProps {
@@ -22,6 +22,34 @@ const KB_TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode }> =
   media: { label: 'Media', icon: <Image className="h-3 w-3" /> },
 };
 
+// Heuristik anti prompt-injection ringan. Hanya warning, bukan blokir.
+const INJECTION_PATTERNS: { pattern: RegExp; reason: string }[] = [
+  { pattern: /ignore\s+(all\s+)?(previous|prior|above)\s+instructions?/i, reason: 'Frasa "ignore previous instructions" terdeteksi.' },
+  { pattern: /abaikan\s+(semua\s+)?(instruksi|petunjuk)\s+(sebelumnya|di atas)/i, reason: 'Frasa "abaikan instruksi sebelumnya" terdeteksi.' },
+  { pattern: /system\s*prompt\s*[:=]/i, reason: 'Coba override system prompt.' },
+  { pattern: /you\s+are\s+now\s+(a|an)?\s*\w+/i, reason: 'Pola "you are now …" (role hijack).' },
+  { pattern: /reveal\s+(your\s+)?(system|hidden)\s+prompt/i, reason: 'Mencoba mengungkap base prompt.' },
+  { pattern: /</i, reason: '' }, // placeholder so length>0
+];
+
+function detectInjection(text: string): string[] {
+  const findings: string[] = [];
+  for (const { pattern, reason } of INJECTION_PATTERNS) {
+    if (reason && pattern.test(text)) findings.push(reason);
+  }
+  return findings;
+}
+
+const BASE_PROMPT_PREVIEW = `Base prompt (read-only) — disusun otomatis dari:
+• Persona & gaya bahasa (chatbot_settings)
+• Data hotel (kamar, fasilitas, kebijakan, harga, slot)
+• Konteks percakapan (memory, last booking, intent)
+• Anti-hallucination guard (wajib pakai tool sebelum sebut harga / fasilitas / payment)
+
+Custom Instructions di bawah akan di-APPEND ke base prompt sebagai
+"## INSTRUKSI TAMBAHAN AGENT". Base prompt + guard tetap menang bila
+ada konflik.`;
+
 export const PromptStudio = ({ agents, onSave, isSaving }: PromptStudioProps) => {
   const [selectedId, setSelectedId] = useState(agents[0]?.id);
   const selected = agents.find(a => a.id === selectedId);
@@ -32,20 +60,22 @@ export const PromptStudio = ({ agents, onSave, isSaving }: PromptStudioProps) =>
 
   useEffect(() => {
     if (selected) {
-      setPrompt(selected.prompt || `Kamu adalah ${selected.name}. ${selected.role}. Jawab dalam Bahasa Indonesia yang natural dan ramah.`);
+      setPrompt(selected.prompt || '');
       setTemperature(selected.temperature || 0.3);
       setMaxTurns(selected.maxTurns || 10);
     }
   }, [selected]);
 
+  const injectionWarnings = detectInjection(prompt);
+
   const handleSave = () => {
     if (!selected?.configId) return;
-    onSave(selected.configId, { system_prompt: prompt, temperature, max_turns: maxTurns });
+    onSave(selected.configId, { custom_instructions: prompt, temperature, max_turns: maxTurns });
   };
 
   const handleReset = () => {
     if (selected) {
-      setPrompt(selected.prompt || `Kamu adalah ${selected.name}. ${selected.role}. Jawab dalam Bahasa Indonesia yang natural dan ramah.`);
+      setPrompt(selected.prompt || '');
       setTemperature(selected.temperature || 0.3);
       setMaxTurns(selected.maxTurns || 10);
     }
@@ -118,12 +148,34 @@ export const PromptStudio = ({ agents, onSave, isSaving }: PromptStudioProps) =>
             )}
 
             <div className="space-y-2">
-              <Label className="text-xs">Agent Prompt</Label>
+              <Label className="text-xs">Custom Instructions</Label>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Instruksi tambahan ini akan di-<strong>append</strong> ke base prompt hardcoded.
+                Base prompt + anti-hallucination guard tetap source of truth.
+                Kosongkan jika tidak perlu instruksi tambahan.
+              </p>
+              <details className="text-[10px] text-muted-foreground bg-muted/40 rounded p-2 border">
+                <summary className="cursor-pointer font-medium">Lihat ringkasan base prompt (read-only)</summary>
+                <pre className="mt-1.5 whitespace-pre-wrap font-mono text-[10px] leading-snug">{BASE_PROMPT_PREVIEW}</pre>
+              </details>
               <Textarea
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                className="text-xs min-h-[200px] font-mono"
+                placeholder="(opsional) Instruksi tambahan untuk agent ini…"
+                className="text-xs min-h-[180px] font-mono"
               />
+              {injectionWarnings.length > 0 && (
+                <div className="flex items-start gap-1.5 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                  <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <strong>Peringatan prompt injection:</strong>
+                    <ul className="list-disc ml-4 mt-0.5">
+                      {injectionWarnings.map((w, i) => <li key={i}>{w}</li>)}
+                    </ul>
+                    <p className="mt-1">Anda tetap bisa menyimpan, tapi pastikan ini disengaja.</p>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
