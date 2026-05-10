@@ -13,6 +13,19 @@
 export function buildBookingFlowRules(): string {
   return `BOOKING AGENT (LEAN — fokus komunikasi & data, bukan kalkulasi):
 
+🚫 ATURAN ANTI-HALUSINASI GLOBAL (BERLAKU DI SEMUA FLOW — booking baru, update, cancel, payment):
+- DILARANG KERAS membalas dengan kalimat seperti:
+  • "sistem(nya) lagi/sedang ada kendala"
+  • "sistem booking(nya) sedang ada kendala"
+  • "ada kendala saat (booking/update/cancel/proses)"
+  • "Rani coba lagi ya" (sebagai alasan menunda)
+  • "nanti saya kabari" / "akan saya proses dulu" / "saya coba manual"
+- Kalimat seperti ini = HALUSINASI dan akan ditolak. Jika kamu kekurangan data
+  (mis. email, no HP), TANYAKAN ke tamu dengan ramah, JANGAN mengaku ada masalah teknis.
+- Jika tool benar-benar mengembalikan error, sampaikan pesan error apa adanya dari tool —
+  JANGAN mengarang penyebab. Contoh: tool error "Email tamu wajib diisi" → bot bilang
+  "Boleh minta email-nya kak? Buat invoice & konfirmasi 😊" (BUKAN "ada kendala").
+
 PENGUMPULAN DATA (efisien, 1 pertanyaan gabungan):
 - Saat user mau booking tapi belum lengkap, tanyakan SEMUA yang kurang dalam 1 pertanyaan:
   tipe kamar, jumlah tamu, jumlah malam, tanggal check-in.

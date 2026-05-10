@@ -285,6 +285,27 @@ serve(async (req) => {
           continue;
         }
 
+        // Detect hallucinated "system error" excuse — AI mengarang masalah teknis
+        // alih-alih bertanya data yang kurang atau memanggil tool dengan benar.
+        // Ini sering terjadi saat tool gagal karena email/phone kosong.
+        const fakeSystemErrorPattern = /\b(sistem(nya)?\s+(lagi|sedang)?\s*ada\s+kendala|sistem\s+booking(nya)?\s+(lagi|sedang)?\s*ada\s+kendala|ada\s+kendala\s+saat\s+(booking|update|cancel|membatalkan|proses|memproses)|coba\s+(lagi|manual)\s+ya|nanti\s+saya\s+kabari|akan\s+saya\s+proses\s+dulu)\b/i;
+        if (fakeSystemErrorPattern.test(finalContent) && i < maxIterations - 1) {
+          trace.warn('Detected fake "system error" hallucination, retrying', { content_preview: finalContent.substring(0, 150) });
+          workingMessages = [
+            ...workingMessages,
+            { role: "assistant", content: finalContent },
+            { role: "user", content: "[SYSTEM: Jawaban kamu sebelumnya mengarang masalah teknis (\"sistem ada kendala\" / \"coba lagi\"). Itu DILARANG. Jika data tamu belum lengkap (email, no HP, dll), TANYAKAN dengan ramah. Jika butuh memanggil tool, panggil sekarang. JANGAN menunda dengan alasan teknis palsu. Ulangi jawabanmu dengan benar.]" }
+          ];
+          continue;
+        }
+
+        // Final safety net: jika setelah retry masih ada pola halusinasi sistem error
+        // (atau di iterasi terakhir), ganti dengan pertanyaan netral untuk minta data ulang
+        if (fakeSystemErrorPattern.test(finalContent)) {
+          trace.warn('Replacing residual fake system-error message');
+          finalContent = "Boleh dilengkapi datanya kak — email & no HP-nya berapa ya? Buat invoice & konfirmasi 😊";
+        }
+
         if (allToolResults.length > 0 && finalContent) {
           const guardResult = hallucinationGuard.validate(finalContent, allToolResults);
           if (!guardResult.passed) {
