@@ -179,6 +179,47 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_config_audit_log: {
+        Row: {
+          agent_config_id: string
+          agent_id: string
+          changed_at: string
+          changed_by: string | null
+          field: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+        }
+        Insert: {
+          agent_config_id: string
+          agent_id: string
+          changed_at?: string
+          changed_by?: string | null
+          field: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Update: {
+          agent_config_id?: string
+          agent_id?: string
+          changed_at?: string
+          changed_by?: string | null
+          field?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_config_audit_log_agent_config_id_fkey"
+            columns: ["agent_config_id"]
+            isOneToOne: false
+            referencedRelation: "agent_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_configs: {
         Row: {
           agent_id: string
@@ -187,6 +228,7 @@ export type Database = {
           category: string
           config_json: Json | null
           created_at: string | null
+          custom_instructions: string | null
           escalation_target: string | null
           icon: string
           id: string
@@ -196,7 +238,6 @@ export type Database = {
           max_turns: number | null
           name: string
           role: string
-          system_prompt: string | null
           tags: string[] | null
           temperature: number | null
           updated_at: string | null
@@ -208,6 +249,7 @@ export type Database = {
           category?: string
           config_json?: Json | null
           created_at?: string | null
+          custom_instructions?: string | null
           escalation_target?: string | null
           icon?: string
           id?: string
@@ -217,7 +259,6 @@ export type Database = {
           max_turns?: number | null
           name: string
           role: string
-          system_prompt?: string | null
           tags?: string[] | null
           temperature?: number | null
           updated_at?: string | null
@@ -229,6 +270,7 @@ export type Database = {
           category?: string
           config_json?: Json | null
           created_at?: string | null
+          custom_instructions?: string | null
           escalation_target?: string | null
           icon?: string
           id?: string
@@ -238,7 +280,6 @@ export type Database = {
           max_turns?: number | null
           name?: string
           role?: string
-          system_prompt?: string | null
           tags?: string[] | null
           temperature?: number | null
           updated_at?: string | null
