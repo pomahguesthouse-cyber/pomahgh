@@ -279,9 +279,19 @@ export const CreateBookingDialog = ({
   };
 
   const handleConfirm = async () => {
-    if (!checkIn || !checkOut || selectedRooms.length === 0) return;
+    if (!checkIn || !checkOut || selectedRooms.length === 0) {
+      console.warn("[CreateBookingDialog] handleConfirm aborted — missing data", {
+        checkIn,
+        checkOut,
+        selectedRoomsLength: selectedRooms.length,
+      });
+      toast.error("Data booking belum lengkap");
+      setShowConfirmation(false);
+      return;
+    }
 
     setIsSubmitting(true);
+    console.log("[CreateBookingDialog] handleConfirm START");
 
     try {
       const totalNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
@@ -309,34 +319,43 @@ export const CreateBookingDialog = ({
       const bookingStatus = "pending";
       const paymentStatusValue = isPayAtHotel ? "pay_at_hotel" : "unpaid";
 
+      const insertPayload = {
+        guest_name: formData.guest_name,
+        guest_email: formData.guest_email,
+        guest_email_backup: formData.guest_email,
+        guest_phone: formData.guest_phone || null,
+        room_id: selectedRooms[0].roomId,
+        check_in: format(checkIn, "yyyy-MM-dd"),
+        check_out: format(checkOut, "yyyy-MM-dd"),
+        check_in_time: formData.check_in_time || null,
+        check_out_time: formData.check_out_time || null,
+        total_nights: totalNights,
+        total_price: paymentAmount,
+        num_guests: formData.num_guests || 1,
+        special_requests: formData.special_requests || null,
+        remark: formData.remark || null,
+        status: bookingStatus,
+        payment_status: paymentStatusValue,
+        booking_source: bookingSource,
+        ota_name: bookingSource === "ota" ? otaName : null,
+        other_source: bookingSource === "other" ? otherSource : null,
+        user_id: user?.id || null,
+        is_inline_payment: false,
+        allocated_room_number: selectedRooms[0]?.roomNumber || null,
+      };
+      console.log("[CreateBookingDialog] inserting booking", insertPayload);
       const { data: booking, error: insertError } = await supabase
         .from("bookings")
-        .insert({
-          guest_name: formData.guest_name,
-          guest_email: formData.guest_email,
-          guest_email_backup: formData.guest_email,
-          guest_phone: formData.guest_phone || null,
-          room_id: selectedRooms[0].roomId,
-          check_in: format(checkIn, "yyyy-MM-dd"),
-          check_out: format(checkOut, "yyyy-MM-dd"),
-          total_nights: totalNights,
-          total_price: paymentAmount,
-          num_guests: formData.num_guests || 1,
-          special_requests: formData.special_requests || null,
-          remark: formData.remark || null,
-          status: bookingStatus,
-          payment_status: paymentStatusValue,
-          booking_source: bookingSource,
-          ota_name: bookingSource === "ota" ? otaName : null,
-          other_source: bookingSource === "other" ? otherSource : null,
-          user_id: user?.id || null,
-          is_inline_payment: false,
-          allocated_room_number: selectedRooms[0]?.roomNumber || null,
-        })
+        .insert(insertPayload)
         .select()
         .single<CreatedBooking>();
 
-      if (insertError) throw new Error(insertError.message);
+      if (insertError) {
+        console.error("[CreateBookingDialog] bookings insert error", insertError);
+        throw new Error(insertError.message || "Insert booking gagal");
+      }
+      if (!booking) throw new Error("Booking tidak terbuat (no row returned)");
+      console.log("[CreateBookingDialog] booking created", booking);
 
       // Multi-room junction — always insert one row per selected room
       // so multi-room bookings are stored as a single booking with N room rows
@@ -408,6 +427,7 @@ export const CreateBookingDialog = ({
       console.error("Create booking error:", error);
       const message = error instanceof Error ? error.message : "Gagal membuat booking";
       toast.error(message);
+      setShowConfirmation(false);
     } finally {
       setIsSubmitting(false);
     }
