@@ -122,24 +122,25 @@ serve(async (req) => {
       lastUserMessage
     });
 
-    // ── HYBRID PROMPT STUDIO ──
+    // ── HYBRID PROMPT STUDIO (B3) ──
     // Bila handler agent meneruskan agent_id (mis. 'booking', 'faq'), append
-    // `agent_configs.system_prompt` sebagai instruksi tambahan agent. Hardcoded
-    // base prompt tetap source of truth; admin custom hanya bersifat menambah.
+    // `agent_configs.custom_instructions` sebagai instruksi tambahan agent.
+    // Hardcoded base prompt + anti-hallucination guard tetap source of truth;
+    // admin custom hanya bersifat MENAMBAH, bukan mengganti.
     if (typeof agent_id === 'string' && agent_id.trim().length > 0) {
       try {
         const { data: agentCfg } = await supabase
           .from('agent_configs')
-          .select('system_prompt, is_active')
+          .select('custom_instructions, is_active')
           .eq('agent_id', agent_id)
           .maybeSingle();
-        const customPrompt = agentCfg?.system_prompt?.trim();
+        const customPrompt = agentCfg?.custom_instructions?.trim();
         if (agentCfg?.is_active !== false && customPrompt) {
-          systemPrompt += `\n\n## INSTRUKSI AGENT (${agent_id})\n${customPrompt}`;
-          trace.info('Appended agent custom prompt', { agent_id, length: customPrompt.length });
+          systemPrompt += `\n\n## INSTRUKSI TAMBAHAN AGENT (${agent_id})\nInstruksi berikut adalah custom instructions yang ditambahkan admin sebagai pelengkap base prompt. Jika ada konflik dengan base prompt atau anti-hallucination guard, prioritaskan base prompt.\n${customPrompt}`;
+          trace.info('Appended agent custom instructions', { agent_id, length: customPrompt.length });
         }
       } catch (cfgErr) {
-        trace.warn('Failed to load agent_configs prompt', { agent_id, error: (cfgErr as Error).message });
+        trace.warn('Failed to load agent custom_instructions', { agent_id, error: (cfgErr as Error).message });
       }
     }
 

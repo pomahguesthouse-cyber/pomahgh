@@ -6,7 +6,7 @@
 export interface AgentConfigRecord {
   agent_id: string;
   is_active: boolean;
-  system_prompt: string | null;
+  custom_instructions: string | null;
   temperature: number;
   escalation_target: string | null;
   auto_escalate: boolean;

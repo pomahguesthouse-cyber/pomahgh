@@ -21,7 +21,7 @@ const FAQ_AGENT_IDS = ['faq_bot', 'cs_faq', 'faq'];
 export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConfigPanelProps) => {
   const [name, setName] = useState(agent.name);
   const [role, setRole] = useState(agent.role);
-  const [prompt, setPrompt] = useState(agent.prompt || `Kamu adalah ${agent.name}. ${agent.role}.`);
+  const [prompt, setPrompt] = useState(agent.prompt || '');
   const [temperature, setTemperature] = useState(agent.temperature || 0.3);
   const [maxTurns, setMaxTurns] = useState(agent.maxTurns || 10);
   const [escalationTarget, setEscalationTarget] = useState(agent.escalationTarget || '');
@@ -36,7 +36,7 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
     if (!agent.configId) return;
     onSave(agent.configId, {
       name, role,
-      system_prompt: prompt,
+      custom_instructions: prompt,
       temperature,
       max_turns: maxTurns,
       escalation_target: escalationTarget || null,
@@ -58,8 +58,11 @@ export const AgentConfigPanel = ({ agent, onClose, onSave, isSaving }: AgentConf
         </div>
       </div>
       <div className="space-y-2">
-        <Label className="text-xs">Agent Prompt</Label>
-        <Textarea value={prompt} onChange={e => setPrompt(e.target.value)} className="text-xs min-h-[200px] font-mono" />
+        <Label className="text-xs">Custom Instructions</Label>
+        <p className="text-[10px] text-muted-foreground">
+          Instruksi tambahan ini akan di-append ke base prompt hardcoded sebagai pelengkap. Kosongkan untuk pakai base prompt saja.
+        </p>
+        <Textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="(opsional) Instruksi tambahan untuk agent ini…" className="text-xs min-h-[200px] font-mono" />
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">

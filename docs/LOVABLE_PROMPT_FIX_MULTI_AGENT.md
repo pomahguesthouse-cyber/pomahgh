@@ -1,4 +1,12 @@
-# PROMPT LOVABLE — Fix Multi-Agent WhatsApp System
+# ⚠️ DEPRECATED — PROMPT LOVABLE — Fix Multi-Agent WhatsApp System
+
+> **Status:** Dokumen ini sudah usang. Banyak bagian sudah dieksekusi atau direvisi
+> dalam refactor multi-agent (2026-05-10). Untuk arsitektur terkini lihat:
+> - [`docs/MULTI_AGENT_TEST_SCENARIOS.md`](./MULTI_AGENT_TEST_SCENARIOS.md) — checklist verifikasi
+> - [`supabase/functions/whatsapp-webhook/agents/ARCHITECTURE.md`](../supabase/functions/whatsapp-webhook/agents/ARCHITECTURE.md) — arsitektur runtime
+> - [`supabase/functions/whatsapp-webhook/agents/API_CONTRACT.md`](../supabase/functions/whatsapp-webhook/agents/API_CONTRACT.md) — kontrak antar-agent
+>
+> Konten di bawah dipertahankan sebagai catatan historis saja.
 
 Perbaiki 6 bug kritis pada sistem multi-agent WhatsApp chatbot hotel. Semua perubahan harus dilakukan pada file yang sudah ada — jangan buat komponen atau halaman baru kecuali migration SQL.
 
