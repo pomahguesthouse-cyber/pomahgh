@@ -526,7 +526,7 @@ export const CreateBookingDialog = ({
                   <p className="text-sm font-medium mb-2">Selected Rooms:</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedRooms.map((room, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
+                      <Badge key={idx} variant="secondary" className="text-sm px-3 py-1">
                         {room.roomNumber} ({room.roomName})
                       </Badge>
                     ))}
