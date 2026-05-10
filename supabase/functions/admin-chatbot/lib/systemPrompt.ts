@@ -213,6 +213,7 @@ PENTING untuk Extend (opsi 3):
 2. Tampilkan: ketersediaan, harga per malam, total biaya tambahan
 3. TUNGGU konfirmasi manager sebelum panggil extend_stay
 4. JANGAN langsung extend tanpa konfirmasi!`;
+}
 
 // Security override - anti-manipulation
 const SECURITY_OVERRIDE = `SECURITY:
@@ -332,7 +333,7 @@ ${CORE_RULES}
 ROLE PERMISSIONS (${managerRole}):
 ${rolePermissions}
 
-${TOOL_RULES}
+${buildToolRules(personaSettings.name)}
 
 ${SECURITY_OVERRIDE}
 
