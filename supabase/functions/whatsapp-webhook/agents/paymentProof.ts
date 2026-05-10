@@ -42,7 +42,20 @@ interface PendingBookingRow {
 const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
 
+/** Normalisasi nomor HP: ambil digit saja, pastikan prefix 62. */
+function normalizePhoneForCompare(phone: string): string {
+  let n = (phone || '').replace(/\D/g, '');
+  if (n.startsWith('0')) n = '62' + n.slice(1);
+  if (!n.startsWith('62') && n.length >= 8) n = '62' + n;
+  return n;
+}
+
 /** Find the most recent pending-payment booking for this phone.
+ *
+ * Robust terhadap variasi format yang tersimpan di DB:
+ *   - 628xxx, 08xxx, +628xxx, 8xxx
+ *   - dengan dash/spasi: 0812-3456-7890, 0812 3456 7890
+ *
  * Status 'pending' termasuk karena create_booking_draft (chatbot) menyimpan
  * dengan status itu — sebelumnya tidak diakomodir sehingga payment proof
  * dari tamu chatbot selalu balas "booking aktif tidak ditemukan".
@@ -51,16 +64,59 @@ async function findPendingBooking(
   supabase: SupabaseClient,
   phone: string,
 ): Promise<PendingBookingRow | null> {
-  const normalizedPhone = phone.startsWith('62') ? '0' + phone.slice(2) : phone;
-  const { data } = await supabase
+  const normalized62 = normalizePhoneForCompare(phone);   // 628xxx
+  const localFormat = '0' + normalized62.slice(2);        // 08xxx
+  const last9 = normalized62.slice(-9);                   // last 9 digits
+
+  // 1) Fast-path: exact match ke beberapa format umum
+  const candidates = Array.from(new Set([
+    phone,
+    normalized62,
+    '+' + normalized62,
+    localFormat,
+    normalized62.slice(2), // 8xxx tanpa prefix
+  ]));
+
+  let { data } = await supabase
     .from('bookings')
-    .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out')
-    .in('guest_phone', [phone, normalizedPhone])
+    .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out, guest_phone')
+    .in('guest_phone', candidates)
     .in('payment_status', ['pending', 'unpaid'])
     .in('status', ['pending', 'pending_payment', 'confirmed'])
     .order('created_at', { ascending: false })
     .limit(1);
-  return data && data.length > 0 ? (data[0] as PendingBookingRow) : null;
+  if (data && data.length > 0) return data[0] as PendingBookingRow;
+
+  // 2) Fallback: ilike dengan last 9 digits — cover format dengan dash/spasi
+  //    selama digit-nya kontigu di tail. (Tidak match jika ada spasi DI ANTARA
+  //    9 digit terakhir — itu kasus rare; ditangani di fallback berikutnya.)
+  if (last9.length === 9) {
+    const { data: likeData } = await supabase
+      .from('bookings')
+      .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out, guest_phone')
+      .ilike('guest_phone', `%${last9}`)
+      .in('payment_status', ['pending', 'unpaid'])
+      .in('status', ['pending', 'pending_payment', 'confirmed'])
+      .order('created_at', { ascending: false })
+      .limit(5);
+    if (likeData && likeData.length > 0) return likeData[0] as PendingBookingRow;
+  }
+
+  // 3) Last-resort: ambil daftar pending terbaru (max 50) lalu bandingkan
+  //    setelah normalisasi (strip semua non-digit di kedua sisi). Ini
+  //    menangani format paling aneh sekalipun (mis. '+62-812 3456 7890').
+  const { data: recentPending } = await supabase
+    .from('bookings')
+    .select('id, booking_code, guest_name, total_price, payment_status, check_in, check_out, guest_phone')
+    .in('payment_status', ['pending', 'unpaid'])
+    .in('status', ['pending', 'pending_payment', 'confirmed'])
+    .order('created_at', { ascending: false })
+    .limit(50);
+  const match = (recentPending || []).find((b) => {
+    const bookingPhoneNorm = normalizePhoneForCompare(b.guest_phone || '');
+    return bookingPhoneNorm && (bookingPhoneNorm === normalized62 || bookingPhoneNorm.endsWith(last9) || normalized62.endsWith(bookingPhoneNorm.slice(-9)));
+  });
+  return (match as PendingBookingRow) || null;
 }
 
 /** Extract a PMH-XXXXXX booking code from a free-text caption (e.g. admin caption). */
