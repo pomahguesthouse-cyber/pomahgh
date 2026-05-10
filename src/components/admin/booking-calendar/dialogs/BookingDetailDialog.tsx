@@ -10,6 +10,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Calendar as CalendarIcon,
+  User,
+  Mail,
+  Phone,
+  Users,
 } from "lucide-react";
 import { useRoomTypeAvailability } from "@/hooks/useRoomTypeAvailability";
 import { Room } from "@/hooks/useRooms";
@@ -177,107 +181,114 @@ export const BookingDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto z-[100] shadow-2xl drop-shadow-2xl">
-        <div className="flex items-start justify-between gap-4 mb-4">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto z-[100] shadow-2xl drop-shadow-2xl rounded-2xl p-0 [&>button]:hidden">
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-6 py-4 flex items-start justify-between gap-4 rounded-t-2xl">
           <div className="flex-1">
             <DialogTitle className="text-2xl font-bold mb-1">Detail Booking</DialogTitle>
             <DialogDescription>
               {isEditMode ? "Edit informasi booking" : "Lihat detail booking"}
             </DialogDescription>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEditToggle}
-            disabled={isUpdating}
-            className="flex-shrink-0"
-          >
-            {isEditMode ? (
-              <>
-                Batal
-              </>
-            ) : (
-              <>
+          <div className="flex items-center gap-2">
+            {!isEditMode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditToggle}
+                disabled={isUpdating}
+                className="rounded-full"
+              >
                 <Edit2 className="h-4 w-4 mr-2" />
                 Edit
-              </>
+              </Button>
             )}
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              disabled={isUpdating}
+              className="rounded-full font-semibold"
+            >
+              <X className="h-4 w-4 mr-1" />
+              BATAL
+            </Button>
+          </div>
         </div>
 
-        <div className="space-y-6">
-          {/* Status Badges */}
+        <div className="space-y-6 px-6 pb-24 pt-4">
+          {/* Status Pills */}
           <div className="flex gap-2">
-            <Badge variant={getStatusVariant(editedBooking.status)} className="text-xs px-3 py-1">
-              {editedBooking.status.toUpperCase()}
-            </Badge>
-            <Badge variant={getPaymentVariant(editedBooking.payment_status)} className="text-xs px-3 py-1">
-              {(editedBooking.payment_status || "unpaid").toUpperCase()}
-            </Badge>
+            <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+              {editedBooking.status}
+            </span>
+            <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300">
+              {editedBooking.payment_status || "unpaid"}
+            </span>
           </div>
 
           {/* Guest Information */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4 space-y-3">
-            <h3 className="font-bold text-sm uppercase tracking-wide mb-3">Informasi Tamu</h3>
+          <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
+            <h3 className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground">Informasi Tamu</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nama Tamu</Label>
-                {isEditMode ? (
+                <Label className="text-[11px] text-muted-foreground uppercase tracking-wide font-semibold">Nama Tamu</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     value={editedBooking.guest_name}
                     onChange={(e) => setEditedBooking({ ...editedBooking, guest_name: e.target.value })}
-                    className="font-semibold"
+                    readOnly={!isEditMode}
+                    className="pl-9 font-semibold bg-background rounded-xl h-11"
                   />
-                ) : (
-                  <p className="font-semibold">{editedBooking.guest_name}</p>
-                )}
+                </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Email</Label>
-                {isEditMode ? (
+                <Label className="text-[11px] text-muted-foreground uppercase tracking-wide font-semibold">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     type="email"
                     value={editedBooking.guest_email}
                     onChange={(e) => setEditedBooking({ ...editedBooking, guest_email: e.target.value })}
-                    className="font-semibold"
+                    readOnly={!isEditMode}
+                    className="pl-9 font-semibold bg-background rounded-xl h-11"
                   />
-                ) : (
-                  <p className="font-semibold break-all">{editedBooking.guest_email}</p>
-                )}
+                </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Telepon</Label>
-                {isEditMode ? (
+                <Label className="text-[11px] text-muted-foreground uppercase tracking-wide font-semibold">Telepon</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     type="tel"
                     value={editedBooking.guest_phone || ""}
                     onChange={(e) => setEditedBooking({ ...editedBooking, guest_phone: e.target.value })}
-                    className="font-semibold"
+                    readOnly={!isEditMode}
+                    className="pl-9 font-semibold bg-background rounded-xl h-11"
                   />
-                ) : (
-                  <p className="font-semibold">{editedBooking.guest_phone || "-"}</p>
-                )}
+                </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Jumlah Tamu</Label>
-                {isEditMode ? (
+                <Label className="text-[11px] text-muted-foreground uppercase tracking-wide font-semibold">Jumlah Tamu</Label>
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     type="number"
                     min="1"
                     value={editedBooking.num_guests}
                     onChange={(e) => setEditedBooking({ ...editedBooking, num_guests: parseInt(e.target.value) || 1 })}
-                    className="font-semibold"
+                    readOnly={!isEditMode}
+                    className="pl-9 font-semibold bg-background rounded-xl h-11"
                   />
-                ) : (
-                  <p className="font-semibold">{editedBooking.num_guests} orang</p>
-                )}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Booking Details */}
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg p-4 space-y-3">
-            <h3 className="font-bold text-sm uppercase tracking-wide mb-3">Detail Booking</h3>
+          <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
+            <h3 className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground">Detail Booking</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">Check-in</Label>
@@ -490,8 +501,8 @@ export const BookingDetailDialog = ({
           </div>
 
           {/* Payment Information */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg p-4">
-            <h3 className="font-bold text-sm uppercase tracking-wide mb-4">Informasi Pembayaran</h3>
+          <div className="bg-muted/40 border rounded-2xl p-5">
+            <h3 className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4">Informasi Pembayaran</h3>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <CreditCard className="h-5 w-5 text-primary mt-0.5" />
@@ -593,8 +604,8 @@ export const BookingDetailDialog = ({
           </div>
 
           {/* Special Requests */}
-          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 rounded-lg p-4 space-y-2">
-            <Label className="font-bold text-sm uppercase tracking-wide">Permintaan Khusus</Label>
+          <div className="bg-muted/40 border rounded-2xl p-5 space-y-2">
+            <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground">Permintaan Khusus</Label>
             {isEditMode ? (
               <Textarea
                 value={editedBooking.special_requests || ""}
@@ -614,40 +625,41 @@ export const BookingDetailDialog = ({
             </p>
           </div>
 
-         {/* Action Buttons */}
-{isEditMode && (
-            <div className="flex gap-2 justify-end pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditedBooking(booking);
-                  setIsEditMode(false);
-                }}
-                disabled={isUpdating}
-              >
-                Batal
-              </Button>
-
-              <Button
-                onClick={handleSaveChanges}
-                disabled={isUpdating}
-                className="flex items-center gap-2"
-              >
-                {isUpdating ? (
-                  <>
-                    <Clock className="h-4 w-4 animate-spin" />
-                    Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Simpan
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
         </div>
+
+        {/* Sticky Footer Action Buttons */}
+        {isEditMode && (
+          <div className="sticky bottom-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm border-t px-6 py-3 flex gap-2 justify-end rounded-b-2xl">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditedBooking(booking);
+                setIsEditMode(false);
+              }}
+              disabled={isUpdating}
+              className="rounded-full font-semibold px-6"
+            >
+              BATAL
+            </Button>
+            <Button
+              onClick={handleSaveChanges}
+              disabled={isUpdating}
+              className="rounded-full font-semibold px-6 flex items-center gap-2"
+            >
+              {isUpdating ? (
+                <>
+                  <Clock className="h-4 w-4 animate-spin" />
+                  MENYIMPAN...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  SIMPAN
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
