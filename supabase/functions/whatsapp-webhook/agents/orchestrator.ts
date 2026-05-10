@@ -548,6 +548,7 @@ export async function orchestrate(
           return await handleGuestBookingFlow(
             supabase, session as WhatsAppSession, phone, normalizedMessage, conversationId!,
             personaName, managerNumbers, env, trace,
+            undefined, undefined, isNewSession,
           );
         }
         return faqResult;
@@ -559,7 +560,7 @@ export async function orchestrate(
         return await handleGuestBookingFlow(
           supabase, session as WhatsAppSession, phone, normalizedMessage, conversationId!,
           personaName, managerNumbers, env, trace,
-          recentMessages, historyWindowMessages,
+          recentMessages, historyWindowMessages, isNewSession,
         );
     }
   } catch (agentError) {

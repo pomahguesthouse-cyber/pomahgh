@@ -130,11 +130,19 @@ export async function getLatestBookingContextByPhone(
 ): Promise<Record<string, unknown> | null> {
   const localPhone = phone.startsWith('62') ? `0${phone.slice(2)}` : phone;
 
+  // WIB today (UTC+7) — hanya muat booking yang masih relevan untuk percakapan
+  // tamu saat ini. Booking yang check_out-nya sudah lewat = "zombie" dan TIDAK
+  // boleh dipakai sebagai konteks; kalau dimuat, AI bisa salah pakai tanggal/
+  // kamar lama saat tamu mulai sesi baru. Status juga difilter ke yang aktif.
+  const nowWib = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const todayWib = nowWib.toISOString().slice(0, 10);
+
   const { data: booking } = await supabase
     .from('bookings')
     .select(`booking_code, guest_name, guest_email, guest_phone, check_in, check_out, total_nights, total_price, status, payment_status, created_at, rooms:room_id (name, price_per_night)`)
     .in('guest_phone', [phone, localPhone])
-    .not('status', 'in', '("cancelled","rejected")')
+    .in('status', ['pending_payment', 'pending', 'confirmed', 'checked_in'])
+    .gte('check_out', todayWib)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();

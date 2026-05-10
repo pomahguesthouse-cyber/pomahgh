@@ -60,6 +60,10 @@ export async function handleGuestBookingFlow(
   preFetchedHistory?: Array<{ role: string; content: string }>,
   /** Optional: ukuran window history (dari hotel_settings). */
   historyWindow?: number,
+  /** Optional: jika TRUE (mis. setelah reset_past_checkout / first_contact /
+   *  reset_by_timeout), JANGAN muat booking context dari DB. Memory baru saja
+   *  di-reset; tamu harus mulai dari nol agar tanggal/kamar lama tidak bocor. */
+  freshSession?: boolean,
 ): Promise<Response> {
   // Fire-and-forget session update — tidak perlu memblok pipeline AI.
   // Jika gagal, di-log tapi tidak menggagalkan respons ke tamu.
@@ -103,11 +107,17 @@ export async function handleGuestBookingFlow(
   // Logging pesan user fire-and-forget — tidak ditunggu.
   void logMessage(supabase, conversationId, 'user', combinedMessage);
 
+  const bookingContextPromise = freshSession
+    ? Promise.resolve(null)
+    : getLatestBookingContextByPhone(supabase, phone).catch(() => null);
   const [messages, brochureSentInline, bookingContext] = await Promise.all([
     historyPromise,
     brochurePromise,
-    getLatestBookingContextByPhone(supabase, phone).catch(() => null),
+    bookingContextPromise,
   ]);
+  if (freshSession) {
+    console.log(`🧹 [booking] freshSession=true — skipping booking context load for ${phone}`);
+  }
 
   const lastMsg = messages[messages.length - 1];
   if (!lastMsg || lastMsg.content !== combinedMessage) {

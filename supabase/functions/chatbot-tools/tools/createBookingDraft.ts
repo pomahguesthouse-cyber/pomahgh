@@ -15,8 +15,10 @@ export async function handleCreateBookingDraft(
     throw new Error("Nomor telepon wajib diisi untuk membuat booking");
   }
   
-  const checkInResult = validateAndFixDate(params.check_in, "check_in");
-  const checkOutResult = validateAndFixDate(params.check_out, "check_out");
+  // Strict mode: tanggal yang sudah lewat akan throw — AI harus tanya ulang
+  // ke tamu. JANGAN insert booking dengan tanggal yang dikoreksi diam-diam.
+  const checkInResult = validateAndFixDate(params.check_in, "check_in", { strict: true });
+  const checkOutResult = validateAndFixDate(params.check_out, "check_out", { strict: true });
   
   const check_in = checkInResult.date;
   const check_out = checkOutResult.date;
@@ -227,6 +229,12 @@ export async function handleCreateBookingDraft(
         total_price: totalPrice,
         status: 'pending',
         payment_status: isPayAtHotel ? 'pay_at_hotel' : 'unpaid',
+        // Backstop: booking unpaid via chatbot WAJIB punya expiry agar
+        // auto_cancel_expired_bookings membersihkannya jika tamu tidak transfer.
+        // Tanpa ini booking jadi "zombie" dan mencemari konteks tamu di sesi berikutnya.
+        payment_expires_at: isPayAtHotel
+          ? null
+          : new Date(Date.now() + 60 * 60 * 1000).toISOString(),
         booking_source: 'other',
         other_source: 'Chatbot AI'
       })
