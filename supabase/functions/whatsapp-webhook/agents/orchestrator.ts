@@ -32,6 +32,17 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
   const conversationId = await ensureConversation(supabase, sessionRaw, phone);
   const managerNumbers = hotelSettings?.whatsapp_manager_numbers || [];
 
+  // 🆘 TAKEOVER SHORT-CIRCUIT
+  // Jika admin sudah ambil alih (is_takeover=true), JANGAN balas dengan AI.
+  // Cukup log pesan masuk supaya muncul di TakeoverChatDialog admin.
+  if (sessionRaw?.is_takeover === true) {
+    await logMessage(supabase, conversationId, "user", rawMessage);
+    console.info(`[orchestrator] Takeover active for ${phone}, skip AI reply`);
+    return new Response(JSON.stringify({ status: "takeover_active" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   // Handle Image & Manager
   const imageUrl = extractImageUrl(body);
   if (imageUrl)
