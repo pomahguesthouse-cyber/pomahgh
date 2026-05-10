@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useBookingValidation } from "./useBookingValidation";
@@ -63,6 +64,39 @@ interface Booking {
 export const useAdminBookings = () => {
   const queryClient = useQueryClient();
   const { checkBookingConflict } = useBookingValidation();
+
+  // Realtime: refetch admin-bookings saat ada perubahan dari sumber lain
+  // (mis. booking dibuat/diupdate/dibatalkan oleh chatbot via service_role).
+  // Listen tabel bookings + booking_rooms + booking_addons karena query
+  // ini join ke ketiganya — perubahan di anak harus juga me-refresh data.
+  useEffect(() => {
+    const refetch = () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+    };
+
+    const channel = supabase
+      .channel("admin-bookings-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings" },
+        refetch
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "booking_rooms" },
+        refetch
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "booking_addons" },
+        refetch
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ["admin-bookings"],
