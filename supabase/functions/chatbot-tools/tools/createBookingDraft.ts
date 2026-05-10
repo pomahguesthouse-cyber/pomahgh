@@ -41,6 +41,18 @@ export async function handleCreateBookingDraft(
   
   const total_nights = calculateNights(check_in, check_out);
 
+  // Batas maksimal booking via chatbot: 30 malam (1 bulan).
+  // Long-stay > 30 malam wajib ditangani admin manual untuk negosiasi harga & verifikasi.
+  if (total_nights > 30) {
+    throw new Error(
+      `Booking via chatbot maksimal 30 malam (1 bulan). Permintaan ${total_nights} malam terlalu panjang. ` +
+      `Mohon teruskan ke admin untuk long-stay (lebih dari 30 malam) — admin akan bantu proses manual & penawaran harga khusus.`
+    );
+  }
+  if (total_nights < 1) {
+    throw new Error("Tanggal check-out harus setelah check-in (minimal 1 malam).");
+  }
+
   let roomsToBook: RoomSelection[] = [];
   
   if (room_selections && room_selections.length > 0) {
