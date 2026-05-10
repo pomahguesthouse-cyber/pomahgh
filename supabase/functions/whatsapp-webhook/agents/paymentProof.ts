@@ -346,6 +346,26 @@ export async function handlePaymentProof(
   } else {
     booking = await findPendingBooking(supabase, phone);
     if (!booking) {
+      // Log diagnostik: ambil 5 booking terbaru (apapun status) untuk
+      // melihat apakah datanya ada tapi format/status tidak match.
+      const { data: diag } = await supabase
+        .from('bookings')
+        .select('booking_code, guest_phone, status, payment_status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      console.warn('🚨 No pending booking match', {
+        from_phone: phone,
+        normalized: normalizePhoneForCompare(phone),
+        last9: normalizePhoneForCompare(phone).slice(-9),
+        recent_bookings: diag?.map(b => ({
+          code: b.booking_code,
+          phone: b.guest_phone,
+          phone_normalized: normalizePhoneForCompare(b.guest_phone || ''),
+          status: b.status,
+          payment_status: b.payment_status,
+        })),
+      });
+
       // No pending booking — soft acknowledge
       const reply = 'Terima kasih sudah mengirim gambar 🙏 Namun kami belum menemukan booking aktif atas nomor ini. Mohon hubungi admin atau buat booking dulu ya.';
       await sendWhatsApp(phone, reply, env.fonnteApiKey);
