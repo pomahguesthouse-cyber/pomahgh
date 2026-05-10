@@ -74,7 +74,16 @@ export async function handleUpdateBooking(
     }
 
     const total_nights = calculateNights(finalCheckIn, finalCheckOut);
-    
+
+    if (total_nights > 30) {
+      throw new Error(
+        `Update booking via chatbot maksimal 30 malam (1 bulan). Permintaan ${total_nights} malam akan dibantu admin manual.`
+      );
+    }
+    if (total_nights < 1) {
+      throw new Error("Tanggal check-out harus setelah check-in (minimal 1 malam).");
+    }
+
     updateData.check_in = finalCheckIn;
     updateData.check_out = finalCheckOut;
     updateData.total_nights = total_nights;
