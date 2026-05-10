@@ -89,19 +89,16 @@ describe('messageBatcher', () => {
     vi.clearAllMocks();
   });
 
-  it('returns null when RPC fails but message already exists in pending buffer', async () => {
+  it('returns null and skips RPC when message already exists in pending buffer (BUG 1 dedup)', async () => {
     const supabase = createSupabaseMock({
-      rpcError: createRpcError('duplicate key'),
       maybeSingleData: { pending_messages: ['halo'] },
     });
 
     const result = await batchMessages(supabase as never, '6281111111111', 'halo');
 
     expect(result).toBeNull();
-    expect(supabase.rpc).toHaveBeenCalledWith('append_pending_message', {
-      p_phone: '6281111111111',
-      p_message: 'halo',
-    });
+    // In-batch dedup must short-circuit before calling the append RPC
+    expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
   it('returns the single message when RPC fails and buffer does not contain it', async () => {
