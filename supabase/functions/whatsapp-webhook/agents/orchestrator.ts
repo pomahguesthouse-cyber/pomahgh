@@ -67,6 +67,27 @@ function getSupabaseClient(env: EnvConfig): SupabaseClient {
   return cachedSupabase;
 }
 
+async function hasRecentFallbackApology(
+  supabase: SupabaseClient,
+  conversationId: string,
+  withinSeconds: number = 180,
+): Promise<boolean> {
+  const sinceIso = new Date(Date.now() - withinSeconds * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('content, created_at')
+    .eq('conversation_id', conversationId)
+    .eq('role', 'assistant')
+    .gte('created_at', sinceIso)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  if (error || !data?.length) return false;
+
+  const fallbackApologyRe = /(maaf).*(kendala|gangguan|error).*(proses|pesan|sistem)|tim\s*kami\s*akan\s*segera\s*menghubungi/i;
+  return data.some((m) => typeof m.content === 'string' && fallbackApologyRe.test(m.content));
+}
+
 async function escalateToHumanStaff(
   supabase: SupabaseClient,
   phone: string,
@@ -595,8 +616,13 @@ export async function orchestrate(
     await logMessage(supabase, conversationId!, 'system', `[Error] Agent ${decision.agent} failed: ${errorMsg}`);
     await escalateToHumanStaff(supabase, phone, conversationId!, errorMsg, managerNumbers, env.fonnteApiKey);
     const apologyMsg = 'Maaf, ada kendala dalam memproses pesan Anda. Tim kami akan segera menghubungi Anda. 🙏';
-    await sendWhatsApp(phone, apologyMsg, env.fonnteApiKey);
-    await logMessage(supabase, conversationId!, 'assistant', apologyMsg);
+    const hasRecentApology = await hasRecentFallbackApology(supabase, conversationId!);
+    if (!hasRecentApology) {
+      await sendWhatsApp(phone, apologyMsg, env.fonnteApiKey);
+      await logMessage(supabase, conversationId!, 'assistant', apologyMsg);
+    } else {
+      console.log(`🛑 Skipping duplicate fallback apology for ${phone} (conversation ${conversationId})`);
+    }
     logAgentDecision(supabase, {
       trace_id: trace?.traceId, phone_number: phone, conversation_id: conversationId,
       from_agent: decision.agent, to_agent: 'human_staff',
