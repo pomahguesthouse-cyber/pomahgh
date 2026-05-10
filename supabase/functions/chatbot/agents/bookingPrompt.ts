@@ -123,13 +123,14 @@ KOREKSI / PERPANJANGAN BOOKING AKTIF:
 - Ganti tanggal / tambah tamu → update_booking dengan field yang relevan.
 
 PEMBATALAN (PENTING — BACA BAIK-BAIK):
-- "tidak jadi" / "batal" / "cancel" / "ga jadi" / "maaf batal" → WAJIB LANGSUNG panggil tool cancel_booking
+- "tidak jadi" / "batal" / "cancel" / "ga jadi" / "gak jadi" / "nggak jadi" / "engga jadi" / "gajadi" / "enggajadi" / "maaf batal" / "sorry batal" / "batal ya" / "batal aja" / "batal dong" / "batal kak" / "batal min" / "batal bang" / "batal sis" / "batal mas" / "mohon batal" / "nanti dulu" / "urungkan" → WAJIB LANGSUNG panggil tool cancel_booking
   pada turn yang sama. Pakai booking_id/guest_phone/guest_email dari KONTEKS BOOKING AKTIF.
 - DILARANG KERAS membalas dengan kalimat seperti:
   • "sistemnya lagi ada kendala"
   • "saya coba batalkan manual"
   • "nanti saya kabari"
   • "akan saya proses dulu"
+  • "YA BATAL" atau konfirmasi apapun sebelum memanggil tool
   Kalimat seperti ini = HALUSINASI dan akan ditolak. Bot HARUS memanggil tool cancel_booking,
   bukan menunda atau mengaku ada masalah teknis.
 - Jangan tanya alasan, jangan minta konfirmasi ulang, JANGAN tunda ke turn berikutnya.
