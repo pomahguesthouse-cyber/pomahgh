@@ -90,6 +90,17 @@ serve(async (req) => {
     // Get last user message
     const lastUserMessage = messages?.filter((m: { role: string; content: string }) => m.role === "user").pop()?.content || "";
 
+    // Cek booking aktif: dari conversationContext (set frontend setelah create_booking_draft)
+    // ATAU dari riwayat pesan asisten (PMH-XXXXXX) — fallback ini penting karena
+    // frontend kadang belum sempat update context (mis. deployment lag, percakapan
+    // lama, atau konteks ter-reset).
+    const assistantMessagesText = (messages || [])
+      .filter((m: { role: string; content: string }) => m.role === "assistant")
+      .map((m: { content: string }) => m.content || "")
+      .join("\n");
+    const bookingCodeFromHistory = assistantMessagesText.match(/\b(PMH-[A-Z0-9]{6})\b/)?.[1] || null;
+    const hasActiveBooking = Boolean(conversationContext?.last_booking_code) || Boolean(bookingCodeFromHistory);
+
     // Detect price/availability intent — force tool call on first iteration
     // to mencegah halusinasi harga/ketersediaan dari memori model.
     const availabilityIntent =
@@ -97,17 +108,17 @@ serve(async (req) => {
       /\btanggal\b/i.test(lastUserMessage) ||
       /\b(\d{1,2})[\s\/-](\d{1,2}|jan|feb|mar|apr|mei|jun|jul|agu|sep|okt|nov|des)/i.test(lastUserMessage);
     const priceIntent = /\b(harga|tarif|rate|berapa|brp|biaya|cost|price|diskon|promo)\b/i.test(lastUserMessage);
-    // Pembatalan: deteksi intent "batal/cancel" + ada booking aktif di konteks
-    // → paksa tool call agar AI tidak halusinasi pesan "sistem ada kendala"
-    // dan membatalkan secara nyata via cancel_booking.
+    // Pembatalan: deteksi intent "batal/cancel" + ada booking aktif (dari context atau history)
+    // → paksa tool call agar AI tidak halusinasi pesan "sistem ada kendala" / minta konfirmasi
+    // "YA BATAL" lalu melepas turn tanpa memanggil cancel_booking.
     // Pattern diperluas untuk mencakup semua variasi bahasa Indonesia informal
     const cancelIntent =
-      /\b(batal(?:kan|in|kah)?|cancel(?:led|lation)?|tidak\s+jadi|ga\s+jadi|gak\s+jadi|nggak\s+jadi|engga\s+jadi|gajadi|enggajadi|nanti\s+dulu|urungkan|mohon\s+batal|maaf\s+batal|sorry\s+batal|batal\s+aja|batal\s+saja|batal\s+ya|batal\s+dong|batal\s+kak|batal\s+min|batal\s+bang|batal\s+sis|batal\s+mas)\b/i.test(lastUserMessage) &&
-      Boolean(conversationContext?.last_booking_code);
+      /\b(batal(?:kan|in|kah)?|cancel(?:led|lation)?|tidak\s+jadi|ga\s+jadi|gak\s+jadi|nggak\s+jadi|engga\s+jadi|gajadi|enggajadi|nanti\s+dulu|urungkan|mohon\s+batal|maaf\s+batal|sorry\s+batal|batal\s+aja|batal\s+saja|batal\s+ya|batal\s+dong|batal\s+kak|batal\s+min|batal\s+bang|batal\s+sis|batal\s+mas|ya\s+batal)\b/i.test(lastUserMessage) &&
+      hasActiveBooking;
     // Deteksi intent update booking: perpanjang malam, ganti tanggal, tambah tamu
     const updateIntent =
       /\b(perpanjang|tambah\s+malam|jadi(?:nya)?\s+\d+\s+malam|ganti\s+tanggal|ubah\s+tanggal|extend|reschedule|pindah\s+tanggal|tambah\s+tamu|kurangi\s+tamu|ubah\s+tamu)\b/i.test(lastUserMessage) &&
-      Boolean(conversationContext?.last_booking_code);
+      hasActiveBooking;
     const forceToolCall = !faq_mode && (availabilityIntent || priceIntent || cancelIntent || updateIntent);
 
     // NOTE: Quick greeting bypass removed intentionally.
@@ -295,6 +306,20 @@ serve(async (req) => {
             ...workingMessages,
             { role: "assistant", content: finalContent },
             { role: "user", content: "[SYSTEM: Jawaban kamu sebelumnya mengarang masalah teknis (\"sistem ada kendala\" / \"coba lagi\"). Itu DILARANG. Jika data tamu belum lengkap (email, no HP, dll), TANYAKAN dengan ramah. Jika butuh memanggil tool, panggil sekarang. JANGAN menunda dengan alasan teknis palsu. Ulangi jawabanmu dengan benar.]" }
+          ];
+          continue;
+        }
+
+        // Detect "minta konfirmasi YA BATAL" — AI menolak panggil cancel_booking
+        // dan malah minta user mengetik ulang konfirmasi. Prompt sudah melarang ini.
+        const fakeConfirmPattern = /\b(ketik\s+["']?ya\s+batal["']?|tulis\s+["']?ya\s+batal["']?|balas\s+["']?ya\s+batal["']?|ketik\s+ya\s+untuk\s+konfirmasi|untuk\s+konfirmasi\s+pembatalan|yakin\s+(mau\s+)?(batal(?:kan)?|cancel))\b/i;
+        if (fakeConfirmPattern.test(finalContent) && cancelIntent && i < maxIterations - 1) {
+          trace.warn('Detected fake "YA BATAL" confirmation hallucination, retrying with explicit tool instruction', { content_preview: finalContent.substring(0, 150) });
+          const bookingCodeForCancel = conversationContext?.last_booking_code || bookingCodeFromHistory;
+          workingMessages = [
+            ...workingMessages,
+            { role: "assistant", content: finalContent },
+            { role: "user", content: `[SYSTEM: User sudah minta batal — JANGAN minta konfirmasi ulang ("YA BATAL", "yakin?", dll). Aturan prompt melarang itu. Panggil tool cancel_booking SEKARANG dengan booking_id=${bookingCodeForCancel || 'PMH-XXXXXX dari konteks'}, dan guest_phone + guest_email dari riwayat percakapan. Jangan jawab dalam teks dulu — wajib tool call.]` }
           ];
           continue;
         }

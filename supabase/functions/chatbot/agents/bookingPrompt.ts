@@ -136,8 +136,11 @@ KOREKSI / PERPANJANGAN BOOKING AKTIF:
 - Ganti tanggal / tambah tamu → update_booking dengan field yang relevan.
 
 PEMBATALAN (PENTING — BACA BAIK-BAIK):
-- "tidak jadi" / "batal" / "cancel" / "ga jadi" / "gak jadi" / "nggak jadi" / "engga jadi" / "gajadi" / "enggajadi" / "maaf batal" / "sorry batal" / "batal ya" / "batal aja" / "batal dong" / "batal kak" / "batal min" / "batal bang" / "batal sis" / "batal mas" / "mohon batal" / "nanti dulu" / "urungkan" → WAJIB LANGSUNG panggil tool cancel_booking
-  pada turn yang sama. Pakai booking_id/guest_phone/guest_email dari KONTEKS BOOKING AKTIF.
+- "tidak jadi" / "batal" / "cancel" / "ga jadi" / "gak jadi" / "nggak jadi" / "engga jadi" / "gajadi" / "enggajadi" / "maaf batal" / "sorry batal" / "batal ya" / "batal aja" / "batal dong" / "batal kak" / "batal min" / "batal bang" / "batal sis" / "batal mas" / "mohon batal" / "nanti dulu" / "urungkan" / "ya batal" → WAJIB LANGSUNG panggil tool cancel_booking
+  pada turn yang sama. Ambil booking_id (PMH-XXXXXX) dari KONTEKS BOOKING AKTIF
+  atau dari pesan asisten sebelumnya. Ambil guest_phone + guest_email dari pesan
+  user di riwayat percakapan (saat tamu memberikan data booking). JANGAN minta
+  ulang ke tamu — data sudah ada di history.
 - DILARANG KERAS membalas dengan kalimat seperti:
   • "sistemnya lagi ada kendala"
   • "saya coba batalkan manual"
