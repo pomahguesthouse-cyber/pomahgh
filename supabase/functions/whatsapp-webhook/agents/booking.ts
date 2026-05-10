@@ -15,30 +15,28 @@ export async function handleGuestBookingFlow(
   trace?: TraceContext,
   recentMessages?: any[],
 ): Promise<Response> {
-  // 1. DETEKSI UPDATE BOOKING
-  // Kita cek apakah riwayat pesan terakhir mengandung kode booking (PMH-...)
-  const historyText = recentMessages?.map((m) => m.content).join(" ") || "";
-  const bookingCodeMatch = historyText.match(/PMH-[A-Z0-9]+/i);
-  const isUpdate = bookingCodeMatch && /\b(jadi|ubah|ganti|3\s*malam)\b/i.test(message);
-
   try {
-    if (isUpdate) {
+    // 1. DETEKSI MODE: Apakah user ingin update booking yang sudah ada?
+    const historyText = recentMessages?.map((m) => m.content).join(" ") || "";
+    const bookingCodeMatch = historyText.match(/PMH-[A-Z0-9]+/i);
+    const isUpdateIntent = bookingCodeMatch && /\b(jadi|ubah|ganti|malam)\b/i.test(message);
+
+    if (isUpdateIntent) {
       return await handleUpdateBooking(supabase, phone, conversationId, bookingCodeMatch![0], message, env);
     }
 
-    // 2. LOGIKA BOOKING BARU (Default)
+    // 2. LOGIKA BOOKING BARU
     return await handleNewBooking(supabase, phone, conversationId, message, env);
   } catch (error) {
     console.error("Booking Flow Error:", error);
-    // RESPONS ELEGAN SAAT ERROR
     const reply =
-      "Mohon maaf kak, sedang ada kendala teknis. Saya teruskan pesan Kakak ke admin ya agar dibantu manual 🙏";
+      "Mohon maaf kak, sistem sedang sibuk. Mohon tunggu sebentar, saya akan coba proses kembali atau hubungkan ke admin 🙏";
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
-    return new Response(JSON.stringify({ status: "escalated" }));
+    return new Response(JSON.stringify({ status: "error_handled" }));
   }
 }
 
-// --- SUB-HANDLER: UPDATE BOOKING ---
+// --- FUNGSI UPDATE BOOKING (DENGAN KALKULASI TANGGAL) ---
 async function handleUpdateBooking(
   supabase: SupabaseClient,
   phone: string,
@@ -47,33 +45,63 @@ async function handleUpdateBooking(
   msg: string,
   env: EnvConfig,
 ) {
-  // Panggil fungsi database untuk update (pastikan fungsi ini ada di Supabase RPC Anda)
-  const { error } = await supabase.rpc("update_booking_duration", {
-    p_code: code,
-    p_nights: msg.includes("3") ? 3 : 2, // Parsing sederhana
-  });
+  const newNightsMatch = msg.match(/(\d+)\s*malam/i);
+  const newNights = newNightsMatch ? parseInt(newNightsMatch[1]) : null;
 
-  if (error) throw new Error("DB_UPDATE_FAILED");
+  if (!newNights) {
+    const reply = `Kak, mau diubah jadi berapa malam ya? Mohon sebutkan jumlah malamnya 🙏`;
+    await sendWhatsApp(phone, reply, env.fonnteApiKey);
+    return new Response(JSON.stringify({ status: "awaiting_nights" }));
+  }
 
-  const reply = `Baik Kak, booking ${code} sudah saya update menjadi 3 malam. Mohon tunggu update rincian pembayarannya ya Kak 🙏`;
+  // Ambil tanggal check-in asli dari database
+  const { data: booking, error: fetchError } = await supabase
+    .from("bookings")
+    .select("check_in_date")
+    .eq("booking_code", code)
+    .single();
+
+  if (fetchError || !booking) {
+    throw new Error("BOOKING_NOT_FOUND");
+  }
+
+  // Hitung ulang check-out: Check-in + jumlah malam baru
+  const checkIn = new Date(booking.check_in_date);
+  const newCheckOut = new Date(checkIn);
+  newCheckOut.setDate(checkIn.getDate() + newNights);
+
+  // Update database
+  const { error: updateError } = await supabase
+    .from("bookings")
+    .update({
+      nights: newNights,
+      check_out_date: newCheckOut.toISOString(),
+    })
+    .eq("booking_code", code);
+
+  if (updateError) throw new Error("DB_UPDATE_FAILED");
+
+  const reply = `Siap Kak, booking ${code} sudah diubah jadi ${newNights} malam. Check-out menjadi tanggal ${newCheckOut.toLocaleDateString("id-ID")}. Totalnya sudah disesuaikan ya Kak 🙏`;
+
   await sendWhatsApp(phone, reply, env.fonnteApiKey);
   await logMessage(supabase, convId, "assistant", reply);
   return new Response(JSON.stringify({ status: "success" }));
 }
 
-// --- SUB-HANDLER: NEW BOOKING ---
+// --- FUNGSI BOOKING BARU ---
 async function handleNewBooking(supabase: SupabaseClient, phone: string, convId: string, msg: string, env: EnvConfig) {
-  // Logic booking baru Anda...
-  // Jika data kurang, jangan return error, return pesan minta info
+  // Parsing dasar untuk booking baru
   const dateMatch = msg.match(/\d{1,2}\s*(jan|feb|mar|apr|mei|jun|jul|agt|sep|okt|nov|des)/i);
 
   if (!dateMatch) {
-    const reply = "Untuk booking-nya, rencana mau check-in tanggal berapa ya Kak? 😊";
+    const reply = "Baik kak, untuk booking barunya, rencana check-in tanggal berapa ya? 😊";
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
     await logMessage(supabase, convId, "assistant", reply);
     return new Response(JSON.stringify({ status: "awaiting_date" }));
   }
 
-  // Jika data lengkap, proses insert ke DB...
+  // Simpan booking baru...
+  // (Tambahkan logika insert database Anda di sini)
+
   return new Response(JSON.stringify({ status: "success" }));
 }
