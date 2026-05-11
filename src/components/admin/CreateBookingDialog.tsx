@@ -766,7 +766,7 @@ export const CreateBookingDialog = ({
 
               {bookingSource === "other" && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                  <Label htmlFor="other_source" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4 font-sans bg-transparent">
+                  <Label htmlFor="other_source" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4 font-sans">
                     Keterangan Sumber <span className="text-destructive">*</span>
                   </Label>
                   <Input
