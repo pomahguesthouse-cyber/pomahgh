@@ -783,7 +783,7 @@ export const CreateBookingDialog = ({
             </div>
 
             {/* Payment Method Section */}
-            <div className="space-y-3 border-t pt-4 mt-4">
+            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4 bg-slate-50 border-t pt-4 mt-4">
               <div>
                 <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Metode Pembayaran</Label>
                 <p className="text-xs text-muted-foreground mb-2">
