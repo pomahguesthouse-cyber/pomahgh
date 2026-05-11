@@ -621,27 +621,25 @@ export const CreateBookingDialog = ({
             <div className="space-y-4">
               <div>
                 <FieldLabel htmlFor="guest_name">Nama Tamu *</FieldLabel>
-                <Input
+                <FieldInput
                   id="guest_name"
                   type="text"
                   value={formData.guest_name}
                   onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
                   placeholder="Nama lengkap tamu"
                   required
-                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
               <div>
                 <FieldLabel htmlFor="guest_email">Email *</FieldLabel>
-                <Input
+                <FieldInput
                   id="guest_email"
                   type="email"
                   value={formData.guest_email}
                   onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
                   placeholder="email@example.com"
                   required
-                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
@@ -649,20 +647,19 @@ export const CreateBookingDialog = ({
                 <FieldLabel htmlFor="guest_phone">
                   Nomor Telepon <span className="text-destructive">*</span>
                 </FieldLabel>
-                <Input
+                <FieldInput
                   id="guest_phone"
                   type="tel"
                   value={formData.guest_phone}
                   onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
                   placeholder="+62 812 3456 7890"
                   required
-                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
               <div>
                 <FieldLabel htmlFor="num_guests">Jumlah Tamu *</FieldLabel>
-                <Input
+                <FieldInput
                   id="num_guests"
                   type="number"
                   min="1"
@@ -670,7 +667,6 @@ export const CreateBookingDialog = ({
                   value={formData.num_guests}
                   onChange={(e) => setFormData({ ...formData, num_guests: parseInt(e.target.value) || 1 })}
                   required
-                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 

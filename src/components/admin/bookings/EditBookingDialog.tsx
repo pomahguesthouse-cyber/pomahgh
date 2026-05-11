@@ -400,44 +400,40 @@ export function EditBookingDialog({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <FieldLabel>Nama Tamu</FieldLabel>
-              <Input
+              <FieldInput
                 type="text"
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
-                className="mt-1 rounded-xl h-11 font-medium"
-              />
+                />
             </div>
             <div>
               <FieldLabel>Email</FieldLabel>
-              <Input
+              <FieldInput
                 type="email"
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
-                className="mt-1 rounded-xl h-11 font-medium"
-              />
+                />
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
               <FieldLabel>Telepon</FieldLabel>
-              <Input
+              <FieldInput
                 type="text"
                 value={guestPhone}
                 onChange={(e) => setGuestPhone(e.target.value)}
                 placeholder="+62..."
-                className="mt-1 rounded-xl h-11 font-medium"
-              />
+                />
             </div>
             <div>
               <FieldLabel>Jumlah Tamu</FieldLabel>
-              <Input
+              <FieldInput
                 type="number"
                 min="1"
                 value={numGuests}
                 onChange={(e) => setNumGuests(parseInt(e.target.value) || 1)}
-                className="mt-1 rounded-xl h-11 font-medium"
-              />
+                />
             </div>
           </div>
           
