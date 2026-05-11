@@ -16,7 +16,7 @@ export const CalendarHeaderRow = ({
   cellWidth
 }: CalendarHeaderRowProps) => {
   return <tr className="bg-muted/50">
-      <th className="sticky left-0 top-0 z-50 w-[80px] md:w-[110px] min-w-[80px] md:min-w-[110px] border-border p-1 md:p-2 shadow-lg backdrop-blur-md bg-[#97c6d8] border px-px mx-[20px] pr-0 pl-0 text-white">
+      <th className="sticky left-0 top-0 z-40 w-[80px] md:w-[110px] min-w-[80px] md:min-w-[110px] border-border p-1 md:p-2 shadow-lg backdrop-blur-md bg-[#97c6d8] border px-px mx-[20px] pr-0 pl-0 text-white">
         <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-wide">HARI/
 TANGGAL</span>
       </th>
