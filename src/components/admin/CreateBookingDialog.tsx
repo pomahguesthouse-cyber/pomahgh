@@ -785,7 +785,7 @@ export const CreateBookingDialog = ({
             {/* Payment Method Section */}
             <div className="space-y-3 border-t pt-4 mt-4">
               <div>
-                <Label className="text-base font-semibold">Metode Pembayaran</Label>
+                <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans">Metode Pembayaran</Label>
                 <p className="text-xs text-muted-foreground mb-2">
                   Pilih bagaimana tamu akan membayar reservasi ini
                 </p>
