@@ -699,9 +699,9 @@ export const CreateBookingDialog = ({
             </div>
 
             {/* Booking Source Section */}
-            <div className="space-y-4 border-t pt-4 mt-4">
+            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4 bg-slate-50 border-t pt-4 mt-4">
               <div>
-                <Label htmlFor="booking_source" className="text-base font-semibold">
+                <Label htmlFor="booking_source" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
                   Jenis Booking
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">Pilih sumber booking untuk tracking</p>
