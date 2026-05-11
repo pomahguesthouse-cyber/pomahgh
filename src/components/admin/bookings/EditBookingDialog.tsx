@@ -398,44 +398,44 @@ export function EditBookingDialog({
           {/* Guest Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Nama Tamu</Label>
+              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Nama Tamu</Label>
               <Input
                 type="text"
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 text-black font-bold bg-slate-200"
+                className="mt-1 rounded-xl h-11 font-medium"
               />
             </div>
             <div>
-              <Label>Email</Label>
+              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Email</Label>
               <Input
                 type="email"
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold bg-slate-300"
+                className="mt-1 rounded-xl h-11 font-medium"
               />
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Telepon</Label>
+              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Telepon</Label>
               <Input
                 type="text"
                 value={guestPhone}
                 onChange={(e) => setGuestPhone(e.target.value)}
                 placeholder="+62..."
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 font-semibold bg-background rounded-xl h-11 bg-slate-300"
+                className="mt-1 rounded-xl h-11 font-medium"
               />
             </div>
             <div>
-              <Label>Jumlah Tamu</Label>
+              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Jumlah Tamu</Label>
               <Input
                 type="number"
                 min="1"
                 value={numGuests}
                 onChange={(e) => setNumGuests(parseInt(e.target.value) || 1)}
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold bg-slate-300"
+                className="mt-1 rounded-xl h-11 font-medium"
               />
             </div>
           </div>
@@ -585,7 +585,7 @@ export function EditBookingDialog({
                 
                 return (
                   <div key={room.id} className="space-y-2">
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-background/50 bg-slate-200">
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-background/50">
                       <span className="font-medium text-sm">{room.name}</span>
                       <span className="text-xs text-muted-foreground">
                         Rp {room.price?.toLocaleString("id-ID")}/malam
@@ -691,7 +691,7 @@ export function EditBookingDialog({
           
           {/* Add-ons / Layanan Tambahan */}
           {availableAddons && availableAddons.length > 0 && (
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4 bg-slate-50 border-t pt-4 space-y-3">
+            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
               <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Layanan Tambahan
@@ -701,7 +701,7 @@ export function EditBookingDialog({
                   const current = editedAddons.find(ea => ea.addon_id === addon.id);
                   const qty = current?.quantity || 0;
                   return (
-                     <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg bg-background/50 bg-slate-200">
+                     <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg bg-background/50">
                       <div className="flex-1">
                         <p className="text-sm font-medium">{addon.name}</p>
                         <p className="text-xs text-muted-foreground">

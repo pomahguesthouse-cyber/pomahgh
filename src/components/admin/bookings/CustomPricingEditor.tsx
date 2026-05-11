@@ -40,7 +40,7 @@ export function CustomPricingEditor({
   const discountPercentage = normalTotal > 0 ? (discountAmount / normalTotal) * 100 : 0;
 
   return (
-    <div className="bg-muted/40 border rounded-2xl p-5 space-y-4 bg-slate-50">
+    <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
       {/* Toggle */}
       <div className="flex items-center justify-between">
         <Label htmlFor="custom-price-toggle">Custom Harga</Label>
