@@ -32,19 +32,26 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
   const conversationId = await ensureConversation(supabase, sessionRaw, phone);
   const managerNumbers = hotelSettings?.whatsapp_manager_numbers || [];
 
+  // Handle Image & Manager
+  const imageUrl = extractImageUrl(body);
+
+  // 📝 CENTRAL INBOUND LOG
+  // Pastikan SEMUA pesan masuk tamu tercatat di chat_messages, apa pun cabang
+  // agent berikutnya. Pesan gambar dilog oleh paymentProof dengan format khusus.
+  if (!imageUrl && rawMessage.trim().length > 0) {
+    await logMessage(supabase, conversationId, "user", rawMessage);
+  }
+
   // 🆘 TAKEOVER SHORT-CIRCUIT
   // Jika admin sudah ambil alih (is_takeover=true), JANGAN balas dengan AI.
   // Cukup log pesan masuk supaya muncul di TakeoverChatDialog admin.
   if (sessionRaw?.is_takeover === true) {
-    await logMessage(supabase, conversationId, "user", rawMessage);
     console.info(`[orchestrator] Takeover active for ${phone}, skip AI reply`);
     return new Response(JSON.stringify({ status: "takeover_active" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  // Handle Image & Manager
-  const imageUrl = extractImageUrl(body);
   if (imageUrl)
     return await handlePaymentProof(supabase, phone, imageUrl, conversationId, managerNumbers, env, undefined, {
       caption: rawMessage,
