@@ -28,6 +28,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "../BookingConfirmationDialog";
 import { useMemberAuth } from "@/hooks/useMemberAuth";
+import { SectionCard, FieldLabel, FieldInput } from "./bookings/shared/BookingFormPrimitives";
 
 interface CreateBookingDialogProps {
   open: boolean;
@@ -481,8 +482,8 @@ export const CreateBookingDialog = ({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Room Selection Section */}
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Pilih Kamar (Multiple)</Label>
+            <SectionCard>
+              <FieldLabel>Pilih Kamar (Multiple)</FieldLabel>
               <p className="text-xs text-muted-foreground mb-2">Pilih satu atau lebih kamar untuk booking ini</p>
               <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
                 {rooms.map((room) => (
@@ -529,7 +530,7 @@ export const CreateBookingDialog = ({
                   </div>
                 </div>
               )}
-            </div>
+            </SectionCard>
 
             {/* Check-in & Check-out Dates */}
             <div className="grid grid-cols-2 gap-4">
@@ -619,49 +620,46 @@ export const CreateBookingDialog = ({
             {/* Guest Information */}
             <div className="space-y-4">
               <div>
-                <Label htmlFor="guest_name" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Nama Tamu *</Label>
-                <Input
+                <FieldLabel htmlFor="guest_name">Nama Tamu *</FieldLabel>
+                <FieldInput
                   id="guest_name"
                   type="text"
                   value={formData.guest_name}
                   onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
                   placeholder="Nama lengkap tamu"
                   required
-                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
               <div>
-                <Label htmlFor="guest_email" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Email *</Label>
-                <Input
+                <FieldLabel htmlFor="guest_email">Email *</FieldLabel>
+                <FieldInput
                   id="guest_email"
                   type="email"
                   value={formData.guest_email}
                   onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
                   placeholder="email@example.com"
                   required
-                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
               <div>
-                <Label htmlFor="guest_phone" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
+                <FieldLabel htmlFor="guest_phone">
                   Nomor Telepon <span className="text-destructive">*</span>
-                </Label>
-                <Input
+                </FieldLabel>
+                <FieldInput
                   id="guest_phone"
                   type="tel"
                   value={formData.guest_phone}
                   onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
                   placeholder="+62 812 3456 7890"
                   required
-                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
               <div>
-                <Label htmlFor="num_guests" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Jumlah Tamu *</Label>
-                <Input
+                <FieldLabel htmlFor="num_guests">Jumlah Tamu *</FieldLabel>
+                <FieldInput
                   id="num_guests"
                   type="number"
                   min="1"
@@ -669,12 +667,11 @@ export const CreateBookingDialog = ({
                   value={formData.num_guests}
                   onChange={(e) => setFormData({ ...formData, num_guests: parseInt(e.target.value) || 1 })}
                   required
-                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
               <div>
-                <Label htmlFor="remark" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Keterangan / Remark</Label>
+                <FieldLabel htmlFor="remark">Keterangan / Remark</FieldLabel>
                 <Textarea
                   id="remark"
                   value={formData.remark}
@@ -686,7 +683,7 @@ export const CreateBookingDialog = ({
               </div>
 
               <div>
-                <Label htmlFor="special_requests" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Permintaan Khusus</Label>
+                <FieldLabel htmlFor="special_requests">Permintaan Khusus</FieldLabel>
                 <Textarea
                   id="special_requests"
                   value={formData.special_requests}
@@ -699,11 +696,11 @@ export const CreateBookingDialog = ({
             </div>
 
             {/* Booking Source Section */}
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
+            <SectionCard>
               <div>
-                <Label htmlFor="booking_source" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
+                <FieldLabel htmlFor="booking_source">
                   Jenis Booking
-                </Label>
+                </FieldLabel>
                 <p className="text-xs text-muted-foreground mb-2">Pilih sumber booking untuk tracking</p>
                 <Select
                   value={bookingSource}
@@ -747,9 +744,9 @@ export const CreateBookingDialog = ({
 
               {bookingSource === "ota" && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                <Label htmlFor="ota_name" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4 font-sans">
+                <FieldLabel htmlFor="ota_name" className="mb-4">
                   Nama OTA <span className="text-destructive">*</span>
-                </Label>
+                </FieldLabel>
                   <Input
                     id="ota_name"
                     value={otaName}
@@ -766,9 +763,9 @@ export const CreateBookingDialog = ({
 
               {bookingSource === "other" && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                  <Label htmlFor="other_source" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4 font-sans">
+                  <FieldLabel htmlFor="other_source" className="mb-4">
                     Keterangan Sumber <span className="text-destructive">*</span>
-                  </Label>
+                  </FieldLabel>
                   <Input
                     id="other_source"
                     value={otherSource}
@@ -780,12 +777,12 @@ export const CreateBookingDialog = ({
                   <p className="text-xs text-muted-foreground mt-1">Jelaskan sumber booking lainnya</p>
                 </div>
               )}
-            </div>
+            </SectionCard>
 
             {/* Payment Method Section */}
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
+            <SectionCard>
               <div>
-                <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Metode Pembayaran</Label>
+                <FieldLabel>Metode Pembayaran</FieldLabel>
                 <p className="text-xs text-muted-foreground mb-2">
                   Pilih bagaimana tamu akan membayar reservasi ini
                 </p>
@@ -825,15 +822,15 @@ export const CreateBookingDialog = ({
                   ⚠️ Booking pay-at-hotel akan tetap berstatus <b>pending</b> sampai dikonfirmasi via WhatsApp.
                 </div>
               )}
-            </div>
+            </SectionCard>
 
             {/* Custom Pricing Section */}
             <div className="border-t pt-4 mt-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="space-y-0.5">
-                  <Label htmlFor="use-custom-price" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
+                  <FieldLabel htmlFor="use-custom-price">
                     Gunakan Harga Custom
-                  </Label>
+                  </FieldLabel>
                   <p className="text-sm text-muted-foreground">Override harga normal kamar dengan harga custom</p>
                 </div>
                 <Switch

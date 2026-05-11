@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { formatRupiahID } from "@/utils/indonesianFormat";
 import { CustomPriceMode } from "./types";
+import { SectionCard, FieldLabel, FieldInput } from "./shared/BookingFormPrimitives";
 
 interface CustomPricingEditorProps {
   enabled: boolean;
@@ -40,7 +41,7 @@ export function CustomPricingEditor({
   const discountPercentage = normalTotal > 0 ? (discountAmount / normalTotal) * 100 : 0;
 
   return (
-    <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
+    <SectionCard>
       {/* Toggle */}
       <div className="flex items-center justify-between">
         <Label htmlFor="custom-price-toggle">Custom Harga</Label>
@@ -172,6 +173,6 @@ export function CustomPricingEditor({
           </div>
         )}
       </div>
-    </div>
+    </SectionCard>
   );
 }

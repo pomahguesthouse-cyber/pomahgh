@@ -31,6 +31,7 @@ import { CustomPricingEditor } from "./CustomPricingEditor";
 import { useAllRoomAddons, RoomAddon, calculateAddonPrice, getPriceTypeLabel } from "@/hooks/useRoomAddons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SectionCard, FieldLabel, FieldInput } from "./shared/BookingFormPrimitives";
 
 interface EditAddonItem {
   addon_id: string;
@@ -398,51 +399,47 @@ export function EditBookingDialog({
           {/* Guest Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Nama Tamu</Label>
-              <Input
+              <FieldLabel>Nama Tamu</FieldLabel>
+              <FieldInput
                 type="text"
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
-                className="mt-1 rounded-xl h-11 font-medium"
-              />
+                />
             </div>
             <div>
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Email</Label>
-              <Input
+              <FieldLabel>Email</FieldLabel>
+              <FieldInput
                 type="email"
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
-                className="mt-1 rounded-xl h-11 font-medium"
-              />
+                />
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Telepon</Label>
-              <Input
+              <FieldLabel>Telepon</FieldLabel>
+              <FieldInput
                 type="text"
                 value={guestPhone}
                 onChange={(e) => setGuestPhone(e.target.value)}
                 placeholder="+62..."
-                className="mt-1 rounded-xl h-11 font-medium"
-              />
+                />
             </div>
             <div>
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Jumlah Tamu</Label>
-              <Input
+              <FieldLabel>Jumlah Tamu</FieldLabel>
+              <FieldInput
                 type="number"
                 min="1"
                 value={numGuests}
                 onChange={(e) => setNumGuests(parseInt(e.target.value) || 1)}
-                className="mt-1 rounded-xl h-11 font-medium"
-              />
+                />
             </div>
           </div>
           
           {/* Booking Source */}
           <div className="border-t pt-4">
-              <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans">Sumber Booking</Label>
+              <FieldLabel className="text-base">Sumber Booking</FieldLabel>
             <Select
               value={bookingSource}
               onValueChange={(v: "direct" | "ota" | "walk_in" | "other") => {
@@ -576,7 +573,7 @@ export function EditBookingDialog({
           
           {/* Room Selection */}
           <div className="space-y-3">
-            <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-lg font-sans">Kamar yang Dipesan</Label>
+            <FieldLabel className="text-lg">Kamar yang Dipesan</FieldLabel>
             <div className="border rounded-lg p-3 space-y-3 max-h-[250px] overflow-y-auto">
               {rooms?.map((room) => {
                 const availabilityData = roomTypeAvailability?.find(
@@ -691,11 +688,11 @@ export function EditBookingDialog({
           
           {/* Add-ons / Layanan Tambahan */}
           {availableAddons && availableAddons.length > 0 && (
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans flex items-center gap-2">
+            <SectionCard>
+              <FieldLabel className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Layanan Tambahan
-              </Label>
+              </FieldLabel>
               <div className="space-y-2">
                 {availableAddons.filter(a => a.is_active).map((addon) => {
                   const current = editedAddons.find(ea => ea.addon_id === addon.id);
@@ -745,7 +742,7 @@ export function EditBookingDialog({
                   Total Add-ons: Rp {addonTotal.toLocaleString('id-ID')}
                 </p>
               )}
-            </div>
+            </SectionCard>
           )}
 
           {/* Custom Pricing */}
