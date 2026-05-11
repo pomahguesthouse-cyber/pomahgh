@@ -89,11 +89,20 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
   );
   const isB2BConversation = hasB2BContext && !hasBookingContext;
 
+  // Guard: pesan acknowledgment pasif (tamu bilang "oke saya diskusikan dulu",
+  // "ditunggu", "nanti saya kabari", dsb.) JANGAN dirouting ke booking flow,
+  // karena akan re-ask tanggal walaupun tanggal sudah pernah dibahas.
+  // Cukup balas via FAQ agent (AI akan kasih reply sopan sesuai konteks).
+  const ACK_DEFER_RE = /^(?:oke?|ok|sip|baik|siap|iya|ya|yoi|noted|terima\s*kasih|makasih|thanks?)\b[\s\S]{0,200}?\b(?:diskusi(?:kan)?|tanya|kabari|kasih\s*tau|tunggu|ditunggu|nanti|besok|sebentar|bentar|dulu|rombongan|ketua|teman|keluarga|istri|suami|bos|atasan|pikir)/i;
+  const isPassiveAck = ACK_DEFER_RE.test(normalizedMessage);
+
   let classification;
   if (isDuplicateBooking) {
     classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "avoid_duplicate_booking" };
   } else if (isB2BConversation) {
     classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "b2b_conversation_context" };
+  } else if (isPassiveAck) {
+    classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "passive_acknowledgment" };
   } else {
     classification = await classifyIntent(normalizedMessage, { recentMessages: recentMessages.slice(-6) });
   }
@@ -101,7 +110,7 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
   try {
     const decision = decide(classification.intent);
 
-    if (isB2BConversation) {
+    if (isB2BConversation || isPassiveAck) {
       return await handleGuestFAQ(
         supabase,
         sessionRaw,
