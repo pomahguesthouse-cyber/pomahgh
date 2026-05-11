@@ -35,7 +35,7 @@ export async function handleGuestBookingFlow(
     }
 
     // 2. LOGIKA BOOKING BARU
-    return await handleNewBooking(supabase, phone, conversationId, message, env);
+    return await handleNewBooking(supabase, phone, conversationId, message, env, recentMessages);
   } catch (error) {
     console.error("Booking Flow Error:", error);
     // Fallback: tidak mengirim pesan error teknis, tapi menyapa balik dengan sopan
@@ -45,9 +45,14 @@ export async function handleGuestBookingFlow(
   }
 }
 
-async function handleNewBooking(supabase: SupabaseClient, phone: string, convId: string, msg: string, env: EnvConfig) {
-  const normalized = msg.toLowerCase();
-
+async function handleNewBooking(
+  supabase: SupabaseClient,
+  phone: string,
+  convId: string,
+  msg: string,
+  env: EnvConfig,
+  recentMessages?: any[],
+) {
   // Helpers: WIB (UTC+7) calendar dates → ISO YYYY-MM-DD
   const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
   const wibNow = () => new Date(Date.now() + WIB_OFFSET_MS);
@@ -67,37 +72,47 @@ async function handleNewBooking(supabase: SupabaseClient, phone: string, convId:
   const now = wibNow();
   let checkInISO: string | null = null;
 
-  if (normalized.includes("hari ini")) {
-    checkInISO = toISODate(now);
-  } else if (normalized.includes("besok")) {
-    const t = new Date(now);
-    t.setUTCDate(t.getUTCDate() + 1);
-    checkInISO = toISODate(t);
-  } else if (normalized.includes("lusa")) {
-    const t = new Date(now);
-    t.setUTCDate(t.getUTCDate() + 2);
-    checkInISO = toISODate(t);
-  } else {
-    const m = msg.match(/(\d{1,2})\s*(jan|feb|mar|apr|mei|jun|jul|agt|agu|ags|sep|okt|nov|des)[a-z]*\s*(\d{4})?/i);
+  // Helper: parse 1 string apapun → ISO date (dipakai untuk msg saat ini & history)
+  const parseDateFrom = (text: string): string | null => {
+    const t = text.toLowerCase();
+    if (t.includes("hari ini")) return toISODate(now);
+    if (t.includes("besok")) {
+      const x = new Date(now); x.setUTCDate(x.getUTCDate() + 1); return toISODate(x);
+    }
+    if (t.includes("lusa")) {
+      const x = new Date(now); x.setUTCDate(x.getUTCDate() + 2); return toISODate(x);
+    }
+    const m = text.match(/(\d{1,2})\s*(jan|feb|mar|apr|mei|jun|jul|agt|agu|ags|sep|okt|nov|des)[a-z]*\s*(\d{4})?/i);
     if (m) {
       const day = parseInt(m[1], 10);
       const month = MONTHS[m[2].toLowerCase()];
       const year = m[3] ? parseInt(m[3], 10) : now.getUTCFullYear();
       const candidate = new Date(Date.UTC(year, month - 1, day));
-      // If past in this year and no year specified, roll to next year
       if (!m[3] && candidate < new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))) {
         candidate.setUTCFullYear(year + 1);
       }
-      checkInISO = toISODate(candidate);
-    } else {
-      const m2 = msg.match(/(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?/);
-      if (m2) {
-        const day = parseInt(m2[1], 10);
-        const month = parseInt(m2[2], 10);
-        let year = m2[3] ? parseInt(m2[3], 10) : now.getUTCFullYear();
-        if (year < 100) year += 2000;
-        checkInISO = toISODate(new Date(Date.UTC(year, month - 1, day)));
-      }
+      return toISODate(candidate);
+    }
+    const m2 = text.match(/(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?/);
+    if (m2) {
+      const day = parseInt(m2[1], 10);
+      const month = parseInt(m2[2], 10);
+      let year = m2[3] ? parseInt(m2[3], 10) : now.getUTCFullYear();
+      if (year < 100) year += 2000;
+      return toISODate(new Date(Date.UTC(year, month - 1, day)));
+    }
+    return null;
+  };
+
+  checkInISO = parseDateFrom(msg);
+
+  // Fallback: jika pesan saat ini TIDAK menyebut tanggal, cari di riwayat
+  // (8 pesan terakhir baik dari tamu maupun bot). Mencegah bot tanya tanggal
+  // berulang-ulang padahal tanggal sudah pernah disebut sebelumnya.
+  if (!checkInISO && recentMessages?.length) {
+    for (const m of recentMessages.slice(-8).reverse()) {
+      const cand = parseDateFrom(String(m?.content ?? ""));
+      if (cand) { checkInISO = cand; break; }
     }
   }
 
