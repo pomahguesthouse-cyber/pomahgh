@@ -45,6 +45,7 @@ export const PaymentMonitorPanel = () => {
       let q = supabase
         .from("bookings")
         .select("id, booking_code, guest_name, guest_email, guest_phone, total_price, payment_status, payment_proof_url, created_at, status")
+        .not("status", "in", "(cancelled,rejected,no_show)")
         .order("created_at", { ascending: false })
         .limit(100);
       if (filter === "pending") q = q.in("payment_status", ["pending", "unpaid"]);
