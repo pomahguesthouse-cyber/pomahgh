@@ -403,7 +403,7 @@ export function EditBookingDialog({
                 type="text"
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11"
+                className="mt-1 rounded-xl h-11 font-medium"
               />
             </div>
             <div>
@@ -412,7 +412,7 @@ export function EditBookingDialog({
                 type="email"
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11"
+                className="mt-1 rounded-xl h-11 font-medium"
               />
             </div>
           </div>
@@ -425,7 +425,7 @@ export function EditBookingDialog({
                 value={guestPhone}
                 onChange={(e) => setGuestPhone(e.target.value)}
                 placeholder="+62..."
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11"
+                className="mt-1 rounded-xl h-11 font-medium"
               />
             </div>
             <div>
@@ -435,7 +435,7 @@ export function EditBookingDialog({
                 min="1"
                 value={numGuests}
                 onChange={(e) => setNumGuests(parseInt(e.target.value) || 1)}
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11"
+                className="mt-1 rounded-xl h-11 font-medium"
               />
             </div>
           </div>
