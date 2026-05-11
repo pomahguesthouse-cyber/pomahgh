@@ -66,9 +66,27 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
   // Guard: Jika baru saja kasih kode booking, jangan classify sebagai booking ulang (cegah loop)
   const isDuplicateBooking = /PMH-/i.test(lastBotReply) && /\b(jadinya|ubah|malam|rubah)\b/i.test(normalizedMessage);
 
+  // Guard: deteksi konteks B2B/sales outreach dari riwayat percakapan.
+  // Jika 6 pesan terakhir mengandung kata kunci kerjasama/proposal/marketing
+  // dan tamu BELUM PERNAH menyebut tanggal/booking/kamar, paksa ke FAQ.
+  const recentText = recentMessages
+    .slice(-10)
+    .map((m) => m.content)
+    .join(" ")
+    .toLowerCase();
+  const hasB2BContext = /(proposal|kerja\s*sama|kerjasama|kolaborasi|partnership|pemasaran|penawaran|tawaran|ota|agensi|agency|vendor|supplier|reddoorz|oyo|sales\s+(?:executive|manager)|business\s+development|b2b)/i.test(
+    recentText,
+  );
+  const hasBookingContext = /(check.?in|check.?out|menginap|nginap|booking|pesan\s+kamar|tanggal|tgl|\b\d+\s+(?:malam|hari|orang|kamar)\b|deluxe|family|superior|standard)/i.test(
+    recentText,
+  );
+  const isB2BConversation = hasB2BContext && !hasBookingContext;
+
   let classification;
   if (isDuplicateBooking) {
     classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "avoid_duplicate_booking" };
+  } else if (isB2BConversation) {
+    classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "b2b_conversation_context" };
   } else {
     classification = await classifyIntent(normalizedMessage, { recentMessages: recentMessages.slice(-6) });
   }
@@ -76,7 +94,20 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
   try {
     const decision = decide(classification.intent);
 
-    if (decision.agent === "booking" || decision.agent === "payment" || isDuplicateBooking) {
+    if (isB2BConversation) {
+      return await handleGuestFAQ(
+        supabase,
+        sessionRaw,
+        phone,
+        normalizedMessage,
+        conversationId,
+        "Rani",
+        env,
+        undefined,
+      );
+    }
+
+    if ((decision.agent === "booking" || decision.agent === "payment" || isDuplicateBooking)) {
       return await handleGuestBookingFlow(
         supabase,
         sessionRaw,
@@ -102,17 +133,17 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
       );
     }
 
-    return await handleGuestBookingFlow(
+    // Safer default: route unmatched/ambiguous intents (greeting, name_collection,
+    // complaint, unknown) to FAQ instead of aggressively pushing booking flow.
+    return await handleGuestFAQ(
       supabase,
       sessionRaw,
       phone,
       normalizedMessage,
       conversationId,
       "Rani",
-      managerNumbers,
       env,
       undefined,
-      recentMessages,
     );
   } catch (err) {
     console.error("Orchestrator Fatal:", err);

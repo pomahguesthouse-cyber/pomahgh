@@ -65,10 +65,17 @@ const FAQ_RE = /\b(fasilitas|facility|wifi|parkir|parking|sarapan|breakfast|kola
 const COMPLAINT_RE = /\b(komplain|complain|kecewa|marah|jelek|buruk|kotor|rusak|tidak\s+(?:puas|sesuai|bagus)|gak\s+puas|ga\s+puas|nggak\s+puas|parah|payah|brengsek|bangsat|sialan|bodoh|tolol|menjijikkan|mengecewakan|refund\s+(?:sekarang|donk|dong)|protes|laporan|laporkan)\b/i;
 const GREETING_RE = /^(?:halo|hai|hello|hi|hey|p|pagi|siang|sore|malam|assalamu'?alaikum|salam)[\s.!?]*$/i;
 const SHORT_AFFIRMATIVE_RE = /^(?:ok|oke|okay|sip|baik|iya|ya|yoi|lanjut|next|ada\??|gimana\??|bagaimana\??)[\s.!?]*$/i;
+// B2B / kerjasama / sales-outreach context — should NEVER route into booking flow.
+const B2B_RE = /\b(proposal|kerja\s*sama|kerjasama|kolaborasi|partnership|pemasaran|marketing|penawaran|tawaran|ota|agensi|agency|vendor|supplier|distributor|reseller|affiliate|afiliasi|b2b|korporat|corporate|company\s+profile|tim\s+(?:sales|marketing|bisnis)|sales\s+(?:executive|manager|representative)|business\s+development|reddoorz|oyo|airy|zen\s*rooms|tiket\.com|traveloka\s+partner|booking\.com\s+partner)\b/i;
 
 // ============= FAST PATH =============
 function keywordClassify(message: string): ClassifyResult | null {
   const trimmed = message.trim();
+
+  // B2B / sales outreach should be treated as FAQ-style (no booking guidance)
+  if (B2B_RE.test(message)) {
+    return { intent: 'faq', confidence: 0.95, source: 'keyword', reason: 'b2b_context' };
+  }
 
   if (GREETING_RE.test(trimmed)) {
     return { intent: 'greeting', confidence: 0.9, source: 'keyword', reason: 'greeting_pattern' };
