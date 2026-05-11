@@ -398,7 +398,7 @@ export function EditBookingDialog({
           {/* Guest Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Nama Tamu</Label>
+              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Nama Tamu</Label>
               <Input
                 type="text"
                 value={guestName}
@@ -407,7 +407,7 @@ export function EditBookingDialog({
               />
             </div>
             <div>
-              <Label>Email</Label>
+              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Email</Label>
               <Input
                 type="email"
                 value={guestEmail}
@@ -419,7 +419,7 @@ export function EditBookingDialog({
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Telepon</Label>
+              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Telepon</Label>
               <Input
                 type="text"
                 value={guestPhone}
@@ -429,7 +429,7 @@ export function EditBookingDialog({
               />
             </div>
             <div>
-              <Label>Jumlah Tamu</Label>
+              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Jumlah Tamu</Label>
               <Input
                 type="number"
                 min="1"
