@@ -585,7 +585,7 @@ export function EditBookingDialog({
                 
                 return (
                   <div key={room.id} className="space-y-2">
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-background/50 bg-slate-200">
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-background/50">
                       <span className="font-medium text-sm">{room.name}</span>
                       <span className="text-xs text-muted-foreground">
                         Rp {room.price?.toLocaleString("id-ID")}/malam
@@ -691,7 +691,7 @@ export function EditBookingDialog({
           
           {/* Add-ons / Layanan Tambahan */}
           {availableAddons && availableAddons.length > 0 && (
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4 bg-slate-50 border-t pt-4 space-y-3">
+            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
               <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Layanan Tambahan
@@ -701,7 +701,7 @@ export function EditBookingDialog({
                   const current = editedAddons.find(ea => ea.addon_id === addon.id);
                   const qty = current?.quantity || 0;
                   return (
-                     <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg bg-background/50 bg-slate-200">
+                     <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg bg-background/50">
                       <div className="flex-1">
                         <p className="text-sm font-medium">{addon.name}</p>
                         <p className="text-xs text-muted-foreground">
