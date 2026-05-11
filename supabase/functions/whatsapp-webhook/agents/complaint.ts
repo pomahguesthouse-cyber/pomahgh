@@ -79,9 +79,7 @@ export async function handleComplaint(
     last_message_at: new Date().toISOString(), is_active: true, session_type: 'guest',
   }, { onConflict: 'phone_number' });
 
-  // Log user message
-  await logMessage(supabase, conversationId, 'user', normalizedMessage);
-
+  // User message sudah dilog terpusat di orchestrator.
   // Send empathetic response
   const empathyResponse = EMPATHY_RESPONSES[urgency];
   await logMessage(supabase, conversationId, 'assistant', empathyResponse);

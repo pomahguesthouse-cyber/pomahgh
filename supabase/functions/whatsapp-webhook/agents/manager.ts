@@ -28,9 +28,8 @@ export async function handleManagerChat(
     });
   }
 
-  // Ensure conversation & log message
+  // Ensure conversation (user message sudah dilog di orchestrator)
   const convId = await ensureConversation(supabase, session, phone);
-  await logMessage(supabase, convId, 'user', normalizedMessage);
   await updateSession(supabase, phone, convId, false, 'admin');
 
   // Build conversation history

@@ -59,7 +59,6 @@ export async function handlePriceListQuestion(
   trace?: TraceContext,
 ): Promise<Response> {
   const convId = conversationId || await ensureConversation(supabase, session, phone);
-  await logMessage(supabase, convId, 'user', message);
   await updateSession(supabase, phone, convId, false);
 
   // Load active rooms — order cheapest first
