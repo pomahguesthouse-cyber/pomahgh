@@ -182,7 +182,15 @@ export const useTakeoverSession = () => {
   return useMutation({
     mutationFn: async (sessionId: string) => {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
+      // Ambil conversation_id supaya kita bisa selipkan catatan "[System]"
+      // di transcript — biar admin lain tahu kapan takeover terjadi.
+      const { data: session } = await supabase
+        .from('whatsapp_sessions')
+        .select('conversation_id')
+        .eq('id', sessionId)
+        .maybeSingle();
+
       const { error } = await supabase
         .from('whatsapp_sessions')
         .update({ 
@@ -194,9 +202,22 @@ export const useTakeoverSession = () => {
         .eq('id', sessionId);
 
       if (error) throw error;
+
+      if (session?.conversation_id) {
+        await supabase.from('chat_messages').insert({
+          conversation_id: session.conversation_id,
+          role: 'assistant',
+          content: '[System] Admin mengambil alih percakapan. AI dihentikan sementara.',
+        });
+      }
+
+      return { conversationId: session?.conversation_id ?? null };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
+      if (data?.conversationId) {
+        queryClient.invalidateQueries({ queryKey: ['whatsapp-session-messages', data.conversationId] });
+      }
       toast.success('Percakapan diambil alih');
     },
     onError: () => {
@@ -215,16 +236,7 @@ export const useReleaseSession = () => {
         .from('whatsapp_sessions')
         .select('conversation_id')
         .eq('id', sessionId)
-        .single();
-
-      // Insert transition note so AI knows admin handled part of the conversation
-      if (session?.conversation_id) {
-        await supabase.from('chat_messages').insert({
-          conversation_id: session.conversation_id,
-          role: 'assistant',
-          content: '[System] Percakapan dikembalikan ke AI. Lanjutkan membantu tamu berdasarkan konteks percakapan sebelumnya termasuk balasan dari admin.',
-        });
-      }
+        .maybeSingle();
 
       const { error } = await supabase
         .from('whatsapp_sessions')
@@ -237,9 +249,24 @@ export const useReleaseSession = () => {
         .eq('id', sessionId);
 
       if (error) throw error;
+
+      // Insert transition note SETELAH update sukses, supaya kalau update
+      // gagal kita tidak meninggalkan catatan menyesatkan.
+      if (session?.conversation_id) {
+        await supabase.from('chat_messages').insert({
+          conversation_id: session.conversation_id,
+          role: 'assistant',
+          content: '[System] Percakapan dikembalikan ke AI. Lanjutkan membantu tamu berdasarkan konteks percakapan sebelumnya termasuk balasan dari admin.',
+        });
+      }
+
+      return { conversationId: session?.conversation_id ?? null };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
+      if (data?.conversationId) {
+        queryClient.invalidateQueries({ queryKey: ['whatsapp-session-messages', data.conversationId] });
+      }
       toast.success('Percakapan dikembalikan ke AI');
     },
     onError: () => {
@@ -252,15 +279,46 @@ export const useSendAdminMessage = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      phoneNumber, 
-      message, 
-      conversationId 
-    }: { 
-      phoneNumber: string; 
-      message: string; 
+    mutationFn: async ({
+      phoneNumber,
+      message,
+      conversationId,
+      sessionId,
+    }: {
+      phoneNumber: string;
+      message: string;
       conversationId: string | null;
+      sessionId?: string | null;
     }) => {
+      // Auto-takeover: kalau admin mulai mengirim manual, otomatis pause AI
+      // supaya tamu tidak menerima 2 balasan (manusia + bot).
+      if (sessionId) {
+        const { data: sess } = await supabase
+          .from('whatsapp_sessions')
+          .select('is_takeover')
+          .eq('id', sessionId)
+          .maybeSingle();
+        if (sess && !sess.is_takeover) {
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase
+            .from('whatsapp_sessions')
+            .update({
+              is_takeover: true,
+              takeover_by: user?.id,
+              takeover_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', sessionId);
+          if (conversationId) {
+            await supabase.from('chat_messages').insert({
+              conversation_id: conversationId,
+              role: 'assistant',
+              content: '[System] Admin mulai membalas — AI dihentikan otomatis.',
+            });
+          }
+        }
+      }
+
       // Send WhatsApp message via edge function
       const { data, error } = await supabase.functions.invoke('send-whatsapp', {
         body: { phone: phoneNumber, message, type: 'admin_reply' }
@@ -279,8 +337,12 @@ export const useSendAdminMessage = () => {
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-session-messages'] });
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
+      if (vars.conversationId) {
+        queryClient.invalidateQueries({ queryKey: ['whatsapp-session-messages', vars.conversationId] });
+      }
       toast.success('Pesan terkirim');
     },
     onError: (error) => {
