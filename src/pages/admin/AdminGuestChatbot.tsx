@@ -11,11 +11,12 @@ import { Bot, Settings, Zap, BookOpen, MessageSquare, GraduationCap, Phone, Plus
 import { toast } from '@/hooks/use-toast';
 import KnowledgeBaseTab from '@/components/admin/KnowledgeBaseTab';
 import TrainingTab from '@/components/admin/TrainingTab';
-import WhatsAppSessionsTab from '@/components/admin/WhatsAppSessionsTab';
 import PersonaSettingsTab from '@/components/admin/PersonaSettingsTab';
 import WhatsAppLearningTab from '@/components/admin/WhatsAppLearningTab';
 import { useState, useEffect } from 'react';
 import { ChatbotSettingsFormData, DEFAULT_CHATBOT_FORM_DATA } from '@/types/chatbot-settings.types';
+import { Link } from 'react-router-dom';
+import { MessageCircle, ArrowUpRight } from 'lucide-react';
 
 const AdminGuestChatbot = () => {
   const { data: settings, isLoading } = useChatbotSettings();
@@ -373,8 +374,26 @@ const AdminGuestChatbot = () => {
             </CardContent>
           </Card>
 
-          {/* WhatsApp Sessions */}
-          <WhatsAppSessionsTab />
+          {/* Log percakapan & Live Chat dipindahkan ke menu Multi-Agent */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base font-medium">
+                <MessageCircle className="w-4 h-4 text-muted-foreground" />
+                Log Percakapan & Live Chat
+              </CardTitle>
+              <CardDescription>
+                Semua percakapan WhatsApp tamu (live chat, takeover, riwayat sesi) kini ada di menu Multi-Agent → Live Chat agar tidak duplikat.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline" size="sm" className="gap-2">
+                <Link to="/admin/multi-agent">
+                  <ArrowUpRight className="w-4 h-4" />
+                  Buka Live Chat di Multi-Agent
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="learning" className="space-y-4">
