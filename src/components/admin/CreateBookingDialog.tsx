@@ -504,11 +504,8 @@ export const CreateBookingDialog = ({
                               key={roomNumber}
                               type="button"
                               onClick={() => toggleRoomSelection(room.id, roomNumber, room.name, room.price_per_night)}
-                              className={cn(
-                                "px-3 py-2 text-xs rounded border transition-colors",
-                                isSelected
-                                  ? "bg-primary text-primary-foreground border-primary font-semibold"
-                                  : "bg-slate-300 hover:bg-muted border-border font-semibold",
+                              className={cn("px-3 py-2 text-xs rounded border transition-colors bg-background hover:bg-muted border-border font-semibold bg-slate-300",
+                                isSelected && "bg-primary text-primary-foreground border-primary font-semibold"
                               )}
                             >
                               {roomNumber}
@@ -525,7 +522,7 @@ export const CreateBookingDialog = ({
                   <p className="text-sm font-medium mb-2">Selected Rooms:</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedRooms.map((room, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-sm px-3 py-1 shadow-sm rounded-md text-white font-normal bg-[#45b082] border-transparent">
+                      <Badge key={idx} variant="secondary" className="inline-flex items-center border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 text-xs shadow-lg border-[#85b1ea] bg-[#7ed2f6] rounded-lg">
                         {room.roomNumber} ({room.roomName})
                       </Badge>
                     ))}
@@ -625,11 +622,12 @@ export const CreateBookingDialog = ({
                 <Label htmlFor="guest_name">Nama Tamu *</Label>
                 <Input
                   id="guest_name"
+                  type="text"
                   value={formData.guest_name}
                   onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
                   placeholder="Nama lengkap tamu"
                   required
-                  className="mt-1"
+                  className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 text-black font-bold"
                 />
               </div>
 
@@ -642,7 +640,7 @@ export const CreateBookingDialog = ({
                   onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
                   placeholder="email@example.com"
                   required
-                  className="mt-1"
+                  className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold"
                 />
               </div>
 
@@ -657,7 +655,7 @@ export const CreateBookingDialog = ({
                   onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
                   placeholder="+62 812 3456 7890"
                   required
-                  className="mt-1"
+                  className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 font-bold"
                 />
               </div>
 
@@ -671,7 +669,7 @@ export const CreateBookingDialog = ({
                   value={formData.num_guests}
                   onChange={(e) => setFormData({ ...formData, num_guests: parseInt(e.target.value) || 1 })}
                   required
-                  className="mt-1"
+                  className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold"
                 />
               </div>
 
@@ -749,9 +747,9 @@ export const CreateBookingDialog = ({
 
               {bookingSource === "ota" && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                  <Label htmlFor="ota_name">
-                    Nama OTA <span className="text-destructive">*</span>
-                  </Label>
+                <Label htmlFor="ota_name" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4 font-sans bg-transparent">
+                  Nama OTA <span className="text-destructive">*</span>
+                </Label>
                   <Input
                     id="ota_name"
                     value={otaName}
@@ -768,7 +766,7 @@ export const CreateBookingDialog = ({
 
               {bookingSource === "other" && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                  <Label htmlFor="other_source">
+                  <Label htmlFor="other_source" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4 font-sans bg-transparent">
                     Keterangan Sumber <span className="text-destructive">*</span>
                   </Label>
                   <Input
@@ -787,7 +785,7 @@ export const CreateBookingDialog = ({
             {/* Payment Method Section */}
             <div className="space-y-3 border-t pt-4 mt-4">
               <div>
-                <Label className="text-base font-semibold">Metode Pembayaran</Label>
+                <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans">Metode Pembayaran</Label>
                 <p className="text-xs text-muted-foreground mb-2">
                   Pilih bagaimana tamu akan membayar reservasi ini
                 </p>
@@ -833,7 +831,7 @@ export const CreateBookingDialog = ({
             <div className="border-t pt-4 mt-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="space-y-0.5">
-                  <Label htmlFor="use-custom-price" className="text-base">
+                  <Label htmlFor="use-custom-price" className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans">
                     Gunakan Harga Custom
                   </Label>
                   <p className="text-sm text-muted-foreground">Override harga normal kamar dengan harga custom</p>

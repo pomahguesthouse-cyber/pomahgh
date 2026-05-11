@@ -400,8 +400,10 @@ export function EditBookingDialog({
             <div>
               <Label>Nama Tamu</Label>
               <Input
+                type="text"
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
+                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 text-black font-bold"
               />
             </div>
             <div>
@@ -410,6 +412,7 @@ export function EditBookingDialog({
                 type="email"
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
+                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold"
               />
             </div>
           </div>
@@ -418,9 +421,11 @@ export function EditBookingDialog({
             <div>
               <Label>Telepon</Label>
               <Input
+                type="text"
                 value={guestPhone}
                 onChange={(e) => setGuestPhone(e.target.value)}
                 placeholder="+62..."
+                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 font-bold"
               />
             </div>
             <div>
@@ -430,13 +435,14 @@ export function EditBookingDialog({
                 min="1"
                 value={numGuests}
                 onChange={(e) => setNumGuests(parseInt(e.target.value) || 1)}
+                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold"
               />
             </div>
           </div>
           
           {/* Booking Source */}
           <div className="border-t pt-4">
-            <Label className="text-base font-semibold">Sumber Booking</Label>
+              <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans">Sumber Booking</Label>
             <Select
               value={bookingSource}
               onValueChange={(v: "direct" | "ota" | "walk_in" | "other") => {
@@ -570,7 +576,7 @@ export function EditBookingDialog({
           
           {/* Room Selection */}
           <div className="space-y-3">
-            <Label>Kamar yang Dipesan</Label>
+            <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-lg font-sans">Kamar yang Dipesan</Label>
             <div className="border rounded-lg p-3 space-y-3 max-h-[250px] overflow-y-auto">
               {rooms?.map((room) => {
                 const availabilityData = roomTypeAvailability?.find(
@@ -686,7 +692,7 @@ export function EditBookingDialog({
           {/* Add-ons / Layanan Tambahan */}
           {availableAddons && availableAddons.length > 0 && (
             <div className="border-t pt-4 space-y-3">
-              <Label className="text-base font-semibold flex items-center gap-2">
+              <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Layanan Tambahan
               </Label>

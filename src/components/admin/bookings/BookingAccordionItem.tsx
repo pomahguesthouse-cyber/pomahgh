@@ -1,5 +1,6 @@
-import { format, parseISO } from "date-fns";
-import { id as localeId } from "date-fns/locale";
+ import { format, parseISO } from "date-fns";
+ import { id as localeId } from "date-fns/locale";
+ import { cn } from "@/lib/utils";
 import { memo, useMemo } from "react";
 import {
   AccordionContent,
@@ -333,13 +334,15 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
               {PAYMENT_STATUS_LABELS[paymentStatus]}
             </div>
             <div className="text-center text-xs font-medium">
-              <span className={`px-2 py-1 rounded ${
+              <span className={cn(
+                "inline-flex items-center px-4 py-1.5 text-xs font-bold uppercase tracking-wide rounded-lg",
                 booking.status === 'checked_in' ? 'bg-blue-100 text-blue-700' :
                 booking.status === 'checked_out' ? 'bg-green-100 text-green-700' :
                 booking.status === 'confirmed' ? 'bg-purple-100 text-purple-700' :
-                booking.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                booking.status === 'cancelled' ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300' :
+                booking.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
                 'bg-gray-100 text-gray-700'
-              }`}>
+              )}>
                 {STATUS_LABELS[booking.status]}
               </span>
             </div>
