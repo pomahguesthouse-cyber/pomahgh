@@ -436,7 +436,7 @@ export function EditBookingDialog({
           
           {/* Booking Source */}
           <div className="border-t pt-4">
-            <Label className="text-base font-semibold">Sumber Booking</Label>
+              <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans">Sumber Booking</Label>
             <Select
               value={bookingSource}
               onValueChange={(v: "direct" | "ota" | "walk_in" | "other") => {
@@ -570,7 +570,7 @@ export function EditBookingDialog({
           
           {/* Room Selection */}
           <div className="space-y-3">
-            <Label>Kamar yang Dipesan</Label>
+            <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-lg font-sans">Kamar yang Dipesan</Label>
             <div className="border rounded-lg p-3 space-y-3 max-h-[250px] overflow-y-auto">
               {rooms?.map((room) => {
                 const availabilityData = roomTypeAvailability?.find(
@@ -686,7 +686,7 @@ export function EditBookingDialog({
           {/* Add-ons / Layanan Tambahan */}
           {availableAddons && availableAddons.length > 0 && (
             <div className="border-t pt-4 space-y-3">
-              <Label className="text-base font-semibold flex items-center gap-2">
+              <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Layanan Tambahan
               </Label>
