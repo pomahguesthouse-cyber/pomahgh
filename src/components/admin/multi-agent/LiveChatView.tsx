@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Send, UserCheck, ArrowUpRight, Users, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,9 @@ import { useHotelSettings, type WhatsAppManager } from '@/hooks/useHotelSettings
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { ConversationMemoryViewer } from './ConversationMemoryViewer';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface SessionConversationSummary {
   id: string;
@@ -55,6 +58,9 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'guest' | 'manager'>('guest');
+  const [unreadByConv, setUnreadByConv] = useState<Record<string, number>>({});
+  const queryClient = useQueryClient();
+  const mountedAtRef = useRef<number>(Date.now());
 
   const { settings: hotelSettings } = useHotelSettings();
   const managerNumbers = hotelSettings?.whatsapp_manager_numbers;
@@ -87,6 +93,75 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
   };
 
   const selectedSession = sessions?.find(s => s.id === selectedSessionId);
+  const selectedConvId = selectedSession?.conversation_id ?? null;
+
+  // Clear unread on session select
+  useEffect(() => {
+    if (selectedConvId) {
+      setUnreadByConv(prev => {
+        if (!prev[selectedConvId]) return prev;
+        const next = { ...prev };
+        delete next[selectedConvId];
+        return next;
+      });
+    }
+  }, [selectedConvId]);
+
+  // Build conv -> session lookup for notifications
+  const convToSession = useMemo(() => {
+    const map = new Map<string, LiveChatSession>();
+    sessions?.forEach(s => {
+      if (s.conversation_id) map.set(s.conversation_id, s);
+    });
+    return map;
+  }, [sessions]);
+
+  // Realtime: notify on new guest messages
+  useEffect(() => {
+    const channel = supabase
+      .channel('live-chat-new-messages')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: 'role=eq.user' },
+        (payload) => {
+          const msg = payload.new as { conversation_id: string; created_at: string; content: string | null };
+          if (!msg.conversation_id) return;
+          // Ignore messages created before this view mounted (avoid backlog spam)
+          if (msg.created_at && new Date(msg.created_at).getTime() < mountedAtRef.current - 5000) return;
+          // Don't notify for currently open conversation
+          if (msg.conversation_id === selectedConvId) return;
+
+          const session = convToSession.get(msg.conversation_id);
+          // Only notify for guest sessions (skip managers)
+          if (session && isManagerSession(session)) return;
+
+          const name = session ? getDisplayName(session) : 'Tamu baru';
+          const preview = (msg.content || '').slice(0, 80);
+
+          setUnreadByConv(prev => ({
+            ...prev,
+            [msg.conversation_id]: (prev[msg.conversation_id] || 0) + 1,
+          }));
+
+          toast(`Pesan baru dari ${name}`, {
+            description: preview || 'Pesan baru masuk',
+            action: session
+              ? { label: 'Buka', onClick: () => setSelectedSessionId(session.id) }
+              : undefined,
+          });
+
+          // Refresh sessions list so last_message_at updates
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedConvId, convToSession]);
+
   const { data: messages } = useWhatsAppSessionMessages(selectedSession?.conversation_id ?? null) as {
     data: ChatMessageItem[] | undefined;
   };
@@ -133,6 +208,7 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
             {visibleSessions.map(session => {
               const displayName = getDisplayName(session);
               const role = getManagerRole(session);
+              const unread = session.conversation_id ? unreadByConv[session.conversation_id] || 0 : 0;
               return (
                 <button
                   key={session.id}
@@ -143,7 +219,14 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
                     <span className="text-xs font-medium text-foreground truncate">
                       {displayName}
                     </span>
-                    {session.is_takeover && <Badge variant="destructive" className="text-[9px] px-1 shrink-0">Manual</Badge>}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {unread > 0 && (
+                        <Badge className="text-[9px] px-1 bg-destructive text-destructive-foreground animate-pulse">
+                          {unread} baru
+                        </Badge>
+                      )}
+                      {session.is_takeover && <Badge variant="destructive" className="text-[9px] px-1">Manual</Badge>}
+                    </div>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-0.5">{session.phone_number}</p>
                   {role && (
