@@ -11,6 +11,10 @@ const AgentAnalytics = lazy(() => import('@/components/admin/multi-agent/AgentAn
 const ManagerNumbersPanel = lazy(() => import('@/components/admin/multi-agent/ManagerNumbersPanel').then(m => ({ default: m.ManagerNumbersPanel })));
 const ChatbotAlertsView = lazy(() => import('@/components/admin/multi-agent/ChatbotAlertsView').then(m => ({ default: m.ChatbotAlertsView })));
 
+import { TabsContent } from '@/components/ui/tabs';
+import { AgentMetrics, AgentGrid, AgentConfigPanel, LiveChatView, ActivityLog, PromptStudio, EscalationFlow, SettingsPanel, AgentAnalytics, ManagerNumbersPanel, ChatbotAlertsView } from '@/components/admin/multi-agent';
+import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
+
 interface DashboardViewsProps {
   stats: { data?: { activeSessions?: number; bookingsToday?: number; totalMessages?: number; escalations?: number } };
   agents: AgentDefinition[];
@@ -25,6 +29,7 @@ interface DashboardViewsProps {
 }
 
 const DashboardViewsComponent = ({
+export const DashboardViews = ({
   stats,
   agents,
   allAgents,
@@ -62,6 +67,7 @@ const DashboardViewsComponent = ({
       <Suspense fallback={<div className="text-xs text-muted-foreground">Memuat live chat…</div>}>
         <LiveChatView sessions={(sessions.data || []) as never[]} />
       </Suspense>
+      <LiveChatView sessions={(sessions.data || []) as never[]} />
     </TabsContent>
 
     <TabsContent value="logs" className="mt-0 p-4">
@@ -115,3 +121,31 @@ const DashboardViewsComponent = ({
 );
 
 export const DashboardViews = memo(DashboardViewsComponent);
+      <ChatbotAlertsView />
+    </TabsContent>
+
+    <TabsContent value="prompt" className="mt-0 p-4">
+      <PromptStudio
+        agents={agents}
+        onSave={handleSaveConfig}
+        isSaving={isSaving}
+      />
+    </TabsContent>
+
+    <TabsContent value="analytics" className="mt-0 p-4">
+      <AgentAnalytics />
+    </TabsContent>
+
+    <TabsContent value="escalation" className="mt-0 p-4">
+      <EscalationFlow agents={allAgents} />
+    </TabsContent>
+
+    <TabsContent value="managers" className="mt-0 p-4">
+      <ManagerNumbersPanel />
+    </TabsContent>
+
+    <TabsContent value="settings" className="mt-0 p-4">
+      <SettingsPanel />
+    </TabsContent>
+  </>
+);

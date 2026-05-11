@@ -21,6 +21,7 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayoutComponent = (props: DashboardLayoutProps) => (
+export const DashboardLayout = (props: DashboardLayoutProps) => (
   <div className="space-y-0 bg-background min-h-screen">
     <TopBar isConnected={!props.sessionsError} />
 

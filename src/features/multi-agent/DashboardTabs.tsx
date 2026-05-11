@@ -7,6 +7,7 @@ interface DashboardTabsProps {
 }
 
 const DashboardTabsComponent = ({ unresolvedCount }: DashboardTabsProps) => (
+export const DashboardTabs = ({ unresolvedCount }: DashboardTabsProps) => (
   <div className="border-b px-4">
     <TabsList className="bg-transparent h-10 p-0 gap-0 w-full overflow-x-auto overflow-y-hidden whitespace-nowrap">
       <TabsTrigger value="agents" className="shrink-0 text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">

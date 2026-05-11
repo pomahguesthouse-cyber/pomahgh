@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMultiAgentDashboard } from '@/hooks/useMultiAgentDashboard';
 import { useChatbotAlerts } from '@/hooks/useChatbotAlerts';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
@@ -32,6 +33,20 @@ const AdminMultiAgentDashboard = () => {
 
   return (
     <DashboardLayout {...layoutProps} />
+    <DashboardLayout
+      unresolvedCount={unresolvedCount}
+      sessionsError={!!sessions.isError}
+      stats={stats}
+      agents={agents}
+      allAgents={allAgents}
+      selectedAgent={selectedAgent}
+      setSelectedAgent={setSelectedAgent}
+      handleSaveConfig={handleSaveConfig}
+      isSaving={saveAgentConfig.isPending}
+      sessions={sessions}
+      activityLog={activityLog}
+      routingLogs={routingLogs}
+    />
   );
 };
 
