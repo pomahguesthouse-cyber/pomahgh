@@ -64,7 +64,7 @@ export const CalendarTable = ({
     <div className="booking-calendar-scroll overflow-x-auto overflow-y-auto max-h-[55vh] md:max-h-[70vh] scroll-smooth">
       <table className="border-collapse table-fixed" style={{ width: tableWidth }}>
         {/* Sticky Header */}
-        <thead className="sticky top-0 z-50">
+        <thead className="sticky top-0 z-40">
           <CalendarHeaderRow dates={dates} cellWidth={cellWidth} />
         </thead>
 
