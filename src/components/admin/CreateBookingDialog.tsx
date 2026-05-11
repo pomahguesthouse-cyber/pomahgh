@@ -504,11 +504,8 @@ export const CreateBookingDialog = ({
                               key={roomNumber}
                               type="button"
                               onClick={() => toggleRoomSelection(room.id, roomNumber, room.name, room.price_per_night)}
-                              className={cn(
-                                "px-3 py-2 text-xs rounded border transition-colors",
-                                isSelected
-                                  ? "bg-primary text-primary-foreground border-primary font-semibold"
-                                  : "bg-slate-300 hover:bg-muted border-border font-semibold",
+                              className={cn("px-3 py-2 text-xs rounded border transition-colors bg-background hover:bg-muted border-border font-semibold bg-slate-300",
+                                isSelected && "bg-primary text-primary-foreground border-primary font-semibold"
                               )}
                             >
                               {roomNumber}
@@ -525,7 +522,7 @@ export const CreateBookingDialog = ({
                   <p className="text-sm font-medium mb-2">Selected Rooms:</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedRooms.map((room, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-sm px-3 py-1 shadow-sm rounded-md text-white font-normal bg-[#45b082] border-transparent">
+                      <Badge key={idx} variant="secondary" className="inline-flex items-center border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 text-xs shadow-lg border-[#85b1ea] bg-[#7ed2f6] rounded-lg">
                         {room.roomNumber} ({room.roomName})
                       </Badge>
                     ))}
@@ -749,9 +746,9 @@ export const CreateBookingDialog = ({
 
               {bookingSource === "ota" && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                  <Label htmlFor="ota_name">
-                    Nama OTA <span className="text-destructive">*</span>
-                  </Label>
+                <Label htmlFor="ota_name" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4 font-sans bg-transparent">
+                  Nama OTA <span className="text-destructive">*</span>
+                </Label>
                   <Input
                     id="ota_name"
                     value={otaName}
