@@ -53,8 +53,6 @@ async function handleNewBooking(
   env: EnvConfig,
   recentMessages?: any[],
 ) {
-  const normalized = msg.toLowerCase();
-
   // Helpers: WIB (UTC+7) calendar dates → ISO YYYY-MM-DD
   const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
   const wibNow = () => new Date(Date.now() + WIB_OFFSET_MS);
