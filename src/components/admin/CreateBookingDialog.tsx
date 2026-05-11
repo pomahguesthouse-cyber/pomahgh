@@ -830,53 +830,6 @@ export const CreateBookingDialog = ({
               )}
             </div>
 
-            {/* WhatsApp Preview */}
-            {checkIn && checkOut && selectedRooms.length > 0 && (
-              <div className="border-t pt-4 mt-4 space-y-3">
-                <Label className="text-base font-semibold">Preview Pesan WhatsApp</Label>
-                <p className="text-xs text-muted-foreground -mt-1">
-                  Pesan akan dikirim otomatis setelah booking dibuat (mengikuti metode pembayaran).
-                </p>
-                <div>
-                  <p className="text-xs font-medium mb-1">Untuk Admin:</p>
-                  <pre className="text-xs whitespace-pre-wrap font-mono bg-muted/50 rounded-md p-3 border">
-{buildAdminPreview({
-  guestName: formData.guest_name,
-  guestEmail: formData.guest_email,
-  guestPhone: formData.guest_phone,
-  roomsText: selectedRooms.map((r) => `${r.roomName} #${r.roomNumber}`).join(", "),
-  totalRooms: selectedRooms.length,
-  checkIn,
-  checkOut,
-  numGuests: formData.num_guests,
-  totalNights,
-  totalPrice: effectiveTotalPrice,
-  paymentMethod,
-})}
-                  </pre>
-                </div>
-                <div>
-                  <p className="text-xs font-medium mb-1">Untuk Tamu:</p>
-                  <pre className="text-xs whitespace-pre-wrap font-mono bg-muted/50 rounded-md p-3 border">
-{buildCustomerPreview({
-  guestName: formData.guest_name,
-  guestEmail: formData.guest_email,
-  guestPhone: formData.guest_phone,
-  roomsText: selectedRooms.map((r) => `${r.roomName} #${r.roomNumber}`).join(", "),
-  totalRooms: selectedRooms.length,
-  checkIn,
-  checkOut,
-  numGuests: formData.num_guests,
-  totalNights,
-  totalPrice: effectiveTotalPrice,
-  hotelName: settings?.hotel_name,
-  paymentMethod,
-})}
-                  </pre>
-                </div>
-              </div>
-            )}
-
             {/* Custom Pricing Section */}
             <div className="border-t pt-4 mt-4">
               <div className="flex items-center justify-between mb-3">
