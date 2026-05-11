@@ -69,7 +69,13 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
               <h1 className="ml-4 text-xl text-foreground truncate font-semibold">{pageTitle}</h1>
             </header>
 
-            <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full">{children}</main>
+            <main
+              className={`flex-1 p-4 md:p-6 w-full ${
+                location.pathname === "/admin/multi-agent" ? "max-w-none" : "max-w-6xl mx-auto"
+              }`}
+            >
+              {children}
+            </main>
           </div>
           
           <Suspense fallback={<ChatbotSkeleton />}>
