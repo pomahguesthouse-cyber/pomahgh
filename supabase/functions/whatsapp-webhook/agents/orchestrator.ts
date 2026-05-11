@@ -13,6 +13,7 @@ import { handlePaymentProof, extractImageUrl } from "./paymentProof.ts";
 import { setAgentConfigs } from "../../_shared/agentConfigCache.ts";
 import { classifyIntent } from "./intentClassifier.ts";
 import { decide } from "./decisionEngine.ts";
+import { logChatbotAlert } from "../services/alerts.ts";
 
 export async function orchestrate(req: Request, env: EnvConfig): Promise<Response> {
   const supabase = createClient(env.supabaseUrl, env.supabaseServiceKey);
@@ -105,6 +106,25 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
     classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "passive_acknowledgment" };
   } else {
     classification = await classifyIntent(normalizedMessage, { recentMessages: recentMessages.slice(-6) });
+  }
+
+  // 🔔 Alert admin: classifier confidence rendah (≤ 0.5) ATAU intent unknown.
+  // Berarti AI tidak yakin merespons → admin perlu pantau & ambil alih kalau perlu.
+  if (
+    !classification.reason?.startsWith("avoid_") &&
+    !classification.reason?.startsWith("b2b_") &&
+    !classification.reason?.startsWith("passive_") &&
+    (classification.confidence <= 0.5 || classification.intent === "unknown")
+  ) {
+    await logChatbotAlert(supabase, {
+      alert_type: "low_confidence",
+      phone_number: phone,
+      conversation_id: conversationId,
+      last_user_message: rawMessage,
+      confidence: classification.confidence,
+      intent: classification.intent,
+      recentMessages: recentMessages as Array<{ role: string; content: string }>,
+    });
   }
 
   try {

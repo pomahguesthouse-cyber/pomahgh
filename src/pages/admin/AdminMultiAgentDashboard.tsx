@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TopBar, AgentMetrics, AgentGrid, AgentConfigPanel, LiveChatView, ActivityLog, PromptStudio, EscalationFlow, SettingsPanel, AgentAnalytics, ManagerNumbersPanel } from '@/components/admin/multi-agent';
+import { TopBar, AgentMetrics, AgentGrid, AgentConfigPanel, LiveChatView, ActivityLog, PromptStudio, EscalationFlow, SettingsPanel, AgentAnalytics, ManagerNumbersPanel, ChatbotAlertsView } from '@/components/admin/multi-agent';
 import { useMultiAgentDashboard } from '@/hooks/useMultiAgentDashboard';
+import { useChatbotAlerts } from '@/hooks/useChatbotAlerts';
+import { Badge } from '@/components/ui/badge';
 import type { AgentDefinition } from '@/hooks/useMultiAgentDashboard';
 
 const AdminMultiAgentDashboard = () => {
   const { agents, allAgents, sessions, stats, activityLog, routingLogs, saveAgentConfig } = useMultiAgentDashboard();
   const [selectedAgent, setSelectedAgent] = useState<AgentDefinition | null>(null);
+  // Subscribe globally so toast fires regardless of active tab
+  const { data: alerts } = useChatbotAlerts({ onlyUnresolved: true });
+  const unresolvedCount = (alerts || []).length;
 
   const handleSaveConfig = (configId: string, data: Record<string, unknown>) => {
     saveAgentConfig.mutate({ configId, data });
@@ -27,6 +32,14 @@ const AdminMultiAgentDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="logs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               📋 Jadwal & Log
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 gap-1.5">
+              🚨 Alert
+              {unresolvedCount > 0 && (
+                <Badge variant="destructive" className="h-4 px-1.5 text-[10px] animate-pulse">
+                  {unresolvedCount}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="prompt" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4">
               ✏️ Prompt Studio
@@ -77,6 +90,10 @@ const AdminMultiAgentDashboard = () => {
             routingLogs={routingLogs?.data || []}
             isLoading={activityLog.isLoading}
           />
+        </TabsContent>
+
+        <TabsContent value="alerts" className="mt-0 p-4">
+          <ChatbotAlertsView />
         </TabsContent>
 
         <TabsContent value="prompt" className="mt-0 p-4">

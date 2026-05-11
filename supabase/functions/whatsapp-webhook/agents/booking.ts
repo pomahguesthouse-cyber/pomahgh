@@ -1,6 +1,7 @@
 import type { SupabaseClient, WhatsAppSession, ManagerInfo, EnvConfig } from "../types.ts";
 import { sendWhatsApp } from "../services/fonnte.ts";
 import { logMessage } from "../services/conversation.ts";
+import { logChatbotAlert } from "../services/alerts.ts";
 import { TraceContext } from "../../_shared/traceContext.ts";
 
 export async function handleGuestBookingFlow(
@@ -121,6 +122,15 @@ async function handleNewBooking(
       "Baik kak, untuk booking-nya, rencana check-in tanggal berapa ya? (Bisa tulis tanggal misal: 10 Mei, atau 'hari ini') 😊";
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
     await logMessage(supabase, convId, "assistant", reply);
+    // 🔔 Alert admin: tanggal tidak terdeteksi sama sekali (potensi loop tanya tanggal)
+    await logChatbotAlert(supabase, {
+      alert_type: "no_date_found",
+      phone_number: phone,
+      conversation_id: convId,
+      last_user_message: msg,
+      intent: "booking",
+      recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
+    });
     return new Response(JSON.stringify({ status: "awaiting_date" }));
   }
 
