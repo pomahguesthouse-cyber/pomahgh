@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { formatRupiahID } from "@/utils/indonesianFormat";
 import { CustomPriceMode } from "./types";
+import { SectionCard, FieldLabel, FieldInput } from "./shared/BookingFormPrimitives";
 
 interface CustomPricingEditorProps {
   enabled: boolean;
@@ -172,6 +173,6 @@ export function CustomPricingEditor({
           </div>
         )}
       </div>
-    </div>
+    </SectionCard>
   );
 }

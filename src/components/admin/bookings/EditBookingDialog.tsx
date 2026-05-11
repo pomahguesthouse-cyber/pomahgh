@@ -31,6 +31,7 @@ import { CustomPricingEditor } from "./CustomPricingEditor";
 import { useAllRoomAddons, RoomAddon, calculateAddonPrice, getPriceTypeLabel } from "@/hooks/useRoomAddons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SectionCard, FieldLabel, FieldInput } from "./shared/BookingFormPrimitives";
 
 interface EditAddonItem {
   addon_id: string;
@@ -442,7 +443,7 @@ export function EditBookingDialog({
           
           {/* Booking Source */}
           <div className="border-t pt-4">
-              <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans">Sumber Booking</Label>
+              <FieldLabel className="text-base">Sumber Booking</FieldLabel>
             <Select
               value={bookingSource}
               onValueChange={(v: "direct" | "ota" | "walk_in" | "other") => {
@@ -576,7 +577,7 @@ export function EditBookingDialog({
           
           {/* Room Selection */}
           <div className="space-y-3">
-            <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-lg font-sans">Kamar yang Dipesan</Label>
+            <FieldLabel className="text-lg">Kamar yang Dipesan</FieldLabel>
             <div className="border rounded-lg p-3 space-y-3 max-h-[250px] overflow-y-auto">
               {rooms?.map((room) => {
                 const availabilityData = roomTypeAvailability?.find(
@@ -745,7 +746,7 @@ export function EditBookingDialog({
                   Total Add-ons: Rp {addonTotal.toLocaleString('id-ID')}
                 </p>
               )}
-            </div>
+            </SectionCard>
           )}
 
           {/* Custom Pricing */}

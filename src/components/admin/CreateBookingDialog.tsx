@@ -28,6 +28,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "../BookingConfirmationDialog";
 import { useMemberAuth } from "@/hooks/useMemberAuth";
+import { SectionCard, FieldLabel, FieldInput } from "./bookings/shared/BookingFormPrimitives";
 
 interface CreateBookingDialogProps {
   open: boolean;
@@ -529,7 +530,7 @@ export const CreateBookingDialog = ({
                   </div>
                 </div>
               )}
-            </div>
+            </SectionCard>
 
             {/* Check-in & Check-out Dates */}
             <div className="grid grid-cols-2 gap-4">
@@ -747,9 +748,9 @@ export const CreateBookingDialog = ({
 
               {bookingSource === "ota" && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                <Label htmlFor="ota_name" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4 font-sans">
+                <FieldLabel htmlFor="ota_name" className="mb-4">
                   Nama OTA <span className="text-destructive">*</span>
-                </Label>
+                </FieldLabel>
                   <Input
                     id="ota_name"
                     value={otaName}
@@ -766,9 +767,9 @@ export const CreateBookingDialog = ({
 
               {bookingSource === "other" && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                  <Label htmlFor="other_source" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4 font-sans">
+                  <FieldLabel htmlFor="other_source" className="mb-4">
                     Keterangan Sumber <span className="text-destructive">*</span>
-                  </Label>
+                  </FieldLabel>
                   <Input
                     id="other_source"
                     value={otherSource}
@@ -780,7 +781,7 @@ export const CreateBookingDialog = ({
                   <p className="text-xs text-muted-foreground mt-1">Jelaskan sumber booking lainnya</p>
                 </div>
               )}
-            </div>
+            </SectionCard>
 
             {/* Payment Method Section */}
             <SectionCard>
@@ -825,7 +826,7 @@ export const CreateBookingDialog = ({
                   ⚠️ Booking pay-at-hotel akan tetap berstatus <b>pending</b> sampai dikonfirmasi via WhatsApp.
                 </div>
               )}
-            </div>
+            </SectionCard>
 
             {/* Custom Pricing Section */}
             <div className="border-t pt-4 mt-4">
