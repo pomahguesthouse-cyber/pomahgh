@@ -47,26 +47,61 @@ export async function handleGuestBookingFlow(
 
 async function handleNewBooking(supabase: SupabaseClient, phone: string, convId: string, msg: string, env: EnvConfig) {
   const normalized = msg.toLowerCase();
-  const today = new Date();
-  let targetDate = null;
 
-  // Parsing tanggal (Hari ini / Besok / Tanggal spesifik)
+  // Helpers: WIB (UTC+7) calendar dates → ISO YYYY-MM-DD
+  const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+  const wibNow = () => new Date(Date.now() + WIB_OFFSET_MS);
+  const toISODate = (d: Date) =>
+    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  const addDaysISO = (iso: string, days: number) => {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + days);
+    return toISODate(d);
+  };
+
+  const MONTHS: Record<string, number> = {
+    jan: 1, feb: 2, mar: 3, apr: 4, mei: 5, jun: 6,
+    jul: 7, agt: 8, agu: 8, ags: 8, sep: 9, okt: 10, nov: 11, des: 12,
+  };
+
+  const now = wibNow();
+  let checkInISO: string | null = null;
+
   if (normalized.includes("hari ini")) {
-    targetDate = today.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    checkInISO = toISODate(now);
   } else if (normalized.includes("besok")) {
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    targetDate = tomorrow.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    const t = new Date(now);
+    t.setUTCDate(t.getUTCDate() + 1);
+    checkInISO = toISODate(t);
+  } else if (normalized.includes("lusa")) {
+    const t = new Date(now);
+    t.setUTCDate(t.getUTCDate() + 2);
+    checkInISO = toISODate(t);
   } else {
-    // Cari pattern "10 mei" atau "10-05"
-    const dateMatch = msg.match(/(\d{1,2})\s*(jan|feb|mar|apr|mei|jun|jul|agt|sep|okt|nov|des)/i);
-    if (dateMatch) {
-      targetDate = `${dateMatch[1]} ${dateMatch[2]} ${today.getFullYear()}`;
+    const m = msg.match(/(\d{1,2})\s*(jan|feb|mar|apr|mei|jun|jul|agt|agu|ags|sep|okt|nov|des)[a-z]*\s*(\d{4})?/i);
+    if (m) {
+      const day = parseInt(m[1], 10);
+      const month = MONTHS[m[2].toLowerCase()];
+      const year = m[3] ? parseInt(m[3], 10) : now.getUTCFullYear();
+      const candidate = new Date(Date.UTC(year, month - 1, day));
+      // If past in this year and no year specified, roll to next year
+      if (!m[3] && candidate < new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))) {
+        candidate.setUTCFullYear(year + 1);
+      }
+      checkInISO = toISODate(candidate);
+    } else {
+      const m2 = msg.match(/(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?/);
+      if (m2) {
+        const day = parseInt(m2[1], 10);
+        const month = parseInt(m2[2], 10);
+        let year = m2[3] ? parseInt(m2[3], 10) : now.getUTCFullYear();
+        if (year < 100) year += 2000;
+        checkInISO = toISODate(new Date(Date.UTC(year, month - 1, day)));
+      }
     }
   }
 
-  // Jika tanggal belum ditemukan
-  if (!targetDate) {
+  if (!checkInISO) {
     const reply =
       "Baik kak, untuk booking-nya, rencana check-in tanggal berapa ya? (Bisa tulis tanggal misal: 10 Mei, atau 'hari ini') 😊";
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
@@ -74,10 +109,76 @@ async function handleNewBooking(supabase: SupabaseClient, phone: string, convId:
     return new Response(JSON.stringify({ status: "awaiting_date" }));
   }
 
-  // Jika tanggal ditemukan
-  const reply = `Siap kak, untuk booking tanggal ${targetDate}, mohon tunggu sebentar saya cek ketersediaan kamarnya ya... 🙏`;
-  await sendWhatsApp(phone, reply, env.fonnteApiKey);
-  await logMessage(supabase, convId, "assistant", reply);
+  // Parse jumlah malam (default 1)
+  const nightsMatch = msg.match(/(\d{1,2})\s*malam/i);
+  const nights = nightsMatch ? Math.max(1, Math.min(30, parseInt(nightsMatch[1], 10))) : 1;
+  const checkOutISO = addDaysISO(checkInISO, nights);
 
-  return new Response(JSON.stringify({ status: "success" }));
+  // Parse jumlah tamu (optional)
+  const guestsMatch = msg.match(/(\d{1,2})\s*(orang|tamu|pax)/i);
+  const numGuests = guestsMatch ? parseInt(guestsMatch[1], 10) : undefined;
+
+  // Panggil chatbot-tools untuk check_availability (sumber tunggal kebenaran)
+  try {
+    const resp = await fetch(`${env.supabaseUrl}/functions/v1/chatbot-tools`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-secret": env.chatbotToolsInternalSecret,
+        Authorization: `Bearer ${env.supabaseServiceKey}`,
+      },
+      body: JSON.stringify({
+        tool_name: "check_availability",
+        parameters: { check_in: checkInISO, check_out: checkOutISO, num_guests: numGuests },
+      }),
+    });
+
+    if (!resp.ok) throw new Error(`chatbot-tools ${resp.status}`);
+    const data = await resp.json();
+
+    const fmtDate = (iso: string) => {
+      const [y, mo, d] = iso.split("-").map(Number);
+      return `${String(d).padStart(2, "0")}/${String(mo).padStart(2, "0")}/${y}`;
+    };
+    const fmtRp = (n: number | null | undefined) =>
+      typeof n === "number" ? `Rp${n.toLocaleString("id-ID")}` : "-";
+
+    interface AvailRoom {
+      name: string;
+      available_count: number;
+      price_per_night: number | null;
+    }
+    const available: AvailRoom[] = data.available_rooms || [];
+    const soldOut: string[] = data.sold_out_rooms || [];
+
+    let reply: string;
+    if (available.length === 0) {
+      reply =
+        `Mohon maaf kak, untuk tanggal ${fmtDate(checkInISO)} – ${fmtDate(checkOutISO)} (${nights} malam) ` +
+        `semua kamar sudah HABIS 🙏 Ingin coba tanggal lain?`;
+    } else {
+      const lines = available.map(
+        (r) => `✅ *${r.name}* — ${r.available_count} kamar tersedia • ${fmtRp(r.price_per_night)}/malam`,
+      );
+      reply =
+        `📅 Ketersediaan ${fmtDate(checkInISO)} – ${fmtDate(checkOutISO)} (${nights} malam):\n\n` +
+        lines.join("\n");
+      if (soldOut.length > 0) {
+        reply += `\n\n❌ Habis: ${soldOut.join(", ")}`;
+      }
+      reply += `\n\nMau lanjut booking kamar yang mana kak? 😊`;
+    }
+
+    await sendWhatsApp(phone, reply, env.fonnteApiKey);
+    await logMessage(supabase, convId, "assistant", reply);
+    return new Response(JSON.stringify({ status: "availability_sent" }));
+  } catch (err) {
+    console.error("check_availability call failed:", err);
+    const reply =
+      `Mohon maaf kak, sedang ada kendala saat mengecek ketersediaan kamar untuk ${checkInISO}. ` +
+      `Saya teruskan ke admin ya 🙏`;
+    await sendWhatsApp(phone, reply, env.fonnteApiKey);
+    await logMessage(supabase, convId, "assistant", reply);
+    return new Response(JSON.stringify({ status: "availability_error" }));
+  }
 }
