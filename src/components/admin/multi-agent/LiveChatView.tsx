@@ -192,7 +192,7 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
   };
 
   return (
-    <div className="flex h-[500px] border rounded-lg overflow-hidden bg-card">
+    <div className="flex h-[calc(100vh-13rem)] min-h-[620px] border rounded-lg overflow-hidden bg-card">
       {/* Chat list */}
       <div className="w-72 border-r overflow-y-auto shrink-0 flex flex-col">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col h-full">
