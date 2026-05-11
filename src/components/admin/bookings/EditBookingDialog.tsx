@@ -691,8 +691,8 @@ export function EditBookingDialog({
           
           {/* Add-ons / Layanan Tambahan */}
           {availableAddons && availableAddons.length > 0 && (
-            <div className="border-t pt-4 space-y-3">
-              <Label className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans flex items-center gap-2">
+            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4 bg-slate-50 border-t pt-4 space-y-3">
+              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Layanan Tambahan
               </Label>
