@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { Tabs } from '@/components/ui/tabs';
 import { TopBar } from '@/components/admin/multi-agent';
 import { DashboardTabs } from './DashboardTabs';
@@ -20,7 +19,6 @@ interface DashboardLayoutProps {
   routingLogs: { data?: Array<Record<string, unknown>> } | undefined;
 }
 
-const DashboardLayoutComponent = (props: DashboardLayoutProps) => (
 export const DashboardLayout = (props: DashboardLayoutProps) => (
   <div className="space-y-0 bg-background min-h-screen">
     <TopBar isConnected={!props.sessionsError} />
@@ -42,5 +40,3 @@ export const DashboardLayout = (props: DashboardLayoutProps) => (
     </Tabs>
   </div>
 );
-
-export const DashboardLayout = memo(DashboardLayoutComponent);
