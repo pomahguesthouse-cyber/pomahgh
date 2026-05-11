@@ -403,7 +403,7 @@ export function EditBookingDialog({
                 type="text"
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 text-black font-bold"
+                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 text-black font-bold bg-slate-200"
               />
             </div>
             <div>
@@ -412,7 +412,7 @@ export function EditBookingDialog({
                 type="email"
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold"
+                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold bg-slate-300"
               />
             </div>
           </div>
@@ -425,7 +425,7 @@ export function EditBookingDialog({
                 value={guestPhone}
                 onChange={(e) => setGuestPhone(e.target.value)}
                 placeholder="+62..."
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 font-bold"
+                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 font-semibold bg-background rounded-xl h-11 bg-slate-300"
               />
             </div>
             <div>
@@ -435,7 +435,7 @@ export function EditBookingDialog({
                 min="1"
                 value={numGuests}
                 onChange={(e) => setNumGuests(parseInt(e.target.value) || 1)}
-                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold"
+                className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold bg-slate-300"
               />
             </div>
           </div>
@@ -585,7 +585,7 @@ export function EditBookingDialog({
                 
                 return (
                   <div key={room.id} className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-background/50 bg-slate-200">
                       <span className="font-medium text-sm">{room.name}</span>
                       <span className="text-xs text-muted-foreground">
                         Rp {room.price?.toLocaleString("id-ID")}/malam
@@ -701,7 +701,7 @@ export function EditBookingDialog({
                   const current = editedAddons.find(ea => ea.addon_id === addon.id);
                   const qty = current?.quantity || 0;
                   return (
-                    <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                     <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg bg-background/50 bg-slate-200">
                       <div className="flex-1">
                         <p className="text-sm font-medium">{addon.name}</p>
                         <p className="text-xs text-muted-foreground">
