@@ -481,13 +481,13 @@ export const CreateBookingDialog = ({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Room Selection Section */}
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4 bg-slate-50">
+            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
               <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Pilih Kamar (Multiple)</Label>
               <p className="text-xs text-muted-foreground mb-2">Pilih satu atau lebih kamar untuk booking ini</p>
               <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
                 {rooms.map((room) => (
                   <div key={room.id} className="space-y-2">
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-background/50 bg-slate-200">
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-background/50">
                       <span className="font-medium text-sm">{room.name}</span>
                       <span className="text-xs text-muted-foreground">
                         Rp {room.price_per_night.toLocaleString("id-ID")}/malam
@@ -504,7 +504,7 @@ export const CreateBookingDialog = ({
                               key={roomNumber}
                               type="button"
                               onClick={() => toggleRoomSelection(room.id, roomNumber, room.name, room.price_per_night)}
-                               className={cn("px-3 py-2 text-xs rounded border transition-colors bg-background hover:bg-muted border-border font-semibold bg-slate-200",
+                               className={cn("px-3 py-2 text-xs rounded-lg border transition-colors bg-background hover:bg-muted border-border font-semibold",
                                 isSelected && "bg-primary text-primary-foreground border-primary font-semibold"
                               )}
                             >
@@ -522,7 +522,7 @@ export const CreateBookingDialog = ({
                   <p className="text-sm font-medium mb-2">Selected Rooms:</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedRooms.map((room, idx) => (
-                      <Badge key={idx} variant="secondary" className="inline-flex items-center border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 text-xs shadow-lg border-[#85b1ea] bg-[#7ed2f6] rounded-lg bg-slate-200">
+                      <Badge key={idx} variant="secondary" className="inline-flex items-center border px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-secondary-foreground hover:bg-secondary/80 text-xs shadow-sm border-border bg-secondary rounded-lg">
                         {room.roomNumber} ({room.roomName})
                       </Badge>
                     ))}
@@ -619,7 +619,7 @@ export const CreateBookingDialog = ({
             {/* Guest Information */}
             <div className="space-y-4">
               <div>
-                <Label htmlFor="guest_name">Nama Tamu *</Label>
+                <Label htmlFor="guest_name" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Nama Tamu *</Label>
                 <Input
                   id="guest_name"
                   type="text"
@@ -627,12 +627,12 @@ export const CreateBookingDialog = ({
                   onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
                   placeholder="Nama lengkap tamu"
                   required
-                   className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 text-black font-bold bg-slate-200"
+                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
               <div>
-                <Label htmlFor="guest_email">Email *</Label>
+                <Label htmlFor="guest_email" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Email *</Label>
                 <Input
                   id="guest_email"
                   type="email"
@@ -640,12 +640,12 @@ export const CreateBookingDialog = ({
                   onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
                   placeholder="email@example.com"
                   required
-                   className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold bg-slate-300"
+                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
               <div>
-                <Label htmlFor="guest_phone">
+                <Label htmlFor="guest_phone" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
                   Nomor Telepon <span className="text-destructive">*</span>
                 </Label>
                 <Input
@@ -655,12 +655,12 @@ export const CreateBookingDialog = ({
                   onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
                   placeholder="+62 812 3456 7890"
                   required
-                   className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 font-semibold bg-background rounded-xl h-11 bg-slate-300"
+                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
               <div>
-                <Label htmlFor="num_guests">Jumlah Tamu *</Label>
+                <Label htmlFor="num_guests" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Jumlah Tamu *</Label>
                 <Input
                   id="num_guests"
                   type="number"
@@ -669,12 +669,12 @@ export const CreateBookingDialog = ({
                   value={formData.num_guests}
                   onChange={(e) => setFormData({ ...formData, num_guests: parseInt(e.target.value) || 1 })}
                   required
-                   className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold bg-slate-300"
+                   className="mt-1 rounded-xl h-11 font-medium"
                 />
               </div>
 
               <div>
-                <Label htmlFor="remark">Keterangan / Remark</Label>
+                <Label htmlFor="remark" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Keterangan / Remark</Label>
                 <Textarea
                   id="remark"
                   value={formData.remark}
@@ -686,7 +686,7 @@ export const CreateBookingDialog = ({
               </div>
 
               <div>
-                <Label htmlFor="special_requests">Permintaan Khusus</Label>
+                <Label htmlFor="special_requests" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Permintaan Khusus</Label>
                 <Textarea
                   id="special_requests"
                   value={formData.special_requests}
@@ -699,7 +699,7 @@ export const CreateBookingDialog = ({
             </div>
 
             {/* Booking Source Section */}
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4 bg-slate-50 border-t pt-4 mt-4">
+            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
               <div>
                 <Label htmlFor="booking_source" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
                   Jenis Booking
@@ -783,7 +783,7 @@ export const CreateBookingDialog = ({
             </div>
 
             {/* Payment Method Section */}
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4 bg-slate-50 border-t pt-4 mt-4">
+            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
               <div>
                 <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Metode Pembayaran</Label>
                 <p className="text-xs text-muted-foreground mb-2">
