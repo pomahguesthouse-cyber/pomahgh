@@ -181,6 +181,7 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
       phoneNumber: selectedSession.phone_number,
       message,
       conversationId: selectedSession.conversation_id,
+      sessionId: selectedSession.id,
     });
     setMessage('');
   };
@@ -263,27 +264,79 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
               </div>
               <div className="flex gap-2">
                 {selectedSession.is_takeover ? (
-                  <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => release.mutate(selectedSession.id)}>
-                    <ArrowUpRight className="w-3 h-3" /> Kembalikan ke AI
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs gap-1"
+                    onClick={() => release.mutate(selectedSession.id)}
+                    disabled={release.isPending}
+                  >
+                    <ArrowUpRight className="w-3 h-3" />
+                    {release.isPending ? 'Mengembalikan…' : 'Kembalikan ke AI'}
                   </Button>
                 ) : (
-                  <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => takeover.mutate(selectedSession.id)}>
-                    <UserCheck className="w-3 h-3" /> Ambil Alih
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs gap-1"
+                    onClick={() => takeover.mutate(selectedSession.id)}
+                    disabled={takeover.isPending}
+                  >
+                    <UserCheck className="w-3 h-3" />
+                    {takeover.isPending ? 'Mengambil…' : 'Ambil Alih'}
                   </Button>
                 )}
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {messages?.map(msg => (
-                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}>
-                  <div className={`max-w-[70%] px-3 py-2 rounded-lg text-xs ${msg.role === 'user' ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'}`}>
-                    {msg.content}
-                    <p className={`text-[9px] mt-1 ${msg.role === 'user' ? 'text-muted-foreground' : 'opacity-70'}`}>
-                      {msg.created_at && new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+              {messages?.map(msg => {
+                const content = msg.content ?? '';
+                const isSystem = content.startsWith('[System]');
+                const isAdmin = content.startsWith('[Admin]');
+                const isUser = msg.role === 'user';
+                const stripped = isSystem
+                  ? content.replace('[System] ', '')
+                  : isAdmin
+                  ? content.replace('[Admin] ', '')
+                  : content;
+                const time = msg.created_at
+                  ? new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                  : '';
+
+                if (isSystem) {
+                  return (
+                    <div key={msg.id} className="flex justify-center">
+                      <div className="max-w-[80%] px-3 py-1.5 rounded-full text-[10px] italic text-muted-foreground bg-muted/50 border border-dashed">
+                        {stripped} {time && <span className="ml-1 opacity-60">• {time}</span>}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={msg.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
+                    <div
+                      className={`max-w-[70%] px-3 py-2 rounded-lg text-xs ${
+                        isUser
+                          ? 'bg-muted text-foreground'
+                          : isAdmin
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-primary text-primary-foreground'
+                      }`}
+                    >
+                      {isAdmin && (
+                        <p className="text-[9px] font-semibold uppercase tracking-wider mb-0.5 opacity-90">
+                          Admin
+                        </p>
+                      )}
+                      <p className="whitespace-pre-wrap break-words">{stripped}</p>
+                      <p className={`text-[9px] mt-1 ${isUser ? 'text-muted-foreground' : 'opacity-70'}`}>
+                        {time}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="p-3 border-t flex gap-2">
               <Input
@@ -292,8 +345,14 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
                 onKeyDown={e => e.key === 'Enter' && handleSend()}
                 placeholder="Ketik pesan..."
                 className="text-xs h-8"
+                disabled={sendMessage.isPending}
               />
-              <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={handleSend}>
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90"
+                onClick={handleSend}
+                disabled={sendMessage.isPending || !message.trim()}
+              >
                 <Send className="w-3 h-3" />
               </Button>
             </div>
