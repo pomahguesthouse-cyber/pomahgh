@@ -192,9 +192,9 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
   };
 
   return (
-    <div className="flex h-[500px] border rounded-lg overflow-hidden bg-card">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-11rem)] lg:h-[calc(100vh-13rem)] min-h-[620px] border rounded-lg overflow-hidden bg-card">
       {/* Chat list */}
-      <div className="w-72 border-r overflow-y-auto shrink-0 flex flex-col">
+      <div className="w-full lg:w-72 border-b lg:border-b-0 lg:border-r overflow-y-auto shrink-0 flex flex-col max-h-64 lg:max-h-none">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col h-full">
           <TabsList className="grid grid-cols-2 m-2 h-8">
             <TabsTrigger value="guest" className="text-xs gap-1">
@@ -366,7 +366,9 @@ export const LiveChatView = ({ sessions }: LiveChatViewProps) => {
 
       {/* Memory Sidebar */}
       {selectedSession && (
+        <div className="hidden xl:block">
         <ConversationMemoryViewer session={selectedSession} />
+        </div>
       )}
     </div>
   );
