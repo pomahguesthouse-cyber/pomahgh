@@ -3,7 +3,6 @@ import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { isWIBToday } from "@/utils/wibTimezone";
 import { isIndonesianHoliday } from "@/utils/indonesianHolidays";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Booking } from "../types";
 import { BookingBar } from "./BookingBar";
 import { BlockedCellOverlay } from "./BlockedCellOverlay";
@@ -160,22 +159,7 @@ export const RoomCell = ({
     </td>
   );
 
-  // Wrap with tooltip for holidays
-  if (holiday && !booking) {
-    return (
-      <TooltipProvider key={`${roomNumber}-${date.toISOString()}`}>
-        <Tooltip delayDuration={300}>
-          <TooltipTrigger asChild>{cell}</TooltipTrigger>
-          <TooltipContent side="top" className="bg-red-600 text-white font-medium">
-            <div className="text-xs">
-              <div className="font-bold">{holiday.name}</div>
-              <div className="text-[10px] opacity-90">Hari Libur Nasional</div>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
+  // Holiday tooltip is shown only in the header (CalendarHeaderRow) to avoid
+  // overlapping or visually shifting booking bars in the row cells.
   return cell;
 };
