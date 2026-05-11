@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -5,6 +6,7 @@ interface DashboardTabsProps {
   unresolvedCount: number;
 }
 
+const DashboardTabsComponent = ({ unresolvedCount }: DashboardTabsProps) => (
 export const DashboardTabs = ({ unresolvedCount }: DashboardTabsProps) => (
   <div className="border-b px-4">
     <TabsList className="bg-transparent h-10 p-0 gap-0 w-full overflow-x-auto overflow-y-hidden whitespace-nowrap">
@@ -43,3 +45,5 @@ export const DashboardTabs = ({ unresolvedCount }: DashboardTabsProps) => (
     </TabsList>
   </div>
 );
+
+export const DashboardTabs = memo(DashboardTabsComponent);

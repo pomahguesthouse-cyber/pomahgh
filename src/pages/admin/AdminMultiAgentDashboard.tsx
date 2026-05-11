@@ -1,3 +1,4 @@
+import { useCallback, useMemo, useState } from 'react';
 import { useState } from 'react';
 import { useMultiAgentDashboard } from '@/hooks/useMultiAgentDashboard';
 import { useChatbotAlerts } from '@/hooks/useChatbotAlerts';
@@ -11,11 +12,27 @@ const AdminMultiAgentDashboard = () => {
   const { data: alerts } = useChatbotAlerts({ onlyUnresolved: true });
   const unresolvedCount = (alerts || []).length;
 
-  const handleSaveConfig = (configId: string, data: Record<string, unknown>) => {
+  const handleSaveConfig = useCallback((configId: string, data: Record<string, unknown>) => {
     saveAgentConfig.mutate({ configId, data });
-  };
+  }, [saveAgentConfig]);
+
+  const layoutProps = useMemo(() => ({
+    unresolvedCount,
+    sessionsError: !!sessions.isError,
+    stats,
+    agents,
+    allAgents,
+    selectedAgent,
+    setSelectedAgent,
+    handleSaveConfig,
+    isSaving: saveAgentConfig.isPending,
+    sessions,
+    activityLog,
+    routingLogs,
+  }), [unresolvedCount, sessions.isError, stats, agents, allAgents, selectedAgent, handleSaveConfig, saveAgentConfig.isPending, sessions, activityLog, routingLogs]);
 
   return (
+    <DashboardLayout {...layoutProps} />
     <DashboardLayout
       unresolvedCount={unresolvedCount}
       sessionsError={!!sessions.isError}
