@@ -1124,6 +1124,51 @@ export type Database = {
           },
         ]
       }
+      chatbot_alerts: {
+        Row: {
+          alert_type: string
+          confidence: number | null
+          conversation_id: string | null
+          created_at: string
+          id: string
+          intent: string | null
+          last_user_message: string | null
+          phone_number: string
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          snippet: string | null
+        }
+        Insert: {
+          alert_type: string
+          confidence?: number | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          intent?: string | null
+          last_user_message?: string | null
+          phone_number: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          snippet?: string | null
+        }
+        Update: {
+          alert_type?: string
+          confidence?: number | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          intent?: string | null
+          last_user_message?: string | null
+          phone_number?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          snippet?: string | null
+        }
+        Relationships: []
+      }
       chatbot_knowledge_base: {
         Row: {
           category: string | null
