@@ -1,6 +1,7 @@
 import type { SupabaseClient, WhatsAppSession, ManagerInfo, EnvConfig } from "../types.ts";
 import { sendWhatsApp } from "../services/fonnte.ts";
 import { logMessage } from "../services/conversation.ts";
+import { logChatbotAlert } from "../services/alerts.ts";
 import { TraceContext } from "../../_shared/traceContext.ts";
 
 export async function handleGuestBookingFlow(
