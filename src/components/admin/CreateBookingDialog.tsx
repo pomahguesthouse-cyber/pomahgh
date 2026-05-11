@@ -642,7 +642,7 @@ export const CreateBookingDialog = ({
                   onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
                   placeholder="email@example.com"
                   required
-                  className="mt-1"
+                  className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold"
                 />
               </div>
 
@@ -657,7 +657,7 @@ export const CreateBookingDialog = ({
                   onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
                   placeholder="+62 812 3456 7890"
                   required
-                  className="mt-1"
+                  className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 font-bold"
                 />
               </div>
 
@@ -671,7 +671,7 @@ export const CreateBookingDialog = ({
                   value={formData.num_guests}
                   onChange={(e) => setFormData({ ...formData, num_guests: parseInt(e.target.value) || 1 })}
                   required
-                  className="mt-1"
+                  className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 font-bold"
                 />
               </div>
 
