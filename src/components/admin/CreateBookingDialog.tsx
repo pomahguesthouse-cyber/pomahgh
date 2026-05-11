@@ -622,11 +622,12 @@ export const CreateBookingDialog = ({
                 <Label htmlFor="guest_name">Nama Tamu *</Label>
                 <Input
                   id="guest_name"
+                  type="text"
                   value={formData.guest_name}
                   onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
                   placeholder="Nama lengkap tamu"
                   required
-                  className="mt-1"
+                  className="flex w-full border border-input px-3 py-2 text-base ring-offset-background file:border-0 file:text-sm file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-9 bg-background rounded-xl h-11 bg-slate-50 text-black font-bold"
                 />
               </div>
 
@@ -765,7 +766,7 @@ export const CreateBookingDialog = ({
 
               {bookingSource === "other" && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                  <Label htmlFor="other_source">
+                  <Label htmlFor="other_source" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground mb-4 font-sans bg-transparent">
                     Keterangan Sumber <span className="text-destructive">*</span>
                   </Label>
                   <Input
@@ -830,7 +831,7 @@ export const CreateBookingDialog = ({
             <div className="border-t pt-4 mt-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="space-y-0.5">
-                  <Label htmlFor="use-custom-price" className="text-base">
+                  <Label htmlFor="use-custom-price" className="font-bold uppercase tracking-[0.15em] text-muted-foreground text-base font-sans">
                     Gunakan Harga Custom
                   </Label>
                   <p className="text-sm text-muted-foreground">Override harga normal kamar dengan harga custom</p>
