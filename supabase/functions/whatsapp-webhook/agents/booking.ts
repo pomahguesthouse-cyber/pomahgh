@@ -118,42 +118,6 @@ async function handleNewBooking(
     }
   }
 
-  // Legacy guard (kept harmless): old branch removed; jika somehow masih null,
-  // logika selanjutnya akan tanya tanggal seperti semula.
-  if (false && normalized.includes("hari ini")) {
-    checkInISO = toISODate(now);
-  } else if (normalized.includes("besok")) {
-    const t = new Date(now);
-    t.setUTCDate(t.getUTCDate() + 1);
-    checkInISO = toISODate(t);
-  } else if (normalized.includes("lusa")) {
-    const t = new Date(now);
-    t.setUTCDate(t.getUTCDate() + 2);
-    checkInISO = toISODate(t);
-  } else {
-    const m = msg.match(/(\d{1,2})\s*(jan|feb|mar|apr|mei|jun|jul|agt|agu|ags|sep|okt|nov|des)[a-z]*\s*(\d{4})?/i);
-    if (m) {
-      const day = parseInt(m[1], 10);
-      const month = MONTHS[m[2].toLowerCase()];
-      const year = m[3] ? parseInt(m[3], 10) : now.getUTCFullYear();
-      const candidate = new Date(Date.UTC(year, month - 1, day));
-      // If past in this year and no year specified, roll to next year
-      if (!m[3] && candidate < new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))) {
-        candidate.setUTCFullYear(year + 1);
-      }
-      checkInISO = toISODate(candidate);
-    } else {
-      const m2 = msg.match(/(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?/);
-      if (m2) {
-        const day = parseInt(m2[1], 10);
-        const month = parseInt(m2[2], 10);
-        let year = m2[3] ? parseInt(m2[3], 10) : now.getUTCFullYear();
-        if (year < 100) year += 2000;
-        checkInISO = toISODate(new Date(Date.UTC(year, month - 1, day)));
-      }
-    }
-  }
-
   if (!checkInISO) {
     const reply =
       "Baik kak, untuk booking-nya, rencana check-in tanggal berapa ya? (Bisa tulis tanggal misal: 10 Mei, atau 'hari ini') 😊";
