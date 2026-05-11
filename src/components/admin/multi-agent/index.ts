@@ -12,4 +12,5 @@ export { AgentAnalytics } from './AgentAnalytics';
 export { ManagerNumbersPanel } from './ManagerNumbersPanel';
 export { FAQKnowledgePanel } from './FAQKnowledgePanel';
 export { IntentBypassStats } from './IntentBypassStats';
+export { ChatbotAlertsView } from './ChatbotAlertsView';
 
