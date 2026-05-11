@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface WhatsAppSession {
   id: string;
@@ -29,52 +29,66 @@ export interface WhatsAppSessionWithMessages extends WhatsAppSession {
   } | null;
 }
 
-export const useWhatsAppSessions = (sessionType?: 'guest' | 'admin' | 'all') => {
+// --- Shared helpers untuk sinkronisasi cache antar panel ---------------------
+// LiveChatView (multi-agent dashboard) memakai query key 'multi-agent-sessions',
+// sedangkan tab WhatsApp Sessions memakai 'whatsapp-sessions'. Setiap mutasi
+// takeover/release HARUS menyentuh kedua cache itu supaya UI berubah tanpa
+// perlu refresh halaman.
+const SESSION_LIST_KEYS = [
+  ["whatsapp-sessions"],
+  ["whatsapp-stats"],
+  ["multi-agent-sessions"],
+  ["multi-agent-stats"],
+] as const;
+
+function invalidateSessionLists(qc: QueryClient) {
+  SESSION_LIST_KEYS.forEach((key) => {
+    qc.invalidateQueries({ queryKey: key });
+  });
+}
+
+function patchSessionInCaches(qc: QueryClient, sessionId: string, patch: Record<string, unknown>) {
+  const updater = (old: unknown) => {
+    if (!Array.isArray(old)) return old;
+    return old.map((s) => {
+      if (s && typeof s === "object" && (s as { id?: string }).id === sessionId) {
+        return { ...s, ...patch };
+      }
+      return s;
+    });
+  };
+  SESSION_LIST_KEYS.forEach((key) => {
+    qc.setQueryData(key, updater);
+  });
+}
+
+// ----------------------------------------------------------------------------
+
+export const useWhatsAppSessions = (sessionType?: "guest" | "admin" | "all") => {
   const queryClient = useQueryClient();
 
-  // Set up real-time subscription for sessions and messages
   useEffect(() => {
-    // Subscribe to whatsapp_sessions changes
     const sessionsChannel = supabase
-      .channel(`whatsapp-sessions-realtime-${sessionType || 'all'}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'whatsapp_sessions'
-        },
-        () => {
-          // Session updated
-          queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions', sessionType] });
-          queryClient.invalidateQueries({ queryKey: ['whatsapp-stats', sessionType] });
-        }
-      )
+      .channel(`whatsapp-sessions-realtime-${sessionType || "all"}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "whatsapp_sessions" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["whatsapp-sessions", sessionType] });
+        queryClient.invalidateQueries({ queryKey: ["whatsapp-stats", sessionType] });
+        queryClient.invalidateQueries({ queryKey: ["multi-agent-sessions"] });
+        queryClient.invalidateQueries({ queryKey: ["multi-agent-stats"] });
+      })
       .subscribe();
 
-    // Subscribe to chat_messages changes for real-time message updates
     const messagesChannel = supabase
-      .channel(`whatsapp-messages-realtime-${sessionType || 'all'}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages'
-        },
-        (payload) => {
-          // New message received
-          // Invalidate the specific conversation's messages
-          if (payload.new && typeof payload.new === 'object' && 'conversation_id' in payload.new) {
-            queryClient.invalidateQueries({ 
-              queryKey: ['whatsapp-session-messages', payload.new.conversation_id] 
-            });
-          }
-          // Also refresh sessions to update message counts
-          queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions', sessionType] });
-          queryClient.invalidateQueries({ queryKey: ['whatsapp-stats', sessionType] });
+      .channel(`whatsapp-messages-realtime-${sessionType || "all"}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
+        if (payload.new && typeof payload.new === "object" && "conversation_id" in payload.new) {
+          queryClient.invalidateQueries({
+            queryKey: ["whatsapp-session-messages", payload.new.conversation_id],
+          });
         }
-      )
+        queryClient.invalidateQueries({ queryKey: ["whatsapp-sessions", sessionType] });
+        queryClient.invalidateQueries({ queryKey: ["whatsapp-stats", sessionType] });
+      })
       .subscribe();
 
     return () => {
@@ -84,11 +98,12 @@ export const useWhatsAppSessions = (sessionType?: 'guest' | 'admin' | 'all') => 
   }, [queryClient, sessionType]);
 
   return useQuery({
-    queryKey: ['whatsapp-sessions', sessionType],
+    queryKey: ["whatsapp-sessions", sessionType],
     queryFn: async () => {
       let query = supabase
-        .from('whatsapp_sessions')
-        .select(`
+        .from("whatsapp_sessions")
+        .select(
+          `
           *,
           chat_conversations (
             id,
@@ -97,16 +112,15 @@ export const useWhatsAppSessions = (sessionType?: 'guest' | 'admin' | 'all') => 
             started_at,
             ended_at
           )
-        `)
-        .order('last_message_at', { ascending: false });
+        `,
+        )
+        .order("last_message_at", { ascending: false });
 
-      // Filter by session_type if specified
-      if (sessionType && sessionType !== 'all') {
-        query = query.eq('session_type', sessionType);
+      if (sessionType && sessionType !== "all") {
+        query = query.eq("session_type", sessionType);
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
       return data as WhatsAppSessionWithMessages[];
     },
@@ -115,16 +129,14 @@ export const useWhatsAppSessions = (sessionType?: 'guest' | 'admin' | 'all') => 
 
 export const useWhatsAppSessionMessages = (conversationId: string | null) => {
   return useQuery({
-    queryKey: ['whatsapp-session-messages', conversationId],
+    queryKey: ["whatsapp-session-messages", conversationId],
     queryFn: async () => {
       if (!conversationId) return [];
-      
       const { data, error } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
+        .from("chat_messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -138,18 +150,17 @@ export const useToggleBlockSession = () => {
   return useMutation({
     mutationFn: async ({ id, isBlocked }: { id: string; isBlocked: boolean }) => {
       const { error } = await supabase
-        .from('whatsapp_sessions')
+        .from("whatsapp_sessions")
         .update({ is_blocked: isBlocked, updated_at: new Date().toISOString() })
-        .eq('id', id);
-
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_, { isBlocked }) => {
-      queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
-      toast.success(isBlocked ? 'Nomor diblokir' : 'Nomor dibuka blokir');
+      invalidateSessionLists(queryClient);
+      toast.success(isBlocked ? "Nomor diblokir" : "Nomor dibuka blokir");
     },
     onError: () => {
-      toast.error('Gagal mengubah status blokir');
+      toast.error("Gagal mengubah status blokir");
     },
   });
 };
@@ -159,19 +170,15 @@ export const useDeleteWhatsAppSession = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('whatsapp_sessions')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from("whatsapp_sessions").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
-      toast.success('Session dihapus');
+      invalidateSessionLists(queryClient);
+      toast.success("Session dihapus");
     },
     onError: () => {
-      toast.error('Gagal menghapus session');
+      toast.error("Gagal menghapus session");
     },
   });
 };
@@ -181,47 +188,65 @@ export const useTakeoverSession = () => {
 
   return useMutation({
     mutationFn: async (sessionId: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      // Ambil conversation_id supaya kita bisa selipkan catatan "[System]"
-      // di transcript — biar admin lain tahu kapan takeover terjadi.
       const { data: session } = await supabase
-        .from('whatsapp_sessions')
-        .select('conversation_id')
-        .eq('id', sessionId)
+        .from("whatsapp_sessions")
+        .select("conversation_id")
+        .eq("id", sessionId)
         .maybeSingle();
 
       const { error } = await supabase
-        .from('whatsapp_sessions')
-        .update({ 
-          is_takeover: true, 
+        .from("whatsapp_sessions")
+        .update({
+          is_takeover: true,
           takeover_by: user?.id,
           takeover_at: new Date().toISOString(),
-          updated_at: new Date().toISOString() 
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', sessionId);
+        .eq("id", sessionId);
 
       if (error) throw error;
 
       if (session?.conversation_id) {
-        await supabase.from('chat_messages').insert({
+        await supabase.from("chat_messages").insert({
           conversation_id: session.conversation_id,
-          role: 'assistant',
-          content: '[System] Admin mengambil alih percakapan. AI dihentikan sementara.',
+          role: "assistant",
+          content: "[System] Admin mengambil alih percakapan. AI dihentikan sementara.",
         });
       }
 
       return { conversationId: session?.conversation_id ?? null };
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
-      if (data?.conversationId) {
-        queryClient.invalidateQueries({ queryKey: ['whatsapp-session-messages', data.conversationId] });
-      }
-      toast.success('Percakapan diambil alih');
+    // OPTIMISTIC: tombol langsung berubah jadi "Kembalikan ke AI" tanpa nunggu network
+    onMutate: async (sessionId: string) => {
+      await Promise.all(SESSION_LIST_KEYS.map((key) => queryClient.cancelQueries({ queryKey: key })));
+      const snapshot = SESSION_LIST_KEYS.map((key) => ({
+        key,
+        data: queryClient.getQueryData(key),
+      }));
+      patchSessionInCaches(queryClient, sessionId, {
+        is_takeover: true,
+        takeover_at: new Date().toISOString(),
+      });
+      return { snapshot };
     },
-    onError: () => {
-      toast.error('Gagal mengambil alih percakapan');
+    onError: (_err, _sessionId, ctx) => {
+      ctx?.snapshot?.forEach(({ key, data }) => queryClient.setQueryData(key, data));
+      toast.error("Gagal mengambil alih percakapan");
+    },
+    onSuccess: (data) => {
+      if (data?.conversationId) {
+        queryClient.invalidateQueries({
+          queryKey: ["whatsapp-session-messages", data.conversationId],
+        });
+      }
+      toast.success("Percakapan diambil alih");
+    },
+    onSettled: () => {
+      invalidateSessionLists(queryClient);
     },
   });
 };
@@ -231,46 +256,63 @@ export const useReleaseSession = () => {
 
   return useMutation({
     mutationFn: async (sessionId: string) => {
-      // Get session info to find conversation_id
       const { data: session } = await supabase
-        .from('whatsapp_sessions')
-        .select('conversation_id')
-        .eq('id', sessionId)
+        .from("whatsapp_sessions")
+        .select("conversation_id")
+        .eq("id", sessionId)
         .maybeSingle();
 
       const { error } = await supabase
-        .from('whatsapp_sessions')
-        .update({ 
-          is_takeover: false, 
+        .from("whatsapp_sessions")
+        .update({
+          is_takeover: false,
           takeover_by: null,
           takeover_at: null,
-          updated_at: new Date().toISOString() 
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', sessionId);
+        .eq("id", sessionId);
 
       if (error) throw error;
 
-      // Insert transition note SETELAH update sukses, supaya kalau update
-      // gagal kita tidak meninggalkan catatan menyesatkan.
       if (session?.conversation_id) {
-        await supabase.from('chat_messages').insert({
+        await supabase.from("chat_messages").insert({
           conversation_id: session.conversation_id,
-          role: 'assistant',
-          content: '[System] Percakapan dikembalikan ke AI. Lanjutkan membantu tamu berdasarkan konteks percakapan sebelumnya termasuk balasan dari admin.',
+          role: "assistant",
+          content:
+            "[System] Percakapan dikembalikan ke AI. Lanjutkan membantu tamu berdasarkan konteks percakapan sebelumnya termasuk balasan dari admin.",
         });
       }
 
       return { conversationId: session?.conversation_id ?? null };
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
-      if (data?.conversationId) {
-        queryClient.invalidateQueries({ queryKey: ['whatsapp-session-messages', data.conversationId] });
-      }
-      toast.success('Percakapan dikembalikan ke AI');
+    // OPTIMISTIC: tombol langsung kembali ke "Ambil Alih"
+    onMutate: async (sessionId: string) => {
+      await Promise.all(SESSION_LIST_KEYS.map((key) => queryClient.cancelQueries({ queryKey: key })));
+      const snapshot = SESSION_LIST_KEYS.map((key) => ({
+        key,
+        data: queryClient.getQueryData(key),
+      }));
+      patchSessionInCaches(queryClient, sessionId, {
+        is_takeover: false,
+        takeover_by: null,
+        takeover_at: null,
+      });
+      return { snapshot };
     },
-    onError: () => {
-      toast.error('Gagal mengembalikan percakapan');
+    onError: (_err, _sessionId, ctx) => {
+      ctx?.snapshot?.forEach(({ key, data }) => queryClient.setQueryData(key, data));
+      toast.error("Gagal mengembalikan percakapan");
+    },
+    onSuccess: (data) => {
+      if (data?.conversationId) {
+        queryClient.invalidateQueries({
+          queryKey: ["whatsapp-session-messages", data.conversationId],
+        });
+      }
+      toast.success("Percakapan dikembalikan ke AI");
+    },
+    onSettled: () => {
+      invalidateSessionLists(queryClient);
     },
   });
 };
@@ -291,46 +333,50 @@ export const useSendAdminMessage = () => {
       sessionId?: string | null;
     }) => {
       // Auto-takeover: kalau admin mulai mengirim manual, otomatis pause AI
-      // supaya tamu tidak menerima 2 balasan (manusia + bot).
       if (sessionId) {
         const { data: sess } = await supabase
-          .from('whatsapp_sessions')
-          .select('is_takeover')
-          .eq('id', sessionId)
+          .from("whatsapp_sessions")
+          .select("is_takeover")
+          .eq("id", sessionId)
           .maybeSingle();
         if (sess && !sess.is_takeover) {
-          const { data: { user } } = await supabase.auth.getUser();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
           await supabase
-            .from('whatsapp_sessions')
+            .from("whatsapp_sessions")
             .update({
               is_takeover: true,
               takeover_by: user?.id,
               takeover_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             })
-            .eq('id', sessionId);
+            .eq("id", sessionId);
+          // Optimistic: ubah cache supaya tombol di UI langsung "Kembalikan ke AI"
+          patchSessionInCaches(queryClient, sessionId, {
+            is_takeover: true,
+            takeover_at: new Date().toISOString(),
+          });
           if (conversationId) {
-            await supabase.from('chat_messages').insert({
+            await supabase.from("chat_messages").insert({
               conversation_id: conversationId,
-              role: 'assistant',
-              content: '[System] Admin mulai membalas — AI dihentikan otomatis.',
+              role: "assistant",
+              content: "[System] Admin mulai membalas — AI dihentikan otomatis.",
             });
           }
         }
       }
 
-      // Send WhatsApp message via edge function
-      const { data, error } = await supabase.functions.invoke('send-whatsapp', {
-        body: { phone: phoneNumber, message, type: 'admin_reply' }
+      const { data, error } = await supabase.functions.invoke("send-whatsapp", {
+        body: { phone: phoneNumber, message, type: "admin_reply" },
       });
 
       if (error) throw error;
 
-      // Log message to chat_messages with admin marker
       if (conversationId) {
-        await supabase.from('chat_messages').insert({
+        await supabase.from("chat_messages").insert({
           conversation_id: conversationId,
-          role: 'assistant',
+          role: "assistant",
           content: `[Admin] ${message}`,
         });
       }
@@ -338,50 +384,55 @@ export const useSendAdminMessage = () => {
       return data;
     },
     onSuccess: (_data, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['whatsapp-session-messages'] });
-      queryClient.invalidateQueries({ queryKey: ['whatsapp-sessions'] });
+      invalidateSessionLists(queryClient);
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-session-messages"] });
       if (vars.conversationId) {
-        queryClient.invalidateQueries({ queryKey: ['whatsapp-session-messages', vars.conversationId] });
+        queryClient.invalidateQueries({
+          queryKey: ["whatsapp-session-messages", vars.conversationId],
+        });
       }
-      toast.success('Pesan terkirim');
+      toast.success("Pesan terkirim");
     },
     onError: (error) => {
-      console.error('Send error:', error);
-      toast.error('Gagal mengirim pesan');
+      console.error("Send error:", error);
+      toast.error("Gagal mengirim pesan");
     },
   });
 };
 
-export const useWhatsAppStats = (sessionType?: 'guest' | 'admin' | 'all') => {
+export const useWhatsAppStats = (sessionType?: "guest" | "admin" | "all") => {
   return useQuery({
-    queryKey: ['whatsapp-stats', sessionType],
+    queryKey: ["whatsapp-stats", sessionType],
     queryFn: async () => {
       let query = supabase
-        .from('whatsapp_sessions')
-        .select('id, is_blocked, is_active, is_takeover, conversation_id, session_type');
+        .from("whatsapp_sessions")
+        .select("id, is_blocked, is_active, is_takeover, conversation_id, session_type");
 
-      // Filter by session_type if specified
-      if (sessionType && sessionType !== 'all') {
-        query = query.eq('session_type', sessionType);
+      if (sessionType && sessionType !== "all") {
+        query = query.eq("session_type", sessionType);
       }
 
       const { data: sessions, error: sessionsError } = await query;
-
       if (sessionsError) throw sessionsError;
 
       const { data: conversations, error: convError } = await supabase
-        .from('chat_conversations')
-        .select('id, message_count, booking_created')
-        .in('id', (sessions?.filter(s => s.conversation_id).map(s => s.conversation_id) || []).filter((id): id is string => id !== null));
+        .from("chat_conversations")
+        .select("id, message_count, booking_created")
+        .in(
+          "id",
+          (sessions?.filter((s) => s.conversation_id).map((s) => s.conversation_id) || []).filter(
+            (id): id is string => id !== null,
+          ),
+        );
 
       if (convError) throw convError;
 
       const totalSessions = sessions?.length || 0;
-      const activeSessions = sessions?.filter(s => s.is_active && !s.is_blocked).length || 0;
-      const blockedSessions = sessions?.filter(s => s.is_blocked).length || 0;
-      const takeoverSessions = sessions?.filter(s => s.is_takeover).length || 0;
+      const activeSessions = sessions?.filter((s) => s.is_active && !s.is_blocked).length || 0;
+      const blockedSessions = sessions?.filter((s) => s.is_blocked).length || 0;
+      const takeoverSessions = sessions?.filter((s) => s.is_takeover).length || 0;
       const totalMessages = conversations?.reduce((sum, c) => sum + (c.message_count || 0), 0) || 0;
-      const bookingsCreated = conversations?.filter(c => c.booking_created).length || 0;
+      const bookingsCreated = conversations?.filter((c) => c.booking_created).length || 0;
 
       return {
         totalSessions,
@@ -390,7 +441,7 @@ export const useWhatsAppStats = (sessionType?: 'guest' | 'admin' | 'all') => {
         takeoverSessions,
         totalMessages,
         bookingsCreated,
-        conversionRate: totalSessions > 0 ? ((bookingsCreated / totalSessions) * 100).toFixed(1) : '0',
+        conversionRate: totalSessions > 0 ? ((bookingsCreated / totalSessions) * 100).toFixed(1) : "0",
       };
     },
   });
