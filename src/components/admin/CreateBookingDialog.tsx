@@ -481,8 +481,8 @@ export const CreateBookingDialog = ({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Room Selection Section */}
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Pilih Kamar (Multiple)</Label>
+            <SectionCard>
+              <FieldLabel>Pilih Kamar (Multiple)</FieldLabel>
               <p className="text-xs text-muted-foreground mb-2">Pilih satu atau lebih kamar untuk booking ini</p>
               <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
                 {rooms.map((room) => (
@@ -619,7 +619,7 @@ export const CreateBookingDialog = ({
             {/* Guest Information */}
             <div className="space-y-4">
               <div>
-                <Label htmlFor="guest_name" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Nama Tamu *</Label>
+                <FieldLabel htmlFor="guest_name">Nama Tamu *</FieldLabel>
                 <Input
                   id="guest_name"
                   type="text"
@@ -632,7 +632,7 @@ export const CreateBookingDialog = ({
               </div>
 
               <div>
-                <Label htmlFor="guest_email" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Email *</Label>
+                <FieldLabel htmlFor="guest_email">Email *</FieldLabel>
                 <Input
                   id="guest_email"
                   type="email"
@@ -645,9 +645,9 @@ export const CreateBookingDialog = ({
               </div>
 
               <div>
-                <Label htmlFor="guest_phone" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
+                <FieldLabel htmlFor="guest_phone">
                   Nomor Telepon <span className="text-destructive">*</span>
-                </Label>
+                </FieldLabel>
                 <Input
                   id="guest_phone"
                   type="tel"
@@ -660,7 +660,7 @@ export const CreateBookingDialog = ({
               </div>
 
               <div>
-                <Label htmlFor="num_guests" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Jumlah Tamu *</Label>
+                <FieldLabel htmlFor="num_guests">Jumlah Tamu *</FieldLabel>
                 <Input
                   id="num_guests"
                   type="number"
@@ -674,7 +674,7 @@ export const CreateBookingDialog = ({
               </div>
 
               <div>
-                <Label htmlFor="remark" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Keterangan / Remark</Label>
+                <FieldLabel htmlFor="remark">Keterangan / Remark</FieldLabel>
                 <Textarea
                   id="remark"
                   value={formData.remark}
@@ -686,7 +686,7 @@ export const CreateBookingDialog = ({
               </div>
 
               <div>
-                <Label htmlFor="special_requests" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Permintaan Khusus</Label>
+                <FieldLabel htmlFor="special_requests">Permintaan Khusus</FieldLabel>
                 <Textarea
                   id="special_requests"
                   value={formData.special_requests}
@@ -699,11 +699,11 @@ export const CreateBookingDialog = ({
             </div>
 
             {/* Booking Source Section */}
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
+            <SectionCard>
               <div>
-                <Label htmlFor="booking_source" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
+                <FieldLabel htmlFor="booking_source">
                   Jenis Booking
-                </Label>
+                </FieldLabel>
                 <p className="text-xs text-muted-foreground mb-2">Pilih sumber booking untuk tracking</p>
                 <Select
                   value={bookingSource}
@@ -783,9 +783,9 @@ export const CreateBookingDialog = ({
             </div>
 
             {/* Payment Method Section */}
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
+            <SectionCard>
               <div>
-                <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Metode Pembayaran</Label>
+                <FieldLabel>Metode Pembayaran</FieldLabel>
                 <p className="text-xs text-muted-foreground mb-2">
                   Pilih bagaimana tamu akan membayar reservasi ini
                 </p>
@@ -831,9 +831,9 @@ export const CreateBookingDialog = ({
             <div className="border-t pt-4 mt-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="space-y-0.5">
-                  <Label htmlFor="use-custom-price" className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
+                  <FieldLabel htmlFor="use-custom-price">
                     Gunakan Harga Custom
-                  </Label>
+                  </FieldLabel>
                   <p className="text-sm text-muted-foreground">Override harga normal kamar dengan harga custom</p>
                 </div>
                 <Switch

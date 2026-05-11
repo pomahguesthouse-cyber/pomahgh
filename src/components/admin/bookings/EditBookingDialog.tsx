@@ -398,7 +398,7 @@ export function EditBookingDialog({
           {/* Guest Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Nama Tamu</Label>
+              <FieldLabel>Nama Tamu</FieldLabel>
               <Input
                 type="text"
                 value={guestName}
@@ -407,7 +407,7 @@ export function EditBookingDialog({
               />
             </div>
             <div>
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Email</Label>
+              <FieldLabel>Email</FieldLabel>
               <Input
                 type="email"
                 value={guestEmail}
@@ -419,7 +419,7 @@ export function EditBookingDialog({
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Telepon</Label>
+              <FieldLabel>Telepon</FieldLabel>
               <Input
                 type="text"
                 value={guestPhone}
@@ -429,7 +429,7 @@ export function EditBookingDialog({
               />
             </div>
             <div>
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">Jumlah Tamu</Label>
+              <FieldLabel>Jumlah Tamu</FieldLabel>
               <Input
                 type="number"
                 min="1"
@@ -691,11 +691,11 @@ export function EditBookingDialog({
           
           {/* Add-ons / Layanan Tambahan */}
           {availableAddons && availableAddons.length > 0 && (
-            <div className="bg-muted/40 border rounded-2xl p-5 space-y-4">
-              <Label className="font-bold text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans flex items-center gap-2">
+            <SectionCard>
+              <FieldLabel className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 Layanan Tambahan
-              </Label>
+              </FieldLabel>
               <div className="space-y-2">
                 {availableAddons.filter(a => a.is_active).map((addon) => {
                   const current = editedAddons.find(ea => ea.addon_id === addon.id);
