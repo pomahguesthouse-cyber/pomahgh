@@ -28,7 +28,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { BookingConfirmationDialog } from "../BookingConfirmationDialog";
 import { useMemberAuth } from "@/hooks/useMemberAuth";
-import { buildAdminPreview, buildCustomerPreview } from "./bookings/whatsappPreview";
 
 interface CreateBookingDialogProps {
   open: boolean;
