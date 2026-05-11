@@ -151,9 +151,7 @@ export async function handleGuestFAQ(
       });
     }
 
-    // Not escalating — now log user message
-    await logMessage(supabase, convId, 'user', message);
-
+    // User message sudah dilog secara terpusat di orchestrator.
     if (!aiResponse || aiResponse.trim() === '') {
       aiResponse = brochureSent
         ? `Brosur sudah saya kirim ya kak 😊 Ada tipe kamar yang menarik?`
