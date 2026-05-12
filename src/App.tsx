@@ -352,6 +352,10 @@ const App = () => {
                             </AdminLayout>
                           }
                         />
+                        <Route
+                          path="/location/:slug"
+                          element={<AreaLandingPage />}
+                        />
 
                         {/* ------------------------------------------------ */}
                         {/* Editor */}

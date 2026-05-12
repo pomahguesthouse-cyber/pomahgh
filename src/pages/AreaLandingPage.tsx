@@ -1,62 +1,81 @@
 import { Helmet } from "react-helmet-async";
-import { useParams } from "react-router-dom";
-import { semarangAreas } from "@/data/semarangAreas";
+
+import { useParams, Link } from "react-router-dom";
+
+import { generateSeoPage } from "@/services/seo/seoPageGenerator";
+
+import { getRelatedAreas } from "@/services/seo/internalLinkAgent";
 
 export default function AreaLandingPage() {
   const { slug } = useParams();
 
-  const areaData = semarangAreas.find(
-    (item) => item.slug === slug
-  );
+  const area =
+    slug?.replace(/-/g, " ") || "Semarang";
 
-  if (!areaData) {
-    return <div>Page not found</div>;
-  }
+  const seo = generateSeoPage(area);
 
-  const canonical =
-    window.location.origin + "/location/" + areaData.slug;
-
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "LodgingBusiness",
-    name: "Pomah Guesthouse",
-    areaServed: areaData.area,
-    description: areaData.description,
-    url: canonical,
-  };
+  const related = getRelatedAreas(slug || "");
 
   return (
     <>
       <Helmet>
-        <title>{areaData.title}</title>
+        <title>{seo.title}</title>
 
         <meta
           name="description"
-          content={areaData.description}
+          content={seo.description}
         />
 
-        <link rel="canonical" href={canonical} />
-
         <script type="application/ld+json">
-          {JSON.stringify(schema)}
+          {JSON.stringify(seo.schema)}
         </script>
       </Helmet>
 
-      <main className="container mx-auto py-10">
-        <h1>{areaData.title}</h1>
+      <main className="container mx-auto py-10 px-4">
+        <h1 className="text-4xl font-bold">
+          {seo.title}
+        </h1>
 
-        <p>{areaData.description}</p>
+        <p className="mt-4">
+          {seo.description}
+        </p>
 
-        <section>
-          <h2>
-            Penginapan Strategis di {areaData.area}
+        {/* FAQ */}
+        <section className="mt-10">
+          <h2 className="text-2xl font-bold">
+            FAQ
           </h2>
 
-          <p>
-            Pomah Guesthouse cocok untuk wisata,
-            perjalanan bisnis, maupun staycation
-            keluarga di area {areaData.area}.
-          </p>
+          <div className="space-y-4 mt-4">
+            {seo.faq.map((item, index) => (
+              <div key={index}>
+                <h3 className="font-semibold">
+                  {item.question}
+                </h3>
+
+                <p>{item.answer}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Related Areas */}
+        <section className="mt-10">
+          <h2 className="text-2xl font-bold">
+            Area Terkait
+          </h2>
+
+          <div className="flex gap-3 flex-wrap mt-4">
+            {related.map((r) => (
+              <Link
+                key={r.slug}
+                to={`/location/${r.slug}`}
+                className="underline"
+              >
+                {r.area}
+              </Link>
+            ))}
+          </div>
         </section>
       </main>
     </>
