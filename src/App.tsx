@@ -23,9 +23,9 @@ function applyCrossDomainRedirects(): boolean {
   if (typeof window === "undefined") return false;
   const { hostname, pathname, search, hash } = window.location;
 
-  // Public domain → if someone hits a legacy `/admin/...` URL, send them to admin subdomain
+  // Public domain → if someone hits a legacy `/admin/...` or `/app/...` URL, send them to admin subdomain
   if (isPublicHost(hostname)) {
-    if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    if (pathname === "/admin" || pathname.startsWith("/admin/") || pathname === "/app" || pathname.startsWith("/app/")) {
       window.location.replace(buildAdminUrl(pathname, search, hash));
       return true;
     }
