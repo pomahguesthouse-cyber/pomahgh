@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Search, FileText, FileSpreadsheet, CalendarIcon, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,7 @@ interface BookingFiltersProps {
   onExportExcel?: () => void;
 }
 
-export function BookingFilters({
+export const BookingFilters = memo(function BookingFilters({
   searchQuery,
   onSearchQueryChange,
   filterStatus,
