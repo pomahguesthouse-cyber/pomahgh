@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { format } from "date-fns";
 import { Booking } from "../types";
 
@@ -12,9 +13,7 @@ export const useCalendarHelpers = (
   bookings: Booking[] | undefined,
   unavailableDates: UnavailableDate[]
 ) => {
-  // Get booking for specific room and date
-  // SINGLE SOURCE OF TRUTH: Prioritize booking_rooms, fallback to allocated_room_number
-  const getBookingForCell = (roomNumber: string, date: Date): Booking | null => {
+  const getBookingForCell = useCallback((roomNumber: string, date: Date): Booking | null => {
     if (!bookings) return null;
     const dateStr = format(date, "yyyy-MM-dd");
     
@@ -38,37 +37,33 @@ export const useCalendarHelpers = (
     });
 
     return matchingBookings[0] || null;
-  };
+  }, [bookings]);
 
-  // Check if date is blocked
-  const isDateBlocked = (roomId: string, roomNumber: string, date: Date): boolean => {
+  const isDateBlocked = useCallback((roomId: string, roomNumber: string, date: Date): boolean => {
     const dateStr = format(date, "yyyy-MM-dd");
     return unavailableDates.some(
       (d) => d.room_id === roomId && d.room_number === roomNumber && d.unavailable_date === dateStr
     );
-  };
+  }, [unavailableDates]);
 
-  // Get block reason
-  const getBlockReason = (roomId: string, roomNumber: string, date: Date): string | undefined => {
+  const getBlockReason = useCallback((roomId: string, roomNumber: string, date: Date): string | undefined => {
     const dateStr = format(date, "yyyy-MM-dd");
     return unavailableDates.find(
       (d) => d.room_id === roomId && d.room_number === roomNumber && d.unavailable_date === dateStr
     )?.reason;
-  };
+  }, [unavailableDates]);
 
-  // Check if this is the first day of a booking
-  const isBookingStart = (booking: Booking, date: Date) => {
+  const isBookingStart = useCallback((booking: Booking, date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
     return dateStr === booking.check_in;
-  };
+  }, []);
 
-  // Check if this is the last day of a booking
-  const isBookingEnd = (booking: Booking, date: Date) => {
+  const isBookingEnd = useCallback((booking: Booking, date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
     const checkOutDate = new Date(booking.check_out);
     checkOutDate.setDate(checkOutDate.getDate() - 1);
     return dateStr === format(checkOutDate, "yyyy-MM-dd");
-  };
+  }, []);
 
   return {
     getBookingForCell,
