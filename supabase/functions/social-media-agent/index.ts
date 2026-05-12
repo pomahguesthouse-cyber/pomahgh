@@ -1,24 +1,8 @@
-import { corsHeaders } from "../_shared/cors.ts";
-
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-
-interface GenerateRequest {
-  topic: string;
-  platforms: string[];
-  tone: string;
-  language: string;
-  brandName: string;
-  brandVoice: string;
-  contentType: string;
-}
-
-interface PlatformContent {
-  instagram?: { caption: string; hashtags: string[]; cta: string };
-  tiktok?: { hook: string; script: string; hashtags: string[] };
-  twitter?: { tweet: string };
-  linkedin?: { post: string; hashtags: string[] };
-  facebook?: { post: string; hashtags: string[] };
-}
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
+};
 
 const PLATFORM_INSTRUCTIONS: Record<string, string> = {
   instagram: `Instagram caption (maks 2200 karakter):
@@ -60,8 +44,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body: GenerateRequest = await req.json();
-    const { topic, platforms, tone, language, brandName, brandVoice, contentType } = body;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!topic || !platforms?.length) {
       return new Response(JSON.stringify({ error: "topic dan platforms wajib diisi" }), {
@@ -79,7 +62,7 @@ Deno.serve(async (req) => {
 
     const langLabel = language === "id" ? "Bahasa Indonesia" : "English";
     const platformGuides = platforms
-      .map((p) => `\n### ${p.toUpperCase()}\n${PLATFORM_INSTRUCTIONS[p] ?? ""}`)
+      .map((p: string) => `\n### ${p.toUpperCase()}\n${PLATFORM_INSTRUCTIONS[p] ?? ""}`)
       .join("\n");
 
     const systemPrompt = `Kamu adalah social media copywriter profesional untuk ${brandName || "bisnis"}.
@@ -99,7 +82,7 @@ ${platformGuides}
 Kembalikan satu JSON object dengan key: ${platforms.join(", ")}.
 Contoh struktur: { "instagram": {...}, "tiktok": {...} }`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -116,8 +99,8 @@ Contoh struktur: { "instagram": {...}, "tiktok": {...} }`;
       }),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
       console.error("AI gateway error:", errText);
       return new Response(JSON.stringify({ error: "Gagal menghubungi AI" }), {
         status: 500,
@@ -125,12 +108,11 @@ Contoh struktur: { "instagram": {...}, "tiktok": {...} }`;
       });
     }
 
-    const data = await response.json();
-    const raw = data.choices?.[0]?.message?.content?.trim() ?? "{}";
+    const data = await aiResponse.json();
+    const raw: string = data.choices?.[0]?.message?.content?.trim() ?? "{}";
 
-    let results: PlatformContent;
+    let results: unknown;
     try {
-      // Strip potential markdown code fences if model ignores instruction
       const cleaned = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
       results = JSON.parse(cleaned);
     } catch {
