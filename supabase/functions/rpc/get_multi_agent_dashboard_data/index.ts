@@ -1,33 +1,88 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// CORS Headers Configuration
+// ==============================
+// CORS CONFIG
+// ==============================
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Content-Type": "application/json",
 };
 
-// Initialize Supabase Client
-const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+// ==============================
+// ENV VALIDATION
+// ==============================
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Missing Supabase environment variables");
+}
+
+// ==============================
+// SUPABASE CLIENT
+// ==============================
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Define the HTTP Server Handler
-serve(async (req) => {
+// ==============================
+// TYPES
+// ==============================
+interface RequestBody {
+  mode: "deep_analyze" | "detect_faq";
+}
+
+interface Conversation {
+  id: string;
+  message: string;
+  created_at: string;
+}
+
+interface FAQPattern {
+  pattern: string;
+  response: string;
+}
+
+// ==============================
+// MAIN SERVER
+// ==============================
+serve(async (req: Request): Promise<Response> => {
+  // Handle preflight request
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      headers: corsHeaders,
+      status: 204,
+    });
+  }
+
+  // Only allow POST
+  if (req.method !== "POST") {
+    return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
   try {
-    const body = await req.json();
-    const mode = body.mode;
+    // Parse body safely
+    let body: RequestBody;
 
-    switch (mode) {
-      case "deep_analyze":
-        // Implement deep analysis logic
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "Invalid JSON body" }, 400);
+    }
+
+    // Validate mode
+    if (!body.mode) {
+      return jsonResponse({ error: "Missing mode field" }, 400);
+    }
+
+    switch (body.mode) {
+      // =====================================
+      // DEEP ANALYSIS
+      // =====================================
+      case "deep_analyze": {
         console.log("Performing deep analysis...");
-        // Example: Fetch recent conversations and analyze them
+
         const { data: conversations, error } = await supabase
           .from("whatsapp_conversations")
           .select("*")
@@ -35,63 +90,104 @@ serve(async (req) => {
           .limit(20);
 
         if (error) {
-          console.error("Error fetching conversations:", error);
-          return new Response(JSON.stringify({ error: "Failed to fetch conversations" }), {
-            headers: corsHeaders,
-            status: 500,
+          console.error("Database error:", error);
+
+          return jsonResponse({ error: "Failed to fetch conversations" }, 500);
+        }
+
+        const analysisResult = await analyzeConversations(conversations as Conversation[]);
+
+        return jsonResponse({
+          success: true,
+          data: analysisResult,
+        });
+      }
+
+      // =====================================
+      // FAQ DETECTION
+      // =====================================
+      case "detect_faq": {
+        console.log("Detecting FAQ patterns...");
+
+        const faqPatterns = await detectFAQPatterns();
+
+        if (!faqPatterns || faqPatterns.length === 0) {
+          return jsonResponse({
+            success: true,
+            message: "No FAQ patterns detected",
           });
         }
 
-        // Process and analyze the conversations
-        const analysisResult = await analyzeConversations(conversations);
-        return new Response(JSON.stringify(analysisResult), { headers: corsHeaders });
+        const { data, error } = await supabase.from("whatsapp_faq_patterns").insert(faqPatterns).select();
 
-      case "detect_faq":
-        // Implement FAQ detection logic
-        console.log("Detecting FAQ patterns...");
-        // Example: Detect FAQ patterns in recent conversations
-        const faqPatterns = await detectFAQPatterns();
-        if (faqPatterns) {
-          const { data, error } = await supabase.from("whatsapp_faq_patterns").insert(faqPatterns);
+        if (error) {
+          console.error("Insert error:", error);
 
-          if (error) {
-            console.error("Error inserting FAQ patterns:", error);
-            return new Response(JSON.stringify({ error: "Failed to insert FAQ patterns" }), {
-              headers: corsHeaders,
-              status: 500,
-            });
-          }
-
-          return new Response(JSON.stringify(data), { headers: corsHeaders });
-        } else {
-          return new Response(JSON.stringify({ message: "No FAQ patterns detected" }), { headers: corsHeaders });
+          return jsonResponse({ error: "Failed to insert FAQ patterns" }, 500);
         }
 
+        return jsonResponse({
+          success: true,
+          inserted: data,
+        });
+      }
+
       default:
-        return new Response(JSON.stringify({ error: "Invalid mode" }), { headers: corsHeaders, status: 400 });
+        return jsonResponse({ error: "Invalid mode" }, 400);
     }
   } catch (error) {
-    console.error("Error processing request:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { headers: corsHeaders, status: 500 });
+    console.error("Unexpected error:", error);
+
+    return jsonResponse(
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      500,
+    );
   }
 });
 
-// Placeholder function to analyze conversations
-async function analyzeConversations(conversations): Promise<any> {
-  // Implement actual conversation analysis logic here
+// ==============================
+// ANALYZE CONVERSATIONS
+// ==============================
+async function analyzeConversations(conversations: Conversation[]): Promise<object> {
+  // Example AI/NLP analysis placeholder
+
+  const totalMessages = conversations.length;
+
   const summary = {
-    commonTopics: ["topic1", "topic2"],
+    totalMessages,
+    commonTopics: ["billing", "login", "shipping"],
     userSentiments: ["positive", "neutral"],
   };
-  return { summary };
+
+  return summary;
 }
 
-// Placeholder function to detect FAQ patterns
-async function detectFAQPatterns(): Promise<any[] | null> {
-  // Implement actual FAQ pattern detection logic here
-  const faqPatterns = [
-    { pattern: "How can I reset my password?", response: 'Visit the settings page and click on "Reset Password".' },
-    { pattern: "What is your return policy?", response: "We offer a 30-day return policy." },
+// ==============================
+// DETECT FAQ PATTERNS
+// ==============================
+async function detectFAQPatterns(): Promise<FAQPattern[]> {
+  // Placeholder ML / NLP logic
+
+  return [
+    {
+      pattern: "How can I reset my password?",
+      response: 'Visit settings and click "Reset Password".',
+    },
+    {
+      pattern: "What is your return policy?",
+      response: "We offer a 30-day return policy.",
+    },
   ];
-  return faqPatterns.length > 0 ? faqPatterns : null;
+}
+
+// ==============================
+// RESPONSE HELPER
+// ==============================
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: corsHeaders,
+  });
 }
