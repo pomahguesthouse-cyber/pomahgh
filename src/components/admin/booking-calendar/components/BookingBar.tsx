@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { useState, useRef } from "react";
+import { memo, useState, useRef } from "react";
 import { Booking } from "../types";
 import { getBookingColor } from "../utils/styleHelpers";
 
@@ -18,7 +18,7 @@ interface BookingBarProps {
   isResizing?: boolean;
 }
 
-export const BookingBar = ({
+export const BookingBar = memo(({
   booking,
   onClick,
   visibleNights,
