@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Home, Calendar, CalendarDays, Building2, ImageIcon, Boxes, Settings, MapPin, CreditCard, Tags, LayoutDashboard, Search, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw, Receipt } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { buildPublicUrl } from "@/lib/domain";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { cn } from "@/lib/utils";
@@ -518,14 +519,13 @@ export function AdminSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Link 
-                to="/" 
-                className="flex items-center gap-3 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg" 
-                onClick={handleNavClick}
+              <a
+                href={buildPublicUrl("/")}
+                className="flex items-center gap-3 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg"
               >
                 <Home className="h-4 w-4 shrink-0" />
                 <span>Back to Site</span>
-              </Link>
+              </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
