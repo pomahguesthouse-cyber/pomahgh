@@ -1,10 +1,11 @@
+import { memo } from "react";
 import { Ban } from "lucide-react";
 
 interface BlockedCellOverlayProps {
   reason?: string;
 }
 
-export const BlockedCellOverlay = ({ reason }: BlockedCellOverlayProps) => {
+export const BlockedCellOverlay = memo(({ reason }: BlockedCellOverlayProps) => {
   return (
     <div
       className="absolute inset-0 z-10 pointer-events-none bg-muted/20"
@@ -29,4 +30,5 @@ export const BlockedCellOverlay = ({ reason }: BlockedCellOverlayProps) => {
       </div>
     </div>
   );
-};
+});
+BlockedCellOverlay.displayName = "BlockedCellOverlay";
