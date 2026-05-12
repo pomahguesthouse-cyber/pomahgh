@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { format, differenceInDays, parseISO, getDay } from "date-fns";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,7 @@ interface RoomCellProps {
   activeBooking?: Booking | null;
 }
 
-export const RoomCell = ({
+export const RoomCell = memo(({
   roomId,
   roomNumber,
   date,
@@ -162,4 +163,5 @@ export const RoomCell = ({
   // Holiday tooltip is shown only in the header (CalendarHeaderRow) to avoid
   // overlapping or visually shifting booking bars in the row cells.
   return cell;
-};
+});
+RoomCell.displayName = "RoomCell";
