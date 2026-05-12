@@ -228,4 +228,4 @@ export const BookingFilters = memo(function BookingFilters({
       </div>
     </div>
   );
-}
+});
