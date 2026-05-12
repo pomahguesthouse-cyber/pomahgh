@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { format, getDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { isWIBToday } from "@/utils/wibTimezone";
@@ -11,7 +12,7 @@ interface CalendarHeaderRowProps {
   dates: Date[];
   cellWidth: number;
 }
-export const CalendarHeaderRow = ({
+export const CalendarHeaderRow = memo(({
   dates,
   cellWidth
 }: CalendarHeaderRowProps) => {
@@ -67,4 +68,5 @@ TANGGAL</span>
       return headerCell;
     })}
     </tr>;
-};
+});
+CalendarHeaderRow.displayName = "CalendarHeaderRow";
