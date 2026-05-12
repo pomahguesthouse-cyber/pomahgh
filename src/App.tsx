@@ -182,6 +182,8 @@ const AdminLandingPages = lazyRetry(() => import("./pages/admin/AdminLandingPage
 
 const AdminMultiAgentDashboard = lazyRetry(() => import("./pages/admin/AdminMultiAgentDashboard"));
 
+const AdminSocialMediaAgent = lazyRetry(() => import("./pages/admin/AdminSocialMediaAgent"));
+
 const AdminLayout = lazyRetry(() =>
   import("./components/admin/AdminLayout").then((m) => ({
     default: m.AdminLayout,
@@ -527,6 +529,15 @@ const App = () => {
                           element={
                             <AdminLayout>
                               <AdminCompetitorAnalysis />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/social-media-agent"
+                          element={
+                            <AdminLayout>
+                              <AdminSocialMediaAgent />
                             </AdminLayout>
                           }
                         />
