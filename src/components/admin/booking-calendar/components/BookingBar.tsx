@@ -214,4 +214,5 @@ export const BookingBar = memo(({
       </div>
     </div>
   );
-};
+});
+BookingBar.displayName = "BookingBar";
