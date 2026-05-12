@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { memo, useMemo } from "react";
 import { Booking, RoomInfo } from "../types";
 import { CalendarHeaderRow } from "./CalendarHeaderRow";
 import { RoomRow } from "./RoomRow";
@@ -23,7 +23,7 @@ interface CalendarTableProps {
   activeBooking?: Booking | null;
 }
 
-export const CalendarTable = ({
+export const CalendarTable = memo(({
   dates,
   cellWidth,
   roomsByType,
@@ -103,4 +103,5 @@ export const CalendarTable = ({
       </table>
     </div>
   );
-};
+});
+CalendarTable.displayName = "CalendarTable";
