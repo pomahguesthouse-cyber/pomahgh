@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard } from "lucide-react";
 import { Booking } from "./types";
@@ -12,7 +13,7 @@ interface PaymentInfoProps {
   booking: Booking;
 }
 
-export function PaymentInfo({ booking }: PaymentInfoProps) {
+export const PaymentInfo = memo(function PaymentInfo({ booking }: PaymentInfoProps) {
   const status = (booking.payment_status || "unpaid") as PaymentStatus;
 
   return (
@@ -38,4 +39,4 @@ export function PaymentInfo({ booking }: PaymentInfoProps) {
         )}
     </div>
   );
-}
+});
