@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient, UseMutationOptions } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -56,6 +57,29 @@ export interface LearningMetric {
 }
 
 // ============================================================
+// ZOD SCHEMAS
+// ============================================================
+
+const DeepAnalyzeSchema = z.object({
+  analyzed: z.number(),
+  insights_generated: z.number(),
+});
+
+const DetectFAQSchema = z.object({
+  patterns_found: z.number(),
+  new_patterns_saved: z.number(),
+});
+
+const DetectSlangSchema = z.object({
+  slang_found: z.number(),
+});
+
+const PromoteFAQSchema = z.object({
+  promoted: z.number(),
+  auto_approved: z.number(),
+});
+
+// ============================================================
 // ERROR HANDLER
 // ============================================================
 
@@ -75,7 +99,11 @@ function getErrorMessage(error: unknown): string {
 // AGENT INVOKER
 // ============================================================
 
-async function invokeAgent<T>(mode: AgentMode, extraParams: Record<string, unknown> = {}): Promise<T> {
+async function invokeAgent<T>(
+  mode: AgentMode,
+  schema: z.ZodSchema<T>,
+  extraParams: Record<string, unknown> = {},
+): Promise<T> {
   const { data, error } = await supabase.functions.invoke("whatsapp-learning-agent", {
     body: {
       mode,
@@ -87,15 +115,22 @@ async function invokeAgent<T>(mode: AgentMode, extraParams: Record<string, unkno
     throw new Error(getErrorMessage(error));
   }
 
-  return data as T;
+  return schema.parse(data);
 }
+
+// ============================================================
+// REQUEST LOCK
+// ============================================================
+
+const pendingRequests = new Set<string>();
 
 // ============================================================
 // GENERIC MUTATION FACTORY
 // ============================================================
 
-function createAgentMutation<TData>(
+function createAgentMutation<TData, TParams = void>(
   mode: AgentMode,
+  schema: z.ZodSchema<TData>,
   options?: {
     successMessage?: (data: TData) => string;
     invalidate?: string[][];
@@ -105,13 +140,25 @@ function createAgentMutation<TData>(
   return () => {
     const queryClient = useQueryClient();
 
-    return useMutation({
-      mutationFn: async (params?: Record<string, unknown>) => {
-        return invokeAgent<TData>(mode, {
-          ...options?.extraParams,
-          ...params,
-        });
+    return useMutation<TData, Error, TParams>({
+      mutationFn: async (params) => {
+        if (pendingRequests.has(mode)) {
+          throw new Error("Request masih berjalan");
+        }
+
+        pendingRequests.add(mode);
+
+        try {
+          return await invokeAgent<TData>(mode, schema, {
+            ...options?.extraParams,
+            ...(params as object),
+          });
+        } finally {
+          pendingRequests.delete(mode);
+        }
       },
+
+      retry: false,
 
       onSuccess: (data) => {
         if (options?.successMessage) {
@@ -136,41 +183,44 @@ function createAgentMutation<TData>(
 // MUTATIONS
 // ============================================================
 
-export const useDeepAnalyze = createAgentMutation<{
-  analyzed: number;
-  insights_generated: number;
-}>("deep_analyze", {
+export const useDeepAnalyze = createAgentMutation("deep_analyze", DeepAnalyzeSchema, {
   successMessage: (data) => `Berhasil menganalisis ${data.analyzed} percakapan`,
   invalidate: [["conversation-insights"], ["learning-metrics"], ["learning-report"]],
 });
 
-export const useDetectFAQ = createAgentMutation<{
-  patterns_found: number;
-  new_patterns_saved: number;
-}>("detect_faq", {
+export const useDetectFAQ = createAgentMutation("detect_faq", DetectFAQSchema, {
   successMessage: (data) => `Ditemukan ${data.patterns_found} FAQ`,
   invalidate: [["faq-patterns"], ["learning-metrics"]],
 });
 
-export const useDetectSlang = createAgentMutation<{
-  slang_found: number;
-}>("detect_slang", {
+export const useDetectSlang = createAgentMutation("detect_slang", DetectSlangSchema, {
   successMessage: (data) =>
     data.slang_found > 0 ? `Ditemukan ${data.slang_found} slang baru` : "Tidak ada slang baru",
 });
 
-export const usePromoteFAQ = createAgentMutation<{
-  promoted: number;
-  auto_approved: number;
-}>("promote_faq", {
+export const usePromoteFAQ = createAgentMutation("promote_faq", PromoteFAQSchema, {
   successMessage: (data) => `${data.promoted} FAQ dipromosikan`,
   invalidate: [["faq-patterns"], ["training-examples"], ["learning-metrics"]],
 });
 
-export const useAnalyzeSingle = createAgentMutation("analyze_single", {
-  successMessage: () => "Percakapan berhasil dianalisis",
-  invalidate: [["conversation-insights"]],
-});
+// ============================================================
+// ANALYZE SINGLE
+// ============================================================
+
+type AnalyzeSingleParams = {
+  conversationId: string;
+};
+
+const AnalyzeSingleSchema = z.any();
+
+export const useAnalyzeSingle = createAgentMutation<unknown, AnalyzeSingleParams>(
+  "analyze_single",
+  AnalyzeSingleSchema,
+  {
+    successMessage: () => "Percakapan berhasil dianalisis",
+    invalidate: [["conversation-insights"]],
+  },
+);
 
 // ============================================================
 // QUERY OPTIONS
@@ -179,7 +229,6 @@ export const useAnalyzeSingle = createAgentMutation("analyze_single", {
 const DEFAULT_QUERY_OPTIONS = {
   staleTime: 1000 * 60,
   gcTime: 1000 * 60 * 10,
-  retry: 2,
 };
 
 // ============================================================
@@ -195,15 +244,15 @@ export const useConversationInsights = (limit = 50) => {
         .from("whatsapp_conversation_insights")
         .select(
           `
-            id,
-            conversation_id,
-            summary,
-            sentiment,
-            topics,
-            resolution_status,
-            bot_accuracy_score,
-            analyzed_at
-          `,
+          id,
+          conversation_id,
+          summary,
+          sentiment,
+          topics,
+          resolution_status,
+          bot_accuracy_score,
+          analyzed_at
+        `,
         )
         .order("analyzed_at", {
           ascending: false,
@@ -216,6 +265,12 @@ export const useConversationInsights = (limit = 50) => {
 
       return data as ConversationInsight[];
     },
+
+    select: (data) =>
+      data.map((item) => ({
+        ...item,
+        summary: item.summary ?? "-",
+      })),
 
     ...DEFAULT_QUERY_OPTIONS,
   });
@@ -230,13 +285,13 @@ export const useFAQPatterns = () => {
         .from("whatsapp_faq_patterns")
         .select(
           `
-            id,
-            pattern_text,
-            category,
-            occurrence_count,
-            best_response,
-            is_promoted_to_training
-          `,
+          id,
+          pattern_text,
+          category,
+          occurrence_count,
+          best_response,
+          is_promoted_to_training
+        `,
         )
         .order("occurrence_count", {
           ascending: false,
@@ -277,9 +332,17 @@ export const useLearningMetrics = (days = 7) => {
   });
 };
 
+// ============================================================
+// LEARNING REPORT
+// ============================================================
+
 export const useLearningReport = () => {
   return useMutation({
-    mutationFn: () => invokeAgent("learning_report"),
+    mutationFn: async () => {
+      return invokeAgent("learning_report", z.any());
+    },
+
+    retry: false,
 
     onError: (error) => {
       toast.error(getErrorMessage(error));
