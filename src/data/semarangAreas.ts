@@ -13,8 +13,7 @@ export const semarangAreas = [
     area: "Sekaran",
     keyword: "guest house dekat Unnes semarang",
     title: "Guest House dekat Unnes Tembalang",
-    description:
-      "Penginapan nyaman dekat Universitas Negeri Semarang untuk keluarga dan perjalanan bisnis.",
+    description: "Penginapan nyaman dekat Universitas Negeri Semarang untuk keluarga dan perjalanan bisnis.",
   },
 
   {
@@ -22,7 +21,14 @@ export const semarangAreas = [
     area: "Kota Lama",
     keyword: "hotel dekat kota lama semarang",
     title: "Penginapan dekat Kota Lama Semarang",
-    description:
-      "Stay nyaman dekat kawasan wisata Kota Lama Semarang dengan akses mudah ke pusat kuliner.",
+    description: "Stay nyaman dekat kawasan wisata Kota Lama Semarang dengan akses mudah ke pusat kuliner.",
+  },
+
+  {
+    slug: "akpol",
+    area: "Akpol",
+    keyword: "guest house dekat Akpol semarang",
+    title: "Guest House dekat Akpol Tembalang",
+    description: "Penginapan nyaman dekat Akademi Kepolisian (AKPOL) Semarang untuk keluarga dan perjalanan bisnis.",
   },
 ];
