@@ -387,7 +387,7 @@ const AdminGuestChatbot = () => {
             </CardHeader>
             <CardContent>
               <Button asChild variant="outline" size="sm" className="gap-2">
-                <Link to="/admin/multi-agent">
+                <Link to="/multi-agent">
                   <ArrowUpRight className="w-4 h-4" />
                   Buka Live Chat di Multi-Agent
                 </Link>

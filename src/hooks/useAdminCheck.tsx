@@ -16,7 +16,7 @@ export const useAdminCheck = () => {
       if (!user) {
         setIsLoading(false);
         setIsAdmin(false);
-        navigate("/admin");
+        navigate("/");
         return;
       }
 
@@ -31,7 +31,7 @@ export const useAdminCheck = () => {
         if (error) {
           console.error("Error checking admin status:", error);
           setIsAdmin(false);
-          navigate("/admin");
+          navigate("/");
         } else if (data) {
           setIsAdmin(true);
         } else {

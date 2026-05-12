@@ -96,7 +96,7 @@ export function TopBar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/admin/page-editor")}
+          onClick={() => navigate("/page-editor")}
           className="h-8 w-8 p-0"
         >
           <ArrowLeft className="h-4 w-4" />

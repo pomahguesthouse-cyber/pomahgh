@@ -28,7 +28,7 @@ const AdminLogin = () => {
           .maybeSingle();
 
         if (data) {
-          navigate("/admin/dashboard");
+          navigate("/dashboard");
         }
       }
     };
@@ -73,7 +73,7 @@ const AdminLogin = () => {
     toast.success("Welcome back!", {
       description: "Redirecting to admin dashboard...",
     });
-    navigate("/admin/dashboard");
+    navigate("/dashboard");
   };
 
   return (
@@ -135,7 +135,7 @@ const AdminLogin = () => {
             onClick={async () => {
               setIsLoading(true);
               const result = await lovable.auth.signInWithOAuth("google", {
-                redirect_uri: `${window.location.origin}/admin/login`,
+                redirect_uri: `${window.location.origin}/`,
               });
               if (result.error) {
                 setIsLoading(false);
