@@ -95,6 +95,7 @@ const defaultMenuGroups: MenuGroup[] = [
     items: [
       { id: "seo-settings", title: "SEO Settings", url: "/admin/seo-settings", icon: Search },
       { id: "seo-agent", title: "SEO Agent", url: "/admin/seo-agent", icon: Sparkles },
+      { id: "social-media-agent", title: "Social Media Agent", url: "/admin/social-media-agent", icon: ImageIcon },
       { id: "settings", title: "Settings", url: "/admin/settings", icon: Settings }
     ]
   }

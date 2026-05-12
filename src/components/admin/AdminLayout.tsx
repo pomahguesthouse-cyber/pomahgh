@@ -32,6 +32,7 @@ const getPageTitle = (pathname: string): string => {
     "/admin/explore-hero-slides": "Explore Hero",
     "/admin/city-events": "City Events",
     "/admin/competitor-analysis": "Competitor Analysis",
+    "/admin/social-media-agent": "Social Media Agent",
     "/admin/chat": "Web Chatbot",
     "/admin/chatbot/guest": "Guest Chatbot",
     "/admin/chatbot/admin": "Admin Chatbot",
