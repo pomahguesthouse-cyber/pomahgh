@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format, eachDayOfInterval, differenceInDays, parseISO } from "date-fns";
 import { DndContext, DragOverlay, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Card } from "@/components/ui/card";
@@ -77,7 +77,7 @@ export const BookingCalendar = () => {
   );
 
   // Handle booking move via drag & drop - AUTO SAVE
-  const handleBookingMove = async (
+  const handleBookingMove = useCallback(async (
     booking: Booking,
     newRoomId: string,
     newRoomNumber: string,
@@ -130,7 +130,7 @@ export const BookingCalendar = () => {
       console.error("Error moving booking:", error);
       toast.error("Gagal memindahkan booking");
     }
-  };
+  }, [updateBooking, queryClient]);
 
   const { activeBooking, handleDragStart, handleDragEnd } = useDragDrop(
     rooms || [],
@@ -140,7 +140,7 @@ export const BookingCalendar = () => {
   );
 
   // Handle booking resize - AUTO SAVE
-  const handleResizeComplete = async (booking: Booking, newCheckIn: string, newCheckOut: string) => {
+  const handleResizeComplete = useCallback(async (booking: Booking, newCheckIn: string, newCheckOut: string) => {
     // Calculate new total nights
     const checkIn = parseISO(newCheckIn);
     const checkOut = parseISO(newCheckOut);
@@ -162,7 +162,7 @@ export const BookingCalendar = () => {
       console.error("Error resizing booking:", error);
       toast.error("Gagal mengubah durasi booking");
     }
-  };
+  }, [updateBooking, queryClient]);
 
   const { isResizing, startResize, getResizePreview } = useBookingResize(
     bookings,
@@ -172,21 +172,21 @@ export const BookingCalendar = () => {
   );
 
   // Event handlers - Manual click opens dialog
-  const handleBookingClick = (booking: Booking) => {
+  const handleBookingClick = useCallback((booking: Booking) => {
     setSelectedBooking(booking);
     const room = rooms?.find((r) => r.id === booking.room_id);
     setAvailableRoomNumbers(room?.room_numbers || []);
-  };
+  }, [rooms]);
 
-  const handleCellClick = (roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => {
+  const handleCellClick = useCallback((roomId: string, roomNumber: string, date: Date, isBlocked: boolean, hasBooking: boolean) => {
     if (isBlocked || hasBooking) return;
     setCreateBookingDialog({ open: true, roomId, roomNumber, date });
-  };
+  }, []);
 
-  const handleRightClick = (e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => {
+  const handleRightClick = useCallback((e: React.MouseEvent, roomId: string, roomNumber: string, date: Date) => {
     e.preventDefault();
     setContextMenu({ roomId, roomNumber, date, x: e.clientX, y: e.clientY });
-  };
+  }, []);
 
   const handleBlockDate = () => {
     if (!contextMenu) return;

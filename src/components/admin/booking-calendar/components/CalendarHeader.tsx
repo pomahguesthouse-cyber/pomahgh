@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,7 +17,7 @@ interface CalendarHeaderProps {
   onToday: () => void;
   onExport: () => void;
 }
-export const CalendarHeader = ({
+export const CalendarHeader = memo(({
   viewRange,
   onViewRangeChange,
   currentMonthYear,
@@ -74,4 +75,5 @@ export const CalendarHeader = ({
         </Button>
       </div>
     </div>;
-};
+});
+CalendarHeader.displayName = "CalendarHeader";
