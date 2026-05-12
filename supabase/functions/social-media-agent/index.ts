@@ -46,19 +46,16 @@ Deno.serve(async (req) => {
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY tidak dikonfigurasi" }), {
-        status: 500,
+    if (!topic || !platforms?.length) {
+      return new Response(JSON.stringify({ error: "topic dan platforms wajib diisi" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const body = await req.json();
-    const { topic, platforms, tone, language, brandName, brandVoice, contentType } = body;
-
-    if (!topic || !platforms?.length) {
-      return new Response(JSON.stringify({ error: "topic dan platforms wajib diisi" }), {
-        status: 400,
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY tidak dikonfigurasi" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
