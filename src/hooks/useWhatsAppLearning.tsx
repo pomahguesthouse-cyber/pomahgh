@@ -1,10 +1,20 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, UseMutationOptions } from "@tanstack/react-query";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // ============================================================
-// Types
+// TYPES
 // ============================================================
+
+export type AgentMode =
+  | "deep_analyze"
+  | "detect_faq"
+  | "detect_slang"
+  | "promote_faq"
+  | "analyze_single"
+  | "learning_report";
+
 export interface ConversationInsight {
   id: string;
   conversation_id: string;
@@ -16,11 +26,6 @@ export interface ConversationInsight {
   resolution_status: "resolved" | "unresolved" | "escalated" | "abandoned";
   bot_accuracy_score: number | null;
   guest_satisfaction_signal: string | null;
-  common_questions: Array<{ question: string; category?: string }>;
-  failed_responses: Array<{ user_msg: string; bot_response: string; issue: string }>;
-  successful_patterns: Array<{ trigger: string; response_style: string; why_worked: string }>;
-  suggested_improvements: Array<{ area: string; suggestion: string; priority: string }>;
-  new_slang_detected: Array<{ slang: string; meaning: string; context: string }>;
   message_count: number;
   analyzed_at: string;
   created_at: string;
@@ -32,11 +37,9 @@ export interface FAQPattern {
   canonical_question: string;
   category: string;
   occurrence_count: number;
-  last_seen_at: string;
   best_response: string | null;
   response_quality_score: number | null;
   is_promoted_to_training: boolean;
-  training_example_id: string | null;
   created_at: string;
 }
 
@@ -50,213 +53,266 @@ export interface LearningMetric {
   training_examples_created: number;
   slang_patterns_detected: number;
   improvements_suggested: number;
-  created_at: string;
-}
-
-export interface LearningReport {
-  summary: {
-    total_conversations_analyzed: number;
-    avg_bot_accuracy: number;
-    total_faq_patterns: number;
-    total_training_from_wa: number;
-    pending_approval: number;
-  };
-  sentiment_distribution: Record<string, number>;
-  resolution_distribution: Record<string, number>;
-  top_topics: Array<{ topic: string; count: number }>;
-  top_faq_patterns: Array<{
-    question: string;
-    category: string;
-    occurrence_count: number;
-    has_response: boolean;
-    promoted: boolean;
-  }>;
-  recent_failures: Array<{ user_msg: string; issue: string }>;
-  improvement_suggestions: Array<{ area: string; suggestion: string }>;
-  weekly_metrics: Array<{
-    date: string;
-    conversations: number;
-    insights: number;
-    faq_found: number;
-    training_created: number;
-  }>;
 }
 
 // ============================================================
-// Agent Invocation Hooks
+// ERROR HANDLER
 // ============================================================
 
-async function invokeAgent(mode: string, extraParams: Record<string, unknown> = {}) {
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String(error.message);
+  }
+
+  return "Unknown error";
+}
+
+// ============================================================
+// AGENT INVOKER
+// ============================================================
+
+async function invokeAgent<T>(mode: AgentMode, extraParams: Record<string, unknown> = {}): Promise<T> {
   const { data, error } = await supabase.functions.invoke("whatsapp-learning-agent", {
-    body: { mode, ...extraParams },
+    body: {
+      mode,
+      ...extraParams,
+    },
   });
-  if (error) throw error;
-  return data;
+
+  if (error) {
+    throw new Error(getErrorMessage(error));
+  }
+
+  return data as T;
 }
 
-/** Deep analyze unanalyzed WhatsApp conversations */
-export const useDeepAnalyze = () => {
-  const queryClient = useQueryClient();
+// ============================================================
+// GENERIC MUTATION FACTORY
+// ============================================================
 
-  return useMutation({
-    mutationFn: (limit?: number) => invokeAgent("deep_analyze", { limit: limit || 20 }),
-    onSuccess: (data) => {
-      toast.success(`Berhasil menganalisis ${data.analyzed} percakapan, ${data.insights_generated} insight dibuat`);
-      queryClient.invalidateQueries({ queryKey: ["conversation-insights"] });
-      queryClient.invalidateQueries({ queryKey: ["learning-metrics"] });
-      queryClient.invalidateQueries({ queryKey: ["learning-report"] });
-    },
-    onError: (err: Error) => {
-      toast.error(`Gagal analisis: ${err.message}`);
-    },
-  });
-};
+function createAgentMutation<TData>(
+  mode: AgentMode,
+  options?: {
+    successMessage?: (data: TData) => string;
+    invalidate?: string[][];
+    extraParams?: Record<string, unknown>;
+  },
+) {
+  return () => {
+    const queryClient = useQueryClient();
 
-/** Detect FAQ patterns from insights */
-export const useDetectFAQ = () => {
-  const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: async (params?: Record<string, unknown>) => {
+        return invokeAgent<TData>(mode, {
+          ...options?.extraParams,
+          ...params,
+        });
+      },
 
-  return useMutation({
-    mutationFn: () => invokeAgent("detect_faq"),
-    onSuccess: (data) => {
-      toast.success(`Ditemukan ${data.patterns_found} pola FAQ, ${data.new_patterns_saved} baru disimpan`);
-      queryClient.invalidateQueries({ queryKey: ["faq-patterns"] });
-      queryClient.invalidateQueries({ queryKey: ["learning-metrics"] });
-    },
-    onError: (err: Error) => {
-      toast.error(`Gagal deteksi FAQ: ${err.message}`);
-    },
-  });
-};
+      onSuccess: (data) => {
+        if (options?.successMessage) {
+          toast.success(options.successMessage(data));
+        }
 
-/** Detect new slang from conversations */
-export const useDetectSlang = () => {
-  return useMutation({
-    mutationFn: () => invokeAgent("detect_slang"),
-    onSuccess: (data) => {
-      if (data.slang_found > 0) {
-        toast.success(`Ditemukan ${data.slang_found} slang/singkatan baru`);
-      } else {
-        toast.info("Tidak ada slang baru terdeteksi");
-      }
-    },
-    onError: (err: Error) => {
-      toast.error(`Gagal deteksi slang: ${err.message}`);
-    },
-  });
-};
+        options?.invalidate?.forEach((key) => {
+          queryClient.invalidateQueries({
+            queryKey: key,
+          });
+        });
+      },
 
-/** Promote top FAQ patterns to training examples */
-export const usePromoteFAQ = () => {
-  const queryClient = useQueryClient();
+      onError: (error) => {
+        toast.error(getErrorMessage(error));
+      },
+    });
+  };
+}
 
-  return useMutation({
-    mutationFn: () => invokeAgent("promote_faq"),
-    onSuccess: (data) => {
-      const msg = data.auto_approved > 0
-        ? `${data.promoted} FAQ dipromosikan (${data.auto_approved} otomatis aktif)`
-        : `${data.promoted} FAQ dipromosikan ke training`;
-      toast.success(msg);
-      queryClient.invalidateQueries({ queryKey: ["faq-patterns"] });
-      queryClient.invalidateQueries({ queryKey: ["training-examples"] });
-      queryClient.invalidateQueries({ queryKey: ["learning-metrics"] });
-    },
-    onError: (err: Error) => {
-      toast.error(`Gagal promosi FAQ: ${err.message}`);
-    },
-  });
-};
+// ============================================================
+// MUTATIONS
+// ============================================================
 
-/** Analyze a single conversation */
-export const useAnalyzeSingle = () => {
-  const queryClient = useQueryClient();
+export const useDeepAnalyze = createAgentMutation<{
+  analyzed: number;
+  insights_generated: number;
+}>("deep_analyze", {
+  successMessage: (data) => `Berhasil menganalisis ${data.analyzed} percakapan`,
+  invalidate: [["conversation-insights"], ["learning-metrics"], ["learning-report"]],
+});
 
-  return useMutation({
-    mutationFn: (conversationId: string) =>
-      invokeAgent("analyze_single", { conversation_id: conversationId }),
-    onSuccess: (data) => {
-      toast.success("Percakapan berhasil dianalisis");
-      queryClient.invalidateQueries({ queryKey: ["conversation-insights"] });
-    },
-    onError: (err: Error) => {
-      toast.error(`Gagal analisis: ${err.message}`);
-    },
-  });
+export const useDetectFAQ = createAgentMutation<{
+  patterns_found: number;
+  new_patterns_saved: number;
+}>("detect_faq", {
+  successMessage: (data) => `Ditemukan ${data.patterns_found} FAQ`,
+  invalidate: [["faq-patterns"], ["learning-metrics"]],
+});
+
+export const useDetectSlang = createAgentMutation<{
+  slang_found: number;
+}>("detect_slang", {
+  successMessage: (data) =>
+    data.slang_found > 0 ? `Ditemukan ${data.slang_found} slang baru` : "Tidak ada slang baru",
+});
+
+export const usePromoteFAQ = createAgentMutation<{
+  promoted: number;
+  auto_approved: number;
+}>("promote_faq", {
+  successMessage: (data) => `${data.promoted} FAQ dipromosikan`,
+  invalidate: [["faq-patterns"], ["training-examples"], ["learning-metrics"]],
+});
+
+export const useAnalyzeSingle = createAgentMutation("analyze_single", {
+  successMessage: () => "Percakapan berhasil dianalisis",
+  invalidate: [["conversation-insights"]],
+});
+
+// ============================================================
+// QUERY OPTIONS
+// ============================================================
+
+const DEFAULT_QUERY_OPTIONS = {
+  staleTime: 1000 * 60,
+  gcTime: 1000 * 60 * 10,
+  retry: 2,
 };
 
 // ============================================================
-// Data Query Hooks
+// QUERIES
 // ============================================================
 
-/** Get conversation insights */
 export const useConversationInsights = (limit = 50) => {
   return useQuery({
     queryKey: ["conversation-insights", limit],
+
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_conversation_insights")
-        .select("*")
-        .order("analyzed_at", { ascending: false })
+        .select(
+          `
+            id,
+            conversation_id,
+            summary,
+            sentiment,
+            topics,
+            resolution_status,
+            bot_accuracy_score,
+            analyzed_at
+          `,
+        )
+        .order("analyzed_at", {
+          ascending: false,
+        })
         .limit(limit);
-      if (error) throw error;
-      return data as unknown as ConversationInsight[];
+
+      if (error) {
+        throw error;
+      }
+
+      return data as ConversationInsight[];
     },
+
+    ...DEFAULT_QUERY_OPTIONS,
   });
 };
 
-/** Get FAQ patterns */
 export const useFAQPatterns = () => {
   return useQuery({
     queryKey: ["faq-patterns"],
+
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_faq_patterns")
-        .select("*")
-        .order("occurrence_count", { ascending: false });
-      if (error) throw error;
-      return data as unknown as FAQPattern[];
+        .select(
+          `
+            id,
+            pattern_text,
+            category,
+            occurrence_count,
+            best_response,
+            is_promoted_to_training
+          `,
+        )
+        .order("occurrence_count", {
+          ascending: false,
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      return data as FAQPattern[];
     },
+
+    ...DEFAULT_QUERY_OPTIONS,
   });
 };
 
-/** Get learning metrics */
 export const useLearningMetrics = (days = 7) => {
   return useQuery({
     queryKey: ["learning-metrics", days],
+
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_learning_metrics")
         .select("*")
-        .order("run_date", { ascending: false })
+        .order("run_date", {
+          ascending: false,
+        })
         .limit(days);
-      if (error) throw error;
-      return data as unknown as LearningMetric[];
+
+      if (error) {
+        throw error;
+      }
+
+      return data as LearningMetric[];
+    },
+
+    ...DEFAULT_QUERY_OPTIONS,
+  });
+};
+
+export const useLearningReport = () => {
+  return useMutation({
+    mutationFn: () => invokeAgent("learning_report"),
+
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
     },
   });
 };
 
-/** Get full learning report */
-export const useLearningReport = () => {
-  return useMutation({
-    mutationFn: () => invokeAgent("learning_report"),
-  });
-};
+// ============================================================
+// DELETE FAQ
+// ============================================================
 
-/** Delete an FAQ pattern */
 export const useDeleteFAQPattern = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("whatsapp_faq_patterns")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
+      const { error } = await supabase.from("whatsapp_faq_patterns").delete().eq("id", id);
+
+      if (error) {
+        throw error;
+      }
     },
+
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["faq-patterns"] });
+      queryClient.invalidateQueries({
+        queryKey: ["faq-patterns"],
+      });
+
       toast.success("FAQ pattern dihapus");
+    },
+
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
     },
   });
 };
