@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
+import { useCanonicalUrl } from "@/hooks/useCanonicalUrl";
 import Header from "@/components/Header";
 import OptimizedHero from "@/components/OptimizedHero";
 import DateSearchBar from "@/components/DateSearchBar";
@@ -15,7 +16,7 @@ import { LazySection } from "@/components/LazySection";
 
 const Index = () => {
   const location = useLocation();
-  const canonical = `${window.location.origin}`;
+  const canonical = useCanonicalUrl("/");
   const title = "Pomah Guesthouse - Your Perfect Stay in Semarang";
   const description = "Pomah Guesthouse Dewi Sartika - Alternatif Penginapan Keluarga di Kota Semarang";
 

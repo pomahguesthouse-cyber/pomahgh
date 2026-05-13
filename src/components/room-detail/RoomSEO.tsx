@@ -1,16 +1,16 @@
 import { Helmet } from "react-helmet-async";
 import type { RoomSEOProps } from "./types";
 import { useSeoSettings } from "@/hooks/useSeoSettings";
+import { useCanonicalUrl } from "@/hooks/useCanonicalUrl";
 
 export const RoomSEO = ({ room, images, displayPrice, roomSlug }: RoomSEOProps) => {
   const { settings } = useSeoSettings();
+  const canonicalUrl = useCanonicalUrl(`/rooms/${roomSlug}`);
 
   const safeDescription =
     room.description?.substring(0, 155) || `Discover ${room.name} at ${settings?.og_site_name || "Pomah Guesthouse"}.`;
 
-  const mainImage = images?.length > 0 ? images[0] : `${settings?.canonical_url}/default-room.jpg`;
-
-  const canonicalUrl = `${settings?.canonical_url || "https://pomahguesthouse.com"}/rooms/${roomSlug}`;
+  const mainImage = images?.length > 0 ? images[0] : `${canonicalUrl}/default-room.jpg`;
 
   // priceValidUntil: end of current year (Google requires for Offer rich results)
   const priceValidUntil = new Date(new Date().getFullYear(), 11, 31).toISOString().split("T")[0];

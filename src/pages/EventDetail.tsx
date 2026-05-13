@@ -13,9 +13,11 @@ import { Calendar, Clock, MapPin, User, Phone, Globe, ArrowLeft, Share2, Externa
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { CityEvent } from "@/types/event.types";
+import { useCanonicalUrl } from "@/hooks/useCanonicalUrl";
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const eventCanonical = useCanonicalUrl(slug ? `/events/${slug}` : "/events");
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ["city-event", slug],
@@ -112,7 +114,7 @@ const EventDetail = () => {
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     image: event.image_url ? [event.image_url] : undefined,
-    url: typeof window !== "undefined" ? window.location.href : undefined,
+    url: eventCanonical,
     location: {
       "@type": "Place",
       name: event.venue || "Semarang",
@@ -149,7 +151,7 @@ const EventDetail = () => {
             price: event.price_range,
             priceCurrency: "IDR",
             availability: "https://schema.org/InStock",
-            url: typeof window !== "undefined" ? window.location.href : undefined,
+            url: eventCanonical,
           },
         }
       : {}),
@@ -160,8 +162,10 @@ const EventDetail = () => {
       <Helmet>
         <title>{event.name} | Event Semarang - Pomah Guesthouse</title>
         <meta name="description" content={event.description || `${event.name} - Event di Semarang`} />
+        <link rel="canonical" href={eventCanonical} />
         <meta property="og:title" content={event.name} />
         <meta property="og:description" content={event.description || ""} />
+        <meta property="og:url" content={eventCanonical} />
         {event.image_url && <meta property="og:image" content={event.image_url} />}
         <meta property="og:type" content="event" />
         <script type="application/ld+json">{JSON.stringify(eventSchema)}</script>

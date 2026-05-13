@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAttractionBySlug } from "@/hooks/useAttractionBySlug";
 import { useSeoSettings } from "@/hooks/useSeoSettings";
+import { useCanonicalUrl } from "@/hooks/useCanonicalUrl";
 import { AttractionCard } from "@/components/explore/AttractionCard";
 import { useCityAttractions } from "@/hooks/useCityAttractions";
 import { toast } from "@/hooks/use-toast";
@@ -36,14 +37,18 @@ const AttractionDetail = () => {
   const { data: attraction, isLoading } = useAttractionBySlug(slug);
   const { attractions: allAttractions = [] } = useCityAttractions();
   const { settings: seoSettings } = useSeoSettings();
-  
+  const attractionCanonical = useCanonicalUrl(
+    slug ? `/explore-semarang/${slug}` : "/explore-semarang",
+  );
+
   const relatedAttractions = attraction
     ? allAttractions
         .filter((a) => a.category === attraction.category && a.id !== attraction.id)
         .slice(0, 3)
     : [];
-  
-  const baseUrl = seoSettings?.canonical_url || "https://pomahguesthouse.com";
+
+  // Base URL used only for cross-links in structured data (author url, logo, etc.)
+  const baseUrl = (seoSettings?.canonical_url || "https://www.pomahguesthouse.com").replace(/\/+$/, "");
   
   const defaultImages: Record<string, string> = {
     wisata: "https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=1200&q=80",
@@ -112,7 +117,7 @@ const AttractionDetail = () => {
     "@type": "TouristAttraction",
     "name": attraction.name,
     "description": attraction.description,
-    "url": `${baseUrl}/explore-semarang/${attraction.slug}`,
+    "url": attractionCanonical,
     "image": imageUrl,
     ...(attraction.address && { "address": attraction.address }),
     ...(attraction.latitude && attraction.longitude && {
@@ -132,7 +137,7 @@ const AttractionDetail = () => {
     image: imageUrl,
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `${baseUrl}/explore-semarang/${attraction.slug}`,
+      "@id": attractionCanonical,
     },
     author: {
       "@type": "Organization",
@@ -155,7 +160,7 @@ const AttractionDetail = () => {
       <Helmet>
         <title>{attraction.name} - Explore Semarang | {seoSettings?.site_title || "Pomah Guesthouse"}</title>
         <meta name="description" content={attraction.description || `Informasi lengkap tentang ${attraction.name} di Semarang`} />
-        <link rel="canonical" href={`${baseUrl}/explore-semarang/${attraction.slug}`} />
+        <link rel="canonical" href={attractionCanonical} />
         <meta property="og:title" content={`${attraction.name} - Wisata Semarang`} />
         <meta property="og:description" content={attraction.description || ""} />
         <meta property="og:image" content={imageUrl} />
