@@ -231,14 +231,12 @@ export function isAdminRoute(
 
 export function isPublicRoute(
   pathname: string,
+export function isPublicRoute(
+  pathname: string,
 ) {
   return PUBLIC_ROUTE_PREFIXES.some(
-    (prefix) => {
-      return (
-        pathname === prefix ||
-        pathname.startsWith(prefix)
-      );
-    },
+    (prefix) =>
+      pathname.startsWith(prefix),
   );
 }
 

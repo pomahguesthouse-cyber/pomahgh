@@ -62,22 +62,24 @@ function applyCrossDomainRedirects() {
   /* Public domain */
   /* ------------------------------------- */
 
-  if (isPublicHost(hostname)) {
-    if (
-      isAdminRoute(pathname) ||
-      isAdminPath(pathname)
-    ) {
-      window.location.replace(
-        buildAdminUrl(
-          pathname,
-          search,
-          hash,
-        ),
-      );
+if (isAdminHost(hostname)) {
 
-      return true;
-    }
+  // Public-only content
+  if (
+    pathname !== "/" &&
+    isPublicRoute(pathname)
+  ) {
+    window.location.replace(
+      buildPublicUrl(
+        pathname,
+        search,
+        hash,
+      ),
+    );
+
+    return true;
   }
+}
 
   /* ------------------------------------- */
   /* Admin domain */
