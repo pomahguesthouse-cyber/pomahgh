@@ -125,7 +125,7 @@ const AdminSeoSettings = lazyRetry(() => import("./pages/admin/AdminSeoSettings"
 const AdminSeoAgent = lazyRetry(() => import("./pages/admin/AdminSeoAgent"));
 const AdminMediaLibrary = lazyRetry(() => import("./pages/admin/AdminMediaLibrary"));
 const AdminCompetitorAnalysis = lazyRetry(() => import("./pages/admin/AdminCompetitorAnalysis"));
-const AdminMultiAgent = lazyRetry(() => import("./pages/admin/AdminMultiAgent"));
+const AdminMultiAgent = lazyRetry(() => import("./pages/admin/AdminMultiAgentDashboard"));
 
 const AdminLayout = lazyRetry(() =>
   import("./components/admin/AdminLayout").then((m) => ({
