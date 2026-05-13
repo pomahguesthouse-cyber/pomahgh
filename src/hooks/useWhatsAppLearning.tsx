@@ -216,7 +216,7 @@ function createAgentMutation<TData, TParams = void>(
 // MUTATIONS
 // ============================================================
 
-export const useDeepAnalyze = createAgentMutation<typeof DeepAnalyzeSchema._type, { limit: number }>("deep_analyze", DeepAnalyzeSchema, {
+export const useDeepAnalyze = createAgentMutation<z.infer<typeof DeepAnalyzeSchema>, { limit: number }>("deep_analyze", DeepAnalyzeSchema, {
   successMessage: (data) => `Berhasil menganalisis ${data.analyzed} percakapan`,
   invalidate: [["conversation-insights"], ["learning-metrics"], ["learning-report"]],
 });
