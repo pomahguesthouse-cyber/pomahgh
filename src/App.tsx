@@ -1,20 +1,13 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
 import { HelmetProvider } from "react-helmet-async";
-
 import { lazy, Suspense, Component } from "react";
-
 import type { ReactNode } from "react";
-
 import { SearchDatesProvider } from "@/contexts/SearchDatesContext";
 import { PublicOverridesProvider } from "@/contexts/PublicOverridesContext";
-
 import { GlobalSEO } from "@/components/GlobalSEO";
 import { SubdomainRouter } from "@/components/SubdomainRouter";
 
@@ -121,28 +114,18 @@ const ManagerCalendar = lazyRetry(() => import("./pages/public/ManagerCalendar")
 /* ------------------------------------------------ */
 
 const AdminLogin = lazyRetry(() => import("./pages/admin/AdminLogin"));
-
 const AdminDashboard = lazyRetry(() => import("./pages/admin/AdminDashboard"));
-
 const AdminBookingCalendarPage = lazyRetry(() => import("./pages/admin/AdminBookingCalendarPage"));
-
 const AdminRooms = lazyRetry(() => import("./pages/admin/AdminRooms"));
-
 const AdminBookings = lazyRetry(() => import("./pages/admin/AdminBookings"));
-
 const AdminHeroSlides = lazyRetry(() => import("./pages/admin/AdminHeroSlides"));
-
 const AdminFacilities = lazyRetry(() => import("./pages/admin/AdminFacilities"));
-
 const AdminSettings = lazyRetry(() => import("./pages/admin/AdminSettings"));
-
 const AdminSeoSettings = lazyRetry(() => import("./pages/admin/AdminSeoSettings"));
-
 const AdminSeoAgent = lazyRetry(() => import("./pages/admin/AdminSeoAgent"));
-
 const AdminMediaLibrary = lazyRetry(() => import("./pages/admin/AdminMediaLibrary"));
-
 const AdminCompetitorAnalysis = lazyRetry(() => import("./pages/admin/AdminCompetitorAnalysis"));
+const AdminMultiAgent = lazyRetry(() => import("./pages/admin/AdminMultiAgent"));
 
 const AdminLayout = lazyRetry(() =>
   import("./components/admin/AdminLayout").then((m) => ({
@@ -349,6 +332,14 @@ const App = () => {
                           element={
                             <AdminLayout>
                               <AdminCompetitorAnalysis />
+                            </AdminLayout>
+                          }
+                        />
+                        <Route
+                          path="/admin/multi-agent"
+                          element={
+                            <AdminLayout>
+                              <AdminMultiAgent />
                             </AdminLayout>
                           }
                         />
