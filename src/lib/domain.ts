@@ -44,10 +44,17 @@ export function isPublicHost(hostname: string = getHostname()): boolean {
 /**
  * Detect which "app" should be rendered for the current location.
  *
+ * If VITE_ADMIN_ONLY=true (set in the admin-only Lovable project), always
+ * renders the admin app regardless of hostname — this powers the separate
+ * admin.pomahguesthouse.com Lovable deployment.
+ *
  * Production: based on hostname.
  * Dev/preview: based on whether path starts with "/admin".
  */
 export function getSubdomain(): Subdomain {
+  // Admin-only build (separate Lovable project for admin.pomahguesthouse.com)
+  if (import.meta.env.VITE_ADMIN_ONLY === "true") return "admin";
+
   const w = safeWindow();
   if (!w) return "public";
 
@@ -63,9 +70,10 @@ export function getSubdomain(): Subdomain {
 /**
  * In dev/preview, admin routes are mounted under `/admin` basename so the
  * router can use clean paths internally while developers visit `/admin/...`.
- * In production on the admin subdomain, basename is "/" (clean URLs).
+ * In production on the admin subdomain (or admin-only build), basename is "/".
  */
 export function getAdminBasename(): string {
+  if (import.meta.env.VITE_ADMIN_ONLY === "true") return "/";
   return isAdminHost() ? "/" : "/admin";
 }
 
