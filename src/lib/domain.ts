@@ -21,8 +21,43 @@ export const WWW_HOST = "www.pomahguesthouse.com";
 
 const PROD_HOSTS = new Set<string>([ADMIN_HOST, MAIN_HOST, WWW_HOST]);
 
+const ADMIN_ONLY_EXACT_PATHS = new Set<string>([
+  "/admin",
+  "/app",
+  "/dashboard",
+  "/booking-calendar",
+  "/rooms",
+  "/hero-slides",
+  "/facility-hero-slides",
+  "/facilities",
+  "/settings",
+  "/invoice-management",
+  "/nearby-locations",
+  "/multi-agent",
+  "/bank-accounts",
+  "/room-features",
+  "/room-addons",
+  "/promotions",
+  "/seo-settings",
+  "/seo-agent",
+  "/social-media-agent",
+  "/page-editor",
+  "/editor",
+  "/media-library",
+  "/city-attractions",
+  "/explore-hero-slides",
+  "/city-events",
+  "/competitor-analysis",
+]);
+
+const ADMIN_ONLY_PREFIXES = ["/admin/", "/app/", "/chatbot/"];
+
 function safeWindow(): Window | null {
   return typeof window === "undefined" ? null : window;
+}
+
+function normalizeHostname(hostname: string): string {
+  return hostname.toLowerCase().replace(/\.$/, "");
 }
 
 export function getHostname(): string {
@@ -30,15 +65,28 @@ export function getHostname(): string {
 }
 
 export function isProdHost(hostname: string = getHostname()): boolean {
-  return PROD_HOSTS.has(hostname);
+  return PROD_HOSTS.has(normalizeHostname(hostname));
 }
 
 export function isAdminHost(hostname: string = getHostname()): boolean {
-  return hostname === ADMIN_HOST;
+  return normalizeHostname(hostname) === ADMIN_HOST;
 }
 
 export function isPublicHost(hostname: string = getHostname()): boolean {
-  return hostname === MAIN_HOST || hostname === WWW_HOST;
+  const normalized = normalizeHostname(hostname);
+  return normalized === MAIN_HOST || normalized === WWW_HOST;
+}
+
+export function isAdminPath(pathname: string): boolean {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
+}
+
+export function stripAdminBasename(pathname: string): string {
+  return pathname.replace(/^\/admin(?=\/|$)/, "") || "/";
+}
+
+export function isAdminOnlyPath(pathname: string): boolean {
+  return ADMIN_ONLY_EXACT_PATHS.has(pathname) || ADMIN_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 /**
@@ -75,7 +123,7 @@ export function getAdminBasename(): string {
  *   buildAdminUrl("/admin/dashboard") → "https://admin.pomahguesthouse.com/dashboard"
  */
 export function buildAdminUrl(path: string, search = "", hash = ""): string {
-  const cleanPath = path.replace(/^\/admin(?=\/|$)/, "") || "/";
+  const cleanPath = stripAdminBasename(path);
   return `https://${ADMIN_HOST}${cleanPath}${search}${hash}`;
 }
 
