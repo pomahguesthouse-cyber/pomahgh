@@ -14,35 +14,32 @@ interface AdminLayoutProps {
 
 const getPageTitle = (pathname: string): string => {
   const titles: Record<string, string> = {
-    "/dashboard": "Dashboard",
-    "/booking-calendar": "Kalender Booking",
-    "/bookings": "Booking Management",
-    "/rooms": "Room Management",
-    "/settings": "Hotel Settings",
-    "/bank-accounts": "Bank Accounts",
-    "/hero-slides": "Hero Slides",
-    "/facilities": "Facilities",
-    "/nearby-locations": "Nearby Locations",
-    "/chatbot": "Chatbot Settings",
-    "/room-features": "Room Features",
-    "/seo-settings": "SEO Settings",
-    "/seo-agent": "SEO Agent",
-    "/page-editor": "Page Editor",
-    "/city-attractions": "City Attractions",
-    "/facility-hero-slides": "Facility Hero",
-    "/explore-hero-slides": "Explore Hero",
-    "/city-events": "City Events",
-    "/competitor-analysis": "Competitor Analysis",
-    "/social-media-agent": "Social Media Agent",
-    "/chat": "Web Chatbot",
-    "/chatbot/guest": "Guest Chatbot",
-    "/chatbot/admin": "Admin Chatbot",
-    "/multi-agent": "Multi-Agent",
-    "/invoice-management": "Payment Management",
-    "/room-addons": "Room Add-ons",
-    "/promotions": "Promotions",
-    "/media-library": "Media Library",
-    "/developer-tools": "Developer Tools"
+    "/admin/dashboard": "Dashboard",
+    "/admin/booking-calendar": "Kalender Booking",
+    "/admin/bookings": "Booking Management",
+    "/admin/rooms": "Room Management",
+    "/admin/settings": "Hotel Settings",
+    "/admin/bank-accounts": "Bank Accounts",
+    "/admin/hero-slides": "Hero Slides",
+    "/admin/facilities": "Facilities",
+    "/admin/nearby-locations": "Nearby Locations",
+    "/admin/chatbot": "Chatbot Settings",
+    "/admin/room-features": "Room Features",
+    "/admin/seo-settings": "SEO Settings",
+    "/admin/page-editor": "Page Editor",
+    "/admin/city-attractions": "City Attractions",
+    "/admin/facility-hero-slides": "Facility Hero",
+    "/admin/explore-hero-slides": "Explore Hero",
+    "/admin/city-events": "City Events",
+    "/admin/competitor-analysis": "Competitor Analysis",
+    "/admin/chat": "Web Chatbot",
+    "/admin/chatbot/guest": "Guest Chatbot",
+    "/admin/chatbot/admin": "Admin Chatbot",
+    
+    "/admin/room-addons": "Room Add-ons",
+    "/admin/promotions": "Promotions",
+    "/admin/media-library": "Media Library",
+    "/admin/developer-tools": "Developer Tools"
   };
   return titles[pathname] || "Admin Panel";
 };
@@ -74,7 +71,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
 
             <main
               className={`flex-1 p-4 md:p-6 w-full ${
-                location.pathname === "/multi-agent" ? "max-w-none" : "max-w-6xl mx-auto"
+                location.pathname === "/admin/multi-agent" ? "max-w-none" : "max-w-6xl mx-auto"
               }`}
             >
               {children}

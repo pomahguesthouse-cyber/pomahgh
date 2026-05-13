@@ -82,7 +82,7 @@ export default function AdminDashboard() {
           </p>
         </div>
         <Button asChild>
-          <Link to="/booking-calendar" className="gap-2">
+          <Link to="/admin/booking-calendar" className="gap-2">
             <Calendar className="h-4 w-4" />
             Kalender Booking
           </Link>
@@ -150,8 +150,8 @@ export default function AdminDashboard() {
             <CardTitle className="text-lg">Aksi Cepat</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Link
-              to="/booking-calendar"
+            <Link 
+              to="/admin/booking-calendar"
               className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -160,8 +160,8 @@ export default function AdminDashboard() {
               </div>
               <ArrowRight className="h-4 w-4 text-muted-foreground" />
             </Link>
-            <Link
-              to="/rooms"
+            <Link 
+              to="/admin/rooms"
               className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -170,8 +170,8 @@ export default function AdminDashboard() {
               </div>
               <ArrowRight className="h-4 w-4 text-muted-foreground" />
             </Link>
-            <Link
-              to="/bookings"
+            <Link 
+              to="/admin/bookings"
               className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Booking Terbaru</CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/bookings">Lihat Semua</Link>
+              <Link to="/admin/bookings">Lihat Semua</Link>
             </Button>
           </CardHeader>
           <CardContent>

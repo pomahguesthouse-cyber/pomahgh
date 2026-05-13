@@ -165,6 +165,3 @@ verify_jwt = false
 [functions.ocr-payment-proof-test]
 verify_jwt = false
 
-[functions.social-media-agent]
-verify_jwt = true
-

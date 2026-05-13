@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Home, Calendar, CalendarDays, Building2, ImageIcon, Boxes, Settings, MapPin, CreditCard, Tags, LayoutDashboard, Search, Compass, ChevronRight, ChevronDown, Sparkles, Percent, TrendingUp, Bot, Users, Shield, FileType, FolderOpen, GripVertical, Save, RotateCcw, Receipt } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { buildPublicUrl } from "@/lib/domain";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { cn } from "@/lib/utils";
@@ -34,7 +33,7 @@ const defaultMenuGroups: MenuGroup[] = [
     items: [{
       id: "page-editor",
       title: "Page Editor",
-      url: "/page-editor",
+      url: "/admin/page-editor",
       icon: FileType
     }]
   },
@@ -42,62 +41,61 @@ const defaultMenuGroups: MenuGroup[] = [
     id: "overview",
     label: "Overview",
     items: [
-      { id: "dashboard", title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { id: "booking-calendar", title: "Kalender Booking", url: "/booking-calendar", icon: CalendarDays },
-      { id: "bookings", title: "Bookings", url: "/bookings", icon: Calendar },
-      { id: "invoice-management", title: "Payment Management", url: "/invoice-management", icon: Receipt }
+      { id: "dashboard", title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
+      { id: "booking-calendar", title: "Kalender Booking", url: "/admin/booking-calendar", icon: CalendarDays },
+      { id: "bookings", title: "Bookings", url: "/admin/bookings", icon: Calendar },
+      { id: "invoice-management", title: "Payment Management", url: "/admin/invoice-management", icon: Receipt }
     ]
   },
   {
     id: "property",
     label: "Property",
     items: [
-      { id: "rooms", title: "Rooms", url: "/rooms", icon: Building2 },
-      { id: "promotions", title: "Promotions", url: "/promotions", icon: Percent },
-      { id: "room-addons", title: "Room Add-ons", url: "/room-addons", icon: Sparkles },
-      { id: "facilities", title: "Facilities", url: "/facilities", icon: Boxes },
-      { id: "room-features", title: "Room Features", url: "/room-features", icon: Tags }
+      { id: "rooms", title: "Rooms", url: "/admin/rooms", icon: Building2 },
+      { id: "promotions", title: "Promotions", url: "/admin/promotions", icon: Percent },
+      { id: "room-addons", title: "Room Add-ons", url: "/admin/room-addons", icon: Sparkles },
+      { id: "facilities", title: "Facilities", url: "/admin/facilities", icon: Boxes },
+      { id: "room-features", title: "Room Features", url: "/admin/room-features", icon: Tags }
     ]
   },
   {
     id: "content",
     label: "Content",
     items: [
-      { id: "media-library", title: "Media Library", url: "/media-library", icon: FolderOpen },
-      { id: "hero-slides", title: "Hero Slides", url: "/hero-slides", icon: ImageIcon },
-      { id: "facility-hero", title: "Facility Hero", url: "/facility-hero-slides", icon: ImageIcon },
-      { id: "explore-hero", title: "Explore Hero", url: "/explore-hero-slides", icon: ImageIcon },
-      { id: "nearby-locations", title: "Nearby Locations", url: "/nearby-locations", icon: MapPin },
-      { id: "city-attractions", title: "City Attractions", url: "/city-attractions", icon: Compass },
-      { id: "city-events", title: "City Events", url: "/city-events", icon: Calendar }
+      { id: "media-library", title: "Media Library", url: "/admin/media-library", icon: FolderOpen },
+      { id: "hero-slides", title: "Hero Slides", url: "/admin/hero-slides", icon: ImageIcon },
+      { id: "facility-hero", title: "Facility Hero", url: "/admin/facility-hero-slides", icon: ImageIcon },
+      { id: "explore-hero", title: "Explore Hero", url: "/admin/explore-hero-slides", icon: ImageIcon },
+      { id: "nearby-locations", title: "Nearby Locations", url: "/admin/nearby-locations", icon: MapPin },
+      { id: "city-attractions", title: "City Attractions", url: "/admin/city-attractions", icon: Compass },
+      { id: "city-events", title: "City Events", url: "/admin/city-events", icon: Calendar }
     ]
   },
   {
     id: "operations",
     label: "Operations",
     items: [
-      { id: "competitor-analysis", title: "Analisis Harga", url: "/competitor-analysis", icon: TrendingUp },
-      { id: "bank-accounts", title: "Bank Accounts", url: "/bank-accounts", icon: CreditCard }
+      { id: "competitor-analysis", title: "Analisis Harga", url: "/admin/competitor-analysis", icon: TrendingUp },
+      { id: "bank-accounts", title: "Bank Accounts", url: "/admin/bank-accounts", icon: CreditCard }
     ]
   },
   {
     id: "virtual-assistant",
     label: "Virtual Assistant",
     items: [
-      { id: "multi-agent", title: "Multi-Agent", url: "/multi-agent", icon: LayoutDashboard },
-      { id: "web-chatbot", title: "Web Chatbot", url: "/chat", icon: Bot },
-      { id: "guest-chatbot", title: "Guest Chatbot", url: "/chatbot/guest", icon: Users },
-      { id: "admin-chatbot", title: "Admin Chatbot", url: "/chatbot/admin", icon: Shield }
+      { id: "multi-agent", title: "Multi-Agent", url: "/admin/multi-agent", icon: LayoutDashboard },
+      { id: "web-chatbot", title: "Web Chatbot", url: "/admin/chat", icon: Bot },
+      { id: "guest-chatbot", title: "Guest Chatbot", url: "/admin/chatbot/guest", icon: Users },
+      { id: "admin-chatbot", title: "Admin Chatbot", url: "/admin/chatbot/admin", icon: Shield }
     ]
   },
   {
     id: "system",
     label: "System",
     items: [
-      { id: "seo-settings", title: "SEO Settings", url: "/seo-settings", icon: Search },
-      { id: "seo-agent", title: "SEO Agent", url: "/seo-agent", icon: Sparkles },
-      { id: "social-media-agent", title: "Social Media Agent", url: "/social-media-agent", icon: ImageIcon },
-      { id: "settings", title: "Settings", url: "/settings", icon: Settings }
+      { id: "seo-settings", title: "SEO Settings", url: "/admin/seo-settings", icon: Search },
+      { id: "seo-agent", title: "SEO Agent", url: "/admin/seo-agent", icon: Sparkles },
+      { id: "settings", title: "Settings", url: "/admin/settings", icon: Settings }
     ]
   }
 ];
@@ -519,13 +517,14 @@ export function AdminSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a
-                href={buildPublicUrl("/")}
-                className="flex items-center gap-3 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg"
+              <Link 
+                to="/" 
+                className="flex items-center gap-3 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg" 
+                onClick={handleNavClick}
               >
                 <Home className="h-4 w-4 shrink-0" />
                 <span>Back to Site</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

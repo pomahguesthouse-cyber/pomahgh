@@ -7,12 +7,6 @@ import { useMultiAgentOrchestrator } from "@/hooks/useMultiAgentOrchestrator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const toOrchestratorStatus = (status: AgentDefinition["status"]): "idle" | "busy" | "error" => {
-  if (status === "error") return "error";
-  if (status === "active" || status === "busy") return "busy";
-  return "idle";
-};
-
 const AdminMultiAgentDashboard = () => {
   // Existing hooks
   const { agents, allAgents, sessions, stats, activityLog, routingLogs, saveAgentConfig } = useMultiAgentDashboard();
@@ -32,8 +26,8 @@ const AdminMultiAgentDashboard = () => {
         id: agent.id,
         name: agent.name,
         role: agent.role || agent.name,
-        status: toOrchestratorStatus(agent.status),
-        capabilities: agent.tags || [],
+        status: agent.status || "idle",
+        capabilities: agent.capabilities || [],
       });
     });
   }, [agents, registerAgent]);

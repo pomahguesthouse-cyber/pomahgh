@@ -27,11 +27,6 @@ export interface ConversationInsight {
   resolution_status: "resolved" | "unresolved" | "escalated" | "abandoned";
   bot_accuracy_score: number | null;
   guest_satisfaction_signal: string | null;
-  common_questions: Array<{ question: string; category: string }>;
-  failed_responses: Array<{ user_msg: string; issue: string }>;
-  successful_patterns: Array<{ trigger: string; why_worked: string }>;
-  suggested_improvements: Array<{ area: string; suggestion: string; priority?: string }>;
-  new_slang_detected: Array<{ slang: string; meaning: string }>;
   message_count: number;
   analyzed_at: string;
   created_at: string;
@@ -59,34 +54,6 @@ export interface LearningMetric {
   training_examples_created: number;
   slang_patterns_detected: number;
   improvements_suggested: number;
-}
-
-export interface LearningReport {
-  summary: {
-    total_conversations_analyzed: number;
-    avg_bot_accuracy: number;
-    total_faq_patterns: number;
-    total_training_from_wa: number;
-    pending_approval: number;
-  };
-  sentiment_distribution: Record<string, number>;
-  resolution_distribution: Record<string, number>;
-  top_topics: Array<{ topic: string; count: number }>;
-  top_faq_patterns: Array<{
-    question: string;
-    category: string;
-    occurrence_count: number;
-    has_response: boolean;
-    promoted: boolean;
-  }>;
-  recent_failures: Array<{ user_msg: string; issue: string }>;
-  improvement_suggestions: Array<{ area: string; suggestion: string }>;
-  weekly_metrics: Array<{ date: string; conversations: number; insights: number; faq_found: number; training_created: number }>;
-}
-
-export interface LearningReportResponse {
-  success: boolean;
-  report: LearningReport;
 }
 
 // ============================================================
@@ -216,7 +183,7 @@ function createAgentMutation<TData, TParams = void>(
 // MUTATIONS
 // ============================================================
 
-export const useDeepAnalyze = createAgentMutation<z.infer<typeof DeepAnalyzeSchema>, { limit: number }>("deep_analyze", DeepAnalyzeSchema, {
+export const useDeepAnalyze = createAgentMutation("deep_analyze", DeepAnalyzeSchema, {
   successMessage: (data) => `Berhasil menganalisis ${data.analyzed} percakapan`,
   invalidate: [["conversation-insights"], ["learning-metrics"], ["learning-report"]],
 });
@@ -284,15 +251,7 @@ export const useConversationInsights = (limit = 50) => {
           topics,
           resolution_status,
           bot_accuracy_score,
-          guest_satisfaction_signal,
-          common_questions,
-          failed_responses,
-          successful_patterns,
-          suggested_improvements,
-          new_slang_detected,
-          message_count,
-          analyzed_at,
-          created_at
+          analyzed_at
         `,
         )
         .order("analyzed_at", {
@@ -311,14 +270,6 @@ export const useConversationInsights = (limit = 50) => {
       data.map((item) => ({
         ...item,
         summary: item.summary ?? "-",
-        topics: item.topics ?? [],
-        intent_flow: item.intent_flow ?? [],
-        common_questions: item.common_questions ?? [],
-        failed_responses: item.failed_responses ?? [],
-        successful_patterns: item.successful_patterns ?? [],
-        suggested_improvements: item.suggested_improvements ?? [],
-        new_slang_detected: item.new_slang_detected ?? [],
-        message_count: item.message_count ?? 0,
       })),
 
     ...DEFAULT_QUERY_OPTIONS,
@@ -386,9 +337,9 @@ export const useLearningMetrics = (days = 7) => {
 // ============================================================
 
 export const useLearningReport = () => {
-  return useMutation<LearningReportResponse, Error, void>({
+  return useMutation({
     mutationFn: async () => {
-      return invokeAgent<LearningReportResponse>("learning_report", z.any());
+      return invokeAgent("learning_report", z.any());
     },
 
     retry: false,
