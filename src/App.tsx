@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import {ENV_CONFIG,} from "@/config/env";
+
 import { HelmetProvider } from "react-helmet-async";
 
 import {
@@ -23,6 +23,8 @@ import {
   isPublicRoute,
   stripAdminPrefix,
 } from "@/lib/domain";
+
+import { ENV_CONFIG } from "@/config/env";
 
 import PublicApp from "./PublicApp";
 import AdminApp from "./AdminApp";
@@ -59,30 +61,30 @@ function applyCrossDomainRedirects() {
   } = window.location;
 
   /* ------------------------------------- */
-  /* Public domain */
+  /* PUBLIC DOMAIN */
   /* ------------------------------------- */
 
-if (isAdminHost(hostname)) {
+  if (isPublicHost(hostname)) {
+    // Admin pages must live on admin subdomain
 
-  // Public-only content
-  if (
-    pathname !== "/" &&
-    isPublicRoute(pathname)
-  ) {
-    window.location.replace(
-      buildPublicUrl(
-        pathname,
-        search,
-        hash,
-      ),
-    );
+    if (
+      isAdminRoute(pathname) ||
+      isAdminPath(pathname)
+    ) {
+      window.location.replace(
+        buildAdminUrl(
+          pathname,
+          search,
+          hash,
+        ),
+      );
 
-    return true;
+      return true;
+    }
   }
-}
 
   /* ------------------------------------- */
-  /* Admin domain */
+  /* ADMIN DOMAIN */
   /* ------------------------------------- */
 
   if (isAdminHost(hostname)) {
@@ -96,9 +98,12 @@ if (isAdminHost(hostname)) {
       return true;
     }
 
-    /* Public-only content */
+    /* Public-only pages */
 
-    if (isPublicRoute(pathname)) {
+    if (
+      pathname !== "/" &&
+      isPublicRoute(pathname)
+    ) {
       window.location.replace(
         buildPublicUrl(
           pathname,
@@ -127,6 +132,10 @@ export default function App() {
     return null;
   }
 
+  /* ------------------------------------- */
+  /* Mode */
+  /* ------------------------------------- */
+
   const mode = getAppMode();
 
   /* ------------------------------------- */
@@ -138,18 +147,35 @@ export default function App() {
       ? getAdminBasename()
       : "/";
 
+  /* ------------------------------------- */
+  /* Debug */
+  /* ------------------------------------- */
+
+  if (import.meta.env.DEV) {
+    console.log("ENV_CONFIG", ENV_CONFIG);
+
+    console.log("MODE", mode);
+
+    console.log(
+      "HOST",
+      window.location.hostname,
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
-        <TooltipProvider>
 
-          <Toaster />
-          <Sonner />
+        <BrowserRouter basename={basename}>
 
-          <BrowserRouter basename={basename}>
+          <TooltipProvider>
+
+            <Toaster />
+
+            <Sonner />
 
             {/* ========================== */}
-            {/* Admin App */}
+            {/* ADMIN APP */}
             {/* ========================== */}
 
             {mode === "admin" ? (
@@ -158,9 +184,10 @@ export default function App() {
               <PublicApp />
             )}
 
-          </BrowserRouter>
+          </TooltipProvider>
 
-        </TooltipProvider>
+        </BrowserRouter>
+
       </HelmetProvider>
     </QueryClientProvider>
   );
