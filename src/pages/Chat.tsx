@@ -10,8 +10,9 @@ const Chat = () => {
   return (
     <>
       <Helmet>
-        <title>{settings?.bot_name || "Chat"} - {hotelSettings?.hotel_name || "Hotel"}</title>
-        <meta name="description" content="Chat dengan asisten AI kami untuk informasi dan bantuan booking" />
+        <title>{settings?.bot_name || "Chat"} - {hotelSettings?.hotel_name || "Pomah Guesthouse"}</title>
+        <meta name="description" content={`Chat langsung dengan asisten AI ${hotelSettings?.hotel_name || "Pomah Guesthouse"} untuk informasi kamar, ketersediaan, dan bantuan reservasi di Semarang.`} />
+        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
       <div className="h-screen flex flex-col bg-background">

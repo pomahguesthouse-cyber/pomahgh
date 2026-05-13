@@ -17,7 +17,7 @@ const NotFound = () => {
         <title>404 - Halaman Tidak Ditemukan</title>
         <meta name="robots" content="noindex, nofollow" />
         <meta name="googlebot" content="noindex, nofollow" />
-        <meta name="description" content="Halaman yang Anda cari tidak ditemukan." />
+        <meta name="description" content="Halaman yang Anda cari tidak ditemukan atau telah dipindahkan. Kembali ke beranda Pomah Guesthouse untuk menemukan informasi kamar dan penginapan di Semarang." />
       </Helmet>
       
       <div className="flex min-h-screen items-center justify-center bg-background">
