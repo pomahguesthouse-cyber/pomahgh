@@ -1,18 +1,41 @@
 import { Helmet } from "react-helmet-async";
-import { Routes, Route } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
-import { lazy, Suspense, Component } from "react";
+import {
+  lazy,
+  Suspense,
+  Component,
+} from "react";
+
 import type { ReactNode } from "react";
+
+import AdminGuard from "@/components/auth/AdminGuard";
+
+/* ====================================================== */
+/* Lazy Retry */
+/* ====================================================== */
 
 function lazyRetry<T extends React.ComponentType<any>>(
   factory: () => Promise<{ default: T }>,
 ) {
   return lazy(() =>
     factory().catch((err) => {
-      const key = "chunk_reload";
+      const key = "admin_chunk_retry";
 
-      if (!sessionStorage.getItem(key)) {
-        sessionStorage.setItem(key, "1");
+      const retryCount = Number(
+        sessionStorage.getItem(key) || "0",
+      );
+
+      if (retryCount < 1) {
+        sessionStorage.setItem(
+          key,
+          String(retryCount + 1),
+        );
+
         window.location.reload();
       }
 
@@ -51,7 +74,7 @@ class AppErrorBoundary extends Component<
         <div className="min-h-screen flex items-center justify-center text-center p-8">
           <div>
             <p className="text-lg font-semibold mb-2">
-              Terjadi kesalahan.
+              Terjadi kesalahan pada Admin App.
             </p>
 
             <button
@@ -72,15 +95,18 @@ class AppErrorBoundary extends Component<
 }
 
 /* ====================================================== */
-/* Admin Pages */
+/* Lazy Pages */
 /* ====================================================== */
 
+/* Auth */
 const AdminLogin = lazyRetry(
   () => import("./pages/admin/AdminLogin"),
 );
 
+/* Dashboard */
 const AdminDashboard = lazyRetry(
-  () => import("./pages/admin/AdminDashboard"),
+  () =>
+    import("./pages/admin/AdminDashboard"),
 );
 
 const AdminBookingCalendarPage =
@@ -91,14 +117,40 @@ const AdminBookingCalendarPage =
       ),
   );
 
+/* Property */
 const AdminRooms = lazyRetry(
   () => import("./pages/admin/AdminRooms"),
 );
 
-const AdminBookings = lazyRetry(
-  () => import("./pages/admin/AdminBookings"),
+const AdminRoomFeatures = lazyRetry(
+  () =>
+    import(
+      "./pages/admin/AdminRoomFeatures"
+    ),
 );
 
+const AdminRoomAddons = lazyRetry(
+  () =>
+    import(
+      "./pages/admin/AdminRoomAddons"
+    ),
+);
+
+/* Booking */
+const AdminBookings = lazyRetry(
+  () =>
+    import("./pages/admin/AdminBookings"),
+);
+
+const AdminInvoiceManagement =
+  lazyRetry(
+    () =>
+      import(
+        "./pages/admin/AdminInvoiceManagement"
+      ),
+  );
+
+/* Content */
 const AdminHeroSlides = lazyRetry(
   () =>
     import("./pages/admin/AdminHeroSlides"),
@@ -112,22 +164,18 @@ const AdminFacilityHeroSlides =
       ),
   );
 
+const AdminExploreHeroSlides =
+  lazyRetry(
+    () =>
+      import(
+        "./pages/admin/AdminExploreHeroSlides"
+      ),
+  );
+
 const AdminFacilities = lazyRetry(
   () =>
     import("./pages/admin/AdminFacilities"),
 );
-
-const AdminSettings = lazyRetry(
-  () => import("./pages/admin/AdminSettings"),
-);
-
-const AdminInvoiceManagement =
-  lazyRetry(
-    () =>
-      import(
-        "./pages/admin/AdminInvoiceManagement"
-      ),
-  );
 
 const AdminNearbyLocations =
   lazyRetry(
@@ -137,6 +185,54 @@ const AdminNearbyLocations =
       ),
   );
 
+const AdminCityAttractions =
+  lazyRetry(
+    () =>
+      import(
+        "./pages/admin/AdminCityAttractions"
+      ),
+  );
+
+const AdminCityEvents = lazyRetry(
+  () =>
+    import("./pages/admin/AdminCityEvents"),
+);
+
+const AdminLandingPages = lazyRetry(
+  () =>
+    import(
+      "./pages/admin/AdminLandingPages"
+    ),
+);
+
+const AdminMediaLibrary = lazyRetry(
+  () =>
+    import("./pages/admin/AdminMediaLibrary"),
+);
+
+/* AI */
+const AdminSeoAgent = lazyRetry(
+  () =>
+    import("./pages/admin/AdminSeoAgent"),
+);
+
+const AdminSocialMediaAgent =
+  lazyRetry(
+    () =>
+      import(
+        "./pages/admin/AdminSocialMediaAgent"
+      ),
+  );
+
+const AdminMultiAgentDashboard =
+  lazyRetry(
+    () =>
+      import(
+        "./pages/admin/AdminMultiAgentDashboard"
+      ),
+  );
+
+/* Chat */
 const AdminGuestChatbot = lazyRetry(
   () =>
     import(
@@ -151,6 +247,17 @@ const AdminAdminChatbot = lazyRetry(
     ),
 );
 
+const AdminChat = lazyRetry(
+  () => import("./pages/admin/AdminChat"),
+);
+
+/* SEO */
+const AdminSeoSettings = lazyRetry(
+  () =>
+    import("./pages/admin/AdminSeoSettings"),
+);
+
+/* Operations */
 const AdminBankAccounts = lazyRetry(
   () =>
     import(
@@ -158,61 +265,10 @@ const AdminBankAccounts = lazyRetry(
     ),
 );
 
-const AdminRoomFeatures = lazyRetry(
-  () =>
-    import(
-      "./pages/admin/AdminRoomFeatures"
-    ),
-);
-
-const AdminSeoSettings = lazyRetry(
-  () =>
-    import("./pages/admin/AdminSeoSettings"),
-);
-
-const AdminSeoAgent = lazyRetry(
-  () =>
-    import("./pages/admin/AdminSeoAgent"),
-);
-
-const AdminSocialMediaAgent =
-  lazyRetry(
-    () =>
-      import(
-        "./pages/admin/AdminSocialMediaAgent"
-      ),
-  );
-
-const AdminMediaLibrary = lazyRetry(
-  () =>
-    import("./pages/admin/AdminMediaLibrary"),
-);
-
-const AdminRoomAddons = lazyRetry(
-  () =>
-    import("./pages/admin/AdminRoomAddons"),
-);
-
 const AdminPromotions = lazyRetry(
   () =>
     import("./pages/admin/AdminPromotions"),
 );
-
-const AdminCityAttractions =
-  lazyRetry(
-    () =>
-      import(
-        "./pages/admin/AdminCityAttractions"
-      ),
-  );
-
-const AdminExploreHeroSlides =
-  lazyRetry(
-    () =>
-      import(
-        "./pages/admin/AdminExploreHeroSlides"
-      ),
-  );
 
 const AdminCompetitorAnalysis =
   lazyRetry(
@@ -222,32 +278,18 @@ const AdminCompetitorAnalysis =
       ),
   );
 
-const AdminChat = lazyRetry(
-  () => import("./pages/admin/AdminChat"),
-);
-
-const AdminCityEvents = lazyRetry(
+/* System */
+const AdminSettings = lazyRetry(
   () =>
-    import("./pages/admin/AdminCityEvents"),
+    import("./pages/admin/AdminSettings"),
 );
 
-const AdminLandingPages = lazyRetry(
-  () =>
-    import("./pages/admin/AdminLandingPages"),
-);
-
-const AdminMultiAgentDashboard =
-  lazyRetry(
-    () =>
-      import(
-        "./pages/admin/AdminMultiAgentDashboard"
-      ),
-  );
-
-const PageEditorPage = lazyRetry(
+/* Editors */
+const LandingEditorPage = lazyRetry(
   () => import("./pages/PageEditorPage"),
 );
 
+/* Mobile */
 const MobileAdminApp = lazyRetry(
   () =>
     import("./pages/app/MobileAdminApp"),
@@ -258,6 +300,7 @@ const MobileLoginPage = lazyRetry(
     import("./pages/app/MobileLoginPage"),
 );
 
+/* Utility */
 const NotFound = lazyRetry(
   () => import("./pages/NotFound"),
 );
@@ -279,41 +322,30 @@ const AdminLayout = lazyRetry(() =>
 /* ====================================================== */
 
 const RouteFallback = () => (
-  <div className="min-h-[40vh] flex items-center justify-center text-sm text-muted-foreground">
+  <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
     Loading...
   </div>
 );
 
 /* ====================================================== */
-/* Layout Wrapper */
+/* Protected Layout Wrapper */
 /* ====================================================== */
 
-const Wrap = ({
+const Protected = ({
   children,
 }: {
   children: ReactNode;
 }) => (
-  <AdminLayout>
-    {children}
-  </AdminLayout>
+  <AdminGuard>
+    <AdminLayout>
+      {children}
+    </AdminLayout>
+  </AdminGuard>
 );
 
 /* ====================================================== */
 /* Admin App */
 /* ====================================================== */
-
-/**
- * IMPORTANT:
- * BrowserRouter REMOVED.
- *
- * Root BrowserRouter now lives in App.tsx.
- *
- * This prevents:
- * - nested router conflicts
- * - refresh issues
- * - random 404
- * - history bugs
- */
 
 export default function AdminApp() {
   return (
@@ -342,11 +374,21 @@ export default function AdminApp() {
           <Routes>
 
             {/* ================================= */}
-            {/* Login */}
+            {/* Auth */}
             {/* ================================= */}
 
             <Route
               path="/"
+              element={
+                <Navigate
+                  to="/login"
+                  replace
+                />
+              }
+            />
+
+            <Route
+              path="/login"
               element={<AdminLogin />}
             />
 
@@ -357,45 +399,71 @@ export default function AdminApp() {
             <Route
               path="/dashboard"
               element={
-                <Wrap>
+                <Protected>
                   <AdminDashboard />
-                </Wrap>
+                </Protected>
               }
             />
 
             <Route
               path="/booking-calendar"
               element={
-                <Wrap>
+                <Protected>
                   <AdminBookingCalendarPage />
-                </Wrap>
+                </Protected>
               }
             />
 
+            {/* ================================= */}
+            {/* Property */}
+            {/* ================================= */}
+
             <Route
-              path="/rooms"
+              path="/manage-rooms"
               element={
-                <Wrap>
+                <Protected>
                   <AdminRooms />
-                </Wrap>
+                </Protected>
               }
             />
 
             <Route
-              path="/bookings"
+              path="/room-features"
               element={
-                <Wrap>
+                <Protected>
+                  <AdminRoomFeatures />
+                </Protected>
+              }
+            />
+
+            <Route
+              path="/room-addons"
+              element={
+                <Protected>
+                  <AdminRoomAddons />
+                </Protected>
+              }
+            />
+
+            {/* ================================= */}
+            {/* Booking */}
+            {/* ================================= */}
+
+            <Route
+              path="/manage-bookings"
+              element={
+                <Protected>
                   <AdminBookings />
-                </Wrap>
+                </Protected>
               }
             />
 
             <Route
               path="/invoice-management"
               element={
-                <Wrap>
+                <Protected>
                   <AdminInvoiceManagement />
-                </Wrap>
+                </Protected>
               }
             />
 
@@ -406,183 +474,143 @@ export default function AdminApp() {
             <Route
               path="/hero-slides"
               element={
-                <Wrap>
+                <Protected>
                   <AdminHeroSlides />
-                </Wrap>
+                </Protected>
               }
             />
 
             <Route
               path="/facility-hero-slides"
               element={
-                <Wrap>
+                <Protected>
                   <AdminFacilityHeroSlides />
-                </Wrap>
+                </Protected>
               }
             />
 
             <Route
               path="/explore-hero-slides"
               element={
-                <Wrap>
+                <Protected>
                   <AdminExploreHeroSlides />
-                </Wrap>
+                </Protected>
               }
             />
 
             <Route
               path="/facilities"
               element={
-                <Wrap>
+                <Protected>
                   <AdminFacilities />
-                </Wrap>
+                </Protected>
               }
             />
 
             <Route
               path="/nearby-locations"
               element={
-                <Wrap>
+                <Protected>
                   <AdminNearbyLocations />
-                </Wrap>
+                </Protected>
               }
             />
 
             <Route
               path="/city-attractions"
               element={
-                <Wrap>
+                <Protected>
                   <AdminCityAttractions />
-                </Wrap>
+                </Protected>
               }
             />
 
             <Route
               path="/city-events"
               element={
-                <Wrap>
+                <Protected>
                   <AdminCityEvents />
-                </Wrap>
+                </Protected>
               }
             />
 
             <Route
               path="/media-library"
               element={
-                <Wrap>
+                <Protected>
                   <AdminMediaLibrary />
-                </Wrap>
-              }
-            />
-
-            <Route
-              path="/page-editor"
-              element={
-                <Wrap>
-                  <AdminLandingPages />
-                </Wrap>
+                </Protected>
               }
             />
 
             {/* ================================= */}
-            {/* Property */}
+            {/* AI */}
             {/* ================================= */}
 
             <Route
-              path="/room-features"
+              path="/seo-agent"
               element={
-                <Wrap>
-                  <AdminRoomFeatures />
-                </Wrap>
+                <Protected>
+                  <AdminSeoAgent />
+                </Protected>
               }
             />
 
             <Route
-              path="/room-addons"
+              path="/social-media-agent"
               element={
-                <Wrap>
-                  <AdminRoomAddons />
-                </Wrap>
-              }
-            />
-
-            <Route
-              path="/promotions"
-              element={
-                <Wrap>
-                  <AdminPromotions />
-                </Wrap>
-              }
-            />
-
-            {/* ================================= */}
-            {/* Chatbot */}
-            {/* ================================= */}
-
-            <Route
-              path="/chatbot"
-              element={
-                <Wrap>
-                  <AdminGuestChatbot />
-                </Wrap>
-              }
-            />
-
-            <Route
-              path="/chatbot/guest"
-              element={
-                <Wrap>
-                  <AdminGuestChatbot />
-                </Wrap>
-              }
-            />
-
-            <Route
-              path="/chatbot/admin"
-              element={
-                <Wrap>
-                  <AdminAdminChatbot />
-                </Wrap>
-              }
-            />
-
-            <Route
-              path="/chat"
-              element={
-                <Wrap>
-                  <AdminChat />
-                </Wrap>
+                <Protected>
+                  <AdminSocialMediaAgent />
+                </Protected>
               }
             />
 
             <Route
               path="/multi-agent"
               element={
-                <Wrap>
+                <Protected>
                   <AdminMultiAgentDashboard />
-                </Wrap>
+                </Protected>
               }
             />
 
             {/* ================================= */}
-            {/* Operations */}
+            {/* Chat */}
             {/* ================================= */}
 
             <Route
-              path="/bank-accounts"
+              path="/chatbot"
               element={
-                <Wrap>
-                  <AdminBankAccounts />
-                </Wrap>
+                <Protected>
+                  <AdminGuestChatbot />
+                </Protected>
               }
             />
 
             <Route
-              path="/competitor-analysis"
+              path="/chatbot/guest"
               element={
-                <Wrap>
-                  <AdminCompetitorAnalysis />
-                </Wrap>
+                <Protected>
+                  <AdminGuestChatbot />
+                </Protected>
+              }
+            />
+
+            <Route
+              path="/chatbot/admin"
+              element={
+                <Protected>
+                  <AdminAdminChatbot />
+                </Protected>
+              }
+            />
+
+            <Route
+              path="/chat"
+              element={
+                <Protected>
+                  <AdminChat />
+                </Protected>
               }
             />
 
@@ -593,50 +621,76 @@ export default function AdminApp() {
             <Route
               path="/seo-settings"
               element={
-                <Wrap>
+                <Protected>
                   <AdminSeoSettings />
-                </Wrap>
-              }
-            />
-
-            <Route
-              path="/seo-agent"
-              element={
-                <Wrap>
-                  <AdminSeoAgent />
-                </Wrap>
-              }
-            />
-
-            <Route
-              path="/social-media-agent"
-              element={
-                <Wrap>
-                  <AdminSocialMediaAgent />
-                </Wrap>
+                </Protected>
               }
             />
 
             {/* ================================= */}
-            {/* Settings */}
+            {/* Operations */}
             {/* ================================= */}
 
             <Route
-              path="/settings"
+              path="/bank-accounts"
               element={
-                <Wrap>
+                <Protected>
+                  <AdminBankAccounts />
+                </Protected>
+              }
+            />
+
+            <Route
+              path="/promotions"
+              element={
+                <Protected>
+                  <AdminPromotions />
+                </Protected>
+              }
+            />
+
+            <Route
+              path="/competitor-analysis"
+              element={
+                <Protected>
+                  <AdminCompetitorAnalysis />
+                </Protected>
+              }
+            />
+
+            {/* ================================= */}
+            {/* System */}
+            {/* ================================= */}
+
+            <Route
+              path="/system-settings"
+              element={
+                <Protected>
                   <AdminSettings />
-                </Wrap>
+                </Protected>
               }
             />
 
             {/* ================================= */}
-            {/* Standalone */}
+            {/* Editors */}
             {/* ================================= */}
 
             <Route
-              path="/editor"
-              element={<PageEditorPage />}
+              path="/landing-editor"
+              element={
+                <Protected>
+                  <LandingEditorPage />
+                </Protected>
+              }
+            />
+
+            <Route
+              path="/page-editor"
+              element={
+                <Protected>
+                  <AdminLandingPages />
+                </Protected>
+              }
             />
 
             {/* ================================= */}
@@ -644,22 +698,31 @@ export default function AdminApp() {
             {/* ================================= */}
 
             <Route
-              path="/mobile"
-              element={<MobileAdminApp />}
+              path="/mobile-dashboard"
+              element={
+                <Protected>
+                  <MobileAdminApp />
+                </Protected>
+              }
             />
 
             <Route
-              path="/mobile/login"
+              path="/mobile-login"
               element={<MobileLoginPage />}
             />
 
             {/* ================================= */}
-            {/* 404 */}
+            {/* Fallback */}
             {/* ================================= */}
 
             <Route
               path="*"
-              element={<NotFound />}
+              element={
+                <Navigate
+                  to="/dashboard"
+                  replace
+                />
+              }
             />
 
           </Routes>
