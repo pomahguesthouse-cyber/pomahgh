@@ -64,7 +64,7 @@ export const RoomSEO = ({ room, images, displayPrice, roomSlug }: RoomSEOProps) 
     hotelRoomSchema.bed = { "@type": "BedDetails", typeOfBed: bedType };
   }
 
-  const pageTitle = `${room.name} – ${settings?.og_site_name || "Pomah Guesthouse"} | Luxury Accommodation in Bali`;
+  const pageTitle = `${room.name} | ${settings?.og_site_name || "Pomah Guesthouse"}, Semarang`;
 
   return (
     <Helmet>
