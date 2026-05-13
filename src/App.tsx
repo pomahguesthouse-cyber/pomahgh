@@ -24,8 +24,6 @@ import {
   stripAdminPrefix,
 } from "@/lib/domain";
 
-import { ENV_CONFIG } from "@/config/env";
-
 import PublicApp from "./PublicApp";
 import AdminApp from "./AdminApp";
 
@@ -45,7 +43,7 @@ const queryClient = new QueryClient({
 });
 
 /* ====================================================== */
-/* Cross Domain Redirects */
+/* Redirects */
 /* ====================================================== */
 
 function applyCrossDomainRedirects() {
@@ -60,13 +58,9 @@ function applyCrossDomainRedirects() {
     hash,
   } = window.location;
 
-  /* ------------------------------------- */
   /* PUBLIC DOMAIN */
-  /* ------------------------------------- */
 
   if (isPublicHost(hostname)) {
-    // Admin pages must live on admin subdomain
-
     if (
       isAdminRoute(pathname) ||
       isAdminPath(pathname)
@@ -83,13 +77,9 @@ function applyCrossDomainRedirects() {
     }
   }
 
-  /* ------------------------------------- */
   /* ADMIN DOMAIN */
-  /* ------------------------------------- */
 
   if (isAdminHost(hostname)) {
-    /* Legacy /admin/* cleanup */
-
     if (isAdminPath(pathname)) {
       window.location.replace(
         `${stripAdminPrefix(pathname)}${search}${hash}`,
@@ -97,8 +87,6 @@ function applyCrossDomainRedirects() {
 
       return true;
     }
-
-    /* Public-only pages */
 
     if (
       pathname !== "/" &&
@@ -124,59 +112,32 @@ function applyCrossDomainRedirects() {
 /* ====================================================== */
 
 export default function App() {
-  /* ------------------------------------- */
-  /* Redirect before render */
-  /* ------------------------------------- */
-
   if (applyCrossDomainRedirects()) {
     return null;
   }
 
-  /* ------------------------------------- */
-  /* Mode */
-  /* ------------------------------------- */
-
   const mode = getAppMode();
-
-  /* ------------------------------------- */
-  /* Basename */
-  /* ------------------------------------- */
 
   const basename =
     mode === "admin"
       ? getAdminBasename()
       : "/";
 
-  /* ------------------------------------- */
-  /* Debug */
-  /* ------------------------------------- */
-
-  if (import.meta.env.DEV) {
-    console.log("ENV_CONFIG", ENV_CONFIG);
-
-    console.log("MODE", mode);
-
-    console.log(
-      "HOST",
-      window.location.hostname,
-    );
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
 
-        <BrowserRouter basename={basename}>
+        {/* IMPORTANT:
+            Radix providers OUTSIDE router
+        */}
 
-          <TooltipProvider>
+        <TooltipProvider>
 
-            <Toaster />
+          <Toaster />
 
-            <Sonner />
+          <Sonner />
 
-            {/* ========================== */}
-            {/* ADMIN APP */}
-            {/* ========================== */}
+          <BrowserRouter basename={basename}>
 
             {mode === "admin" ? (
               <AdminApp />
@@ -184,9 +145,9 @@ export default function App() {
               <PublicApp />
             )}
 
-          </TooltipProvider>
+          </BrowserRouter>
 
-        </BrowserRouter>
+        </TooltipProvider>
 
       </HelmetProvider>
     </QueryClientProvider>
