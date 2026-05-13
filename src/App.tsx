@@ -9,10 +9,13 @@ import AdminApp from "./AdminApp";
 import {
   getSubdomain,
   isAdminHost,
+  isAdminOnlyPath,
+  isAdminPath,
   isPublicHost,
   isPublicOnlyPath,
   buildAdminUrl,
   buildPublicUrl,
+  stripAdminBasename,
 } from "@/lib/domain";
 
 /* ====================================================== */
@@ -23,16 +26,22 @@ function applyCrossDomainRedirects(): boolean {
   if (typeof window === "undefined") return false;
   const { hostname, pathname, search, hash } = window.location;
 
-  // Public domain → if someone hits a legacy `/admin/...` or `/app/...` URL, send them to admin subdomain
+  // Public domain → admin-only URLs must always live on admin.pomahguesthouse.com.
   if (isPublicHost(hostname)) {
-    if (pathname === "/admin" || pathname.startsWith("/admin/") || pathname === "/app" || pathname.startsWith("/app/")) {
+    if (isAdminOnlyPath(pathname)) {
       window.location.replace(buildAdminUrl(pathname, search, hash));
       return true;
     }
   }
 
-  // Admin domain → if a public-only path (e.g. /rooms/deluxe) is accessed, send to public
+  // Admin domain → normalize legacy `/admin/...` paths to clean admin-subdomain paths.
   if (isAdminHost(hostname)) {
+    if (isAdminPath(pathname)) {
+      window.location.replace(`${stripAdminBasename(pathname)}${search}${hash}`);
+      return true;
+    }
+
+    // Public-only content must stay on the public domain.
     if (isPublicOnlyPath(pathname)) {
       window.location.replace(buildPublicUrl(pathname, search, hash));
       return true;
