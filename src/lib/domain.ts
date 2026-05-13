@@ -1,38 +1,61 @@
 /**
- * Domain & subdomain detection helpers.
+ * PRODUCTION-READY DOMAIN & ROUTING HELPERS
+ * ----------------------------------------
+ * Supports:
+ * - public domain
+ * - admin subdomain
+ * - localhost development
+ * - lovable preview environments
+ * - SPA routing
+ * - SEO isolation
+ * - admin/public boundary enforcement
  *
- * Production hosts:
- *   - pomahguesthouse.com / www.pomahguesthouse.com → "public"
- *   - admin.pomahguesthouse.com                     → "admin"
- *
- * Dev / preview hosts (localhost, *.lovable.app, *.lovableproject.com, etc.):
- *   - URL path starting with "/admin" → treated as "admin"
- *   - otherwise → treated as "public"
- *
- * This lets developers test admin pages locally by visiting `/admin/...`
- * while production uses subdomain-based isolation.
+ * Domains:
+ * - https://pomahguesthouse.com
+ * - https://www.pomahguesthouse.com
+ * - https://admin.pomahguesthouse.com
  */
 
-export type Subdomain = "admin" | "public";
+export type AppMode = "admin" | "public";
 
-export const ADMIN_HOST = "admin.pomahguesthouse.com";
-export const MAIN_HOST = "pomahguesthouse.com";
-export const WWW_HOST = "www.pomahguesthouse.com";
+/* ===================================================== */
+/* HOST CONFIG */
+/* ===================================================== */
 
-const PROD_HOSTS = new Set<string>([ADMIN_HOST, MAIN_HOST, WWW_HOST]);
+export const MAIN_HOST =
+  "pomahguesthouse.com";
 
-const ADMIN_ONLY_EXACT_PATHS = new Set<string>([
-  "/admin",
-  "/app",
+export const WWW_HOST =
+  "www.pomahguesthouse.com";
+
+export const ADMIN_HOST =
+  "admin.pomahguesthouse.com";
+
+export const PROD_HOSTS = new Set([
+  MAIN_HOST,
+  WWW_HOST,
+  ADMIN_HOST,
+]);
+
+/* ===================================================== */
+/* ADMIN ROUTE CONFIG */
+/* ===================================================== */
+
+export const ADMIN_ROUTES = [
   "/dashboard",
   "/booking-calendar",
   "/rooms",
+  "/bookings",
   "/hero-slides",
   "/facility-hero-slides",
   "/facilities",
   "/settings",
   "/invoice-management",
   "/nearby-locations",
+  "/chatbot",
+  "/chatbot/guest",
+  "/chatbot/admin",
+  "/chat",
   "/multi-agent",
   "/bank-accounts",
   "/room-features",
@@ -48,97 +71,13 @@ const ADMIN_ONLY_EXACT_PATHS = new Set<string>([
   "/explore-hero-slides",
   "/city-events",
   "/competitor-analysis",
-]);
+];
 
-const ADMIN_ONLY_PREFIXES = ["/admin/", "/app/", "/chatbot/"];
+/* ===================================================== */
+/* PUBLIC ROUTE PREFIXES */
+/* ===================================================== */
 
-function safeWindow(): Window | null {
-  return typeof window === "undefined" ? null : window;
-}
-
-function normalizeHostname(hostname: string): string {
-  return hostname.toLowerCase().replace(/\.$/, "");
-}
-
-export function getHostname(): string {
-  return safeWindow()?.location.hostname ?? "";
-}
-
-export function isProdHost(hostname: string = getHostname()): boolean {
-  return PROD_HOSTS.has(normalizeHostname(hostname));
-}
-
-export function isAdminHost(hostname: string = getHostname()): boolean {
-  return normalizeHostname(hostname) === ADMIN_HOST;
-}
-
-export function isPublicHost(hostname: string = getHostname()): boolean {
-  const normalized = normalizeHostname(hostname);
-  return normalized === MAIN_HOST || normalized === WWW_HOST;
-}
-
-export function isAdminPath(pathname: string): boolean {
-  return pathname === "/admin" || pathname.startsWith("/admin/");
-}
-
-export function stripAdminBasename(pathname: string): string {
-  return pathname.replace(/^\/admin(?=\/|$)/, "") || "/";
-}
-
-export function isAdminOnlyPath(pathname: string): boolean {
-  return ADMIN_ONLY_EXACT_PATHS.has(pathname) || ADMIN_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
-
-/**
- * Detect which "app" should be rendered for the current location.
- *
- * Production: based on hostname.
- * Dev/preview: based on whether path starts with "/admin".
- */
-export function getSubdomain(): Subdomain {
-  const w = safeWindow();
-  if (!w) return "public";
-
-  const hostname = w.location.hostname;
-
-  if (isAdminHost(hostname)) return "admin";
-  if (isPublicHost(hostname)) return "public";
-
-  // Dev/preview fallback: use path prefix
-  return w.location.pathname.startsWith("/admin") ? "admin" : "public";
-}
-
-/**
- * In dev/preview, admin routes are mounted under `/admin` basename so the
- * router can use clean paths internally while developers visit `/admin/...`.
- * In production on the admin subdomain, basename is "/" (clean URLs).
- */
-export function getAdminBasename(): string {
-  return isAdminHost() ? "/" : "/admin";
-}
-
-/**
- * Build an absolute URL to the admin app, suitable for cross-domain redirects.
- * Strips a leading "/admin" from the path so e.g.
- *   buildAdminUrl("/admin/dashboard") → "https://admin.pomahguesthouse.com/dashboard"
- */
-export function buildAdminUrl(path: string, search = "", hash = ""): string {
-  const cleanPath = stripAdminBasename(path);
-  return `https://${ADMIN_HOST}${cleanPath}${search}${hash}`;
-}
-
-/**
- * Build an absolute URL to the public site.
- */
-export function buildPublicUrl(path: string, search = "", hash = ""): string {
-  return `https://${MAIN_HOST}${path}${search}${hash}`;
-}
-
-/**
- * Path prefixes that — even on the admin subdomain — must redirect to public.
- * Useful when someone navigates from the admin app to a public page via a stale link.
- */
-const PUBLIC_ONLY_PATHS = [
+export const PUBLIC_ROUTE_PREFIXES = [
   "/rooms/",
   "/explore-semarang",
   "/events/",
@@ -148,6 +87,360 @@ const PUBLIC_ONLY_PATHS = [
   "/homestay/",
 ];
 
-export function isPublicOnlyPath(pathname: string): boolean {
-  return PUBLIC_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p));
+/* ===================================================== */
+/* SAFE WINDOW */
+/* ===================================================== */
+
+function safeWindow(): Window | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window;
+}
+
+/* ===================================================== */
+/* HOST HELPERS */
+/* ===================================================== */
+
+export function normalizeHostname(
+  hostname: string,
+) {
+  return hostname
+    .toLowerCase()
+    .replace(/\.$/, "");
+}
+
+export function getHostname() {
+  return (
+    safeWindow()?.location.hostname || ""
+  );
+}
+
+export function isProdHost(
+  hostname = getHostname(),
+) {
+  return PROD_HOSTS.has(
+    normalizeHostname(hostname),
+  );
+}
+
+export function isAdminHost(
+  hostname = getHostname(),
+) {
+  return (
+    normalizeHostname(hostname) ===
+    ADMIN_HOST
+  );
+}
+
+export function isPublicHost(
+  hostname = getHostname(),
+) {
+  const normalized =
+    normalizeHostname(hostname);
+
+  return (
+    normalized === MAIN_HOST ||
+    normalized === WWW_HOST
+  );
+}
+
+/* ===================================================== */
+/* APP MODE DETECTION */
+/* ===================================================== */
+
+export function getAppMode(): AppMode {
+  const w = safeWindow();
+
+  if (!w) {
+    return "public";
+  }
+
+  const hostname = normalizeHostname(
+    w.location.hostname,
+  );
+
+  /* ------------------------------------- */
+  /* Production */
+  /* ------------------------------------- */
+
+  if (hostname === ADMIN_HOST) {
+    return "admin";
+  }
+
+  if (
+    hostname === MAIN_HOST ||
+    hostname === WWW_HOST
+  ) {
+    return "public";
+  }
+
+  /* ------------------------------------- */
+  /* Dev / Preview fallback */
+  /* ------------------------------------- */
+
+  return w.location.pathname.startsWith(
+    "/admin",
+  )
+    ? "admin"
+    : "public";
+}
+
+/* ===================================================== */
+/* ADMIN BASE PATH */
+/* ===================================================== */
+
+export function getAdminBasename() {
+  return isAdminHost()
+    ? "/"
+    : "/admin";
+}
+
+/* ===================================================== */
+/* ADMIN PATH DETECTION */
+/* ===================================================== */
+
+export function isAdminPath(
+  pathname: string,
+) {
+  return (
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/")
+  );
+}
+
+/* ===================================================== */
+/* ADMIN ROUTE CHECK */
+/* ===================================================== */
+
+export function isAdminRoute(
+  pathname: string,
+) {
+  return ADMIN_ROUTES.some((route) => {
+    return (
+      pathname === route ||
+      pathname.startsWith(`${route}/`)
+    );
+  });
+}
+
+/* ===================================================== */
+/* PUBLIC ROUTE CHECK */
+/* ===================================================== */
+
+export function isPublicRoute(
+  pathname: string,
+) {
+  return PUBLIC_ROUTE_PREFIXES.some(
+    (prefix) => {
+      return (
+        pathname === prefix ||
+        pathname.startsWith(prefix)
+      );
+    },
+  );
+}
+
+/* ===================================================== */
+/* CLEAN ADMIN PATH */
+/* ===================================================== */
+
+export function stripAdminPrefix(
+  pathname: string,
+) {
+  const cleaned = pathname.replace(
+    /^\/admin(?=\/|$)/,
+    "",
+  );
+
+  return cleaned || "/";
+}
+
+/* ===================================================== */
+/* URL BUILDERS */
+/* ===================================================== */
+
+export function buildAdminUrl(
+  path: string,
+  search = "",
+  hash = "",
+) {
+  const cleanPath =
+    stripAdminPrefix(path);
+
+  return `https://${ADMIN_HOST}${cleanPath}${search}${hash}`;
+}
+
+export function buildPublicUrl(
+  path: string,
+  search = "",
+  hash = "",
+) {
+  return `https://${MAIN_HOST}${path}${search}${hash}`;
+}
+
+/* ===================================================== */
+/* REDIRECT HELPERS */
+/* ===================================================== */
+
+export function redirectToAdmin(
+  path = "/dashboard",
+) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.location.href =
+    buildAdminUrl(path);
+}
+
+export function redirectToPublic(
+  path = "/",
+) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.location.href =
+    buildPublicUrl(path);
+}
+
+/* ===================================================== */
+/* DOMAIN BOUNDARY ENFORCEMENT */
+/* ===================================================== */
+
+export function enforceDomainBoundary() {
+  const w = safeWindow();
+
+  if (!w) {
+    return;
+  }
+
+  const pathname =
+    w.location.pathname;
+
+  const search =
+    w.location.search;
+
+  const hash = w.location.hash;
+
+  const mode = getAppMode();
+
+  /* ------------------------------------- */
+  /* PUBLIC DOMAIN */
+  /* ------------------------------------- */
+
+  if (mode === "public") {
+    if (
+      isAdminRoute(pathname) ||
+      isAdminPath(pathname)
+    ) {
+      window.location.replace(
+        buildAdminUrl(
+          pathname,
+          search,
+          hash,
+        ),
+      );
+
+      return;
+    }
+  }
+
+  /* ------------------------------------- */
+  /* ADMIN DOMAIN */
+  /* ------------------------------------- */
+
+  if (mode === "admin") {
+    if (isPublicRoute(pathname)) {
+      window.location.replace(
+        buildPublicUrl(
+          pathname,
+          search,
+          hash,
+        ),
+      );
+
+      return;
+    }
+  }
+}
+
+/* ===================================================== */
+/* ADMIN SEO PROTECTION */
+/* ===================================================== */
+
+export function injectAdminNoIndex() {
+  if (
+    typeof document === "undefined"
+  ) {
+    return;
+  }
+
+  if (getAppMode() !== "admin") {
+    return;
+  }
+
+  let meta = document.querySelector(
+    'meta[name="robots"]',
+  );
+
+  if (!meta) {
+    meta =
+      document.createElement("meta");
+
+    meta.setAttribute(
+      "name",
+      "robots",
+    );
+
+    document.head.appendChild(meta);
+  }
+
+  meta.setAttribute(
+    "content",
+    "noindex,nofollow",
+  );
+}
+
+/* ===================================================== */
+/* DEBUG */
+/* ===================================================== */
+
+export function debugDomainInfo() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  console.group(
+    "Pomah Domain Debug",
+  );
+
+  console.log(
+    "hostname:",
+    window.location.hostname,
+  );
+
+  console.log(
+    "pathname:",
+    window.location.pathname,
+  );
+
+  console.log(
+    "mode:",
+    getAppMode(),
+  );
+
+  console.log(
+    "isAdminHost:",
+    isAdminHost(),
+  );
+
+  console.log(
+    "isPublicHost:",
+    isPublicHost(),
+  );
+
+  console.groupEnd();
 }
