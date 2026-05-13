@@ -33,6 +33,14 @@ Deno.serve(async (req) => {
       .select('slug, updated_at')
       .eq('is_active', true);
 
+    // Fetch active upcoming events
+    const { data: events } = await supabase
+      .from('city_events')
+      .select('slug, updated_at')
+      .eq('is_active', true)
+      .gte('event_date', new Date().toISOString().split('T')[0])
+      .order('event_date', { ascending: true });
+
     const baseUrl = seoSettings?.canonical_url || 'https://pomahguesthouse.com';
     const changefreq = seoSettings?.sitemap_change_freq || 'weekly';
     const priorityHome = seoSettings?.sitemap_priority_home || 1.0;
@@ -46,13 +54,6 @@ Deno.serve(async (req) => {
     xml += '  <url>\n';
     xml += `    <loc>${baseUrl}</loc>\n`;
     xml += `    <priority>${priorityHome}</priority>\n`;
-    xml += `    <changefreq>${changefreq}</changefreq>\n`;
-    xml += '  </url>\n';
-
-    // Auth page
-    xml += '  <url>\n';
-    xml += `    <loc>${baseUrl}/auth</loc>\n`;
-    xml += '    <priority>0.6</priority>\n';
     xml += `    <changefreq>${changefreq}</changefreq>\n`;
     xml += '  </url>\n';
 
@@ -98,9 +99,23 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Event detail pages
+    if (events && events.length > 0) {
+      for (const event of events) {
+        xml += '  <url>\n';
+        xml += `    <loc>${baseUrl}/events/${event.slug}</loc>\n`;
+        xml += '    <priority>0.7</priority>\n';
+        xml += `    <changefreq>${changefreq}</changefreq>\n`;
+        if (event.updated_at) {
+          xml += `    <lastmod>${new Date(event.updated_at).toISOString().split('T')[0]}</lastmod>\n`;
+        }
+        xml += '  </url>\n';
+      }
+    }
+
     xml += '</urlset>';
 
-    console.log('Generated sitemap with', (rooms?.length || 0) + 3, 'URLs');
+    console.log('Generated sitemap with', (rooms?.length || 0) + (attractions?.length || 0) + (events?.length || 0) + 3, 'URLs');
 
     return new Response(xml, {
       headers: {

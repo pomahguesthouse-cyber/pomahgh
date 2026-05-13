@@ -42,6 +42,18 @@ Deno.serve(async (req) => {
       console.error('Error fetching attractions:', attractionsError);
     }
 
+    // Fetch active upcoming events
+    const { data: events, error: eventsError } = await supabase
+      .from('city_events')
+      .select('slug, updated_at')
+      .eq('is_active', true)
+      .gte('event_date', new Date().toISOString().split('T')[0])
+      .order('event_date', { ascending: true });
+
+    if (eventsError) {
+      console.error('Error fetching events:', eventsError);
+    }
+
     const today = new Date().toISOString().split('T')[0];
 
     // Build XML sitemap
@@ -54,19 +66,19 @@ Deno.serve(async (req) => {
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-  
+
   <!-- Static pages -->
   <url>
-    <loc>${SITE_URL}/explore</loc>
+    <loc>${SITE_URL}/explore-semarang</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>${SITE_URL}/bookings</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
 `;
 
@@ -94,7 +106,7 @@ Deno.serve(async (req) => {
         if (attraction.slug) {
           const lastmod = attraction.updated_at ? new Date(attraction.updated_at).toISOString().split('T')[0] : today;
           xml += `  <url>
-    <loc>${SITE_URL}/explore/${attraction.slug}</loc>
+    <loc>${SITE_URL}/explore-semarang/${attraction.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -104,9 +116,26 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Add event pages
+    if (events && events.length > 0) {
+      xml += '\n  <!-- Event pages -->\n';
+      for (const event of events) {
+        if (event.slug) {
+          const lastmod = event.updated_at ? new Date(event.updated_at).toISOString().split('T')[0] : today;
+          xml += `  <url>
+    <loc>${SITE_URL}/events/${event.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+`;
+        }
+      }
+    }
+
     xml += '</urlset>';
 
-    console.log(`Sitemap generated with ${(rooms?.length || 0) + (attractions?.length || 0) + 3} URLs`);
+    console.log(`Sitemap generated with ${(rooms?.length || 0) + (attractions?.length || 0) + (events?.length || 0) + 3} URLs`);
 
     return new Response(xml, {
       headers: {
