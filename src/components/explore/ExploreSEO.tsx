@@ -2,6 +2,8 @@ import { Helmet } from "react-helmet-async";
 import { useSeoSettings } from "@/hooks/useSeoSettings";
 import { usePublicHotelSettings } from "@/hooks/usePublicHotelSettings";
 import { CityAttraction } from "@/hooks/useCityAttractions";
+import { useCanonicalUrl } from "@/hooks/useCanonicalUrl";
+import { normalizeBaseUrl } from "@/utils/buildCanonicalUrl";
 
 interface ExploreSEOProps {
   attractions: CityAttraction[];
@@ -20,8 +22,9 @@ const getCategoryTouristType = (category: string): string[] => {
 export const ExploreSEO = ({ attractions }: ExploreSEOProps) => {
   const { settings } = useSeoSettings();
   const { settings: hotelSettings } = usePublicHotelSettings();
-  
-  const baseUrl = settings?.canonical_url || "https://pomahguesthouse.com";
+  const pageCanonical = useCanonicalUrl("/explore-semarang");
+  // Base URL (no path) used for cross-links in structured data
+  const baseUrl = normalizeBaseUrl(settings?.canonical_url);
   const pageTitle = "Explore Semarang - Wisata, Kuliner & Destinasi Terbaik | " + (settings?.site_title || "Pomah Guesthouse");
   const description = "Temukan destinasi wisata terbaik di Semarang: Lawang Sewu, Sam Poo Kong, kuliner Lunpia, dan tempat menarik lainnya. Menginap nyaman di Pomah Guesthouse.";
   const keywords = "wisata semarang, tempat wisata semarang, kuliner semarang, hotel semarang, penginapan semarang, lawang sewu, sam poo kong, kota lama semarang";
@@ -83,7 +86,7 @@ export const ExploreSEO = ({ attractions }: ExploreSEOProps) => {
     "@type": "CollectionPage",
     "name": pageTitle,
     "description": description,
-    "url": `${baseUrl}/explore-semarang`,
+    "url": pageCanonical,
     "inLanguage": "id-ID",
     "isPartOf": {
       "@type": "WebSite",
@@ -156,7 +159,7 @@ export const ExploreSEO = ({ attractions }: ExploreSEOProps) => {
         "@type": "ListItem",
         "position": 2,
         "name": "Explore Semarang",
-        "item": `${baseUrl}/explore-semarang`
+        "item": pageCanonical
       }
     ]
   };
@@ -207,7 +210,7 @@ export const ExploreSEO = ({ attractions }: ExploreSEOProps) => {
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
       <meta name="author" content={hotelSettings?.hotel_name || "Pomah Guesthouse"} />
-      <link rel="canonical" href={`${baseUrl}/explore-semarang`} />
+      <link rel="canonical" href={pageCanonical} />
       
       {/* Robots */}
       <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -222,7 +225,7 @@ export const ExploreSEO = ({ attractions }: ExploreSEOProps) => {
       <meta property="og:title" content={pageTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:type" content="article" />
-      <meta property="og:url" content={`${baseUrl}/explore-semarang`} />
+      <meta property="og:url" content={pageCanonical} />
       <meta property="og:image" content={ogImage} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
@@ -245,8 +248,8 @@ export const ExploreSEO = ({ attractions }: ExploreSEOProps) => {
       {settings?.twitter_handle && <meta name="twitter:site" content={settings.twitter_handle} />}
       
       {/* Hreflang for Indonesian */}
-      <link rel="alternate" hrefLang="id" href={`${baseUrl}/explore-semarang`} />
-      <link rel="alternate" hrefLang="x-default" href={`${baseUrl}/explore-semarang`} />
+      <link rel="alternate" hrefLang="id" href={pageCanonical} />
+      <link rel="alternate" hrefLang="x-default" href={pageCanonical} />
       
       {/* Structured Data */}
       <script type="application/ld+json">{JSON.stringify(lodgingBusinessSchema)}</script>

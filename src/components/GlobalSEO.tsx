@@ -162,11 +162,11 @@ export const GlobalSEO = () => {
     : "noindex, nofollow";
 
   /* ---------------------
-   * Canonical fallback
+   * Base URL for JSON-LD
+   * Used only in structured-data schemas (org/website), NOT as a <link
+   * rel="canonical"> — each page component owns its own canonical tag.
    * --------------------- */
-  const canonical = settings.canonical_url
-    ? settings.canonical_url.replace(/\/$/, "")
-    : `${window.location.origin}${window.location.pathname}`.replace(/\/$/, "");
+  const canonical = (settings.canonical_url || window.location.origin).replace(/\/+$/, "");
 
   /* ---------------------
    * Structured Data base
@@ -255,9 +255,6 @@ export const GlobalSEO = () => {
       <meta name="keywords" content={settings.meta_keywords || ""} />
       <meta name="robots" content={robotsContent} />
       <meta name="author" content={settings.og_site_name || settings.site_title} />
-
-      {/* Canonical */}
-      <link rel="canonical" href={canonical} />
 
       {/* Open Graph */}
       <meta property="og:site_name" content={settings.og_site_name} />
