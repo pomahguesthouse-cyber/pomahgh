@@ -216,7 +216,7 @@ function createAgentMutation<TData, TParams = void>(
 // MUTATIONS
 // ============================================================
 
-export const useDeepAnalyze = createAgentMutation("deep_analyze", DeepAnalyzeSchema, {
+export const useDeepAnalyze = createAgentMutation<typeof DeepAnalyzeSchema._type, { limit: number }>("deep_analyze", DeepAnalyzeSchema, {
   successMessage: (data) => `Berhasil menganalisis ${data.analyzed} percakapan`,
   invalidate: [["conversation-insights"], ["learning-metrics"], ["learning-report"]],
 });
@@ -386,9 +386,9 @@ export const useLearningMetrics = (days = 7) => {
 // ============================================================
 
 export const useLearningReport = () => {
-  return useMutation({
+  return useMutation<LearningReportResponse, Error, void>({
     mutationFn: async () => {
-      return invokeAgent("learning_report", z.any());
+      return invokeAgent<LearningReportResponse>("learning_report", z.any());
     },
 
     retry: false,
