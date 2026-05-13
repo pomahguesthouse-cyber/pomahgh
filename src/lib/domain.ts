@@ -1,26 +1,32 @@
 /**
- * PRODUCTION-READY DOMAIN & ROUTING HELPERS
- * ----------------------------------------
+ * ======================================================
+ * DOMAIN & ENVIRONMENT HELPERS
+ * ======================================================
+ *
  * Supports:
  * - public domain
  * - admin subdomain
  * - localhost development
- * - lovable preview environments
+ * - lovable preview deployments
  * - SPA routing
- * - SEO isolation
- * - admin/public boundary enforcement
+ * - admin/public separation
+ * - cross-domain redirects
  *
- * Domains:
- * - https://pomahguesthouse.com
- * - https://www.pomahguesthouse.com
- * - https://admin.pomahguesthouse.com
+ * Production:
+ *   https://pomahguesthouse.com
+ *   https://admin.pomahguesthouse.com
+ *
+ * Development:
+ *   localhost:8080/admin/dashboard
  */
 
-export type AppMode = "admin" | "public";
+export type AppMode =
+  | "admin"
+  | "public";
 
-/* ===================================================== */
-/* HOST CONFIG */
-/* ===================================================== */
+/* ====================================================== */
+/* Hosts */
+/* ====================================================== */
 
 export const MAIN_HOST =
   "pomahguesthouse.com";
@@ -31,51 +37,66 @@ export const WWW_HOST =
 export const ADMIN_HOST =
   "admin.pomahguesthouse.com";
 
-export const PROD_HOSTS = new Set([
-  MAIN_HOST,
-  WWW_HOST,
-  ADMIN_HOST,
-]);
-
-/* ===================================================== */
-/* ADMIN ROUTE CONFIG */
-/* ===================================================== */
+/* ====================================================== */
+/* Admin Routes */
+/* ====================================================== */
 
 export const ADMIN_ROUTES = [
   "/dashboard",
+  "/login",
+
   "/booking-calendar",
-  "/rooms",
-  "/bookings",
+
+  "/manage-rooms",
+  "/manage-bookings",
+
+  "/invoice-management",
+
   "/hero-slides",
   "/facility-hero-slides",
+  "/explore-hero-slides",
+
   "/facilities",
-  "/settings",
-  "/invoice-management",
   "/nearby-locations",
+
+  "/city-attractions",
+  "/city-events",
+
+  "/media-library",
+
+  "/room-features",
+  "/room-addons",
+
+  "/promotions",
+
   "/chatbot",
   "/chatbot/guest",
   "/chatbot/admin",
+
   "/chat",
+
   "/multi-agent",
+
   "/bank-accounts",
-  "/room-features",
-  "/room-addons",
-  "/promotions",
+
   "/seo-settings",
   "/seo-agent",
   "/social-media-agent",
-  "/page-editor",
-  "/editor",
-  "/media-library",
-  "/city-attractions",
-  "/explore-hero-slides",
-  "/city-events",
+
   "/competitor-analysis",
+
+  "/system-settings",
+
+  "/landing-editor",
+  "/page-editor",
+
+  "/mobile-dashboard",
+  "/mobile-login",
 ];
 
-/* ===================================================== */
-/* PUBLIC ROUTE PREFIXES */
-/* ===================================================== */
+/* ====================================================== */
+/* Public Routes */
+/* ====================================================== */
 
 export const PUBLIC_ROUTE_PREFIXES = [
   "/rooms/",
@@ -87,11 +108,13 @@ export const PUBLIC_ROUTE_PREFIXES = [
   "/homestay/",
 ];
 
-/* ===================================================== */
-/* SAFE WINDOW */
-/* ===================================================== */
+/* ====================================================== */
+/* Safe Window */
+/* ====================================================== */
 
-function safeWindow(): Window | null {
+function safeWindow():
+  | Window
+  | null {
   if (typeof window === "undefined") {
     return null;
   }
@@ -99,31 +122,29 @@ function safeWindow(): Window | null {
   return window;
 }
 
-/* ===================================================== */
-/* HOST HELPERS */
-/* ===================================================== */
+/* ====================================================== */
+/* Helpers */
+/* ====================================================== */
 
 export function normalizeHostname(
   hostname: string,
 ) {
   return hostname
     .toLowerCase()
-    .replace(/\.$/, "");
+    .replace(/\.$/, "")
+    .replace(/^www\./, "");
 }
 
 export function getHostname() {
   return (
-    safeWindow()?.location.hostname || ""
+    safeWindow()?.location.hostname ||
+    ""
   );
 }
 
-export function isProdHost(
-  hostname = getHostname(),
-) {
-  return PROD_HOSTS.has(
-    normalizeHostname(hostname),
-  );
-}
+/* ====================================================== */
+/* Host Detection */
+/* ====================================================== */
 
 export function isAdminHost(
   hostname = getHostname(),
@@ -141,44 +162,42 @@ export function isPublicHost(
     normalizeHostname(hostname);
 
   return (
-    normalized === MAIN_HOST ||
-    normalized === WWW_HOST
+    normalized === MAIN_HOST
   );
 }
 
-/* ===================================================== */
-/* APP MODE DETECTION */
-/* ===================================================== */
+/* ====================================================== */
+/* App Mode */
+/* ====================================================== */
 
-export function getAppMode(): AppMode {
+export function getAppMode():
+  AppMode {
   const w = safeWindow();
 
   if (!w) {
     return "public";
   }
 
-  const hostname = normalizeHostname(
-    w.location.hostname,
-  );
+  const hostname =
+    normalizeHostname(
+      w.location.hostname,
+    );
 
-  /* ------------------------------------- */
+  /* ---------------------------------- */
   /* Production */
-  /* ------------------------------------- */
+  /* ---------------------------------- */
 
   if (hostname === ADMIN_HOST) {
     return "admin";
   }
 
-  if (
-    hostname === MAIN_HOST ||
-    hostname === WWW_HOST
-  ) {
+  if (hostname === MAIN_HOST) {
     return "public";
   }
 
-  /* ------------------------------------- */
+  /* ---------------------------------- */
   /* Dev / Preview fallback */
-  /* ------------------------------------- */
+  /* ---------------------------------- */
 
   return w.location.pathname.startsWith(
     "/admin",
@@ -187,9 +206,9 @@ export function getAppMode(): AppMode {
     : "public";
 }
 
-/* ===================================================== */
-/* ADMIN BASE PATH */
-/* ===================================================== */
+/* ====================================================== */
+/* Admin Basename */
+/* ====================================================== */
 
 export function getAdminBasename() {
   return isAdminHost()
@@ -197,9 +216,9 @@ export function getAdminBasename() {
     : "/admin";
 }
 
-/* ===================================================== */
-/* ADMIN PATH DETECTION */
-/* ===================================================== */
+/* ====================================================== */
+/* Legacy Admin Path */
+/* ====================================================== */
 
 export function isAdminPath(
   pathname: string,
@@ -210,39 +229,47 @@ export function isAdminPath(
   );
 }
 
-/* ===================================================== */
-/* ADMIN ROUTE CHECK */
-/* ===================================================== */
+/* ====================================================== */
+/* Admin Route Check */
+/* ====================================================== */
 
 export function isAdminRoute(
   pathname: string,
 ) {
-  return ADMIN_ROUTES.some((route) => {
-    return (
+  return ADMIN_ROUTES.some(
+    (route) =>
       pathname === route ||
-      pathname.startsWith(`${route}/`)
-    );
-  });
+      pathname.startsWith(
+        `${route}/`,
+      ),
+  );
 }
 
-/* ===================================================== */
-/* PUBLIC ROUTE CHECK */
-/* ===================================================== */
+/* ====================================================== */
+/* Public Route Check */
+/* ====================================================== */
 
-export function isPublicRoute(
-  pathname: string,
 export function isPublicRoute(
   pathname: string,
 ) {
+  /* IMPORTANT:
+     prevent "/" from redirecting
+     admin root accidentally.
+  */
+
+  if (pathname === "/") {
+    return false;
+  }
+
   return PUBLIC_ROUTE_PREFIXES.some(
     (prefix) =>
       pathname.startsWith(prefix),
   );
 }
 
-/* ===================================================== */
-/* CLEAN ADMIN PATH */
-/* ===================================================== */
+/* ====================================================== */
+/* Strip Legacy Admin Prefix */
+/* ====================================================== */
 
 export function stripAdminPrefix(
   pathname: string,
@@ -255,9 +282,9 @@ export function stripAdminPrefix(
   return cleaned || "/";
 }
 
-/* ===================================================== */
-/* URL BUILDERS */
-/* ===================================================== */
+/* ====================================================== */
+/* URL Builders */
+/* ====================================================== */
 
 export function buildAdminUrl(
   path: string,
@@ -278,14 +305,16 @@ export function buildPublicUrl(
   return `https://${MAIN_HOST}${path}${search}${hash}`;
 }
 
-/* ===================================================== */
-/* REDIRECT HELPERS */
-/* ===================================================== */
+/* ====================================================== */
+/* Redirect Helpers */
+/* ====================================================== */
 
 export function redirectToAdmin(
   path = "/dashboard",
 ) {
-  if (typeof window === "undefined") {
+  if (
+    typeof window === "undefined"
+  ) {
     return;
   }
 
@@ -296,7 +325,9 @@ export function redirectToAdmin(
 export function redirectToPublic(
   path = "/",
 ) {
-  if (typeof window === "undefined") {
+  if (
+    typeof window === "undefined"
+  ) {
     return;
   }
 
@@ -304,110 +335,14 @@ export function redirectToPublic(
     buildPublicUrl(path);
 }
 
-/* ===================================================== */
-/* DOMAIN BOUNDARY ENFORCEMENT */
-/* ===================================================== */
-
-export function enforceDomainBoundary() {
-  const w = safeWindow();
-
-  if (!w) {
-    return;
-  }
-
-  const pathname =
-    w.location.pathname;
-
-  const search =
-    w.location.search;
-
-  const hash = w.location.hash;
-
-  const mode = getAppMode();
-
-  /* ------------------------------------- */
-  /* PUBLIC DOMAIN */
-  /* ------------------------------------- */
-
-  if (mode === "public") {
-    if (
-      isAdminRoute(pathname) ||
-      isAdminPath(pathname)
-    ) {
-      window.location.replace(
-        buildAdminUrl(
-          pathname,
-          search,
-          hash,
-        ),
-      );
-
-      return;
-    }
-  }
-
-  /* ------------------------------------- */
-  /* ADMIN DOMAIN */
-  /* ------------------------------------- */
-
-  if (mode === "admin") {
-    if (isPublicRoute(pathname)) {
-      window.location.replace(
-        buildPublicUrl(
-          pathname,
-          search,
-          hash,
-        ),
-      );
-
-      return;
-    }
-  }
-}
-
-/* ===================================================== */
-/* ADMIN SEO PROTECTION */
-/* ===================================================== */
-
-export function injectAdminNoIndex() {
-  if (
-    typeof document === "undefined"
-  ) {
-    return;
-  }
-
-  if (getAppMode() !== "admin") {
-    return;
-  }
-
-  let meta = document.querySelector(
-    'meta[name="robots"]',
-  );
-
-  if (!meta) {
-    meta =
-      document.createElement("meta");
-
-    meta.setAttribute(
-      "name",
-      "robots",
-    );
-
-    document.head.appendChild(meta);
-  }
-
-  meta.setAttribute(
-    "content",
-    "noindex,nofollow",
-  );
-}
-
-/* ===================================================== */
-/* DEBUG */
-/* ===================================================== */
+/* ====================================================== */
+/* Debug */
+/* ====================================================== */
 
 export function debugDomainInfo() {
-  if (typeof window === "undefined") {
+  if (
+    typeof window === "undefined"
+  ) {
     return;
   }
 
