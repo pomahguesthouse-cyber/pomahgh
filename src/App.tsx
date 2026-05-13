@@ -1,55 +1,31 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { HelmetProvider } from "react-helmet-async";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+import {
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+
+import { BrowserRouter } from "react-router-dom";
+
+import {
+  buildAdminUrl,
+  buildPublicUrl,
+  getAppMode,
+  getAdminBasename,
+  isAdminHost,
+  isAdminPath,
+  isAdminRoute,
+  isPublicHost,
+  isPublicRoute,
+  stripAdminPrefix,
+} from "@/lib/domain";
 
 import PublicApp from "./PublicApp";
 import AdminApp from "./AdminApp";
-import {
-  getSubdomain,
-  isAdminHost,
-  isAdminOnlyPath,
-  isAdminPath,
-  isPublicHost,
-  isPublicOnlyPath,
-  buildAdminUrl,
-  buildPublicUrl,
-  stripAdminBasename,
-} from "@/lib/domain";
-
-/* ====================================================== */
-/* Cross-domain redirects (synchronous, pre-render)        */
-/* ====================================================== */
-
-function applyCrossDomainRedirects(): boolean {
-  if (typeof window === "undefined") return false;
-  const { hostname, pathname, search, hash } = window.location;
-
-  // Public domain → admin-only URLs must always live on admin.pomahguesthouse.com.
-  if (isPublicHost(hostname)) {
-    if (isAdminOnlyPath(pathname)) {
-      window.location.replace(buildAdminUrl(pathname, search, hash));
-      return true;
-    }
-  }
-
-  // Admin domain → normalize legacy `/admin/...` paths to clean admin-subdomain paths.
-  if (isAdminHost(hostname)) {
-    if (isAdminPath(pathname)) {
-      window.location.replace(`${stripAdminBasename(pathname)}${search}${hash}`);
-      return true;
-    }
-
-    // Public-only content must stay on the public domain.
-    if (isPublicOnlyPath(pathname)) {
-      window.location.replace(buildPublicUrl(pathname, search, hash));
-      return true;
-    }
-  }
-
-  return false;
-}
 
 /* ====================================================== */
 /* Query Client */
@@ -67,27 +43,123 @@ const queryClient = new QueryClient({
 });
 
 /* ====================================================== */
-/* App Root */
+/* Cross Domain Redirects */
 /* ====================================================== */
 
-const App = () => {
-  // If a cross-domain redirect fires, stop rendering — the browser navigation
-  // is already in flight.
-  if (applyCrossDomainRedirects()) return null;
+function applyCrossDomainRedirects() {
+  if (typeof window === "undefined") {
+    return false;
+  }
 
-  const subdomain = getSubdomain();
+  const {
+    hostname,
+    pathname,
+    search,
+    hash,
+  } = window.location;
+
+  /* ------------------------------------- */
+  /* Public domain */
+  /* ------------------------------------- */
+
+  if (isPublicHost(hostname)) {
+    if (
+      isAdminRoute(pathname) ||
+      isAdminPath(pathname)
+    ) {
+      window.location.replace(
+        buildAdminUrl(
+          pathname,
+          search,
+          hash,
+        ),
+      );
+
+      return true;
+    }
+  }
+
+  /* ------------------------------------- */
+  /* Admin domain */
+  /* ------------------------------------- */
+
+  if (isAdminHost(hostname)) {
+    /* Legacy /admin/* cleanup */
+
+    if (isAdminPath(pathname)) {
+      window.location.replace(
+        `${stripAdminPrefix(pathname)}${search}${hash}`,
+      );
+
+      return true;
+    }
+
+    /* Public-only content */
+
+    if (isPublicRoute(pathname)) {
+      window.location.replace(
+        buildPublicUrl(
+          pathname,
+          search,
+          hash,
+        ),
+      );
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/* ====================================================== */
+/* App */
+/* ====================================================== */
+
+export default function App() {
+  /* ------------------------------------- */
+  /* Redirect before render */
+  /* ------------------------------------- */
+
+  if (applyCrossDomainRedirects()) {
+    return null;
+  }
+
+  const mode = getAppMode();
+
+  /* ------------------------------------- */
+  /* Basename */
+  /* ------------------------------------- */
+
+  const basename =
+    mode === "admin"
+      ? getAdminBasename()
+      : "/";
 
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
         <TooltipProvider>
+
           <Toaster />
           <Sonner />
-          {subdomain === "admin" ? <AdminApp /> : <PublicApp />}
+
+          <BrowserRouter basename={basename}>
+
+            {/* ========================== */}
+            {/* Admin App */}
+            {/* ========================== */}
+
+            {mode === "admin" ? (
+              <AdminApp />
+            ) : (
+              <PublicApp />
+            )}
+
+          </BrowserRouter>
+
         </TooltipProvider>
       </HelmetProvider>
     </QueryClientProvider>
   );
-};
-
-export default App;
+}
