@@ -49,7 +49,7 @@ export const Contact = ({ editorMode = false }: ContactProps) => {
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">Location</h3>
                 <p className="text-sm sm:text-base text-muted-foreground">
-                  {fullAddress || "Jimbaran Beach, Bali, Indonesia, 80361"}
+                  {fullAddress || "Dewi Sartika IV No 71 Semarang, 50221"}
                 </p>
               </div>
             </div>
