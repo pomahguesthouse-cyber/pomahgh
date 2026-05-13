@@ -146,8 +146,8 @@ const NotFound = lazyRetry(() => import("./pages/NotFound"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
-      gcTime: 5 * 60_000,
+      staleTime: 60_000,        // 1 min — halves background refetches vs 30 s
+      gcTime: 10 * 60_000,      // 10 min — keeps data across route navigations
       refetchOnWindowFocus: false,
       retry: 1,
     },

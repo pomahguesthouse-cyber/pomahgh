@@ -51,6 +51,8 @@ export const useSeoSettings = () => {
       if (error) throw error;
       return data as SeoSettings;
     },
+    staleTime: 10 * 60_000, // SEO settings change at most a few times per day
+    gcTime: 30 * 60_000,    // keep in memory across navigations for 30 min
   });
 
   const updateSettings = useMutation({
