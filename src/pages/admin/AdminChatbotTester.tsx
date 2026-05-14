@@ -270,7 +270,7 @@ function ReplayTab() {
           <SelectContent>
             {(convs ?? []).map((c) => (
               <SelectItem key={c.id} value={c.id}>
-                {c.phone_number} · {c.message_count ?? 0} pesan · {new Date(c.created_at).toLocaleString("id-ID")}
+                {c.session_id} · {c.message_count ?? 0} pesan · {c.started_at ? new Date(c.started_at).toLocaleString("id-ID") : ""}
               </SelectItem>
             ))}
           </SelectContent>

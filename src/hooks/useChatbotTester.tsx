@@ -209,8 +209,8 @@ export const useRecentConversations = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("chat_conversations")
-        .select("id, phone_number, created_at, message_count")
-        .order("created_at", { ascending: false })
+        .select("id, session_id, started_at, message_count")
+        .order("started_at", { ascending: false })
         .limit(50);
       if (error) throw error;
       return data ?? [];
