@@ -4,6 +4,7 @@ import { logMessage } from "../services/conversation.ts";
 import { logChatbotAlert } from "../services/alerts.ts";
 import { updateSession } from "../services/session.ts";
 import { TraceContext } from "../../_shared/traceContext.ts";
+import { composeReplyWithTraining } from "../../_shared/trainingAugmentedReply.ts";
 
 export async function handleGuestBookingFlow(
   supabase: SupabaseClient,
@@ -45,7 +46,16 @@ export async function handleGuestBookingFlow(
         "system",
         `⚠️ Tamu minta update booking ${bookingCode} (${reasonText}): "${message}"`,
       );
-      const reply = `Kak, permintaan perubahan untuk booking ${bookingCode} sudah saya teruskan ke admin kami ya agar dibantu proses secara manual. Mohon ditunggu sebentar 🙏`;
+      const fallbackReply = `Kak, permintaan perubahan untuk booking ${bookingCode} sudah saya teruskan ke admin kami ya agar dibantu proses secara manual. Mohon ditunggu sebentar 🙏`;
+      const reply = await composeReplyWithTraining({
+        supabase,
+        userMessage: message,
+        facts: `Kode booking: ${bookingCode}\nJenis permintaan: ${isRefundCancel ? "pembatalan/refund" : "perubahan booking"}\nKonteks: ${reasonText}\nAksi sistem: sudah dieskalasi ke admin manusia.`,
+        instruction:
+          "Tamu minta perubahan/pembatalan booking. Konfirmasi singkat bahwa permintaan sudah diteruskan ke admin manusia, minta tamu tunggu sebentar. JANGAN menjanjikan hasil apa pun (approve/refund) — keputusan ada di admin.",
+        fallback: fallbackReply,
+        recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
+      });
       await sendWhatsApp(phone, reply, env.fonnteApiKey);
       await logMessage(supabase, conversationId, "assistant", reply);
       await logChatbotAlert(supabase, {
