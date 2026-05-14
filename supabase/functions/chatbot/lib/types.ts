@@ -126,6 +126,17 @@ export interface PromptConfig {
   hotelData: HotelData;
   conversationContext?: ConversationContext;
   lastUserMessage?: string;
+  /**
+   * Pre-fetched, semantically-ranked training examples.
+   * If provided & non-empty, promptBuilder uses these instead of keyword filter.
+   */
+  semanticTrainingExamples?: Array<{
+    id: string;
+    question: string;
+    ideal_answer: string;
+    category: string | null;
+    similarity: number;
+  }>;
 }
 
 export const DEFAULT_CHATBOT_SETTINGS: ChatbotSettings = {
