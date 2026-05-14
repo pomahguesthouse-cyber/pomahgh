@@ -127,6 +127,28 @@ const AdminMediaLibrary = lazyRetry(() => import("./pages/admin/AdminMediaLibrar
 const AdminCompetitorAnalysis = lazyRetry(() => import("./pages/admin/AdminCompetitorAnalysis"));
 const AdminMultiAgent = lazyRetry(() => import("./pages/admin/AdminMultiAgentDashboard"));
 
+/* Property */
+const AdminPromotions = lazyRetry(() => import("./pages/admin/AdminPromotions"));
+const AdminRoomAddons = lazyRetry(() => import("./pages/admin/AdminRoomAddons"));
+const AdminRoomFeatures = lazyRetry(() => import("./pages/admin/AdminRoomFeatures"));
+
+/* Operations / Finance */
+const AdminInvoiceManagement = lazyRetry(() => import("./pages/admin/AdminInvoiceManagement"));
+const AdminBankAccounts = lazyRetry(() => import("./pages/admin/AdminBankAccounts"));
+
+/* Content */
+const AdminFacilityHeroSlides = lazyRetry(() => import("./pages/admin/AdminFacilityHeroSlides"));
+const AdminExploreHeroSlides = lazyRetry(() => import("./pages/admin/AdminExploreHeroSlides"));
+const AdminNearbyLocations = lazyRetry(() => import("./pages/admin/AdminNearbyLocations"));
+const AdminCityAttractions = lazyRetry(() => import("./pages/admin/AdminCityAttractions"));
+const AdminCityEvents = lazyRetry(() => import("./pages/admin/AdminCityEvents"));
+const AdminLandingPages = lazyRetry(() => import("./pages/admin/AdminLandingPages"));
+
+/* Chatbots */
+const AdminChat = lazyRetry(() => import("./pages/admin/AdminChat"));
+const AdminGuestChatbot = lazyRetry(() => import("./pages/admin/AdminGuestChatbot"));
+const AdminAdminChatbot = lazyRetry(() => import("./pages/admin/AdminAdminChatbot"));
+
 const AdminLayout = lazyRetry(() =>
   import("./components/admin/AdminLayout").then((m) => ({
     default: m.AdminLayout,
@@ -340,6 +362,146 @@ const App = () => {
                           element={
                             <AdminLayout>
                               <AdminMultiAgent />
+                            </AdminLayout>
+                          }
+                        />
+
+                        {/* Property */}
+                        <Route
+                          path="/admin/promotions"
+                          element={
+                            <AdminLayout>
+                              <AdminPromotions />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/room-addons"
+                          element={
+                            <AdminLayout>
+                              <AdminRoomAddons />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/room-features"
+                          element={
+                            <AdminLayout>
+                              <AdminRoomFeatures />
+                            </AdminLayout>
+                          }
+                        />
+
+                        {/* Operations / Finance */}
+                        <Route
+                          path="/admin/invoice-management"
+                          element={
+                            <AdminLayout>
+                              <AdminInvoiceManagement />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/bank-accounts"
+                          element={
+                            <AdminLayout>
+                              <AdminBankAccounts />
+                            </AdminLayout>
+                          }
+                        />
+
+                        {/* Content */}
+                        <Route
+                          path="/admin/facility-hero-slides"
+                          element={
+                            <AdminLayout>
+                              <AdminFacilityHeroSlides />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/explore-hero-slides"
+                          element={
+                            <AdminLayout>
+                              <AdminExploreHeroSlides />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/nearby-locations"
+                          element={
+                            <AdminLayout>
+                              <AdminNearbyLocations />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/city-attractions"
+                          element={
+                            <AdminLayout>
+                              <AdminCityAttractions />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/city-events"
+                          element={
+                            <AdminLayout>
+                              <AdminCityEvents />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/landing-pages"
+                          element={
+                            <AdminLayout>
+                              <AdminLandingPages />
+                            </AdminLayout>
+                          }
+                        />
+
+                        {/* Chatbots */}
+                        <Route
+                          path="/admin/chat"
+                          element={
+                            <AdminLayout>
+                              <AdminChat />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/chatbot/guest"
+                          element={
+                            <AdminLayout>
+                              <AdminGuestChatbot />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/chatbot/admin"
+                          element={
+                            <AdminLayout>
+                              <AdminAdminChatbot />
+                            </AdminLayout>
+                          }
+                        />
+
+                        {/* Page Editor (admin alias for /editor) */}
+                        <Route
+                          path="/admin/page-editor"
+                          element={
+                            <AdminLayout>
+                              <PageEditorPage />
                             </AdminLayout>
                           }
                         />
