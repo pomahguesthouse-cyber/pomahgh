@@ -85,9 +85,7 @@ const defaultMenuGroups: MenuGroup[] = [
     items: [
       { id: "multi-agent", title: "Multi-Agent", url: "/admin/multi-agent", icon: LayoutDashboard },
       { id: "web-chatbot", title: "Web Chatbot", url: "/admin/chat", icon: Bot },
-      { id: "guest-chatbot", title: "Guest Chatbot", url: "/admin/chatbot/guest", icon: Users },
-      { id: "admin-chatbot", title: "Admin Chatbot", url: "/admin/chatbot/admin", icon: Shield },
-      { id: "chatbot-tester", title: "Tester AI", url: "/admin/chatbot/tester", icon: Sparkles }
+      { id: "ai-lab", title: "AI Lab", url: "/admin/ai-lab", icon: Sparkles }
     ]
   },
   {
@@ -127,9 +125,7 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
   "/admin/bank-accounts":        () => import("@/pages/admin/AdminBankAccounts"),
   "/admin/multi-agent":          () => import("@/pages/admin/AdminMultiAgentDashboard"),
   "/admin/chat":                 () => import("@/pages/admin/AdminChat"),
-  "/admin/chatbot/guest":        () => import("@/pages/admin/AdminGuestChatbot"),
-  "/admin/chatbot/admin":        () => import("@/pages/admin/AdminAdminChatbot"),
-  "/admin/chatbot/tester":       () => import("@/pages/admin/AdminChatbotTester"),
+  "/admin/ai-lab":               () => import("@/pages/admin/AdminAILab"),
   "/admin/seo-settings":         () => import("@/pages/admin/AdminSeoSettings"),
   "/admin/seo-agent":            () => import("@/pages/admin/AdminSeoAgent"),
   "/admin/settings":             () => import("@/pages/admin/AdminSettings"),
