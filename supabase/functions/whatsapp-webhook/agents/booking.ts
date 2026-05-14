@@ -313,6 +313,9 @@ async function handleNewBooking(
   const roomCountMatch = msg.match(/(\d{1,2})\s*kamar\b/i);
   const numRooms = roomCountMatch ? parseInt(roomCountMatch[1], 10) : 1;
   if (numRooms >= 2) {
+    // Cek apakah ada kode booking PMH- di riwayat (untuk konteks)
+    const histText = recentMessages?.map((m) => m.content).join(" ") || "";
+    const bookingCode = histText.match(/PMH-[A-Z0-9]+/i)?.[0] ?? null;
     const reply =
       `Baik kak, untuk booking ${numRooms} kamar (${numGuests ?? "?"} tamu) di tanggal ` +
       `${checkInISO} – ${checkOutISO} sudah saya teruskan ke admin kami untuk dibantu ` +
@@ -325,6 +328,16 @@ async function handleNewBooking(
       "system",
       `⚠️ Multi-room request: ${numRooms} kamar, ${numGuests ?? "?"} tamu, ${checkInISO} – ${checkOutISO}. Pesan asli: "${msg}"`,
     );
+    await logChatbotAlert(supabase, {
+      alert_type: "multi_room_escalation",
+      phone_number: phone,
+      conversation_id: convId,
+      last_user_message: msg,
+      intent: `multi_room_${numRooms}kamar`,
+      booking_code: bookingCode,
+      reason: `${numRooms} kamar • ${numGuests ?? "?"} tamu • ${checkInISO} → ${checkOutISO}`,
+      recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
+    });
     await updateSession(supabase, phone, convId, false);
     return new Response(JSON.stringify({ status: "multi_room_escalated" }));
   }
