@@ -42,7 +42,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import TrainingTab from "@/components/admin/TrainingTab";
 import AdminTrainingTab from "@/components/admin/AdminTrainingTab";
-import TrainingEmbeddingStatus from "@/components/admin/TrainingEmbeddingStatus";
+import { TrainingEmbeddingStatus } from "@/components/admin/TrainingEmbeddingStatus";
 import KnowledgeBaseTab from "@/components/admin/KnowledgeBaseTab";
 import AdminKnowledgeBaseTab from "@/components/admin/AdminKnowledgeBaseTab";
 import WhatsAppLearningTab from "@/components/admin/WhatsAppLearningTab";
