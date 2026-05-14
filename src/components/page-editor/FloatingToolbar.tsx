@@ -10,21 +10,31 @@ import {
 } from "@/components/ui/tooltip";
 
 const FloatingToolbar = memo(function FloatingToolbar() {
-  const {
-    elements,
-    selectedElementId,
-    removeElement,
-    duplicateElement,
-    moveElement,
-    saveToHistory,
-  } = useEditorStore();
-
-  const currentIndex = selectedElementId ? elements.findIndex((el) => el.id === selectedElementId) : -1;
-  const canMoveUp = currentIndex > 0;
-  const canMoveDown = currentIndex < elements.length - 1 && currentIndex !== -1;
-  
-  const selectedElement = selectedElementId ? elements.find(el => el.id === selectedElementId) : undefined;
-  const elementType = selectedElement?.type || 'element';
+  // Computed selectors: toolbar re-renders only when these derived values
+  // change, not on every elements[] reference swap (e.g. a style edit on a
+  // different element).
+  const selectedElementId = useEditorStore(s => s.selectedElementId);
+  const currentIndex = useEditorStore(s =>
+    s.selectedElementId ? s.elements.findIndex(el => el.id === s.selectedElementId) : -1,
+  );
+  const canMoveUp = useEditorStore(s => {
+    if (!s.selectedElementId) return false;
+    return s.elements.findIndex(el => el.id === s.selectedElementId) > 0;
+  });
+  const canMoveDown = useEditorStore(s => {
+    if (!s.selectedElementId) return false;
+    const idx = s.elements.findIndex(el => el.id === s.selectedElementId);
+    return idx >= 0 && idx < s.elements.length - 1;
+  });
+  const elementType = useEditorStore(s =>
+    s.selectedElementId
+      ? (s.elements.find(el => el.id === s.selectedElementId)?.type ?? 'element')
+      : 'element',
+  );
+  const removeElement    = useEditorStore(s => s.removeElement);
+  const duplicateElement = useEditorStore(s => s.duplicateElement);
+  const moveElement      = useEditorStore(s => s.moveElement);
+  const saveToHistory    = useEditorStore(s => s.saveToHistory);
 
   const handleMoveUp = useCallback(() => {
     if (!canMoveUp || currentIndex === -1 || !selectedElementId) return;

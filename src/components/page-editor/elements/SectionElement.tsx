@@ -19,7 +19,12 @@ export function SectionElement({
   onHover,
   isPreview = false,
 }: SectionElementProps) {
-  const { selectedElementId, hoveredElementId, selectElement, setHoveredElement } = useEditorStore();
+  // Individual selectors: component re-renders only when these specific
+  // fields change, not on every unrelated store mutation (zoom, isSaving…).
+  const selectedElementId = useEditorStore(s => s.selectedElementId);
+  const hoveredElementId  = useEditorStore(s => s.hoveredElementId);
+  const selectElement     = useEditorStore(s => s.selectElement);
+  const setHoveredElement = useEditorStore(s => s.setHoveredElement);
   
   const {
     backgroundColor,

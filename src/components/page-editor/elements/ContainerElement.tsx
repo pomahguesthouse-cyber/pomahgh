@@ -20,7 +20,10 @@ export function ContainerElement({
   onHover,
   isPreview = false,
 }: ContainerElementProps) {
-  const { selectedElementId, hoveredElementId, selectElement, setHoveredElement } = useEditorStore();
+  const selectedElementId = useEditorStore(s => s.selectedElementId);
+  const hoveredElementId  = useEditorStore(s => s.hoveredElementId);
+  const selectElement     = useEditorStore(s => s.selectElement);
+  const setHoveredElement = useEditorStore(s => s.setHoveredElement);
   
   const {
     backgroundColor,

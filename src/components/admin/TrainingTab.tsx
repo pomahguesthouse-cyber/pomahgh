@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { BookOpen, Star, Plus, Pencil, Trash2, GraduationCap, MessageSquare, TrendingUp, Loader2, ChevronUp, ChevronDown, Zap, CheckCircle, XCircle, Bot } from "lucide-react";
 import { useTrainingExamples, useAddTrainingExample, useUpdateTrainingExample, useDeleteTrainingExample, useTrainingStats, useExtractTrainingData, useAutoLearnStats, useBulkApproveExamples, TrainingExample } from "@/hooks/useTrainingExamples";
-import { AITrainerCoachPanel } from "@/components/admin/AITrainerCoachPanel";
+// Lazy-load AI Coach panel — only needed when user opens the third tab.
+const AITrainerCoachPanel = lazy(() =>
+  import("@/components/admin/AITrainerCoachPanel").then(m => ({ default: m.AITrainerCoachPanel })),
+);
 import { useGenerateForCategory, useAnalyzeGaps, usePendingGeneratedExamples, useApproveGeneratedExample } from "@/hooks/useAITrainingGenerator";
 const CATEGORIES = [{
   value: "general",
@@ -735,7 +738,9 @@ export default function TrainingTab() {
 
       {/* ── AI Coach Tab ── */}
       <TabsContent value="ai-coach">
-        <AITrainerCoachPanel />
+        <Suspense fallback={<div className="py-12 text-center text-sm text-muted-foreground">Memuat AI Coach…</div>}>
+          <AITrainerCoachPanel />
+        </Suspense>
       </TabsContent>
 
     </Tabs>

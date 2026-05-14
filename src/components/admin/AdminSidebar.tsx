@@ -102,6 +102,30 @@ const defaultMenuGroups: MenuGroup[] = [
 
 const STORAGE_KEY = "admin-menu-order-v2";
 
+// Prefetch map: route path → dynamic import factory.
+// Called on mouseenter so the JS chunk downloads before the user clicks.
+// Fire-and-forget: errors are silently swallowed.
+const routePrefetchMap: Record<string, () => Promise<unknown>> = {
+  "/admin/dashboard":           () => import("@/pages/admin/AdminDashboard"),
+  "/admin/booking-calendar":    () => import("@/pages/admin/AdminBookingCalendarPage"),
+  "/admin/bookings":            () => import("@/pages/admin/AdminBookings"),
+  "/admin/rooms":               () => import("@/pages/admin/AdminRooms"),
+  "/admin/hero-slides":         () => import("@/pages/admin/AdminHeroSlides"),
+  "/admin/facilities":          () => import("@/pages/admin/AdminFacilities"),
+  "/admin/settings":            () => import("@/pages/admin/AdminSettings"),
+  "/admin/seo-settings":        () => import("@/pages/admin/AdminSeoSettings"),
+  "/admin/seo-agent":           () => import("@/pages/admin/AdminSeoAgent"),
+  "/admin/media-library":       () => import("@/pages/admin/AdminMediaLibrary"),
+  "/admin/competitor-analysis": () => import("@/pages/admin/AdminCompetitorAnalysis"),
+  "/admin/multi-agent":         () => import("@/pages/admin/AdminMultiAgentDashboard"),
+};
+
+function prefetchRoute(url: string | undefined): void {
+  if (!url) return;
+  const factory = routePrefetchMap[url];
+  if (factory) factory().catch(() => {});
+}
+
 // Cleanup old version
 try {
   localStorage.removeItem("admin-menu-order");
@@ -331,12 +355,13 @@ export function AdminSidebar() {
                   return (
                     <SidebarMenuItem key={idx}>
                       <SidebarMenuButton asChild isActive={isSubActive}>
-                        <Link 
-                          to={sub.url} 
+                        <Link
+                          to={sub.url}
                           className={cn(
                             "flex items-center gap-3 rounded-lg transition-colors text-sm",
                             isSubActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
                           )}
+                          onMouseEnter={() => prefetchRoute(sub.url)}
                           onClick={handleNavClick}
                         >
                           <sub.icon className={cn("h-4 w-4 shrink-0", isSubActive && "text-primary")} />
@@ -367,12 +392,13 @@ export function AdminSidebar() {
         )}
       >
         <SidebarMenuButton asChild isActive={isActive}>
-          <Link 
-            to={item.url || "#"} 
+          <Link
+            to={item.url || "#"}
             className={cn(
               "flex items-center gap-3 rounded-md transition-colors text-sm",
               isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"
             )}
+            onMouseEnter={() => prefetchRoute(item.url)}
             onClick={handleNavClick}
           >
             {isEditMode && (
