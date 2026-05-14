@@ -4239,7 +4239,9 @@ export type Database = {
       }
       whatsapp_conversation_insights: {
         Row: {
+          admin_rating_count: number
           analyzed_at: string | null
+          avg_admin_rating: number | null
           bot_accuracy_score: number | null
           common_questions: Json | null
           conversation_id: string | null
@@ -4260,7 +4262,9 @@ export type Database = {
           topics: string[] | null
         }
         Insert: {
+          admin_rating_count?: number
           analyzed_at?: string | null
+          avg_admin_rating?: number | null
           bot_accuracy_score?: number | null
           common_questions?: Json | null
           conversation_id?: string | null
@@ -4281,7 +4285,9 @@ export type Database = {
           topics?: string[] | null
         }
         Update: {
+          admin_rating_count?: number
           analyzed_at?: string | null
+          avg_admin_rating?: number | null
           bot_accuracy_score?: number | null
           common_questions?: Json | null
           conversation_id?: string | null
@@ -4533,6 +4539,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      whatsapp_slang_patterns: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          normalized: string
+          notes: string | null
+          slang: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          normalized: string
+          notes?: string | null
+          slang: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          normalized?: string
+          notes?: string | null
+          slang?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       whatsapp_webhook_dedup: {
         Row: {
