@@ -2,6 +2,7 @@ import type { SupabaseClient, WhatsAppSession, ManagerInfo, EnvConfig } from "..
 import { sendWhatsApp } from "../services/fonnte.ts";
 import { logMessage } from "../services/conversation.ts";
 import { logChatbotAlert } from "../services/alerts.ts";
+import { updateSession } from "../services/session.ts";
 import { TraceContext } from "../../_shared/traceContext.ts";
 
 export async function handleGuestBookingFlow(
@@ -32,6 +33,7 @@ export async function handleGuestBookingFlow(
       const reply = `Kak, permintaan perubahan untuk booking ${bookingCodeMatch![0]} sudah saya teruskan ke admin kami ya agar dibantu proses secara manual. Mohon ditunggu sebentar 🙏`;
       await sendWhatsApp(phone, reply, env.fonnteApiKey);
       await logMessage(supabase, conversationId, "assistant", reply);
+      await updateSession(supabase, phone, conversationId, false);
       return new Response(JSON.stringify({ status: "escalated_to_admin" }));
     }
 
@@ -42,6 +44,7 @@ export async function handleGuestBookingFlow(
     // Fallback: tidak mengirim pesan error teknis, tapi menyapa balik dengan sopan
     const reply = "Baik kak, silakan infokan tanggal check-in yang diinginkan agar bisa segera saya proses ya 🙏";
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
+    await updateSession(supabase, phone, conversationId, false);
     return new Response(JSON.stringify({ status: "error_handled" }));
   }
 }
