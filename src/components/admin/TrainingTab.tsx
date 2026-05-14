@@ -206,6 +206,9 @@ export default function TrainingTab() {
 
       <TabsContent value="contoh">
       <div className="space-y-6">
+      {/* Semantic embedding status */}
+      <TrainingEmbeddingStatus />
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
