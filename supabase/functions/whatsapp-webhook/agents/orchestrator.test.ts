@@ -151,7 +151,8 @@ vi.mock('../types.ts', () => ({
 }));
 
 vi.mock('../utils/slang.ts', () => ({
-  normalizeIndonesianMessage: (value: string) => value.toLowerCase().trim(),
+  normalizeIndonesianMessage: async (value: string) => value.toLowerCase().trim(),
+  invalidateSlangCache: () => {},
 }));
 
 vi.mock('../utils/format.ts', () => ({

@@ -23,11 +23,11 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
   const { sender, message } = body;
   const phone = normalizePhone(String(sender));
   const rawMessage = String(message ?? "");
-  const normalizedMessage = normalizeIndonesianMessage(rawMessage);
 
-  const [hotelSettings, { data: sessionRaw }] = await Promise.all([
+  const [hotelSettings, { data: sessionRaw }, normalizedMessage] = await Promise.all([
     getCachedHotelSettings(supabase),
     supabase.from("whatsapp_sessions").select("*").eq("phone_number", phone).limit(1).maybeSingle(),
+    normalizeIndonesianMessage(rawMessage, supabase),
   ]);
 
   const conversationId = await ensureConversation(supabase, sessionRaw, phone);

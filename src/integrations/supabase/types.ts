@@ -4457,6 +4457,39 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_slang_patterns: {
+        Row: {
+          id: string
+          slang: string
+          normalized: string
+          is_active: boolean
+          source: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slang: string
+          normalized: string
+          is_active?: boolean
+          source?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slang?: string
+          normalized?: string
+          is_active?: boolean
+          source?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       whatsapp_sessions: {
         Row: {
           awaiting_name: boolean | null
