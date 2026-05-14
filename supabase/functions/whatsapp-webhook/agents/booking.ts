@@ -31,15 +31,33 @@ export async function handleGuestBookingFlow(
       bookingCodeMatch && (updateKeywords.test(message) || alreadyBookedPhrase.test(message));
 
     if (isUpdateIntent) {
+      const bookingCode = bookingCodeMatch![0];
+      const isRefundCancel = /\b(batal|cancel|refund)\b/i.test(message);
+      const reasonText = (() => {
+        const m = message.match(updateKeywords);
+        if (m) return m[0];
+        if (alreadyBookedPhrase.test(message)) return "menyebutkan booking aktif";
+        return "perubahan booking";
+      })();
       await logMessage(
         supabase,
         conversationId,
         "system",
-        `⚠️ Tamu minta update booking ${bookingCodeMatch![0]}: "${message}"`,
+        `⚠️ Tamu minta update booking ${bookingCode} (${reasonText}): "${message}"`,
       );
-      const reply = `Kak, permintaan perubahan untuk booking ${bookingCodeMatch![0]} sudah saya teruskan ke admin kami ya agar dibantu proses secara manual. Mohon ditunggu sebentar 🙏`;
+      const reply = `Kak, permintaan perubahan untuk booking ${bookingCode} sudah saya teruskan ke admin kami ya agar dibantu proses secara manual. Mohon ditunggu sebentar 🙏`;
       await sendWhatsApp(phone, reply, env.fonnteApiKey);
       await logMessage(supabase, conversationId, "assistant", reply);
+      await logChatbotAlert(supabase, {
+        alert_type: isRefundCancel ? "refund_cancel_intent" : "booking_update_escalation",
+        phone_number: phone,
+        conversation_id: conversationId,
+        last_user_message: message,
+        intent: isRefundCancel ? "refund_cancel" : "booking_update",
+        booking_code: bookingCode,
+        reason: reasonText,
+        recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
+      });
       await updateSession(supabase, phone, conversationId, false);
       return new Response(JSON.stringify({ status: "escalated_to_admin" }));
     }
@@ -295,6 +313,9 @@ async function handleNewBooking(
   const roomCountMatch = msg.match(/(\d{1,2})\s*kamar\b/i);
   const numRooms = roomCountMatch ? parseInt(roomCountMatch[1], 10) : 1;
   if (numRooms >= 2) {
+    // Cek apakah ada kode booking PMH- di riwayat (untuk konteks)
+    const histText = recentMessages?.map((m) => m.content).join(" ") || "";
+    const bookingCode = histText.match(/PMH-[A-Z0-9]+/i)?.[0] ?? null;
     const reply =
       `Baik kak, untuk booking ${numRooms} kamar (${numGuests ?? "?"} tamu) di tanggal ` +
       `${checkInISO} – ${checkOutISO} sudah saya teruskan ke admin kami untuk dibantu ` +
@@ -307,6 +328,16 @@ async function handleNewBooking(
       "system",
       `⚠️ Multi-room request: ${numRooms} kamar, ${numGuests ?? "?"} tamu, ${checkInISO} – ${checkOutISO}. Pesan asli: "${msg}"`,
     );
+    await logChatbotAlert(supabase, {
+      alert_type: "multi_room_escalation",
+      phone_number: phone,
+      conversation_id: convId,
+      last_user_message: msg,
+      intent: `multi_room_${numRooms}kamar`,
+      booking_code: bookingCode,
+      reason: `${numRooms} kamar • ${numGuests ?? "?"} tamu • ${checkInISO} → ${checkOutISO}`,
+      recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
+    });
     await updateSession(supabase, phone, convId, false);
     return new Response(JSON.stringify({ status: "multi_room_escalated" }));
   }

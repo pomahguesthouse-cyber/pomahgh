@@ -1,6 +1,12 @@
 import type { SupabaseClient } from "../types.ts";
 
-export type AlertType = "no_date_found" | "low_confidence" | "other";
+export type AlertType =
+  | "no_date_found"
+  | "low_confidence"
+  | "multi_room_escalation"
+  | "booking_update_escalation"
+  | "refund_cancel_intent"
+  | "other";
 
 interface LogAlertParams {
   alert_type: AlertType;
@@ -10,6 +16,8 @@ interface LogAlertParams {
   confidence?: number | null;
   intent?: string | null;
   recentMessages?: Array<{ role: string; content: string }>;
+  booking_code?: string | null;
+  reason?: string | null;
 }
 
 /**
@@ -24,11 +32,16 @@ export async function logChatbotAlert(
   params: LogAlertParams,
 ): Promise<void> {
   try {
-    const { recentMessages = [], ...rest } = params;
-    const snippet = recentMessages
+    const { recentMessages = [], booking_code, reason, ...rest } = params;
+    const baseSnippet = recentMessages
       .slice(-6)
       .map((m) => `${m.role === "assistant" ? "Bot" : "Tamu"}: ${String(m.content ?? "").slice(0, 220)}`)
       .join("\n");
+    const header = [
+      booking_code ? `🔖 Booking: ${booking_code}` : null,
+      reason ? `📌 Alasan: ${reason}` : null,
+    ].filter(Boolean).join("\n");
+    const snippet = [header, baseSnippet].filter(Boolean).join("\n\n");
 
     const { error } = await supabase.from("chatbot_alerts").insert({
       alert_type: rest.alert_type,
