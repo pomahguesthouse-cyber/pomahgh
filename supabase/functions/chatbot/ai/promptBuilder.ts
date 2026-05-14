@@ -189,7 +189,7 @@ ${buildAdminTakeoverRules()}`;
  * Main — build complete system prompt
  */
 export function buildSystemPrompt(config: PromptConfig): string {
-  const { settings, hotelData, conversationContext, lastUserMessage } = config;
+  const { settings, hotelData, conversationContext, lastUserMessage, semanticTrainingExamples } = config;
   const { settings: hotel, facilities, knowledgeBase, trainingExamples, faqPatterns, learningInsights, nearbyLocations, bankAccounts } = hotelData;
 
   const wibTime = getWIBTime();
@@ -207,10 +207,14 @@ export function buildSystemPrompt(config: PromptConfig): string {
     ? (bankAccounts || []).map(b => `🏦 ${b.bank_name} | No. Rek: ${b.account_number} | a.n. ${b.account_holder_name}`).join('\n')
     : '';
 
-  // Relevant training examples
-  const relevantExamples = lastUserMessage 
-    ? selectRelevantExamples(lastUserMessage, trainingExamples)
-    : [];
+  // Relevant training examples — prefer semantic matches when available
+  const relevantExamples = (semanticTrainingExamples && semanticTrainingExamples.length > 0)
+    ? semanticTrainingExamples.map(s => ({
+        question: s.question,
+        ideal_answer: s.ideal_answer,
+        category: s.category ?? 'general',
+      }))
+    : (lastUserMessage ? selectRelevantExamples(lastUserMessage, trainingExamples) : []);
   const trainingExamplesInfo = formatTrainingExamples(relevantExamples);
 
   // FAQ patterns
