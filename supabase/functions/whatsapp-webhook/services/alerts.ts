@@ -22,10 +22,8 @@ interface LogAlertParams {
 
 /**
  * Insert a row into `chatbot_alerts` so admin gets notified (via realtime)
- * about situations needing follow-up: no date detected in booking flow,
- * low intent classification confidence, etc.
- *
- * Fire-and-forget — failures are logged but never throw.
+ * about situations needing follow-up. Duplicates (same conversation + same
+ * alert_type within a 5-minute window) are silently skipped to prevent spam.
  */
 export async function logChatbotAlert(
   supabase: SupabaseClient,
@@ -33,9 +31,29 @@ export async function logChatbotAlert(
 ): Promise<void> {
   try {
     const { recentMessages = [], booking_code, reason, ...rest } = params;
+
+    // ---- DEDUPLIKASI: jangan spam alert yang sama ----
+    if (rest.conversation_id) {
+      const { count, error: countErr } = await supabase
+        .from("chatbot_alerts")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", rest.conversation_id)
+        .eq("alert_type", rest.alert_type)
+        .gt("created_at", new Date(Date.now() - 5 * 60 * 1000).toISOString());
+
+      if (!countErr && (count ?? 0) > 0) {
+        console.log(
+          `[alerts] dedup skipped: ${rest.alert_type} for ${rest.conversation_id}`,
+        );
+        return;
+      }
+    }
+
     const baseSnippet = recentMessages
       .slice(-6)
-      .map((m) => `${m.role === "assistant" ? "Bot" : "Tamu"}: ${String(m.content ?? "").slice(0, 220)}`)
+      .map((m) =>
+        `${m.role === "assistant" ? "Bot" : "Tamu"}: ${String(m.content ?? "").slice(0, 220)}`
+      )
       .join("\n");
     const header = [
       booking_code ? `🔖 Booking: ${booking_code}` : null,
