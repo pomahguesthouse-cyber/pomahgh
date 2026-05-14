@@ -2,6 +2,7 @@ import type { SupabaseClient, WhatsAppSession, ManagerInfo, EnvConfig } from "..
 import { sendWhatsApp } from "../services/fonnte.ts";
 import { logMessage } from "../services/conversation.ts";
 import { logChatbotAlert } from "../services/alerts.ts";
+import { updateSession } from "../services/session.ts";
 import { TraceContext } from "../../_shared/traceContext.ts";
 
 export async function handleGuestBookingFlow(
@@ -32,6 +33,7 @@ export async function handleGuestBookingFlow(
       const reply = `Kak, permintaan perubahan untuk booking ${bookingCodeMatch![0]} sudah saya teruskan ke admin kami ya agar dibantu proses secara manual. Mohon ditunggu sebentar 🙏`;
       await sendWhatsApp(phone, reply, env.fonnteApiKey);
       await logMessage(supabase, conversationId, "assistant", reply);
+      await updateSession(supabase, phone, conversationId, false);
       return new Response(JSON.stringify({ status: "escalated_to_admin" }));
     }
 
@@ -42,6 +44,7 @@ export async function handleGuestBookingFlow(
     // Fallback: tidak mengirim pesan error teknis, tapi menyapa balik dengan sopan
     const reply = "Baik kak, silakan infokan tanggal check-in yang diinginkan agar bisa segera saya proses ya 🙏";
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
+    await updateSession(supabase, phone, conversationId, false);
     return new Response(JSON.stringify({ status: "error_handled" }));
   }
 }
@@ -72,6 +75,7 @@ async function handleNewBooking(
 
   const now = wibNow();
   let checkInISO: string | null = null;
+  let checkOutFromRange: string | null = null;
 
   // Helper: parse 1 string apapun → ISO date (dipakai untuk msg saat ini & history)
   const parseDateFrom = (text: string): string | null => {
@@ -98,6 +102,9 @@ async function handleNewBooking(
     if (m2) {
       const day = parseInt(m2[1], 10);
       const month = parseInt(m2[2], 10);
+      // Validasi: bulan harus 1-12 dan hari 1-31. Tanpa ini, "12-13" akan
+      // diparse sebagai tgl 12 bulan 13 → Date.UTC overflow ke Jan tahun depan.
+      if (month < 1 || month > 12 || day < 1 || day > 31) return null;
       let year = m2[3] ? parseInt(m2[3], 10) : now.getUTCFullYear();
       if (year < 100) year += 2000;
       return toISODate(new Date(Date.UTC(year, month - 1, day)));
@@ -105,14 +112,113 @@ async function handleNewBooking(
     return null;
   };
 
+  // Helper: parse range tanggal (check-in & check-out) dari satu string.
+  // Pola yang dikenali (urutan = prioritas):
+  //   - "12-13 Juni"               → 12 Jun → 13 Jun
+  //   - "12 Juni - 13 Juni 2026"   → 12 Jun → 13 Jun 2026
+  //   - "13/06/2026 - 15/06/2026"  → 13 Jun → 15 Jun
+  //   - "12-13/6"                  → 12 Jun → 13 Jun
+  const parseDateRangeFrom = (text: string): { checkIn: string; checkOut: string } | null => {
+    const monthRe = "(jan|feb|mar|apr|mei|jun|jul|agt|agu|ags|sep|okt|nov|des)[a-z]*";
+    const yearRollIfPast = (iso: string, hasYear: boolean): string => {
+      if (hasYear) return iso;
+      const today = toISODate(now);
+      if (iso >= today) return iso;
+      const d = new Date(`${iso}T00:00:00Z`);
+      d.setUTCFullYear(d.getUTCFullYear() + 1);
+      return toISODate(d);
+    };
+
+    // Pola 1: "12-13 Juni [2026]"
+    const r1 = text.match(new RegExp(`(\\d{1,2})\\s*[-–]\\s*(\\d{1,2})\\s*${monthRe}\\s*(\\d{4})?`, "i"));
+    if (r1) {
+      const d1 = parseInt(r1[1], 10);
+      const d2 = parseInt(r1[2], 10);
+      const month = MONTHS[r1[3].toLowerCase()];
+      const hasYear = !!r1[4];
+      const year = hasYear ? parseInt(r1[4], 10) : now.getUTCFullYear();
+      if (d1 >= 1 && d1 <= 31 && d2 >= 1 && d2 <= 31 && d2 > d1) {
+        const ci = toISODate(new Date(Date.UTC(year, month - 1, d1)));
+        const co = toISODate(new Date(Date.UTC(year, month - 1, d2)));
+        return { checkIn: yearRollIfPast(ci, hasYear), checkOut: yearRollIfPast(co, hasYear) };
+      }
+    }
+
+    // Pola 2: "12 Juni - 13 Juni [2026]"
+    const r2 = text.match(new RegExp(`(\\d{1,2})\\s*${monthRe}\\s*[-–]\\s*(\\d{1,2})\\s*${monthRe}\\s*(\\d{4})?`, "i"));
+    if (r2) {
+      const d1 = parseInt(r2[1], 10);
+      const m1 = MONTHS[r2[2].toLowerCase()];
+      const d2 = parseInt(r2[3], 10);
+      const m2m = MONTHS[r2[4].toLowerCase()];
+      const hasYear = !!r2[5];
+      const year = hasYear ? parseInt(r2[5], 10) : now.getUTCFullYear();
+      const ci = toISODate(new Date(Date.UTC(year, m1 - 1, d1)));
+      let co = toISODate(new Date(Date.UTC(year, m2m - 1, d2)));
+      // Kalau check-out < check-in (cross-year), naikkan tahun check-out.
+      if (co < ci) {
+        co = toISODate(new Date(Date.UTC(year + 1, m2m - 1, d2)));
+      }
+      return { checkIn: yearRollIfPast(ci, hasYear), checkOut: yearRollIfPast(co, hasYear) };
+    }
+
+    // Pola 3: "13/06/2026 - 15/06/2026"
+    const r3 = text.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})\s*[-–]\s*(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+    if (r3) {
+      const d1 = parseInt(r3[1], 10), m1 = parseInt(r3[2], 10);
+      let y1 = parseInt(r3[3], 10); if (y1 < 100) y1 += 2000;
+      const d2 = parseInt(r3[4], 10), m2m = parseInt(r3[5], 10);
+      let y2 = parseInt(r3[6], 10); if (y2 < 100) y2 += 2000;
+      if (m1 >= 1 && m1 <= 12 && m2m >= 1 && m2m <= 12) {
+        return {
+          checkIn: toISODate(new Date(Date.UTC(y1, m1 - 1, d1))),
+          checkOut: toISODate(new Date(Date.UTC(y2, m2m - 1, d2))),
+        };
+      }
+    }
+
+    // Pola 4: "12-13/6" atau "12-13/6/2026"
+    const r4 = text.match(/(\d{1,2})\s*[-–]\s*(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?/);
+    if (r4) {
+      const d1 = parseInt(r4[1], 10);
+      const d2 = parseInt(r4[2], 10);
+      const month = parseInt(r4[3], 10);
+      const hasYear = !!r4[4];
+      let year = hasYear ? parseInt(r4[4], 10) : now.getUTCFullYear();
+      if (year < 100) year += 2000;
+      if (month >= 1 && month <= 12 && d1 >= 1 && d2 >= 1 && d2 > d1) {
+        const ci = toISODate(new Date(Date.UTC(year, month - 1, d1)));
+        const co = toISODate(new Date(Date.UTC(year, month - 1, d2)));
+        return { checkIn: yearRollIfPast(ci, hasYear), checkOut: yearRollIfPast(co, hasYear) };
+      }
+    }
+
+    return null;
+  };
+
+  // Cek pola range DULU sebelum single date supaya "12-13 Juni" tidak salah
+  // ditafsirkan jadi "13 Juni" oleh single-date regex.
+  const range = parseDateRangeFrom(msg);
+  if (range) {
+    checkInISO = range.checkIn;
+    checkOutFromRange = range.checkOut;
+  } else {
   checkInISO = parseDateFrom(msg);
+  }
 
   // Fallback: jika pesan saat ini TIDAK menyebut tanggal, cari di riwayat
   // (8 pesan terakhir baik dari tamu maupun bot). Mencegah bot tanya tanggal
   // berulang-ulang padahal tanggal sudah pernah disebut sebelumnya.
   if (!checkInISO && recentMessages?.length) {
     for (const m of recentMessages.slice(-8).reverse()) {
-      const cand = parseDateFrom(String(m?.content ?? ""));
+      const text = String(m?.content ?? "");
+      const histRange = parseDateRangeFrom(text);
+      if (histRange) {
+        checkInISO = histRange.checkIn;
+        checkOutFromRange = histRange.checkOut;
+        break;
+      }
+      const cand = parseDateFrom(text);
       if (cand) { checkInISO = cand; break; }
     }
   }
@@ -131,13 +237,24 @@ async function handleNewBooking(
       intent: "booking",
       recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
     });
+    await updateSession(supabase, phone, convId, false);
     return new Response(JSON.stringify({ status: "awaiting_date" }));
   }
 
   // Parse jumlah malam (default 1)
   const nightsMatch = msg.match(/(\d{1,2})\s*malam/i);
-  const nights = nightsMatch ? Math.max(1, Math.min(30, parseInt(nightsMatch[1], 10))) : 1;
-  const checkOutISO = addDaysISO(checkInISO, nights);
+  // Prioritas: range eksplisit > "X malam" > default 1 malam.
+  let checkOutISO: string;
+  let nights: number;
+  if (checkOutFromRange) {
+    checkOutISO = checkOutFromRange;
+    const ci = new Date(`${checkInISO}T00:00:00Z`).getTime();
+    const co = new Date(`${checkOutISO}T00:00:00Z`).getTime();
+    nights = Math.max(1, Math.round((co - ci) / 86400000));
+  } else {
+    nights = nightsMatch ? Math.max(1, Math.min(30, parseInt(nightsMatch[1], 10))) : 1;
+    checkOutISO = addDaysISO(checkInISO, nights);
+  }
 
   // Parse jumlah tamu (optional)
   const guestsMatch = msg.match(/(\d{1,2})\s*(orang|tamu|pax)/i);
@@ -196,6 +313,7 @@ async function handleNewBooking(
 
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
     await logMessage(supabase, convId, "assistant", reply);
+    await updateSession(supabase, phone, convId, false);
     return new Response(JSON.stringify({ status: "availability_sent" }));
   } catch (err) {
     console.error("check_availability call failed:", err);
@@ -204,6 +322,7 @@ async function handleNewBooking(
       `Saya teruskan ke admin ya 🙏`;
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
     await logMessage(supabase, convId, "assistant", reply);
+    await updateSession(supabase, phone, convId, false);
     return new Response(JSON.stringify({ status: "availability_error" }));
   }
 }
