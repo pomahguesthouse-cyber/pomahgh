@@ -11,6 +11,7 @@ import { tools } from "./ai/tools.ts";
 import { createTrace } from "../_shared/traceContext.ts";
 import { createHallucinationGuard } from "../_shared/hallucinationGuard.ts";
 import { logToolExecution } from "../_shared/agentLogger.ts";
+import { fetchSemanticTrainingExamples } from "../_shared/embeddings.ts";
 
 interface ToolCall {
   id: string;
