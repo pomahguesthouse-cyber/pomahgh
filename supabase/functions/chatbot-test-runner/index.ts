@@ -319,7 +319,7 @@ async function requireAdmin(req: Request): Promise<{ supabase: SupabaseClient; u
     .from("user_roles")
     .select("role")
     .eq("user_id", user.id)
-    .in("role", ["admin", "super_admin"])
+    .eq("role", "admin")
     .maybeSingle();
   if (!roleRow) {
     return new Response(JSON.stringify({ error: "forbidden" }), {
