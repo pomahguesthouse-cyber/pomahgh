@@ -77,7 +77,7 @@ export default function WhatsAppLearningTab() {
             </div>
             <div className="flex gap-2">
               <Button
-                onClick={() => deepAnalyze.mutate(20)}
+                onClick={() => deepAnalyze.mutate()}
                 disabled={isAnyLoading}
                 size="sm"
               >
