@@ -1124,6 +1124,154 @@ export type Database = {
           },
         ]
       }
+      chat_test_messages: {
+        Row: {
+          assertions: Json
+          content: string
+          created_at: string
+          id: string
+          latency_ms: number | null
+          role: string
+          run_id: string
+          step_index: number
+        }
+        Insert: {
+          assertions?: Json
+          content: string
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          role: string
+          run_id: string
+          step_index: number
+        }
+        Update: {
+          assertions?: Json
+          content?: string
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          role?: string
+          run_id?: string
+          step_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_test_messages_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "chat_test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_test_runs: {
+        Row: {
+          accuracy_score: number | null
+          created_at: string
+          escalation_score: number | null
+          finished_at: string | null
+          id: string
+          mode: string
+          overall_score: number | null
+          recommendations: string | null
+          scenario_id: string | null
+          source_conversation_id: string | null
+          started_at: string
+          status: string
+          summary: string | null
+          test_conversation_id: string | null
+          test_phone: string
+          tone_score: number | null
+          triggered_by: string | null
+        }
+        Insert: {
+          accuracy_score?: number | null
+          created_at?: string
+          escalation_score?: number | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          overall_score?: number | null
+          recommendations?: string | null
+          scenario_id?: string | null
+          source_conversation_id?: string | null
+          started_at?: string
+          status?: string
+          summary?: string | null
+          test_conversation_id?: string | null
+          test_phone: string
+          tone_score?: number | null
+          triggered_by?: string | null
+        }
+        Update: {
+          accuracy_score?: number | null
+          created_at?: string
+          escalation_score?: number | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          overall_score?: number | null
+          recommendations?: string | null
+          scenario_id?: string | null
+          source_conversation_id?: string | null
+          started_at?: string
+          status?: string
+          summary?: string | null
+          test_conversation_id?: string | null
+          test_phone?: string
+          tone_score?: number | null
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_test_runs_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "chat_test_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_test_scenarios: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          expected_final_outcome: string | null
+          id: string
+          is_active: boolean
+          name: string
+          steps: Json
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expected_final_outcome?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          steps?: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expected_final_outcome?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          steps?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chatbot_alerts: {
         Row: {
           alert_type: string
