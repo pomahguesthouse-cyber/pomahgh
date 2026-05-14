@@ -1,9 +1,19 @@
+/** Test-mode safeguard: phone numbers with prefix 99999 are SIMULATED only,
+ *  no real WhatsApp message is sent. Used by chatbot-test-runner. */
+function isTestPhone(phone: string): boolean {
+  return /^\+?6?2?99999/.test(phone.replace(/\s/g, ""));
+}
+
 /** Send a WhatsApp message via Fonnte API */
 export async function sendWhatsApp(
   phone: string,
   message: string,
   fonnteApiKey: string,
 ): Promise<{ status: boolean; detail?: string; [key: string]: unknown }> {
+  if (isTestPhone(phone)) {
+    console.info(`[fonnte] TEST_MODE skip ${phone}: ${message.slice(0, 80)}`);
+    return { status: true, simulated: true, target: phone };
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -60,6 +70,10 @@ export async function sendWhatsAppFile(
   fonnteApiKey: string,
   filename?: string,
 ): Promise<{ status: boolean; detail?: string; [key: string]: unknown }> {
+  if (isTestPhone(phone)) {
+    console.info(`[fonnte] TEST_MODE skip file ${phone}`);
+    return { status: true, simulated: true, target: phone };
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
 

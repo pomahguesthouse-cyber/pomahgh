@@ -148,6 +148,8 @@ const AdminLandingPages = lazyRetry(() => import("./pages/admin/AdminLandingPage
 const AdminChat = lazyRetry(() => import("./pages/admin/AdminChat"));
 const AdminGuestChatbot = lazyRetry(() => import("./pages/admin/AdminGuestChatbot"));
 const AdminAdminChatbot = lazyRetry(() => import("./pages/admin/AdminAdminChatbot"));
+const AdminChatbotTester = lazyRetry(() => import("./pages/admin/AdminChatbotTester"));
+const AdminChatbotTesterRunDetail = lazyRetry(() => import("./pages/admin/AdminChatbotTesterRunDetail"));
 
 const AdminLayout = lazyRetry(() =>
   import("./components/admin/AdminLayout").then((m) => ({
@@ -492,6 +494,24 @@ const App = () => {
                           element={
                             <AdminLayout>
                               <AdminAdminChatbot />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/chatbot/tester"
+                          element={
+                            <AdminLayout>
+                              <AdminChatbotTester />
+                            </AdminLayout>
+                          }
+                        />
+
+                        <Route
+                          path="/admin/chatbot/tester/runs/:runId"
+                          element={
+                            <AdminLayout>
+                              <AdminChatbotTesterRunDetail />
                             </AdminLayout>
                           }
                         />
