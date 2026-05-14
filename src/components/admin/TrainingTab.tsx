@@ -17,6 +17,7 @@ const AITrainerCoachPanel = lazy(() =>
   import("@/components/admin/AITrainerCoachPanel").then(m => ({ default: m.AITrainerCoachPanel })),
 );
 import { useGenerateForCategory, useAnalyzeGaps, usePendingGeneratedExamples, useApproveGeneratedExample } from "@/hooks/useAITrainingGenerator";
+import { TrainingEmbeddingStatus } from "@/components/admin/TrainingEmbeddingStatus";
 const CATEGORIES = [{
   value: "general",
   label: "Umum",
