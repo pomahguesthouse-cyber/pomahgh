@@ -57,7 +57,51 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
     return await handlePaymentProof(supabase, phone, imageUrl, conversationId, managerNumbers, env, undefined, {
       caption: rawMessage,
     });
-  if (managerNumbers.some((m) => m.phone === phone))
+
+  const isManager = managerNumbers.some((m) => m.phone === phone);
+
+  // 🧪 GUEST TEST MODE — admin/manager dapat ketik perintah khusus untuk
+  // berperan sebagai tamu dan menguji chatbot dari WhatsApp mereka sendiri.
+  //   /tamu  → masuk mode tamu (semua pesan berikutnya diperlakukan sebagai guest)
+  //   /admin → kembali ke mode manager
+  //   /modetamu, /keluar → alias
+  const cmd = rawMessage.trim().toLowerCase();
+  const ctx = (sessionRaw?.context as Record<string, unknown> | null) ?? {};
+  let guestTestMode = Boolean(ctx.guest_test_mode);
+
+  if (isManager && (cmd === "/tamu" || cmd === "/modetamu" || cmd === "/test")) {
+    await supabase
+      .from("whatsapp_sessions")
+      .update({ context: { ...ctx, guest_test_mode: true }, updated_at: new Date().toISOString() })
+      .eq("phone_number", phone);
+    await sendWhatsApp(
+      phone,
+      "🧪 *Mode Tamu Aktif*\n\nMulai sekarang pesan Anda akan dijawab AI sebagai tamu (Rani). Ketik */admin* untuk kembali ke mode manager.",
+      env,
+    );
+    return new Response(JSON.stringify({ status: "guest_test_mode_on" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (isManager && guestTestMode && (cmd === "/admin" || cmd === "/keluar" || cmd === "/exit")) {
+    const newCtx = { ...ctx };
+    delete (newCtx as Record<string, unknown>).guest_test_mode;
+    await supabase
+      .from("whatsapp_sessions")
+      .update({ context: newCtx, updated_at: new Date().toISOString() })
+      .eq("phone_number", phone);
+    await sendWhatsApp(
+      phone,
+      "✅ *Mode Manager Aktif Kembali*\n\nPesan Anda kembali diperlakukan sebagai admin/manager.",
+      env,
+    );
+    return new Response(JSON.stringify({ status: "guest_test_mode_off" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (isManager && !guestTestMode)
     return await handleManagerChat(
       supabase,
       sessionRaw,
