@@ -253,12 +253,23 @@ const DEFAULT_QUERY_OPTIONS = {
 // QUERIES
 // ============================================================
 
-export const useConversationInsights = (limit = 50) => {
-  return useQuery({
-    queryKey: ["conversation-insights", limit],
+export interface PaginatedResult<T> {
+  rows: T[];
+  total: number;
+}
 
-    queryFn: async () => {
-      const { data, error } = await supabase
+export const useConversationInsights = ({
+  page = 0,
+  pageSize = 20,
+}: { page?: number; pageSize?: number } = {}) => {
+  return useQuery({
+    queryKey: ["conversation-insights", page, pageSize],
+
+    queryFn: async (): Promise<PaginatedResult<ConversationInsight>> => {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error, count } = await supabase
         .from("whatsapp_conversation_insights")
         .select(
           `
@@ -271,21 +282,18 @@ export const useConversationInsights = (limit = 50) => {
           bot_accuracy_score,
           analyzed_at
         `,
+          { count: "exact" },
         )
         .order("analyzed_at", {
           ascending: false,
         })
-        .limit(limit);
+        .range(from, to);
 
       if (error) {
         throw error;
       }
 
-      return data as ConversationInsight[];
-    },
-
-    select: (data) =>
-      data.map((item) => ({
+      const rows = (data ?? []).map((item) => ({
         ...item,
         summary: item.summary ?? "-",
         intent_flow: (item as { intent_flow?: string[] }).intent_flow ?? [],
@@ -295,18 +303,27 @@ export const useConversationInsights = (limit = 50) => {
         successful_patterns: [],
         suggested_improvements: [],
         new_slang_detected: [],
-      })),
+      })) as unknown as ConversationInsight[];
+
+      return { rows, total: count ?? 0 };
+    },
 
     ...DEFAULT_QUERY_OPTIONS,
   });
 };
 
-export const useFAQPatterns = () => {
+export const useFAQPatterns = ({
+  page = 0,
+  pageSize = 20,
+}: { page?: number; pageSize?: number } = {}) => {
   return useQuery({
-    queryKey: ["faq-patterns"],
+    queryKey: ["faq-patterns", page, pageSize],
 
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async (): Promise<PaginatedResult<FAQPattern>> => {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error, count } = await supabase
         .from("whatsapp_faq_patterns")
         .select(
           `
@@ -317,16 +334,18 @@ export const useFAQPatterns = () => {
           best_response,
           is_promoted_to_training
         `,
+          { count: "exact" },
         )
         .order("occurrence_count", {
           ascending: false,
-        });
+        })
+        .range(from, to);
 
       if (error) {
         throw error;
       }
 
-      return data as FAQPattern[];
+      return { rows: (data ?? []) as FAQPattern[], total: count ?? 0 };
     },
 
     ...DEFAULT_QUERY_OPTIONS,
