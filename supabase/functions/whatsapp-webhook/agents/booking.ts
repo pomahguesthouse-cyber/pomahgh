@@ -4,6 +4,7 @@ import { logMessage } from "../services/conversation.ts";
 import { logChatbotAlert } from "../services/alerts.ts";
 import { updateSession } from "../services/session.ts";
 import { TraceContext } from "../../_shared/traceContext.ts";
+import { composeReplyWithTraining } from "../../_shared/trainingAugmentedReply.ts";
 
 export async function handleGuestBookingFlow(
   supabase: SupabaseClient,
@@ -45,7 +46,16 @@ export async function handleGuestBookingFlow(
         "system",
         `⚠️ Tamu minta update booking ${bookingCode} (${reasonText}): "${message}"`,
       );
-      const reply = `Kak, permintaan perubahan untuk booking ${bookingCode} sudah saya teruskan ke admin kami ya agar dibantu proses secara manual. Mohon ditunggu sebentar 🙏`;
+      const fallbackReply = `Kak, permintaan perubahan untuk booking ${bookingCode} sudah saya teruskan ke admin kami ya agar dibantu proses secara manual. Mohon ditunggu sebentar 🙏`;
+      const reply = await composeReplyWithTraining({
+        supabase,
+        userMessage: message,
+        facts: `Kode booking: ${bookingCode}\nJenis permintaan: ${isRefundCancel ? "pembatalan/refund" : "perubahan booking"}\nKonteks: ${reasonText}\nAksi sistem: sudah dieskalasi ke admin manusia.`,
+        instruction:
+          "Tamu minta perubahan/pembatalan booking. Konfirmasi singkat bahwa permintaan sudah diteruskan ke admin manusia, minta tamu tunggu sebentar. JANGAN menjanjikan hasil apa pun (approve/refund) — keputusan ada di admin.",
+        fallback: fallbackReply,
+        recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
+      });
       await sendWhatsApp(phone, reply, env.fonnteApiKey);
       await logMessage(supabase, conversationId, "assistant", reply);
       await logChatbotAlert(supabase, {
@@ -271,8 +281,17 @@ async function handleNewBooking(
   }
 
   if (!checkInISO) {
-    const reply =
+    const fallbackReply =
       "Baik kak, untuk booking-nya, rencana check-in tanggal berapa ya? (Bisa tulis tanggal misal: 10 Mei, atau 'hari ini') 😊";
+    const reply = await composeReplyWithTraining({
+      supabase,
+      userMessage: msg,
+      facts: "Tanggal check-in belum disebutkan tamu.",
+      instruction:
+        "Tamu menyatakan ingin booking tapi belum menyebut tanggal check-in. Tanyakan tanggal check-in dengan ramah, beri contoh format singkat (misal '10 Mei' atau 'besok'). Jangan minta data lain dulu.",
+      fallback: fallbackReply,
+      recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
+    });
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
     await logMessage(supabase, convId, "assistant", reply);
     // 🔔 Alert admin: tanggal tidak terdeteksi sama sekali (potensi loop tanya tanggal)
@@ -316,10 +335,20 @@ async function handleNewBooking(
     // Cek apakah ada kode booking PMH- di riwayat (untuk konteks)
     const histText = recentMessages?.map((m) => m.content).join(" ") || "";
     const bookingCode = histText.match(/PMH-[A-Z0-9]+/i)?.[0] ?? null;
-    const reply =
+    const fmtD = (iso: string) => { const [y,m,d]=iso.split("-"); return `${d}/${m}/${y}`; };
+    const fallbackReply =
       `Baik kak, untuk booking ${numRooms} kamar (${numGuests ?? "?"} tamu) di tanggal ` +
-      `${checkInISO} – ${checkOutISO} sudah saya teruskan ke admin kami untuk dibantu ` +
+      `${fmtD(checkInISO)} – ${fmtD(checkOutISO)} sudah saya teruskan ke admin kami untuk dibantu ` +
       `proses ya 🙏 Mohon ditunggu sebentar.`;
+    const reply = await composeReplyWithTraining({
+      supabase,
+      userMessage: msg,
+      facts: `Jumlah kamar diminta: ${numRooms}\nJumlah tamu: ${numGuests ?? "tidak disebut"}\nCheck-in: ${fmtD(checkInISO)}\nCheck-out: ${fmtD(checkOutISO)}\nAksi: dieskalasi ke admin (bot belum support multi-room otomatis).`,
+      instruction:
+        "Tamu minta booking lebih dari 1 kamar. Konfirmasi permintaan sudah diteruskan ke admin manusia untuk dibantu proses. Jangan menyebut harga atau ketersediaan (admin akan handle). Singkat & sopan.",
+      fallback: fallbackReply,
+      recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
+    });
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
     await logMessage(supabase, convId, "assistant", reply);
     await logMessage(
@@ -375,23 +404,29 @@ async function handleNewBooking(
     const available: AvailRoom[] = data.available_rooms || [];
     const soldOut: string[] = data.sold_out_rooms || [];
 
-    let reply: string;
+    let fallbackReply: string;
     if (available.length === 0) {
-      reply =
+      fallbackReply =
         `Mohon maaf kak, untuk tanggal ${fmtDate(checkInISO)} – ${fmtDate(checkOutISO)} (${nights} malam) ` +
         `semua kamar sudah HABIS 🙏 Ingin coba tanggal lain?`;
     } else {
       const lines = available.map(
         (r) => `✅ *${r.name}* — ${r.available_count} kamar tersedia • ${fmtRp(r.price_per_night)}/malam`,
       );
-      reply =
+      fallbackReply =
         `📅 Ketersediaan ${fmtDate(checkInISO)} – ${fmtDate(checkOutISO)} (${nights} malam):\n\n` +
         lines.join("\n");
       if (soldOut.length > 0) {
-        reply += `\n\n❌ Habis: ${soldOut.join(", ")}`;
+        fallbackReply += `\n\n❌ Habis: ${soldOut.join(", ")}`;
       }
-      reply += `\n\nMau lanjut booking kamar yang mana kak? 😊`;
+      fallbackReply += `\n\nMau lanjut booking kamar yang mana kak? 😊`;
     }
+
+    // Untuk hasil availability, balasan deterministik sudah optimal (struktur list
+    // + harga + status sold-out). Kita TIDAK kirim ke LLM agar tidak ada risiko
+    // halusinasi harga / mengubah angka. Training context dipakai HANYA untuk
+    // path tanpa data terstruktur (no_date / multi_room / update / error).
+    const reply = fallbackReply;
 
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
     await logMessage(supabase, convId, "assistant", reply);
@@ -399,9 +434,18 @@ async function handleNewBooking(
     return new Response(JSON.stringify({ status: "availability_sent" }));
   } catch (err) {
     console.error("check_availability call failed:", err);
-    const reply =
+    const fallbackReply =
       `Mohon maaf kak, sedang ada kendala saat mengecek ketersediaan kamar untuk ${checkInISO}. ` +
       `Saya teruskan ke admin ya 🙏`;
+    const reply = await composeReplyWithTraining({
+      supabase,
+      userMessage: msg,
+      facts: `Check-in diminta: ${checkInISO}\nKendala: sistem availability sedang error.\nAksi: dieskalasi ke admin manusia.`,
+      instruction:
+        "Sistem cek ketersediaan gagal. Sampaikan permintaan maaf singkat & beri tahu permintaan diteruskan ke admin. Jangan menjanjikan ketersediaan atau harga.",
+      fallback: fallbackReply,
+      recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
+    });
     await sendWhatsApp(phone, reply, env.fonnteApiKey);
     await logMessage(supabase, convId, "assistant", reply);
     await updateSession(supabase, phone, convId, false);
