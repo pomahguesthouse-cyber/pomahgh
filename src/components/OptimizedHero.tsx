@@ -2,38 +2,39 @@ import React, { useEffect, useMemo, useRef, memo } from "react";
 import { useHeroSlides, type HeroSlide as HeroSlideType } from "@/hooks/useHeroSlides";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { motion } from "framer-motion";
 
 const HERO_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Crect fill='%230F766E' width='1920' height='1080'/%3E%3C/svg%3E";
 
-const getTextAnimation = (animation: string | null | undefined, isLoop = false) => {
-  const base = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6, ease: "easeOut" },
-  };
-
-  const map: Record<string, any> = {
-    none: { initial: {}, animate: {}, transition: {} },
-    "fade-up": base,
-    "fade-down": { ...base, initial: { opacity: 0, y: -20 } },
-    "fade-left": { ...base, initial: { opacity: 0, x: 30 } },
-    "fade-right": { ...base, initial: { opacity: 0, x: -30 } },
-    "zoom-in": {
-      initial: { opacity: 0, scale: 0.9 },
-      animate: { opacity: 1, scale: 1 },
-      transition: { duration: 0.5, ease: "easeOut" },
-    },
-    bounce: {
-      initial: { opacity: 0, y: -40 },
-      animate: { opacity: 1, y: 0 },
-      transition: isLoop
-        ? { type: "spring", bounce: 0.4, duration: 0.8, repeat: Infinity, repeatDelay: 0.5 }
-        : { type: "spring", bounce: 0.4, duration: 0.8 },
-    },
-  };
-
-  return map[animation || "fade-up"] || map["fade-up"];
+/**
+ * Map a slide-animation key to a className string built from
+ * tailwindcss-animate utilities (already in the bundle via shadcn).
+ *
+ * Replaces the previous framer-motion-based getTextAnimation() so that
+ * the homepage hero no longer pulls framer-motion into the critical path.
+ */
+const getTextAnimationClass = (
+  animation: string | null | undefined,
+  isLoop = false,
+): string => {
+  switch (animation) {
+    case "none":
+      return "";
+    case "fade-down":
+      return "animate-in fade-in slide-in-from-top-4 duration-700 ease-out";
+    case "fade-left":
+      return "animate-in fade-in slide-in-from-right-4 duration-700 ease-out";
+    case "fade-right":
+      return "animate-in fade-in slide-in-from-left-4 duration-700 ease-out";
+    case "zoom-in":
+      return "animate-in fade-in zoom-in-95 duration-500 ease-out";
+    case "bounce":
+      return isLoop
+        ? "animate-bounce"
+        : "animate-in fade-in slide-in-from-top-8 duration-700 ease-out";
+    case "fade-up":
+    default:
+      return "animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out";
+  }
 };
 
 const alignMap = {
@@ -48,8 +49,8 @@ interface HeroSlideProps {
 }
 
 const HeroSlide = memo(({ slide, isPrimary }: HeroSlideProps) => {
-  const titleAnim = getTextAnimation(slide.title_animation, slide.title_animation_loop || false);
-  const subtitleAnim = getTextAnimation(slide.subtitle_animation, slide.subtitle_animation_loop || false);
+  const titleAnimClass = getTextAnimationClass(slide.title_animation, slide.title_animation_loop || false);
+  const subtitleAnimClass = getTextAnimationClass(slide.subtitle_animation, slide.subtitle_animation_loop || false);
   const align = alignMap[(slide.text_align as keyof typeof alignMap) || "center"];
   const overlayGradient = `linear-gradient(to bottom, ${slide.overlay_gradient_from ?? "#0F766E"}, ${slide.overlay_gradient_to ?? "#000000"})`;
 
@@ -82,25 +83,23 @@ const HeroSlide = memo(({ slide, isPrimary }: HeroSlideProps) => {
 
       <div className={`relative z-10 ${align.items} flex flex-col h-full ${align.contentPadding}`}>
         <div className={`w-full max-w-4xl mx-auto ${align.text} text-white`}>
-          <motion.h1
-            {...titleAnim}
-            className={`${slide.font_size ?? "text-3xl sm:text-4xl md:text-6xl lg:text-7xl"} ${slide.font_weight ?? "font-bold"} mb-4 sm:mb-6 px-2`}
+          <h1
+            className={`${slide.font_size ?? "text-3xl sm:text-4xl md:text-6xl lg:text-7xl"} ${slide.font_weight ?? "font-bold"} mb-4 sm:mb-6 px-2 ${titleAnimClass}`}
             style={{ fontFamily: slide.font_family, color: slide.text_color }}
           >
             {slide.overlay_text}
-          </motion.h1>
+          </h1>
 
           {slide.overlay_subtext && (
-            <motion.p
-              {...subtitleAnim}
-              className={`${slide.subtitle_font_size ?? "text-base sm:text-lg md:text-xl lg:text-2xl"} ${slide.subtitle_font_weight ?? "font-normal"} mb-6 sm:mb-8 max-w-2xl px-2 ${slide.text_align === "center" ? "mx-auto" : ""}`}
+            <p
+              className={`${slide.subtitle_font_size ?? "text-base sm:text-lg md:text-xl lg:text-2xl"} ${slide.subtitle_font_weight ?? "font-normal"} mb-6 sm:mb-8 max-w-2xl px-2 ${slide.text_align === "center" ? "mx-auto" : ""} ${subtitleAnimClass}`}
               style={{
                 fontFamily: slide.subtitle_font_family ?? slide.font_family,
                 color: slide.subtitle_text_color ?? slide.text_color,
               }}
             >
               {slide.overlay_subtext}
-            </motion.p>
+            </p>
           )}
         </div>
       </div>

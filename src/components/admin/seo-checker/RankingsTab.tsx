@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, Link2, Unlink, ExternalLink, Loader2 } from "lucide-react";
@@ -6,7 +6,11 @@ import { useSearchConsoleRankings } from "@/hooks/useSearchConsoleRankings";
 import { RankingsSummary } from "./RankingsSummary";
 import { TopPagesTable } from "./TopPagesTable";
 import { TopQueriesTable } from "./TopQueriesTable";
-import { RankingsTrendChart } from "./RankingsTrendChart";
+
+// Lazy-load chart so recharts (≈100 KB) is fetched only when this tab actually renders.
+const RankingsTrendChart = lazy(() =>
+  import("./RankingsTrendChart").then(m => ({ default: m.RankingsTrendChart })),
+);
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -131,7 +135,9 @@ export const RankingsTab = () => {
       <RankingsSummary summary={summary} />
 
       {/* Trend Chart */}
-      <RankingsTrendChart data={getRankingTrend(7)} />
+      <Suspense fallback={<div className="h-64 rounded-md border bg-muted/30 animate-pulse" />}>
+        <RankingsTrendChart data={getRankingTrend(7)} />
+      </Suspense>
 
       {/* Tables */}
       <div className="grid md:grid-cols-2 gap-6">
