@@ -31,15 +31,33 @@ export async function handleGuestBookingFlow(
       bookingCodeMatch && (updateKeywords.test(message) || alreadyBookedPhrase.test(message));
 
     if (isUpdateIntent) {
+      const bookingCode = bookingCodeMatch![0];
+      const isRefundCancel = /\b(batal|cancel|refund)\b/i.test(message);
+      const reasonText = (() => {
+        const m = message.match(updateKeywords);
+        if (m) return m[0];
+        if (alreadyBookedPhrase.test(message)) return "menyebutkan booking aktif";
+        return "perubahan booking";
+      })();
       await logMessage(
         supabase,
         conversationId,
         "system",
-        `⚠️ Tamu minta update booking ${bookingCodeMatch![0]}: "${message}"`,
+        `⚠️ Tamu minta update booking ${bookingCode} (${reasonText}): "${message}"`,
       );
-      const reply = `Kak, permintaan perubahan untuk booking ${bookingCodeMatch![0]} sudah saya teruskan ke admin kami ya agar dibantu proses secara manual. Mohon ditunggu sebentar 🙏`;
+      const reply = `Kak, permintaan perubahan untuk booking ${bookingCode} sudah saya teruskan ke admin kami ya agar dibantu proses secara manual. Mohon ditunggu sebentar 🙏`;
       await sendWhatsApp(phone, reply, env.fonnteApiKey);
       await logMessage(supabase, conversationId, "assistant", reply);
+      await logChatbotAlert(supabase, {
+        alert_type: isRefundCancel ? "refund_cancel_intent" : "booking_update_escalation",
+        phone_number: phone,
+        conversation_id: conversationId,
+        last_user_message: message,
+        intent: isRefundCancel ? "refund_cancel" : "booking_update",
+        booking_code: bookingCode,
+        reason: reasonText,
+        recentMessages: recentMessages as Array<{ role: string; content: string }> | undefined,
+      });
       await updateSession(supabase, phone, conversationId, false);
       return new Response(JSON.stringify({ status: "escalated_to_admin" }));
     }
