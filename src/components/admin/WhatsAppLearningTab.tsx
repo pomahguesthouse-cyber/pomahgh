@@ -20,6 +20,7 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Star,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
@@ -223,9 +224,17 @@ export default function WhatsAppLearningTab() {
               {report ? (
                 <div className="space-y-6">
                   {/* Summary Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                     <MiniStat label="Total Dianalisis" value={report.summary.total_conversations_analyzed} />
                     <MiniStat label="Akurasi Bot" value={`${Math.round(report.summary.avg_bot_accuracy * 100)}%`} />
+                    <MiniStat
+                      label={`Rating Admin (${report.summary.rated_conversations})`}
+                      value={
+                        report.summary.avg_admin_rating != null
+                          ? `★ ${report.summary.avg_admin_rating.toFixed(1)}`
+                          : "–"
+                      }
+                    />
                     <MiniStat label="Pola FAQ" value={report.summary.total_faq_patterns} />
                     <MiniStat label="Training dari WA" value={report.summary.total_training_from_wa} />
                     <MiniStat label="Menunggu Approval" value={report.summary.pending_approval} />
@@ -514,12 +523,18 @@ function InsightCard({ insight }: { insight: ConversationInsight }) {
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <SentimentBadge sentiment={insight.sentiment} />
               <ResolutionBadge status={insight.resolution_status} />
               {insight.bot_accuracy_score != null && (
                 <Badge variant="outline">
                   Akurasi: {Math.round(insight.bot_accuracy_score * 100)}%
+                </Badge>
+              )}
+              {insight.admin_rating_count > 0 && insight.avg_admin_rating != null && (
+                <Badge variant="secondary" className="text-yellow-700 bg-yellow-50" title="Rating dari admin (override sinyal AI)">
+                  <Star className="h-3 w-3 mr-1 fill-yellow-500 text-yellow-500" />
+                  {insight.avg_admin_rating.toFixed(1)} ({insight.admin_rating_count})
                 </Badge>
               )}
               <span className="text-xs text-muted-foreground">

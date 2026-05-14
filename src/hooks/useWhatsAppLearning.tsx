@@ -27,6 +27,8 @@ export interface ConversationInsight {
   resolution_status: "resolved" | "unresolved" | "escalated" | "abandoned";
   bot_accuracy_score: number | null;
   guest_satisfaction_signal: string | null;
+  avg_admin_rating: number | null;
+  admin_rating_count: number;
   message_count: number;
   analyzed_at: string;
   created_at: string;
@@ -43,6 +45,8 @@ export interface LearningReport {
     total_faq_patterns: number;
     total_training_from_wa: number;
     pending_approval: number;
+    avg_admin_rating: number | null;
+    rated_conversations: number;
   };
   sentiment_distribution: Record<string, number>;
   top_topics: Array<{ topic: string; count: number }>;
@@ -280,6 +284,9 @@ export const useConversationInsights = ({
           topics,
           resolution_status,
           bot_accuracy_score,
+          guest_satisfaction_signal,
+          avg_admin_rating,
+          admin_rating_count,
           analyzed_at
         `,
           { count: "exact" },
@@ -299,6 +306,8 @@ export const useConversationInsights = ({
         intent_flow: (item as { intent_flow?: string[] }).intent_flow ?? [],
         topics: item.topics ?? [],
         message_count: (item as { message_count?: number }).message_count ?? 0,
+        admin_rating_count: (item as { admin_rating_count?: number | null }).admin_rating_count ?? 0,
+        avg_admin_rating: (item as { avg_admin_rating?: number | null }).avg_admin_rating ?? null,
         failed_responses: [],
         successful_patterns: [],
         suggested_improvements: [],

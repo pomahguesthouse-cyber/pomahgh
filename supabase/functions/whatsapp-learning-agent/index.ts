@@ -128,6 +128,48 @@ Deno.serve(async (req: Request) => {
 });
 
 // ============================================================
+// Helper: Aggregate admin ratings for a conversation.
+// Returns { avg, count } where avg is null when no messages are rated.
+// ============================================================
+async function fetchAdminRatingAggregate(
+  supabase: SupabaseClient,
+  conversationId: string
+): Promise<{ avg: number | null; count: number }> {
+  const { data: msgs } = await supabase
+    .from("chat_messages")
+    .select("id")
+    .eq("conversation_id", conversationId);
+
+  const ids = (msgs ?? []).map((m) => m.id);
+  if (ids.length === 0) return { avg: null, count: 0 };
+
+  const { data: ratings } = await supabase
+    .from("chat_message_ratings")
+    .select("rating")
+    .in("message_id", ids);
+
+  const rows = (ratings ?? []).filter((r) => typeof r.rating === "number");
+  if (rows.length === 0) return { avg: null, count: 0 };
+
+  const sum = rows.reduce((s, r) => s + (r.rating as number), 0);
+  return { avg: Math.round((sum / rows.length) * 100) / 100, count: rows.length };
+}
+
+// Map admin rating (1-5) to the same value space the AI infers.
+// Admin rating is ground truth — overrides AI-inferred fields when present.
+function ratingToSatisfaction(avg: number): "happy" | "neutral" | "frustrated" {
+  if (avg >= 4) return "happy";
+  if (avg <= 2) return "frustrated";
+  return "neutral";
+}
+
+function ratingToSentiment(avg: number): "positive" | "neutral" | "negative" {
+  if (avg >= 4) return "positive";
+  if (avg <= 2) return "negative";
+  return "neutral";
+}
+
+// ============================================================
 // Helper: Analyze a single conversation (used in parallel chunks)
 // ============================================================
 interface AnalyzeResult {
@@ -151,6 +193,9 @@ async function analyzeOneConversation(
     .eq("conversation_id", conv.id)
     .order("created_at", { ascending: true });
 
+  // Admin ratings act as ground truth for satisfaction/sentiment when present
+  const adminRating = await fetchAdminRatingAggregate(supabase, conv.id);
+
   if (!messages || messages.length === 0) {
     await supabase.from("whatsapp_conversation_insights").insert({
       conversation_id: conv.id,
@@ -161,6 +206,8 @@ async function analyzeOneConversation(
       resolution_status: "abandoned",
       message_count: 0,
       model_used: MODEL,
+      avg_admin_rating: adminRating.avg,
+      admin_rating_count: adminRating.count,
     });
     return { conversation_id: conv.id, success: true, topics: [], insightGenerated: false, resolved: false };
   }
@@ -182,17 +229,22 @@ async function analyzeOneConversation(
       if (!shortResult.rateLimited) {
         const shortAnalysis = parseJsonFromAI(shortResult.data.choices[0]?.message?.content || "{}");
         if (shortAnalysis) {
+          const aiSentiment = validateEnum(shortAnalysis.sentiment, ["positive", "neutral", "negative", "mixed"], "neutral");
+          const overrideSentiment = adminRating.avg !== null ? ratingToSentiment(adminRating.avg) : aiSentiment;
+
           await supabase.from("whatsapp_conversation_insights").insert({
             conversation_id: conv.id,
             session_id: conv.session_id,
             summary: (shortAnalysis.summary as string) || `Percakapan singkat: ${topic}`,
             topics: (shortAnalysis.topics as string[]) || [],
-            sentiment: validateEnum(shortAnalysis.sentiment, ["positive", "neutral", "negative", "mixed"], "neutral"),
+            sentiment: overrideSentiment,
             resolution_status: validateEnum(shortAnalysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "abandoned"),
             bot_accuracy_score: clampScore(shortAnalysis.bot_accuracy_score),
             common_questions: shortAnalysis.common_questions || [],
             message_count: messages.length,
             model_used: MODEL,
+            avg_admin_rating: adminRating.avg,
+            admin_rating_count: adminRating.count,
           });
           return {
             conversation_id: conv.id, success: true,
@@ -211,10 +263,12 @@ async function analyzeOneConversation(
       session_id: conv.session_id,
       summary: `Percakapan singkat (${messages.length} pesan)`,
       topics: [],
-      sentiment: "neutral",
+      sentiment: adminRating.avg !== null ? ratingToSentiment(adminRating.avg) : "neutral",
       resolution_status: "abandoned",
       message_count: messages.length,
       model_used: MODEL,
+      avg_admin_rating: adminRating.avg,
+      admin_rating_count: adminRating.count,
     });
     return { conversation_id: conv.id, success: true, topics: [], insightGenerated: false, resolved: false };
   }
@@ -241,16 +295,22 @@ async function analyzeOneConversation(
     return { conversation_id: conv.id, success: false, insightGenerated: false, resolved: false };
   }
 
+  const aiSentiment = validateEnum(analysis.sentiment, ["positive", "neutral", "negative", "mixed"], "neutral");
+  const finalSentiment = adminRating.avg !== null ? ratingToSentiment(adminRating.avg) : aiSentiment;
+  const finalSatisfaction = adminRating.avg !== null
+    ? ratingToSatisfaction(adminRating.avg)
+    : (analysis.guest_satisfaction_signal || "neutral");
+
   await supabase.from("whatsapp_conversation_insights").insert({
     conversation_id: conv.id,
     session_id: conv.session_id,
     summary: analysis.summary || "Tidak ada ringkasan",
     topics: analysis.topics || [],
-    sentiment: validateEnum(analysis.sentiment, ["positive", "neutral", "negative", "mixed"], "neutral"),
+    sentiment: finalSentiment,
     intent_flow: analysis.intent_flow || [],
     resolution_status: validateEnum(analysis.resolution_status, ["resolved", "unresolved", "escalated", "abandoned"], "unresolved"),
     bot_accuracy_score: clampScore(analysis.bot_accuracy_score),
-    guest_satisfaction_signal: analysis.guest_satisfaction_signal || "neutral",
+    guest_satisfaction_signal: finalSatisfaction,
     common_questions: analysis.common_questions || [],
     failed_responses: analysis.failed_responses || [],
     successful_patterns: analysis.successful_patterns || [],
@@ -258,6 +318,8 @@ async function analyzeOneConversation(
     new_slang_detected: analysis.new_slang_detected || [],
     message_count: messages.length,
     model_used: MODEL,
+    avg_admin_rating: adminRating.avg,
+    admin_rating_count: adminRating.count,
   });
 
   const score = clampScore(analysis.bot_accuracy_score);
@@ -740,13 +802,24 @@ async function generateLearningReport(supabase: SupabaseClient): Promise<Respons
   const resolutionDist = { resolved: 0, unresolved: 0, escalated: 0, abandoned: 0 };
   const topicCounts: Record<string, number> = {};
 
+  let ratedConversations = 0;
+  let ratingSum = 0;
+
   for (const insight of insights) {
     if (insight.sentiment) sentimentDist[insight.sentiment as keyof typeof sentimentDist]++;
     if (insight.resolution_status) resolutionDist[insight.resolution_status as keyof typeof resolutionDist]++;
     for (const topic of (insight.topics || [])) {
       topicCounts[topic] = (topicCounts[topic] || 0) + 1;
     }
+    if (insight.admin_rating_count && insight.admin_rating_count > 0 && typeof insight.avg_admin_rating === "number") {
+      ratedConversations++;
+      ratingSum += insight.avg_admin_rating;
+    }
   }
+
+  const avgAdminRating = ratedConversations > 0
+    ? Math.round((ratingSum / ratedConversations) * 100) / 100
+    : null;
 
   // All failed responses
   const allFailures: Array<{ user_msg: string; issue: string }> = [];
@@ -781,6 +854,8 @@ async function generateLearningReport(supabase: SupabaseClient): Promise<Respons
         total_faq_patterns: (faqPatterns || []).length,
         total_training_from_wa: trainingCount || 0,
         pending_approval: pendingCount || 0,
+        avg_admin_rating: avgAdminRating,
+        rated_conversations: ratedConversations,
       },
       sentiment_distribution: sentimentDist,
       resolution_distribution: resolutionDist,

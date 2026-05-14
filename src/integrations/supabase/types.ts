@@ -4240,6 +4240,8 @@ export type Database = {
       whatsapp_conversation_insights: {
         Row: {
           analyzed_at: string | null
+          avg_admin_rating: number | null
+          admin_rating_count: number | null
           bot_accuracy_score: number | null
           common_questions: Json | null
           conversation_id: string | null
@@ -4261,6 +4263,8 @@ export type Database = {
         }
         Insert: {
           analyzed_at?: string | null
+          avg_admin_rating?: number | null
+          admin_rating_count?: number | null
           bot_accuracy_score?: number | null
           common_questions?: Json | null
           conversation_id?: string | null
@@ -4282,6 +4286,8 @@ export type Database = {
         }
         Update: {
           analyzed_at?: string | null
+          avg_admin_rating?: number | null
+          admin_rating_count?: number | null
           bot_accuracy_score?: number | null
           common_questions?: Json | null
           conversation_id?: string | null
