@@ -26,8 +26,8 @@ const AdminMultiAgentDashboard = () => {
         id: agent.id,
         name: agent.name,
         role: agent.role || agent.name,
-        status: agent.status || "idle",
-        capabilities: agent.capabilities || [],
+        status: agent.status === "active" ? "idle" : (agent.status || "idle"),
+        capabilities: agent.tags || [],
       });
     });
   }, [agents, registerAgent]);
