@@ -30,6 +30,24 @@ export interface ConversationInsight {
   message_count: number;
   analyzed_at: string;
   created_at: string;
+  failed_responses: Array<{ user_msg: string; issue: string }>;
+  successful_patterns: Array<{ trigger: string; why_worked: string }>;
+  suggested_improvements: Array<{ area: string; suggestion: string; priority: string }>;
+  new_slang_detected: Array<{ slang: string; meaning: string }>;
+}
+
+export interface LearningReport {
+  summary: {
+    total_conversations_analyzed: number;
+    avg_bot_accuracy: number;
+    total_faq_patterns: number;
+    total_training_from_wa: number;
+    pending_approval: number;
+  };
+  sentiment_distribution: Record<string, number>;
+  top_topics: Array<{ topic: string; count: number }>;
+  improvement_suggestions: Array<{ area: string; suggestion: string }>;
+  recent_failures: Array<{ user_msg: string; issue: string }>;
 }
 
 export interface FAQPattern {
@@ -270,6 +288,13 @@ export const useConversationInsights = (limit = 50) => {
       data.map((item) => ({
         ...item,
         summary: item.summary ?? "-",
+        intent_flow: (item as { intent_flow?: string[] }).intent_flow ?? [],
+        topics: item.topics ?? [],
+        message_count: (item as { message_count?: number }).message_count ?? 0,
+        failed_responses: [],
+        successful_patterns: [],
+        suggested_improvements: [],
+        new_slang_detected: [],
       })),
 
     ...DEFAULT_QUERY_OPTIONS,
