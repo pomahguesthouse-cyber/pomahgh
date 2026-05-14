@@ -9,7 +9,10 @@ import { logAgentDecision } from '../../_shared/agentLogger.ts';
 
 // Detect requests for room photos / brochure
 const PHOTO_WORDS = /(foto|fotonya|gambar|gambarnya|pic(?:ture)?|photo|brosur|brochure|katalog|preview)/i;
-const ROOM_WORDS = /(kamar|kamarnya|room|rooms|deluxe|single|family|grand|standard|superior)/i;
+const ROOM_WORDS = /(kamar|kamarnya|room|rooms|deluxe|single|family|suite|grand|standard|superior)/i;
+// "lihat/liat/tunjuk/tunjukin/preview/model/contoh/penampakan/wujud" + room context
+// → guest minta lihat kamar (tanpa kata "foto") = anggap minta brosur juga.
+const VIEW_VERB = /(liat|lihat|tunjuk(?:in|kan)?|preview|contoh(?:nya)?|wujud(?:nya)?|penampakan|model|tipe|jenis|seperti\s*apa|kayak\s*apa|spek(?:nya)?|spesifikasi|detail(?:nya)?)/i;
 
 /**
  * Detect if the message is asking for room photos or brochure.
@@ -17,15 +20,20 @@ const ROOM_WORDS = /(kamar|kamarnya|room|rooms|deluxe|single|family|grand|standa
  */
 export function isRoomPhotoRequest(message: string): boolean {
   const m = message.toLowerCase();
-  if (!PHOTO_WORDS.test(m)) return false;
   // "brosur" / "katalog" / "brochure" alone is enough
   if (/(brosur|brochure|katalog)/i.test(m)) return true;
-  // Photo word + room context word
-  if (ROOM_WORDS.test(m)) return true;
-  // Generic short asks: "ada fotonya?", "ada contoh gambarnya?"
-  if (/(ada\s+(?:foto|gambar|fotonya|gambarnya|contoh\s+(?:foto|gambar)))/i.test(m)) return true;
-  // "minta fotonya", "lihat gambarnya", etc.
-  if (/(minta|liat|lihat|kirim|share|tunjuk)\s+(?:foto|gambar|fotonya|gambarnya)/i.test(m)) return true;
+  if (PHOTO_WORDS.test(m)) {
+    if (ROOM_WORDS.test(m)) return true;
+    if (/(ada\s+(?:foto|gambar|fotonya|gambarnya|contoh\s+(?:foto|gambar)))/i.test(m)) return true;
+    if (/(minta|liat|lihat|kirim|share|tunjuk)\s+(?:foto|gambar|fotonya|gambarnya)/i.test(m)) return true;
+  }
+  // Permintaan "lihat / tunjukin / preview / model / spek kamar [tipe]" → brosur.
+  // Contoh yang harus match:
+  //   "boleh liat kamar family suitnya?"
+  //   "tunjukin kamar deluxe dong"
+  //   "kamar single seperti apa?"
+  //   "model kamar grand deluxe gimana?"
+  if (VIEW_VERB.test(m) && ROOM_WORDS.test(m)) return true;
   return false;
 }
 
