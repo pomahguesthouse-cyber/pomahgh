@@ -19,9 +19,16 @@ export async function handleGuestBookingFlow(
 ): Promise<Response> {
   try {
     // 1. DETEKSI UPDATE BOOKING (Cek kode PMH- di riwayat)
+    // Diperluas: early/late check-in/out, extend, perpanjang, tambah malam,
+    // batal, refund, ganti kamar, dsb. Juga: kalau pesan diawali "ak/saya
+    // dah booking" → tetap escalate agar tidak nyasar ke flow availability.
     const historyText = recentMessages?.map((m) => m.content).join(" ") || "";
     const bookingCodeMatch = historyText.match(/PMH-[A-Z0-9]+/i);
-    const isUpdateIntent = bookingCodeMatch && /\b(jadinya|ubah|ganti|malam|rubah|menjadi)\b/i.test(message);
+    const updateKeywords =
+      /\b(jadinya|ubah|ganti|rubah|menjadi|early\s*(check\s*in|ci)|late\s*(check\s*out|co)|extend|perpanjang|tambah\s*malam|batal|cancel|refund|pindah\s*kamar|upgrade|downgrade)\b/i;
+    const alreadyBookedPhrase = /\b(udah|sudah|dah|telah)\s+(book|booking|pesan|reservasi)\b/i;
+    const isUpdateIntent =
+      bookingCodeMatch && (updateKeywords.test(message) || alreadyBookedPhrase.test(message));
 
     if (isUpdateIntent) {
       await logMessage(
@@ -196,9 +203,31 @@ async function handleNewBooking(
     return null;
   };
 
+  // Pola tambahan: "check in 17 check out 18" (angka polos tanpa bulan).
+  // Default ke bulan berjalan; kalau sudah lewat → bulan berikutnya.
+  const parseCheckInOutNumeric = (
+    text: string,
+  ): { checkIn: string; checkOut: string } | null => {
+    const r = text.match(/check\s*in[^\d]{0,15}(\d{1,2})[\s\S]{0,40}?check\s*out[^\d]{0,15}(\d{1,2})/i);
+    if (!r) return null;
+    const d1 = parseInt(r[1], 10);
+    const d2 = parseInt(r[2], 10);
+    if (d1 < 1 || d1 > 31 || d2 < 1 || d2 > 31 || d2 <= d1) return null;
+    let year = now.getUTCFullYear();
+    let month = now.getUTCMonth() + 1; // 1-12
+    const today = now.getUTCDate();
+    if (d1 < today) {
+      month += 1;
+      if (month > 12) { month = 1; year += 1; }
+    }
+    const ci = toISODate(new Date(Date.UTC(year, month - 1, d1)));
+    const co = toISODate(new Date(Date.UTC(year, month - 1, d2)));
+    return { checkIn: ci, checkOut: co };
+  };
+
   // Cek pola range DULU sebelum single date supaya "12-13 Juni" tidak salah
   // ditafsirkan jadi "13 Juni" oleh single-date regex.
-  const range = parseDateRangeFrom(msg);
+  const range = parseDateRangeFrom(msg) ?? parseCheckInOutNumeric(msg);
   if (range) {
     checkInISO = range.checkIn;
     checkOutFromRange = range.checkOut;
@@ -212,7 +241,7 @@ async function handleNewBooking(
   if (!checkInISO && recentMessages?.length) {
     for (const m of recentMessages.slice(-8).reverse()) {
       const text = String(m?.content ?? "");
-      const histRange = parseDateRangeFrom(text);
+      const histRange = parseDateRangeFrom(text) ?? parseCheckInOutNumeric(text);
       if (histRange) {
         checkInISO = histRange.checkIn;
         checkOutFromRange = histRange.checkOut;
@@ -259,6 +288,28 @@ async function handleNewBooking(
   // Parse jumlah tamu (optional)
   const guestsMatch = msg.match(/(\d{1,2})\s*(orang|tamu|pax)/i);
   const numGuests = guestsMatch ? parseInt(guestsMatch[1], 10) : undefined;
+
+  // Deteksi multi-kamar: "(2 kamar)" / "2 kamar" / "butuh 3 kamar".
+  // Chatbot belum support multi-room booking otomatis → escalate ke admin
+  // supaya tidak salah konfirmasi 1 kamar.
+  const roomCountMatch = msg.match(/(\d{1,2})\s*kamar\b/i);
+  const numRooms = roomCountMatch ? parseInt(roomCountMatch[1], 10) : 1;
+  if (numRooms >= 2) {
+    const reply =
+      `Baik kak, untuk booking ${numRooms} kamar (${numGuests ?? "?"} tamu) di tanggal ` +
+      `${checkInISO} – ${checkOutISO} sudah saya teruskan ke admin kami untuk dibantu ` +
+      `proses ya 🙏 Mohon ditunggu sebentar.`;
+    await sendWhatsApp(phone, reply, env.fonnteApiKey);
+    await logMessage(supabase, convId, "assistant", reply);
+    await logMessage(
+      supabase,
+      convId,
+      "system",
+      `⚠️ Multi-room request: ${numRooms} kamar, ${numGuests ?? "?"} tamu, ${checkInISO} – ${checkOutISO}. Pesan asli: "${msg}"`,
+    );
+    await updateSession(supabase, phone, convId, false);
+    return new Response(JSON.stringify({ status: "multi_room_escalated" }));
+  }
 
   // Panggil chatbot-tools untuk check_availability (sumber tunggal kebenaran)
   try {
