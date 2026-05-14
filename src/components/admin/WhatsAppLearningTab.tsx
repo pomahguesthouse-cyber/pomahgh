@@ -37,6 +37,7 @@ import {
   type FAQPattern,
   type LearningReport,
 } from "@/hooks/useWhatsAppLearning";
+import { SlangManagementPanel, AddSlangButton } from "./SlangManagementPanel";
 
 export default function WhatsAppLearningTab() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -191,6 +192,10 @@ export default function WhatsAppLearningTab() {
           <TabsTrigger value="slang">
             <Languages className="h-4 w-4 mr-1" />
             Slang Detection
+          </TabsTrigger>
+          <TabsTrigger value="slang-manage">
+            <Languages className="h-4 w-4 mr-1" />
+            Kelola Slang
           </TabsTrigger>
         </TabsList>
 
@@ -398,6 +403,11 @@ export default function WhatsAppLearningTab() {
             onDetect={() => detectSlang.mutate()}
             result={detectSlang.data}
           />
+        </TabsContent>
+
+        {/* Slang Management Tab */}
+        <TabsContent value="slang-manage" className="space-y-4">
+          <SlangManagementPanel />
         </TabsContent>
       </Tabs>
     </div>
@@ -689,11 +699,11 @@ function SlangDetectionPanel({
                     <Badge variant="outline" className="ml-auto text-xs">
                       {s.confidence}
                     </Badge>
+                    <AddSlangButton slang={s.slang} normalized={s.meaning} />
                   </div>
                 ))}
                 <p className="text-xs text-muted-foreground mt-2">
-                  Tambahkan slang baru ke <code>SLANG_PATTERNS</code> di{" "}
-                  <code>whatsapp-webhook/index.ts</code> untuk normalisasi otomatis.
+                  Klik "Tambah ke Normalizer" untuk menyimpan slang ke database. Berlaku otomatis dalam ±5 menit.
                 </p>
               </div>
             ) : (

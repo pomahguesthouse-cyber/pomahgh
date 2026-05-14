@@ -1,38 +1,75 @@
-/** Indonesian slang normalizer for better AI understanding */
-const SLANG_MAP: Record<string, string> = {
-  'dlx': 'deluxe', 'delux': 'deluxe', 'dluxe': 'deluxe',
-  'grnd': 'grand', 'grd': 'grand',
-  'fam': 'family', 'fmly': 'family',
-  'sgl': 'single', 'sngl': 'single',
-  'kmr': 'kamar', 'kmar': 'kamar',
-  'brp': 'berapa', 'brapa': 'berapa',
-  'bs': 'bisa', 'bsa': 'bisa', 'bza': 'bisa',
-  'gk': 'tidak', 'ga': 'tidak', 'ngga': 'tidak', 'gak': 'tidak', 'nggak': 'tidak',
-  'sy': 'saya', 'aku': 'saya', 'ak': 'saya', 'gw': 'saya', 'gue': 'saya',
-  'mlm': 'malam', 'malem': 'malam',
-  'org': 'orang', 'orng': 'orang',
-  'tgl': 'tanggal', 'tggl': 'tanggal',
-  'kpn': 'kapan', 'kapn': 'kapan',
-  'bsk': 'besok', 'besuk': 'besok',
-  'lsa': 'lusa',
-  'gmn': 'bagaimana', 'gimana': 'bagaimana', 'gmna': 'bagaimana',
-  'udh': 'sudah', 'udah': 'sudah', 'sdh': 'sudah',
-  'blm': 'belum', 'blum': 'belum',
-  'yg': 'yang', 'yng': 'yang',
-  'dg': 'dengan', 'dgn': 'dengan',
-  'utk': 'untuk', 'utuk': 'untuk', 'buat': 'untuk',
-  'krn': 'karena', 'krna': 'karena',
-  'lg': 'lagi', 'lgi': 'lagi',
-  'msh': 'masih', 'msih': 'masih',
-  'jg': 'juga', 'jga': 'juga',
-  'tp': 'tapi', 'tpi': 'tapi',
-  'sm': 'sama', 'ama': 'sama',
-  'trims': 'terima kasih', 'tq': 'terima kasih', 'makasih': 'terima kasih', 'mksh': 'terima kasih',
-};
+/** Indonesian slang normalizer for better AI understanding.
+ *  Patterns are loaded from whatsapp_slang_patterns table with a TTL cache,
+ *  so admin can manage entries without redeploy. */
+import type { SupabaseClient } from "../types.ts";
 
-// Single combined regex — compiled once per isolate
-const SLANG_RE = new RegExp(`\\b(${Object.keys(SLANG_MAP).join('|')})\\b`, 'gi');
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
-export function normalizeIndonesianMessage(msg: string): string {
-  return msg.toLowerCase().replace(SLANG_RE, (match) => SLANG_MAP[match.toLowerCase()] || match);
+interface SlangCache {
+  map: Record<string, string>;
+  regex: RegExp | null;
+  fetchedAt: number;
+}
+
+let cache: SlangCache | null = null;
+let inflight: Promise<SlangCache> | null = null;
+
+function buildRegex(map: Record<string, string>): RegExp | null {
+  const keys = Object.keys(map);
+  if (keys.length === 0) return null;
+  const escaped = keys.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  return new RegExp(`\\b(${escaped.join("|")})\\b`, "gi");
+}
+
+async function loadPatterns(supabase: SupabaseClient): Promise<SlangCache> {
+  const { data, error } = await supabase
+    .from("whatsapp_slang_patterns")
+    .select("slang, normalized")
+    .eq("is_active", true);
+
+  if (error) {
+    console.error("[slang] failed to load patterns:", error.message);
+    return { map: {}, regex: null, fetchedAt: Date.now() };
+  }
+
+  const map: Record<string, string> = {};
+  for (const row of data ?? []) {
+    if (row.slang && row.normalized) {
+      map[String(row.slang).toLowerCase()] = String(row.normalized);
+    }
+  }
+
+  return { map, regex: buildRegex(map), fetchedAt: Date.now() };
+}
+
+async function getCache(supabase: SupabaseClient): Promise<SlangCache> {
+  const now = Date.now();
+  if (cache && now - cache.fetchedAt < CACHE_TTL_MS) return cache;
+  if (inflight) return inflight;
+
+  inflight = loadPatterns(supabase)
+    .then((result) => {
+      cache = result;
+      return result;
+    })
+    .finally(() => {
+      inflight = null;
+    });
+
+  return inflight;
+}
+
+export async function normalizeIndonesianMessage(
+  msg: string,
+  supabase: SupabaseClient,
+): Promise<string> {
+  const { map, regex } = await getCache(supabase);
+  const lowered = msg.toLowerCase();
+  if (!regex) return lowered;
+  return lowered.replace(regex, (match) => map[match.toLowerCase()] || match);
+}
+
+/** Test/admin helper: force the next call to refetch from DB. */
+export function invalidateSlangCache(): void {
+  cache = null;
 }
