@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { lazy, Suspense, Component } from "react";
 import type { ReactNode } from "react";
@@ -146,9 +146,7 @@ const AdminLandingPages = lazyRetry(() => import("./pages/admin/AdminLandingPage
 
 /* Chatbots */
 const AdminChat = lazyRetry(() => import("./pages/admin/AdminChat"));
-const AdminGuestChatbot = lazyRetry(() => import("./pages/admin/AdminGuestChatbot"));
-const AdminAdminChatbot = lazyRetry(() => import("./pages/admin/AdminAdminChatbot"));
-const AdminChatbotTester = lazyRetry(() => import("./pages/admin/AdminChatbotTester"));
+const AdminAILab = lazyRetry(() => import("./pages/admin/AdminAILab"));
 const AdminChatbotTesterRunDetail = lazyRetry(() => import("./pages/admin/AdminChatbotTesterRunDetail"));
 
 const AdminLayout = lazyRetry(() =>
@@ -482,27 +480,24 @@ const App = () => {
 
                         <Route
                           path="/admin/chatbot/guest"
-                          element={
-                            <AdminLayout>
-                              <AdminGuestChatbot />
-                            </AdminLayout>
-                          }
+                          element={<Navigate to="/admin/ai-lab?section=persona&tab=persona-guest" replace />}
                         />
 
                         <Route
                           path="/admin/chatbot/admin"
-                          element={
-                            <AdminLayout>
-                              <AdminAdminChatbot />
-                            </AdminLayout>
-                          }
+                          element={<Navigate to="/admin/ai-lab?section=persona&tab=persona-admin" replace />}
                         />
 
                         <Route
                           path="/admin/chatbot/tester"
+                          element={<Navigate to="/admin/ai-lab?section=training&tab=tester" replace />}
+                        />
+
+                        <Route
+                          path="/admin/ai-lab"
                           element={
                             <AdminLayout>
-                              <AdminChatbotTester />
+                              <AdminAILab />
                             </AdminLayout>
                           }
                         />

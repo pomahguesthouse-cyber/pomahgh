@@ -1,72 +1,88 @@
-# Seleksi Training Berbasis Semantic Similarity
+## Tujuan
 
-Mengganti seleksi keyword-kategori (`detectCategory` + filter manual) di `supabase/functions/chatbot/services/exampleSelector.ts` dengan ranking cosine similarity menggunakan **pgvector** + embeddings dari **OpenAI `text-embedding-3-small`** (1536-dim, key `OPENAI_API_KEY` sudah tersedia).
+Buat satu halaman terpusat **AI Lab** (`/admin/ai-lab`) yang menggabungkan semua fitur peningkatan kemampuan chatbot AI ke dalam tab-tab terstruktur, lalu **hapus halaman lama** (Guest Chatbot, Admin Chatbot, Tester AI) dari sidebar agar tidak ada duplikasi.
 
-## Mengapa OpenAI embeddings, bukan Lovable AI Gateway
+## Struktur Halaman `/admin/ai-lab`
 
-Lovable AI Gateway saat ini hanya melayani chat/image — **tidak ada endpoint embeddings**. Project sudah punya `OPENAI_API_KEY`, jadi panggil `https://api.openai.com/v1/embeddings` langsung dari edge function. Murah (~$0.02 / 1M token) dan stabil.
+Halaman tunggal dengan dua level navigasi: **Section grup** di kiri (vertical pills) dan **Tabs** di dalamnya. Layout responsif: di mobile jadi accordion/select.
 
-## Perubahan database (1 migrasi)
-
-1. `CREATE EXTENSION IF NOT EXISTS vector;`
-2. Tambah kolom ke `chatbot_training_examples`:
-   - `embedding vector(1536)`
-   - `embedding_source text` (gabungan `question + ideal_answer` yang dipakai saat embed, untuk deteksi staleness)
-3. Index IVFFlat: `CREATE INDEX ON chatbot_training_examples USING ivfflat (embedding vector_cosine_ops) WITH (lists = 50);`
-4. RPC `match_training_examples(query_embedding vector(1536), match_count int, min_similarity float)` — SECURITY DEFINER, return top-N dengan `(1 - (embedding <=> query)) AS similarity`, hanya `is_active=true`.
-5. Trigger `BEFORE UPDATE` yang me-null-kan `embedding` bila `question` atau `ideal_answer` berubah (auto-stale).
-
-## Edge function baru: `embed-training-examples`
-
-- Input: opsional `{ ids?: string[], force?: boolean }`. Default: ambil semua row dengan `embedding IS NULL`.
-- Batch 50 per panggilan ke OpenAI, retry sederhana, update kolom `embedding` + `embedding_source`.
-- Auth: hanya admin (cek `user_roles` role=`admin`) atau via `CHATBOT_TOOLS_INTERNAL_SECRET` header.
-- Dipanggil otomatis dari frontend setelah create/update training example (fire-and-forget) + tombol "Re-embed semua" di tab admin Training.
-
-## Perubahan di guest chatbot (`supabase/functions/chatbot`)
-
-1. `services/dataLoader.ts` — **hapus** preload `trainingExamples` dari `loadHotelData` (karena sekarang query per turn). Tetap load lainnya yang masih relevan.
-2. `services/exampleSelector.ts`:
-   - Tambah `selectRelevantExamplesSemantic(userMessage, supabase)`:
-     - Embed `userMessage` via OpenAI (cache LRU sederhana: 5 menit, key=lowercased message).
-     - Panggil RPC `match_training_examples(emb, 6, 0.55)`.
-     - Fallback ke seleksi keyword lama bila embedding gagal / tidak ada hasil ≥ threshold.
-3. `ai/promptBuilder.ts` — terima `relevantExamples` dari semantic selector (signature jadi async). Naikkan limit dari 4 → **6** karena ranking sudah lebih akurat.
-4. Tambah log ringkas: `🎯 semantic match: 4/6 ≥ 0.55, top sim=0.82`.
-
-## Perubahan di `admin-chatbot`
-
-Sama: gabung `admin_chatbot_training_examples` + `chatbot_training_examples` (perlu kolom `embedding` di tabel admin juga — masuk ke migrasi yang sama). RPC kedua: `match_admin_training_examples`.
-
-## UI admin (`AdminTrainingTab.tsx`)
-
-- Tambah badge "Embedded ✓ / Pending" per row (dari `embedding IS NULL`).
-- Tombol header "Embed semua yang tertunda" → `supabase.functions.invoke('embed-training-examples')`.
-- Setelah save form, panggil embed function untuk row tsb.
-
-## Backfill awal
-
-Setelah migrasi disetujui, panggil sekali `embed-training-examples` tanpa filter untuk mengisi semua baris existing.
-
-## File yang berubah
-
-```
-+ supabase/migrations/<ts>_training_embeddings.sql
-+ supabase/functions/embed-training-examples/index.ts
-~ supabase/functions/chatbot/services/dataLoader.ts
-~ supabase/functions/chatbot/services/exampleSelector.ts
-~ supabase/functions/chatbot/ai/promptBuilder.ts
-~ supabase/functions/admin-chatbot/index.ts
-~ supabase/functions/admin-chatbot/lib/knowledgeContext.ts (semantic version of buildTrainingContext)
-~ src/components/admin/AdminTrainingTab.tsx (badge + tombol)
-~ src/hooks/useAdminTrainingExamples.tsx (trigger embed setelah save)
+```text
+AI Lab
+├── 🎓 Training & Evaluasi
+│   ├── Training Examples (Guest)        ← TrainingTab
+│   ├── Training Examples (Admin)        ← AdminTrainingTab
+│   ├── Embedding Status                 ← TrainingEmbeddingStatus
+│   ├── AI Tester (run + history)        ← AdminChatbotTester konten
+│   └── AI Training Generator            ← komponen baru tipis (panggil edge function existing)
+│
+├── 📚 Knowledge & Konteks
+│   ├── Knowledge Base (PDF/URL)         ← KnowledgeBaseTab
+│   └── WhatsApp Auto-Learning           ← WhatsAppLearningTab
+│
+├── 🤖 Persona & Gaya
+│   ├── Persona Guest                    ← PersonaSettingsTab
+│   ├── Persona Admin                    ← konten persona dari AdminAdminChatbot
+│   └── Perilaku & Lanjutan              ← form behavior + advanced dari AdminGuestChatbot
+│
+├── 💬 Templates & Pesan
+│   ├── Message Templates                ← komponen templates dari AdminAdminChatbot
+│   └── WhatsApp Settings (kontak, whitelist) ← form WhatsApp dari AdminGuestChatbot
+│
+└── 📊 Logs & Monitoring
+    ├── Conversation Logs                ← konten logs dari AdminAdminChatbot
+    └── Multi-Agent Dashboard (link)     ← tetap di /admin/multi-agent (link saja)
 ```
 
-## Risiko & mitigasi
+`AdminChatbotTesterRunDetail` (`/admin/chatbot/tester/:runId`) **tetap sebagai route detail** karena dibuka per-run; hanya entry-point pindah ke tab AI Lab.
 
-- **Latensi tambahan ~150-300ms** untuk embed query → cache + fallback paralel.
-- **Biaya OpenAI** kecil (text-embedding-3-small ~$0.00002/turn) tapi tetap dipantau.
-- **IVFFlat lists=50** cocok untuk <10k baris; bila tumbuh besar, tuning ulang.
-- **Stale embedding** ditangani trigger auto-null + UI badge.
+## Perubahan Sidebar
 
-Setelah Anda approve, saya jalankan migrasi dulu lalu kode.
+Grup `Virtual Assistant` jadi:
+
+```text
+Virtual Assistant
+├── Multi-Agent          /admin/multi-agent       (tetap)
+├── Web Chatbot          /admin/chat              (tetap — UI chat live)
+└── AI Lab               /admin/ai-lab            (BARU, ikon Sparkles/Brain)
+```
+
+Dihapus dari sidebar:
+- Guest Chatbot (`/admin/chatbot/guest`)
+- Admin Chatbot (`/admin/chatbot/admin`)
+- Tester AI (`/admin/chatbot/tester`)
+
+Route lama tetap terdaftar di `App.tsx` agar bookmark/redirect lama tidak 404, tapi melakukan `<Navigate to="/admin/ai-lab?section=...">`.
+
+## File yang Disentuh
+
+**Baru**
+- `src/pages/admin/AdminAILab.tsx` — shell halaman, baca `?section=` & `?tab=` dari query string untuk deep-link.
+- `src/components/admin/ai-lab/AILabNav.tsx` — vertical section nav (sidebar dalam halaman).
+- `src/components/admin/ai-lab/sections/TrainingSection.tsx` — kombinasi 5 sub-tab training/tester.
+- `src/components/admin/ai-lab/sections/KnowledgeSection.tsx`
+- `src/components/admin/ai-lab/sections/PersonaSection.tsx`
+- `src/components/admin/ai-lab/sections/TemplatesSection.tsx`
+- `src/components/admin/ai-lab/sections/LogsSection.tsx`
+- `src/components/admin/ai-lab/AITesterPanel.tsx` — extract isi `AdminChatbotTester.tsx` jadi panel reusable (route detail tetap pakai komponen yang sama).
+
+**Diedit**
+- `src/components/admin/AdminSidebar.tsx` — ganti 3 entri jadi 1 `AI Lab`, update `routePrefetchMap`.
+- `src/App.tsx` — daftarkan route `/admin/ai-lab` lazy; ubah 3 route lama jadi `<Navigate>` ke section yang sesuai.
+- `src/pages/admin/AdminGuestChatbot.tsx` & `AdminAdminChatbot.tsx` & `AdminChatbotTester.tsx` — disederhanakan jadi re-export `<Navigate>` (atau dihapus jika tidak diimpor lagi). Komponen tab existing (PersonaSettingsTab, TrainingTab, dst.) **tidak diubah** — hanya dipindah lokasinya di tree.
+
+**Tidak disentuh**
+- Edge functions, hooks (`useChatbot*`), tipe, dan tab-component itu sendiri (TrainingTab, KnowledgeBaseTab, PersonaSettingsTab, WhatsAppLearningTab, AdminTrainingTab, TrainingEmbeddingStatus, dst.) — agar perubahan murni UI/komposisi.
+
+## Detail Teknis
+
+- **Deep-link**: `/admin/ai-lab?section=training&tab=tester` → useSearchParams, default `section=training&tab=guest-examples`.
+- **Lazy render**: section yang tidak aktif tidak dimount untuk hemat query (penting karena Tester & Logs cukup berat).
+- **Mobile (<768px)**: AILabNav berubah jadi `<Select>` dropdown di atas konten.
+- **Konsistensi**: tetap pakai semantic tokens dari `index.css`; section nav memakai `Card` + `SidebarMenuButton`-style aktif state.
+- **Migrasi data**: tidak ada — semua hooks & tabel existing tetap dipakai apa adanya.
+
+## Yang Tidak Termasuk
+
+- Tidak menambah fitur AI baru.
+- Tidak mengubah perilaku edge function chatbot/embedding.
+- Tidak menyentuh layout `/admin/chat` (Web Chatbot live).
