@@ -1,10 +1,18 @@
+import { lazy, Suspense } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompetitorHotelsTab } from "@/components/admin/competitor/CompetitorHotelsTab";
 import { CompetitorRoomsTab } from "@/components/admin/competitor/CompetitorRoomsTab";
 import { PriceSurveyTab } from "@/components/admin/competitor/PriceSurveyTab";
-import { AnalysisDashboardTab } from "@/components/admin/competitor/AnalysisDashboardTab";
 import { Building2, BedDouble, ClipboardList, BarChart3 } from "lucide-react";
+
+// Lazy-load: dashboard tab pulls recharts. Other tabs (Survey/Hotels/Rooms)
+// stay chart-free, so opening the page no longer downloads recharts upfront.
+const AnalysisDashboardTab = lazy(() =>
+  import("@/components/admin/competitor/AnalysisDashboardTab").then(m => ({
+    default: m.AnalysisDashboardTab,
+  })),
+);
 
 const AdminCompetitorAnalysis = () => {
   return (
@@ -38,7 +46,9 @@ const AdminCompetitorAnalysis = () => {
           </TabsList>
 
           <TabsContent value="dashboard">
-            <AnalysisDashboardTab />
+            <Suspense fallback={<div className="h-96 rounded-md border bg-muted/30 animate-pulse" />}>
+              <AnalysisDashboardTab />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="survey">
