@@ -86,7 +86,8 @@ const defaultMenuGroups: MenuGroup[] = [
       { id: "multi-agent", title: "Multi-Agent", url: "/admin/multi-agent", icon: LayoutDashboard },
       { id: "web-chatbot", title: "Web Chatbot", url: "/admin/chat", icon: Bot },
       { id: "guest-chatbot", title: "Guest Chatbot", url: "/admin/chatbot/guest", icon: Users },
-      { id: "admin-chatbot", title: "Admin Chatbot", url: "/admin/chatbot/admin", icon: Shield }
+      { id: "admin-chatbot", title: "Admin Chatbot", url: "/admin/chatbot/admin", icon: Shield },
+      { id: "chatbot-tester", title: "Tester AI", url: "/admin/chatbot/tester", icon: Sparkles }
     ]
   },
   {
@@ -128,6 +129,7 @@ const routePrefetchMap: Record<string, () => Promise<unknown>> = {
   "/admin/chat":                 () => import("@/pages/admin/AdminChat"),
   "/admin/chatbot/guest":        () => import("@/pages/admin/AdminGuestChatbot"),
   "/admin/chatbot/admin":        () => import("@/pages/admin/AdminAdminChatbot"),
+  "/admin/chatbot/tester":       () => import("@/pages/admin/AdminChatbotTester"),
   "/admin/seo-settings":         () => import("@/pages/admin/AdminSeoSettings"),
   "/admin/seo-agent":            () => import("@/pages/admin/AdminSeoAgent"),
   "/admin/settings":             () => import("@/pages/admin/AdminSettings"),
