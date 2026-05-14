@@ -18,7 +18,11 @@ import {
   BarChart3,
   Languages,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+
+const PAGE_SIZE = 20;
 import {
   useDeepAnalyze,
   useDetectFAQ,
@@ -37,6 +41,8 @@ import {
 export default function WhatsAppLearningTab() {
   const [activeTab, setActiveTab] = useState("overview");
   const [report, setReport] = useState<LearningReport | null>(null);
+  const [insightsPage, setInsightsPage] = useState(0);
+  const [faqPage, setFaqPage] = useState(0);
 
   // Agent mutations
   const deepAnalyze = useDeepAnalyze();
@@ -47,9 +53,21 @@ export default function WhatsAppLearningTab() {
   const deleteFAQ = useDeleteFAQPattern();
 
   // Data queries
-  const { data: insights, isLoading: loadingInsights, error: insightsError } = useConversationInsights(30);
-  const { data: faqPatterns, isLoading: loadingFAQ, error: faqError } = useFAQPatterns();
+  const { data: insightsData, isLoading: loadingInsights, error: insightsError } = useConversationInsights({ page: insightsPage, pageSize: PAGE_SIZE });
+  const { data: faqData, isLoading: loadingFAQ, error: faqError } = useFAQPatterns({ page: faqPage, pageSize: PAGE_SIZE });
   const { data: metrics } = useLearningMetrics(7);
+
+  const insights = insightsData?.rows;
+  const insightsTotal = insightsData?.total ?? 0;
+  const faqPatterns = faqData?.rows;
+  const faqTotal = faqData?.total ?? 0;
+
+  const handleDeepAnalyze = () =>
+    deepAnalyze.mutate(undefined, { onSuccess: () => setInsightsPage(0) });
+  const handleDetectFAQ = () =>
+    detectFAQ.mutate(undefined, { onSuccess: () => setFaqPage(0) });
+  const handlePromoteFAQ = () =>
+    promoteFAQ.mutate(undefined, { onSuccess: () => setFaqPage(0) });
 
   const handleGenerateReport = async () => {
     const result = await learningReport.mutateAsync();
@@ -77,7 +95,7 @@ export default function WhatsAppLearningTab() {
             </div>
             <div className="flex gap-2">
               <Button
-                onClick={() => deepAnalyze.mutate()}
+                onClick={handleDeepAnalyze}
                 disabled={isAnyLoading}
                 size="sm"
               >
@@ -89,7 +107,7 @@ export default function WhatsAppLearningTab() {
                 Analisis Percakapan
               </Button>
               <Button
-                onClick={() => detectFAQ.mutate()}
+                onClick={handleDetectFAQ}
                 disabled={isAnyLoading}
                 size="sm"
                 variant="outline"
@@ -102,7 +120,7 @@ export default function WhatsAppLearningTab() {
                 Deteksi FAQ
               </Button>
               <Button
-                onClick={() => promoteFAQ.mutate()}
+                onClick={handlePromoteFAQ}
                 disabled={isAnyLoading}
                 size="sm"
                 variant="outline"
@@ -123,18 +141,18 @@ export default function WhatsAppLearningTab() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           title="Percakapan Dianalisis"
-          value={insights?.length || 0}
+          value={insightsTotal}
           icon={<MessageSquare className="h-4 w-4" />}
           color="blue"
         />
         <StatCard
           title="Pola FAQ"
-          value={faqPatterns?.length || 0}
+          value={faqTotal}
           icon={<BookOpen className="h-4 w-4" />}
           color="green"
         />
         <StatCard
-          title="Akurasi Bot Rata-rata"
+          title="Akurasi Bot (halaman ini)"
           value={
             insights && insights.length > 0
               ? `${Math.round((insights.reduce((s, i) => s + (i.bot_accuracy_score || 0), 0) / insights.length) * 100)}%`
@@ -164,11 +182,11 @@ export default function WhatsAppLearningTab() {
           </TabsTrigger>
           <TabsTrigger value="insights">
             <Brain className="h-4 w-4 mr-1" />
-            Insights ({insights?.length || 0})
+            Insights ({insightsTotal})
           </TabsTrigger>
           <TabsTrigger value="faq">
             <BookOpen className="h-4 w-4 mr-1" />
-            FAQ Patterns ({faqPatterns?.length || 0})
+            FAQ Patterns ({faqTotal})
           </TabsTrigger>
           <TabsTrigger value="slang">
             <Languages className="h-4 w-4 mr-1" />
@@ -315,9 +333,17 @@ export default function WhatsAppLearningTab() {
               </CardContent>
             </Card>
           ) : insights && insights.length > 0 ? (
-            insights.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
-            ))
+            <>
+              {insights.map((insight) => (
+                <InsightCard key={insight.id} insight={insight} />
+              ))}
+              <PaginationControls
+                page={insightsPage}
+                pageSize={PAGE_SIZE}
+                total={insightsTotal}
+                onPageChange={setInsightsPage}
+              />
+            </>
           ) : (
             <Card>
               <CardContent className="py-10 text-center text-muted-foreground">
@@ -341,13 +367,21 @@ export default function WhatsAppLearningTab() {
               </CardContent>
             </Card>
           ) : faqPatterns && faqPatterns.length > 0 ? (
-            faqPatterns.map((pattern) => (
-              <FAQCard
-                key={pattern.id}
-                pattern={pattern}
-                onDelete={() => deleteFAQ.mutate(pattern.id)}
+            <>
+              {faqPatterns.map((pattern) => (
+                <FAQCard
+                  key={pattern.id}
+                  pattern={pattern}
+                  onDelete={() => deleteFAQ.mutate(pattern.id)}
+                />
+              ))}
+              <PaginationControls
+                page={faqPage}
+                pageSize={PAGE_SIZE}
+                total={faqTotal}
+                onPageChange={setFaqPage}
               />
-            ))
+            </>
           ) : (
             <Card>
               <CardContent className="py-10 text-center text-muted-foreground">
@@ -373,6 +407,52 @@ export default function WhatsAppLearningTab() {
 // ============================================================
 // Sub-components
 // ============================================================
+
+function PaginationControls({
+  page,
+  pageSize,
+  total,
+  onPageChange,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const hasPrev = page > 0;
+  const hasNext = (page + 1) * pageSize < total;
+
+  if (total <= pageSize) return null;
+
+  return (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-xs text-muted-foreground">
+        Halaman {page + 1} dari {totalPages} ({total} total)
+      </span>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!hasPrev}
+          onClick={() => onPageChange(page - 1)}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Sebelumnya
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!hasNext}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Berikutnya
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function StatCard({
   title,
