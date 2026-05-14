@@ -148,6 +148,8 @@ export type Database = {
           category: string | null
           created_at: string | null
           display_order: number | null
+          embedding: string | null
+          embedding_source: string | null
           id: string
           ideal_answer: string
           is_active: boolean | null
@@ -159,6 +161,8 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           display_order?: number | null
+          embedding?: string | null
+          embedding_source?: string | null
           id?: string
           ideal_answer: string
           is_active?: boolean | null
@@ -170,6 +174,8 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           display_order?: number | null
+          embedding?: string | null
+          embedding_source?: string | null
           id?: string
           ideal_answer?: string
           is_active?: boolean | null
@@ -1473,6 +1479,8 @@ export type Database = {
           category: string | null
           created_at: string | null
           display_order: number | null
+          embedding: string | null
+          embedding_source: string | null
           id: string
           ideal_answer: string
           is_active: boolean | null
@@ -1486,6 +1494,8 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           display_order?: number | null
+          embedding?: string | null
+          embedding_source?: string | null
           id?: string
           ideal_answer: string
           is_active?: boolean | null
@@ -1499,6 +1509,8 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           display_order?: number | null
+          embedding?: string | null
+          embedding_source?: string | null
           id?: string
           ideal_answer?: string
           is_active?: boolean | null
@@ -4834,6 +4846,35 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
+      match_admin_training_examples: {
+        Args: {
+          match_count?: number
+          min_similarity?: number
+          query_embedding: string
+        }
+        Returns: {
+          category: string
+          id: string
+          ideal_answer: string
+          question: string
+          similarity: number
+          source: string
+        }[]
+      }
+      match_training_examples: {
+        Args: {
+          match_count?: number
+          min_similarity?: number
+          query_embedding: string
+        }
+        Returns: {
+          category: string
+          id: string
+          ideal_answer: string
+          question: string
+          similarity: number
+        }[]
+      }
       update_booking_duration: {
         Args: { p_code: string; p_nights: number }
         Returns: undefined

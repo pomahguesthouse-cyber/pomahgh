@@ -170,7 +170,29 @@ Deno.serve(async (req: Request) => {
     const allKnowledge = [...(knowledgeData || []), ...(guestKBData || [])];
     const knowledgeContext = buildKnowledgeContext(allKnowledge);
     // Combine admin training + guest training
-    const allTraining = [...(trainingData || []), ...(guestTrainingData || [])];
+    let allTraining = [...(trainingData || []), ...(guestTrainingData || [])];
+    // Try semantic re-ranking via RPC; fallback to original list on failure
+    try {
+      const { fetchSemanticTrainingExamples } = await import("../_shared/embeddings.ts");
+      const sem = await fetchSemanticTrainingExamples(
+        supabase,
+        userMessage,
+        "match_admin_training_examples",
+        8,
+        0.5,
+      );
+      if (sem.length > 0) {
+        allTraining = sem.map(s => ({
+          question: s.question,
+          ideal_answer: s.ideal_answer,
+          category: s.category,
+          is_active: true,
+        }));
+        console.log(`🎯 admin semantic training: ${sem.length} matches, top sim=${sem[0].similarity.toFixed(2)}`);
+      }
+    } catch (e) {
+      console.warn("[admin-chatbot] semantic training fallback:", (e as Error).message);
+    }
     const trainingContext = buildTrainingContext(allTraining, 10, 300);
 
     // Build facilities and nearby locations context

@@ -11,6 +11,7 @@ import { tools } from "./ai/tools.ts";
 import { createTrace } from "../_shared/traceContext.ts";
 import { createHallucinationGuard } from "../_shared/hallucinationGuard.ts";
 import { logToolExecution } from "../_shared/agentLogger.ts";
+import { fetchSemanticTrainingExamples } from "../_shared/embeddings.ts";
 
 interface ToolCall {
   id: string;
@@ -141,11 +142,21 @@ serve(async (req) => {
     const allToolResults: string[] = [];
 
     // Build optimized system prompt
+    // Semantic training selection (fallback to keyword inside promptBuilder if empty)
+    const semanticExamples = lastUserMessage
+      ? await trace.span('semanticTraining', () =>
+          fetchSemanticTrainingExamples(supabase, lastUserMessage, 'match_training_examples', 6, 0.55))
+      : [];
+    if (semanticExamples.length > 0) {
+      console.log(`🎯 semantic training: ${semanticExamples.length} matches, top sim=${semanticExamples[0].similarity.toFixed(2)}`);
+    }
+
     let systemPrompt = buildSystemPrompt({
       settings,
       hotelData,
       conversationContext,
-      lastUserMessage
+      lastUserMessage,
+      semanticTrainingExamples: semanticExamples,
     });
 
     // ── HYBRID PROMPT STUDIO (B3) ──
