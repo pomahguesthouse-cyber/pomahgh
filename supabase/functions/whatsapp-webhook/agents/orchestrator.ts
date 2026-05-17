@@ -232,6 +232,29 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
 
     // Safer default: route unmatched/ambiguous intents (greeting, name_collection,
     // complaint, unknown) to FAQ instead of aggressively pushing booking flow.
+    // 🔔 Safety net: kalau sampai sini padahal intent = price_inquiry atau
+    // decision.agent = price_list, berarti price-list fast-path tidak terpanggil
+    // (regex meleset / handler tidak match). Log alert supaya admin tahu &
+    // bisa tuning regex/classifier.
+    if (
+      classification.intent === "price_inquiry" ||
+      decision.agent === "price_list" ||
+      isGenericPriceQuestion(normalizedMessage)
+    ) {
+      console.warn(
+        `[orchestrator] price_routing_miss phone=${phone} intent=${classification.intent} agent=${decision.agent} msg="${normalizedMessage.slice(0, 120)}"`,
+      );
+      await logChatbotAlert(supabase, {
+        alert_type: "price_routing_miss",
+        phone_number: phone,
+        conversation_id: conversationId,
+        last_user_message: rawMessage,
+        confidence: classification.confidence,
+        intent: classification.intent,
+        recentMessages: recentMessages as Array<{ role: string; content: string }>,
+      });
+    }
+
     return await handleGuestFAQ(
       supabase,
       sessionRaw,
