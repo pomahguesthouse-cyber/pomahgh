@@ -10,6 +10,7 @@ import { handleManagerChat } from "./manager.ts";
 import { handleGuestBookingFlow } from "./booking.ts";
 import { handleGuestFAQ } from "./faq.ts";
 import { handlePaymentProof, extractImageUrl } from "./paymentProof.ts";
+import { handlePriceListQuestion, isGenericPriceQuestion } from "./priceList.ts";
 import { setAgentConfigs } from "../../_shared/agentConfigCache.ts";
 import { classifyIntent } from "./intentClassifier.ts";
 import { decide } from "./decisionEngine.ts";
@@ -184,6 +185,22 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
         "Rani",
         env,
         undefined,
+      );
+    }
+
+    // 💸 Price list fast-path — guest asks generic "berapa harga kamar?" tanpa
+    // sebut tipe kamar/tanggal. Kirim daftar harga semua kamar dulu, baru
+    // tawarkan cek ketersediaan. Hindari classifier menjatuhkan ke booking flow
+    // yang malah balas "tanggal & tipe kamar apa?".
+    if (decision.agent === "price_list" || isGenericPriceQuestion(normalizedMessage)) {
+      return await handlePriceListQuestion(
+        supabase,
+        sessionRaw,
+        phone,
+        normalizedMessage,
+        conversationId,
+        "Rani",
+        env,
       );
     }
 
