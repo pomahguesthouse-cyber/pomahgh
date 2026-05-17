@@ -142,6 +142,18 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
   const ACK_DEFER_RE = /^(?:oke?|ok|sip|baik|siap|iya|ya|yoi|noted|terima\s*kasih|makasih|thanks?)\b[\s\S]{0,200}?\b(?:diskusi(?:kan)?|tanya|kabari|kasih\s*tau|tunggu|ditunggu|nanti|besok|sebentar|bentar|dulu|rombongan|ketua|teman|keluarga|istri|suami|bos|atasan|pikir)/i;
   const isPassiveAck = ACK_DEFER_RE.test(normalizedMessage);
 
+  // Guard: bot baru saja kirim daftar ketersediaan ("📅 Ketersediaan ...").
+  // Kalau pesan tamu BERIKUTNYA tidak membawa tanggal/rentang baru, jangan
+  // re-run check_availability (bikin loop daftar yang sama). Alihkan ke FAQ
+  // supaya LLM bisa jawab pertanyaan sub-detail (kapasitas, jam check-in)
+  // atau menanggapi pilihan kamar tamu secara natural.
+  const lastShowedAvailability = /📅\s*Ketersediaan|kamar tersedia|Mau lanjut booking kamar yang mana/i.test(
+    lastBotReply,
+  );
+  const HAS_DATE_RE = /\b(hari ini|besok|lusa|tgl|tanggal|\d{1,2}\s*[-\/]\s*\d{1,2}|\d{1,2}\s*(jan|feb|mar|apr|mei|jun|jul|agt|agu|ags|sep|okt|nov|des)|check\s*in.*\d|\d+\s*malam)\b/i;
+  const hasNewDateSignal = HAS_DATE_RE.test(normalizedMessage);
+  const isAvailabilityLoopRisk = lastShowedAvailability && !hasNewDateSignal;
+
   let classification;
   if (isDuplicateBooking) {
     classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "avoid_duplicate_booking" };
@@ -149,6 +161,13 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
     classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "b2b_conversation_context" };
   } else if (isPassiveAck) {
     classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "passive_acknowledgment" };
+  } else if (isAvailabilityLoopRisk) {
+    classification = {
+      intent: "faq",
+      confidence: 1.0,
+      source: "keyword",
+      reason: "post_availability_followup",
+    };
   } else {
     classification = await classifyIntent(normalizedMessage, { recentMessages: recentMessages.slice(-6) });
   }
@@ -176,6 +195,22 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
     const decision = decide(classification.intent);
 
     if (isB2BConversation || isPassiveAck) {
+      return await handleGuestFAQ(
+        supabase,
+        sessionRaw,
+        phone,
+        normalizedMessage,
+        conversationId,
+        "Rani",
+        env,
+        undefined,
+      );
+    }
+
+    if (isAvailabilityLoopRisk) {
+      console.info(
+        `[orchestrator] post_availability_followup → FAQ phone=${phone} msg="${normalizedMessage.slice(0, 80)}"`,
+      );
       return await handleGuestFAQ(
         supabase,
         sessionRaw,
