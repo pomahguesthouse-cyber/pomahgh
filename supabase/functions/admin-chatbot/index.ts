@@ -19,7 +19,7 @@ import { createTrace } from "../_shared/traceContext.ts";
 import { logToolExecution } from "../_shared/agentLogger.ts";
 import { createHallucinationGuard } from "../_shared/hallucinationGuard.ts";
 
-const AI_FETCH_TIMEOUT_MS = 15_000; // 15 second timeout per AI call
+const AI_FETCH_TIMEOUT_MS = 45_000; // 45 second timeout per AI call (tool-calling with 24 tools needs more time)
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
