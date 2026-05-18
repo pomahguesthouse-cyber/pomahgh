@@ -278,7 +278,14 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
     // sebut tipe kamar/tanggal. Kirim daftar harga semua kamar dulu, baru
     // tawarkan cek ketersediaan. Hindari classifier menjatuhkan ke booking flow
     // yang malah balas "tanggal & tipe kamar apa?".
-    if (decision.agent === "price_list" || isGenericPriceQuestion(normalizedMessage)) {
+    // Skip price-list fast-path bila tamu sudah menyebut tanggal/rentang
+    // menginap ("info rate tgl 10-14 juni"). Routing ke booking flow supaya
+    // check_availability memberi harga + ketersediaan untuk tanggal tsb,
+    // bukan daftar harga "hari ini" yang mengabaikan tanggal.
+    if (
+      (decision.agent === "price_list" || isGenericPriceQuestion(normalizedMessage)) &&
+      !hasNewDateSignal
+    ) {
       return await handlePriceListQuestion(
         supabase,
         sessionRaw,
