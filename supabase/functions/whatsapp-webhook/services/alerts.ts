@@ -7,6 +7,7 @@ export type AlertType =
   | "booking_update_escalation"
   | "refund_cancel_intent"
   | "price_routing_miss"
+  | "guest_details_submitted"
   | "other";
 
 interface LogAlertParams {

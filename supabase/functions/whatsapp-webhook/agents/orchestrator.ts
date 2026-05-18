@@ -154,6 +154,24 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
   const hasNewDateSignal = HAS_DATE_RE.test(normalizedMessage);
   const isAvailabilityLoopRisk = lastShowedAvailability && !hasNewDateSignal;
 
+  // Guard: bot baru saja minta data tamu (nama lengkap / email / no HP) dan
+  // tamu sudah balas dengan data kontak (email pattern / nomor HP / dua kata
+  // nama). Booking agent tidak punya state "collecting guest details" sehingga
+  // akan re-run check_availability dengan tanggal dari riwayat → tamu melihat
+  // daftar ketersediaan yang sama berulang-ulang. Solusi: eskalasi ke admin
+  // supaya booking diproses manual.
+  const lastAskedGuestDetails =
+    /(nama\s+lengkap|nama\s+(?:dan|&)\s*email|email.*(?:no\.?\s*hp|nomor\s*hp|whatsapp)|no\.?\s*hp|nomor\s*hp|whatsapp.*kamu|kontak.*tamu|data\s+tamu|info(?:rmasi)?\s+(?:tamu|kontak|nama))/i.test(
+      lastBotReply,
+    );
+  const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
+  const PHONE_RE = /(?:\+?62|0)8\d{7,12}/;
+  const looksLikeGuestDataReply =
+    EMAIL_RE.test(normalizedMessage) ||
+    PHONE_RE.test(normalizedMessage) ||
+    /\n/.test(normalizedMessage); // multi-line reply (nama\nemail\nhp)
+  const isGuestDetailsSubmission = lastAskedGuestDetails && looksLikeGuestDataReply;
+
   let classification;
   if (isDuplicateBooking) {
     classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "avoid_duplicate_booking" };
@@ -161,6 +179,13 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
     classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "b2b_conversation_context" };
   } else if (isPassiveAck) {
     classification = { intent: "faq", confidence: 1.0, source: "keyword", reason: "passive_acknowledgment" };
+  } else if (isGuestDetailsSubmission) {
+    classification = {
+      intent: "faq",
+      confidence: 1.0,
+      source: "keyword",
+      reason: "guest_details_submitted",
+    };
   } else if (isAvailabilityLoopRisk) {
     classification = {
       intent: "faq",
@@ -205,6 +230,32 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
         env,
         undefined,
       );
+    }
+
+    // Tamu sudah kirim data kontak (nama/email/HP) setelah bot meminta.
+    // Eskalasi ke admin: bot belum bisa finalize booking + kirim invoice
+    // otomatis, jadi serahkan ke manusia supaya tamu tidak melihat daftar
+    // ketersediaan lagi.
+    if (isGuestDetailsSubmission) {
+      console.info(
+        `[orchestrator] guest_details_submitted → escalate phone=${phone} msg="${normalizedMessage.slice(0, 80)}"`,
+      );
+      const ackReply =
+        "Terima kasih kak, datanya sudah saya catat 🙏 Tim admin kami akan segera follow up untuk konfirmasi booking & instruksi pembayaran ya.";
+      await sendWhatsApp(phone, ackReply, env.fonnteApiKey);
+      await logMessage(supabase, conversationId, "assistant", ackReply);
+      await logChatbotAlert(supabase, {
+        alert_type: "guest_details_submitted",
+        phone_number: phone,
+        conversation_id: conversationId,
+        last_user_message: rawMessage,
+        intent: "booking",
+        reason: "Tamu sudah kirim nama/email/HP — perlu finalize booking manual",
+        recentMessages: recentMessages as Array<{ role: string; content: string }>,
+      });
+      return new Response(JSON.stringify({ status: "guest_details_escalated" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (isAvailabilityLoopRisk) {
