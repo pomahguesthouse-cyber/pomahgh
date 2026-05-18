@@ -242,7 +242,7 @@ export async function orchestrate(req: Request, env: EnvConfig): Promise<Respons
       );
       const ackReply =
         "Terima kasih kak, datanya sudah saya catat 🙏 Tim admin kami akan segera follow up untuk konfirmasi booking & instruksi pembayaran ya.";
-      await sendWhatsApp(phone, ackReply, env);
+      await sendWhatsApp(phone, ackReply, env.fonnteApiKey);
       await logMessage(supabase, conversationId, "assistant", ackReply);
       await logChatbotAlert(supabase, {
         alert_type: "guest_details_submitted",
