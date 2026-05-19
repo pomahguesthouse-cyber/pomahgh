@@ -58,7 +58,6 @@ import {
 import { getSourceLabel, formatNumberID } from "./booking.utils";
 import { formatRupiahID, formatTimeID } from "@/utils/indonesianFormat";
 import { PaymentInfo } from "./PaymentInfo";
-import { buildAdminPreview, buildCustomerPreview, type PreviewPaymentMethod } from "./whatsappPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { toast } from "sonner";
@@ -151,27 +150,6 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
   }, [booking.booking_rooms, booking.total_price, booking.total_nights]);
 
   const paymentStatus = (booking.payment_status || "unpaid") as PaymentStatus;
-
-  const paymentMethod: PreviewPaymentMethod =
-    paymentStatus === "pay_at_hotel" ? "pay_at_hotel" : "transfer";
-
-  const buildPreviewPayload = () => ({
-    guestName: booking.guest_name,
-    guestEmail: booking.guest_email,
-    guestPhone: booking.guest_phone,
-    roomsText: roomTypes,
-    totalRooms: booking.booking_rooms?.length ?? 1,
-    checkIn: checkInDate,
-    checkOut: checkOutDate,
-    numGuests: booking.num_guests,
-    totalNights: booking.total_nights,
-    totalPrice: booking.total_price,
-    bookingCode: booking.booking_code,
-    hotelName: settings?.hotel_name,
-    paymentMethod,
-  });
-
-  };
 
   return (
     <AccordionItem value={booking.id} className="border-0">
