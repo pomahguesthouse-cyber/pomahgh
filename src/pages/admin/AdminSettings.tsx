@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { FonnteDevicesManager } from "@/components/admin/FonnteDevicesManager";
 
 export default function AdminSettings() {
   const { settings, isLoading, updateSettings, isUpdating, uploadFile } = useHotelSettings();
@@ -79,7 +80,7 @@ export default function AdminSettings() {
     <div className="space-y-6">
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList className="grid grid-cols-7 w-full">
+          <TabsList className="grid grid-cols-8 w-full">
             <TabsTrigger value="basic">Basic</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="location">Location</TabsTrigger>
@@ -87,6 +88,7 @@ export default function AdminSettings() {
             <TabsTrigger value="social">Social Media</TabsTrigger>
             <TabsTrigger value="business">Business</TabsTrigger>
             <TabsTrigger value="policies">Policies</TabsTrigger>
+            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4">
