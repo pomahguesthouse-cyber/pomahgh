@@ -130,76 +130,10 @@ Booking Anda telah kami terima:
 Kami akan segera menghubungi Anda untuk konfirmasi pembayaran.`;
 }
 
-/**
- * Send WhatsApp message via edge function
- */
-export async function sendWhatsApp(
-  phone: string,
-  message: string,
-  type: 'admin' | 'customer'
-): Promise<void> {
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !serviceKey) {
-      console.error("Missing Supabase environment variables for WhatsApp");
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/send-whatsapp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${serviceKey}`,
-      },
-      body: JSON.stringify({ phone, message, type }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      const bodyText = await response.text().catch(() => "<no body>");
-      console.error(
-        `❌ WhatsApp send failed for ${type} (${phone}): ${response.status} ${response.statusText} — ${bodyText}`
-      );
-      return;
-    }
-    console.log(`✅ WhatsApp sent to ${type}: ${phone}`);
-  } catch (err) {
-    const errMsg = (err as Error).name === 'AbortError' ? 'WhatsApp send timeout (10s)' : (err as Error).message;
-    console.error(`Failed to send ${type} WhatsApp: ${errMsg}`);
-  }
-}
-
-/**
- * Send booking notifications to admin and customer
- */
 export async function sendBookingNotifications(
-  hotelSettings: { whatsapp_number?: string; hotel_name?: string } | null,
-  payload: WhatsAppMessagePayload,
-  messageType: 'new' | 'update' | 'reschedule'
+  _hotelSettings: { whatsapp_number?: string; hotel_name?: string } | null,
+  _payload: WhatsAppMessagePayload,
+  _messageType: 'new' | 'update' | 'reschedule'
 ): Promise<void> {
-  if (!hotelSettings?.whatsapp_number) {
-    console.log("No WhatsApp number configured, skipping notifications");
-    return;
-  }
-
-  // Send admin notification
-  const adminMessage = buildAdminMessage(messageType, payload);
-  sendWhatsApp(hotelSettings.whatsapp_number, adminMessage, 'admin');
-
-  // Send customer notification if phone provided
-  if (payload.guestPhone) {
-    const customerType = messageType === 'reschedule' ? 'update' : messageType;
-    const customerMessage = buildCustomerMessage(customerType as 'new' | 'update', {
-      ...payload,
-      hotelName: hotelSettings.hotel_name
-    });
-    sendWhatsApp(payload.guestPhone, customerMessage, 'customer');
-  }
+  console.log("WhatsApp notifications disabled — Fonnte integration removed");
 }

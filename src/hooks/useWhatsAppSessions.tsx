@@ -367,21 +367,7 @@ export const useSendAdminMessage = () => {
         }
       }
 
-      const { data, error } = await supabase.functions.invoke("send-whatsapp", {
-        body: { phone: phoneNumber, message, type: "admin_reply" },
-      });
-
-      if (error) throw error;
-
-      if (conversationId) {
-        await supabase.from("chat_messages").insert({
-          conversation_id: conversationId,
-          role: "assistant",
-          content: `[Admin] ${message}`,
-        });
-      }
-
-      return data;
+      throw new Error("WhatsApp send not available — Fonnte integration removed");
     },
     onSuccess: (_data, vars) => {
       invalidateSessionLists(queryClient);

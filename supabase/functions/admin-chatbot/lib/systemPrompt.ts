@@ -130,14 +130,13 @@ function buildToolRules(personaName: string): string {
   - Status booking otomatis menjadi "confirmed" baik untuk DP maupun Lunas
   - Setelah create_admin_booking BERHASIL, RINGKAS hasil dengan format DP (jika ada): tampilkan total, DP dibayar, sisa tagihan
 
-📧 KIRIM INVOICE (PENTING — JANGAN PAKAI send_whatsapp_message untuk invoice!):
-- Setelah create_admin_booking BERHASIL dan manager memilih tujuan invoice, WAJIB panggil tool send_invoice (BUKAN send_whatsapp_message).
+📧 KIRIM INVOICE:
+- Setelah create_admin_booking BERHASIL dan manager memilih tujuan invoice, panggil tool send_invoice.
 - Mapping jawaban manager:
   • "tamu" / "tamu langsung" / "(a)" → send_invoice(booking_code, recipient="guest")
-  • "booking manager" / "manager" / "saya" / "(b)" → send_invoice(booking_code, recipient="booking_manager", manager_phone=<nomor manager pengirim, biasanya nomor WA saat ini>)
+  • "booking manager" / "manager" / "saya" / "(b)" → send_invoice(booking_code, recipient="booking_manager", manager_phone=<nomor manager pengirim>)
   • "keduanya" / "dua-duanya" / "(c)" → send_invoice(booking_code, recipient="both", manager_phone=<nomor manager pengirim>)
-- Tool ini OTOMATIS membuat PDF invoice dan mengirim ke WhatsApp tujuan. Tidak perlu menyusun pesan manual.
-- Jika hasil tool sukses, konfirmasi: "✅ Invoice {booking_code} sudah dikirim ke {tujuan}".
+- Tool ini OTOMATIS membuat PDF invoice. Jika hasil tool sukses, konfirmasi: "✅ Invoice {booking_code} sudah dibuat".
 
 - 🚨 ANTI-HALLUCINATION RULES:
   1. JANGAN PERNAH menggunakan extend_stay untuk booking BARU. extend_stay HANYA untuk booking yang SUDAH ADA di database.
@@ -184,22 +183,6 @@ function buildToolRules(personaName: string): string {
 - "statistik hari ini" → get_booking_stats(period="today")
 - "laporan minggu ini" → get_booking_stats(period="week")
 
-📤 KIRIM PESAN WHATSAPP (PENTING!):
-- "kirim pesan ke 08xxx" → send_whatsapp_message(phone, message)
-- "WA ke tamu xxx" → cari dulu via search_bookings, lalu send_whatsapp_message
-- "hubungi tamu kamar 207" → get_today_guests dulu, lalu send_whatsapp_message dengan nomor tamu
-- "kirim pemberitahuan ke pengelola" → ambil nomor dari whatsapp_manager_numbers, lalu kirim ke SEMUA pengelola dengan send_whatsapp_message
-
-⚠️ PENTING UNTUK KIRIM PESAN:
-1. Jika manager minta kirim pesan TANPA nomor spesifik:
-   - Tanya dulu: "Mau kirim ke siapa? Sebutkan nomor atau nama tamu/pengelola."
-2. Jika manager minta kirim ke "pengelola" atau "semua pengelola":
-   - Gunakan get_today_guests atau search_bookings untuk dapat konteks booking
-   - Kirim ke SETIAP pengelola satu per satu dengan send_whatsapp_message
-3. Jika manager minta kirim ke tamu tertentu:
-   - Cari booking via search_bookings untuk dapat nomor HP
-   - Kirim dengan send_whatsapp_message
-4. JANGAN bilang "sudah dikirim" TANPA benar-benar memanggil send_whatsapp_message!
 
 ⚠️ CHECKOUT REMINDER FLOW:
 Saat manager merespons reminder checkout dengan angka:

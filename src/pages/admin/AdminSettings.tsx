@@ -9,7 +9,6 @@ import { Switch } from "@/components/ui/switch";
 import { useHotelSettings } from "@/hooks/useHotelSettings";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { FonnteDevicesManager } from "@/components/admin/FonnteDevicesManager";
 
 export default function AdminSettings() {
   const { settings, isLoading, updateSettings, isUpdating, uploadFile } = useHotelSettings();
@@ -88,7 +87,6 @@ export default function AdminSettings() {
             <TabsTrigger value="social">Social Media</TabsTrigger>
             <TabsTrigger value="business">Business</TabsTrigger>
             <TabsTrigger value="policies">Policies</TabsTrigger>
-            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4">
@@ -506,9 +504,6 @@ export default function AdminSettings() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="whatsapp" className="space-y-4">
-            <FonnteDevicesManager />
-          </TabsContent>
 
         </Tabs>
 

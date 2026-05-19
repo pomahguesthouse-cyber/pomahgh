@@ -112,52 +112,6 @@ Deno.serve(async (req) => {
       console.log(`  - ${r.booking_code} | ${r.guest_name} | ${r.room} | CO: ${r.check_out} ${r.check_out_time}`);
     });
 
-    // Send notification to managers via WhatsApp (optional)
-    if (results.length > 0) {
-      try {
-        const { data: settings } = await supabase
-          .from('hotel_settings')
-          .select('whatsapp_manager_numbers')
-          .single();
-
-        if (settings?.whatsapp_manager_numbers) {
-          const managerNumbers = Array.isArray(settings.whatsapp_manager_numbers) 
-            ? settings.whatsapp_manager_numbers 
-            : [];
-
-          if (managerNumbers.length > 0) {
-            const guestList = results.map((r) => 
-              `• ${r.guest_name} - ${r.room} (CO: ${r.check_out_time.substring(0, 5)})`
-            ).join('\n');
-
-            const message = `🔄 *AUTO CHECK-OUT*\n\n${results.length} tamu telah otomatis di-checkout karena melewati waktu checkout:\n\n${guestList}\n\n_Sistem otomatis ${todayStr} ${currentTimeStr} WIB_`;
-
-            const fonnte_key = Deno.env.get('FONNTE_API_KEY');
-            if (fonnte_key) {
-              for (const mgr of managerNumbers) {
-                const mgrNumber = typeof mgr === 'object' && mgr !== null ? (mgr as { number?: string }).number : mgr;
-                if (!mgrNumber) continue;
-                
-                await fetch('https://api.fonnte.com/send', {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': fonnte_key,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    target: mgrNumber,
-                    message: message,
-                  }),
-                });
-              }
-              console.log('📱 Manager notifications sent');
-            }
-          }
-        }
-      } catch (notifError) {
-        console.error('Failed to send manager notification (non-critical):', notifError);
-      }
-    }
 
     return new Response(
       JSON.stringify({ 

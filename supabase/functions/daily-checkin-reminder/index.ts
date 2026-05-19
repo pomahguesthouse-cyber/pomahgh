@@ -97,29 +97,9 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const sendResults = await Promise.allSettled(
-      managers.map(async (manager: ManagerContact) => {
-        const phone = (manager.phone || '').toString().replace(/\D/g, '');
-        if (!phone) throw new Error(`No phone number for ${manager.name}`);
-        
-        const { error } = await supabase.functions.invoke('send-whatsapp', {
-          body: { phone, message: reminderMessage }
-        });
-        
-        if (error) throw error;
-        return manager.name;
-      })
-    );
-
-    const successCount = sendResults.filter(r => r.status === 'fulfilled').length;
-    const failedManagers = sendResults
-      .filter(r => r.status === 'rejected')
-      .map((_, i) => managers[i]?.name || 'Unknown');
-    
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       success: true, date: today, check_ins: count,
-      managers_notified: successCount, managers_total: managers.length,
-      failed: failedManagers.length > 0 ? failedManagers : undefined
+      managers_notified: 0, managers_total: managers.length,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (error) {
