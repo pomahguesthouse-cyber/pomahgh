@@ -2089,6 +2089,45 @@ export type Database = {
         }
         Relationships: []
       }
+      fonnte_devices: {
+        Row: {
+          api_token: string
+          created_at: string
+          device_name: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          label: string
+          notes: string | null
+          phone_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_token: string
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          label: string
+          notes?: string | null
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_token?: string
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          label?: string
+          notes?: string | null
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fonnte_health_checks: {
         Row: {
           alert_reason: string | null
