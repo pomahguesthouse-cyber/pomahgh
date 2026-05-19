@@ -5,18 +5,17 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Loader2, Mail, MessageCircle, FileText } from "lucide-react";
+import { Loader2, Mail, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 /**
- * Test sender: pick a booking, override email/phone, send a test invoice.
- * Useful to verify Resend & Fonnte integrations end-to-end.
+ * Test sender: pick a booking, override email, send a test invoice.
+ * Useful to verify Resend integration end-to-end.
  */
 export const TestSendInvoiceCard = () => {
   const [bookingId, setBookingId] = useState("");
   const [testEmail, setTestEmail] = useState("");
-  const [testPhone, setTestPhone] = useState("");
   const [sending, setSending] = useState<"email" | "wa" | "preview" | null>(null);
   const [lastUrl, setLastUrl] = useState<string>("");
 
@@ -66,9 +65,6 @@ export const TestSendInvoiceCard = () => {
       } else if (mode === "email") {
         if (data?.email_sent) toast.success(`📧 Email test terkirim ke ${testEmail}`);
         else toast.error("Gagal kirim email test (cek API key Resend)");
-      } else if (mode === "wa") {
-        if (data?.whatsapp_sent) toast.success(`💬 WA test terkirim ke ${testPhone}`);
-        else toast.error("Gagal kirim WA test (cek API key Fonnte)");
       }
     } catch (e) {
       toast.error(`Test gagal: ${e instanceof Error ? e.message : "error"}`);
@@ -84,7 +80,7 @@ export const TestSendInvoiceCard = () => {
           <FileText className="h-5 w-5 text-primary" /> Test Kirim PDF Invoice
         </CardTitle>
         <CardDescription>
-          Verifikasi end-to-end generate PDF + integrasi Email (Resend) & WhatsApp (Fonnte) tanpa mengganggu data tamu.
+          Verifikasi end-to-end generate PDF + integrasi Email (Resend) tanpa mengganggu data tamu.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -119,14 +115,6 @@ export const TestSendInvoiceCard = () => {
               onChange={(e) => setTestEmail(e.target.value)}
             />
           </div>
-          <div>
-            <Label>WA Test (override, format 628xxx)</Label>
-            <Input
-              placeholder="62812xxxxxxxx"
-              value={testPhone}
-              onChange={(e) => setTestPhone(e.target.value)}
-            />
-          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2">
@@ -145,13 +133,6 @@ export const TestSendInvoiceCard = () => {
           >
             {sending === "email" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
             Test Kirim Email
-          </Button>
-          <Button
-            onClick={() => runTest("wa")}
-            disabled={!bookingId || !testPhone || sending !== null}
-          >
-            {sending === "wa" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
-            Test Kirim WhatsApp
           </Button>
         </div>
 

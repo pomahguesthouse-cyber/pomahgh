@@ -416,8 +416,6 @@ class RealTimePricingEngine {
           pricing_calculation_id: event.id
         });
       
-      // Send WhatsApp notification for approval
-      await this.sendWhatsAppApprovalNotification(event.room_id, oldPrice, newPrice);
     } else {
       // Auto-approve
       await this.supabase
@@ -439,44 +437,6 @@ class RealTimePricingEngine {
     return changePercentage > 10; // 10% threshold
   }
 
-  // Send WhatsApp approval notification
-  private async sendWhatsAppApprovalNotification(roomId: string, oldPrice: number, newPrice: number): Promise<void> {
-    try {
-      const { data: room } = await this.supabase
-        .from('rooms')
-        .select('name')
-        .eq('id', roomId)
-        .single();
-
-      const { data: settings } = await this.supabase
-        .from('hotel_settings')
-        .select('whatsapp_number, hotel_name')
-        .single();
-
-      if (settings?.whatsapp_number) {
-        const message = `🔄 *PRICE CHANGE APPROVAL NEEDED*
-
-Room: ${room?.name}
-Old Price: Rp ${oldPrice.toLocaleString('id-ID')}
-New Price: Rp ${newPrice.toLocaleString('id-ID')}
-Change: ${Math.abs((newPrice - oldPrice) / oldPrice * 100).toFixed(1)}%
-
-Reply "APPROVE ${roomId}" to approve or "REJECT ${roomId}" to reject.
-
-Expires in 30 minutes.`;
-
-        await this.supabase.functions.invoke('send-whatsapp', {
-          body: {
-            phone: settings.whatsapp_number,
-            message: message,
-            type: 'admin'
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error sending WhatsApp approval notification:', error);
-    }
-  }
 }
 
 // Main edge function handler

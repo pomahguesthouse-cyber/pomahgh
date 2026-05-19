@@ -142,27 +142,13 @@ Deno.serve(async (req) => {
           `Balas dengan angka (1/2/3) untuk kamar ${roomDisplay}\n\n` +
           `🎫 Kode: ${booking.booking_code}`;
         
-        const managerResults = await Promise.allSettled(
-          managers.map(async (manager: Manager) => {
-            const phone = (manager.phone || '').toString().replace(/\D/g, '');
-            if (!phone) return null;
-            
-            const { error } = await supabase.functions.invoke('send-whatsapp', {
-              body: { phone, message: reminderMessage }
-            });
-            
-            if (error) throw error;
-            return { manager: manager.name, booking: booking.booking_code };
-          })
-        );
-        
         return {
           booking_code: booking.booking_code,
           guest_name: booking.guest_name,
           room_numbers: roomDisplay,
           checkout_time: bookingCheckoutTime,
           is_late_checkout: isLateCheckout,
-          managers_notified: managerResults.filter(r => r.status === 'fulfilled').length
+          managers_notified: 0
         };
       })
     );

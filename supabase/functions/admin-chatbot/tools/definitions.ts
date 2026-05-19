@@ -256,40 +256,9 @@ export const TOOLS: ToolDefinition[] = [
   {
     type: "function",
     function: {
-      name: "send_whatsapp_message",
-      description: "Kirim pesan WhatsApp ke tamu atau pengelola lain. Gunakan saat manager minta: 'kirim pesan ke 08xxx', 'hubungi tamu xxx', 'WA ke xxx'. WAJIB ada nomor telepon dan isi pesan.",
-      parameters: {
-        type: "object",
-        properties: {
-          phone: { type: "string", description: "Nomor telepon tujuan (format 08xxx atau 62xxx)" },
-          message: { type: "string", description: "Isi pesan yang akan dikirim" },
-          booking_code: { type: "string", description: "Kode booking terkait (opsional, untuk konteks)" }
-        },
-        required: ["phone", "message"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
       name: "get_manager_list",
       description: "Dapatkan daftar semua pengelola/manager yang terdaftar beserta nomor teleponnya. Gunakan saat manager minta: 'kirim ke semua pengelola', 'broadcast ke pengelola', 'daftar pengelola'",
       parameters: { type: "object", properties: {} }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "send_brochure_to_guest",
-      description: "Kirim FILE PDF brosur kamar Pomah Guesthouse ke nomor WhatsApp tamu. WAJIB digunakan saat manager minta: 'kirim brosur ke 08xxx', 'kirim brosur kamar ke +62xxx', 'kirimin brosur ke tamu xxx', 'WA brosur ke xxx'. JANGAN gunakan send_whatsapp_message untuk brosur — tool ini akan attach file PDF asli, bukan teks/link kosong.",
-      parameters: {
-        type: "object",
-        properties: {
-          phone: { type: "string", description: "Nomor telepon tujuan (format 08xxx atau 62xxx atau +62xxx)" },
-          caption: { type: "string", description: "Caption pesan opsional (default: pesan ramah otomatis)" }
-        },
-        required: ["phone"]
-      }
     }
   },
   {

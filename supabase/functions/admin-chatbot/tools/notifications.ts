@@ -98,40 +98,13 @@ export async function sendCheckinReminder(supabase: SupabaseClient, dateStr?: st
     };
   }
 
-  // Send to each manager
-  let successCount = 0;
-  const sendResults: string[] = [];
-
-  for (const manager of managers) {
-    try {
-      const phone = (manager.phone || '').toString().replace(/\D/g, '');
-      if (!phone) continue;
-
-      const { error } = await supabase.functions.invoke('send-whatsapp', {
-        body: { phone, message: reminderMessage }
-      });
-
-      if (error) {
-        console.error(`Failed to send to ${manager.name}:`, error);
-        sendResults.push(`❌ ${manager.name}: gagal`);
-      } else {
-        successCount++;
-        sendResults.push(`✅ ${manager.name}`);
-        console.log(`✅ Sent to ${manager.name} (${phone})`);
-      }
-    } catch (err) {
-      console.error(`Error sending to ${manager.name}:`, err);
-      sendResults.push(`❌ ${manager.name}: error`);
-    }
-  }
-
   return {
     success: true,
     date: targetDate,
     check_ins: count,
-    managers_notified: successCount,
+    managers_notified: 0,
     managers_total: managers.length,
-    details: sendResults
+    details: ["WhatsApp notifications disabled — Fonnte integration removed"]
   };
 }
 
@@ -169,83 +142,11 @@ export async function sendCalendarLink(supabase: SupabaseClient, message?: strin
   };
 }
 
-/**
- * Send WhatsApp message to a phone number
- */
-export async function sendWhatsAppMessage(supabase: SupabaseClient, args: { phone: string; message: string; booking_code?: string }) {
-  const { phone, message, booking_code } = args;
-  
-  if (!phone || !message) {
-    return {
-      success: false,
-      error: "Nomor telepon dan pesan wajib diisi"
-    };
-  }
-  
-  // Normalize phone number
-  let normalizedPhone = phone.replace(/\D/g, '');
-  if (normalizedPhone.startsWith('0')) {
-    normalizedPhone = '62' + normalizedPhone.slice(1);
-  }
-  if (!normalizedPhone.startsWith('62')) {
-    normalizedPhone = '62' + normalizedPhone;
-  }
-  
-  console.log(`📤 Sending WhatsApp to ${normalizedPhone}: "${message.substring(0, 50)}..."`);
-  
-  try {
-    // Call send-whatsapp edge function
-    const { data, error } = await supabase.functions.invoke('send-whatsapp', {
-      body: { 
-        phone: normalizedPhone, 
-        message: message 
-      }
-    });
-    
-    if (error) {
-      console.error('WhatsApp send error:', error);
-      return {
-        success: false,
-        error: `Gagal mengirim pesan: ${error.message || 'Unknown error'}`,
-        phone: normalizedPhone
-      };
-    }
-    
-    console.log('✅ WhatsApp sent successfully:', data);
-    
-    // Get booking info if booking_code provided
-    let bookingInfo = null;
-    if (booking_code) {
-      const { data: booking } = await supabase
-        .from('bookings')
-        .select('guest_name, rooms(name)')
-        .eq('booking_code', booking_code)
-        .single();
-      
-      if (booking) {
-        bookingInfo = {
-          booking_code,
-          guest_name: booking.guest_name,
-          room_name: (booking.rooms as unknown as { name: string })?.name
-        };
-      }
-    }
-    
-    return {
-      success: true,
-      message: `✅ Pesan berhasil dikirim ke ${normalizedPhone}`,
-      phone: normalizedPhone,
-      sent_message: message,
-      booking_info: bookingInfo
-    };
-  } catch (err: unknown) {
-    console.error('WhatsApp send exception:', err);
-    return {
-      success: false,
-      error: `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
-      phone: normalizedPhone
-    };
-  }
+export async function sendWhatsAppMessage(_supabase: SupabaseClient, _args: { phone: string; message: string; booking_code?: string }) {
+  return {
+    success: false,
+    error: "WhatsApp send not available — Fonnte integration removed",
+  };
 }
 
 /**
@@ -255,98 +156,14 @@ export async function getManagerList(supabase: SupabaseClient) {
   return await _getManagerListImpl(supabase);
 }
 
-/**
- * Send the room brochure PDF (from knowledge_base) to a guest's WhatsApp.
- * Looks up an active KB entry titled like "%brosur%kamar%", generates a signed
- * URL from the private `knowledge-base` bucket, and sends as WhatsApp file.
- */
 export async function sendBrochureToGuest(
-  supabase: SupabaseClient,
-  args: { phone: string; caption?: string }
+  _supabase: SupabaseClient,
+  _args: { phone: string; caption?: string }
 ) {
-  const { phone, caption } = args;
-  if (!phone) return { success: false, error: 'Nomor telepon wajib diisi' };
-
-  // Normalize phone
-  let normalizedPhone = phone.replace(/\D/g, '');
-  if (normalizedPhone.startsWith('0')) normalizedPhone = '62' + normalizedPhone.slice(1);
-  if (!normalizedPhone.startsWith('62')) normalizedPhone = '62' + normalizedPhone;
-
-  // Lookup brochure in knowledge base
-  const { data: kb, error: kbErr } = await supabase
-    .from('chatbot_knowledge_base')
-    .select('title, source_url, original_filename')
-    .ilike('title', '%brosur%kamar%')
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
-
-  if (kbErr || !kb?.source_url) {
-    return {
-      success: false,
-      error: 'Brosur kamar tidak ditemukan di knowledge base. Pastikan ada entri aktif dengan judul mengandung "brosur kamar".',
-    };
-  }
-
-  // Sign URL (private bucket, valid 1 hour)
-  const { data: signed, error: signErr } = await supabase
-    .storage.from('knowledge-base')
-    .createSignedUrl(kb.source_url, 3600);
-
-  if (signErr || !signed?.signedUrl) {
-    return { success: false, error: `Gagal generate URL brosur: ${signErr?.message || 'unknown'}` };
-  }
-
-  const filename = kb.original_filename || 'brosur-kamar-pomah-guesthouse.pdf';
-  const finalCaption = caption?.trim() ||
-    '📕 Berikut brosur kamar Pomah Guesthouse, lengkap dengan foto & detail tiap tipe kamar 😊';
-
-  // Send via Fonnte API (file with URL attachment)
-  const fonnteApiKey = Deno.env.get('FONNTE_API_KEY');
-  if (!fonnteApiKey) {
-    return { success: false, error: 'FONNTE_API_KEY belum dikonfigurasi' };
-  }
-
-  try {
-    const resp = await fetch('https://api.fonnte.com/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': fonnteApiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        target: normalizedPhone,
-        message: finalCaption,
-        url: signed.signedUrl,
-        filename,
-        countryCode: '62',
-      }),
-    });
-
-    const result = await resp.json().catch(() => ({}));
-    if (!resp.ok || result.status === false) {
-      return {
-        success: false,
-        error: `Gagal kirim brosur: ${result.detail || resp.statusText}`,
-        phone: normalizedPhone,
-      };
-    }
-
-    console.log(`✅ Brochure PDF sent to ${normalizedPhone}`);
-    return {
-      success: true,
-      message: `✅ Brosur PDF berhasil dikirim ke ${normalizedPhone}`,
-      phone: normalizedPhone,
-      filename,
-      caption: finalCaption,
-    };
-  } catch (err) {
-    return {
-      success: false,
-      error: `Error kirim brosur: ${(err as Error).message}`,
-      phone: normalizedPhone,
-    };
-  }
+  return {
+    success: false,
+    error: "WhatsApp file send not available — Fonnte integration removed",
+  };
 }
 
 async function _getManagerListImpl(supabase: SupabaseClient) {
@@ -444,7 +261,7 @@ export async function sendInvoice(
 
     invoiceUrl = invData?.invoice_pdf_url || null;
     guestEmailSent = !!invData?.email_sent;
-    guestWaSent = !!invData?.whatsapp_sent;
+    guestWaSent = false;
   } catch (e) {
     console.error('generate-invoice exception:', e);
     return { success: false, error: `Gagal generate invoice: ${e instanceof Error ? e.message : 'Unknown'}` };

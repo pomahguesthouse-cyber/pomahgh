@@ -703,65 +703,11 @@ serve(async (req) => {
       }
     }
 
-    // === Optional: Send via WhatsApp (Fonnte) ===
-    let whatsappSent = false;
-    const phoneRecipient = targetPhone || booking.guest_phone;
-    if (send_whatsapp && phoneRecipient) {
-      try {
-        const fonnteApiKey = Deno.env.get("FONNTE_API_KEY");
-        if (!fonnteApiKey) {
-          console.error("FONNTE_API_KEY not configured");
-        } else {
-          const hotelName = hotelSettings.hotel_name || 'Pomah Guesthouse';
-          const totalLabel = formatRupiah(showPaidStamp || isDownPayment ? booking.total_price : totalWithCode);
-          const checkInLabel = format(new Date(booking.check_in), "d MMMM yyyy", { locale: idLocale });
-          const checkOutLabel = format(new Date(booking.check_out), "d MMMM yyyy", { locale: idLocale });
-
-          const bankList = (bankAccounts && bankAccounts.length > 0)
-            ? (bankAccounts as BankAccountItem[]).map(b => `🏦 *${b.bank_name}*\nNo. Rek: ${b.account_number}\na.n. ${b.account_holder_name}`).join('\n\n')
-            : '';
-
-          const message = showPaidStamp
-            ? `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah menginap di ${hotelName}!\n\nBerikut bukti pemesanan Anda (terlampir PDF):\n\n📋 *${booking.booking_code}*\n📅 ${checkInLabel} → ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total: *${totalLabel}* — LUNAS ✅\n\nKami tunggu kunjungan Anda berikutnya 🙏`
-            : isDownPayment
-              ? `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah memesan di ${hotelName}!\n\nBerikut bukti pemesanan Anda (PDF terlampir):\n\n📋 Kode: *${booking.booking_code}*\n📅 Check-in: ${checkInLabel}\n📅 Check-out: ${checkOutLabel} (${booking.total_nights} malam)\n\n💵 Total: *${totalLabel}*\n✅ DP dibayar: *${formatRupiah(paidAmount)}*\n💳 Sisa pelunasan: *${formatRupiah(remainingBalance)}*\n\n💳 *PELUNASAN PEMBAYARAN*\n${bankList}\n\nSilakan lunasi sisa pembayaran sebesar *${formatRupiah(remainingBalance)}* dan kirim bukti transfer di chat ini ya 🙏\n\n📄 Invoice: ${invoicePdfUrl}`
-              : `Halo *${booking.guest_name}* 👋\n\nTerima kasih telah memesan di ${hotelName}!\n\nBerikut detail pesanan Anda (PDF terlampir):\n\n📋 Kode: *${booking.booking_code}*\n📅 Check-in: ${checkInLabel}\n📅 Check-out: ${checkOutLabel} (${booking.total_nights} malam)\n💵 Total bayar: *${formatRupiah(totalWithCode)}*\n_(termasuk kode unik 3 digit untuk identifikasi)_\n\n💳 *INSTRUKSI PEMBAYARAN*\n${bankList}\n\nSilakan lakukan pembayaran dan kirim bukti transfer di chat ini ya. Tim kami akan segera memverifikasi 🙏\n\n📄 Invoice: ${invoicePdfUrl}`;
-
-          // Send PDF directly as multipart/form-data (avoids "url unreachable" errors when Fonnte cannot fetch our public URL)
-          const formData = new FormData();
-          formData.append("target", phoneRecipient);
-          formData.append("message", message);
-          formData.append("countryCode", "62");
-          const pdfBlob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
-          formData.append("file", pdfBlob, `Invoice-${booking.booking_code}.pdf`);
-
-          const fonnteResp = await fetch("https://api.fonnte.com/send", {
-            method: "POST",
-            headers: {
-              "Authorization": fonnteApiKey,
-            },
-            body: formData,
-          });
-
-          const fonnteResult = await fonnteResp.json();
-          if (fonnteResp.ok && fonnteResult.status !== false) {
-            whatsappSent = true;
-            console.log("Invoice sent via WhatsApp:", booking.guest_phone);
-          } else {
-            console.error("Fonnte send failed:", fonnteResult);
-          }
-        }
-      } catch (e) {
-        console.error("WhatsApp send error:", e);
-      }
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
         invoice_pdf_url: invoicePdfUrl,
         email_sent: emailSent,
-        whatsapp_sent: whatsappSent,
         guest_email: booking.guest_email,
         guest_phone: booking.guest_phone,
         booking_code: booking.booking_code,

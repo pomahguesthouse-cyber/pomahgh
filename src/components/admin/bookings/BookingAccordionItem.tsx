@@ -96,7 +96,6 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
   const checkInDate = parseISO(booking.check_in);
   const checkOutDate = parseISO(booking.check_out);
   const { settings } = useHotelSettings();
-  const [resending, setResending] = useState(false);
 
   // Get room numbers from booking_rooms
   const allocatedRooms =
@@ -172,59 +171,6 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
     paymentMethod,
   });
 
-  const handleResendWhatsApp = async (target: "guest" | "admin") => {
-    try {
-      setResending(true);
-      const payload = buildPreviewPayload();
-
-      if (target === "guest") {
-        const phone = booking.guest_phone?.trim();
-        if (!phone) {
-          toast.error("Nomor WhatsApp tamu tidak tersedia");
-          return;
-        }
-        const { error } = await supabase.functions.invoke("send-whatsapp", {
-          body: {
-            phone,
-            message: buildCustomerPreview(payload),
-            type: "booking_resend_guest",
-          },
-        });
-        if (error) throw error;
-        toast.success("Pesan WhatsApp dikirim ulang ke tamu");
-        return;
-      }
-
-      const managers = settings?.whatsapp_manager_numbers ?? [];
-      const targets = managers
-        .map((m) => m.phone?.trim())
-        .filter((p): p is string => !!p);
-      if (targets.length === 0) {
-        toast.error("Nomor WhatsApp admin belum dikonfigurasi");
-        return;
-      }
-      const adminMessage = buildAdminPreview(payload);
-      const results = await Promise.all(
-        targets.map((phone) =>
-          supabase.functions.invoke("send-whatsapp", {
-            body: { phone, message: adminMessage, type: "booking_resend_admin" },
-          })
-        )
-      );
-      const failed = results.filter((r) => r.error).length;
-      if (failed > 0) {
-        toast.error(`Gagal mengirim ke ${failed}/${targets.length} admin`);
-      } else {
-        toast.success(`Pesan dikirim ulang ke ${targets.length} admin`);
-      }
-    } catch (err) {
-      console.error("Resend WhatsApp error:", err);
-      toast.error(
-        err instanceof Error ? err.message : "Gagal mengirim WhatsApp"
-      );
-    } finally {
-      setResending(false);
-    }
   };
 
   return (
@@ -556,35 +502,6 @@ export const BookingAccordionItem = memo(function BookingAccordionItem({
               Edit
             </Button>
 
-            {/* Resend WhatsApp */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-emerald-600 border-emerald-600 hover:bg-emerald-50"
-                  disabled={resending}
-                >
-                  <Send className="mr-1 h-4 w-4" />
-                  Kirim WhatsApp Ulang
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem
-                  disabled={resending}
-                  onClick={() => handleResendWhatsApp("guest")}
-                >
-                  Ke Tamu ({paymentMethod === "pay_at_hotel" ? "Bayar di Tempat" : "Transfer"})
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={resending}
-                  onClick={() => handleResendWhatsApp("admin")}
-                >
-                  Ke Admin/Manager
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
 
             {/* Delete Button */}
             <AlertDialog>

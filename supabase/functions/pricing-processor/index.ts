@@ -163,7 +163,6 @@ async function processOccupancyEvent(supabase: SupaClient, event: Record<string,
       pricing_factors: { occupancy_rate: occupancy.occupancy_rate, demand_score: occupancy.demand_score, multiplier, trigger: 'occupancy_update' }
     });
 
-    await sendWhatsAppNotification(supabase, room, basePrice, finalPrice, occupancy);
     console.log(`⏳ Approval needed for ${room.name}`);
     return { priceUpdated: false, approvalCreated: true };
   }
@@ -193,41 +192,3 @@ async function processOccupancyEvent(supabase: SupaClient, event: Record<string,
   return { priceUpdated: true, approvalCreated: false };
 }
 
-async function sendWhatsAppNotification(supabase: SupaClient, room: Record<string, unknown>, oldPrice: number, newPrice: number, occupancy: Record<string, unknown>) {
-  try {
-    const { data: settings } = await supabase.from('hotel_settings').select('whatsapp_number, hotel_name').single();
-    if (!settings?.whatsapp_number) return;
-
-    const changePercent = ((newPrice - oldPrice) / oldPrice * 100);
-    const direction = changePercent > 0 ? '⬆️ INCREASE' : '⬇️ DECREASE';
-
-    const message = `🔄 *PRICE CHANGE APPROVAL NEEDED*
-
-🏨 ${settings.hotel_name || 'Hotel'}
-🛏️ Room: ${room.name}
-${direction}: ${Math.abs(changePercent).toFixed(1)}%
-
-💰 Price Details:
-• Old: Rp ${oldPrice.toLocaleString('id-ID')}
-• New: Rp ${newPrice.toLocaleString('id-ID')}
-
-📊 Triggered by:
-• Occupancy: ${(occupancy.occupancy_rate as number).toFixed(1)}%
-• Booked: ${occupancy.booked_units}/${occupancy.total_allotment} units
-
-🔘 Reply to approve:
-APPROVE ${room.id}
-
-🔘 Reply to reject:
-REJECT ${room.id} [reason]
-
-⏰ Expires in 30 minutes`;
-
-    await supabase.functions.invoke('send-whatsapp', {
-      body: { phone: settings.whatsapp_number, message, type: 'admin' }
-    });
-    console.log('📱 WhatsApp notification sent');
-  } catch (error) {
-    console.error('WhatsApp error:', error);
-  }
-}

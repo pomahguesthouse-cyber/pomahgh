@@ -118,50 +118,6 @@ async function submitProof(supabase: any, body: PaymentRequest) {
     .eq("id", booking.id);
   if (updateErr) return { ok: false, error: `Gagal update booking: ${updateErr.message}` };
 
-  // Notify managers via Fonnte (auto-confirm via manager flow already exists in whatsapp-webhook price-approval)
-  const FONNTE_API_KEY = Deno.env.get("FONNTE_API_KEY");
-  let notifiedCount = 0;
-  if (FONNTE_API_KEY) {
-    const { data: settings } = await supabase
-      .from("hotel_settings")
-      .select("whatsapp_manager_numbers, hotel_name")
-      .maybeSingle();
-    const managers: Array<{ phone: string; name: string }> = settings?.whatsapp_manager_numbers || [];
-    const hotelName = settings?.hotel_name || "Hotel";
-
-    const msg = `💰 *PEMBAYARAN MASUK*
-
-📍 ${hotelName}
-📝 Kode: ${booking.booking_code}
-👤 Tamu: ${booking.guest_name}
-📱 HP: ${booking.guest_phone || "-"}
-💵 Nominal diharapkan: ${fmtRupiah(expectedAmount)}
-${body.declared_amount ? `💵 Tamu menyatakan: ${fmtRupiah(body.declared_amount)} ${amountMatches ? "✅" : "⚠️ TIDAK COCOK"}` : ""}
-🖼️ Bukti: ${body.proof_url}
-
-⏰ ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}
-
-_Balas *APPROVE ${booking.booking_code}* untuk konfirmasi, atau *REJECT ${booking.booking_code}* untuk tolak._`;
-
-    for (const m of managers) {
-      try {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 10000);
-        const r = await fetch("https://api.fonnte.com/send", {
-          method: "POST",
-          headers: { Authorization: FONNTE_API_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ target: m.phone, message: msg }),
-          signal: ctrl.signal,
-        });
-        clearTimeout(t);
-        const j = await r.json();
-        if (j.status) notifiedCount++;
-      } catch (e) {
-        console.error("notify failed", m.phone, e);
-      }
-    }
-  }
-
   return {
     ok: true,
     validation: {
@@ -170,9 +126,8 @@ _Balas *APPROVE ${booking.booking_code}* untuk konfirmasi, atau *REJECT ${bookin
       expected_amount: expectedAmount,
       declared_amount: body.declared_amount || null,
     },
-    notified_managers: notifiedCount,
     booking_status: "proof_uploaded",
-    summary: `Bukti diterima untuk ${booking.booking_code}. ${notifiedCount} manager dinotifikasi. Menunggu APPROVE manager.`,
+    summary: `Bukti diterima untuk ${booking.booking_code}. Menunggu APPROVE manager.`,
   };
 }
 

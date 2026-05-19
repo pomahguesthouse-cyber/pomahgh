@@ -89,10 +89,6 @@ export const SettingsPanel = () => {
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs">Provider</Label>
-            <Input defaultValue="Fonnte" className="text-xs h-8" readOnly />
-          </div>
-          <div className="space-y-2">
             <Label className="text-xs">Response Mode</Label>
             <Select value={form.whatsapp_response_mode} onValueChange={v => update('whatsapp_response_mode', v as 'ai' | 'manual')}>
               <SelectTrigger className="text-xs h-8">
