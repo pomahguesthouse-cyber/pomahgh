@@ -506,10 +506,19 @@ export default function AdminSettings() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="whatsapp" className="space-y-4">
+            <FonnteDevicesManager />
+          </TabsContent>
+
         </Tabs>
+
+        <div className="flex justify-end mt-6">
+          <Button type="submit" disabled={isUpdating || isUploading}>
+            {(isUpdating || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isUploading ? "Uploading..." : "Save Settings"}
+          </Button>
+        </div>
       </form>
-
-      <Tabs value="whatsapp" className="space-y-6 hidden">
-        <TabsContent value="whatsapp" />
-      </Tabs>
-
+    </div>
+  );
+}
